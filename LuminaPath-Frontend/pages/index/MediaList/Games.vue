@@ -8,7 +8,7 @@ const { data: games, pending, error } = await useAsyncData('games', () => store.
 </script>
 <template>
   <ion-page>
-    <ion-content>
+    <ion-content :fullscreen="true">
       <MediaNavigation />
       <div v-if="pending">
         <Loading />
@@ -16,7 +16,7 @@ const { data: games, pending, error } = await useAsyncData('games', () => store.
       <div v-else-if="error != null">
         <ErrorData />
       </div>
-      <div v-else>
+      <div class="m-4" v-else>
         <Media />
       </div>
     </ion-content>
