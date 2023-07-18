@@ -1,6 +1,11 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   ssr: false,
+  runtimeConfig: {
+    public: {
+      API_ENDPOINT: process.env.NUXT_API_ENDPOINT,
+    },
+  },
   css: [
       '@ionic/core/css/core.css',
       '@ionic/core/css/normalize.css',

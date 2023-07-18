@@ -1,7 +1,8 @@
 import axios from 'axios'
 import { Game } from 'utils/models/games'
+const runtimeConfig = useRuntimeConfig()
 
-const url = "https://localhost:16051/api"
+const url = runtimeConfig.public.API_ENDPOINT
 
 export async function getGames(): Promise<Array<Game>> {
     const result = await axios.get(url + "/games")
