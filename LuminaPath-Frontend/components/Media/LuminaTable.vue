@@ -49,7 +49,7 @@ const store = useGameStore()
     </section>
 </template>
 <style scoped>
-tbody:hover {
+tr:hover {
     background-color: #1d3145;
     cursor: pointer;
 }
