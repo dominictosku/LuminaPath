@@ -38,6 +38,7 @@ if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
+	app.UseCors("MyPolicy");
 
 	// For the proxy in docker compose to work correctly
 	app.UseHttpsRedirection();
@@ -47,6 +48,5 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 
 app.MapControllers();
-app.UseCors("MyPolicy");
 
 app.Run();
