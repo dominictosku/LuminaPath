@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import LuminaGrid from './Media/LuminaGrid.vue';
+
 const isGrid = ref(false)
 defineProps({
   name: String,
@@ -18,7 +20,7 @@ function changeIsGrid() {
     </div>
     <!-- Gallery view -->
     <div v-else id="Grid" class="tabcontent">
-      <MediaGrid />
+      <LuminaGrid />
     </div>
   <MediaLuminaPagination />
 </template>

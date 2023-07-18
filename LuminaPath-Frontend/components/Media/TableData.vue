@@ -1,9 +1,7 @@
-<script setup>
+<script setup lang="ts">
+import { Game } from '@/utils/models/games';
 defineProps({
-    title: String,
-    status: String,
-    plattform: String,
-    friends: String
+    game: Object as PropType<Game>
 })
 </script>
 <template>
@@ -11,10 +9,10 @@ defineProps({
         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
             <div>
                 <h2 class="font-medium text-gray-800 dark:text-white ">
-                    {{ title }}
+                    {{ game?.name }}
                 </h2>
                 <p class="text-sm font-normal text-gray-600 dark:text-gray-400">
-                    Legends
+                    {{ game?.description }}
                 </p>
             </div>
         </td>
@@ -29,13 +27,13 @@ defineProps({
             <div class="inline px-3 py-1 text-sm font-normal
                                                 rounded-full text-emerald-500 gap-x-2 bg-emerald-100/60
                                                 dark:bg-gray-800">
-                Playstation
+                {{ game?.plattforms }}
             </div>
         </td>
         <td class="px-4 py-4 text-sm whitespace-nowrap">
             <div>
                 <h4 class="text-gray-700 dark:text-gray-200">
-                    6 Hours
+                    {{ game?.playtime }}
                 </h4>
                 <p class="text-gray-500 dark:text-gray-400">
                     Main + Side
