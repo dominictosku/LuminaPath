@@ -11,14 +11,16 @@ function changeIsGrid() {
 
 <template>
   <MediaTabs @changebool="changeIsGrid" />
+  <MediaLuminaFilter />
     <!-- Table view -->
     <div v-if="!isGrid" id="Table" class="tabcontent">
-      <MediaTable />
+      <MediaLuminaTable />
     </div>
     <!-- Gallery view -->
     <div v-else id="Grid" class="tabcontent">
       <MediaGrid />
     </div>
+  <MediaLuminaPagination />
 </template>
   
 <style scoped>

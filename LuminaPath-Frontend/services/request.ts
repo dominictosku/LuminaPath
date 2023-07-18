@@ -4,7 +4,7 @@ const runtimeConfig = useRuntimeConfig()
 
 const url = runtimeConfig.public.API_ENDPOINT
 
-export async function getGames(): Promise<Array<Game>> {
+export async function fetchGames(): Promise<Array<Game>> {
     const result = await axios.get(url + "/games")
     return result.data
 }

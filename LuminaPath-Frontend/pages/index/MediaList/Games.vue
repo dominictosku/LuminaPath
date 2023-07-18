@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { getGames } from '@/services/request';
+import { useGameStore } from '@/stores/games';
 
-const { data: games, pending, error } = await useAsyncData('games', () => getGames(), {
+const store = useGameStore()
+const { data: games, pending, error } = await useAsyncData('games', () => store.getGames(), {
   lazy: true
 })
 </script>
