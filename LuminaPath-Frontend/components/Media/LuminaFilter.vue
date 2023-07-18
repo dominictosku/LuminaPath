@@ -4,7 +4,6 @@ import { add } from 'ionicons/icons';
 const createForm: any = ref(null);
 
 function toggleModal() {
-  // `childComponentRef.value` accesses the component instance
   createForm.value.openModal();
 }
 </script>

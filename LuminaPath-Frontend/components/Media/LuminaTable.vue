@@ -39,7 +39,7 @@ const store = useGameStore()
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:divide-gray-700 dark:bg-gray-900">
-                               <MediaTableData v-for="item in store.GamesList" :title="item.name" />
+                               <MediaTableData v-for="game in store.GamesList" :game="game" />
                             </tbody>
                         </table>
                     </div>

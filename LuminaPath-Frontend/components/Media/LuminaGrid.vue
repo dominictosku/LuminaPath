@@ -1,17 +1,12 @@
 <script setup lang="ts">
+import { useGameStore } from '@/stores/games';
+const store = useGameStore()
 </script>
 
 <template>
     <ol role="list" class="flex flex-wrap ">
-        <li v-for="n in 10" v-bind:key="n" style="--i: 2; --length: 10">
-            <div data-bs-toggle="modal" data-bs-target="#exampleModal">
-                <div class="">
-                    <img src="../../assets/png/Placeholder.png" class="object-cover h-48 w-96" />
-                </div>
-                <div class="bg-gray-100 text-black text-center h3">
-                    Name
-                </div>
-            </div>
+        <li v-for="game in store.GamesList" v-bind:key="game.id" style="--i: 2; --length: 10">
+            <MediaGridData :game="game" />
         </li>
     </ol>
 </template>
