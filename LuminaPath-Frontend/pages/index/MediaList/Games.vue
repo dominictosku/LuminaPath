@@ -13,7 +13,7 @@ const { data: games, pending, error } = await useAsyncData('games', () => store.
       <div v-if="pending">
         <Loading />
       </div>
-      <div v-else-if="error != null">
+      <div v-else-if="error != null || games == null">
         <ErrorData />
       </div>
       <div class="m-4" v-else>
