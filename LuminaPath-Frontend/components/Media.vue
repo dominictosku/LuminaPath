@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import LuminaGrid from './Media/LuminaGrid.vue';
-import Details from '@/components/Media/Details.vue';
 
 const isGrid = ref(false)
 
@@ -14,19 +13,16 @@ function changeIsGrid() {
 </script>
 
 <template>
-  <ion-nav-link ref="detailsEvent" router-direction="forward" :component="Details">
-  <IonButton> click here </IonButton>
-  </ion-nav-link>
   <MediaTabs @changebool="changeIsGrid" />
   <MediaLuminaFilter />
-    <!-- Table view -->
-    <div v-if="!isGrid" id="Table" class="tabcontent">
-      <MediaLuminaTable />
-    </div>
-    <!-- Gallery view -->
-    <div v-else id="Grid" class="tabcontent">
-      <LuminaGrid />
-    </div>
+  <!-- Table view -->
+  <div v-if="!isGrid" id="Table" class="tabcontent">
+    <MediaLuminaTable />
+  </div>
+  <!-- Gallery view -->
+  <div v-else id="Grid" class="tabcontent">
+    <LuminaGrid />
+  </div>
   <MediaLuminaPagination />
 </template>
   

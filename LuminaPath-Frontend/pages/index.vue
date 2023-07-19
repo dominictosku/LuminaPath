@@ -1,7 +1,6 @@
 <template>
-    <ion-nav :root="Main"></ion-nav>
+    <Main />
 </template>
 
 <script setup lang="ts">
-import Main from '@/components/Main.vue';
 </script>
