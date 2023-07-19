@@ -9,6 +9,11 @@ export async function fetchGames(): Promise<Array<IGame>> {
     return result
 }
 
+export async function deleteGame(id: number){
+    await axios.delete(url + "/games?id=" + id)
+    return
+}
+
 export async function PostGame(game: IGame){
     await axios.post(url + "/games", game)
     return

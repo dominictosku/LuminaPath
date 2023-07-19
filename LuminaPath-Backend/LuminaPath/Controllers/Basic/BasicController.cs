@@ -71,7 +71,7 @@ namespace LuminaPath.Controllers.Basic
 				await _service.Save();
 			}
 
-			return RedirectToPage("../Index");
+			return new JsonResult("Ok");
 		}
 
 		private bool PersonalGamingExists(int id)

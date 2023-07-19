@@ -1,5 +1,5 @@
 import { type IGame } from "@/utils/models/games";
-import { PostGame, fetchGames } from "@/services/request";
+import { PostGame, fetchGames, deleteGame } from "@/services/request";
 
 export const useGameStore = defineStore("games", () => {
   const GamesList: Ref<IGame[] | null> = ref(null)
@@ -17,6 +17,12 @@ export const useGameStore = defineStore("games", () => {
     }
     return undefined
   }
+  
+  async function removeGame(id: number) {
+    await deleteGame(id)
+    await getGames()
+    return;
+  }
 
   async function createGame(game: IGame) {
     await PostGame(game)
@@ -24,5 +30,5 @@ export const useGameStore = defineStore("games", () => {
     return;
   }
 
-  return { GamesList, SelectedGame, getGames, createGame, getGameById }
+  return { GamesList, SelectedGame, getGames, createGame, getGameById, removeGame }
 });
