@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import LuminaGrid from './Media/LuminaGrid.vue';
+import Details from '@/components/Media/Details.vue';
 
 const isGrid = ref(false)
+
 defineProps({
   name: String,
 });
@@ -12,6 +14,9 @@ function changeIsGrid() {
 </script>
 
 <template>
+  <ion-nav-link ref="detailsEvent" router-direction="forward" :component="Details">
+  <IonButton> click here </IonButton>
+  </ion-nav-link>
   <MediaTabs @changebool="changeIsGrid" />
   <MediaLuminaFilter />
     <!-- Table view -->

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { IonButtons, IonMenuButton, IonContent, IonHeader, IonMenu, IonMenuToggle, IonTitle, IonToolbar } from '@ionic/vue';
 </script>
 <template>
   <ion-menu content-id="main-content" side="end">
