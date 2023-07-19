@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { Game } from '@/utils/models/games';
-defineProps({
+import { useGameStore } from '@/stores/games'
+const props = defineProps({
     game: Object as PropType<Game>
 })
+
+function loadGame(){
+    if(props.game != null){
+        store.setSelectedGame(props.game)
+    }
+}
+
+const store = useGameStore()
 </script>
 <template>
-    <tr>
+    <tr @click="loadGame">
         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
             <div>
                 <h2 class="font-medium text-gray-800 dark:text-white ">
-                    {{ game?.name }}
+                        {{ game?.name }}
                 </h2>
                 <p class="text-sm font-normal text-gray-600 dark:text-gray-400">
                     {{ game?.description }}
@@ -60,5 +69,4 @@ defineProps({
         </td>
     </tr>
 </template>
-<style scoped>
-</style>
+<style scoped></style>

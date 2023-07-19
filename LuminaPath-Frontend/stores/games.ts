@@ -3,11 +3,16 @@ import { PostGame, fetchGames } from "@/services/request";
 
 export const useGameStore = defineStore("games", () => {
   const GamesList: Ref<IGame[] | null> = ref(null)
+  const SelectedGame: Ref<IGame | null> = ref(null)
   async function getGames() : Promise<IGame[]> {
     let data = await fetchGames()
     if(typeof data === 'object' && data != null)
       GamesList.value = data
     return data;
+  }
+
+  function setSelectedGame(game: IGame){
+      SelectedGame.value = game
   }
 
   async function createGame(game: IGame) {
@@ -16,5 +21,5 @@ export const useGameStore = defineStore("games", () => {
     return;
   }
 
-  return { GamesList, getGames, createGame }
+  return { GamesList, SelectedGame, getGames, createGame, setSelectedGame }
 });
