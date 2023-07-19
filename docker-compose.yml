@@ -7,8 +7,12 @@ services:
     build:
       context: ./LuminaPath-Frontend
       dockerfile: Dockerfile
+    environment:
+      - NUXT_API_ENDPOINT=backend
     ports:
       - 3000
+    depends_on:
+      - backend
 
   backend:
     container_name: luminapath-backend

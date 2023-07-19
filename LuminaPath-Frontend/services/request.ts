@@ -2,7 +2,7 @@ import axios from 'axios'
 import { IGame } from 'utils/models/games'
 const runtimeConfig = useRuntimeConfig()
 
-const url = runtimeConfig.public.API_ENDPOINT
+const url = runtimeConfig.public.API_ENDPOINT + "/api"
 
 export async function fetchGames(): Promise<Array<IGame>> {
     const result: IGame[] = await $fetch<IGame[]>(url + "/games")
