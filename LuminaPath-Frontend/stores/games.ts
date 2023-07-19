@@ -5,7 +5,8 @@ export const useGameStore = defineStore("games", () => {
   const GamesList: Ref<IGame[] | null> = ref(null)
   async function getGames() : Promise<IGame[]> {
     let data = await fetchGames()
-    GamesList.value = data
+    if(typeof data === 'object' && data != null)
+      GamesList.value = data
     return data;
   }
 
