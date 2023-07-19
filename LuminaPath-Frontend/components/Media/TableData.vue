@@ -6,7 +6,7 @@ const props = defineProps({
 const router = useIonRouter();
 </script>
 <template>
-    <tr @click="() => router.push('/Details/1', customAnimation)">
+    <tr @click="() => router.push(`/Details/${props.game?.id}`, customAnimation)">
         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
             <div>
                 <h2 class="font-medium text-gray-800 dark:text-white ">
