@@ -1,20 +1,12 @@
 <script setup lang="ts">
 import { Game } from '@/utils/models/games';
-import { useGameStore } from '@/stores/games'
 const props = defineProps({
     game: Object as PropType<Game>
 })
-
-function loadGame(){
-    if(props.game != null){
-        store.setSelectedGame(props.game)
-    }
-}
-
-const store = useGameStore()
+const router = useIonRouter();
 </script>
 <template>
-    <tr @click="loadGame">
+    <tr @click="() => router.push('/Details/1', customAnimation)">
         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
             <div>
                 <h2 class="font-medium text-gray-800 dark:text-white ">
