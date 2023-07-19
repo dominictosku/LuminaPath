@@ -6,12 +6,13 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var MyAllowSpecificOrigins = "MyPolicy";
+var connectionstring = builder.Configuration.GetConnectionString("Default");
 
 // Add services to the container.
 
 builder.Services.AddControllers();
 builder.Services.AddDbContext<LuminaPathDbContext>(options =>
-		options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+		options.UseMySql(connectionstring, ServerVersion.AutoDetect(connectionstring)));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
