@@ -7,7 +7,7 @@ const props = defineProps({
 const router = useIonRouter();
 </script>
 <template>
-    <div @click="() => router.push('/Details/1', customAnimation)">
+    <div @click="() => router.push(`/Details/${props.game?.id}`, customAnimation)">
         <div class="">
             <img src="../../assets/png/Placeholder.png" class="object-cover h-48 w-96" />
         </div>

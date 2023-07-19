@@ -11,8 +11,11 @@ export const useGameStore = defineStore("games", () => {
     return data;
   }
 
-  function setSelectedGame(game: IGame){
-      SelectedGame.value = game
+  function getGameById(id: number): IGame | undefined {
+    if(GamesList.value != null){
+      return GamesList.value.find(g => g.id == id)
+    }
+    return undefined
   }
 
   async function createGame(game: IGame) {
@@ -21,5 +24,5 @@ export const useGameStore = defineStore("games", () => {
     return;
   }
 
-  return { GamesList, SelectedGame, getGames, createGame, setSelectedGame }
+  return { GamesList, SelectedGame, getGames, createGame, getGameById }
 });
