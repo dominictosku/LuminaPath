@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LuminaPath.Controllers.Basic
 {
+	[ApiController]
+	[Route("api/[controller]")]
 	public class BasicController<T> : ControllerBase where T : class, IBasicInfo
 	{
 		private protected readonly IGenericCrud<T> _service;

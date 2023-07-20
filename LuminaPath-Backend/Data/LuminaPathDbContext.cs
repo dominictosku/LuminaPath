@@ -1,4 +1,6 @@
 ﻿using Data.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -8,13 +10,18 @@ using System.Threading.Tasks;
 
 namespace Data
 {
-    public class LuminaPathDbContext : DbContext
-    {
+    public class LuminaPathDbContext : IdentityDbContext<IdentityUser>
+	{
         public LuminaPathDbContext(DbContextOptions<LuminaPathDbContext> options) : base(options)
         {
         }
 
-        public DbSet<Games> Games { get; set; }
+		protected override void OnModelCreating(ModelBuilder modelBuilder)
+		{
+			base.OnModelCreating(modelBuilder);
+		}
+
+		public DbSet<Games> Games { get; set; }
 		public DbSet<PersonalGaming> PersonalGaming { get; set; }
 	}
 }
