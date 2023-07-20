@@ -19,6 +19,16 @@ services:
          - luminapath-DB:/var/lib/mysql
      ports:
          - "3306:3306"
+  phpmyadmin:
+      image: phpmyadmin:latest
+      container_name: luminapath-phpmyadmin
+      ports:
+          - 8087:80
+      depends_on:
+          - db
+      environment:
+          PMA_HOST: db
+          PMA_PORT: 3306
   blob:
     image: mcr.microsoft.com/azure-storage/azurite
     container_name: luminapath-blob

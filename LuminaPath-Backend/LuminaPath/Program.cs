@@ -37,6 +37,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 	options.User.RequireUniqueEmail = false;
 })
 	.AddEntityFrameworkStores<LuminaPathDbContext>()
+	.AddRoles<IdentityRole>()
 	.AddDefaultTokenProviders();
 
 
@@ -60,11 +61,6 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 	ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
-using (var serviceScope = app.Services.CreateScope())
-{
-	var context = serviceScope.ServiceProvider.GetRequiredService<LuminaPathDbContext>();
-	context.Database.Migrate();
-}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -75,6 +71,18 @@ if (app.Environment.IsDevelopment())
 
 	// For the proxy in docker compose to work correctly
 	app.UseHttpsRedirection();
+
+	using (var serviceScope = app.Services.CreateScope())
+	{
+		var context = serviceScope.ServiceProvider.GetRequiredService<LuminaPathDbContext>();
+		try{
+			context.Database.Migrate();
+		}
+		catch(Exception e)
+		{
+            Console.WriteLine("Error: ", e);
+        }
+	}
 }
 else
 {
