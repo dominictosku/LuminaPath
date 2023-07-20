@@ -1,4 +1,5 @@
 using Data;
+using Data.Classes;
 using Data.Interfaces;
 using Data.Models;
 using Data.Services;
@@ -16,7 +17,7 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<LuminaPathDbContext>(options =>
 		options.UseMySql(connectionstring, ServerVersion.AutoDetect(connectionstring)));
 
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+builder.Services.AddIdentity<LuminaUser, IdentityRole>(options =>
 {
 	// Password settings.
 	options.Password.RequireDigit = true;

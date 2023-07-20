@@ -17,7 +17,7 @@ namespace LuminaPath.Controllers
 		}
 
 		[HttpGet("{username}")]
-		public async Task<ActionResult<LuminaUser>> GetUser(string username)
+		public async Task<ActionResult<UserDto>> GetUser(string username)
 		{
 			IdentityUser? user = await _userManager.FindByNameAsync(username);
 
@@ -26,7 +26,7 @@ namespace LuminaPath.Controllers
 				return NotFound();
 			}
 
-			return new LuminaUser
+			return new UserDto
 			{
 				UserName = user.UserName ?? "Error",
 				Email = user.Email ?? "Error"
@@ -34,7 +34,7 @@ namespace LuminaPath.Controllers
 		}
 
 		[HttpPost]
-		public async Task<ActionResult<LuminaUser>> PostUser(LuminaUser user)
+		public async Task<ActionResult<UserDto>> PostUser(UserDto user)
 		{
 			if (!ModelState.IsValid)
 			{
