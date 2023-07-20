@@ -7,8 +7,6 @@ using Microsoft.Extensions.Logging;
 
 namespace LuminaPath.Controllers
 {
-	[ApiController]
-	[Route("api/[controller]")]
 	public class GamesController : BasicController<Games>
 	{
 		private readonly ILogger<GamesController> _logger;

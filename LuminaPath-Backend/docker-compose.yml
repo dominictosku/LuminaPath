@@ -19,5 +19,14 @@ services:
          - luminapath-DB:/var/lib/mysql
      ports:
          - "3306:3306"
+  blob:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: luminapath-blob
+    volumes:
+      - luminapath-blob:/data
+    ports:
+      - 10000:10000
+
 volumes:
     luminapath-DB:
+    luminapath-blob: 

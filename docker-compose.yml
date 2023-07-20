@@ -43,5 +43,14 @@ services:
       - frontend
       - backend
 
+  blob:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: luminapath-blob
+    volumes:
+      - luminapath-blob:/data
+    ports:
+      - 10000:10000
+
 volumes:
-    luminapath-DB:  
+    luminapath-DB:
+    luminapath-blob:  
