@@ -1,6 +1,6 @@
+<script setup lang="ts">
+</script>
 <template>
     <NavigationTabsBar />
 </template>
 
-<script setup lang="ts">
-</script>

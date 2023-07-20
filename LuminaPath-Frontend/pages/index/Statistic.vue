@@ -3,7 +3,7 @@
 <template>
   <ion-page>
     <ion-content :fullscreen="true">
-      <Chart />
+      <StatisticChart />
     </ion-content>
   </ion-page>
 </template>
