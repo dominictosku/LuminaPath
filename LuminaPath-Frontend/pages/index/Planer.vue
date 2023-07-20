@@ -3,9 +3,9 @@
 <template>
   <ion-page>
     <ion-content :fullscreen="true">
-      <VCalendar />
+      <EventsVCalendar />
       <Drag />
-      <VFullCalendar class="sm:p-12" />
+      <EventsVFullCalendar class="sm:p-12" />
     </ion-content>
   </ion-page>
 </template>
