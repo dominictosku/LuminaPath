@@ -1,4 +1,5 @@
 ﻿using Data.Classes;
+using Data.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -9,11 +10,13 @@ namespace LuminaPath.Controllers
 	[ApiController]
 	public class LuminaUserController : ControllerBase
 	{
-		private readonly UserManager<IdentityUser> _userManager;
+		private readonly UserManager<LuminaUser> _userManager;
+		private readonly JwtService _jwtService;
 
-		public LuminaUserController(UserManager<IdentityUser> userManager)
+		public LuminaUserController(UserManager<LuminaUser> userManager, JwtService jwtService)
 		{
 			_userManager = userManager;
+			_jwtService = jwtService;
 		}
 
 		[HttpGet("{username}")]
@@ -42,7 +45,7 @@ namespace LuminaPath.Controllers
 			}
 
 			var result = await _userManager.CreateAsync(
-				new IdentityUser() { UserName = user.UserName, Email = user.Email },
+				new LuminaUser() { UserName = user.UserName, Email = user.Email },
 				user.Password
 			);
 
@@ -53,6 +56,33 @@ namespace LuminaPath.Controllers
 
 			user.Password = null;
 			return Created("", user);
+		}
+
+		[HttpPost("BearerToken")]
+		public async Task<ActionResult<AuthenticationResponse>> CreateBearerToken(UserCredentials request)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest("Bad credentials");
+			}
+
+			var user = await _userManager.FindByNameAsync(request.UserName);
+
+			if (user == null)
+			{
+				return BadRequest("Bad credentials");
+			}
+
+			var isPasswordValid = await _userManager.CheckPasswordAsync(user, request.Password);
+
+			if (!isPasswordValid)
+			{
+				return BadRequest("Bad credentials");
+			}
+
+			var token = _jwtService.CreateToken(user);
+
+			return Ok(token);
 		}
 	}
 }
