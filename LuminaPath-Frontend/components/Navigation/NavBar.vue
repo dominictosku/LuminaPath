@@ -21,7 +21,7 @@ const router = useIonRouter();
         <ion-buttons slot="end">
           <ion-menu-button></ion-menu-button>
         </ion-buttons>
-        <IonButton router-link="/Home" color="dark" fill="clear">
+        <IonButton router-link="/Home" fill="clear">
           <ion-title>
             <IonIcon :icon="logoAmplify"></IonIcon>
             LuminaPath
