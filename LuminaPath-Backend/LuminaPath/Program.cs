@@ -45,6 +45,7 @@ builder.Services.AddIdentity<LuminaUser, IdentityRole>(options =>
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<JwtService>();
 builder.Services.AddTransient<IGenericCrud<Games>, GenericCrud<Games>>();
 builder.Services.AddTransient<IGenericCrud<PersonalGaming>, GenericCrud<PersonalGaming>>();
 
