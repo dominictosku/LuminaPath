@@ -1,17 +1,7 @@
 <script setup lang="ts">
-import { useGameStore } from "@/stores/games"
-import { Game } from "~/utils/games";
-const store = useGameStore()
-
 let newGame = new Game(0, "", "", "", 0, 0)
-const game: Ref<Game> = ref(newGame)
 
 const isModalOpen = ref(false)
-
-async function post() {
-    await store.createGame(game.value)
-    closeModal()
-}
 
 function openModal() {
     isModalOpen.value = true;
@@ -30,25 +20,12 @@ defineExpose({
     <div>
         <!-- Modal -->
         <transition name="modal">
-            <div v-if="isModalOpen" class="absolute inset-0 flex items-center justify-center z-50" id="exampleModal"
-                tabindex="-1" aria-labelledby="exampleModalLabel" aria-modal="true">
+            <div v-if="isModalOpen" class="absolute inset-0 items-center justify-center z-50" id="exampleModal"
+                tabindex="-1" aria-labelledby="CreateModal" aria-modal="true">
                 <div class="modal-overlay" @click="closeModal"></div> <!-- Transparent background overlay -->
-                <div class="max-w-md mx-auto rounded shadow-lg">
+                <div class="w-fit m-auto rounded shadow-lg bg-slate-900 p-6">
                     <!-- Modal content -->
-                    <form class="grid justify-center mt-12">
-                        <div class="border-solid border-2 border-sky-500 p-6 bg-gray-800">
-                            <FormKit v-model="game.name" name="Title" label="Title of game" validation="required" />
-                            <FormKit v-model="game.description" type="textarea" name="description" label="description" />
-                            <FormKit v-model="game.plattforms" type="select" name="plattform" label="Plattform"
-                                placeholder="Playstation" :options="Plattforms" />
-                            <FormKit v-model="game.genre" type="text" name="genre" label="genre" />
-                            <FormKit v-model="game.playtime" type="number" label="Estimated Playtime" step="1" />
-                            <div class="flex justify-end p-3 gap-3">
-                                <IonButton color="light" @click="closeModal">close</IonButton>
-                                <IonButton @click="post"> Add </IonButton>
-                            </div>
-                        </div>
-                    </form>
+                    <FormsGameForm :game="newGame" @exit="closeModal" />
                 </div>
             </div>
         </transition>
