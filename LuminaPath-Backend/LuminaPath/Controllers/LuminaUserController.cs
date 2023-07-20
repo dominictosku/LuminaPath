@@ -1,5 +1,6 @@
 ﻿using Data.Classes;
 using Data.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -37,6 +38,7 @@ namespace LuminaPath.Controllers
 		}
 
 		[HttpPost]
+		[AllowAnonymous]
 		public async Task<ActionResult<UserDto>> PostUser(UserDto user)
 		{
 			if (!ModelState.IsValid)
@@ -59,6 +61,7 @@ namespace LuminaPath.Controllers
 		}
 
 		[HttpPost("BearerToken")]
+		[AllowAnonymous]
 		public async Task<ActionResult<AuthenticationResponse>> CreateBearerToken(UserCredentials request)
 		{
 			if (!ModelState.IsValid)
