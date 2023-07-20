@@ -3,13 +3,17 @@ using Data.Classes;
 using Data.Interfaces;
 using Data.Models;
 using Data.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 var MyAllowSpecificOrigins = "MyPolicy";
 var connectionstring = builder.Configuration.GetConnectionString("Default");
+var Jwt = builder.Configuration.GetSection("Jwt");
 
 // Add services to the container.
 
@@ -40,6 +44,24 @@ builder.Services.AddIdentity<LuminaUser, IdentityRole>(options =>
 	.AddEntityFrameworkStores<LuminaPathDbContext>()
 	.AddRoles<IdentityRole>()
 	.AddDefaultTokenProviders();
+
+builder.Services
+	.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+	.AddJwtBearer(options =>
+	{
+		options.TokenValidationParameters = new TokenValidationParameters()
+		{
+			ValidateIssuer = true,
+			ValidateAudience = true,
+			ValidateLifetime = true,
+			ValidateIssuerSigningKey = true,
+			ValidAudience = Jwt["Audience"],
+			ValidIssuer = Jwt["Issuer"],
+			IssuerSigningKey = new SymmetricSecurityKey(
+				Encoding.UTF8.GetBytes(Jwt["Key"])
+			)
+		};
+	});
 
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

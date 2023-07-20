@@ -1,5 +1,6 @@
 ﻿using Data.Interfaces;
 using Data.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace LuminaPath.Controllers.Basic
 {
 	[ApiController]
+	[Authorize(AuthenticationSchemes = "Bearer")]
 	[Route("api/[controller]")]
 	public class BasicController<T> : ControllerBase where T : class, IBasicInfo
 	{
@@ -17,6 +19,7 @@ namespace LuminaPath.Controllers.Basic
 		}
 
 		[HttpGet]
+		[AllowAnonymous]
 		public IEnumerable<T> Get()
 		{
 			var entity = _service.GetAll();
