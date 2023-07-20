@@ -13,14 +13,9 @@ if (!editGame) {
 </script>
 <template>
   <ion-page>
-    <ion-header>
-      <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-back-button></ion-back-button>
-        </ion-buttons>
-        <ion-title>Edit Game: {{ id }} </ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <NavigationGoBack>
+      <p>Edit Game: {{ id }} </p>
+    </NavigationGoBack>
     <ion-content>
       <FormsEdit :game="editGame" />
     </ion-content>

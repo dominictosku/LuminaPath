@@ -9,11 +9,10 @@ const calendarOptions = {
 const fullCalendar: any = ref(null)
 
 onMounted(() => {
-  let calendarApi = fullCalendar.value.getApi()
-  setTimeout(() => {
-    calendarApi.render()
-  }, 500);
-})
+  setTimeout(function () {
+    window.dispatchEvent(new Event('resize'));
+  }, 1);
+});
 </script>
 <template>
     <FullCalendar ref="fullCalendar" :options="calendarOptions" />

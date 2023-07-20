@@ -38,16 +38,18 @@ async function confirm() {
       </ion-header>
       <ion-content class="ion-padding">
           <form class="grid justify-center">
-            <FormKit v-model="game.name" name="Title" label="Title of game" validation="required" />
-            <FormKit v-model="game.description" type="textarea" name="description" label="description" />
-            <FormKit v-model="game.plattforms" type="select" name="plattform" label="Plattform" placeholder="Playstation"
+            <div class="border-solid border-2 border-sky-500 p-6">
+              <FormKit v-model="game.name" name="Title" label="Title of game" validation="required" />
+              <FormKit v-model="game.description" type="textarea" name="description" label="description" />
+              <FormKit v-model="game.plattforms" type="select" name="plattform" label="Plattform" placeholder="Playstation"
               :options="Plattforms" />
-            <FormKit v-model="game.genre" type="text" name="genre" label="genre" />
-            <FormKit v-model="game.playtime" type="number" label="Estimated Playtime" step="1" />
-            <div class="flex justify-end p-3 gap-3">
-              <IonButton @click="deleteGame()" color="danger">delete</IonButton>
-              <IonButton @click="cancel()" color="light">close</IonButton>
-              <IonButton @click="confirm()"> Edit </IonButton>
+              <FormKit v-model="game.genre" type="text" name="genre" label="genre" />
+              <FormKit v-model="game.playtime" type="number" label="Estimated Playtime" step="1" />
+              <div class="flex justify-end p-3 gap-3">
+                <IonButton @click="deleteGame()" color="danger">delete</IonButton>
+                <IonButton @click="cancel()" color="light">close</IonButton>
+                <IonButton @click="confirm()"> Edit </IonButton>
+              </div>
             </div>
           </form>
       </ion-content>

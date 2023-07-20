@@ -5,9 +5,7 @@
     <ion-content :fullscreen="true">
       <VCalendar />
       <Drag />
-      <ClientOnly>
-        <VFullCalendar />
-      </ClientOnly>
+      <VFullCalendar class="sm:p-12" />
     </ion-content>
   </ion-page>
 </template>
