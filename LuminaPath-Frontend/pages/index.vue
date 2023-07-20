@@ -1,5 +1,5 @@
 <template>
-    <Main />
+    <NavigationTabsBar />
 </template>
 
 <script setup lang="ts">

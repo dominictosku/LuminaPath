@@ -28,7 +28,7 @@ function toggleModal() {
             <span>Import</span>
         </button>
         <div class="media-button">
-            <ion-fab>
+            <ion-fab class="z-0">
                 <ion-fab-button @click="toggleModal" size="small">
                     <ion-icon :icon="add"></ion-icon>
                 </ion-fab-button>

@@ -8,7 +8,7 @@ const game: Ref<Game> = ref(newGame)
 
 const isModalOpen = ref(false)
 
-async function post(){
+async function post() {
     await store.createGame(game.value)
     closeModal()
 }
@@ -30,29 +30,23 @@ defineExpose({
     <div>
         <!-- Modal -->
         <transition name="modal">
-            <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50" id="exampleModal"
+            <div v-if="isModalOpen" class="absolute inset-0 flex items-center justify-center z-50" id="exampleModal"
                 tabindex="-1" aria-labelledby="exampleModalLabel" aria-modal="true">
                 <div class="modal-overlay" @click="closeModal"></div> <!-- Transparent background overlay -->
-                <div class="bg-slate-500 w-full max-w-md mx-auto rounded shadow-lg">
+                <div class="max-w-md mx-auto rounded shadow-lg">
                     <!-- Modal content -->
-                    <form method="post" class="p-3 grid justify-center">
-                        <div class="border-b text-center">
-                            <h5 class="text-lg font-bold">Add Game</h5>
-                        </div>
-                        <FormKit v-model="game.name" name="Title" label="Title of game" validation="required" />
-                        <FormKit v-model="game.description" type="textarea" name="description" label="description" />
-                        <FormKit v-model="game.plattforms"
-                            type="select"
-                            name="plattform"
-                            label="Plattform"
-                            placeholder="Playstation"
-                            :options="Plattforms"
-                        />                        
-                        <FormKit v-model="game.genre" type="text" name="genre" label="genre" />
-                        <FormKit v-model="game.playtime" type="number" label="Estimated Playtime" step="1" />
-                        <div class="flex justify-end p-3 gap-3">
-                            <IonButton color="light" @click="closeModal">close</IonButton>
-                            <IonButton @click="post"> Add </IonButton>
+                    <form class="grid justify-center mt-12">
+                        <div class="border-solid border-2 border-sky-500 p-6 bg-gray-800">
+                            <FormKit v-model="game.name" name="Title" label="Title of game" validation="required" />
+                            <FormKit v-model="game.description" type="textarea" name="description" label="description" />
+                            <FormKit v-model="game.plattforms" type="select" name="plattform" label="Plattform"
+                                placeholder="Playstation" :options="Plattforms" />
+                            <FormKit v-model="game.genre" type="text" name="genre" label="genre" />
+                            <FormKit v-model="game.playtime" type="number" label="Estimated Playtime" step="1" />
+                            <div class="flex justify-end p-3 gap-3">
+                                <IonButton color="light" @click="closeModal">close</IonButton>
+                                <IonButton @click="post"> Add </IonButton>
+                            </div>
                         </div>
                     </form>
                 </div>
