@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { IGame } from 'utils/models/games'
+import { IGame } from './games'
 const runtimeConfig = useRuntimeConfig()
 
 const url = runtimeConfig.public.API_ENDPOINT + "/api"

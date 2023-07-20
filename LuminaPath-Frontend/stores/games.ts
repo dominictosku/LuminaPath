@@ -1,5 +1,4 @@
-import { type IGame } from "@/utils/models/games";
-import { PostGame, fetchGames, deleteGame } from "@/services/request";
+import { IGame } from "utils/games";
 
 export const useGameStore = defineStore("games", () => {
   const GamesList: Ref<IGame[] | null> = ref(null)

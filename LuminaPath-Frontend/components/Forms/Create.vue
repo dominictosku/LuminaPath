@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Game, Plattforms } from "@/utils/models/games"
 import { useGameStore } from "@/stores/games"
+import { Game } from "~/utils/games";
 const store = useGameStore()
 
 let newGame = new Game(0, "", "", "", 0, 0)
