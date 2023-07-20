@@ -1,4 +1,5 @@
-﻿using Data.Models;
+﻿using Data.Classes;
+using Data.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Data
 {
-    public class LuminaPathDbContext : IdentityDbContext<IdentityUser>
+    public class LuminaPathDbContext : IdentityDbContext<LuminaUser>
 	{
         public LuminaPathDbContext(DbContextOptions<LuminaPathDbContext> options) : base(options)
         {
