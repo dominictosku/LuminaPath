@@ -7,9 +7,3 @@ services:
       - ASPNETCORE_URLS=http://+:80
     ports:
       - 80
-  db:
-    ports:
-         - 1433
-    environment:
-      MSSQL_SA_PASSWORD: "S3cur3P@ssW0rd!"
-      ACCEPT_EULA: "Y"
