@@ -1,18 +1,18 @@
 <template>
-    <nav class="border-4 border-black box-shadow bg-gradient-to-r from-cyan-500 to-blue-500">
+    <nav class="border-4 border-gray-800 box-shadow bg-gradient-to-r from-zinc-800 to-slate-400">
         <div class="container mx-auto sm:px-4">
             <div>
                 <ul class="sm:flex sm:flex-wrap pl-0 mb-0 gap-8">
                     <li class="max-sm:border-2 border-black">
                         <div>
                             <div class="link-container">
-                                <a class="link-two menuLinks text-xl sm:text-4xl" href="">Games</a>
+                                <a class="link-two menuLinks text-4xl" href="">Games</a>
                             </div>
                         </div>
                     </li>
                     <li class="max-sm:border-2 border-black">
                         <div class="link-container">
-                            <a class="link-two menuLinks text-xl sm:text-4xl" href="">Anime</a>
+                            <a class="link-two menuLinks text-4xl" href="">Anime</a>
                         </div>
                     </li>
                 </ul>
@@ -38,12 +38,12 @@
     }
     
     .link-two {
-        color: black;
+        color: white;
         transition: color 1s cubic-bezier(0.32, 0, 0.67, 0);
     }
     
         .link-two:hover {
-            color: azure;
+            color: black;
             transition: color 1s cubic-bezier(0.33, 1, 0.68, 1);
         }
     
