@@ -4,13 +4,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace LuminaPath.Controllers.Basic
 {
 	[ApiController]
 	[Authorize(AuthenticationSchemes = "Bearer")]
 	[Route("api/[controller]")]
-	public class BasicController<T> : ControllerBase where T : class, IBasicInfo
+	public abstract class BasicController<T> : ControllerBase where T : class, IBasicInfo
 	{
 		private protected readonly IGenericCrud<T> _service;
 		public BasicController(IGenericCrud<T> service)
@@ -20,14 +21,14 @@ namespace LuminaPath.Controllers.Basic
 
 		[HttpGet]
 		[AllowAnonymous]
-		public IEnumerable<T> Get()
+		public virtual IEnumerable<T> Get()
 		{
 			var entity = _service.GetAll();
 			return entity.ToArray();
 		}
 
 		[HttpPost]
-		public async Task<ActionResult<T>> PostAsync(T entity)
+		public virtual async Task<ActionResult<T>> PostAsync(T entity)
 		{
 			if (!ModelState.IsValid)
 			{
@@ -62,7 +63,7 @@ namespace LuminaPath.Controllers.Basic
 		}
 
 		[HttpDelete]
-		public async Task<IActionResult> DeleteAsync(int? id)
+		public virtual async Task<IActionResult> DeleteAsync(int? id)
 		{
 			if (id == null || _service.GetAll() == null)
 			{

@@ -1,5 +1,6 @@
 ﻿using Data.Classes;
 using Data.Interfaces;
+using Data.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -13,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Data.Services
 {
-	public class JwtService : ITokenGenerator
+    public class JwtService : ITokenGenerator
 	{
 		private const int EXPIRATION_MINUTES = 1;
 
@@ -52,9 +53,9 @@ namespace Data.Services
 				signingCredentials: credentials
 			);
 
-		private Claim[] CreateClaims(IdentityUser user) =>
+		private Claim[] CreateClaims(LuminaUser user) =>
 			new[] {
-				new Claim(JwtRegisteredClaimNames.Sub, _configuration["Jwt:Subject"]),
+				new Claim(JwtRegisteredClaimNames.Sub, user.Id),
 				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
 				new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
 				new Claim(ClaimTypes.NameIdentifier, user.Id),

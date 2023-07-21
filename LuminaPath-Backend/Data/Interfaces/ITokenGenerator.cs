@@ -1,4 +1,5 @@
 ﻿using Data.Classes;
+using Data.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Data.Interfaces
 {
-	public interface ITokenGenerator
+    public interface ITokenGenerator
 	{
 		public AuthenticationResponse CreateToken(LuminaUser user);
 	}
