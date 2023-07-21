@@ -1,4 +1,5 @@
-﻿using Data.Interfaces;
+﻿using AutoMapper;
+using Data.Interfaces;
 using Data.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,35 +12,39 @@ namespace LuminaPath.Controllers.Basic
 	[ApiController]
 	[Authorize(AuthenticationSchemes = "Bearer")]
 	[Route("api/[controller]")]
-	public abstract class BasicController<T> : ControllerBase where T : class, IBasicInfo
+	public abstract class BasicController<T, T2> : ControllerBase where T : class, IBasicInfo
 	{
 		private protected readonly IGenericCrud<T> _service;
-		public BasicController(IGenericCrud<T> service)
+		public IMapper Mapper;
+		public BasicController(IGenericCrud<T> service, IMapper mapper)
 		{
 			_service = service;
+			Mapper = mapper;
 		}
 
 		[HttpGet]
 		[AllowAnonymous]
-		public virtual IEnumerable<T> Get()
+		public virtual IEnumerable<T2> Get()
 		{
-			var entity = _service.GetAll();
-			return entity.ToArray();
+			var entities = _service.GetAll();
+			var entitiesDto = Mapper.Map<IEnumerable<T>, IEnumerable<T2>>(entities);
+			return entitiesDto.ToArray();
 		}
 
 		[HttpPost]
-		public virtual async Task<ActionResult<T>> PostAsync(T entity)
+		public virtual async Task<ActionResult<T2>> PostAsync(T2 entityDto)
 		{
 			if (!ModelState.IsValid)
 			{
 				return NotFound();
 			}
+			var entity = Mapper.Map<T>(entityDto);
 			var entityExists = await _service.GetByIdNoTrack(entity.Id);
 			if (entityExists == null)
 			{
 				await _service.Create(entity);
 				await _service.Save();
-				return entity;
+				return entityDto;
 			}
 			_service.Update(entity);
 
@@ -59,7 +64,7 @@ namespace LuminaPath.Controllers.Basic
 				}
 			}
 
-			return entity;
+			return entityDto;
 		}
 
 		[HttpDelete]
@@ -80,7 +85,7 @@ namespace LuminaPath.Controllers.Basic
 			return new JsonResult("Ok");
 		}
 
-		private bool PersonalGamingExists(int id)
+		protected bool PersonalGamingExists(int id)
 		{
 			var entities = _service.GetAll();
 			return entities.Any(e => e.Id == id);
