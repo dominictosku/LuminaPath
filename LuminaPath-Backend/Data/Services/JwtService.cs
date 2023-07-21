@@ -1,4 +1,5 @@
 ﻿using Data.Classes;
+using Data.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -12,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Data.Services
 {
-	public class JwtService
+	public class JwtService : ITokenGenerator
 	{
 		private const int EXPIRATION_MINUTES = 1;
 
@@ -23,7 +24,7 @@ namespace Data.Services
 			_configuration = configuration;
 		}
 
-		public AuthenticationResponse CreateToken(IdentityUser user)
+		public AuthenticationResponse CreateToken(LuminaUser user)
 		{
 			var expiration = DateTime.UtcNow.AddMinutes(EXPIRATION_MINUTES);
 

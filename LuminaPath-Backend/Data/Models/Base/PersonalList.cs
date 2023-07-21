@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Data.Classes
+namespace Data.Models.Base
 {
     public enum ProgressionStatus
     {
@@ -15,10 +15,10 @@ namespace Data.Classes
         Planned
     }
     public abstract class PersonalList : IBasicInfo
-	{
+    {
         public int Id { get; set; }
-		[Range(1, 10)]
-		public byte? Rating { get; set; }
+        [Range(1, 10)]
+        public byte? Rating { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public ProgressionStatus Status { get; set; }

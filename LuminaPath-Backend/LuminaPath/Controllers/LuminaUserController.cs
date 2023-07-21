@@ -1,4 +1,5 @@
 ﻿using Data.Classes;
+using Data.Interfaces;
 using Data.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -12,9 +13,9 @@ namespace LuminaPath.Controllers
 	public class LuminaUserController : ControllerBase
 	{
 		private readonly UserManager<LuminaUser> _userManager;
-		private readonly JwtService _jwtService;
+		private readonly ITokenGenerator _jwtService;
 
-		public LuminaUserController(UserManager<LuminaUser> userManager, JwtService jwtService)
+		public LuminaUserController(UserManager<LuminaUser> userManager, ITokenGenerator jwtService)
 		{
 			_userManager = userManager;
 			_jwtService = jwtService;

@@ -1,4 +1,4 @@
-﻿using Data.Classes;
+﻿using Data.Models.Base;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Data.Models
 {
-	public partial class PersonalGaming : PersonalList
+    public partial class PersonalGaming : PersonalList
 	{
 		[Required(ErrorMessage = "No {0} was choosen")]
 		[Display(Name = "Game")]
