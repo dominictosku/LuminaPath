@@ -1,13 +1,30 @@
+<script setup lang="ts">
+import { Creds } from '~/utils/user';
+import { useUseStore } from '~/stores/user';
+
+const Store = useUseStore()
+const Credentials = ref(new Creds())
+const submitted = ref(false)
+
+async function post() {
+    try {
+        await Store.Login(Credentials.value)
+    }
+    catch (e) {
+        submitted.value = true
+    }
+}
+</script>
 <template>
-    <form class="space-y-6" action="#" method="POST">
+    <FormKit class="space-y-6" type="form" id="Sign in" :form-class="submitted ? 'hide' : 'show'" submit-label="Sign in"
+        @submit="post" :actions="false" #default="{ value }">
         <div>
-            <label for="email" class="block text-sm font-medium leading-6 text-white">Email address</label>
+            <label for="userName" class="block text-sm font-medium leading-6 text-white">Username</label>
             <div class="mt-2">
-                <input id="email" name="email" type="email" autocomplete="email" required
+                <input id="userName" v-model="Credentials.userName" name="userName" required
                     class="block w-full rounded-md border-0 py-1.5 text-white shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
             </div>
         </div>
-
         <div>
             <div class="flex items-center justify-between">
                 <label for="password" class="block text-sm font-medium leading-6 white">Password</label>
@@ -16,15 +33,18 @@
                 </div>
             </div>
             <div class="mt-2">
-                <input id="password" name="password" type="password" autocomplete="current-password" required
+                <input id="password" v-model="Credentials.password" name="password" type="password"
+                    autocomplete="current-password" required
                     class="block w-full rounded-md border-0 py-1.5 text-white shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
             </div>
         </div>
 
         <div>
-            <button type="submit"
-                class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Sign
-                in</button>
+            <FormKit type="submit" label="Sign in" />
         </div>
-    </form>
+    </FormKit>
 </template>
+
+<!-- <button type="submit"
+class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Sign
+in</button> -->
