@@ -5,9 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Data.Classes
+namespace Data.Models
 {
-	public class LuminaUser : IdentityUser
-	{
-	}
+    public class LuminaUser : IdentityUser
+    {
+        public List<PersonalGaming>? PersonalGamings { get; set; }
+    }
 }

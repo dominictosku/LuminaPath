@@ -15,5 +15,7 @@ namespace Data.Models
 		[Display(Name = "Game")]
 		public int GameId { get; set; }
 		public Games? Game { get; set; }
+		public string? LuminaUserId { get; set; }
+		public LuminaUser? LuminaUser { get; set;}
 	}
 }
