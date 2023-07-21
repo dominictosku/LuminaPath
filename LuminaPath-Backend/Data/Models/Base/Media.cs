@@ -8,11 +8,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Data.Classes
+namespace Data.Models.Base
 {
     [Index(nameof(Name), IsUnique = true)]
     public abstract class Media : IBasicInfo
-	{
+    {
         public int Id { get; set; }
         [Required]
         [StringLength(50)]
