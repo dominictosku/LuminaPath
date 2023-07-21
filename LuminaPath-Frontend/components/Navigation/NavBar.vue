@@ -11,7 +11,7 @@ const router = useIonRouter();
     </ion-header>
     <ion-content class="ion-padding">
       <ion-menu-toggle>
-        <ion-button @Click="() => router.push(`/Login`)">Login</ion-button>
+        <ion-button @Click="() => router.push(`/Auth/Login`)">Login</ion-button>
         <ion-button>Click to close the menu</ion-button>
       </ion-menu-toggle>
     </ion-content>
