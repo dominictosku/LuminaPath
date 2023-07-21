@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import LuminaGrid from './Media/LuminaGrid.vue';
+import { useGameStore } from '@/stores/games';
+const store = useGameStore()
+
+const ionInfinite = (ev: any) => {
+        setTimeout(() => ev.target.complete(), 500);
+};
+
+const handleRefresh = async (event: any) => {
+  await store.getGames()
+  event.target.complete();
+};
 
 const isGrid = ref(false)
-
-defineProps({
-  name: String,
-});
 
 function changeIsGrid() {
   isGrid.value = !isGrid.value
@@ -15,6 +22,9 @@ function changeIsGrid() {
 <template>
   <MediaTabs @changebool="changeIsGrid" />
   <MediaLuminaFilter />
+  <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
   <!-- Table view -->
   <div v-if="!isGrid" id="Table" class="tabcontent">
     <MediaLuminaTable />
@@ -23,7 +33,9 @@ function changeIsGrid() {
   <div v-else id="Grid" class="tabcontent">
     <LuminaGrid />
   </div>
-  <MediaLuminaPagination />
+  <ion-infinite-scroll @ionInfinite="ionInfinite">
+      <ion-infinite-scroll-content></ion-infinite-scroll-content>
+    </ion-infinite-scroll>
 </template>
   
 <style scoped>
