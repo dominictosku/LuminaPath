@@ -69,6 +69,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ITokenGenerator, JwtService>();
 builder.Services.AddTransient<IGenericCrud<Games>, GenericCrud<Games>>();
 builder.Services.AddTransient<IGenericCrud<PersonalGaming>, GenericCrud<PersonalGaming>>();
+builder.Services.AddAutoMapper(typeof(Program));
 
 builder.Services.AddCors(o => o.AddPolicy(MyAllowSpecificOrigins, builder =>
 {
