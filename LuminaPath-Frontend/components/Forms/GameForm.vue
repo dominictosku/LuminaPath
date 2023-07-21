@@ -40,6 +40,7 @@ async function confirm() {
             <FormKit v-model="game.plattforms" type="select" name="plattforms" label="Plattform" placeholder="Playstation"
               :options="Plattforms" />
             <FormKit v-model="game.genre" type="text" name="genre" label="genre" />
+            <EventsVDatePicker />
             <FormKit v-model="game.playtime" type="number" name="playtime" label="Estimated Playtime" step="1" />
             <div class="flex justify-end p-3 gap-3">
               <IonButton v-if="showDelete" @click="deleteGame()" color="danger">delete</IonButton>
