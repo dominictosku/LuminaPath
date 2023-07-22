@@ -1,41 +1,47 @@
-import axios from 'axios'
-import { IGame } from './games'
+import axios from "axios";
+import { IGame } from "./games";
 import { type Credentials } from "~/utils/user";
 import { useUseStore } from "~/stores/user";
 
+const getApiUrl = (endpoint: string) => {
+  const runtimeConfig = useRuntimeConfig();
+  return runtimeConfig.public.API_ENDPOINT + "/api" + endpoint;
+};
+
+const apiCall = async (url: string, data: any, config: any) => {
+  const userStore = useUseStore();
+  try {
+    return await axios.post(url, data, { ...userStore.config, ...config });
+  } catch (error) {
+    // Handle error if needed
+    console.error("API call failed:", error);
+    throw error;
+  }
+};
+
 export async function fetchGames(): Promise<Array<IGame>> {
-    const runtimeConfig = useRuntimeConfig()
-    const url = runtimeConfig.public.API_ENDPOINT + "/api"
-    const result: IGame[] = await $fetch<IGame[]>(url + "/games")
-    return result
+  const url = getApiUrl("/games");
+  const result: IGame[] = await $fetch<IGame[]>(url);
+  return result;
 }
 
-export async function deleteGame(id: number){
-    const userStore = useUseStore()
-    const runtimeConfig = useRuntimeConfig()
-    const url = runtimeConfig.public.API_ENDPOINT + "/api"
-    await axios.delete(url + "/games?id=" + id, userStore.config)
-    return
+export async function deleteGame(id: number) {
+  const url = getApiUrl("/games?id=" + id);
+  await apiCall(url, null, {});
 }
 
-export async function PostGame(game: IGame){
-    const userStore = useUseStore()
-    const runtimeConfig = useRuntimeConfig()
-    const url = runtimeConfig.public.API_ENDPOINT + "/api"
-    console.log(userStore.config)
-    await axios.post(url + "/games", game, userStore.config)
-    return
+export async function PostGame(game: IGame) {
+  const url = getApiUrl("/games");
+  await apiCall(url, game, {});
 }
 
-export async function LoginUser(Credentials: Credentials){
-    const runtimeConfig = useRuntimeConfig()
-    const url = runtimeConfig.public.API_ENDPOINT + "/api"
-    const { data } = await axios.post(url + "/LuminaUser/BearerToken", Credentials)
-    return data.token
+export async function LoginUser(Credentials: Credentials) {
+  const url = getApiUrl("/LuminaUser/BearerToken");
+  const { data } = await apiCall(url, Credentials, {});
+  return data.token;
 }
 
-export async function CreateUser(Credentials: Credentials){
-    const runtimeConfig = useRuntimeConfig()
-    const url = runtimeConfig.public.API_ENDPOINT + "/api"
-    await axios.post(url + "/LuminaUser", Credentials)
+export async function CreateUser(Credentials: Credentials) {
+  const url = getApiUrl("/LuminaUser");
+  await apiCall(url, Credentials, {});
 }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Creds } from '~/utils/user';
 import { useUseStore } from '~/stores/user';
-
+const ionRouter = useIonRouter();
 const Store = useUseStore()
 const Credentials = ref(new Creds())
 const submitted = ref(false)
@@ -9,6 +9,7 @@ const submitted = ref(false)
 async function post() {
     try {
         await Store.Login(Credentials.value)
+        ionRouter.push('/Home')
     }
     catch (e) {
         submitted.value = true
