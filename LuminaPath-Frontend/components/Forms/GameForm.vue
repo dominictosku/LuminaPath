@@ -5,8 +5,8 @@ import { Game } from "~/utils/games";
 const emit = defineEmits(['exit'])
 
 const props = defineProps({
-    game: Object as PropType<Game>,
-    showDelete: Boolean
+  game: Object as PropType<Game>,
+  showDelete: Boolean
 })
 async function deleteGame() {
   await store.removeGame(game.value.id)
@@ -20,11 +20,11 @@ const submitted = ref(false)
 
 
 async function confirm() {
-  try{
+  try {
     await store.createGame(game.value)
     await presentToast("Success!", 'primary')
     emit('exit')
-  }catch(e){
+  } catch (e) {
     await presentToast("Something went wrong, try again", 'danger')
     submitted.value = true
   }
@@ -32,21 +32,21 @@ async function confirm() {
 }
 </script>
 <template>
-        <FormKit class="" type="form" id="edit" :form-class="submitted ? 'hide' : 'show'" submit-label="Edit" @submit="confirm"
-          :actions="false" #default="{ value }">
-          <div class="grid justify-center">
-            <FormKit v-model="game.name" name="name" label="Title of game" validation="required" />
-            <FormKit v-model="game.description" type="textarea" name="description" label="description" />
-            <FormKit v-model="game.plattforms" type="select" name="plattforms" label="Plattform" placeholder="Playstation"
-              :options="Plattforms" />
-            <FormKit v-model="game.genre" type="text" name="genre" label="genre" />
-            <EventsVDatePicker />
-            <FormKit v-model="game.playtime" type="number" name="playtime" label="Estimated Playtime" step="1" />
-            <div class="flex justify-end p-3 gap-3">
-              <IonButton v-if="showDelete" @click="deleteGame()" color="danger">delete</IonButton>
-              <IonButton @click="emit('exit')" color="light">close</IonButton>
-              <FormKit type="submit" label="Edit" />
-            </div>
-          </div>
-        </FormKit>
+  <FormKit class="" type="form" id="edit" :form-class="submitted ? 'hide' : 'show'" submit-label="Confirm" @submit="confirm"
+    :actions="false" #default="{ value }">
+    <div class="grid justify-center">
+      <FormKit v-model="game.name" name="name" label="Title of game" validation="required" />
+      <FormKit v-model="game.description" type="textarea" name="description" label="description" />
+      <FormKit v-model="game.plattforms" type="select" name="plattforms" label="Plattform" placeholder="Playstation"
+        :options="Plattforms" />
+      <FormKit v-model="game.genre" type="text" name="genre" label="genre" />
+      <FormKit type="date" label="Release date" />
+      <FormKit v-model="game.playtime" type="number" name="playtime" label="Estimated Playtime" step="1" />
+      <div class="flex justify-end p-3 gap-3">
+        <IonButton class="h-12" v-if="showDelete" @click="deleteGame()" color="danger">delete</IonButton>
+        <IonButton class="h-12" @click="emit('exit')" color="light">close</IonButton>
+        <FormKit type="submit" label="Confirm" />
+      </div>
+    </div>
+  </FormKit>
 </template>
