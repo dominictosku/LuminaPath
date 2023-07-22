@@ -3,7 +3,7 @@ export class User implements UserInfo {
     age: number;
   
     constructor() {
-      this.userName = '';
+      this.userName = 'Please login';
       this.age = 0
     }
 }

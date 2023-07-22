@@ -1,7 +1,7 @@
 import { LoginUser, CreateUser } from "~/utils/request";
 import { User, type Credentials } from "~/utils/user";
 
-export const useUseStore = defineStore("user", () => {
+export const useUserStore = defineStore("user", () => {
   const storedStringValue: string | null = localStorage.getItem('loggedIn');
   const storedToken: string = localStorage.getItem('token') ?? ''
   const parsedBooleanValue: boolean = storedStringValue ? JSON.parse(storedStringValue) : false;
@@ -18,6 +18,14 @@ export const useUseStore = defineStore("user", () => {
     await Login(Credentials);
   }
 
+  async function Logout() {
+    user.value = new User()
+    loggedIn.value = false
+    Token.value = ''
+    localStorage.setItem('loggedIn', 'false')
+    localStorage.setItem('token', '')
+  }
+
   async function Login(Credentials: Credentials) {
     let token = await LoginUser(Credentials);
     if (typeof token === "string") {
@@ -29,5 +37,5 @@ export const useUseStore = defineStore("user", () => {
     }
   }
 
-  return { getUser, config, loggedIn, Login, Create };
+  return { getUser, config, loggedIn, Login, Logout, Create };
 });

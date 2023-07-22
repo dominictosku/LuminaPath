@@ -1,7 +1,7 @@
 import axios from "axios";
 import { IGame } from "./games";
 import { type Credentials } from "~/utils/user";
-import { useUseStore } from "~/stores/user";
+import { useUserStore } from "~/stores/user";
 
 const getApiUrl = (endpoint: string) => {
   const runtimeConfig = useRuntimeConfig();
@@ -9,7 +9,7 @@ const getApiUrl = (endpoint: string) => {
 };
 
 const apiCall = async (url: string, data: any, config: any) => {
-  const userStore = useUseStore();
+  const userStore = useUserStore();
   try {
     return await axios.post(url, data, { ...userStore.config, ...config });
   } catch (error) {
