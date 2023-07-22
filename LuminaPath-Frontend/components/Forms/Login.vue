@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Creds } from '~/utils/user';
-import { useUseStore } from '~/stores/user';
+import { useUserStore } from '~/stores/user';
 const ionRouter = useIonRouter();
-const Store = useUseStore()
+const Store = useUserStore()
 const Credentials = ref(new Creds())
 const submitted = ref(false)
 
