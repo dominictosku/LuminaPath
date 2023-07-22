@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
-import { useGameStore } from "@/stores/games"
 const route = useRoute();
 const { id } = route.params;
-const store = useGameStore()
-const idAsNumber: number = parseInt(id as string);
-let editGame = store.getGameById(idAsNumber)
+const idInt: number = parseInt(id as string);
+const { data: editGame, pending, error } = await useAsyncData('games/' + idInt, () => fetchGameById(idInt))
+
 if (!editGame) {
   throw createError({ statusCode: 404, statusMessage: 'Page Not Found' })
 }

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Data.Classes;
 using Data.Interfaces;
 using Data.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -29,6 +30,18 @@ namespace LuminaPath.Controllers.Basic
 			var entities = _service.GetAll();
 			var entitiesDto = Mapper.Map<IEnumerable<T>, IEnumerable<T2>>(entities);
 			return entitiesDto.ToArray();
+		}
+
+		[HttpGet("{id}")]
+		[AllowAnonymous]
+		public async virtual Task<ActionResult<T2>> Get(int? id)
+		{
+			if (id == null)
+				return NotFound();
+			var entity = await _service.GetByIdNoTrack(id);
+			if(entity == null)
+				return NotFound();
+			return Ok(entity);
 		}
 
 		[HttpPost]

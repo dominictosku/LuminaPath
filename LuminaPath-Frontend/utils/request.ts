@@ -25,6 +25,12 @@ export async function fetchGames(): Promise<Array<IGame>> {
   return result;
 }
 
+export async function fetchGameById(id: number): Promise<IGame> {
+  const url = getApiUrl("/games/" + id);
+  const result: IGame = await $fetch<IGame>(url);
+  return result;
+}
+
 export async function deleteGame(id: number) {
   const url = getApiUrl("/games?id=" + id);
   await apiCall(url, null, {});
