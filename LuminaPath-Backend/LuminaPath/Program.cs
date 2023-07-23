@@ -2,10 +2,12 @@ using Data;
 using Data.Interfaces;
 using Data.Models;
 using Data.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -18,49 +20,57 @@ var Jwt = builder.Configuration.GetSection("Jwt");
 
 builder.Services.AddControllers();
 builder.Services.AddDbContext<LuminaPathDbContext>(options =>
-        options.UseMySql(connectionstring, ServerVersion.AutoDetect(connectionstring)));
+		options.UseMySql(connectionstring, ServerVersion.AutoDetect(connectionstring)));
 
 builder.Services.AddIdentity<LuminaUser, IdentityRole>(options =>
 {
-    // Password settings.
-    options.Password.RequireDigit = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireNonAlphanumeric = true;
-    options.Password.RequireUppercase = true;
-    options.Password.RequiredLength = 6;
-    options.Password.RequiredUniqueChars = 1;
+	// Password settings.
+	options.Password.RequireDigit = true;
+	options.Password.RequireLowercase = true;
+	options.Password.RequireNonAlphanumeric = true;
+	options.Password.RequireUppercase = true;
+	options.Password.RequiredLength = 6;
+	options.Password.RequiredUniqueChars = 1;
 
-    // Lockout settings.
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(120);
-    options.Lockout.MaxFailedAccessAttempts = 10;
+	// Lockout settings.
+	options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(120);
+	options.Lockout.MaxFailedAccessAttempts = 10;
 
-    // User settings.
-    options.SignIn.RequireConfirmedAccount = true;
-    options.User.AllowedUserNameCharacters =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
-    options.User.RequireUniqueEmail = false;
+	// User settings.
+	options.SignIn.RequireConfirmedAccount = true;
+	options.User.AllowedUserNameCharacters =
+	"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+	options.User.RequireUniqueEmail = false;
 })
-    .AddEntityFrameworkStores<LuminaPathDbContext>()
-    .AddRoles<IdentityRole>()
-    .AddDefaultTokenProviders();
+	.AddEntityFrameworkStores<LuminaPathDbContext>()
+	.AddRoles<IdentityRole>()
+	.AddDefaultTokenProviders();
 
 builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters()
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidAudience = Jwt["Audience"],
-            ValidIssuer = Jwt["Issuer"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(Jwt["Key"])
-            )
-        };
-    });
+	.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+	.AddJwtBearer(options =>
+	{
+		options.TokenValidationParameters = new TokenValidationParameters()
+		{
+			ValidateIssuer = true,
+			ValidateAudience = true,
+			ValidateLifetime = true,
+			ValidateIssuerSigningKey = true,
+			ValidAudience = Jwt["Audience"],
+			ValidIssuer = Jwt["Issuer"],
+			IssuerSigningKey = new SymmetricSecurityKey(
+				Encoding.UTF8.GetBytes(Jwt["Key"])
+			)
+		};
+		options.Events = new JwtBearerEvents
+		{
+			OnMessageReceived = context =>
+			{
+				context.Token = context.Request.Cookies["X-Access-Token"];
+				return Task.CompletedTask;
+			}
+		};
+	});
 
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -73,45 +83,46 @@ builder.Services.AddAutoMapper(typeof(Program));
 
 builder.Services.AddCors(o => o.AddPolicy(MyAllowSpecificOrigins, builder =>
 {
-    builder.AllowAnyOrigin()
-           .AllowAnyMethod()
-           .AllowAnyHeader();
+	builder.WithOrigins("http://localhost:3000")
+		   .AllowAnyMethod()
+		   .AllowAnyHeader()
+		   .AllowCredentials();
 }));
 
 var app = builder.Build();
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+	ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-    app.UseCors("MyPolicy");
+	app.UseSwagger();
+	app.UseSwaggerUI();
+	app.UseCors("MyPolicy");
 
-    // For the proxy in docker compose to work correctly
-    app.UseHttpsRedirection();
+	// For the proxy in docker compose to work correctly
+	app.UseHttpsRedirection();
 }
 else
 {
-    app.UseHsts();
+	app.UseHsts();
 }
 
 using (var serviceScope = app.Services.CreateScope())
 {
-    var context = serviceScope.ServiceProvider.GetRequiredService<LuminaPathDbContext>();
-    try
-    {
-        context.Database.Migrate();
-    }
-    catch (Exception e)
-    {
-        Console.WriteLine("Error: ", e);
-    }
+	var context = serviceScope.ServiceProvider.GetRequiredService<LuminaPathDbContext>();
+	try
+	{
+		context.Database.Migrate();
+	}
+	catch (Exception e)
+	{
+		Console.WriteLine("Error: ", e);
+	}
 }
 
 
