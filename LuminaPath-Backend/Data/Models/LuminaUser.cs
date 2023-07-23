@@ -9,6 +9,7 @@ namespace Data.Models
 {
     public class LuminaUser : IdentityUser
     {
+        public string? RefreshToken { get; set; }
         public List<PersonalGaming>? PersonalGamings { get; set; }
     }
 }

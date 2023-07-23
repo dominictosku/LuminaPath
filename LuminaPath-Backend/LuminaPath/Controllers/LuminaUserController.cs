@@ -62,6 +62,30 @@ namespace LuminaPath.Controllers
 			return Created("", user);
 		}
 
+		[HttpGet("refresh")]
+		public async Task<IActionResult> Refresh()
+		{
+			if (!(Request.Cookies.TryGetValue("X-Username", out var userName) && Request.Cookies.TryGetValue("X-Refresh-Token", out var refreshToken)))
+				return BadRequest();
+
+			var user = _userManager.Users.FirstOrDefault(i => i.UserName == userName && i.RefreshToken == refreshToken);
+
+			if (user == null)
+				return BadRequest();
+
+			var token = _jwtService.CreateToken(user);
+
+			user.RefreshToken = Guid.NewGuid().ToString();
+
+			await _userManager.UpdateAsync(user);
+
+			Response.Cookies.Append("X-Access-Token", token.Token, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None });
+			Response.Cookies.Append("X-Username", user.UserName, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None });
+			Response.Cookies.Append("X-Refresh-Token", user.RefreshToken, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None });
+
+			return Ok();
+		}
+
 		[HttpPost("BearerToken")]
 		[AllowAnonymous]
 		public async Task<ActionResult<AuthenticationResponse>> CreateBearerToken(UserCredentials request)
@@ -86,8 +110,13 @@ namespace LuminaPath.Controllers
 			}
 
 			var token = _jwtService.CreateToken(user);
+			user.RefreshToken = Guid.NewGuid().ToString();
+			await _userManager.UpdateAsync(user);
+			Response.Cookies.Append("X-Access-Token", token.Token, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None });
+			Response.Cookies.Append("X-Username", user.UserName, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None });
+			Response.Cookies.Append("X-Refresh-Token", user.RefreshToken, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None });
 
-			return Ok(token);
+			return Ok();
 		}
 	}
 }
