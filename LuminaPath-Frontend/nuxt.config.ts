@@ -24,7 +24,7 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@formkit/nuxt',
     'nuxt-swiper',
-    'nuxt-svgo'
+    'nuxt-icons'
   ],
   pinia: {
     autoImports: [

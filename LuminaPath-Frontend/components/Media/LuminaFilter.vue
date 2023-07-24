@@ -24,7 +24,7 @@ function toggleModal() {
         <div class="flex items-center mt-4 gap-x-3">
             <button class="media-button bg-white border media-button dark:hover:bg-gray-800 dark:bg-gray-900
             hover:bg-gray-100 dark:text-gray-200 dark:border-gray-700 text-gray-700">
-            <img class="" src="../../assets/svg/cloud-download.svg" />
+            <nuxt-icon name="cloud-download" filled />
             <span>Import</span>
         </button>
         <div class="media-button">
@@ -62,7 +62,7 @@ function toggleModal() {
 
         <div class="relative flex items-center mt-4 md:mt-0">
             <span class="absolute">
-                <img class="w-5 h-5 mx-3 text-gray-400 dark:text-gray-600" src="../../assets/svg/search.svg" />
+                <nuxt-icon name="search" filled />
             </span>
 
             <input type="text" placeholder="Search" class="block w-full py-1.5 pr-5 text-gray-700

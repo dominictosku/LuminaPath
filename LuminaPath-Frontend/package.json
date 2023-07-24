@@ -16,8 +16,7 @@
     "@nuxtjs/tailwindcss": "^6.8.0",
     "@types/node": "^18.16.19",
     "eslint": "^8.45.0",
-    "nuxt": "^3.6.3",
-    "nuxt-svgo": "^3.3.0"
+    "nuxt": "^3.6.3"
   },
   "dependencies": {
     "@formkit/icons": "^0.17.4",
@@ -31,6 +30,7 @@
     "@popperjs/core": "^2.11.8",
     "chart.js": "^4.3.0",
     "ionicons": "^7.1.2",
+    "nuxt-icons": "^3.2.1",
     "nuxt-swiper": "^1.2.0",
     "v-calendar": "^3.0.3",
     "vue-chartjs": "^5.2.0",
