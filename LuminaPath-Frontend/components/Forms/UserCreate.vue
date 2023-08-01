@@ -2,6 +2,7 @@
 import { Creds } from '~/utils/user';
 import { useUserStore } from '~/stores/user';
 
+const ionRouter = useIonRouter();
 const Store = useUserStore()
 const Credentials = ref(new Creds())
 const submitted = ref(false)
@@ -9,6 +10,7 @@ const submitted = ref(false)
 async function post() {
     try {
         await Store.Create(Credentials.value)
+        ionRouter.push('/Auth/Login')
     }
     catch (e) {
         submitted.value = true
@@ -24,6 +26,11 @@ async function post() {
                 <input id="userName" v-model="Credentials.userName" name="userName" required
                     class="block w-full rounded-md border-0 py-1.5 text-white shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
             </div>
+            <label for="userName" class="block text-sm font-medium leading-6 text-white">Email</label>
+            <div class="mt-2">
+                <input id="Email" v-model="Credentials.email" name="Email" required
+                    class="block w-full rounded-md border-0 py-1.5 text-white shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+            </div>
         </div>
         <div>
             <div class="mt-2">
@@ -37,7 +44,7 @@ async function post() {
         </div>
 
         <div>
-            <FormKit type="submit" label="Sign in" />
+            <FormKit type="submit" label="Create account" />
         </div>
     </FormKit>
 </template>
