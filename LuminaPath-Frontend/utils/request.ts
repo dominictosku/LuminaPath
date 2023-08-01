@@ -39,7 +39,13 @@ export async function fetchGameById(id: number): Promise<IGame> {
 
 export async function deleteGame(id: number) {
   const url = getApiUrl("/games?id=" + id);
-  await apiCall(url, null);
+  await axios.delete(url, {
+    withCredentials: true, // This is crucial to include the HttpOnly cookie in the request
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  });
 }
 
 export async function PostGame(game: IGame) {
