@@ -44,6 +44,7 @@ async function post() {
             <FormKit type="submit" label="Sign in" />
         </div>
     </FormKit>
+    <ion-button size="small" router-link="/Auth/Create" class="float-right">Create new account</ion-button>
 </template>
 
 <!-- <button type="submit"
