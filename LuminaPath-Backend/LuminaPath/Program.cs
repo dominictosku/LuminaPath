@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -102,7 +103,6 @@ if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
-	app.UseCors("MyPolicy");
 
 	// For the proxy in docker compose to work correctly
 	app.UseHttpsRedirection();
@@ -114,7 +114,21 @@ else
 
 using (var serviceScope = app.Services.CreateScope())
 {
+	var services = serviceScope.ServiceProvider;
 	var context = serviceScope.ServiceProvider.GetRequiredService<LuminaPathDbContext>();
+
+	// Seeding
+	try
+	{
+		await DataSeeder.SeedIdentityDataAsync(services);
+	}
+	catch (Exception ex)
+	{
+		// Handle any errors while seeding data
+		Console.WriteLine($"An error occurred while seeding data: {ex.Message}");
+	}
+
+	// Migrations
 	try
 	{
 		context.Database.Migrate();
@@ -125,7 +139,7 @@ using (var serviceScope = app.Services.CreateScope())
 	}
 }
 
-
+app.UseCors("MyPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 

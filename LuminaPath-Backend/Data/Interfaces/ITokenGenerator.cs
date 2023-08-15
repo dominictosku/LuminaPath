@@ -10,6 +10,6 @@ namespace Data.Interfaces
 {
     public interface ITokenGenerator
 	{
-		public AuthenticationResponse CreateToken(LuminaUser user);
+		public Task<AuthenticationResponse> CreateToken(LuminaUser user);
 	}
 }
