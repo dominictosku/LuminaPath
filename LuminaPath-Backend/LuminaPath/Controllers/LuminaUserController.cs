@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LuminaPath.Controllers
 {
     [Route("api/[controller]")]
+	[Authorize(AuthenticationSchemes = "Bearer")]
 	[ApiController]
 	public class LuminaUserController : ControllerBase
 	{
@@ -23,6 +24,7 @@ namespace LuminaPath.Controllers
 		}
 
 		[HttpGet("{username}")]
+		[Authorize(Roles = "Administrator")]
 		public async Task<ActionResult<UserDto>> GetUser(string username)
 		{
 			IdentityUser? user = await _userManager.FindByNameAsync(username);
@@ -63,6 +65,7 @@ namespace LuminaPath.Controllers
 		}
 
 		[HttpGet("refresh")]
+		[AllowAnonymous]
 		public async Task<IActionResult> Refresh()
 		{
 			if (!(Request.Cookies.TryGetValue("X-Username", out var userName) && Request.Cookies.TryGetValue("X-Refresh-Token", out var refreshToken)))
@@ -73,15 +76,15 @@ namespace LuminaPath.Controllers
 			if (user == null)
 				return BadRequest();
 
-			var token = _jwtService.CreateToken(user);
+			var token = await _jwtService.CreateToken(user);
 
 			user.RefreshToken = Guid.NewGuid().ToString();
 
 			await _userManager.UpdateAsync(user);
 
-			Response.Cookies.Append("X-Access-Token", token.Token, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None });
-			Response.Cookies.Append("X-Username", user.UserName, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None });
-			Response.Cookies.Append("X-Refresh-Token", user.RefreshToken, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None });
+			Response.Cookies.Append("X-Access-Token", token.Token, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None, Secure = true });
+			Response.Cookies.Append("X-Username", user.UserName, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None, Secure = true });
+			Response.Cookies.Append("X-Refresh-Token", user.RefreshToken, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None, Secure = true });
 
 			return Ok();
 		}
@@ -109,12 +112,12 @@ namespace LuminaPath.Controllers
 				return BadRequest("Bad credentials");
 			}
 
-			var token = _jwtService.CreateToken(user);
+			var token = await _jwtService.CreateToken(user);
 			user.RefreshToken = Guid.NewGuid().ToString();
 			await _userManager.UpdateAsync(user);
-			Response.Cookies.Append("X-Access-Token", token.Token, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None });
-			Response.Cookies.Append("X-Username", user.UserName, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None });
-			Response.Cookies.Append("X-Refresh-Token", user.RefreshToken, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None });
+			Response.Cookies.Append("X-Access-Token", token.Token, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None, Secure = true });
+			Response.Cookies.Append("X-Username", user.UserName, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None, Secure = true });
+			Response.Cookies.Append("X-Refresh-Token", user.RefreshToken, new CookieOptions() { HttpOnly = true, SameSite = SameSiteMode.None, Secure = true });
 
 			return Ok();
 		}
