@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { logoAmplify } from 'ionicons/icons';
-import { useUserStore } from '~/stores/user';
+import { useUserStore } from '~/store/user';
 const router = useIonRouter();
 const store = useUserStore()
 

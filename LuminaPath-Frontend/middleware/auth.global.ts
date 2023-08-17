@@ -1,4 +1,4 @@
-import { useUserStore } from "~/stores/user"
+import { useUserStore } from "~/store/user"
 export default defineNuxtRouteMiddleware((to, from) => {
     const store = useUserStore()
     if(to.path == '/Auth/Login' || to.path == '/Auth/Create')

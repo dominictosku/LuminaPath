@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useGameStore } from "@/stores/games"
+import { useGameStore } from "@/store/games"
 import { Game } from "~/utils/games";
 
 const emit = defineEmits(['exit'])
