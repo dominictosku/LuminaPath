@@ -1,14 +1,27 @@
 <script setup lang="ts">
 import { add } from 'ionicons/icons';
 
-const createForm: any = ref(null);
+import { modalController } from '@ionic/vue';
+  import Modal from '~/components/Forms/Create.vue';
+  import { ref } from 'vue';
 
-function toggleModal() {
-  createForm.value.openModal();
-}
+  const message = ref('This modal example uses the modalController to present and dismiss modals.');
+
+  const openModal = async () => {
+    const modal = await modalController.create({
+      component: Modal,
+    });
+
+    modal.present();
+
+    const { data, role } = await modal.onWillDismiss();
+
+    if (role === 'confirm') {
+      message.value = `Hello, ${data}!`;
+    }
+  };
 </script>
 <template>
-    <FormsCreate ref="createForm" />
     <div class="sm:flex sm:items-center sm:justify-between">
         <div>
             <div class="flex items-center gap-x-3">
@@ -29,7 +42,7 @@ function toggleModal() {
         </button>
         <div class="media-button">
             <ion-fab class="z-0">
-                <ion-fab-button @click="toggleModal" size="small">
+                <ion-fab-button @click="openModal" size="small">
                     <ion-icon :icon="add"></ion-icon>
                 </ion-fab-button>
             </ion-fab>

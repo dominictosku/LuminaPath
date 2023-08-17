@@ -1,7 +1,7 @@
 import axios from "axios";
 import { IGame } from "./games";
 import { type Credentials } from "~/utils/user";
-import { useUserStore } from "~/stores/user";
+import { useUserStore } from "~/store/user";
 
 const getApiUrl = (endpoint: string) => {
   const runtimeConfig = useRuntimeConfig();

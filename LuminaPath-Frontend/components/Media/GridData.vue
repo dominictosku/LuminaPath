@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Game } from '@/utils/models/games';
-import { useGameStore } from '@/stores/games'
+import { Game } from '@/utils/games';
+import { useGameStore } from '@/store/games'
 const props = defineProps({
     game: Object as PropType<Game>
 })

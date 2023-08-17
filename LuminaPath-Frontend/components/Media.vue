@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import LuminaGrid from './Media/LuminaGrid.vue';
-import { useGameStore } from '@/stores/games';
+import { useGameStore } from '@/store/games';
 const store = useGameStore()
 
 const ionInfinite = (ev: any) => {
