@@ -24,8 +24,8 @@ async function confirm() {
     await store.createGame(game.value)
     await presentToast("Success!", 'primary')
     emit('exit')
-  } catch (e) {
-    await presentToast("Something went wrong, try again", 'danger')
+  } catch (e: any) {
+    await presentToast(e.response.data, 'danger')
     submitted.value = true
   }
 

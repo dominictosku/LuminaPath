@@ -21,6 +21,12 @@ namespace Data
 			base.OnModelCreating(modelBuilder);
 		}
 
+		[DbFunction(Name = "SOUNDEX", IsBuiltIn = true)]
+		public static string Soundex(string query)
+		{
+			throw new NotImplementedException();
+		}
+
 		public DbSet<Games> Games { get; set; }
 		public DbSet<PersonalGaming> PersonalGaming { get; set; }
 	}

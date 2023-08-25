@@ -32,12 +32,12 @@ namespace LuminaPath.Controllers
 				return Unauthorized("Please Login");
 			LuminaUser user = await _userManager.FindByIdAsync(userId);
 			if (user == null)
-				return NotFound("User not found, please create an account");
+				return NotFound("User not found, please login");
 			var entity = Mapper.Map<PersonalGaming>(entityDto);
 			entity.LuminaUser = user;
 			if (!ModelState.IsValid)
 			{
-				return NotFound();
+				return NotFound("Item not found");
 			}
 			var entityExists = await _service.GetByIdNoTrack(entity.Id);
 			if (entityExists == null)
