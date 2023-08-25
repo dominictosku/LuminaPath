@@ -1,4 +1,4 @@
-using Data;
+﻿using Data;
 using Data.Interfaces;
 using Data.Models;
 using Data.Services;
@@ -6,10 +6,12 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.Net;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,7 +21,10 @@ var Jwt = builder.Configuration.GetSection("Jwt");
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+	options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider());
+});
 builder.Services.AddDbContext<LuminaPathDbContext>(options =>
 		options.UseMySql(connectionstring, ServerVersion.AutoDetect(connectionstring)));
 
@@ -117,16 +122,7 @@ using (var serviceScope = app.Services.CreateScope())
 	var services = serviceScope.ServiceProvider;
 	var context = serviceScope.ServiceProvider.GetRequiredService<LuminaPathDbContext>();
 
-	// Seeding
-	try
-	{
-		await DataSeeder.SeedIdentityDataAsync(services);
-	}
-	catch (Exception ex)
-	{
-		// Handle any errors while seeding data
-		Console.WriteLine($"An error occurred while seeding data: {ex.Message}");
-	}
+	await context.SeedIdentityDataAsync(services);
 
 	// Migrations
 	try
@@ -142,6 +138,21 @@ using (var serviceScope = app.Services.CreateScope())
 app.UseCors("MyPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.Use(async (context, next) =>
+{
+	await next();
+
+	if (context.Response.StatusCode == (int)HttpStatusCode.Unauthorized)
+	{
+		await context.Response.WriteAsync("Session expired, please login");
+	}
+
+	if (context.Response.StatusCode == (int)HttpStatusCode.Forbidden)
+	{
+		await context.Response.WriteAsync("You have not permission to access this");
+	}
+});
 
 app.MapControllers();
 

@@ -18,7 +18,7 @@ namespace Data.Models.Base
         [Required]
         [StringLength(50)]
         [Display(Name = "Title")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public string? Description { get; set; }
         public string? Genre { get; set; }
 

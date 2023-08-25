@@ -11,15 +11,36 @@ namespace Data.Services
 {
 	public static class DataSeeder
 	{
-		public static async Task SeedIdentityDataAsync(IServiceProvider serviceProvider)
+		public static async Task SeedIdentityDataAsync(this LuminaPathDbContext context, IServiceProvider serviceProvider)
 		{
-			await SeedRolesAsync(serviceProvider);
-
 			// Admin user credentials
 			string adminEmail = "admin@example.com";
-			string adminPassword = "Admin123!"; // Replace with a strong password
-
+			string adminPassword = "Admin123*";
+			await SeedRolesAsync(serviceProvider);
 			await SeedAdminUserAsync(serviceProvider, adminEmail, adminPassword);
+			await SeedGamesAsync(context);
+		}
+
+		public static async Task SeedGamesAsync(LuminaPathDbContext context)
+		{
+			if (context.Games.Any())
+			{
+				return;
+			}
+			List<Games> games = new List<Games>();
+			games.Add(
+				new Games()
+				{
+					Name = "Apex",
+					Description = "Battle Royale",
+					Genre = "Shooter",
+					ReleaseDate = new DateTime(2017, 07, 28),
+					Plattforms = Plattforms.Playstation,
+					Playtime = 100
+				}
+			);
+			await context.AddRangeAsync(games);
+			await context.SaveChangesAsync();
 		}
 
 		public static async Task SeedRolesAsync(IServiceProvider serviceProvider)
