@@ -1,12 +1,9 @@
 ﻿using AutoMapper;
 using Data.Classes;
 using Data.Interfaces;
-using Data.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace LuminaPath.Controllers.Basic
 {
@@ -25,11 +22,11 @@ namespace LuminaPath.Controllers.Basic
 
 		[HttpGet]
 		[AllowAnonymous]
-		public virtual IEnumerable<T2> Get()
+		public async virtual Task<PaginatedResult<T2>> Get([FromQuery] MediaFIlter filter)
 		{
-			var entities = _service.GetAll();
+			PaginatedList<T> entities = await _service.GetAll(filter);
 			var entitiesDto = Mapper.Map<IEnumerable<T>, IEnumerable<T2>>(entities);
-			return entitiesDto.ToArray();
+			return new PaginatedResult<T2>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
 
 		[HttpGet("{id}")]
@@ -49,18 +46,31 @@ namespace LuminaPath.Controllers.Basic
 		{
 			if (!ModelState.IsValid)
 			{
-				return NotFound();
+				return BadRequest();
 			}
 			var entity = viewModel;
 			var entityDto = Mapper.Map<T2>(viewModel);
-			var entityExists = await _service.GetByIdNoTrack(entity.Id);
-			if (entityExists == null)
+			await _service.Create(entity);
+			await _service.Save();
+
+			return CreatedAtAction("GetById", new { id = viewModel.Id }, entityDto);
+		}
+
+		[HttpPut("{id}")]
+		public async Task<IActionResult> PutHunt(int id, T viewModel)
+		{
+			if (id != viewModel.Id)
 			{
-				await _service.Create(entity);
-				await _service.Save();
-				return entityDto;
+				return BadRequest();
 			}
-			_service.Update(entity);
+
+			var entity = await _service.GetByIdNoTrack(id);
+			if (entity == null)
+			{
+				return NotFound();
+			}
+			
+			_service.Update(viewModel);
 
 			try
 			{
@@ -68,7 +78,7 @@ namespace LuminaPath.Controllers.Basic
 			}
 			catch (DbUpdateConcurrencyException)
 			{
-				if (!MyMediaExists(entity.Id))
+				if (!MyMediaExists(id))
 				{
 					return NotFound();
 				}
@@ -77,7 +87,8 @@ namespace LuminaPath.Controllers.Basic
 					throw;
 				}
 			}
-			return CreatedAtAction("GetById", new { id = entity.Id },viewModel);
+
+			return NoContent();
 		}
 
 		[HttpDelete]
