@@ -19,7 +19,7 @@ namespace Data.Classes.Validation
 		protected override ValidationResult? IsValid(
 			object? value, ValidationContext validationContext)
 		{
-			GamesDto game = (GamesDto)validationContext.ObjectInstance;
+			Game game = (Game)validationContext.ObjectInstance;
 			LuminaPathDbContext _context = (LuminaPathDbContext)validationContext
 												.GetService(typeof(LuminaPathDbContext))!;
 
