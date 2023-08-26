@@ -2,12 +2,19 @@ import { IGame } from "utils/games";
 
 export const useGameStore = defineStore("games", () => {
   const GamesList: Ref<IGame[] | null> = ref(null)
+  const PageIndex: Ref<number> = ref(1)
+  const TotalPages: Ref<number> = ref(1)
   const SelectedGame: Ref<IGame | null> = ref(null)
+
   async function getGames() : Promise<IGame[]> {
-    let data = await fetchGames()
-    if(typeof data === 'object' && data != null)
-      GamesList.value = data
-    return data;
+    let response = await fetchGames()
+    console.log(response)
+    if(typeof response === 'object' && response != null)
+    console.log("hiii")
+      GamesList.value = response.data
+      PageIndex.value = response.currentPage
+      TotalPages.value = response.pages
+    return response.data;
   }
 
   function getGameById(id: number): IGame | undefined {
@@ -24,10 +31,14 @@ export const useGameStore = defineStore("games", () => {
   }
 
   async function createGame(game: IGame) {
-    await PostGame(game)
+    if(game.id == 0){
+      await PostGame(game)
+    }else{
+      await PutGame(game)
+    }
     await getGames()
     return;
   }
 
-  return { GamesList, SelectedGame, getGames, createGame, getGameById, removeGame }
+  return { GamesList, SelectedGame, PageIndex, TotalPages, getGames, createGame, getGameById, removeGame }
 });

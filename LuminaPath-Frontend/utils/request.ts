@@ -1,7 +1,7 @@
 import axios from "axios";
-import { IGame } from "./games";
+import { IGame } from "~/utils/games";
+import { PaginateResult } from "~/utils/paginatedResult";
 import { type Credentials } from "~/utils/user";
-import { useUserStore } from "~/store/user";
 
 const getApiUrl = (endpoint: string) => {
   const runtimeConfig = useRuntimeConfig();
@@ -24,9 +24,9 @@ const apiCall = async (url: string, data: any) => {
   }
 };
 
-export async function fetchGames(): Promise<Array<IGame>> {
+export async function fetchGames(): Promise<PaginateResult> {
   const url = getApiUrl("/games");
-  const result: IGame[] = await $fetch<IGame[]>(url);
+  const result: PaginateResult = await $fetch<PaginateResult>(url);
   return result;
 }
 
@@ -50,6 +50,17 @@ export async function deleteGame(id: number) {
 export async function PostGame(game: IGame) {
   const url = getApiUrl("/games");
   await apiCall(url, game);
+}
+
+export async function PutGame(game: IGame) {
+  const url = getApiUrl(`/games/${game.id}`);
+  await axios.put(url, game, {
+    withCredentials: true, // This is crucial to include the HttpOnly cookie in the request
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  });
 }
 
 export async function LoginUser(Credentials: Credentials) {
