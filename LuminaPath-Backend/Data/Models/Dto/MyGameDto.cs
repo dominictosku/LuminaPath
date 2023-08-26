@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Data.Models.Dto
 {
-	public class MyGameDto : MyGame
+	public class MyGameDto : MyMedia
 	{
 	}
 }

@@ -24,7 +24,7 @@ namespace LuminaPath.Controllers
 		}
 
 		[HttpPost]
-		public override async Task<ActionResult<GamesQuestDto>> PostAsync(GamesQuestDto entityDto)
+		public override async Task<ActionResult<GamesQuestDto>> PostAsync(GamesQuest viewModel)
 		{
 			string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			if (userId == null)
@@ -32,8 +32,8 @@ namespace LuminaPath.Controllers
 			LuminaUser user = await _userManager.FindByIdAsync(userId);
 			if (user == null)
 				return NotFound("User not found, please login");
-			entityDto.Owner = user;
-			return await base.PostAsync(entityDto);
+			viewModel.Owner = user;
+			return await base.PostAsync(viewModel);
 		}
 	}
 }

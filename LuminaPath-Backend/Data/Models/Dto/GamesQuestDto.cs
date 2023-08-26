@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Data.Models.Dto
 {
-	public class GamesQuestDto : GamesQuest
+	public class GamesQuestDto : Media
 	{
 	}
 }
