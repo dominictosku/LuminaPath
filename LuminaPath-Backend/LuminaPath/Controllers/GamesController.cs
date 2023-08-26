@@ -18,20 +18,5 @@ namespace LuminaPath.Controllers
 			_logger = logger;
 
 		}
-
-		public override async Task<ActionResult<GamesDto>> PostAsync(GamesDto entityDto)
-		{
-			if (NameAlreadyExists(entityDto.Name ?? ""))
-			{
-				return BadRequest("Title is already registered");
-			}
-			return await base.PostAsync(entityDto);
-		}
-
-		protected bool NameAlreadyExists(string name)
-		{
-			var entities = _service.GetAll();
-			return entities.Any(e => e.Name == name);
-		}
 	}
 }

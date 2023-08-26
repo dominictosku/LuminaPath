@@ -8,10 +8,10 @@ const calendarOptions = {
 }
 const fullCalendar: any = ref(null)
 
-onMounted(() => {
-  setTimeout(function () {
-    window.dispatchEvent(new Event('resize'));
-  }, 1);
+onIonViewWillEnter(() => {
+    setTimeout(function () {
+        window.dispatchEvent(new Event('resize'));
+    }, 1);
 });
 </script>
 <template>
