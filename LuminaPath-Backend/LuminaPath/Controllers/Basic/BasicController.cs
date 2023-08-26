@@ -45,13 +45,14 @@ namespace LuminaPath.Controllers.Basic
 		}
 
 		[HttpPost]
-		public virtual async Task<ActionResult<T2>> PostAsync(T2 entityDto)
+		public virtual async Task<ActionResult<T2>> PostAsync(T viewModel)
 		{
 			if (!ModelState.IsValid)
 			{
 				return NotFound();
 			}
-			var entity = Mapper.Map<T>(entityDto);
+			var entity = viewModel;
+			var entityDto = Mapper.Map<T2>(viewModel);
 			var entityExists = await _service.GetByIdNoTrack(entity.Id);
 			if (entityExists == null)
 			{
@@ -76,7 +77,7 @@ namespace LuminaPath.Controllers.Basic
 					throw;
 				}
 			}
-			return CreatedAtAction("GetById", new { id = entity.Id },entityDto);
+			return CreatedAtAction("GetById", new { id = entity.Id },viewModel);
 		}
 
 		[HttpDelete]
