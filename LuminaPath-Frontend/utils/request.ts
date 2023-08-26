@@ -9,7 +9,6 @@ const getApiUrl = (endpoint: string) => {
 };
 
 const apiCall = async (url: string, data: any) => {
-  const userStore = useUserStore();
   try {
     return await axios.post(url, data, {
       withCredentials: true, // This is crucial to include the HttpOnly cookie in the request
@@ -55,7 +54,7 @@ export async function PostGame(game: IGame) {
 
 export async function LoginUser(Credentials: Credentials) {
   const url = getApiUrl("/LuminaUser/BearerToken");
-  const { data } = await apiCall(url, Credentials);
+  await apiCall(url, Credentials);
   return 'data.token';
 }
 

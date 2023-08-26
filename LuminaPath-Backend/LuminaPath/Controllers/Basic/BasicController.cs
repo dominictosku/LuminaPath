@@ -77,7 +77,7 @@ namespace LuminaPath.Controllers.Basic
 				}
 			}
 
-			return entityDto;
+			return CreatedAtAction("Get", new { id = entity.Id },entityDto);
 		}
 
 		[HttpDelete]

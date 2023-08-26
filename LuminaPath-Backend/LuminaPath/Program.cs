@@ -25,6 +25,7 @@ builder.Services.AddControllers(options =>
 {
 	options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider());
 });
+
 builder.Services.AddDbContext<LuminaPathDbContext>(options =>
 		options.UseMySql(connectionstring, ServerVersion.AutoDetect(connectionstring)));
 
@@ -135,10 +136,6 @@ using (var serviceScope = app.Services.CreateScope())
 	}
 }
 
-app.UseCors("MyPolicy");
-app.UseAuthentication();
-app.UseAuthorization();
-
 app.Use(async (context, next) =>
 {
 	await next();
@@ -153,6 +150,10 @@ app.Use(async (context, next) =>
 		await context.Response.WriteAsync("You have not permission to access this");
 	}
 });
+
+app.UseCors("MyPolicy");
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

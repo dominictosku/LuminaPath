@@ -1,4 +1,5 @@
-﻿using Data.Interfaces;
+﻿using Data.Classes.Validation;
+using Data.Interfaces;
 using Data.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -17,6 +18,7 @@ namespace Data.Models.Base
 
         [Required]
         [StringLength(50)]
+        [UniqueName]
         [Display(Name = "Title")]
         public string? Name { get; set; }
         public string? Description { get; set; }

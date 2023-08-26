@@ -16,7 +16,8 @@
     "@nuxtjs/tailwindcss": "^6.8.0",
     "@types/node": "^18.16.19",
     "eslint": "^8.45.0",
-    "nuxt": "^3.6.3"
+    "nuxt": "^3.6.3",
+    "nuxt3-leaflet": "^1.0.12"
   },
   "dependencies": {
     "@formkit/icons": "^0.17.4",
