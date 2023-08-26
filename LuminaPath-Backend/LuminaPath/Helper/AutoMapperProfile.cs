@@ -1,17 +1,20 @@
 ﻿using AutoMapper;
 using Data.Models;
 using Data.Models.Dto;
-using Org.BouncyCastle.Asn1.X509;
+using Data.Models.Quests;
 
 namespace LuminaPath.Helper
 {
 	public class AutoMapperProfile : Profile
 	{
 		public AutoMapperProfile() {
-			CreateMap<PersonalGamingDto, PersonalGaming>()
+			CreateMap<MyGameDto, MyGame>()
 				.ReverseMap();
 
-			CreateMap<GamesDto, Games>()
+			CreateMap<GamesDto, Game>()
+				.ReverseMap();
+
+			CreateMap<GamesQuestDto, GamesQuest>()
 				.ReverseMap();
 		}
 	}

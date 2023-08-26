@@ -14,7 +14,7 @@ namespace Data.Models.Base
         InProgress,
         Planned
     }
-    public abstract class PersonalList : IBasicInfo
+    public abstract class MyMedia : IBasicInfo
     {
         public int Id { get; set; }
         [Range(1, 10)]

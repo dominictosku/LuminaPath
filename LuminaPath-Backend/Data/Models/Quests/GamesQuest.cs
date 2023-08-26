@@ -5,10 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Data.Models.Dto
+namespace Data.Models.Quests
 {
-	public class PersonalGamingDto : PersonalList
+	public class GamesQuest : Quest
 	{
-		public int GameId { get; set; }
+		public Game? Games { get; set; }
 	}
 }
