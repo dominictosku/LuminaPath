@@ -34,7 +34,7 @@ namespace LuminaPath.Controllers.Basic
 
 		[HttpGet("{id}")]
 		[AllowAnonymous]
-		public async virtual Task<ActionResult<T2>> Get(int? id)
+		public async virtual Task<ActionResult<T2>> GetById(int? id)
 		{
 			if (id == null)
 				return NotFound();
@@ -67,7 +67,7 @@ namespace LuminaPath.Controllers.Basic
 			}
 			catch (DbUpdateConcurrencyException)
 			{
-				if (!PersonalGamingExists(entity.Id))
+				if (!MyMediaExists(entity.Id))
 				{
 					return NotFound();
 				}
@@ -76,8 +76,7 @@ namespace LuminaPath.Controllers.Basic
 					throw;
 				}
 			}
-
-			return CreatedAtAction("Get", new { id = entity.Id },entityDto);
+			return CreatedAtAction("GetById", new { id = entity.Id },entityDto);
 		}
 
 		[HttpDelete]
@@ -98,7 +97,7 @@ namespace LuminaPath.Controllers.Basic
 			return new JsonResult("Ok");
 		}
 
-		protected bool PersonalGamingExists(int id)
+		protected bool MyMediaExists(int id)
 		{
 			var entities = _service.GetAll();
 			return entities.Any(e => e.Id == id);

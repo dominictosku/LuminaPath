@@ -1,4 +1,6 @@
 ﻿using Data.Models;
+using Data.Models.Base;
+using Data.Models.Quests;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -27,7 +29,9 @@ namespace Data
 			throw new NotImplementedException();
 		}
 
-		public DbSet<Games> Games { get; set; }
-		public DbSet<PersonalGaming> PersonalGaming { get; set; }
+		public DbSet<Game> Games { get; set; }
+		public DbSet<MyGame> MyGames { get; set; }
+		public DbSet<Quest> Quests { get; set; }
+		public DbSet<GamesQuest> GamesQuests { get; set; }
 	}
 }

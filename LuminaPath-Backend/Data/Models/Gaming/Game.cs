@@ -19,12 +19,12 @@ namespace Data.Models
         [Display(Name = "XBOX")]
         XBOX
     }
-    public partial class Games : Media
+    public partial class Game : Media
     {
         [Display(Name = "Plattform")]
 		public Plattforms Plattforms { get; set; }
         [Display(Name = "Estimated playtime")]
         public int? Playtime { get; set; }
-        public List<PersonalGaming>? PersonalGamings { get; set; }
+        public List<MyGame>? PersonalGamings { get; set; }
     }
 }

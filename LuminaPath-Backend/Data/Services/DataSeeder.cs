@@ -27,9 +27,9 @@ namespace Data.Services
 			{
 				return;
 			}
-			List<Games> games = new List<Games>();
+			List<Game> games = new List<Game>();
 			games.Add(
-				new Games()
+				new Game()
 				{
 					Name = "Apex",
 					Description = "Battle Royale",
