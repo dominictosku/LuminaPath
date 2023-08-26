@@ -1,4 +1,5 @@
 ﻿using Data;
+using Data.Classes;
 using Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,8 +16,13 @@ namespace Data.Services
 			_entities = context.Set<T>();
 		}
 
-		public IEnumerable<T> GetAll() =>
+		public IEnumerable<T> GetAll() => 
 			_entities.ToList();
+
+		public async Task<PaginatedList<T>> GetAll(MediaFIlter filter)
+		{
+			return await PaginatedList<T>.CreateAsync(_entities, filter?.PageIndex ?? 1, 10);
+		}
 
 		public async Task<T> GetById(int? id) =>
 			 await _entities.FindAsync(id);
