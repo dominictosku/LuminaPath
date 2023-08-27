@@ -5,16 +5,17 @@ export const useGameStore = defineStore("games", () => {
   const PageIndex: Ref<number> = ref(1)
   const TotalPages: Ref<number> = ref(1)
   const SelectedGame: Ref<IGame | null> = ref(null)
+  const Prefix: string = "games"
 
   async function getGames(howMany?: number) : Promise<IGame[]> {
-    let response = await fetchGames(howMany ?? 100)
+    let response = await fetchMedia<IGame>(howMany ?? 100, Prefix)
     if(typeof response === 'object' && response != null)
       GamesList.value = response
     return response;
   }
 
   async function getPaginatedGames() : Promise<IGame[]> {
-    let response = await fetchPaginatedGames()
+    let response = await fetchPaginatedMedia<IGame>(Prefix)
     if(typeof response === 'object' && response != null)
       GamesList.value = response.data
       PageIndex.value = response.currentPage
@@ -22,24 +23,21 @@ export const useGameStore = defineStore("games", () => {
     return response.data;
   }
 
-  function getGameById(id: number): IGame | undefined {
-    if(GamesList.value != null){
-      return GamesList.value.find(g => g.id == id)
-    }
-    return undefined
+  async function getGameById(id: number): Promise<IGame | undefined> {
+    return await fetchMediaById<IGame>(id, Prefix)
   }
   
   async function removeGame(id: number) {
-    await deleteGame(id)
+    await deleteMedia(id, Prefix)
     await getGames()
     return;
   }
 
   async function createGame(game: IGame) {
     if(game.id == 0){
-      await PostGame(game)
+      await PostMedia(game, Prefix)
     }else{
-      await PutGame(game)
+      await PutMedia(game, Prefix)
     }
     await getGames()
     return;

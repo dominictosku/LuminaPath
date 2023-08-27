@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Game } from '@/utils/models/games';
+import { Game } from '~/utils/games';
 const props = defineProps({
     game: Object as PropType<Game>
 })

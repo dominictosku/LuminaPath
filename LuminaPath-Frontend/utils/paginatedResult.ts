@@ -1,7 +1,7 @@
 import { Game } from "~/utils/games";
 
-export class PaginateResult{
-    data: Array<Game>
+export class PaginateResult<T>{
+    data: Array<T>
     currentPage: number;
     pages: number;
 
