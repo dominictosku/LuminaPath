@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useGameStore } from '@/store/games';
 const store = useGameStore()
+provide('store', store)
 const { data: games, pending, error } = await useAsyncData('games', () => store.getMedia(), {
   lazy: true
 })

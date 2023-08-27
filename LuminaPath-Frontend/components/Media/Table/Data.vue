@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { Game } from '~/utils/games';
 const props = defineProps({
-    game: Object as PropType<Game>
+    media: Object as PropType<Game>
 })
 const router = useIonRouter();
 </script>
 <template>
-    <tr @click="() => router.push(`/Details/${props.game?.id}`, customAnimation)">
+    <tr v-if="media != undefined" @click="() => router.push(`/Details/${props.media?.id}`, customAnimation)">
         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
             <div>
                 <h2 class="font-medium text-gray-800 dark:text-white ">
-                        {{ game?.name }}
+                    {{ media.name}}
                 </h2>
                 <p class="text-sm font-normal text-gray-600 dark:text-gray-400">
-                    {{ game?.description }}
+                    {{ media.description }}
                 </p>
             </div>
         </td>
@@ -28,13 +28,13 @@ const router = useIonRouter();
             <div class="inline px-3 py-1 text-sm font-normal
                                                 rounded-full text-emerald-500 gap-x-2 bg-emerald-100/60
                                                 dark:bg-gray-800">
-                {{ game?.plattforms }}
+                {{ media.plattforms }}
             </div>
         </td>
         <td class="px-4 py-4 text-sm whitespace-nowrap">
             <div>
                 <h4 class="text-gray-700 dark:text-gray-200">
-                    {{ game?.playtime }}
+                    {{ media.playtime }}
                 </h4>
                 <p class="text-gray-500 dark:text-gray-400">
                     Main + Side
