@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Game } from "~/utils/games";
 import GameForms from "./GameForm.vue"
 import MyGameForms from "./MyGameForm.vue"
 defineProps({

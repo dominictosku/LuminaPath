@@ -16,11 +16,12 @@ namespace Data.Services
 			_context = context;
 			_entities = context.Set<T>();
 		}
-
-		public IEnumerable<T> GetAll() => 
+		public IEnumerable<T> GetAll() =>
+			_entities.ToList();
+		public IEnumerable<T> GetAll(string include) => 
 			_entities.ToList();
 
-		public IEnumerable<T> GetAll(int? howMany) =>
+		public IEnumerable<T> GetAll(int? howMany, string include) =>
 			_entities.Take(howMany ?? 100).ToList();
 
 		public async Task<PaginatedList<T>> GetAll(MediaFIlter filter)

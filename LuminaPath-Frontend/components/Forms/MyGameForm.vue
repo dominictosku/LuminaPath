@@ -4,7 +4,6 @@ import { useGameStore } from "~/store/games"
 import { MyGame } from "~/utils/games";
 
 const emit = defineEmits(['exit'])
-console.log("JOOOOO")
 const props = defineProps({
   game: Object as PropType<MyGame>,
   showDelete: Boolean
