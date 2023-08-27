@@ -34,6 +34,34 @@ export class Game implements IGame, IBasicInfo {
   }
 }
 
+export class MyGame implements IBasicInfo {
+  id: number;
+  rating: number;
+  startDate: Date;
+  endDate: Date;
+  status: number;
+  timeSpend: number;
+  gameId: number;
+
+  constructor(
+    id: number,
+    rating: number,
+    startDate: Date,
+    endDate: Date,
+    status: number,
+    timeSpend: number,
+    gameId: number
+  ) {
+    this.id = id;
+    this.rating = rating;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.status = status;
+    this.timeSpend = timeSpend;
+    this.gameId = gameId;
+  }
+}
+
 export const Plattforms = [
     { label: 'Playstation', value: 0 },
     { label: 'Switch', value: 1 },
