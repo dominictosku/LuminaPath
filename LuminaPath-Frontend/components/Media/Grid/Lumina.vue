@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { useGameStore } from '~/store/games';
-const store = useGameStore()
+import { IStore } from '~/utils/basicStore';
+import { IGame } from '~/utils/games';
+
+const store: IStore<IGame> = inject('store') as IStore<IGame>
+const Media: any = computed(() => store.MediaList)
 </script>
 
 <template>
     <ol role="list" class="grid md:grid-cols-4 grid-cols-2 gap-4">
-        <li v-for="game in store.MediaList" v-bind:key="game.id" style="--i: 2; --length: 10">
-            <MediaGridData :game="game" />
+        <li v-for="media in Media" v-bind:key="media.id" style="--i: 2; --length: 10">
+            <MediaGridData :game="media" />
         </li>
     </ol>
 </template>

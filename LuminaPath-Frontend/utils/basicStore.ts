@@ -3,6 +3,7 @@ export interface IStore<T>{
     PageIndex: Ref<number>
     TotalPages: Ref<number>
     SelectedGame: Ref<T | null>
+    TableColumns: Array<Object>
     getMedia(howMany?: number) : Promise<T[]>
     getMediaById(id: number): Promise<T | undefined>
     getPaginatedMedia() : Promise<T[]>

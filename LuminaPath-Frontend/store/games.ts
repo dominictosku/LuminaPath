@@ -7,6 +7,17 @@ export const useGameStore = defineStore("games", (): IStore<IGame> => {
   const TotalPages: Ref<number> = ref(1)
   const SelectedGame: Ref<IGame | null> = ref(null)
   const Prefix: string = "games"
+  const TableColumns = [
+    { key: "name", label: "Status" },
+    { key: "platform", label: "Plattform" },
+    { key: "playtime", label: "Playtime" },
+    { key: "users", label: "Users" },
+    { key: "progress", label: "Progress" }
+]
+
+  const Media = computed(() => {
+    return MediaList.value
+  })
 
   async function getMedia(howMany?: number) : Promise<IGame[]> {
     let response = await fetchMedia<IGame>(howMany ?? 100, Prefix)
@@ -44,7 +55,7 @@ export const useGameStore = defineStore("games", (): IStore<IGame> => {
     return;
   }
 
-  return { MediaList: MediaList, SelectedGame, PageIndex, TotalPages,
+  return { MediaList: Media, SelectedGame, PageIndex, TotalPages, TableColumns,
     getMedia, getPaginatedMedia, getMediaById, createMedia, removeMedia 
     }
 });

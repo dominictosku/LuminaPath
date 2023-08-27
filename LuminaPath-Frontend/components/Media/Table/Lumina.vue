@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { useGameStore } from '~/store/games';
-const store = useGameStore()
+import { IGame } from '~/utils/games';
+import { IStore } from '~/utils/basicStore';
+
+const store: IStore<IGame> = inject('store') as IStore<IGame>
+const Media: any = computed(() => store.MediaList)
+const tableColumns: any = store.TableColumns
 </script>
 <template>
     <section class="container px-4 mx-auto">
@@ -18,29 +22,14 @@ const store = useGameStore()
 
                                         </button>
                                     </th>
-
-                                    <th scope="col" class="media-th">
-                                        Status
-                                    </th>
-
-                                    <th scope="col" class="media-th">
-                                        Plattform
-                                    </th>
-
-                                    <th scope="col" class="media-th">
-                                        Playtime
-                                    </th>
-
-                                    <th scope="col" class="media-th">Users</th>
-
-                                    <th scope="col" class="media-th">
-                                        Progress
+                                    <th v-for="column in tableColumns" scope="col" class="media-th">
+                                        {{ column.label }}
                                     </th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:divide-gray-700 dark:bg-gray-900">
-                               <MediaTableData v-if="store.MediaList && store.MediaList.length > 0"
-                                               v-for="game in store.MediaList" :game="game" />
+                               <MediaTableData v-if="Media && Media.length > 0"
+                                               v-for="media in Media" :media="media" />
                                 <MediaTableNoData v-else />
                             </tbody>
                         </table>

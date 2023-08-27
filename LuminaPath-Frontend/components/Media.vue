@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { useGameStore } from '@/store/games';
-const store = useGameStore()
+import { IStore } from '~/utils/basicStore';
+import { IGame } from '~/utils/games';
+
+const store: IStore<IGame> = inject('store') as IStore<IGame>
 
 const ionInfinite = (ev: any) => {
-        setTimeout(() => ev.target.complete(), 500);
+  setTimeout(() => ev.target.complete(), 500);
 };
 
 const handleRefresh = async (event: any) => {
