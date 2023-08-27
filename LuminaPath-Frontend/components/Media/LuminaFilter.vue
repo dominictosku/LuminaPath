@@ -3,20 +3,16 @@ import { add } from 'ionicons/icons';
 import { modalController } from '@ionic/vue';
 import Modal from '~/components/Forms/Create.vue';
 
-  const message = ref('This modal example uses the modalController to present and dismiss modals.');
-
+const formType = inject("formType")
   const openModal = async () => {
     const modal = await modalController.create({
       component: Modal,
+      componentProps: {formType: formType}
     });
 
     modal.present();
 
-    const { data, role } = await modal.onWillDismiss();
-
-    if (role === 'confirm') {
-      message.value = `Hello, ${data}!`;
-    }
+    await modal.onWillDismiss();
   };
 </script>
 <template>

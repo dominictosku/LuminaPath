@@ -2,6 +2,7 @@
 import { useMyGameStore } from '~/store/myGames';
 const store = useMyGameStore()
 provide('store', store)
+provide('formType', "MyGameForms")
 const { data: games, pending, error } = await useAsyncData('myGames', () => store.getMedia(), {
   lazy: true
 })
