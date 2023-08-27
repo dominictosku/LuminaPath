@@ -2,6 +2,7 @@
 using Data.Classes;
 using Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace Data.Services
 {
@@ -18,6 +19,9 @@ namespace Data.Services
 
 		public IEnumerable<T> GetAll() => 
 			_entities.ToList();
+
+		public IEnumerable<T> GetAll(int? howMany) =>
+			_entities.Take(howMany ?? 100).ToList();
 
 		public async Task<PaginatedList<T>> GetAll(MediaFIlter filter)
 		{
