@@ -33,7 +33,7 @@ namespace LuminaPath.Controllers.Basic
 		[AllowAnonymous]
 		public virtual IEnumerable<T2> GetAll(int? howMany)
 		{
-			var entities = _service.GetAll(howMany);
+			var entities = _service.GetAll(howMany, "game");
 			var entitiesDto = Mapper.Map<IEnumerable<T>, IEnumerable<T2>>(entities);
 			return entitiesDto;
 		}
