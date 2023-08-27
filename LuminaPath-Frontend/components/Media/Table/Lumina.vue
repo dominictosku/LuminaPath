@@ -39,8 +39,8 @@ const store = useGameStore()
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:divide-gray-700 dark:bg-gray-900">
-                               <MediaTableData v-if="store.GamesList && store.GamesList.length > 0"
-                                               v-for="game in store.GamesList" :game="game" />
+                               <MediaTableData v-if="store.MediaList && store.MediaList.length > 0"
+                                               v-for="game in store.MediaList" :game="game" />
                                 <MediaTableNoData v-else />
                             </tbody>
                         </table>
