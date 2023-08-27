@@ -24,9 +24,15 @@ const apiCall = async (url: string, data: any) => {
   }
 };
 
-export async function fetchGames(): Promise<PaginateResult> {
+export async function fetchPaginatedGames(): Promise<PaginateResult> {
   const url = getApiUrl("/games");
   const result: PaginateResult = await $fetch<PaginateResult>(url);
+  return result;
+}
+
+export async function fetchGames(howMany: number): Promise<Array<IGame>> {
+  const url = getApiUrl(`/games/all/${howMany}`);
+  const result: Array<IGame> = await $fetch<Array<IGame>>(url);
   return result;
 }
 

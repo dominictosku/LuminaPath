@@ -6,11 +6,16 @@ export const useGameStore = defineStore("games", () => {
   const TotalPages: Ref<number> = ref(1)
   const SelectedGame: Ref<IGame | null> = ref(null)
 
-  async function getGames() : Promise<IGame[]> {
-    let response = await fetchGames()
-    console.log(response)
+  async function getGames(howMany?: number) : Promise<IGame[]> {
+    let response = await fetchGames(howMany ?? 100)
     if(typeof response === 'object' && response != null)
-    console.log("hiii")
+      GamesList.value = response
+    return response;
+  }
+
+  async function getPaginatedGames() : Promise<IGame[]> {
+    let response = await fetchPaginatedGames()
+    if(typeof response === 'object' && response != null)
       GamesList.value = response.data
       PageIndex.value = response.currentPage
       TotalPages.value = response.pages
@@ -40,5 +45,7 @@ export const useGameStore = defineStore("games", () => {
     return;
   }
 
-  return { GamesList, SelectedGame, PageIndex, TotalPages, getGames, createGame, getGameById, removeGame }
+  return { GamesList, SelectedGame, PageIndex, TotalPages,
+     getGames, getPaginatedGames, createGame, getGameById, removeGame 
+    }
 });
