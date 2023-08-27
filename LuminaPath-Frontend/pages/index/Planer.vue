@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { Calendar } from 'v-calendar';
+onIonViewWillEnter(() => {
+    setTimeout(function () {
+        window.dispatchEvent(new Event('resize'));
+    }, 1);
+});
 </script>
 <template>
   <ion-page>

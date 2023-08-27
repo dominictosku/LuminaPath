@@ -1,3 +1,5 @@
+import { IBasicInfo } from "~/utils/basicInfo";
+
 export interface IGame {
   id: number;
   name: string;
@@ -7,7 +9,7 @@ export interface IGame {
   playtime: number;
 }
 
-export class Game implements IGame {
+export class Game implements IGame, IBasicInfo {
   id: number;
   name: string;
   description: string;

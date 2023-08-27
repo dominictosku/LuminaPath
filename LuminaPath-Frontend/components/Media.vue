@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import LuminaGrid from './Media/LuminaGrid.vue';
 import { useGameStore } from '@/store/games';
 const store = useGameStore()
 
@@ -27,11 +26,11 @@ function changeIsGrid() {
   </ion-refresher>
   <!-- Table view -->
   <div v-if="!isGrid" id="Table" class="tabcontent">
-    <MediaLuminaTable />
+    <MediaTableLumina />
   </div>
   <!-- Gallery view -->
   <div v-else id="Grid" class="tabcontent">
-    <LuminaGrid />
+    <MediaGridLumina />
   </div>
   <ion-infinite-scroll @ionInfinite="ionInfinite">
       <ion-infinite-scroll-content></ion-infinite-scroll-content>

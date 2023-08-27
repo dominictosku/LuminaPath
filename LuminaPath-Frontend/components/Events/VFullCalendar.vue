@@ -7,12 +7,6 @@ const calendarOptions = {
         initialView: 'dayGridMonth'
 }
 const fullCalendar: any = ref(null)
-
-onIonViewWillEnter(() => {
-    setTimeout(function () {
-        window.dispatchEvent(new Event('resize'));
-    }, 1);
-});
 </script>
 <template>
     <FullCalendar ref="fullCalendar" :options="calendarOptions" />

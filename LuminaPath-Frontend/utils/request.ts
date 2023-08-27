@@ -1,5 +1,5 @@
 import axios from "axios";
-import { IGame } from "~/utils/games";
+import { IBasicInfo } from "~/utils/basicInfo";
 import { PaginateResult } from "~/utils/paginatedResult";
 import { type Credentials } from "~/utils/user";
 
@@ -24,26 +24,26 @@ const apiCall = async (url: string, data: any) => {
   }
 };
 
-export async function fetchPaginatedGames(): Promise<PaginateResult> {
-  const url = getApiUrl("/games");
-  const result: PaginateResult = await $fetch<PaginateResult>(url);
+export async function fetchPaginatedMedia<T>(prefix: string): Promise<PaginateResult<T>> {
+  const url = getApiUrl(`/${prefix}`);
+  const result: PaginateResult<T> = await $fetch<PaginateResult<T>>(url);
   return result;
 }
 
-export async function fetchGames(howMany: number): Promise<Array<IGame>> {
-  const url = getApiUrl(`/games/all/${howMany}`);
-  const result: Array<IGame> = await $fetch<Array<IGame>>(url);
+export async function fetchMedia<T>(howMany: number, prefix: string): Promise<Array<T>> {
+  const url = getApiUrl(`/${prefix}/all/${howMany}`);
+  const result: Array<T> = await $fetch<Array<T>>(url);
   return result;
 }
 
-export async function fetchGameById(id: number): Promise<IGame> {
-  const url = getApiUrl("/games/" + id);
-  const result: IGame = await $fetch<IGame>(url);
+export async function fetchMediaById<T>(id: number, prefix: string): Promise<T> {
+  const url = getApiUrl(`/${prefix}/${id}`);
+  const result: T = await $fetch<T>(url);
   return result;
 }
 
-export async function deleteGame(id: number) {
-  const url = getApiUrl("/games?id=" + id);
+export async function deleteMedia<T>(id: number, prefix: string) {
+  const url = getApiUrl(`/${prefix}?id=${id}`);
   await axios.delete(url, {
     withCredentials: true, // This is crucial to include the HttpOnly cookie in the request
     headers: {
@@ -53,14 +53,14 @@ export async function deleteGame(id: number) {
   });
 }
 
-export async function PostGame(game: IGame) {
-  const url = getApiUrl("/games");
-  await apiCall(url, game);
+export async function PostMedia<T>(media: IBasicInfo, prefix: string) {
+  const url = getApiUrl(`/${prefix}`);
+  await apiCall(url, media);
 }
 
-export async function PutGame(game: IGame) {
-  const url = getApiUrl(`/games/${game.id}`);
-  await axios.put(url, game, {
+export async function PutMedia(media: IBasicInfo, prefix: string) {
+  const url = getApiUrl(`/${prefix}/${media.id}`);
+  await axios.put(url, media, {
     withCredentials: true, // This is crucial to include the HttpOnly cookie in the request
     headers: {
       Accept: "application/json",
@@ -68,6 +68,8 @@ export async function PutGame(game: IGame) {
     },
   });
 }
+
+// User requests
 
 export async function LoginUser(Credentials: Credentials) {
   const url = getApiUrl("/LuminaUser/BearerToken");
