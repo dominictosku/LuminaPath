@@ -29,6 +29,15 @@ namespace LuminaPath.Controllers.Basic
 			return new PaginatedResult<T2>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
 
+		[HttpGet("All/{howMany}")]
+		[AllowAnonymous]
+		public virtual IEnumerable<T2> GetAll(int? howMany)
+		{
+			var entities = _service.GetAll(howMany);
+			var entitiesDto = Mapper.Map<IEnumerable<T>, IEnumerable<T2>>(entities);
+			return entitiesDto;
+		}
+
 		[HttpGet("{id}")]
 		[AllowAnonymous]
 		public async virtual Task<ActionResult<T2>> GetById(int? id)
