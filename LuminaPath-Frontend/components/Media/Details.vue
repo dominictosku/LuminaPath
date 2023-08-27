@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Game } from '@/utils/games';
 import { useGameStore } from '@/store/games'
 const store = useGameStore()
 const game = computed(() => { return store.SelectedGame})

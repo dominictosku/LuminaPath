@@ -5,7 +5,7 @@ const store = useGameStore()
 
 <template>
     <ol role="list" class="grid md:grid-cols-4 grid-cols-2 gap-4">
-        <li v-for="game in store.GamesList" v-bind:key="game.id" style="--i: 2; --length: 10">
+        <li v-for="game in store.MediaList" v-bind:key="game.id" style="--i: 2; --length: 10">
             <MediaGridData :game="game" />
         </li>
     </ol>

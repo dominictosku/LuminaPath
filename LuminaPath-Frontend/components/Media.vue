@@ -7,7 +7,7 @@ const ionInfinite = (ev: any) => {
 };
 
 const handleRefresh = async (event: any) => {
-  await store.getGames()
+  await store.getMedia()
   event.target.complete();
 };
 

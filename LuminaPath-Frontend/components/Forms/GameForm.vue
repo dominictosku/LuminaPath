@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useGameStore } from "@/store/games"
+import { useGameStore } from "~/store/games"
 import { Game } from "~/utils/games";
 
 const emit = defineEmits(['exit'])
@@ -9,7 +9,7 @@ const props = defineProps({
   showDelete: Boolean
 })
 async function deleteGame() {
-  await store.removeGame(game.value.id)
+  await store.removeMedia(game.value.id)
   emit('exit')
   router.back()
 }
@@ -21,7 +21,7 @@ const submitted = ref(false)
 
 async function confirm() {
   try {
-    await store.createGame(game.value)
+    await store.createMedia(game.value)
     await presentToast("Success!", 'primary')
     emit('exit')
   } catch (e: any) {
