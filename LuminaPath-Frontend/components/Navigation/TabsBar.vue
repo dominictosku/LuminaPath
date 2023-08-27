@@ -10,7 +10,7 @@
                       <ion-label>Home</ion-label>
                   </ion-tab-button>
 
-                  <ion-tab-button tab="tab2" href="/MyList">
+                  <ion-tab-button tab="tab2" href="/MyList/Games">
                       <ion-icon aria-hidden="true" :icon="ellipse" />
                       <ion-label>MyList</ion-label>
                   </ion-tab-button>

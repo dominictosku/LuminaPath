@@ -23,7 +23,7 @@ namespace Data.Classes.Validation
 			LuminaPathDbContext _context = (LuminaPathDbContext)validationContext
 												.GetService(typeof(LuminaPathDbContext))!;
 
-			if (_context.Games.Any(e => e.Name == game.Name))
+			if (game.Id == 0 && _context.Games.Any(e => e.Name == game.Name))
 			{
 				return new ValidationResult(GetErrorMessage());
 			}

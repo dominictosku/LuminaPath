@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { add } from 'ionicons/icons';
 import { modalController } from '@ionic/vue';
-  import Modal from '~/components/Forms/Create.vue';
+import Modal from '~/components/Forms/Create.vue';
 
   const message = ref('This modal example uses the modalController to present and dismiss modals.');
 
