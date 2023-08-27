@@ -8,7 +8,7 @@ export const useGameStore = defineStore("games", (): IStore<IGame> => {
   const SelectedGame: Ref<IGame | null> = ref(null)
   const Prefix: string = "games"
   const TableColumns = [
-    { key: "name", label: "Status" },
+    { key: "status", label: "Status" },
     { key: "platform", label: "Plattform" },
     { key: "playtime", label: "Playtime" },
     { key: "users", label: "Users" },

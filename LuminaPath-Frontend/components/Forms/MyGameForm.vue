@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { useMyGameStore } from "~/store/myGames"
 import { useGameStore } from "~/store/games"
-import { Game } from "~/utils/games";
+import { MyGame } from "~/utils/games";
 
 const emit = defineEmits(['exit'])
-
+console.log("JOOOOO")
 const props = defineProps({
-  game: Object as PropType<Game>,
+  game: Object as PropType<MyGame>,
   showDelete: Boolean
 })
 async function deleteGame() {
@@ -13,10 +14,20 @@ async function deleteGame() {
   emit('exit')
   router.back()
 }
-const store = useGameStore()
+const store = useMyGameStore()
+const gameStore = useGameStore()
+const { data: games } = await useAsyncData('games', () => gameStore.getMedia(10))
 const router = useIonRouter()
 const game: any = ref(props.game)
 const submitted = ref(false)
+const gamesSelect: any = []
+if(games.value){
+    for(let i = 0; i < games.value.length; i++){
+        gamesSelect.push(
+            { label: games.value[i].name, value: games.value[i].id }
+        )
+    }
+}
 
 
 async function confirm() {
@@ -35,13 +46,10 @@ async function confirm() {
   <FormKit class="" type="form" id="edit" :form-class="submitted ? 'hide' : 'show'" submit-label="Confirm" @submit="confirm"
     :actions="false" #default="{ value }">
     <div class="grid justify-center">
-      <FormKit v-model="game.name" name="name" label="Title of game" validation="required" />
-      <FormKit v-model="game.description" type="textarea" name="description" label="description" />
-      <FormKit v-model="game.plattforms" type="select" name="plattforms" label="Plattform" placeholder="Playstation"
-        :options="Plattforms" />
-      <FormKit v-model="game.genre" type="text" name="genre" label="genre" />
-      <FormKit v-model="game.releaseDate" type="date" label="Release date" />
-      <FormKit v-model="game.playtime" type="number" name="playtime" label="Estimated Playtime" step="1" />
+      <FormKit v-model="game.gameId" type="select" name="gamesSelect" label="Game" :options="gamesSelect" />
+      <FormKit v-model="game.rating" type="number" name="rating" label="Rating" />
+      <FormKit v-model="game.startDate" type="date" label="Start date" />
+      <FormKit v-model="game.timeSpend" type="number" name="playtime" label="Your Playtime" step="1" />
       <div class="flex justify-end p-3 gap-3">
         <IonButton class="h-12" v-if="showDelete" @click="deleteGame()" color="danger">delete</IonButton>
         <IonButton class="h-12" @click="emit('exit')" color="light">close</IonButton>

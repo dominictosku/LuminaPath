@@ -2,8 +2,6 @@
 </script>
 <template>
   <ion-page>
-    <ion-content :fullscreen="true">
-
-    </ion-content>
+      <ion-router-outlet></ion-router-outlet>
   </ion-page>
 </template>

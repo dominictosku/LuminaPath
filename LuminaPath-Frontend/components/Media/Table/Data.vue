@@ -6,7 +6,7 @@ const props = defineProps({
 const router = useIonRouter();
 </script>
 <template>
-    <tr v-if="media != undefined" @click="() => router.push(`/Details/${props.media?.id}`, customAnimation)">
+    <tr v-if="media != undefined" @click="() => router.push(`/Details/Games/${props.media?.id}`, customAnimation)">
         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
             <div>
                 <h2 class="font-medium text-gray-800 dark:text-white ">

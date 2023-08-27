@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { Game } from "~/utils/games";
+import GameForms from "./GameForm.vue"
+import MyGameForms from "./MyGameForm.vue"
 defineProps({
-  game: Object as PropType<Game>
-})
-
+  game: Object,
+  formType: String
+  })
+  
+  const forms: any = {
+    GameForms,
+    MyGameForms
+  }
 const modal: any = ref(null)
 
 function cancel() {
@@ -24,7 +31,7 @@ function cancel() {
         </ion-toolbar>
       </ion-header>
       <ion-content class="ion-padding">
-        <FormsGameForm :game="game" :show-delete="true" @exit="cancel" />
+        <component :is="forms[formType ?? 'GameForms']" :game="game" :show-delete="true" @exit="cancel" />
       </ion-content>
     </ion-modal>
   </ion-content>
