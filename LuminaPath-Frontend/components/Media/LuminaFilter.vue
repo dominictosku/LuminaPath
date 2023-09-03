@@ -1,19 +1,9 @@
 <script setup lang="ts">
 import { add } from 'ionicons/icons';
-import { modalController } from '@ionic/vue';
 import Modal from '~/components/Forms/Create.vue';
 
 const formType = inject("formType")
-  const openModal = async () => {
-    const modal = await modalController.create({
-      component: Modal,
-      componentProps: {formType: formType}
-    });
-
-    modal.present();
-
-    await modal.onWillDismiss();
-  };
+  const modalProps = {formType: formType}
 </script>
 <template>
     <div class="sm:flex sm:items-center sm:justify-between">
@@ -36,7 +26,7 @@ const formType = inject("formType")
         </button>
         <div class="media-button">
             <ion-fab class="z-0">
-                <ion-fab-button @click="openModal" size="small">
+                <ion-fab-button @click="openModal(Modal, modalProps)" size="small">
                     <ion-icon :icon="add"></ion-icon>
                 </ion-fab-button>
             </ion-fab>

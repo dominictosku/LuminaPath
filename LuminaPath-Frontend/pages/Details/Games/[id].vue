@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { IGame } from 'utils/games';
 import { useRoute } from 'vue-router';
+import Modal from '~/components/Forms/Edit.vue';
 const route = useRoute();
 const { id } = route.params;
 const idInt: number = parseInt(id as string);
@@ -9,6 +10,7 @@ const { data: editGame } = await useAsyncData('games/' + idInt, async () => awai
 if (!editGame) {
   throw createError({ statusCode: 404, statusMessage: 'Page Not Found' })
 }
+const modalProps = {game: editGame}
 
 </script>
 <template>
@@ -17,7 +19,7 @@ if (!editGame) {
       <p>Edit Game: {{ id }} </p>
     </NavigationGoBack>
     <ion-content>
-      <FormsEdit :game="editGame" />
+      <ion-button @click="openModal(Modal, modalProps)" expand="block">Edit Game</ion-button>
     </ion-content>
   </ion-page>
 </template>
