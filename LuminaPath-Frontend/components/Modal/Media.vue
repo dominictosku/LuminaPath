@@ -1,28 +1,19 @@
 <script setup lang="ts">
-const modal: any = ref(null)
-
-function cancel() {
-  modal.value.$el.dismiss(null, 'cancel');
-}
 </script>
 <template>
+    <ion-header>
+    <ion-toolbar>
+      <ion-buttons slot="start">
+        <ion-button color="medium" @click="cancel">Cancel</ion-button>
+      </ion-buttons>
+      <ion-title><slot name="header"></slot></ion-title>
+      <ion-buttons slot="end">
+        <ion-button @click="confirm" :strong="true">Confirm</ion-button>
+      </ion-buttons>
+    </ion-toolbar>
+  </ion-header>
   <ion-content class="ion-padding">
-    <ion-button id="open-modal" expand="block"><slot name="header"></slot></ion-button>
-    <ion-modal ref="modal" trigger="open-modal">
-      <ion-header>
-        <ion-toolbar>
-          <ion-button @click="cancel()" slot="start">
-            X
-          </ion-button>
-          <ion-title> 
-            <slot name="header"></slot>
-          </ion-title>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content class="ion-padding">
-        <slot :exit="cancel"></slot>
-      </ion-content>
-    </ion-modal>
+    <slot :exit="confirm"></slot>
   </ion-content>
 </template>
 <style scoped>
