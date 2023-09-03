@@ -90,6 +90,7 @@ builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddCors(o => o.AddPolicy(MyAllowSpecificOrigins, builder =>
 {
 	builder.WithOrigins("http://localhost:3000")
+		   .WithOrigins("http://127.0.0.1:3000")
 		   .AllowAnyMethod()
 		   .AllowAnyHeader()
 		   .AllowCredentials();
