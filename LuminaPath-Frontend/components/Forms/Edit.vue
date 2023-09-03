@@ -10,36 +10,15 @@ defineProps({
     GameForms,
     MyGameForms
   }
-const modal: any = ref(null)
-
-function cancel() {
-  modal.value.$el.dismiss(null, 'cancel');
-}
-
 </script>
 <template>
-  <ion-content class="ion-padding">
-    <ion-button id="open-modal" expand="block">Edit Game</ion-button>
-    <ion-modal ref="modal" trigger="open-modal">
-      <ion-header>
-        <ion-toolbar>
-          <ion-button @click="cancel()" slot="start">
-            X
-          </ion-button>
-          <ion-title> Edit Game </ion-title>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content class="ion-padding">
-        <component :is="forms[formType ?? 'GameForms']" :game="game" :show-delete="true" @exit="cancel" />
-      </ion-content>
-    </ion-modal>
-  </ion-content>
+<modal-media>
+  <template v-slot:header>
+    Edit Game
+  </template>
+  <template v-slot="scope">
+    <component :is="forms[formType ?? 'GameForms']" :game="game" :show-delete="true" @exit="scope.exit"/>
+  </template>
+</modal-media>
 </template>
-<style scoped>
-  ion-toast.custom-toast {
-    --background: red;
-    --box-shadow: 3px 3px 10px 0 rgba(0, 0, 0, 0.2);
-    --color: #4b4a50;
-  }
-</style>
   

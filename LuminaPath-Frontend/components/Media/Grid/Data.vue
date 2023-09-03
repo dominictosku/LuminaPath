@@ -13,5 +13,6 @@ const router = useIonRouter();
         <div class="bg-gray-100 text-black text-center h3">
             {{ game?.name }}
         </div>
+        <FormsAddToList />
     </div>
 </template>
