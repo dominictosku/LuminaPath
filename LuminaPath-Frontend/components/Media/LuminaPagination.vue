@@ -1,5 +1,5 @@
 <template>
-    <section class="container mt-4 px-4 mx-auto">
+    <section class="sm:container mt-4 sm:px-4 mx-auto">
         <div class="w-full">
             <!-- Start coding here -->
             <div class="relative overflow-hidden bg-white rounded-b-lg shadow-md dark:bg-gray-800">

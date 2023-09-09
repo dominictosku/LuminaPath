@@ -43,7 +43,6 @@ function changeIsGrid() {
 <style scoped>
 /* Style the tab content */
 .tabcontent {
-  padding: 6px 12px;
   -webkit-animation: fadeEffect 1s;
   animation: fadeEffect 1s;
 }
