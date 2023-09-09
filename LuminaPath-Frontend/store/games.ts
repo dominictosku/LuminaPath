@@ -1,5 +1,5 @@
-import { IStore } from "utils/basicStore";
-import { IGame } from "utils/games";
+import { IStore } from "~/utils/basicStore";
+import { IGame } from "~/utils/games";
 
 export const useGameStore = defineStore("games", (): IStore<IGame> => {
   const MediaList: Ref<IGame[] | null> = ref(null)

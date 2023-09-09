@@ -2,7 +2,8 @@
 import GameForms from "./GameForm.vue"
 import MyGameForms from "./MyGameForm.vue"
 const props = defineProps({
-  formType: String
+  formType: String,
+  gameId: Number
 })
 
 const forms: any = {
@@ -10,7 +11,7 @@ const forms: any = {
   MyGameForms
 }
 let newGame = new Game(0, "", "", "", 0, 0)
-let newMyGame = new MyGame(0, 0, new Date(), new Date(), 0, 0, 1)
+let newMyGame = new MyGame(0, 0, new Date(), new Date(), 0, 0, props.gameId ?? 0)
 let propGame = props.formType == "GameForms" ? newGame : newMyGame
 </script>
 <template>

@@ -5,6 +5,8 @@ const ionRouter = useIonRouter();
 const Store = useUserStore()
 const Credentials = ref(new Creds())
 const submitted = ref(false)
+Credentials.value.userName = "admin@example.com"
+Credentials.value.password = "Admin123*"
 
 async function post() {
     try {

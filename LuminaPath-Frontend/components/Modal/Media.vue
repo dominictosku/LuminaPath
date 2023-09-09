@@ -3,12 +3,9 @@
 <template>
     <ion-header>
     <ion-toolbar>
-      <ion-buttons slot="start">
-        <ion-button color="medium" @click="cancel">Cancel</ion-button>
-      </ion-buttons>
       <ion-title><slot name="header"></slot></ion-title>
       <ion-buttons slot="end">
-        <ion-button @click="confirm" :strong="true">Confirm</ion-button>
+        <ion-button @click="confirm" :strong="true">X</ion-button>
       </ion-buttons>
     </ion-toolbar>
   </ion-header>
