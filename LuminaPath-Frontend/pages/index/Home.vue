@@ -6,7 +6,6 @@
       <div class="">
         <SwipeParallax /> 
       </div>
-      <SwipeRating /> 
     </ion-content>
   </ion-page>
 </template>

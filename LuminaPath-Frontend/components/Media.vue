@@ -29,14 +29,15 @@ function changeIsGrid() {
   <!-- Table view -->
   <div v-if="!isGrid" id="Table" class="tabcontent">
     <MediaTableLumina />
+    <MediaLuminaPagination />
   </div>
   <!-- Gallery view -->
   <div v-else id="Grid" class="tabcontent">
     <MediaGridLumina />
   </div>
   <ion-infinite-scroll @ionInfinite="ionInfinite">
-      <ion-infinite-scroll-content></ion-infinite-scroll-content>
-    </ion-infinite-scroll>
+    <ion-infinite-scroll-content></ion-infinite-scroll-content>
+  </ion-infinite-scroll>
 </template>
   
 <style scoped>

@@ -1,46 +1,43 @@
 <script setup lang="ts">
-</script>
-<template>
-  <swiper :style="{
-    '--swiper-navigation-color': '#fff',
-    '--swiper-pagination-color': '#fff',
-  }" :speed="600" :parallax="true" :pagination="{
+const style = {
+  '--swiper-navigation-color': '#fff',
+  '--swiper-pagination-color': '#fff',
+};
+const speed = 600;
+const pagination = {
   clickable: true,
-}" :modules="[SwiperPagination, SwiperNavigation, SwiperParallax, SwiperAutoplay]" :autoplay="{
+}
+const modules = [SwiperPagination, SwiperNavigation, SwiperParallax, SwiperAutoplay]
+const autoplay = {
   delay: 4000,
   disableOnInteraction: false,
-}" class="mySwiper">
-    <div slot="container-start" class="parallax-bg" :style="{
-      'background-image':
-        'url(https://media.istockphoto.com/id/1494263866/de/foto/abstrakte-verbundene-punkte-und-linien-konzept-der-ki-technologie-bewegung-des-digitalen.webp?s=1024x1024&w=is&k=20&c=JSgYVdISUmHqzOQ_2HwLZZCaFvx2oOcAU9QAbIWMn4U=)',
-    }" data-swiper-parallax="-23%"></div>
-    <swiper-slide v-for="slide in 5">
-        <div class="grid max-w-screen-xl px-4 py-8 mx-auto lg:gap-8 xl:gap-0 lg:py-16 lg:grid-cols-12">
-          <div class="mr-auto place-self-center lg:col-span-7">
-            <h1
-              class="max-w-2xl mb-4 text-4xl font-extrabold tracking-tight leading-none md:text-5xl xl:text-6xl dark:text-white">
-              Welcome To Harare City</h1>
-            <p class="max-w-2xl mb-6 font-light text-gray-500 lg:mb-8 md:text-lg lg:text-xl dark:text-gray-400">Welcome to
-              [Company Name], your gateway to unforgettable travel experiences. We are a leading travel and tour company
-              dedicated to creating exceptional journeys for adventurers, explorers, and wanderers like you.</p>
-            <a href="#"
-              class="inline-flex items-center justify-center px-5 py-3 mr-3 text-base font-medium text-center text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:focus:ring-primary-900">
-              Get started
-              <svg class="w-5 h-5 ml-2 -mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd"
-                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-                  clip-rule="evenodd"></path>
-              </svg>
-            </a>
-            <a href="#"
-              class="inline-flex items-center justify-center px-5 py-3 text-base font-medium text-center text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:focus:ring-gray-800">
-              Speak to Sales
-            </a>
-          </div>
-          <div class="hidden lg:mt-0 lg:col-span-5 lg:flex rounded-lg">
-            <img src="https://lp-cms-production.imgix.net/2019-06/554369495_full.jpg" alt="mockup" class="rounded-lg">
-          </div>
+}
+
+const containerStyle = {
+  'background-image':
+    'url(https://images.pexels.com/photos/956999/milky-way-starry-sky-night-sky-star-956999.jpeg)',
+}
+
+const router = useIonRouter()
+</script>
+<template>
+  <swiper :style="style" :speed="speed" :parallax="true" :pagination="pagination" :modules="modules" :autoplay="autoplay"
+    class="mySwiper">
+    <div slot="container-start" class="parallax-bg" :style="containerStyle" data-swiper-parallax="-23%"></div>
+    <swiper-slide v-for="slide in 3">
+      <div class="flex flex-col items-center NewsCard">
+        <img class="object-cover w-full rounded-t-lg h-96 md:h-auto md:w-48 md:rounded-none md:rounded-l-lg"
+          src="https://images.pexels.com/photos/956999/milky-way-starry-sky-night-sky-star-956999.jpeg" alt="">
+        <div class="flex flex-col justify-between p-4 leading-normal">
+          <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+            New Games this month
+          </h5>
+          <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">
+            Track your games and share progress with friends
+          </p>
+          <ion-button @click="router.push('/MediaList/Games')">Games</ion-button>
         </div>
+      </div>
     </swiper-slide>
   </swiper>
 </template>
@@ -60,4 +57,9 @@
   -webkit-background-size: cover;
   background-size: cover;
   background-position: center;
-}</style>
+}
+
+.NewsCard {
+  @apply bg-white border border-gray-200 rounded-lg shadow md:flex-row md:max-w-xl hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700
+}
+</style>
