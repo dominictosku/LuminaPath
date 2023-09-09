@@ -42,7 +42,7 @@ export class MyGame implements IBasicInfo {
   status: number;
   timeSpend: number;
   gameId: number;
-  game: Game;
+  game: Game | null;
 
   constructor(
     id: number,
@@ -60,7 +60,7 @@ export class MyGame implements IBasicInfo {
     this.status = status;
     this.timeSpend = timeSpend;
     this.gameId = gameId;
-    this.game = new Game(0, "", "", "", 0, 0)
+    this.game = null
   }
 }
 

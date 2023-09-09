@@ -10,7 +10,7 @@ const router = useIonRouter();
         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
             <div>
                 <h2 class="font-medium text-gray-800 dark:text-white ">
-                    {{ media.name}}
+                    {{ media.name }}
                 </h2>
                 <p class="text-sm font-normal text-gray-600 dark:text-gray-400">
                     {{ media.description }}
@@ -44,11 +44,11 @@ const router = useIonRouter();
         <td class="px-4 py-4 text-sm whitespace-nowrap">
             <div class="flex items-center">
                 <img class="object-cover w-6 h-6 -mx-1 border-2 border-white
-                                                rounded-full dark:border-gray-700 shrink-0"
+                            rounded-full dark:border-gray-700 shrink-0"
                     src="../../assets/svg/user-bolt.svg" alt="">
                 <p class="flex items-center justify-center
-                                             w-6 h-6 -mx-1 text-xs text-blue-600 bg-blue-100 border-2
-                                              border-white rounded-full">
+                            w-6 h-6 -mx-1 text-xs text-blue-600 bg-blue-100 border-2
+                            border-white rounded-full">
                     +4
                 </p>
             </div>
