@@ -6,12 +6,14 @@ const props = defineProps({
 const router = useIonRouter();
 </script>
 <template>
-    <div @click="() => router.push(`/Details/Games/${props.game?.id}`, customAnimation)">
-        <div class="">
-            <img src="../../assets/png/Placeholder.png" class="object-cover h-48 w-96" />
-        </div>
-        <div class="bg-gray-100 text-black text-center h3">
-            {{ game?.name }}
+    <div>
+        <div @click="() => router.push(`/Details/Games/${props.game?.id}`, customAnimation)">
+            <div class="">
+                <img src="../../assets/png/Placeholder.png" class="object-cover h-48 w-96" />
+            </div>
+            <div class="bg-gray-100 text-black text-center h3">
+                {{ game?.name }}
+            </div>
         </div>
         <FormsAddToList :game-id="game?.id" />
     </div>
