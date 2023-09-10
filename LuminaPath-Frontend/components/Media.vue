@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { IStore } from '~/utils/basicStore';
 import { IGame } from '~/utils/games';
+const props = defineProps({
+  Store: Object,
+  Forms: String
+})
 
-const store: IStore<IGame> = inject('store') as IStore<IGame>
+const store: IStore<IGame> = props.Store as IStore<IGame>
+const formType = props.Forms
+provide('store', store)
+provide('formType', formType)
 
 const ionInfinite = (ev: any) => {
   setTimeout(() => ev.target.complete(), 500);
@@ -21,24 +28,26 @@ function changeIsGrid() {
 </script>
 
 <template>
-  <MediaTabs @changebool="changeIsGrid" />
-  <MediaLuminaFilter />
-  <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
-    <ion-refresher-content></ion-refresher-content>
-  </ion-refresher>
-  <!-- Table view -->
-  <div v-if="!isGrid" id="Table" class="tabcontent">
-    <MediaTableLumina />
-    <MediaLuminaPagination />
+  <div>
+    <MediaTabs @changebool="changeIsGrid" />
+    <MediaLuminaFilter />
+    <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
+      <ion-refresher-content></ion-refresher-content>
+    </ion-refresher>
+    <!-- Table view -->
+    <div v-if="!isGrid" id="Table" class="tabcontent">
+      <MediaTableLumina />
+      <MediaLuminaPagination />
+    </div>
+    <!-- Gallery view -->
+    <div v-else id="Grid" class="tabcontent">
+      <MediaGridLumina />
+    </div>
+    <ion-infinite-scroll @ionInfinite="ionInfinite">
+      <ion-infinite-scroll-content></ion-infinite-scroll-content>
+    </ion-infinite-scroll>
   </div>
-  <!-- Gallery view -->
-  <div v-else id="Grid" class="tabcontent">
-    <MediaGridLumina />
-  </div>
-  <ion-infinite-scroll @ionInfinite="ionInfinite">
-    <ion-infinite-scroll-content></ion-infinite-scroll-content>
-  </ion-infinite-scroll>
-</template>
+  </template>
   
 <style scoped>
 /* Style the tab content */
