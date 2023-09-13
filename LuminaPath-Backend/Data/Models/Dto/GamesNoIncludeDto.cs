@@ -8,12 +8,11 @@ using System.Threading.Tasks;
 
 namespace Data.Models.Dto
 {
-	public class GamesDto : Media
+	public class GamesNoIncludeDto : Media
 	{
 		[Display(Name = "Plattform")]
 		public Plattforms Plattforms { get; set; }
 		[Display(Name = "Estimated playtime")]
 		public int? Playtime { get; set; }
-		public List<MyMedia>? PersonalGamings { get; set; }
 	}
 }

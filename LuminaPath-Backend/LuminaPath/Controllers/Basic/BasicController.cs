@@ -13,6 +13,7 @@ namespace LuminaPath.Controllers.Basic
 	public abstract class BasicController<T, T2> : ControllerBase where T : class, IBasicInfo
 	{
 		private protected readonly IGenericCrud<T> _service;
+		private protected IEnumerable<string> _includes { get; set; } = new List<string>();
 		public IMapper Mapper;
 		public BasicController(IGenericCrud<T> service, IMapper mapper)
 		{
@@ -24,7 +25,7 @@ namespace LuminaPath.Controllers.Basic
 		[AllowAnonymous]
 		public async virtual Task<PaginatedResult<T2>> Get([FromQuery] MediaFIlter filter)
 		{
-			PaginatedList<T> entities = await _service.GetAll(filter);
+			PaginatedList<T> entities = await _service.GetAll(filter, _includes);
 			var entitiesDto = Mapper.Map<IEnumerable<T>, IEnumerable<T2>>(entities);
 			return new PaginatedResult<T2>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
@@ -66,7 +67,7 @@ namespace LuminaPath.Controllers.Basic
 		}
 
 		[HttpPut("{id}")]
-		public async Task<IActionResult> PutHunt(int id, T viewModel)
+		public async Task<IActionResult> PutAsync(int id, T viewModel)
 		{
 			if (id != viewModel.Id)
 			{

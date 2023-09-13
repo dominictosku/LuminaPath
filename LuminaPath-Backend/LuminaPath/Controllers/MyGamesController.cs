@@ -23,6 +23,7 @@ namespace LuminaPath.Controllers
 		{
 			_userManager = userManager;
 			_logger = logger;
+			_includes = new List<string> { "Game" };
 		}
 
 		[HttpPost]

@@ -29,6 +29,13 @@ namespace Data.Services
 			return await PaginatedList<T>.CreateAsync(_entities, filter?.PageIndex ?? 1, 10);
 		}
 
+		public async Task<PaginatedList<T>> GetAll(MediaFIlter filter, IEnumerable<string> includes)
+		{
+			return await PaginatedList<T>.CreateAsync(
+				includes.Aggregate(_entities.AsQueryable(),(current, include) => current.Include(include)),
+				filter?.PageIndex ?? 1, 10);
+		}
+
 		public async Task<T> GetById(int? id) =>
 			 await _entities.FindAsync(id);
 
