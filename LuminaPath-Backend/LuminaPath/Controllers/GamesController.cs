@@ -16,6 +16,7 @@ namespace LuminaPath.Controllers
 		public GamesController(IGenericCrud<Game> service, ILogger<GamesController> logger, IMapper mapper) : base(service, mapper)
 		{
 			_logger = logger;
+			_includes = new List<string> { "PersonalGamings" };
 		}
 	}
 }

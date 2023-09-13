@@ -9,6 +9,6 @@ namespace Data.Models.Dto
 {
 	public class MyGameDto : MyMedia
 	{
-		public Game? Game { get; set; }
+		public GamesNoIncludeDto? Game { get; set; }
 	}
 }

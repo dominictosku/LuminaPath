@@ -8,6 +8,7 @@ namespace Data.Interfaces
 		IEnumerable<T> GetAll(string include);
 		IEnumerable<T> GetAll(int? howMany, string include);
 		Task<PaginatedList<T>> GetAll(MediaFIlter filter);
+		Task<PaginatedList<T>> GetAll(MediaFIlter filter, IEnumerable<string> includes);
 		Task<T> GetById(int? id);
 		Task<T> GetByIdNoTrack(int? id);
 		Task Create(T entity);

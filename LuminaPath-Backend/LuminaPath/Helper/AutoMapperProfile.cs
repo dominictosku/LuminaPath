@@ -11,6 +11,9 @@ namespace LuminaPath.Helper
 			CreateMap<MyGameDto, MyGame>()
 				.ReverseMap();
 
+			CreateMap<GamesNoIncludeDto, Game>()
+				.ReverseMap();
+
 			CreateMap<GamesDto, Game>()
 				.ReverseMap();
 
