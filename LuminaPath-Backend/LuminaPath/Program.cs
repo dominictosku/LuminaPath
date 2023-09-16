@@ -2,6 +2,7 @@
 using Data.Interfaces;
 using Data.Models;
 using Data.Models.Quests;
+using Data.Repositories;
 using Data.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -82,9 +83,10 @@ builder.Services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ITokenGenerator, JwtService>();
-builder.Services.AddTransient<IGenericCrud<Game>, GenericCrud<Game>>();
-builder.Services.AddTransient<IGenericCrud<MyGame>, GenericCrud<MyGame>>();
-builder.Services.AddTransient<IGenericCrud<GamesQuest>, GenericCrud<GamesQuest>>();
+builder.Services.AddTransient<IGenericRepo<Game>, GenericRepo<Game>>();
+builder.Services.AddTransient<IGenericRepo<MyGame>, GenericRepo<MyGame>>();
+builder.Services.AddTransient<IGenericRepo<GamesQuest>, GenericRepo<GamesQuest>>();
+builder.Services.AddTransient<GameRepo>();
 builder.Services.AddAutoMapper(typeof(Program));
 
 builder.Services.AddCors(o => o.AddPolicy(MyAllowSpecificOrigins, builder =>

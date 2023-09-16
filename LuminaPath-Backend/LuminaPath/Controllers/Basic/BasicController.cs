@@ -12,10 +12,10 @@ namespace LuminaPath.Controllers.Basic
 	[Route("api/[controller]")]
 	public abstract class BasicController<T, T2> : ControllerBase where T : class, IBasicInfo
 	{
-		private protected readonly IGenericCrud<T> _service;
-		private protected IEnumerable<string> _includes { get; set; } = new List<string>();
+		protected readonly IGenericRepo<T> _service;
+		protected IEnumerable<string> _includes { get; set; } = new List<string>();
 		public IMapper Mapper;
-		public BasicController(IGenericCrud<T> service, IMapper mapper)
+		public BasicController(IGenericRepo<T> service, IMapper mapper)
 		{
 			_service = service;
 			Mapper = mapper;
@@ -34,7 +34,7 @@ namespace LuminaPath.Controllers.Basic
 		[AllowAnonymous]
 		public virtual IEnumerable<T2> GetAll(int? howMany)
 		{
-			var entities = _service.GetAll(howMany, "game");
+			var entities = _service.GetAll(howMany, _includes);
 			var entitiesDto = Mapper.Map<IEnumerable<T>, IEnumerable<T2>>(entities);
 			return entitiesDto;
 		}
