@@ -1,4 +1,4 @@
-import { LoginUser, CreateUser } from "~/utils/request";
+import { LoginUser, CreateUser } from "~/utils/api";
 import { User, type Credentials } from "~/utils/user";
 
 export const useUserStore = defineStore("user", () => {
