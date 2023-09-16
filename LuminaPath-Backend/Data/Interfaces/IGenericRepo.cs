@@ -2,11 +2,11 @@
 
 namespace Data.Interfaces
 {
-	public interface IGenericCrud<T> where T : class
+	public interface IGenericRepo<T> where T : class
 	{
 		IEnumerable<T> GetAll();
 		IEnumerable<T> GetAll(string include);
-		IEnumerable<T> GetAll(int? howMany, string include);
+		IEnumerable<T> GetAll(int? howMany, IEnumerable<string> includes);
 		Task<PaginatedList<T>> GetAll(MediaFIlter filter);
 		Task<PaginatedList<T>> GetAll(MediaFIlter filter, IEnumerable<string> includes);
 		Task<T> GetById(int? id);

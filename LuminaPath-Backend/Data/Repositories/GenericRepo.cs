@@ -6,12 +6,12 @@ using System.Linq;
 
 namespace Data.Services
 {
-	public class GenericCrud<T> : IGenericCrud<T> where T : class, IBasicInfo
+	public class GenericRepo<T> : IGenericRepo<T> where T : class, IBasicInfo
 	{
-		private readonly LuminaPathDbContext _context;
-		private readonly DbSet<T> _entities;
+		private protected readonly LuminaPathDbContext _context;
+		private protected readonly DbSet<T> _entities;
 
-		public GenericCrud(LuminaPathDbContext context)
+		public GenericRepo(LuminaPathDbContext context)
 		{
 			_context = context;
 			_entities = context.Set<T>();
@@ -19,9 +19,9 @@ namespace Data.Services
 		public IEnumerable<T> GetAll() =>
 			_entities.ToList();
 		public IEnumerable<T> GetAll(string include) => 
-			_entities.ToList();
+			_entities.Include(include).ToList();
 
-		public IEnumerable<T> GetAll(int? howMany, string include) =>
+		public IEnumerable<T> GetAll(int? howMany, IEnumerable<string> includes) =>
 			_entities.Take(howMany ?? 100).ToList();
 
 		public async Task<PaginatedList<T>> GetAll(MediaFIlter filter)

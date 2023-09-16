@@ -16,7 +16,7 @@ namespace LuminaPath.Controllers
 		private readonly UserManager<LuminaUser> _userManager;
 		private readonly ILogger<GamesController> _logger;
 
-		public QuestsController(IGenericCrud<GamesQuest> service, ILogger<GamesController> logger,
+		public QuestsController(IGenericRepo<GamesQuest> service, ILogger<GamesController> logger,
 			IMapper mapper, UserManager<LuminaUser> userManager) : base(service, mapper)
 		{
 			_logger = logger;
