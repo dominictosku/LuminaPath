@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { IStore } from '~/utils/basicStore';
-import { IGame } from '~/utils/games';
+import { IStore } from '~/utils/interfaces/IBasicStore';
+import { IGame } from '~/utils/interfaces/iGames';
 const props = defineProps({
   Store: Object,
   Forms: String

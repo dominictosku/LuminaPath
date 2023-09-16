@@ -11,7 +11,7 @@ const router = useIonRouter();
         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
             <div>
                 <h2 class="font-medium text-gray-800 dark:text-white ">
-                    {{ media.game.name }}
+                    {{ media?.game?.name }}
                 </h2>
                 <p class="text-sm font-normal text-gray-600 dark:text-gray-400">
                     {{ media.rating }}
@@ -46,7 +46,7 @@ const router = useIonRouter();
             <div class="flex items-center">
                 <img class="object-cover w-6 h-6 -mx-1 border-2 border-white
                                                 rounded-full dark:border-gray-700 shrink-0"
-                    src="../../assets/svg/user-bolt.svg" alt="">
+                    src="~/assets/icons/user-bolt.svg" alt="">
                 <p class="flex items-center justify-center
                                              w-6 h-6 -mx-1 text-xs text-blue-600 bg-blue-100 border-2
                                               border-white rounded-full">

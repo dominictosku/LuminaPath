@@ -1,4 +1,4 @@
-import { IStore } from "~/utils/basicStore";
+import { IStore } from "~/utils/interfaces/IBasicStore";
 import { MyGame } from "~/utils/games";
 
 export const useMyGameStore = defineStore("myGames", (): IStore<MyGame> => {

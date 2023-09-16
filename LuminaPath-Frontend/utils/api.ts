@@ -1,5 +1,5 @@
 import axios from "axios";
-import { IBasicInfo } from "~/utils/basicInfo";
+import { IBasicInfo } from "~/utils/interfaces/iBasicInfo";
 import { PaginateResult } from "~/utils/paginatedResult";
 import { type Credentials } from "~/utils/user";
 
