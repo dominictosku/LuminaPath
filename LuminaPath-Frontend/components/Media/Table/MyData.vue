@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { useGameStore } from '~/store/games';
 import { MyGame } from '~/utils/games';
+import Modal from '~/components/Forms/Edit.vue';
 const props = defineProps({
     media: Object as PropType<MyGame>
 })
 const router = useIonRouter();
+const { data: editGame } = await useAsyncData('myGames/' + props.media?.id,
+    async () => await fetchMediaById<MyGame>(props.media?.id ?? 0, "MyGames"))
+const modalProps = { game: editGame, formType: "MyGames" }
 </script>
 <template>
-    <tr v-if="media != undefined" @click="() => router.push(`/Details/MyGames/${props.media?.id}`, customAnimation)">
+    <tr v-if="media != undefined" @click="openModal(Modal, modalProps)">
         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
             <div>
                 <h2 class="font-medium text-gray-800 dark:text-white ">

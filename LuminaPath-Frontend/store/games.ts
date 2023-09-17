@@ -5,6 +5,7 @@ import { useMyGameStore } from "./myGames";
 import { MyGame } from "#imports";
 
 export const useGameStore = defineStore("games", (): IMainStore<MyGame> & IStore<IGame> => {
+  const Id: String = "Games"
   const {
     Media,
     PageIndex,
@@ -24,16 +25,15 @@ export const useGameStore = defineStore("games", (): IMainStore<MyGame> & IStore
     { key: "users", label: "Users" },
     { key: "progress", label: "Progress" },
   ];
-  const Formtype: String = "GameForms"
 
   return {
+    Id,
     MediaList: Media,
     SelectedGame,
     PageIndex,
     TotalPages,
     TableColumns,
     MyStore,
-    Formtype,
     getMedia,
     getPaginatedMedia,
     getMediaById,

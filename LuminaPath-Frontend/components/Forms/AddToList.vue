@@ -4,7 +4,7 @@ import { create } from 'ionicons/icons';
 const props = defineProps({
   gameId: Number
 })
-const modalProps = {formType: "MyGameForms", gameId: props.gameId}
+const modalProps = {formType: "MyGames", gameId: props.gameId}
 </script>
 <template>
     <div>
