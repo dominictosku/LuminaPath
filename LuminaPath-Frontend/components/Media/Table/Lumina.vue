@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { IGame } from '~/utils/games';
-import { IStore } from '~/utils/basicStore';
+import { IGame } from '~/utils/interfaces/iGames';
+import { IStore } from '~/utils/interfaces/IBasicStore';
 import Data from './Data.vue';
 import MyData from './MyData.vue';
-
-const formType: any = inject("formType")
 const forms: any = {
     Data,
     MyData
 }
-const DataType = formType == "MyGameForms" ? "MyData" : "Data"
 
 const store: IStore<IGame> = inject('store') as IStore<IGame>
+const DataType = store.Formtype == "MyGameForms" ? "MyData" : "Data"
 const Media: any = computed(() => store.MediaList)
 const tableColumns: any = store.TableColumns
 </script>
