@@ -3,6 +3,7 @@ import { BaseStore } from "~/utils/baseStore";
 import { IStore } from "~/utils/interfaces/IBasicStore";
 
 export const useMyGameStore = defineStore("myGames", (): IStore<MyGame> => {
+  const Id: String = "MyGames"
   const {
     Media,
     PageIndex,
@@ -21,15 +22,14 @@ export const useMyGameStore = defineStore("myGames", (): IStore<MyGame> => {
     { key: "users", label: "Users" },
     { key: "progress", label: "Progress" },
   ];
-  const Formtype: String = "MyGameForms"
 
   return {
+    Id,
     MediaList: Media,
     SelectedGame,
     PageIndex,
     TotalPages,
     TableColumns,
-    Formtype,
     getMedia,
     getPaginatedMedia,
     getMediaById,

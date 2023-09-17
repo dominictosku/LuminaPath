@@ -1,18 +1,18 @@
 <script lang="ts" setup>
-import GameForms from "./GameForm.vue"
-import MyGameForms from "./MyGameForm.vue"
+import Games from "./GameForm.vue"
+import MyGames from "./MyGameForm.vue"
 const props = defineProps({
   formType: String,
   gameId: Number
 })
 
 const forms: any = {
-  GameForms,
-  MyGameForms
+  Games,
+  MyGames
 }
 let newGame = new Game(0, "", "", "", 0, 0)
 let newMyGame = new MyGame(0, 0, new Date(), new Date(), 0, 0, props.gameId ?? 0)
-let propGame = props.formType == "GameForms" ? newGame : newMyGame
+let propGame = props.formType == "Games" ? newGame : newMyGame
 </script>
 <template>
 <modal-media>
@@ -20,7 +20,7 @@ let propGame = props.formType == "GameForms" ? newGame : newMyGame
     Add Game
   </template>
   <template v-slot="scope">
-    <component :is="forms[formType ?? 'GameForms']" :game="propGame" @exit="scope.exit" />
+    <component :is="forms[formType ?? 'Games']" :game="propGame" @exit="scope.exit" />
   </template>
 </modal-media>
 </template>

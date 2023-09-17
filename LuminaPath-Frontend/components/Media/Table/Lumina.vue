@@ -3,13 +3,13 @@ import { IGame } from '~/utils/interfaces/iGames';
 import { IStore } from '~/utils/interfaces/IBasicStore';
 import Data from './Data.vue';
 import MyData from './MyData.vue';
-const forms: any = {
+const forms = {
     Data,
     MyData
 }
 
 const store: IStore<IGame> = inject('store') as IStore<IGame>
-const DataType = store.Formtype == "MyGameForms" ? "MyData" : "Data"
+const DataType = store.Id == "MyGames" ? "MyData" : "Data"
 const Media: any = computed(() => store.MediaList)
 const tableColumns: any = store.TableColumns
 </script>

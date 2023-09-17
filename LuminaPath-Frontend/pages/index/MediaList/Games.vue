@@ -4,7 +4,7 @@ const gameStore = useGameStore()
 const store: any = ref(gameStore)
 const ToggleMyMedia = ref(false)
 const refresh = ref(false)
-const formType = ref("GameForms")
+const formType = ref("Games")
 const type : Ref<"games" | "myGames"> = ref("games")
 const { data: games, pending, error } = await useAsyncData('games', () => gameStore.getMedia(), {
   lazy: true
@@ -13,7 +13,7 @@ const toggle = async () => {
   ToggleMyMedia.value = !ToggleMyMedia.value
   type.value = ToggleMyMedia.value ? "myGames" : "games"
   store.value =  ToggleMyMedia.value ? gameStore.MyStore : gameStore
-  formType.value = store.value.Formtype
+  formType.value = store.value.Id
   await useAsyncData(type.value, () => store.value.getMedia())
   refresh.value = !refresh.value
 }

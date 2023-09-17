@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import GameForms from "./GameForm.vue"
-import MyGameForms from "./MyGameForm.vue"
+import Games from "./GameForm.vue"
+import MyGames from "./MyGameForm.vue"
 defineProps({
   game: Object,
   formType: String
   })
   
   const forms: any = {
-    GameForms,
-    MyGameForms
+    Games,
+    MyGames
   }
 </script>
 <template>
@@ -17,7 +17,7 @@ defineProps({
     Edit Game
   </template>
   <template v-slot="scope">
-    <component :is="forms[formType ?? 'GameForms']" :game="game" :show-delete="true" @exit="scope.exit"/>
+    <component :is="forms[formType ?? 'Games']" :game="game" :show-delete="true" @exit="scope.exit"/>
   </template>
 </modal-media>
 </template>
