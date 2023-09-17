@@ -21,6 +21,7 @@ export const useMyGameStore = defineStore("myGames", (): IStore<MyGame> => {
     { key: "users", label: "Users" },
     { key: "progress", label: "Progress" },
   ];
+  const Formtype: String = "MyGameForms"
 
   return {
     MediaList: Media,
@@ -28,6 +29,7 @@ export const useMyGameStore = defineStore("myGames", (): IStore<MyGame> => {
     PageIndex,
     TotalPages,
     TableColumns,
+    Formtype,
     getMedia,
     getPaginatedMedia,
     getMediaById,

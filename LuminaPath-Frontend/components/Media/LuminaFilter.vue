@@ -2,8 +2,8 @@
 import { add } from 'ionicons/icons';
 import Modal from '~/components/Forms/Create.vue';
 
-const formType = inject("formType")
-const modalProps = {formType: formType}
+const store: any = inject("store")
+const modalProps = {formType: store.Formtype}
 </script>
 <template>
     <div class="sm:flex sm:items-center sm:justify-between">

@@ -4,6 +4,7 @@ export interface IStore<T>{
     TotalPages: Ref<number>
     SelectedGame: Ref<T | null>
     TableColumns: Array<Object>
+    Formtype: String
     getMedia(howMany?: number) : Promise<T[]>
     getMediaById(id: number): Promise<T | undefined>
     getPaginatedMedia() : Promise<T[]>
