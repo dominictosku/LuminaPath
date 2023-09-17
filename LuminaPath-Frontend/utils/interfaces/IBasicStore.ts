@@ -10,3 +10,7 @@ export interface IStore<T>{
     createMedia(media: T) : any
     removeMedia(id: number): any
 }
+
+export interface IMainStore<T>{
+    MyStore: IStore<T>
+}

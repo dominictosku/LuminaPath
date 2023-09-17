@@ -1,8 +1,10 @@
 import { BaseStore } from "~/utils/baseStore";
-import { IStore } from "~/utils/interfaces/IBasicStore";
+import { IStore, IMainStore } from "~/utils/interfaces/IBasicStore";
 import { IGame } from "~/utils/interfaces/iGames";
+import { useMyGameStore } from "./myGames";
+import { MyGame } from "#imports";
 
-export const useGameStore = defineStore("games", (): IStore<IGame> => {
+export const useGameStore = defineStore("games", (): IMainStore<MyGame> & IStore<IGame> => {
   const {
     Media,
     PageIndex,
@@ -13,6 +15,7 @@ export const useGameStore = defineStore("games", (): IStore<IGame> => {
     createMedia,
     removeMedia,
   } = BaseStore<IGame>("games");
+  const MyStore: any = useMyGameStore()
   const SelectedGame: Ref<IGame | null> = ref(null);
   const TableColumns = [
     { key: "status", label: "Status" },
@@ -28,6 +31,7 @@ export const useGameStore = defineStore("games", (): IStore<IGame> => {
     PageIndex,
     TotalPages,
     TableColumns,
+    MyStore,
     getMedia,
     getPaginatedMedia,
     getMediaById,
