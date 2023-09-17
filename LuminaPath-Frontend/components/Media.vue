@@ -1,12 +1,25 @@
 <script setup lang="ts">
-import { IStore } from '~/utils/interfaces/IBasicStore';
+import { MyGame } from '~/utils/games';
+import { IMainStore, IStore } from '~/utils/interfaces/IBasicStore';
 import { IGame } from '~/utils/interfaces/iGames';
 const props = defineProps({
   Store: Object,
+  type: String,
   Forms: String
 })
 
-const store: IStore<IGame> = props.Store as IStore<IGame>
+type TypeMap = {
+  game: IStore<IGame> & IMainStore<MyGame>;
+  myGame: IStore<MyGame>;
+};
+
+// Define a function that takes a type string and returns the corresponding type
+function getType<T extends keyof TypeMap>(typeName: T): TypeMap[T] {
+  // You can add more logic here if needed
+  return props.Store as TypeMap[T];
+}
+
+const store: any = getType("game")
 const formType = props.Forms
 provide('store', store)
 provide('formType', formType)
