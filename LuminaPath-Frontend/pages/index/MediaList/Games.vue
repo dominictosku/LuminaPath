@@ -38,7 +38,7 @@ const toggle = async () => {
       </div>
       <div class="m-4" v-else>
         <IonButton @click="toggle">Toggle</IonButton>
-        <Media :Store="store" type="games" :Forms="formType" :key="refresh" />
+        <Media :Store="store" :type="type" :Forms="formType" :key="refresh" />
       </div>
     </ion-content>
   </ion-page>
