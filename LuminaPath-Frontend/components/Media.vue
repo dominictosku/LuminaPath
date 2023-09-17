@@ -4,7 +4,7 @@ import { IMainStore, IStore } from '~/utils/interfaces/IBasicStore';
 import { IGame } from '~/utils/interfaces/iGames';
 const props = defineProps({
   Store: Object,
-  type: String,
+  type: String as PropType<"game" | "myGame">,
   Forms: String
 })
 
@@ -19,7 +19,7 @@ function getType<T extends keyof TypeMap>(typeName: T): TypeMap[T] {
   return props.Store as TypeMap[T];
 }
 
-const store: any = getType("game")
+const store: any = getType(props.type ?? "game")
 const formType = props.Forms
 provide('store', store)
 provide('formType', formType)
