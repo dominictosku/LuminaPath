@@ -1,61 +1,37 @@
-import { IStore } from "~/utils/interfaces/IBasicStore";
 import { MyGame } from "~/utils/games";
+import { BaseStore } from "~/utils/baseStore";
+import { IStore } from "~/utils/interfaces/IBasicStore";
 
 export const useMyGameStore = defineStore("myGames", (): IStore<MyGame> => {
-  const MediaList: Ref<MyGame[] | null> = ref(null)
-  const PageIndex: Ref<number> = ref(1)
-  const TotalPages: Ref<number> = ref(1)
-  const SelectedGame: Ref<MyGame | null> = ref(null)
-  const Prefix: string = "MyGames"
+  const {
+    Media,
+    PageIndex,
+    TotalPages,
+    getMedia,
+    getPaginatedMedia,
+    getMediaById,
+    createMedia,
+    removeMedia,
+  } = BaseStore<MyGame>("MyGames");
+  const SelectedGame: Ref<MyGame | null> = ref(null);
   const TableColumns = [
-    { key: "rating", label: "Rating" },
-    { key: "startDate", label: "Start" },
-    { key: "timeSpend", label: "Playtime" },
+    { key: "status", label: "Status" },
+    { key: "platform", label: "Plattform" },
+    { key: "playtime", label: "Playtime" },
     { key: "users", label: "Users" },
-    { key: "status", label: "Progress" }
-]
+    { key: "progress", label: "Progress" },
+  ];
 
-  const Media = computed(() => {
-    return MediaList.value
-  })
-
-  async function getMedia(howMany?: number) : Promise<MyGame[]> {
-    let response = await fetchMedia<MyGame>(howMany ?? 100, Prefix)
-    if(typeof response === 'object' && response != null)
-      MediaList.value = response
-    return response;
-  }
-
-  async function getPaginatedMedia() : Promise<MyGame[]> {
-    let response = await fetchPaginatedMedia<MyGame>(Prefix)
-    if(typeof response === 'object' && response != null)
-      MediaList.value = response.data
-      PageIndex.value = response.currentPage
-      TotalPages.value = response.pages
-    return response.data;
-  }
-
-  async function getMediaById(id: number): Promise<MyGame | undefined> {
-    return await fetchMediaById<MyGame>(id, Prefix)
-  }
-  
-  async function removeMedia(id: number) {
-    await deleteMedia(id, Prefix)
-    await getMedia()
-    return;
-  }
-
-  async function createMedia(media: MyGame) {
-    if(media.id == 0){
-      await PostMedia(media, Prefix)
-    }else{
-      await PutMedia(media, Prefix)
-    }
-    await getMedia()
-    return;
-  }
-
-  return { MediaList: Media, SelectedGame, PageIndex, TotalPages, TableColumns,
-    getMedia, getPaginatedMedia, getMediaById, createMedia, removeMedia 
-    }
+  return {
+    MediaList: Media,
+    SelectedGame,
+    PageIndex,
+    TotalPages,
+    TableColumns,
+    getMedia,
+    getPaginatedMedia,
+    getMediaById,
+    createMedia,
+    removeMedia,
+  };
 });
