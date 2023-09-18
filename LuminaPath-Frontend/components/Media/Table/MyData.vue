@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { MyGame } from '~/utils/games';
-import Modal from '~/components/Forms/Edit.vue';
+import Modal from '~/components/Forms/Create.vue';
 const props = defineProps({
     media: Object as PropType<MyGame>
 })
