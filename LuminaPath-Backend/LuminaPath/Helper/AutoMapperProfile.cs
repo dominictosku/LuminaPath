@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Data.Models;
+using Data.Models.Base;
 using Data.Models.Dto;
 using Data.Models.Quests;
 
@@ -14,7 +15,8 @@ namespace LuminaPath.Helper
 			CreateMap<GamesNoIncludeDto, Game>()
 				.ReverseMap();
 
-			CreateMap<GamesDto, Game>()
+			CreateMap<Game, GamesDto>()
+				.ForMember(dest => dest.PersonalGamings, act => act.MapFrom(src => src.PersonalGamings.FirstOrDefault()))
 				.ReverseMap();
 
 			CreateMap<GamesQuestDto, GamesQuest>()
