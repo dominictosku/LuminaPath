@@ -18,7 +18,7 @@ namespace Data.Repositories
 		}
 		public async Task<PaginatedList<Game>> GetAll(MediaFIlter filter, string UserId)
 		{
-			var games = _entities.Include(g => g.PersonalGamings.Where(p => p.LuminaUserId == UserId));
+			var games = _entities.Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
 			return await PaginatedList<Game>.CreateAsync(games, filter?.PageIndex ?? 1, 10);
 		}
 	}

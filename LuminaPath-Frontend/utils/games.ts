@@ -8,6 +8,7 @@ export class Game implements IGame, IBasicInfo {
   genre: string;
   plattforms: number;
   playtime: number;
+  myGames: MyGame | null
 
   constructor(
     id: number,
@@ -15,7 +16,8 @@ export class Game implements IGame, IBasicInfo {
     description: string,
     genre: string,
     plattforms: number,
-    playtime: number
+    playtime: number,
+    myGame?: MyGame
   ) {
     this.id = id;
     this.name = name;
@@ -23,6 +25,7 @@ export class Game implements IGame, IBasicInfo {
     this.genre = genre;
     this.plattforms = plattforms;
     this.playtime = playtime;
+    this.myGames = myGame ?? null
   }
 }
 

@@ -34,7 +34,7 @@ namespace LuminaPath.Controllers
 		{
 			if (IsGameAlreadyAdded(viewModel.GameId, viewModel.Id))
 			{
-				return BadRequest();
+				return BadRequest("This is game already added");
 			}
 			string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			if (userId == null)

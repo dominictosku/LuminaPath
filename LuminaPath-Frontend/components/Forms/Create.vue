@@ -11,8 +11,8 @@ const forms: any = {
   Games,
   MyGames
 }
-let newGame = new Game(0, "", "", "", 0, 0)
 let newMyGame = new MyGame(0, 0, new Date(), new Date(), 0, 0, props.gameId ?? 0)
+let newGame = new Game(0, "", "", "", 0, 0)
 let propGame = props.formType == "Games" ? newGame : newMyGame
 </script>
 <template>
