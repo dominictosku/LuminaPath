@@ -1,3 +1,4 @@
+import { C } from "@fullcalendar/core/internal-common";
 import { IBasicInfo } from "./interfaces/iBasicInfo";
 export function BaseStore<T extends IBasicInfo>(prefix: string) {
   const MediaList: Ref<T[] | null> = ref(null);

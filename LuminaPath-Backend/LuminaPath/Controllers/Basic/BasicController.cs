@@ -10,6 +10,7 @@ namespace LuminaPath.Controllers.Basic
 	[ApiController]
 	[Authorize(AuthenticationSchemes = "Bearer")]
 	[Route("api/[controller]")]
+	[Authorize]
 	public abstract class BasicController<T, T2> : ControllerBase where T : class, IBasicInfo
 	{
 		protected readonly IGenericRepo<T> _service;
@@ -22,7 +23,6 @@ namespace LuminaPath.Controllers.Basic
 		}
 
 		[HttpGet]
-		[AllowAnonymous]
 		public async virtual Task<PaginatedResult<T2>> Get([FromQuery] MediaFIlter filter)
 		{
 			PaginatedList<T> entities = await _service.GetAll(filter, _includes);
@@ -31,7 +31,6 @@ namespace LuminaPath.Controllers.Basic
 		}
 
 		[HttpGet("All/{howMany}")]
-		[AllowAnonymous]
 		public virtual IEnumerable<T2> GetAll(int? howMany)
 		{
 			var entities = _service.GetAll(howMany, _includes);
@@ -40,7 +39,6 @@ namespace LuminaPath.Controllers.Basic
 		}
 
 		[HttpGet("{id}")]
-		[AllowAnonymous]
 		public async virtual Task<ActionResult<T2>> GetById(int? id)
 		{
 			if (id == null)

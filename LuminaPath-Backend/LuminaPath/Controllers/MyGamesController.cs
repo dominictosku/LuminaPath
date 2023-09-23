@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
+using Data.Classes;
 using Data.Interfaces;
 using Data.Models;
 using Data.Models.Dto;
 using Data.Repositories;
 using LuminaPath.Controllers.Basic;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
