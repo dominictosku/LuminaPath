@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Data.Migrations
 {
     [DbContext(typeof(LuminaPathDbContext))]
-    [Migration("20230721104709_LuminaUserRelation")]
-    partial class LuminaUserRelation
+    [Migration("20230923165124_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -22,7 +22,44 @@ namespace Data.Migrations
                 .HasAnnotation("ProductVersion", "7.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity("Data.Models.Games", b =>
+            modelBuilder.Entity("Data.Models.Base.Quest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("HasStartDate")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("OwnerId")
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("Quests");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("Quest");
+
+                    b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("Data.Models.Game", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -98,6 +135,12 @@ namespace Data.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<int?>("QuestId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("longtext");
 
@@ -117,10 +160,12 @@ namespace Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
 
+                    b.HasIndex("QuestId");
+
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Data.Models.PersonalGaming", b =>
+            modelBuilder.Entity("Data.Models.MyGame", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -153,7 +198,7 @@ namespace Data.Migrations
 
                     b.HasIndex("LuminaUserId");
 
-                    b.ToTable("PersonalGaming");
+                    b.ToTable("MyGames");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -284,10 +329,38 @@ namespace Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Data.Models.PersonalGaming", b =>
+            modelBuilder.Entity("Data.Models.Quests.GamesQuest", b =>
                 {
-                    b.HasOne("Data.Models.Games", "Game")
-                        .WithMany("PersonalGamings")
+                    b.HasBaseType("Data.Models.Base.Quest");
+
+                    b.Property<int?>("GamesId")
+                        .HasColumnType("int");
+
+                    b.HasIndex("GamesId");
+
+                    b.HasDiscriminator().HasValue("GamesQuest");
+                });
+
+            modelBuilder.Entity("Data.Models.Base.Quest", b =>
+                {
+                    b.HasOne("Data.Models.LuminaUser", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("Data.Models.LuminaUser", b =>
+                {
+                    b.HasOne("Data.Models.Base.Quest", null)
+                        .WithMany("Users")
+                        .HasForeignKey("QuestId");
+                });
+
+            modelBuilder.Entity("Data.Models.MyGame", b =>
+                {
+                    b.HasOne("Data.Models.Game", "Game")
+                        .WithMany("MyGames")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -352,9 +425,23 @@ namespace Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Data.Models.Games", b =>
+            modelBuilder.Entity("Data.Models.Quests.GamesQuest", b =>
                 {
-                    b.Navigation("PersonalGamings");
+                    b.HasOne("Data.Models.Game", "Games")
+                        .WithMany()
+                        .HasForeignKey("GamesId");
+
+                    b.Navigation("Games");
+                });
+
+            modelBuilder.Entity("Data.Models.Base.Quest", b =>
+                {
+                    b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("Data.Models.Game", b =>
+                {
+                    b.Navigation("MyGames");
                 });
 
             modelBuilder.Entity("Data.Models.LuminaUser", b =>

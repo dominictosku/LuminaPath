@@ -357,7 +357,7 @@ namespace Data.Migrations
             modelBuilder.Entity("Data.Models.MyGame", b =>
                 {
                     b.HasOne("Data.Models.Game", "Game")
-                        .WithMany("PersonalGamings")
+                        .WithMany("MyGames")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -438,7 +438,7 @@ namespace Data.Migrations
 
             modelBuilder.Entity("Data.Models.Game", b =>
                 {
-                    b.Navigation("PersonalGamings");
+                    b.Navigation("MyGames");
                 });
 
             modelBuilder.Entity("Data.Models.LuminaUser", b =>

@@ -8,15 +8,17 @@ const getApiUrl = (endpoint: string) => {
   return runtimeConfig.public.API_ENDPOINT + "/api" + endpoint;
 };
 
+const axiosConfig = {
+  withCredentials: true, // This is crucial to include the HttpOnly cookie in the request
+  headers: {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  }
+};
+
 const apiCall = async (url: string, data: any) => {
   try {
-    return await axios.post(url, data, {
-      withCredentials: true, // This is crucial to include the HttpOnly cookie in the request
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-    },
-  });
+    return await axios.post(url, data, axiosConfig);
   } catch (error) {
     // Handle error if needed
     console.error("API call failed:", error);
@@ -26,31 +28,25 @@ const apiCall = async (url: string, data: any) => {
 
 export async function fetchPaginatedMedia<T>(prefix: string): Promise<PaginateResult<T>> {
   const url = getApiUrl(`/${prefix}`);
-  const result: PaginateResult<T> = await $fetch<PaginateResult<T>>(url);
+  const { data: result } = await axios.get<PaginateResult<T>>(url, axiosConfig);;
   return result;
 }
 
 export async function fetchMedia<T>(howMany: number, prefix: string): Promise<Array<T>> {
   const url = getApiUrl(`/${prefix}/all/${howMany}`);
-  const result: Array<T> = await $fetch<Array<T>>(url);
+  const { data: result } = await axios.get<Array<T>>(url, axiosConfig);;
   return result;
 }
 
 export async function fetchMediaById<T>(id: number, prefix: string): Promise<T> {
   const url = getApiUrl(`/${prefix}/${id}`);
-  const result: T = await $fetch<T>(url);
+  const { data: result } =   await axios.get<T>(url, axiosConfig);;
   return result;
 }
 
 export async function deleteMedia<T>(id: number, prefix: string) {
   const url = getApiUrl(`/${prefix}?id=${id}`);
-  await axios.delete(url, {
-    withCredentials: true, // This is crucial to include the HttpOnly cookie in the request
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-  });
+  await axios.delete(url, axiosConfig);
 }
 
 export async function PostMedia<T>(media: IBasicInfo, prefix: string) {
@@ -60,13 +56,7 @@ export async function PostMedia<T>(media: IBasicInfo, prefix: string) {
 
 export async function PutMedia(media: IBasicInfo, prefix: string) {
   const url = getApiUrl(`/${prefix}/${media.id}`);
-  await axios.put(url, media, {
-    withCredentials: true, // This is crucial to include the HttpOnly cookie in the request
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-  });
+  await axios.put(url, media, axiosConfig);
 }
 
 // User requests

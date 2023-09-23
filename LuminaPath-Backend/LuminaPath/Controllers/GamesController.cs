@@ -42,5 +42,26 @@ namespace LuminaPath.Controllers
 			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
+
+		[HttpGet("All/{howMany}")]
+		[AllowAnonymous]
+		public override IEnumerable<GamesDto> GetAll(int? howMany)
+		{
+			var entities = _gameService.GetAll(howMany, _includes);
+			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
+			return entitiesDto;
+		}
+
+		[HttpGet("{id}")]
+		[AllowAnonymous]
+		public override async Task<ActionResult<GamesDto>> GetById(int? id)
+		{
+			if (id == null)
+				return NotFound();
+			var entity = await _gameService.GetByIdNoTrack(id);
+			if (entity == null)
+				return NotFound();
+			return Ok(entity);
+		}
 	}
 }
