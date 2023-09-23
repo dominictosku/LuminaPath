@@ -87,6 +87,7 @@ builder.Services.AddTransient<IGenericRepo<Game>, GenericRepo<Game>>();
 builder.Services.AddTransient<IGenericRepo<MyGame>, GenericRepo<MyGame>>();
 builder.Services.AddTransient<IGenericRepo<GamesQuest>, GenericRepo<GamesQuest>>();
 builder.Services.AddTransient<GameRepo>();
+builder.Services.AddTransient<MyGameRepo>();
 builder.Services.AddAutoMapper(typeof(Program));
 
 builder.Services.AddCors(o => o.AddPolicy(MyAllowSpecificOrigins, builder =>

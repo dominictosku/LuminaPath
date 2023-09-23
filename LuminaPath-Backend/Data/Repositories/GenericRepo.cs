@@ -18,6 +18,9 @@ namespace Data.Services
 		}
 		public IEnumerable<T> GetAll() =>
 			_entities.ToList();
+
+		public IEnumerable<T> GetAllNoTrack() =>
+			_entities.AsNoTracking().ToList();
 		public IEnumerable<T> GetAll(string include) => 
 			_entities.Include(include).ToList();
 

@@ -67,7 +67,7 @@ namespace LuminaPath.Controllers.Basic
 		}
 
 		[HttpPut("{id}")]
-		public async Task<IActionResult> PutAsync(int id, T viewModel)
+		public virtual async Task<IActionResult> PutAsync(int id, T viewModel)
 		{
 			if (id != viewModel.Id)
 			{
