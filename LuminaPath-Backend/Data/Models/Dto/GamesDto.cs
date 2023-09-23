@@ -14,6 +14,6 @@ namespace Data.Models.Dto
 		public Plattforms Plattforms { get; set; }
 		[Display(Name = "Estimated playtime")]
 		public int? Playtime { get; set; }
-		public MyMedia? PersonalGamings { get; set; }
+		public MyMedia? MyGames { get; set; }
 	}
 }

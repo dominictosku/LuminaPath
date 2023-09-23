@@ -8,7 +8,6 @@ const forms = {
     MyData
 }
 const store: IStore<IGame> = inject('store') as IStore<IGame>
-console.log(store.MediaList)
 const DataType = store.Id == "MyGames" ? "MyData" : "Data"
 const Media: any = computed(() => store.MediaList)
 const tableColumns: any = store.TableColumns

@@ -16,7 +16,7 @@ namespace LuminaPath.Helper
 				.ReverseMap();
 
 			CreateMap<Game, GamesDto>()
-				.ForMember(dest => dest.PersonalGamings, act => act.MapFrom(src => src.PersonalGamings.FirstOrDefault()))
+				.ForMember(dest => dest.MyGames, act => act.MapFrom(src => src.MyGames.FirstOrDefault()))
 				.ReverseMap();
 
 			CreateMap<GamesQuestDto, GamesQuest>()

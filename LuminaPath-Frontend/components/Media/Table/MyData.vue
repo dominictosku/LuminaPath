@@ -4,10 +4,12 @@ import Modal from '~/components/Forms/Create.vue';
 const props = defineProps({
     media: Object as PropType<MyGame>
 })
-const router = useIonRouter();
-const { data: editGame } = await useAsyncData('myGames/' + props.media?.id,
-    async () => await fetchMediaById<MyGame>(props.media?.id ?? 0, "MyGames"))
-const modalProps = { game: editGame, formType: "MyGames" }
+
+let myGame = props.media
+if(myGame){
+    myGame.game = null;
+}
+const modalProps = { game: myGame, formType: "MyGames" }
 </script>
 <template>
     <tr v-if="media != undefined" @click="openModal(Modal, modalProps)">
