@@ -15,7 +15,7 @@ async function deleteGame() {
 }
 const store = useMyGameStore()
 const gameStore = useGameStore()
-const { data: games } = await useAsyncData('games', () => gameStore.getMedia(10))
+const { data: games } = await useAsyncData('games', () => gameStore.getMedia())
 const router = useIonRouter()
 const game: any = ref(props.game)
 const submitted = ref(false)

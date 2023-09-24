@@ -1,4 +1,3 @@
-import { C } from "@fullcalendar/core/internal-common";
 import { IBasicInfo } from "./interfaces/iBasicInfo";
 export function BaseStore<T extends IBasicInfo>(prefix: string) {
   const MediaList: Ref<T[] | null> = ref(null);
@@ -10,15 +9,22 @@ export function BaseStore<T extends IBasicInfo>(prefix: string) {
     return MediaList.value;
   });
 
-  async function getMedia(howMany?: number): Promise<T[]> {
-    let response = await fetchMedia<T>(howMany ?? 100, Prefix);
+  async function getMedia(mediaFilter?: MediaFilter): Promise<T[]> {
+    let response = await fetchMedia<T>(Prefix);
     if (typeof response === "object" && response != null)
       MediaList.value = response;
     return response;
   }
 
-  async function getPaginatedMedia(): Promise<T[]> {
-    let response = await fetchPaginatedMedia<T>(Prefix);
+  async function getMediaAll(count?: number): Promise<T[]> {
+    let response = await fetchMediaAll<T>(count ?? 100, Prefix);
+    if (typeof response === "object" && response != null)
+      MediaList.value = response;
+    return response;
+  }
+
+  async function getPaginatedMedia(mediaFilter: MediaFilter): Promise<T[]> {
+    let response = await fetchPaginatedMedia<T>(Prefix, mediaFilter );
     if (typeof response === "object" && response != null)
       MediaList.value = response.data;
     PageIndex.value = response.currentPage;
@@ -50,6 +56,7 @@ export function BaseStore<T extends IBasicInfo>(prefix: string) {
     PageIndex,
     TotalPages,
     getMedia,
+    getMediaAll,
     getPaginatedMedia,
     getMediaById,
     createMedia,

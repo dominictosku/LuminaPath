@@ -16,7 +16,7 @@ const modalProps = { game: myGame, formType: "MyGames" }
         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
             <div>
                 <h2 class="font-medium text-gray-800 dark:text-white ">
-                    {{ media?.game?.name }}
+                    {{ media.game?.name }}
                 </h2>
                 <p class="text-sm font-normal text-gray-600 dark:text-gray-400">
                     {{ media.rating }}

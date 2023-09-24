@@ -5,9 +5,10 @@ export interface IStore<T>{
     TotalPages: Ref<number>
     SelectedGame: Ref<T | null>
     TableColumns: Array<Object>
-    getMedia(howMany?: number) : Promise<T[]>
+    getMedia(mediaFilter?: MediaFilter) : Promise<T[]>
+    getMediaAll(count?: number) : Promise<T[]>
     getMediaById(id: number): Promise<T | undefined>
-    getPaginatedMedia() : Promise<T[]>
+    getPaginatedMedia(mediaFilter: MediaFilter) : Promise<T[]>
     createMedia(media: T) : any
     removeMedia(id: number): any
 }
