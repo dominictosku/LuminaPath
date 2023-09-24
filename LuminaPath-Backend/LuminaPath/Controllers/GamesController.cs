@@ -29,7 +29,7 @@ namespace LuminaPath.Controllers
 		[AllowAnonymous]
 		public override async Task<PaginatedResult<GamesDto>> Get([FromQuery] MediaFIlter filter)
 		{
-			string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			string userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			PaginatedList<Game> entities;
 			if(userId != null)
 			{

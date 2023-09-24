@@ -124,9 +124,11 @@ else
 using (var serviceScope = app.Services.CreateScope())
 {
 	var services = serviceScope.ServiceProvider;
+	var userManager = serviceScope.ServiceProvider.GetRequiredService<UserManager<LuminaUser>>();
+	var roleManager = serviceScope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 	var context = serviceScope.ServiceProvider.GetRequiredService<LuminaPathDbContext>();
 
-	await context.SeedIdentityDataAsync(services);
+	await context.SeedDatabase(userManager, roleManager);
 
 	// Migrations
 	try

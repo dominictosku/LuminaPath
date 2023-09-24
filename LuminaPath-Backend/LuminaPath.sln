@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Data", "Data\Data.csproj", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath", "LuminaPath\LuminaPath.csproj", "{3E530078-98B2-490E-A28C-EE3BAE4FC9E3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "..\Test\Test.csproj", "{4C349ECA-B704-48EE-9911-5DA8409F140D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{3E530078-98B2-490E-A28C-EE3BAE4FC9E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E530078-98B2-490E-A28C-EE3BAE4FC9E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3E530078-98B2-490E-A28C-EE3BAE4FC9E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C349ECA-B704-48EE-9911-5DA8409F140D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C349ECA-B704-48EE-9911-5DA8409F140D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C349ECA-B704-48EE-9911-5DA8409F140D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C349ECA-B704-48EE-9911-5DA8409F140D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
