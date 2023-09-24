@@ -34,8 +34,8 @@ async function confirm() {
     await store.createMedia(game.value)
     await presentToast("Success!", 'primary')
     emit('exit')
-  } catch (e: any) {
-    await presentToast(e.response.data, 'danger')
+  } catch (e : any) {
+    await presentToast(e, 'danger')
     submitted.value = true
   }
 

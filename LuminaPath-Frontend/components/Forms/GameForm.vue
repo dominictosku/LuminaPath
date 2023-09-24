@@ -25,7 +25,7 @@ async function confirm() {
     await presentToast("Success!", 'primary')
     emit('exit')
   } catch (e: any) {
-    await presentToast(e.response.data, 'danger')
+    await presentToast(e, 'danger')
     submitted.value = true
   }
 
