@@ -11,13 +11,13 @@ namespace Data.Services
 {
 	public static class DataSeeder
 	{
-		public static async Task SeedIdentityDataAsync(this LuminaPathDbContext context, IServiceProvider serviceProvider)
+		public static async Task SeedDatabase(this LuminaPathDbContext context, UserManager<LuminaUser> userManager, RoleManager<IdentityRole> roleManager)
 		{
 			// Admin user credentials
 			string adminEmail = "admin@example.com";
 			string adminPassword = "Admin123*";
-			await SeedRolesAsync(serviceProvider);
-			await SeedAdminUserAsync(serviceProvider, adminEmail, adminPassword);
+			await SeedRolesAsync(roleManager);
+			await SeedAdminUserAsync(userManager, adminEmail, adminPassword);
 			await SeedGamesAsync(context);
 		}
 
@@ -43,10 +43,8 @@ namespace Data.Services
 			await context.SaveChangesAsync();
 		}
 
-		public static async Task SeedRolesAsync(IServiceProvider serviceProvider)
+		public static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
 		{
-			var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
 			// Create roles if they don't exist
 			if (!await roleManager.RoleExistsAsync("Administrator"))
 			{
@@ -54,10 +52,8 @@ namespace Data.Services
 			}
 		}
 
-		public static async Task SeedAdminUserAsync(IServiceProvider serviceProvider, string adminEmail, string adminPassword)
+		public static async Task SeedAdminUserAsync(UserManager<LuminaUser> userManager, string adminEmail, string adminPassword)
 		{
-			var userManager = serviceProvider.GetRequiredService<UserManager<LuminaUser>>();
-
 			// Create the admin user if it doesn't exist
 			if (userManager.Users.All(u => u.UserName != adminEmail))
 			{
