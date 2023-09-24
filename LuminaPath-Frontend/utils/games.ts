@@ -46,7 +46,8 @@ export class MyGame implements IBasicInfo {
     endDate: Date,
     status: number,
     timeSpend: number,
-    gameId: number
+    gameId: number,
+    game?: Game
   ) {
     this.id = id;
     this.rating = rating;
@@ -55,7 +56,7 @@ export class MyGame implements IBasicInfo {
     this.status = status;
     this.timeSpend = timeSpend;
     this.gameId = gameId;
-    this.game = null
+    this.game = game ?? null;
   }
 }
 

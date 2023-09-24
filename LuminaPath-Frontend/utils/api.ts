@@ -13,7 +13,18 @@ const axiosConfig = {
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
-  }
+  },
+};
+
+const axiosConfigWithParams = (param: any) => {
+  return {
+    params: param,
+    withCredentials: true, // This is crucial to include the HttpOnly cookie in the request
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  };
 };
 
 const apiCall = async (url: string, data: any) => {
@@ -26,21 +37,39 @@ const apiCall = async (url: string, data: any) => {
   }
 };
 
-export async function fetchPaginatedMedia<T>(prefix: string): Promise<PaginateResult<T>> {
+export async function fetchPaginatedMedia<T>(
+  prefix: string,
+  mediaFilter: MediaFilter
+): Promise<PaginateResult<T>> {
   const url = getApiUrl(`/${prefix}`);
-  const { data: result } = await axios.get<PaginateResult<T>>(url, axiosConfig);;
+  const { data: result } = await axios.get<PaginateResult<T>>(url, axiosConfigWithParams(mediaFilter));
   return result;
 }
 
-export async function fetchMedia<T>(howMany: number, prefix: string): Promise<Array<T>> {
+export async function fetchMedia<T>(
+  prefix: string,
+  mediaFilter?: MediaFilter
+): Promise<Array<T>> {
+  const url = getApiUrl(`/${prefix}`);
+  const { data: result } = await axios.get<PaginateResult<T>>(url, axiosConfig);
+  return result.data;
+}
+
+export async function fetchMediaAll<T>(
+  howMany: number,
+  prefix: string
+): Promise<Array<T>> {
   const url = getApiUrl(`/${prefix}/all/${howMany}`);
-  const { data: result } = await axios.get<Array<T>>(url, axiosConfig);;
+  const { data: result } = await axios.get<Array<T>>(url, axiosConfig);
   return result;
 }
 
-export async function fetchMediaById<T>(id: number, prefix: string): Promise<T> {
+export async function fetchMediaById<T>(
+  id: number,
+  prefix: string
+): Promise<T> {
   const url = getApiUrl(`/${prefix}/${id}`);
-  const { data: result } =   await axios.get<T>(url, axiosConfig);;
+  const { data: result } = await axios.get<T>(url, axiosConfig);
   return result;
 }
 
@@ -64,7 +93,7 @@ export async function PutMedia(media: IBasicInfo, prefix: string) {
 export async function LoginUser(Credentials: Credentials) {
   const url = getApiUrl("/LuminaUser/BearerToken");
   await apiCall(url, Credentials);
-  return 'data.token';
+  return "data.token";
 }
 
 export async function CreateUser(Credentials: Credentials) {
