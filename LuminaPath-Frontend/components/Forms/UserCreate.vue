@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Creds } from '~/utils/user';
+import { Creds } from '~/utils/model/user';
 import { useUserStore } from '~/store/user';
 
 const ionRouter = useIonRouter();

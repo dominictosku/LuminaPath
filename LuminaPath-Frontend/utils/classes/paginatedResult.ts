@@ -1,5 +1,3 @@
-import { Game } from "~/utils/games";
-
 export class PaginateResult<T>{
     data: Array<T>
     currentPage: number;

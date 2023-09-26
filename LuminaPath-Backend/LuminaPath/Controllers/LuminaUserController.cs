@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace LuminaPath.Controllers
 {
@@ -62,6 +63,26 @@ namespace LuminaPath.Controllers
 
 			user.Password = null;
 			return Created("", user);
+		}
+
+		[HttpGet("status")]
+		public async Task<IActionResult> Status()
+		{
+			string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			LuminaUser? user = await _userManager.FindByIdAsync(userId);
+
+			if (user == null)
+			{
+				return BadRequest();
+			}
+
+			var UserDto = new UserDto
+			{
+				UserName = user.UserName ?? "Error",
+				Email = user.Email ?? "Error"
+			};
+
+			return Ok(UserDto);
 		}
 
 		[HttpGet("refresh")]

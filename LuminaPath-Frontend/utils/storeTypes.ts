@@ -1,4 +1,4 @@
-import { MyGame } from '~/utils/games';
+import { MyGame } from '~/utils/model/games';
 import { IMainStore, IStore } from '~/utils/interfaces/IBasicStore';
 import { IGame } from '~/utils/interfaces/iGames';
 type TypeMap = {

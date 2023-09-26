@@ -1,4 +1,4 @@
-import { IBasicInfo } from "./interfaces/iBasicInfo";
+import { IBasicInfo } from "../interfaces/iBasicInfo";
 export function BaseStore<T extends IBasicInfo>(prefix: string) {
   const MediaList: Ref<T[] | null> = ref(null);
   const PageIndex: Ref<number> = ref(1);

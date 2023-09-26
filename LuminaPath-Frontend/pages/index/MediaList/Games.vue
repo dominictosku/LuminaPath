@@ -23,7 +23,7 @@ const toggle = async () => {
     <ion-content :fullscreen="true">
       <MediaNavigation />
       <div v-if="pending">
-        <Loading />
+        <EventsLoading />
       </div>
       <div v-else-if="error != null || games == null">
         <ErrorData />
