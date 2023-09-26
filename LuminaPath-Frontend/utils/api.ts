@@ -1,8 +1,8 @@
 import axios from "axios";
 import { UseFetchOptions } from "nuxt/dist/app/composables/fetch";
 import { IBasicInfo } from "~/utils/interfaces/iBasicInfo";
-import { PaginateResult } from "~/utils/paginatedResult";
-import { type Credentials } from "~/utils/user";
+import { PaginateResult } from "~/utils/classes/paginatedResult";
+import { type Credentials } from "~/utils/model/user";
 
 const getApiUrl = () => {
   const runtimeConfig = useRuntimeConfig();
@@ -28,7 +28,6 @@ const apiCall = async <T>(endpoint: string, fetchConfig: any) => {
     return await $fetch<T>("/api" + endpoint, fetchConfig);
   } catch (error) {
     // Handle error if needed
-    console.error("API call failed:", error);
     throw error;
   }
 };
@@ -100,8 +99,21 @@ export async function LoginUser(Credentials: Credentials) {
   return "data.token";
 }
 
+export async function RefreshToken() {
+  const url = "/LuminaUser/refresh";
+  const config = fetchConfig('GET')
+  await apiCall(url, config);
+}
+
+export async function GetStatus() {
+  const url = "/LuminaUser/status";
+  const config = fetchConfig('GET')
+  await apiCall(url, config);
+}
+
 export async function CreateUser(Credentials: Credentials) {
   const url = "/LuminaUser";
   const config = fetchConfig<Credentials>('POST', null, Credentials)
   await apiCall(url, config);
 }
+

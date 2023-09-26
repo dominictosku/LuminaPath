@@ -1,5 +1,5 @@
 import { LoginUser, CreateUser } from "~/utils/api";
-import { User, type Credentials } from "~/utils/user";
+import { User, type Credentials } from "~/utils/model/user";
 
 export const useUserStore = defineStore("user", () => {
   const storedStringValue: string | null = localStorage.getItem('loggedIn');

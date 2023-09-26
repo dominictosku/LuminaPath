@@ -1,4 +1,4 @@
-import { BaseStore } from "~/utils/baseStore";
+import { BaseStore } from "~/utils/classes/baseStore";
 import { IStore, IMainStore } from "~/utils/interfaces/IBasicStore";
 import { IGame } from "~/utils/interfaces/iGames";
 import { useMyGameStore } from "./myGames";
