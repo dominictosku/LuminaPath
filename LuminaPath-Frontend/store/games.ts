@@ -4,42 +4,35 @@ import { IGame } from "~/utils/interfaces/iGames";
 import { useMyGameStore } from "./myGames";
 import { MyGame } from "#imports";
 
-export const useGameStore = defineStore("games", (): IMainStore<MyGame> & IStore<IGame> => {
-  const Id: String = "Games"
-  const {
-    Media,
-    PageIndex,
-    TotalPages,
-    getMedia,
-    getMediaAll,
-    getPaginatedMedia,
-    getMediaById,
-    createMedia,
-    removeMedia,
-  } = BaseStore<IGame>("games");
-  const MyStore: any = useMyGameStore()
-  const SelectedGame: Ref<IGame | null> = ref(null);
-  const TableColumns = [
-    { key: "status", label: "Status" },
-    { key: "platform", label: "Plattform" },
-    { key: "playtime", label: "Playtime" },
-    { key: "users", label: "Users" },
-    { key: "progress", label: "Progress" },
-  ];
+export const useGameStore = defineStore(
+  "games",
+  (): IMainStore<MyGame> & IStore<IGame> => {
+    const Id: String = "Games";
+    const { Media, PageIndex, TotalPages, api } = BaseStore<IGame>("games");
+    const MyStore: any = useMyGameStore();
+    const SelectedGame: Ref<IGame | null> = ref(null);
+    const TableColumns = [
+      { key: "status", label: "Status" },
+      { key: "platform", label: "Plattform" },
+      { key: "playtime", label: "Playtime" },
+      { key: "users", label: "Users" },
+      { key: "progress", label: "Progress" },
+    ];
 
-  return {
-    Id,
-    MediaList: Media,
-    SelectedGame,
-    PageIndex,
-    TotalPages,
-    TableColumns,
-    MyStore,
-    getMedia,
-    getMediaAll,
-    getPaginatedMedia,
-    getMediaById,
-    createMedia,
-    removeMedia,
-  };
-});
+    return {
+      Id,
+      MediaList: Media,
+      SelectedGame,
+      PageIndex,
+      TotalPages,
+      TableColumns,
+      MyStore,
+      getMedia : api.getMedia,
+      getMediaAll : api.getMediaAll,
+      getPaginatedMedia : api.getPaginatedMedia,
+      getMediaById : api.getMediaById,
+      createMedia : api.createMedia,
+      removeMedia: api.removeMedia,
+    };
+  }
+);

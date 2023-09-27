@@ -3,18 +3,8 @@ import { BaseStore } from "~/utils/classes/baseStore";
 import { IStore } from "~/utils/interfaces/IBasicStore";
 
 export const useMyGameStore = defineStore("myGames", (): IStore<MyGame> => {
-  const Id: String = "MyGames"
-  const {
-    Media,
-    PageIndex,
-    TotalPages,
-    getMedia,
-    getMediaAll,
-    getPaginatedMedia,
-    getMediaById,
-    createMedia,
-    removeMedia,
-  } = BaseStore<MyGame>("MyGames");
+  const Id: String = "MyGames";
+  const { Media, PageIndex, TotalPages, api } = BaseStore<MyGame>("MyGames");
   const SelectedGame: Ref<MyGame | null> = ref(null);
   const TableColumns = [
     { key: "status", label: "Status" },
@@ -31,11 +21,11 @@ export const useMyGameStore = defineStore("myGames", (): IStore<MyGame> => {
     PageIndex,
     TotalPages,
     TableColumns,
-    getMedia,
-    getMediaAll,
-    getPaginatedMedia,
-    getMediaById,
-    createMedia,
-    removeMedia,
+    getMedia: api.getMedia,
+    getMediaAll: api.getMediaAll,
+    getPaginatedMedia: api.getPaginatedMedia,
+    getMediaById: api.getMediaById,
+    createMedia: api.createMedia,
+    removeMedia: api.removeMedia,
   };
 });
