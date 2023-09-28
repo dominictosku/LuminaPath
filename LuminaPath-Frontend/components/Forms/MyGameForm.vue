@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { useMyGameStore } from "~/store/myGames"
 import { useGameStore } from "~/store/games"
-import { MyGame } from "~/utils/games";
+import { MyGame } from "~/utils/model/games";
 
 const emit = defineEmits(['exit'])
 const props = defineProps({
@@ -9,32 +8,30 @@ const props = defineProps({
   showDelete: Boolean
 })
 async function deleteGame() {
-  await store.removeMedia(game.value.id)
+  await store.Api.removeMedia(game.value.id)
   emit('exit')
   router.back()
 }
-const store = useMyGameStore()
-const gameStore = useGameStore()
-const { data: games } = await useAsyncData('games', () => gameStore.getMedia())
+const store = useGameStore()
 const router = useIonRouter()
 const game: any = ref(props.game)
 const submitted = ref(false)
 const gamesSelect: any = []
-if(games.value){
-    for(let i = 0; i < games.value.length; i++){
-        gamesSelect.push(
-            { label: games.value[i].name, value: games.value[i].id }
-        )
-    }
+
+for (let i = 0; i < store.Media.length; i++) {
+  gamesSelect.push(
+    { label: store.Media[i].name, value: store.Media[i].id }
+  )
 }
+
 
 
 async function confirm() {
   try {
-    await store.createMedia(game.value)
+    await store.Api.createMedia(game.value)
     await presentToast("Success!", 'primary')
     emit('exit')
-  } catch (e : any) {
+  } catch (e: any) {
     await presentToast(e, 'danger')
     submitted.value = true
   }
@@ -42,8 +39,8 @@ async function confirm() {
 }
 </script>
 <template>
-  <FormKit class="" type="form" id="edit" :form-class="submitted ? 'hide' : 'show'" submit-label="Confirm" @submit="confirm"
-    :actions="false" #default="{ value }">
+  <FormKit class="" type="form" id="edit" :form-class="submitted ? 'hide' : 'show'" submit-label="Confirm"
+    @submit="confirm" :actions="false" #default="{ value }">
     <div class="grid justify-center">
       <FormKit v-model="game.gameId" type="select" name="gamesSelect" label="Game" :options="gamesSelect" />
       <FormKit v-model="game.rating" type="number" name="rating" label="Rating" />

@@ -1,9 +1,8 @@
 import { MyGame } from '~/utils/model/games';
-import { IMainStore, IStore } from '~/utils/interfaces/IBasicStore';
+import { IStore } from '~/utils/interfaces/IBasicStore';
 import { IGame } from '~/utils/interfaces/iGames';
 type TypeMap = {
-    game: IStore<IGame> & IMainStore<MyGame>;
-    myGame: IStore<MyGame>;
+    Game: IStore<IGame, MyGame>,
 };
 
 export function getStoreType<T extends keyof TypeMap>(typeName: T, store?: Object): TypeMap[T] {

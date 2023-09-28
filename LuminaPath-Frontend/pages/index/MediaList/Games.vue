@@ -1,20 +1,13 @@
 <script setup lang="ts">
 import { useGameStore } from '@/store/games';
-const gameStore = useGameStore()
-const store: any = ref(gameStore)
-const ToggleMyMedia = ref(false)
+const store = useGameStore()
 const refresh = ref(false)
-const formType = ref("Games")
-const type : Ref<"games" | "myGames"> = ref("games")
-const { data: games, pending, error } = await useAsyncData('games', () => gameStore.getMedia(), {
+const { data: games, pending, error } = await useAsyncData('games', () => store.Api.getMedia(), {
   lazy: true
 })
 const toggle = async () => {
-  ToggleMyMedia.value = !ToggleMyMedia.value
-  type.value = ToggleMyMedia.value ? "myGames" : "games"
-  store.value =  ToggleMyMedia.value ? gameStore.MyStore : gameStore
-  formType.value = store.value.Id
-  await useAsyncData(type.value, () => store.value.getMedia())
+  store.changeMode()
+  await useAsyncData(store.Id, () => store.Api.getMedia())
   refresh.value = !refresh.value
 }
 </script>
@@ -30,7 +23,7 @@ const toggle = async () => {
       </div>
       <div class="m-4" v-else>
         <IonButton @click="toggle">Toggle</IonButton>
-        <Media :Store="store" :type="type" :key="refresh" />
+        <Media :Store="store" :key="refresh" />
       </div>
     </ion-content>
   </ion-page>

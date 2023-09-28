@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { MyGame } from '#imports';
 import { IStore } from '~/utils/interfaces/IBasicStore';
 import { IGame } from '~/utils/interfaces/iGames';
 
-const store: IStore<IGame> = inject('store') as IStore<IGame>
-const Media: any = computed(() => store.MediaList)
+const store: IStore<IGame, MyGame> = inject('store') as IStore<IGame, MyGame>
+const Media: any = computed(() => store.Media)
 </script>
 
 <template>

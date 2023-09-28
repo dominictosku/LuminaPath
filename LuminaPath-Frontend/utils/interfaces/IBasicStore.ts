@@ -1,18 +1,14 @@
-export interface IStore<T>{
-    Id: String
-    MediaList: Ref<T[] | null>
+import { IApi } from "./IApiInterface"
+import { IBasicInfo } from "./iBasicInfo"
+
+export interface IStore<T, T2>{
+    Id:  globalThis.ComputedRef<string>
+    Media: globalThis.Ref<T[] | null>
+    MyMedia: globalThis.Ref<T2[] | null>
     PageIndex: Ref<number>
     TotalPages: Ref<number>
     SelectedGame: Ref<T | null>
     TableColumns: Array<Object>
-    getMedia(mediaFilter?: MediaFilter) : Promise<T[]>
-    getMediaAll(count?: number) : Promise<T[]>
-    getMediaById(id: number): Promise<T | undefined>
-    getPaginatedMedia(mediaFilter: MediaFilter) : Promise<T[]>
-    createMedia(media: T) : any
-    removeMedia(id: number): any
-}
-
-export interface IMainStore<T>{
-    MyStore: IStore<T>
+    Api: IApi<IBasicInfo>
+    changeMode(): string
 }
