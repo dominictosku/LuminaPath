@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import { IGame } from '~/utils/interfaces/iGames';
-import { IStore } from '~/utils/interfaces/IBasicStore';
 import Data from './Data.vue';
 import MyData from './MyData.vue';
 const forms = {
     Data,
     MyData
 }
-const store: IStore<IGame> = inject('store') as IStore<IGame>
-const DataType = store.Id == "MyGames" ? "MyData" : "Data"
-const Media: any = computed(() => store.MediaList)
+const store: any = inject('store')
+const IsMyMode: boolean = store.Id == "MyGames"
+const DataType = IsMyMode ? "MyData" : "Data"
+const Media: any = computed(() => {
+    if (IsMyMode) {
+        return store.MyMedia
+    } else {
+        return store.Media
+    }
+})
+
 const tableColumns: any = store.TableColumns
 </script>
 <template>
@@ -34,8 +40,7 @@ const tableColumns: any = store.TableColumns
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:divide-gray-700 dark:bg-gray-900">
-                               <component :is="forms[DataType ?? 'Data']" 
-                                    v-if="Media && Media.length > 0"
+                                <component :is="forms[DataType ?? 'Data']" v-if="Media && Media.length > 0"
                                     v-for="media in Media" :media="media" />
                                 <MediaTableNoData v-else />
                             </tbody>

@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { MyGame } from '#imports';
+import { IStore } from '~/utils/interfaces/IBasicStore';
+import { IGame } from '~/utils/interfaces/iGames';
+
 
 const props = defineProps({
-  Store: Object,
-  type: String as PropType<"game" | "myGame">,
+  Store: Object
 })
-const store: any = getStoreType(props.type ?? "game", props.Store)
+const store: IStore<IGame, MyGame> = getStoreType("Game", props.Store)
 provide('store', store)
 
 const ionInfinite = (ev: any) => {
@@ -12,7 +15,7 @@ const ionInfinite = (ev: any) => {
 };
 
 const handleRefresh = async (event: any) => {
-  await store.getMedia()
+  await store.Api.getMedia()
   event.target.complete();
 };
 
