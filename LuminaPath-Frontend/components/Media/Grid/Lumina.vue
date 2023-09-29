@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { MyGame } from '#imports';
-import { IStore } from '~/utils/interfaces/IBasicStore';
-import { IGame } from '~/utils/interfaces/iGames';
+import { useGameStore } from '~/store/games';
 
-const store: IStore<IGame, MyGame> = inject('store') as IStore<IGame, MyGame>
+const store = useGameStore()
 const Media: any = computed(() => store.Media)
 </script>
 

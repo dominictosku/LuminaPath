@@ -1,3 +1,4 @@
+import { MediaComponent } from "~/utils/classes/mediaComponent"
 import { IApi } from "./IApiInterface"
 import { IBasicInfo } from "./iBasicInfo"
 
@@ -7,8 +8,8 @@ export interface IStore<T, T2>{
     MyMedia: globalThis.Ref<T2[] | null>
     PageIndex: Ref<number>
     TotalPages: Ref<number>
-    SelectedGame: Ref<T | null>
-    TableColumns: Array<Object>
+    SelectedGameId: Ref<number>
+    ActiveComponent: Ref<MediaComponent> 
     Api: IApi<IBasicInfo>
     changeMode(): string
 }

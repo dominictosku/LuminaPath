@@ -1,13 +1,9 @@
 <script setup lang="ts">
-import Data from './Data.vue';
-import MyData from './MyData.vue';
-const forms = {
-    Data,
-    MyData
-}
-const store: any = inject('store')
+import { useGameStore } from '~/store/games';
+
+const store = useGameStore()
 const IsMyMode: boolean = store.Id == "MyGames"
-const DataType = IsMyMode ? "MyData" : "Data"
+const tableColumns: any = store.ActiveComponent.TableColumns
 const Media: any = computed(() => {
     if (IsMyMode) {
         return store.MyMedia
@@ -16,7 +12,6 @@ const Media: any = computed(() => {
     }
 })
 
-const tableColumns: any = store.TableColumns
 </script>
 <template>
     <section class="container px-4 mx-auto">
@@ -40,7 +35,7 @@ const tableColumns: any = store.TableColumns
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:divide-gray-700 dark:bg-gray-900">
-                                <component :is="forms[DataType ?? 'Data']" v-if="Media && Media.length > 0"
+                                <component :is="store.ActiveComponent.TableData" v-if="Media && Media.length > 0"
                                     v-for="media in Media" :media="media" />
                                 <MediaTableNoData v-else />
                             </tbody>

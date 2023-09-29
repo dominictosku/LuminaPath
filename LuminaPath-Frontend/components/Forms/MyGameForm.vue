@@ -18,10 +18,12 @@ const game: any = ref(props.game)
 const submitted = ref(false)
 const gamesSelect: any = []
 
-for (let i = 0; i < store.Media.length; i++) {
-  gamesSelect.push(
-    { label: store.Media[i].name, value: store.Media[i].id }
-  )
+if (store.Media) {
+  for (let i = 0; i < store.Media.length; i++) {
+    gamesSelect.push(
+      { label: store.Media[i].name, value: store.Media[i].id }
+    )
+  }
 }
 
 
