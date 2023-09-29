@@ -9,7 +9,7 @@ let myGame = props.media
 if(myGame){
     myGame.game = null;
 }
-const modalProps = { game: myGame, formType: "MyGames" }
+const modalProps = { game: myGame }
 </script>
 <template>
     <tr v-if="media != undefined" @click="openModal(Modal, modalProps)">

@@ -23,7 +23,7 @@ const toggle = async () => {
       </div>
       <div class="m-4" v-else>
         <IonButton @click="toggle">Toggle</IonButton>
-        <Media :Store="store" :key="refresh" />
+        <Media :key="refresh" />
       </div>
     </ion-content>
   </ion-page>

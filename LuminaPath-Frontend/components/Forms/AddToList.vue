@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import Modal from '~/components/Forms/Create.vue';
 import { create } from 'ionicons/icons';
+import { useGameStore } from '~/store/games';
 const props = defineProps({
   gameId: Number
 })
-const modalProps = {formType: "MyGames", gameId: props.gameId}
+const store = useGameStore()
+store.SelectedGameId = props.gameId ?? 0
 </script>
 <template>
     <div>

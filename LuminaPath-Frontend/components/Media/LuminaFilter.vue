@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { add } from 'ionicons/icons';
 import Modal from '~/components/Forms/Create.vue';
-
-const store: any = inject("store")
-const modalProps = {formType: store.Id}
 </script>
 <template>
     <div class="sm:flex sm:items-center sm:justify-between">
@@ -26,7 +23,7 @@ const modalProps = {formType: store.Id}
         </button>
         <div class="media-button">
             <ion-fab class="z-0">
-                <ion-fab-button @click="openModal(Modal, modalProps)" size="small">
+                <ion-fab-button @click="openModal(Modal, {})" size="small">
                     <ion-icon :icon="add"></ion-icon>
                 </ion-fab-button>
             </ion-fab>

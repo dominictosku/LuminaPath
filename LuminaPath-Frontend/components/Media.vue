@@ -1,14 +1,6 @@
 <script setup lang="ts">
-import { MyGame } from '#imports';
-import { IStore } from '~/utils/interfaces/IBasicStore';
-import { IGame } from '~/utils/interfaces/iGames';
-
-
-const props = defineProps({
-  Store: Object
-})
-const store: IStore<IGame, MyGame> = getStoreType("Game", props.Store)
-provide('store', store)
+import { useGameStore } from '~/store/games';
+const store = useGameStore()
 
 const ionInfinite = (ev: any) => {
   setTimeout(() => ev.target.complete(), 500);
