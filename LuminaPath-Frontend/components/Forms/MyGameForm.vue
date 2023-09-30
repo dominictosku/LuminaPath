@@ -4,33 +4,35 @@ import { MyGame } from "~/utils/model/games";
 
 const emit = defineEmits(['exit'])
 const props = defineProps({
-  game: Object as PropType<MyGame>,
+  game: {
+    type: Object as PropType<MyGame>,
+    required: true
+  },
   showDelete: Boolean
 })
+
 async function deleteGame() {
-  await store.Api.removeMedia(game.value.id)
+  await store.Api.removeMedia(game.value.id, store.Type.MyGames)
   emit('exit')
   router.back()
 }
 const store = useGameStore()
 const router = useIonRouter()
-const game: any = ref(props.game)
+const game = ref(props.game)
 const submitted = ref(false)
 const gamesSelect: any = []
 
-if (store.Media) {
-  for (let i = 0; i < store.Media.length; i++) {
-    gamesSelect.push(
-      { label: store.Media[i].name, value: store.Media[i].id }
-    )
-  }
+
+for (let i = 0; i < store.Media.length; i++) {
+  gamesSelect.push(
+    { label: store.Media[i].name, value: store.Media[i].id }
+  )
 }
-
-
 
 async function confirm() {
   try {
-    await store.Api.createMedia(game.value)
+    console.log(game.value)
+    await store.Api.createMedia(game.value, store.Type.MyGames)
     await presentToast("Success!", 'primary')
     emit('exit')
   } catch (e: any) {

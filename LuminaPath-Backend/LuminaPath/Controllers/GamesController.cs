@@ -33,11 +33,11 @@ namespace LuminaPath.Controllers
 			PaginatedList<Game> entities;
 			if(userId != null)
 			{
-				entities = await _gameService.GetAll(filter, userId);
+				entities = await _gameService.GetAllPaginated(filter, userId);
 			}
 			else
 			{
-				entities = await _gameService.GetAll(filter);
+				entities = await _gameService.GetAllPaginated(filter);
 			}
 			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
@@ -58,10 +58,11 @@ namespace LuminaPath.Controllers
 		{
 			if (id == null)
 				return NotFound();
-			var entity = await _gameService.GetByIdNoTrack(id);
+			var entity = await _gameService.GetById(id, _includes);
+			var entitiesDto = Mapper.Map<Game, GamesDto>(entity);
 			if (entity == null)
 				return NotFound();
-			return Ok(entity);
+			return Ok(entitiesDto);
 		}
 	}
 }

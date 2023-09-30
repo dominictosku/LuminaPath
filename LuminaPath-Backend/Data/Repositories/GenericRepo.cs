@@ -16,31 +16,55 @@ namespace Data.Services
 			_context = context;
 			_entities = context.Set<T>();
 		}
+
 		public IEnumerable<T> GetAll() =>
 			_entities.ToList();
+		public IEnumerable<T> GetAll(string include) =>
+			_entities.Include(include).ToList();
+		public IEnumerable<T> GetAll(IEnumerable<string> includes)
+		{
+			IQueryable<T> entities = _entities;
+			foreach (var include in includes)
+			{
+				entities = _entities.Include(include);
+			}
+			return entities.ToList();
+		}
+		public IEnumerable<T> GetAll(int? howMany, IEnumerable<string> includes)
+		{
+			IQueryable<T> entities = _entities;
+			foreach (var include in includes)
+			{
+				entities = _entities.Include(include);
+			}
+			return entities.Take(howMany ?? 100).ToList();
+		}
 
 		public IEnumerable<T> GetAllNoTrack() =>
 			_entities.AsNoTracking().ToList();
-		public IEnumerable<T> GetAll(string include) => 
-			_entities.Include(include).ToList();
 
-		public IEnumerable<T> GetAll(int? howMany, IEnumerable<string> includes) =>
-			_entities.Take(howMany ?? 100).ToList();
 
-		public async Task<PaginatedList<T>> GetAll(MediaFIlter filter)
+		public async Task<PaginatedList<T>> GetAllPaginated(MediaFIlter filter)
 		{
 			return await PaginatedList<T>.CreateAsync(_entities, filter?.PageIndex ?? 1, 10);
 		}
 
-		public async Task<PaginatedList<T>> GetAll(MediaFIlter filter, IEnumerable<string> includes)
+		public async Task<PaginatedList<T>> GetAllPaginated(MediaFIlter filter, IEnumerable<string> includes)
 		{
 			return await PaginatedList<T>.CreateAsync(
-				includes.Aggregate(_entities.AsQueryable(),(current, include) => current.Include(include)),
+				includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include)),
 				filter?.PageIndex ?? 1, 10);
 		}
 
 		public async Task<T> GetById(int? id) =>
 			 await _entities.FindAsync(id);
+
+		public async Task<T> GetById(int? id, string include) =>
+			await _entities.Include(include).FirstOrDefaultAsync(e => e.Id == id);
+
+		public async Task<T> GetById(int? id, IEnumerable<string> includes) =>
+			await includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include))
+			.FirstOrDefaultAsync(e => e.Id == id);
 
 		public async Task<T> GetByIdNoTrack(int? id) =>
 			await _entities.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);

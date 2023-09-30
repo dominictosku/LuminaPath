@@ -31,37 +31,61 @@ namespace LuminaPath.Controllers
 			_myGameRepo = service;
 		}
 
+		[HttpGet("games")]
+		public async virtual Task<ActionResult<PaginatedResult<GamesDto>>> GetAsync([FromQuery] MediaFIlter filter)
+		{
+			string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (userId == null)
+				return Unauthorized("Please Login");
+			LuminaUser user = await _userManager.FindByIdAsync(userId);
+			PaginatedList<MyGame> entities = await _myGameRepo.GetAllPaginated(filter, user.Id);
+			List<Game> games = new List<Game>();
+			foreach (var myGame in entities)
+			{
+				games.Add(myGame.Game);
+			}
+			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(games);
+			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
+		}
+
 		[HttpPost]
 		public override async Task<ActionResult<MyGameDto>> PostAsync(MyGame viewModel)
 		{
-			if (IsGameAlreadyAdded(viewModel.GameId, viewModel.Id))
-			{
-				return BadRequest("This is game already added");
-			}
 			string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			if (userId == null)
 				return Unauthorized("Please Login");
 			LuminaUser user = await _userManager.FindByIdAsync(userId);
 			if (user == null)
 				return NotFound("User not found, please login");
-			viewModel.LuminaUser = user;
+			if (IsGameAlreadyAdded(viewModel.GameId, viewModel.Id, userId))
+			{
+				return BadRequest("This is game already added");
+			}
+			viewModel.LuminaUserId = user.Id;
 			return await base.PostAsync(viewModel);
 		}
 
 		[HttpPut("{id}")]
 		public override async Task<IActionResult> PutAsync(int id, MyGame viewModel)
 		{
-			if(IsGameAlreadyAdded(viewModel.GameId, viewModel.Id))
+			string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (userId == null)
+				return Unauthorized("Please Login");
+			LuminaUser user = await _userManager.FindByIdAsync(userId);
+			if (user == null)
+				return NotFound("User not found, please login");
+			if(IsGameAlreadyAdded(viewModel.GameId, viewModel.Id, userId))
 			{
 				return BadRequest("This is game already added");
 			}
+			viewModel.LuminaUserId = user.Id;
 			return await base.PutAsync(id, viewModel);
 		}
 
-		private bool IsGameAlreadyAdded(int id, int myId)
+		private bool IsGameAlreadyAdded(int id, int myId, string userId)
 		{
 			var entities = _myGameRepo.GetAllNoTrack();
-			return entities.Any(e => e.GameId == id && e.Id != myId);
+			return entities.Any(e => e.GameId == id && e.Id != myId && e.LuminaUserId == userId);
 		}
 	}
 }

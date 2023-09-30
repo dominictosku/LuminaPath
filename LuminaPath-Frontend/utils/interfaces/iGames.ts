@@ -1,3 +1,4 @@
+import { MyGame } from "~/utils/model/games";
 export interface IGame {
     id: number;
     name: string;
@@ -5,4 +6,5 @@ export interface IGame {
     genre: string;
     plattforms: number;
     playtime: number;
+    myGames: MyGame | null
 }

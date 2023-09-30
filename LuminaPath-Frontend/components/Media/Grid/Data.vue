@@ -15,6 +15,6 @@ const router = useIonRouter();
                 {{ game?.name }}
             </div>
         </div>
-        <FormsAddToList :game-id="game?.id" />
+        <FormsAddToList :game="game" />
     </div>
 </template>
