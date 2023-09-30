@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { s } from "@fullcalendar/core/internal-common";
 import { useGameStore } from "~/store/games"
 import { Game } from "~/utils/model/games";
 
@@ -8,20 +9,21 @@ const props = defineProps({
   game: Object as PropType<Game>,
   showDelete: Boolean
 })
+const store = useGameStore()
+const router = useIonRouter()
+const game = ref(props.game as Game)
+game.value.myGames = null
+const submitted = ref(false)
+
 async function deleteGame() {
-  await store.Api.removeMedia(game.value.id)
+  await store.Api.removeMedia(game.value.id, store.Type.Games)
   emit('exit')
   router.back()
 }
-const store = useGameStore()
-const router = useIonRouter()
-const game: any = ref(props.game)
-const submitted = ref(false)
-
 
 async function confirm() {
   try {
-    await store.Api.createMedia(game.value)
+    await store.Api.createMedia(game.value, store.Type.Games)
     await presentToast("Success!", 'primary')
     emit('exit')
   } catch (e: any) {

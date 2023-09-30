@@ -16,7 +16,7 @@ namespace Data.Repositories
 		public GameRepo(LuminaPathDbContext context): base(context) 
 		{
 		}
-		public async Task<PaginatedList<Game>> GetAll(MediaFIlter filter, string UserId)
+		public async Task<PaginatedList<Game>> GetAllPaginated(MediaFIlter filter, string UserId)
 		{
 			var games = _entities.Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
 			return await PaginatedList<Game>.CreateAsync(games, filter?.PageIndex ?? 1, 10);

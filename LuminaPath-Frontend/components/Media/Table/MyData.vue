@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import { MyGame } from '~/utils/model/games';
+import { Game, MyGame } from '~/utils/model/games';
 import Modal from '~/components/Forms/Create.vue';
+import { useGameStore } from '~/store/games';
 const props = defineProps({
-    media: Object as PropType<MyGame>
+    media: {
+        type: Object as PropType<Game>,
+        required: true
+    }
 })
-
-let myGame = props.media
-if(myGame){
-    myGame.game = null;
-}
-const modalProps = { game: myGame }
+const store = useGameStore()
+const modalProps = { game: props.media.myGames, form: "myMedia" }
 </script>
 <template>
     <tr v-if="media != undefined" @click="openModal(Modal, modalProps)">
         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
             <div>
                 <h2 class="font-medium text-gray-800 dark:text-white ">
-                    {{ media.game?.name }}
+                    {{ media.name }}
                 </h2>
                 <p class="text-sm font-normal text-gray-600 dark:text-gray-400">
-                    {{ media.rating }}
+                    {{ media.myGames?.rating }}
                 </p>
             </div>
         </td>
@@ -34,13 +34,13 @@ const modalProps = { game: myGame }
             <div class="inline px-3 py-1 text-sm font-normal
                                                 rounded-full text-emerald-500 gap-x-2 bg-emerald-100/60
                                                 dark:bg-gray-800">
-                {{ media.startDate }}
+                {{ media.myGames?.startDate }}
             </div>
         </td>
         <td class="px-4 py-4 text-sm whitespace-nowrap">
             <div>
                 <h4 class="text-gray-700 dark:text-gray-200">
-                    {{ media.timeSpend }}
+                    {{ media.myGames?.timeSpend }}
                 </h4>
                 <p class="text-gray-500 dark:text-gray-400">
                     Main + Side

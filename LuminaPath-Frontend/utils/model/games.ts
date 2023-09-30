@@ -5,27 +5,21 @@ export class Game implements IGame, IBasicInfo {
   id: number;
   name: string;
   description: string;
+  releaseDate: Date;
   genre: string;
   plattforms: number;
   playtime: number;
-  myGames: MyGame | null
+  myGames: MyGame | null;
 
-  constructor(
-    id: number,
-    name: string,
-    description: string,
-    genre: string,
-    plattforms: number,
-    playtime: number,
-    myGame?: MyGame
-  ) {
-    this.id = id;
-    this.name = name;
-    this.description = description;
-    this.genre = genre;
-    this.plattforms = plattforms;
-    this.playtime = playtime;
-    this.myGames = myGame ?? null
+  constructor(myGame?: MyGame) {
+    this.id = 0;
+    this.name = "";
+    this.description = "";
+    this.releaseDate = new Date;
+    this.genre = "";
+    this.plattforms = 0;
+    this.playtime = 0;
+    this.myGames = myGame ?? new MyGame(0);
   }
 }
 
@@ -39,30 +33,21 @@ export class MyGame implements IBasicInfo {
   gameId: number;
   game: Game | null;
 
-  constructor(
-    id: number,
-    rating: number,
-    startDate: Date,
-    endDate: Date,
-    status: number,
-    timeSpend: number,
-    gameId: number,
-    game?: Game
-  ) {
-    this.id = id;
-    this.rating = rating;
-    this.startDate = startDate;
-    this.endDate = endDate;
-    this.status = status;
-    this.timeSpend = timeSpend;
+  constructor(gameId: number) {
+    this.id = 0;
+    this.rating = 0;
+    this.startDate = new Date;
+    this.endDate = new Date;
+    this.status = 0;
+    this.timeSpend = 0;
+    this.game = null;
     this.gameId = gameId;
-    this.game = game ?? null;
   }
 }
 
 export const Plattforms = [
-    { label: 'Playstation', value: 0 },
-    { label: 'Switch', value: 1 },
-    { label: 'PC', value: 2 },
-    { label: 'XBOX', value: 3 }
-]
+  { label: "Playstation", value: 0 },
+  { label: "Switch", value: 1 },
+  { label: "PC", value: 2 },
+  { label: "XBOX", value: 3 },
+];

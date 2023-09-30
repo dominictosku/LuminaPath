@@ -2,12 +2,12 @@
 import { useGameStore } from '@/store/games';
 const store = useGameStore()
 const refresh = ref(false)
-const { data: games, pending, error } = await useAsyncData('games', () => store.Api.getMedia(), {
+const { data: games, pending, error } = await useAsyncData('games', () => store.Api.getMedia(store.Id), {
   lazy: true
 })
 const toggle = async () => {
   store.changeMode()
-  await useAsyncData(store.Id, () => store.Api.getMedia())
+  await useAsyncData(store.Id, () => store.Api.getMedia(store.Id))
   refresh.value = !refresh.value
 }
 </script>

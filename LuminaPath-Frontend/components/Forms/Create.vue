@@ -1,13 +1,23 @@
 <script lang="ts" setup>
 import { useGameStore } from '~/store/games';
-defineProps({
+import GameForm from './GameForm.vue';
+import MyGameForm from './MyGameForm.vue';
+const props = defineProps({
   game: Object,
+  form: {
+    type: String as PropType<"media" | "myMedia">,
+    required: true
+  }
 })
 
+const type = props.form ?? "media"
 const store = useGameStore()
-let newMyGame = new MyGame(0, 0, new Date(), new Date(), 0, 0, store.SelectedGameId)
-let newGame = new Game(0, "", "", "", 0, 0)
-let propGame = store.Id == "Games" ? newGame : newMyGame
+const forms = {
+  media: GameForm,
+  myMedia: MyGameForm 
+}
+
+let propGame = store.Id == "Games" ? new Game() : new MyGame(props?.game?.id ?? 0)
 </script>
 <template>
 <modal-media>
@@ -15,8 +25,8 @@ let propGame = store.Id == "Games" ? newGame : newMyGame
     Add Game
   </template>
   <template v-slot="scope">
-    <component v-if="game" :is="store.ActiveComponent.Forms" :game="game" :show-delete="true" @exit="scope.exit"/>
-    <component v-else :is="store.ActiveComponent.Forms" :game="propGame" @exit="scope.exit" />
+    <component v-if="game" :is="forms[type]" :game="game" :show-delete="true" @exit="scope.exit"/>
+    <component v-else :is="forms[type]" :game="propGame" @exit="scope.exit" />
   </template>
 </modal-media>
 </template>

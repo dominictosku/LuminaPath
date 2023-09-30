@@ -1,14 +1,14 @@
 import { BaseStore } from "~/utils/classes/baseStore";
 import { IStore } from "~/utils/interfaces/IBasicStore";
 import { IGame } from "~/utils/interfaces/iGames";
-import { MyGame } from "#imports";
-import { MediaComponent } from "~/utils/classes/mediaComponent"
+import { Game } from "#imports";
+import { MediaComponent } from "~/utils/classes/mediaComponent";
 import Games from "~/components/Forms/GameForm.vue";
 import MyGames from "~/components/Forms/MyGameForm.vue";
 import Data from "~/components/Media/Table/Data.vue";
 import MyData from "~/components/Media/Table/MyData.vue";
 
-export const useGameStore = defineStore("games", (): IStore<IGame, MyGame> => {
+export const useGameStore = defineStore("games", (): IStore<IGame> => {
   const Type = {
     Games: "Games",
     MyGames: "MyGames",
@@ -16,30 +16,29 @@ export const useGameStore = defineStore("games", (): IStore<IGame, MyGame> => {
   const {
     Id: id,
     Media,
-    MyMedia,
-    Mode,
+    NextEndpoint,
     PageIndex,
     TotalPages,
     Api,
-  } = BaseStore<IGame, MyGame>("games");
-  const SelectedGameId: Ref<number> = ref(0);
+  } = BaseStore<Game>("games");
   const GameComponents = new MediaComponent(Games, Data, MediaColumns);
 
   const MyGameComponents = new MediaComponent(MyGames, MyData, MyMediaColumns);
   const activeComponent = shallowRef(GameComponents);
 
   function changeMode(): string {
-    if (Mode.value == "Media") {
-      Mode.value = "MyMedia";
-      id.value = Type.MyGames;
-      activeComponent.value = MyGameComponents;
-      return "MyMedia";
-    } else {
-      Mode.value = "Media";
+    if (id.value == Type.MyGames) {
       id.value = Type.Games;
       activeComponent.value = GameComponents;
+      NextEndpoint.value = ""
       return "Media";
     }
+    else {
+      id.value = Type.MyGames;
+      activeComponent.value = MyGameComponents;
+      NextEndpoint.value = Type.Games
+      return "MyMedia";
+    } 
   }
 
   const Id = computed(() => {
@@ -47,17 +46,18 @@ export const useGameStore = defineStore("games", (): IStore<IGame, MyGame> => {
   });
 
   const ActiveComponent = computed(() => {
-    return activeComponent.value
-  })
+    return activeComponent.value;
+  });
 
   return {
     Id,
     Media,
-    MyMedia,
-    SelectedGameId,
     PageIndex,
+    Type,
     TotalPages,
     ActiveComponent,
+    GameComponents,
+    MyGameComponents,
     Api,
     changeMode,
   };

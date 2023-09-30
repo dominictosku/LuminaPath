@@ -1,47 +1,36 @@
 import { IApi } from "../interfaces/IApiInterface";
 import { IBasicInfo } from "../interfaces/iBasicInfo";
-export function BaseStore<T extends IBasicInfo, T2>(id: string) {
+export function BaseStore<T extends IBasicInfo>(id: string) {
   const Id : Ref<string> = ref(id)
-  const Endpoint = computed(() => {
-    return Id.value
-  })
-  const MediaList: Ref<T[] | null> = ref(null);
-  const MyMediaList: Ref<T2[] | null> = ref(null)
+  const NextEndpoint = ref("")
+  const MediaList: Ref<T[]> = ref([]);
   const PageIndex: Ref<number> = ref(1);
   const TotalPages: Ref<number> = ref(1);
-  const Mode: Ref<"Media" | "MyMedia"> = ref("Media")
   const Media = computed(() => {
     return MediaList.value;
   });
-  const MyMedia = computed(() => {
-    return MyMediaList.value;
-  });
 
 const ChangeActiveValue = (value: any) => {
-  if(Mode.value == "Media"){
     MediaList.value = value
-  }else{
-    MyMediaList.value = value
-  }
 }
 
   const Api: IApi<IBasicInfo> = {
-    getMedia: async <IBasicInfo>(mediaFilter?: MediaFilter): Promise<IBasicInfo[]> => {
-      let response = await fetchMedia<IBasicInfo>(Endpoint.value);
+    getMedia: async <IBasicInfo>(endPoint: string, mediaFilter?: MediaFilter): Promise<IBasicInfo[]> => {
+      let response = await fetchMedia<IBasicInfo>(endPoint + `/${NextEndpoint.value}`);
       if (typeof response === "object" && response != null)
         ChangeActiveValue(response);
       return response;
     },
 
-    getMediaAll: async (count?: number): Promise<T[]> => {
-      let response = await fetchMediaAll<T>(count ?? 100, Endpoint.value);
+    getMediaAll: async (endPoint: string, count?: number): Promise<T[]> => {
+      let response = await fetchMediaAll<T>(count ?? 100, endPoint);
       if (typeof response === "object" && response != null)
         ChangeActiveValue(response);
       return response;
     },
 
-    getPaginatedMedia: async (mediaFilter: MediaFilter): Promise<T[]> => {
-      let response = await fetchPaginatedMedia<T>(Endpoint.value, mediaFilter);
+    getPaginatedMedia: async (mediaFilter: MediaFilter, endPoint: string): Promise<T[]> => {
+      let response = await fetchPaginatedMedia<T>(endPoint, mediaFilter);
       if (typeof response === "object" && response != null)
         ChangeActiveValue(response.data);
       PageIndex.value = response.currentPage;
@@ -49,23 +38,23 @@ const ChangeActiveValue = (value: any) => {
       return response.data;
     },
 
-    getMediaById: async (id: number): Promise<T | undefined> => {
-      return await fetchMediaById<T>(id, Endpoint.value);
+    getMediaById: async (id: number, endPoint: string): Promise<T | undefined> => {
+      return await fetchMediaById<T>(id, endPoint);
     },
 
-    removeMedia: async (id: number) => {
-      await deleteMedia(id, Endpoint.value);
-      await Api.getMedia();
+    removeMedia: async (id: number, endPoint: string) => {
+      await deleteMedia(id, endPoint);
+      await Api.getMedia(endPoint);
       return;
     },
 
-    createMedia: async (media: IBasicInfo) => {
+    createMedia: async (media: IBasicInfo, endPoint: string) => {
       if (media.id == 0) {
-        await PostMedia(media, Endpoint.value);
+        await PostMedia(media, endPoint);
       } else {
-        await PutMedia(media, Endpoint.value);
+        await PutMedia(media, endPoint);
       }
-      await Api.getMedia();
+      await Api.getMedia(Id.value);
       return;
     },
   };
@@ -73,8 +62,7 @@ const ChangeActiveValue = (value: any) => {
   return {
     Id,
     Media,
-    MyMedia,
-    Mode,
+    NextEndpoint,
     PageIndex,
     TotalPages,
     Api,

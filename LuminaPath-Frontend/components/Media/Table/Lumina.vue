@@ -2,14 +2,9 @@
 import { useGameStore } from '~/store/games';
 
 const store = useGameStore()
-const IsMyMode: boolean = store.Id == "MyGames"
 const tableColumns: any = store.ActiveComponent.TableColumns
 const Media: any = computed(() => {
-    if (IsMyMode) {
-        return store.MyMedia
-    } else {
-        return store.Media
-    }
+    return store.Media
 })
 
 </script>

@@ -12,7 +12,7 @@ const { data: editGame } = await useAsyncData('games/' + idInt, async () => awai
 if (!editGame) {
   throw createError({ statusCode: 404, statusMessage: 'Page Not Found' })
 }
-const modalProps = { game: editGame }
+const modalProps = { game: editGame, form: "media"  }
 
 </script>
 <template>

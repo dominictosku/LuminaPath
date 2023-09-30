@@ -7,7 +7,7 @@ const ionInfinite = (ev: any) => {
 };
 
 const handleRefresh = async (event: any) => {
-  await store.Api.getMedia()
+  await store.Api.getMedia(store.Id)
   event.target.complete();
 };
 
