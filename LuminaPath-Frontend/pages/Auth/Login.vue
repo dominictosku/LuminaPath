@@ -13,7 +13,7 @@
                 </div>
 
                 <div class="mt-4 sm:mx-auto sm:w-full sm:max-w-sm">
-                    <FormsLogin />
+                    <FormsUserLogin />
                 </div>
             </div>
         </IonContent>

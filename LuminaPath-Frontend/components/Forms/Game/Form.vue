@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { s } from "@fullcalendar/core/internal-common";
 import { useGameStore } from "~/store/games"
 import { Game } from "~/utils/model/games";
 
 const emit = defineEmits(['exit'])
 
 const props = defineProps({
-  game: Object as PropType<Game>,
+  media: Object,
   showDelete: Boolean
 })
 const store = useGameStore()
 const router = useIonRouter()
-const game = ref(props.game as Game)
+const game = ref(props.media as Game)
 game.value.myGames = null
 const submitted = ref(false)
 

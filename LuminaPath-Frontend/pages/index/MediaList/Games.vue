@@ -14,12 +14,12 @@ const toggle = async () => {
 <template>
   <ion-page>
     <ion-content :fullscreen="true">
-      <MediaNavigation />
+      <MediaToolsNavigation />
       <div v-if="pending">
-        <EventsLoading />
+        <UIEventsLoading />
       </div>
       <div v-else-if="error != null || games == null">
-        <ErrorData />
+        <UIErrorData/>
       </div>
       <div class="m-4" v-else>
         <IonButton @click="toggle">Toggle</IonButton>

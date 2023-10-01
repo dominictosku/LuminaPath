@@ -14,7 +14,7 @@ const modules = [SwiperPagination, SwiperNavigation]
     <div slot="container-start"></div>
     <swiper-slide v-for="slide in 4">
         <div class="grid grid-cols-1 md:grid-cols-4">
-            <news-media v-for="item in 4" />
+            <UINewsMedia />
         </div>
     </swiper-slide>
   </swiper>

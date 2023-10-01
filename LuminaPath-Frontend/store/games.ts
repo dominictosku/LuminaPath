@@ -3,8 +3,8 @@ import { IStore } from "~/utils/interfaces/IBasicStore";
 import { IGame } from "~/utils/interfaces/iGames";
 import { Game } from "#imports";
 import { MediaComponent } from "~/utils/classes/mediaComponent";
-import Games from "~/components/Forms/GameForm.vue";
-import MyGames from "~/components/Forms/MyGameForm.vue";
+import Games from "~/components/Forms/Game/Form.vue";
+import MyGames from "~/components/Forms//Game/MyForm.vue";
 import Data from "~/components/Media/Table/Data.vue";
 import MyData from "~/components/Media/Table/MyData.vue";
 
