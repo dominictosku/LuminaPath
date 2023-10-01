@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import Modal from '~/components/Forms/Create.vue';
 import { create } from 'ionicons/icons';
-import { PropType } from 'nuxt/dist/app/compat/capi';
 import { Game } from '#imports';
 const props = defineProps({
   game: {

@@ -4,8 +4,8 @@ import { MyGame } from "~/utils/model/games";
 
 const emit = defineEmits(['exit'])
 const props = defineProps({
-  game: {
-    type: Object as PropType<MyGame>,
+  media: {
+    type: Object,
     required: true
   },
   showDelete: Boolean
@@ -18,7 +18,7 @@ async function deleteGame() {
 }
 const store = useGameStore()
 const router = useIonRouter()
-const game = ref(props.game)
+const game = ref(props.media as MyGame)
 const submitted = ref(false)
 const gamesSelect: any = []
 

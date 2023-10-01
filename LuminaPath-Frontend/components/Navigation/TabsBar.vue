@@ -31,5 +31,5 @@
 </template>
 
 <script setup lang="ts">
-import { ellipse, square, triangle } from 'ionicons/icons';
+import { square, triangle } from 'ionicons/icons';
 </script>

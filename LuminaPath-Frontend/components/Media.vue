@@ -20,19 +20,19 @@ function changeIsGrid() {
 
 <template>
   <div>
-    <MediaTabs @changebool="changeIsGrid" />
-    <MediaLuminaFilter />
+    <MediaToolsTabs @changebool="changeIsGrid" />
+    <MediaToolsFilter />
     <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
       <ion-refresher-content></ion-refresher-content>
     </ion-refresher>
     <!-- Table view -->
     <div v-if="!isGrid" id="Table" class="tabcontent">
-      <MediaTableLumina />
-      <MediaLuminaPagination />
+      <MediaTable />
+      <MediaToolsPagination />
     </div>
     <!-- Gallery view -->
     <div v-else id="Grid" class="tabcontent">
-      <MediaGridLumina />
+      <MediaGrid />
     </div>
     <ion-infinite-scroll @ionInfinite="ionInfinite">
       <ion-infinite-scroll-content></ion-infinite-scroll-content>

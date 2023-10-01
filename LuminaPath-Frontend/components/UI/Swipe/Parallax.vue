@@ -1,4 +1,5 @@
 <script setup lang="ts">
+
 const style = {
   '--swiper-navigation-color': '#fff',
   '--swiper-pagination-color': '#fff',
@@ -23,7 +24,7 @@ const containerStyle = {
     class="mySwiper">
     <div slot="container-start" class="parallax-bg" :style="containerStyle" data-swiper-parallax="-23%"></div>
     <swiper-slide v-for="slide in 3">
-      <news-activity />
+      <UINewsActivity />
     </swiper-slide>
   </swiper>
 </template>

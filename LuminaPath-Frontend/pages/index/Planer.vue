@@ -8,9 +8,9 @@ onIonViewWillEnter(() => {
 <template>
   <ion-page>
     <ion-content :fullscreen="true">
-      <EventsVWeek />
+      <UIEventsVWeek/>
       <ion-list>
-        <ion-item-sliding v-for="item in 10">
+        <ion-item-sliding v-for="item in 4">
           <ion-item-options side="start">
             <ion-item-option color="success">Completed</ion-item-option>
           </ion-item-options>
@@ -24,7 +24,7 @@ onIonViewWillEnter(() => {
           </ion-item-options>
         </ion-item-sliding>
       </ion-list>
-      <EventsVFullCalendar class="sm:p-12" />
+      <UIEventsVFullCalendar class="sm:p-12" />
     </ion-content>
   </ion-page>
 </template>
