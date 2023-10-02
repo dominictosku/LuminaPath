@@ -8,7 +8,8 @@ const props = defineProps({
     required: true
   }
 })
-const modalProps = { game: props.game.myGames, form: "myMedia" }
+
+const modalProps = { game: props.game.myGames, form: "myMedia", id: props.game.id }
 </script>
 <template>
     <div>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useGameStore } from "~/store/games"
-import { MyGame } from "~/utils/model/games";
+import { Game, MyGame } from "~/utils/model/games";
 
 const emit = defineEmits(['exit'])
 const props = defineProps({
@@ -11,23 +11,21 @@ const props = defineProps({
   showDelete: Boolean
 })
 
-async function deleteGame() {
-  await store.Api.removeMedia(game.value.id, store.Type.MyGames)
-  emit('exit')
-  router.back()
-}
+
 const store = useGameStore()
 const router = useIonRouter()
 const game = ref(props.media as MyGame)
 const submitted = ref(false)
 const gamesSelect: any = []
 
+const { data, error } = await useAsyncData(game.value.gameId.toString(), () => 
+  fetchMediaById<Game>(game.value.gameId, "games"))
 
-for (let i = 0; i < store.Media.length; i++) {
-  gamesSelect.push(
-    { label: store.Media[i].name, value: store.Media[i].id }
-  )
-}
+
+
+gamesSelect.push(
+  { label: data.value?.name, value: data.value?.id }
+)
 
 async function confirm() {
   try {
@@ -40,6 +38,11 @@ async function confirm() {
     submitted.value = true
   }
 
+}
+async function deleteGame() {
+  await store.Api.removeMedia(game.value.id, store.Type.MyGames)
+  emit('exit')
+  router.back()
 }
 </script>
 <template>

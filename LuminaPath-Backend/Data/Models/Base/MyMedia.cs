@@ -23,5 +23,7 @@ namespace Data.Models.Base
         public DateTime? EndDate { get; set; }
         public ProgressionStatus Status { get; set; }
         public int? TimeSpend { get; set; }
-    }
+		public string? LuminaUserId { get; set; }
+		public LuminaUser? LuminaUser { get; set; }
+	}
 }

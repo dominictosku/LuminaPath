@@ -8,7 +8,8 @@ const props = defineProps({
   form: {
     type: String as PropType<"media" | "myMedia">,
     required: true
-  }
+  },
+  id: Number
 })
 
 const type = props.form ?? "media"
@@ -18,7 +19,7 @@ const forms = {
   myMedia: MyGameForm
 }
 
-let propGame = store.Id == "Games" ? new Game() : new MyGame(props?.game?.id ?? 0)
+let propGame = store.Id == "Games" ? new Game() : new MyGame(props?.id ?? 0)
 </script>
 <template>
   <UIModalMedia>

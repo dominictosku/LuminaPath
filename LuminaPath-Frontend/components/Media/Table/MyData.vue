@@ -8,8 +8,8 @@ const props = defineProps({
         required: true
     }
 })
-const store = useGameStore()
-const modalProps = { game: props.media.myGames, form: "myMedia" }
+
+const modalProps = { game: props.media.myGames, form: "myMedia", id: props.media.id }
 </script>
 <template>
     <tr v-if="media != undefined" @click="openModal(Modal, modalProps)">
