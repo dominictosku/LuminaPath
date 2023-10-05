@@ -1,17 +1,13 @@
 <script setup lang="ts">
 import { useGameStore } from '~/store/games';
 const store = useGameStore()
-
-const ionInfinite = (ev: any) => {
-  setTimeout(() => ev.target.complete(), 500);
-};
+const isGrid = ref(false)
 
 const handleRefresh = async (event: any) => {
   await store.Api.getMedia(store.Id)
   event.target.complete();
 };
 
-const isGrid = ref(false)
 
 function changeIsGrid() {
   isGrid.value = !isGrid.value
@@ -34,9 +30,6 @@ function changeIsGrid() {
     <div v-else id="Grid" class="tabcontent">
       <MediaGrid />
     </div>
-    <ion-infinite-scroll @ionInfinite="ionInfinite">
-      <ion-infinite-scroll-content></ion-infinite-scroll-content>
-    </ion-infinite-scroll>
   </div>
   </template>
   

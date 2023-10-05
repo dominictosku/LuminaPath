@@ -23,7 +23,6 @@ let propGame = store.Id == "Games" ? new Game() : new MyGame(props?.id ?? 0)
 </script>
 <template>
   <UIModalMedia>
-
     <template v-slot:header>
       Add Game
     </template>

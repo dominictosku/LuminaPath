@@ -3,22 +3,20 @@ import { useGameStore } from "~/store/games"
 import { Game } from "~/utils/model/games";
 
 const emit = defineEmits(['exit'])
-
 const props = defineProps({
-  media: Object,
+  media: {
+    type: Object,
+    required: true
+  },
   showDelete: Boolean
 })
+
 const store = useGameStore()
 const router = useIonRouter()
 const game = ref(props.media as Game)
 game.value.myGames = null
 const submitted = ref(false)
 
-async function deleteGame() {
-  await store.Api.removeMedia(game.value.id, store.Type.Games)
-  emit('exit')
-  router.back()
-}
 
 async function confirm() {
   try {
@@ -29,7 +27,12 @@ async function confirm() {
     await presentToast(e, 'danger')
     submitted.value = true
   }
+}
 
+async function deleteGame() {
+  await store.Api.removeMedia(game.value.id, store.Type.Games)
+  emit('exit')
+  router.back()
 }
 </script>
 <template>

@@ -4,13 +4,13 @@
   <ion-page>
     <ion-content :fullscreen="true">
       <div class="container mx-auto">
-        <UISwipeParallax />
+        <HomeParallax />
       </div>
       <div class="container">
         <HomeBar />
       </div>
       <div class="container p-4 mx-auto">
-        <UISwipeNews />
+        <HomeNews />
       </div>
     </ion-content>
   </ion-page>

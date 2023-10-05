@@ -1,25 +1,22 @@
 <script setup lang="ts">
-import { Game, MyGame } from '~/utils/model/games';
-import Modal from '~/components/Forms/Create.vue';
-import { useGameStore } from '~/store/games';
+import { Game } from '~/utils/model/games';
 const props = defineProps({
     media: {
         type: Object as PropType<Game>,
         required: true
     }
 })
-
-const modalProps = { game: props.media.myGames, form: "myMedia", id: props.media.id }
+const router = useIonRouter();
 </script>
 <template>
-    <tr v-if="media != undefined" @click="openModal(Modal, modalProps)">
+    <tr v-if="media != undefined" @click="() => router.push(`/Details/Games/${props.media?.id}`, customAnimation)">
         <td class="px-4 py-4 text-sm font-medium whitespace-nowrap">
             <div>
                 <h2 class="font-medium text-gray-800 dark:text-white ">
                     {{ media.name }}
                 </h2>
                 <p class="text-sm font-normal text-gray-600 dark:text-gray-400">
-                    {{ media.myGames?.rating }}
+                    {{ media.description }}
                 </p>
             </div>
         </td>
@@ -34,13 +31,13 @@ const modalProps = { game: props.media.myGames, form: "myMedia", id: props.media
             <div class="inline px-3 py-1 text-sm font-normal
                                                 rounded-full text-emerald-500 gap-x-2 bg-emerald-100/60
                                                 dark:bg-gray-800">
-                {{ media.myGames?.startDate }}
+                {{ media.plattforms }}
             </div>
         </td>
         <td class="px-4 py-4 text-sm whitespace-nowrap">
             <div>
                 <h4 class="text-gray-700 dark:text-gray-200">
-                    {{ media.myGames?.timeSpend }}
+                    {{ media.playtime }}
                 </h4>
                 <p class="text-gray-500 dark:text-gray-400">
                     Main + Side
@@ -50,11 +47,11 @@ const modalProps = { game: props.media.myGames, form: "myMedia", id: props.media
         <td class="px-4 py-4 text-sm whitespace-nowrap">
             <div class="flex items-center">
                 <img class="object-cover w-6 h-6 -mx-1 border-2 border-white
-                                                rounded-full dark:border-gray-700 shrink-0"
+                            rounded-full dark:border-gray-700 shrink-0"
                     src="~/assets/icons/user-bolt.svg" alt="">
                 <p class="flex items-center justify-center
-                                             w-6 h-6 -mx-1 text-xs text-blue-600 bg-blue-100 border-2
-                                              border-white rounded-full">
+                            w-6 h-6 -mx-1 text-xs text-blue-600 bg-blue-100 border-2
+                            border-white rounded-full">
                     +4
                 </p>
             </div>

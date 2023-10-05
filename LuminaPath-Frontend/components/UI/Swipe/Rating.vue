@@ -1,43 +1,37 @@
-<template>
-    <swiper
-      :slidesPerView="4"
-      :centeredSlides="true"
-      :spaceBetween="30"
-      :grabCursor="true"
-      :pagination="{
+<script>
+import { Swiper, SwiperSlide } from 'swiper/vue';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import { Pagination } from 'swiper/modules';
+
+export default {
+  components: {
+    Swiper,
+    SwiperSlide,
+  },
+  setup() {
+    const options = {
+      slidesPerView: 4,
+      centeredSlides: true,
+      spaceBetween: 30,
+      grabCursor: true,
+      pagination:{
         clickable: true,
-      }"
-      :modules="modules"
-      class="mySwiper"
-    >
-      <swiper-slide v-for="slide in 10"> Slide {{ slide }} </swiper-slide>
-    </swiper>
-  </template>
-  <script>
-    // Import Swiper Vue.js components
-    import { Swiper, SwiperSlide } from 'swiper/vue';
-  
-    // Import Swiper styles
-    import 'swiper/css';
-  
-    import 'swiper/css/pagination';
-  
-    // import required modules
-    import { Pagination } from 'swiper/modules';
-  
-    export default {
-      components: {
-        Swiper,
-        SwiperSlide,
       },
-      setup() {
-        return {
-          modules: [Pagination],
-        };
-      },
+      modules: [Pagination]
+    }
+    return {
+      options
     };
-  </script>
-  <style scoped>
+  },
+};
+</script>
+<template>
+  <swiper v-bind="options" class="mySwiper">
+    <swiper-slide v-for="slide in 10"> Slide {{ slide }} </swiper-slide>
+  </swiper>
+</template>
+<style scoped>
 .swiper {
   width: 100%;
   height: 100%;
