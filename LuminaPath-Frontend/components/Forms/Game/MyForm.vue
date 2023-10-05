@@ -11,25 +11,18 @@ const props = defineProps({
   showDelete: Boolean
 })
 
-
 const store = useGameStore()
 const router = useIonRouter()
 const game = ref(props.media as MyGame)
 const submitted = ref(false)
-const gamesSelect: any = []
 
-const { data, error } = await useAsyncData(game.value.gameId.toString(), () => 
+const { data } = await useAsyncData(game.value.gameId.toString(), () => 
   fetchMediaById<Game>(game.value.gameId, "games"))
 
-
-
-gamesSelect.push(
-  { label: data.value?.name, value: data.value?.id }
-)
+const gamesSelect = [{ label: data.value?.name, value: data.value?.id }]
 
 async function confirm() {
   try {
-    console.log(game.value)
     await store.Api.createMedia(game.value, store.Type.MyGames)
     await presentToast("Success!", 'primary')
     emit('exit')

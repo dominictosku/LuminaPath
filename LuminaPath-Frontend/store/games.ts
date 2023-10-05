@@ -5,8 +5,8 @@ import { Game } from "#imports";
 import { MediaComponent } from "~/utils/classes/mediaComponent";
 import Games from "~/components/Forms/Game/Form.vue";
 import MyGames from "~/components/Forms//Game/MyForm.vue";
-import Data from "~/components/Media/Table/Data.vue";
-import MyData from "~/components/Media/Table/MyData.vue";
+import Data from "~/components/Media/Table/Game/Data.vue";
+import MyData from "~/components/Media/Table/Game/MyData.vue";
 
 export const useGameStore = defineStore("games", (): IStore<IGame> => {
   const Type = {

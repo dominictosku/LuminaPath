@@ -2,15 +2,21 @@
 import { useGameStore } from '~/store/games';
 
 const store = useGameStore()
-const Media: any = computed(() => store.Media)
+const ionInfinite = (ev: any) => {
+  setTimeout(() => ev.target.complete(), 500);
+};
+
 </script>
 
 <template>
     <ol role="list" class="grid md:grid-cols-4 grid-cols-2 gap-4">
-        <li v-for="media in Media" v-bind:key="media.id" style="--i: 2; --length: 10">
+        <li v-for="media in store.Media" v-bind:key="media.id" style="--i: 2; --length: 10">
             <MediaGridData :game="media" />
         </li>
     </ol>
+    <ion-infinite-scroll @ionInfinite="ionInfinite">
+      <ion-infinite-scroll-content></ion-infinite-scroll-content>
+    </ion-infinite-scroll>
 </template>
 
 <style scoped>
