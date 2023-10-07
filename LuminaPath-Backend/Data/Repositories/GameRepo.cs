@@ -26,5 +26,15 @@ namespace Data.Repositories
 			}
 			return await PaginatedList<Game>.CreateAsync(games, mediaFilter?.PageIndex ?? 1, 10);
 		}
+
+		public async Task<IEnumerable<Game>> GetAll(int? count, string UserId, Expression<Func<Game, bool>> filter = null)
+		{
+			IQueryable<Game> entities = _entities.Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
+			if (filter != null)
+			{
+				entities = entities.Where(filter);
+			}
+			return await entities.Take(count ?? 100).ToListAsync();
+		}
 	}
 }

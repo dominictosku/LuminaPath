@@ -16,7 +16,7 @@ const ionInfinite = async (ev: any) => {
 
 <template>
     <ol role="list" class="grid md:grid-cols-4 grid-cols-2 gap-4">
-        <li v-for="media in store.Media" v-bind:key="media.id" style="--i: 2; --length: 10">
+        <li v-for="media in store.Media" :key="media.id" style="--i: 2; --length: 10">
             <MediaGridData :game="media" />
         </li>
     </ol>
