@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,10 +17,14 @@ namespace Data.Repositories
 		public GameRepo(LuminaPathDbContext context): base(context) 
 		{
 		}
-		public async Task<PaginatedList<Game>> GetAllPaginated(MediaFIlter filter, string UserId)
+		public async Task<PaginatedList<Game>> GetAllPaginated(MediaFIlter mediaFilter, string UserId, Expression<Func<Game, bool>> filter = null)
 		{
-			var games = _entities.Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
-			return await PaginatedList<Game>.CreateAsync(games, filter?.PageIndex ?? 1, 10);
+			IQueryable<Game> games = _entities.Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
+			if(filter != null)
+			{
+				games = games.Where(filter);
+			}
+			return await PaginatedList<Game>.CreateAsync(games, mediaFilter?.PageIndex ?? 1, 10);
 		}
 	}
 }

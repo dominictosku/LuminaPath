@@ -1,5 +1,6 @@
 import { IApi } from "../interfaces/IApiInterface";
 import { IBasicInfo } from "../interfaces/iBasicInfo";
+import { PaginateResult } from "./paginatedResult";
 export function BaseStore<T extends IBasicInfo>(id: string) {
   const Id : Ref<string> = ref(id)
   const NextEndpoint = ref("")
@@ -15,10 +16,18 @@ const ChangeActiveValue = (value: any) => {
 }
 
   const Api: IApi<IBasicInfo> = {
-    getMedia: async <IBasicInfo>(endPoint: string, mediaFilter?: MediaFilter): Promise<IBasicInfo[]> => {
-      let response = await fetchMedia<IBasicInfo>(endPoint + `/${NextEndpoint.value}`);
+    getMedia: async (
+      endPoint: string,
+      mediaFilter?: MediaFilter
+    ): Promise<PaginateResult<IBasicInfo>> => {
+      let response = await fetchPaginatedMedia<IBasicInfo>(
+        endPoint + `/${NextEndpoint.value}`,
+        mediaFilter
+      );
       if (typeof response === "object" && response != null)
-        ChangeActiveValue(response);
+        ChangeActiveValue(response.data);
+      PageIndex.value = response.currentPage;
+      TotalPages.value = response.pages;
       return response;
     },
 
@@ -27,15 +36,6 @@ const ChangeActiveValue = (value: any) => {
       if (typeof response === "object" && response != null)
         ChangeActiveValue(response);
       return response;
-    },
-
-    getPaginatedMedia: async (mediaFilter: MediaFilter, endPoint: string): Promise<T[]> => {
-      let response = await fetchPaginatedMedia<T>(endPoint, mediaFilter);
-      if (typeof response === "object" && response != null)
-        ChangeActiveValue(response.data);
-      PageIndex.value = response.currentPage;
-      TotalPages.value = response.pages;
-      return response.data;
     },
 
     getMediaById: async (id: number, endPoint: string): Promise<T | undefined> => {

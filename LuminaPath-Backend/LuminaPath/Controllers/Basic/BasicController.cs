@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
 using Data.Classes;
 using Data.Interfaces;
+using Data.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace LuminaPath.Controllers.Basic
 {
@@ -23,17 +26,17 @@ namespace LuminaPath.Controllers.Basic
 		}
 
 		[HttpGet]
-		public async virtual Task<PaginatedResult<T2>> Get([FromQuery] MediaFIlter filter)
+		public async virtual Task<PaginatedResult<T2>> Get([FromQuery] MediaFIlter mediaFilter)
 		{
-			PaginatedList<T> entities = await _service.GetAllPaginated(filter, _includes);
+			PaginatedList<T> entities = await _service.GetAllPaginated(mediaFilter, includes: _includes);
 			var entitiesDto = Mapper.Map<IEnumerable<T>, IEnumerable<T2>>(entities);
 			return new PaginatedResult<T2>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
 
-		[HttpGet("All/{howMany}")]
-		public virtual IEnumerable<T2> GetAll(int? howMany)
+		[HttpGet("All/{count}")]
+		public virtual async Task<IEnumerable<T2>> GetAll(int? count)
 		{
-			var entities = _service.GetAll(howMany, _includes);
+			var entities = await _service.GetAll(count, _includes);
 			var entitiesDto = Mapper.Map<IEnumerable<T>, IEnumerable<T2>>(entities);
 			return entitiesDto;
 		}
@@ -44,7 +47,7 @@ namespace LuminaPath.Controllers.Basic
 			if (id == null)
 				return NotFound();
 			var entity = await _service.GetById(id, _includes);
-			if(entity == null)
+			if (entity == null)
 				return NotFound();
 			return Ok(entity);
 		}
@@ -77,7 +80,7 @@ namespace LuminaPath.Controllers.Basic
 			{
 				return NotFound();
 			}
-			
+
 			_service.Update(viewModel);
 
 			try
@@ -117,9 +120,19 @@ namespace LuminaPath.Controllers.Basic
 			return new JsonResult("Ok");
 		}
 
+		protected async Task<(LuminaUser user, string UserId)> GetUserAndUserIdAsync(UserManager<LuminaUser> userManager)
+		{
+			string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (userId == null)
+				return (null, null);
+
+			LuminaUser user = await userManager.FindByIdAsync(userId);
+			return (user, userId);
+		}
+
 		protected bool MyMediaExists(int id)
 		{
-			var entities = _service.GetAll();
+			var entities = _service.GetAll().Result;
 			return entities.Any(e => e.Id == id);
 		}
 	}
