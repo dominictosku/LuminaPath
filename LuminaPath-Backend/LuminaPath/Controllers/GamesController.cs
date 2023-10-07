@@ -5,7 +5,7 @@ using Data.Interfaces;
 using Data.Models;
 using Data.Models.Dto;
 using Data.Repositories;
-using LuminaPath.Controllers.Basic;
+using LuminaPath.Controllers.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -13,7 +13,7 @@ using System.Security.Claims;
 
 namespace LuminaPath.Controllers
 {
-	public class GamesController : BasicController<Game, GamesDto>
+	public class GamesController : MediaController<Game, GamesDto>
 	{
 		private readonly ILogger<GamesController> _logger;
 		private readonly GameRepo _gameService;
@@ -41,28 +41,6 @@ namespace LuminaPath.Controllers
 			}
 			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
-		}
-
-		[HttpGet("All/{count}")]
-		[AllowAnonymous]
-		public override async Task<IEnumerable<GamesDto>> GetAll(int? count)
-		{
-			var entities = await _gameService.GetAll(count, _includes);
-			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
-			return entitiesDto;
-		}
-
-		[HttpGet("{id}")]
-		[AllowAnonymous]
-		public override async Task<ActionResult<GamesDto>> GetById(int? id)
-		{
-			if (id == null)
-				return NotFound();
-			var entity = await _gameService.GetById(id, _includes);
-			var entitiesDto = Mapper.Map<Game, GamesDto>(entity);
-			if (entity == null)
-				return NotFound();
-			return Ok(entitiesDto);
 		}
 	}
 }

@@ -3,7 +3,7 @@ using Data.Interfaces;
 using Data.Models;
 using Data.Models.Dto;
 using Data.Models.Quests;
-using LuminaPath.Controllers.Basic;
+using LuminaPath.Controllers.Base.Generic;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -11,7 +11,7 @@ using System.Security.Claims;
 namespace LuminaPath.Controllers
 {
 
-	public class QuestsController : BasicController<GamesQuest, GamesQuestDto>
+	public class QuestsController : GenericController<GamesQuest, GamesQuestDto>
 	{
 		private readonly UserManager<LuminaUser> _userManager;
 		private readonly ILogger<GamesController> _logger;
