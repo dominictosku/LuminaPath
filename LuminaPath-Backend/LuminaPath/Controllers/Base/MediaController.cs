@@ -15,13 +15,6 @@ namespace LuminaPath.Controllers.Base
 			Mapper = mapper;
 		}
 
-		[HttpGet("All/{count}")]
-		[AllowAnonymous]
-		public override async Task<IEnumerable<TEntityDto>> GetAll(int? count)
-		{
-			return await base.GetAll(count);
-		}
-
 		[HttpGet("{id}")]
 		[AllowAnonymous]
 		public override async Task<ActionResult<TEntityDto>> GetById(int? id)
