@@ -2,8 +2,14 @@
 import { useGameStore } from '~/store/games';
 
 const store = useGameStore()
-const ionInfinite = (ev: any) => {
-  setTimeout(() => ev.target.complete(), 500);
+const countMedia = ref(50)
+await useAsyncData(`${store.Id}${countMedia.value}`, () => store.Api.getMediaAll(store.Id, countMedia.value))
+const ionInfinite = async (ev: any) => {
+    countMedia.value += 50;
+    await store.Api.getMediaAll(store.Id, countMedia.value)
+    setTimeout(() => {
+        ev.target.complete();
+    }, 500);
 };
 
 </script>
@@ -15,7 +21,7 @@ const ionInfinite = (ev: any) => {
         </li>
     </ol>
     <ion-infinite-scroll @ionInfinite="ionInfinite">
-      <ion-infinite-scroll-content></ion-infinite-scroll-content>
+        <ion-infinite-scroll-content></ion-infinite-scroll-content>
     </ion-infinite-scroll>
 </template>
 

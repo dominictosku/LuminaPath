@@ -4,8 +4,8 @@ enum StatusOptions {
   Open,
 }
 
-class MediaFilter {
-  SearchString?: string;
+export class MediaFilter {
+  SearchString: string;
   PageIndex: number;
   Status: StatusOptions;
 

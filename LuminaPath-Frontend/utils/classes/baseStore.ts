@@ -1,5 +1,6 @@
 import { IApi } from "../interfaces/IApiInterface";
 import { IBasicInfo } from "../interfaces/iBasicInfo";
+import { MediaFilter } from "./mediaFilter";
 import { PaginateResult } from "./paginatedResult";
 export function BaseStore<T extends IBasicInfo>(id: string) {
   const Id : Ref<string> = ref(id)
