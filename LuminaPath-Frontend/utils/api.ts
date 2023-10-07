@@ -34,7 +34,7 @@ const apiCall = async <T>(endpoint: string, fetchConfig: any) => {
 
 export async function fetchPaginatedMedia<T>(
   prefix: string,
-  mediaFilter: MediaFilter
+  mediaFilter?: MediaFilter
 ): Promise<PaginateResult<T>> {
   const url = `/${prefix}`;
   const config = fetchConfig<T>('GET', mediaFilter)
@@ -42,21 +42,11 @@ export async function fetchPaginatedMedia<T>(
   return result;
 }
 
-export async function fetchMedia<T>(
-  prefix: string,
-  mediaFilter?: MediaFilter
-): Promise<Array<T>> {
-  const url = `/${prefix}`;
-  const config = fetchConfig<T>('GET', mediaFilter)
-  const result = await apiCall<PaginateResult<T>>(url, config);
-  return result.data;
-}
-
 export async function fetchMediaAll<T>(
-  howMany: number,
+  count: number,
   prefix: string
 ): Promise<Array<T>> {
-  const url = `/${prefix}/all/${howMany}`;
+  const url = `/${prefix}/all/${count}`;
   const config = fetchConfig<T>('GET')
   const result = await apiCall<Array<T>>(url, config);
   return result;

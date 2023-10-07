@@ -32,12 +32,11 @@ namespace LuminaPath.Controllers
 		}
 
 		[HttpGet("games")]
-		public async virtual Task<ActionResult<PaginatedResult<GamesDto>>> GetAsync([FromQuery] MediaFIlter filter)
+		public async Task<ActionResult<PaginatedResult<GamesDto>>> GetAsync([FromQuery] MediaFIlter filter)
 		{
-			string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-			if (userId == null)
-				return Unauthorized("Please Login");
-			LuminaUser user = await _userManager.FindByIdAsync(userId);
+			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
+			if (user == null)
+				return NotFound("User not found, please login");
 			PaginatedList<MyGame> entities = await _myGameRepo.GetAllPaginated(filter, user.Id);
 			List<Game> games = new List<Game>();
 			foreach (var myGame in entities)
@@ -48,13 +47,26 @@ namespace LuminaPath.Controllers
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
 
+		[HttpGet("games/All/{count}")]
+		public async Task<ActionResult<IEnumerable<GamesDto>>> GetAllAsync(int? count)
+		{
+			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
+			if (user == null)
+				return NotFound("User not found, please login");
+			List<MyGame> entities = await _myGameRepo.GetAll(count ?? 100, user.Id);
+			List<Game> games = new List<Game>();
+			foreach (var myGame in entities)
+			{
+				games.Add(myGame.Game);
+			}
+			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(games);
+			return Ok(entitiesDto);
+		}
+
 		[HttpPost]
 		public override async Task<ActionResult<MyGameDto>> PostAsync(MyGame viewModel)
 		{
-			string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-			if (userId == null)
-				return Unauthorized("Please Login");
-			LuminaUser user = await _userManager.FindByIdAsync(userId);
+			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
 			if (user == null)
 				return NotFound("User not found, please login");
 			if (IsGameAlreadyAdded(viewModel.GameId, viewModel.Id, userId))
@@ -68,10 +80,7 @@ namespace LuminaPath.Controllers
 		[HttpPut("{id}")]
 		public override async Task<IActionResult> PutAsync(int id, MyGame viewModel)
 		{
-			string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-			if (userId == null)
-				return Unauthorized("Please Login");
-			LuminaUser user = await _userManager.FindByIdAsync(userId);
+			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
 			if (user == null)
 				return NotFound("User not found, please login");
 			if(IsGameAlreadyAdded(viewModel.GameId, viewModel.Id, userId))

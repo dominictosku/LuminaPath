@@ -1,78 +1,103 @@
-﻿using Data;
-using Data.Classes;
+﻿using Data.Classes;
 using Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
+using System.Linq.Expressions;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Data.Services
 {
-	public class GenericRepo<T> : IGenericRepo<T> where T : class, IBasicInfo
+	public class GenericRepo<TEntity> : IGenericRepo<TEntity> where TEntity : class, IBasicInfo
 	{
 		private protected readonly LuminaPathDbContext _context;
-		private protected readonly DbSet<T> _entities;
+		private protected readonly DbSet<TEntity> _entities;
 
 		public GenericRepo(LuminaPathDbContext context)
 		{
 			_context = context;
-			_entities = context.Set<T>();
+			_entities = context.Set<TEntity>();
 		}
 
-		public IEnumerable<T> GetAll() =>
-			_entities.ToList();
-		public IEnumerable<T> GetAll(string include) =>
-			_entities.Include(include).ToList();
-		public IEnumerable<T> GetAll(IEnumerable<string> includes)
+		public async Task<IEnumerable<TEntity>> GetAll(
+			Expression<Func<TEntity, bool>> filter = null,
+			Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
+			string includeProperties = "")
 		{
-			IQueryable<T> entities = _entities;
+			IQueryable<TEntity> query = _entities;
+
+			if (filter != null)
+			{
+				query = query.Where(filter);
+			}
+
+			foreach (var includeProperty in includeProperties.Split
+				(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+			{
+				query = query.Include(includeProperty);
+			}
+
+			if (orderBy != null)
+			{
+				return await orderBy(query).ToListAsync();
+			}
+			else
+			{
+				return query.ToList();
+			}
+		}
+
+		public async Task<IEnumerable<TEntity>> GetAll(int? count, IEnumerable<string> includes, Expression<Func<TEntity, bool>> filter = null)
+		{
+			IQueryable<TEntity> entities = _entities;
+			if (filter != null)
+			{
+				entities = entities.Where(filter);
+			}
 			foreach (var include in includes)
 			{
 				entities = _entities.Include(include);
 			}
-			return entities.ToList();
-		}
-		public IEnumerable<T> GetAll(int? howMany, IEnumerable<string> includes)
-		{
-			IQueryable<T> entities = _entities;
-			foreach (var include in includes)
-			{
-				entities = _entities.Include(include);
-			}
-			return entities.Take(howMany ?? 100).ToList();
+			return await entities.Take(count ?? 100).ToListAsync();
 		}
 
-		public IEnumerable<T> GetAllNoTrack() =>
+		public IEnumerable<TEntity> GetAllNoTrack() =>
 			_entities.AsNoTracking().ToList();
 
-
-		public async Task<PaginatedList<T>> GetAllPaginated(MediaFIlter filter)
+		public async Task<PaginatedList<TEntity>> GetAllPaginated(
+			MediaFIlter mediaFilter,
+			Expression<Func<TEntity, bool>> filter = null,
+			IEnumerable<string> includes = null)
 		{
-			return await PaginatedList<T>.CreateAsync(_entities, filter?.PageIndex ?? 1, 10);
+			int pageIndex = mediaFilter.PageIndex;
+			IQueryable<TEntity> entities = _entities;
+			if (filter != null)
+			{
+				entities = entities.Where(filter);
+			}
+			if (includes != null)
+			{
+				entities = includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include));
+			}
+			return await PaginatedList<TEntity>.CreateAsync(entities, pageIndex, 10);
 		}
 
-		public async Task<PaginatedList<T>> GetAllPaginated(MediaFIlter filter, IEnumerable<string> includes)
+		public async Task<TEntity> GetById(int? id, IEnumerable<string> includes = null)
 		{
-			return await PaginatedList<T>.CreateAsync(
-				includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include)),
-				filter?.PageIndex ?? 1, 10);
+			IQueryable<TEntity> entities = _entities;
+			if (includes != null)
+			{
+				entities = includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include));
+			}
+			return await entities.FirstOrDefaultAsync(e => e.Id == id) ?? throw new Exception("id not found");
 		}
 
-		public async Task<T> GetById(int? id) =>
-			 await _entities.FindAsync(id);
+		public async Task<TEntity> GetByIdNoTrack(int? id) =>
+			await _entities.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id) ?? throw new Exception("id not found");
 
-		public async Task<T> GetById(int? id, string include) =>
-			await _entities.Include(include).FirstOrDefaultAsync(e => e.Id == id);
-
-		public async Task<T> GetById(int? id, IEnumerable<string> includes) =>
-			await includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include))
-			.FirstOrDefaultAsync(e => e.Id == id);
-
-		public async Task<T> GetByIdNoTrack(int? id) =>
-			await _entities.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
-
-		public async Task Create(T entity) =>
+		#region CRUD
+		public async Task Create(TEntity entity) =>
 			await _context.AddAsync(entity);
 
-		public void Update(T entity)
+		public void Update(TEntity entity)
 		{
 			_entities.Attach(entity);
 			_context.Entry(entity).State = EntityState.Modified;
@@ -80,12 +105,12 @@ namespace Data.Services
 
 		public async Task Delete(int? id)
 		{
-			T existing = await _entities.FindAsync(id);
+			TEntity existing = await _entities.FindAsync(id) ?? throw new Exception("id not found"); ;
 			_entities.Remove(existing);
 		}
 
 		public async Task Save() =>
 		  await _context.SaveChangesAsync();
-
 	}
+	#endregion
 }

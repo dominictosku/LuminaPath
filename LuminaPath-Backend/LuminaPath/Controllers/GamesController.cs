@@ -43,11 +43,11 @@ namespace LuminaPath.Controllers
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
 
-		[HttpGet("All/{howMany}")]
+		[HttpGet("All/{count}")]
 		[AllowAnonymous]
-		public override IEnumerable<GamesDto> GetAll(int? howMany)
+		public override async Task<IEnumerable<GamesDto>> GetAll(int? count)
 		{
-			var entities = _gameService.GetAll(howMany, _includes);
+			var entities = await _gameService.GetAll(count, _includes);
 			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
 			return entitiesDto;
 		}
