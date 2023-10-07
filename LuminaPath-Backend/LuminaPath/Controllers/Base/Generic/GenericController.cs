@@ -2,65 +2,67 @@
 using Data.Classes;
 using Data.Interfaces;
 using Data.Models;
+using Data.Models.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
-namespace LuminaPath.Controllers.Basic
+namespace LuminaPath.Controllers.Base.Generic
 {
 	[ApiController]
 	[Authorize(AuthenticationSchemes = "Bearer")]
 	[Route("api/[controller]")]
 	[Authorize]
-	public abstract class BasicController<T, T2> : ControllerBase where T : class, IBasicInfo
+	public abstract class GenericController<TEntity, TEntityDto> : ControllerBase where TEntity : class, IBasicInfo
 	{
-		protected readonly IGenericRepo<T> _service;
+		protected readonly IGenericRepo<TEntity> _service;
 		protected IEnumerable<string> _includes { get; set; } = new List<string>();
 		public IMapper Mapper;
-		public BasicController(IGenericRepo<T> service, IMapper mapper)
+		public GenericController(IGenericRepo<TEntity> service, IMapper mapper)
 		{
 			_service = service;
 			Mapper = mapper;
 		}
 
 		[HttpGet]
-		public async virtual Task<PaginatedResult<T2>> Get([FromQuery] MediaFIlter mediaFilter)
+		public async virtual Task<PaginatedResult<TEntityDto>> Get([FromQuery] MediaFIlter mediaFilter)
 		{
-			PaginatedList<T> entities = await _service.GetAllPaginated(mediaFilter, includes: _includes);
-			var entitiesDto = Mapper.Map<IEnumerable<T>, IEnumerable<T2>>(entities);
-			return new PaginatedResult<T2>(entitiesDto, entities.PageIndex, entities.TotalPages);
+			PaginatedList<TEntity> entities = await _service.GetAllPaginated(mediaFilter, includes: _includes);
+			var entitiesDto = Mapper.Map<IEnumerable<TEntity>, IEnumerable<TEntityDto>>(entities);
+			return new PaginatedResult<TEntityDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
 
 		[HttpGet("All/{count}")]
-		public virtual async Task<IEnumerable<T2>> GetAll(int? count)
+		public virtual async Task<IEnumerable<TEntityDto>> GetAll(int? count)
 		{
 			var entities = await _service.GetAll(count, _includes);
-			var entitiesDto = Mapper.Map<IEnumerable<T>, IEnumerable<T2>>(entities);
+			var entitiesDto = Mapper.Map<IEnumerable<TEntity>, IEnumerable<TEntityDto>>(entities);
 			return entitiesDto;
 		}
 
 		[HttpGet("{id}")]
-		public async virtual Task<ActionResult<T2>> GetById(int? id)
+		public async virtual Task<ActionResult<TEntityDto>> GetById(int? id)
 		{
 			if (id == null)
 				return NotFound();
 			var entity = await _service.GetById(id, _includes);
 			if (entity == null)
 				return NotFound();
-			return Ok(entity);
+			var entitiesDto = Mapper.Map<TEntity, TEntityDto>(entity);
+			return Ok(entitiesDto);
 		}
 
 		[HttpPost]
-		public virtual async Task<ActionResult<T2>> PostAsync(T viewModel)
+		public virtual async Task<ActionResult<TEntityDto>> PostAsync(TEntity viewModel)
 		{
 			if (!ModelState.IsValid)
 			{
 				return BadRequest();
 			}
 			var entity = viewModel;
-			var entityDto = Mapper.Map<T2>(viewModel);
+			var entityDto = Mapper.Map<TEntityDto>(viewModel);
 			await _service.Create(entity);
 			await _service.Save();
 
@@ -68,7 +70,7 @@ namespace LuminaPath.Controllers.Basic
 		}
 
 		[HttpPut("{id}")]
-		public virtual async Task<IActionResult> PutAsync(int id, T viewModel)
+		public virtual async Task<IActionResult> PutAsync(int id, TEntity viewModel)
 		{
 			if (id != viewModel.Id)
 			{
