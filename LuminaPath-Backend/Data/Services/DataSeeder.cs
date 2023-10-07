@@ -1,4 +1,5 @@
-﻿using Data.Models;
+﻿using Bogus;
+using Data.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -28,17 +29,20 @@ namespace Data.Services
 				return;
 			}
 			List<Game> games = new List<Game>();
-			games.Add(
-				new Game()
-				{
-					Name = "Apex",
-					Description = "Battle Royale",
-					Genre = "Shooter",
-					ReleaseDate = new DateTime(2017, 07, 28),
-					Plattforms = Plattforms.Playstation,
-					Playtime = 100
-				}
-			);
+			for (int i = 0; i < 100; i++)
+			{
+				games.Add(
+					new Faker<Game>()
+					.RuleFor(o => o.Name, f => f.Commerce.ProductName())
+					.RuleFor(o => o.Description, f => f.Lorem.Text())
+					.RuleFor(o => o.Genre, f => f.Lorem.Word())
+					.RuleFor(o => o.ReleaseDate, f => f.Date.Future())
+					.RuleFor(o => o.Plattforms, f => f.Random.Enum<Plattforms>())
+					.RuleFor(o => o.Playtime, f => f.Random.Byte())
+					.Generate()
+				);
+
+			}
 			await context.AddRangeAsync(games);
 			await context.SaveChangesAsync();
 		}
