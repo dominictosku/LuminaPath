@@ -3,9 +3,6 @@ import { useGameStore } from '~/store/games';
 
 const store = useGameStore()
 const tableColumns: any = store.ActiveComponent.TableColumns
-const Media: any = computed(() => {
-    return store.Media
-})
 
 </script>
 <template>
@@ -30,8 +27,8 @@ const Media: any = computed(() => {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:divide-gray-700 dark:bg-gray-900">
-                                <component :is="store.ActiveComponent.TableData" v-if="Media && Media.length > 0"
-                                    v-for="media in Media" :media="media" />
+                                <component :is="store.ActiveComponent.TableData" v-if="store.Media.length > 0"
+                                    v-for="media in store.Media" :media="media" />
                                 <MediaTableNoData v-else />
                             </tbody>
                         </table>

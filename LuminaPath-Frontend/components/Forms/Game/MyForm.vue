@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { PropType } from "nuxt/dist/app/compat/capi";
 import { useGameStore } from "~/store/games"
 import { Game, MyGame } from "~/utils/model/games";
 
 const emit = defineEmits(['exit'])
 const props = defineProps({
   media: {
-    type: Object,
+    type: Object as PropType<MyGame>,
     required: true
   },
   showDelete: Boolean
@@ -13,11 +14,11 @@ const props = defineProps({
 
 const store = useGameStore()
 const router = useIonRouter()
-const game = ref(props.media as MyGame)
+const game = ref(props.media)
 const submitted = ref(false)
 
-const { data } = await useAsyncData(game.value.gameId.toString(), () => 
-  fetchMediaById<Game>(game.value.gameId, "games"))
+const { data } = await useAsyncData(props.media.gameId.toString(), () => 
+  fetchMediaById<Game>(props.media.gameId, "games"))
 
 const gamesSelect = [{ label: data.value?.name, value: data.value?.id }]
 
