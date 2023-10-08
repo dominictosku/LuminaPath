@@ -22,6 +22,7 @@ function changeIsGrid() {
     </ion-refresher>
     <!-- Table view -->
     <div v-if="!isGrid" id="Table" class="tabcontent">
+      <MediaToolsPagination />
       <MediaTable />
       <MediaToolsPagination />
     </div>
