@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useGameStore } from '~/store/games';
 const store = useGameStore()
-const isGrid = ref(false)
+const isGrid = ref(true)
 
 const handleRefresh = async (event: any) => {
   await store.Api.getMedia(store.Id)
@@ -16,8 +16,7 @@ function changeIsGrid() {
 
 <template>
   <div>
-    <MediaToolsTabs @changebool="changeIsGrid" />
-    <MediaToolsFilter />
+    <MediaToolsFilter @changebool="changeIsGrid" />
     <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
       <ion-refresher-content></ion-refresher-content>
     </ion-refresher>
