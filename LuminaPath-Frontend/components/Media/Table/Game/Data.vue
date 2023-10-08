@@ -15,7 +15,7 @@ const router = useIonRouter();
                 <h2 class="font-medium text-gray-800 dark:text-white ">
                     {{ media.name }}
                 </h2>
-                <p class="text-sm font-normal text-gray-600 dark:text-gray-400">
+                <p class="w-40 text-sm truncate font-normal text-gray-600 dark:text-gray-400">
                     {{ media.description }}
                 </p>
             </div>
