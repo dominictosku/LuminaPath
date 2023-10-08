@@ -5,6 +5,12 @@ import { PaginateResult } from "./paginatedResult";
 export function BaseStore<T extends IBasicInfo>(id: string) {
   const Id : Ref<string> = ref(id)
   const NextEndpoint = ref("")
+  const AddEnpoint = computed(() => {
+    if(NextEndpoint.value == ""){
+      return "";
+    }
+    return `/${NextEndpoint.value}`
+  })
   const MediaList: Ref<T[]> = ref([]);
   const PageIndex: Ref<number> = ref(1);
   const TotalPages: Ref<number> = ref(1);
@@ -22,7 +28,7 @@ const ChangeActiveValue = (value: any) => {
       mediaFilter?: MediaFilter
     ): Promise<PaginateResult<IBasicInfo>> => {
       let response = await fetchPaginatedMedia<IBasicInfo>(
-        endPoint + `/${NextEndpoint.value}`,
+        endPoint + AddEnpoint.value,
         mediaFilter
       );
       if (typeof response === "object" && response != null)
@@ -33,7 +39,7 @@ const ChangeActiveValue = (value: any) => {
     },
 
     getMediaAll: async (endPoint: string, count?: number): Promise<T[]> => {
-      let response = await fetchMediaAll<T>(count ?? 100, endPoint);
+      let response = await fetchMediaAll<T>(count ?? 100, endPoint + AddEnpoint.value);
       if (typeof response === "object" && response != null)
         ChangeActiveValue(response);
       return response;
