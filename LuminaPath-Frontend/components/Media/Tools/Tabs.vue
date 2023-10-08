@@ -1,5 +1,5 @@
 <script setup lang="ts">
-
+import { gridOutline, listOutline } from 'ionicons/icons';
 function SwitchView(evt: any) {
     const tablinks: any = document.getElementsByClassName("tablinks");
 
@@ -13,8 +13,12 @@ function SwitchView(evt: any) {
 <template>
 <div class="flex">
 	<div class="tab">
-		<button id="defaultOpen" class="tablinks active" @click="SwitchView($event),$emit('changebool')">Table</button>
-		<button class="tablinks" @click="SwitchView($event),$emit('changebool')">Grid</button>
+        <button id="defaultOpen" class="tablinks active" @click="SwitchView($event), $emit('changebool')">
+            <ion-icon :icon="gridOutline"></ion-icon>
+        </button>
+		<button class="tablinks" @click="SwitchView($event), $emit('changebool')">
+            <ion-icon :icon="listOutline"></ion-icon>
+        </button>
 	</div>
 </div>
 </template>
@@ -32,7 +36,7 @@ function SwitchView(evt: any) {
         border: none;
         outline: none;
         cursor: pointer;
-        padding: 0.5em 0.5em;
+        padding: 1em 1em;
         transition: 0.3s;
         font-size: 1rem;
     }
