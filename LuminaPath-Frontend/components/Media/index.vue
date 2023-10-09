@@ -16,12 +16,14 @@ function changeIsGrid() {
 
 <template>
   <div>
-    <MediaToolsFilter @changebool="changeIsGrid" />
-    <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
-      <ion-refresher-content></ion-refresher-content>
-    </ion-refresher>
+    <div class="mx-4">
+      <MediaToolsFilter @changebool="changeIsGrid" />
+      <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
+        <ion-refresher-content></ion-refresher-content>
+      </ion-refresher>
+    </div>
     <!-- Table view -->
-    <div v-if="!isGrid" id="Table" class="tabcontent">
+    <div v-if="!isGrid" id="Table" class="tabcontent m-4">
       <MediaToolsPagination />
       <MediaTable />
       <MediaToolsPagination />
