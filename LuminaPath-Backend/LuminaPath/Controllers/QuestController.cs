@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using Data.Interfaces;
 using Data.Models;
-using Data.Models.Dto;
+using Data.Models.Dto.Quests;
 using Data.Models.Quests;
 using LuminaPath.Controllers.Base.Generic;
 using Microsoft.AspNetCore.Identity;
@@ -11,7 +11,7 @@ using System.Security.Claims;
 namespace LuminaPath.Controllers
 {
 
-	public class QuestsController : GenericController<GamesQuest, GamesQuestDto>
+    public class QuestsController : GenericController<GamesQuest, GamesQuestDto>
 	{
 		private readonly UserManager<LuminaUser> _userManager;
 		private readonly ILogger<GamesController> _logger;

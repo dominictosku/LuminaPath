@@ -1,5 +1,5 @@
-﻿using Data.Models;
-using Data.Models.Dto;
+﻿using Data.Models.Dto;
+using Data.Models.Gaming;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

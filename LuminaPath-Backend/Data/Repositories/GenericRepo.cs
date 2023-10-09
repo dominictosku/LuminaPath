@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
-namespace Data.Services
+namespace Data.Repositories
 {
 	public class GenericRepo<TEntity> : IGenericRepo<TEntity> where TEntity : class, IBasicInfo
 	{

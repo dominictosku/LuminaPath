@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Data.Models.Dto
+namespace Data.Models.Dto.Quests
 {
-	public class GamesQuestDto : Media
-	{
-	}
+    public class GamesQuestDto : Media
+    {
+    }
 }

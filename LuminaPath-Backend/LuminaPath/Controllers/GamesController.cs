@@ -2,8 +2,8 @@
 using Data;
 using Data.Classes;
 using Data.Interfaces;
-using Data.Models;
-using Data.Models.Dto;
+using Data.Models.Dto.Gaming;
+using Data.Models.Gaming;
 using Data.Repositories;
 using LuminaPath.Controllers.Base;
 using Microsoft.AspNetCore.Authorization;

@@ -8,9 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Data.Models
+namespace Data.Models.Gaming
 {
-    public partial class MyGame : MyMedia, IMyMedia
+	public partial class MyGame : MyMedia, IMyMedia
 	{
 		[Required(ErrorMessage = "No {0} was choosen")]
 		[Display(Name = "Game")]

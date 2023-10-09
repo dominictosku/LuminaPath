@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Data.Classes
+namespace Data.Models.Dto
 {
 	public class UserDto
 	{
@@ -13,7 +13,7 @@ namespace Data.Classes
 		public string UserName { get; set; } = string.Empty;
 		[Required]
 		public string Password { get; set; } = string.Empty;
-		[Required] 
+		[Required]
 		public string Email { get; set; } = string.Empty;
 	}
 }

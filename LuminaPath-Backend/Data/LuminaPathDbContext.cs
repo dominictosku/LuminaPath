@@ -1,5 +1,6 @@
 ﻿using Data.Models;
 using Data.Models.Base;
+using Data.Models.Gaming;
 using Data.Models.Quests;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -12,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Data
 {
-    public class LuminaPathDbContext : IdentityDbContext<LuminaUser>
+	public class LuminaPathDbContext : IdentityDbContext<LuminaUser>
 	{
         public LuminaPathDbContext(DbContextOptions<LuminaPathDbContext> options) : base(options)
         {

@@ -1,5 +1,6 @@
 ﻿using Bogus;
 using Data.Models;
+using Data.Models.Gaming;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using System;
