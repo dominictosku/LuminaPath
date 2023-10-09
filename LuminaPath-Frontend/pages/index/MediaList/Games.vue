@@ -21,8 +21,8 @@ const toggle = async () => {
       <div v-else-if="error != null || games == null">
         <UIErrorData/>
       </div>
-      <div class="m-4" v-else>
-        <IonButton @click="toggle">{{ store.Id }}</IonButton>
+      <div class="mt-4" v-else>
+        <IonButton class="m-2" @click="toggle">{{ store.Id }}</IonButton>
         <Media :key="refresh" />
       </div>
     </ion-content>

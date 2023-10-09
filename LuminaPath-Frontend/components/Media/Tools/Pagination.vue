@@ -23,11 +23,9 @@ async function getPaginatedMedia(page: number) {
         <div class="w-full">
             <!-- Start coding here -->
             <div class="relative overflow-hidden bg-white rounded-b-lg shadow-md dark:bg-gray-800">
-                <nav class="flex flex-col items-start justify-between p-4 space-y-3 md:flex-row md:items-center md:space-y-0"
+                <nav class="flex flex-row items-center justify-between p-4 space-y-3 md:space-y-0"
                     aria-label="Table navigation">
-                    <span class="text-sm font-normal text-gray-500 dark:text-gray-400">Showing <span
-                            class="font-semibold text-gray-900 dark:text-white">1-10</span> of <span
-                            class="font-semibold text-gray-900 dark:text-white">1000</span></span>
+                    <span>{{ store.Id }}</span>
                     <ul class="inline-flex items-stretch -space-x-px">
                         <li>
                             <p @click="getPaginatedMedia(store.PageIndex - 1)"
