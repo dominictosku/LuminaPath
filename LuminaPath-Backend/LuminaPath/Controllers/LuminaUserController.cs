@@ -1,6 +1,7 @@
 ﻿using Data.Classes;
 using Data.Interfaces;
 using Data.Models;
+using Data.Models.Dto;
 using Data.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -10,7 +11,7 @@ using System.Security.Claims;
 
 namespace LuminaPath.Controllers
 {
-    [Route("api/[controller]")]
+	[Route("api/[controller]")]
 	[Authorize(AuthenticationSchemes = "Bearer")]
 	[ApiController]
 	public class LuminaUserController : ControllerBase

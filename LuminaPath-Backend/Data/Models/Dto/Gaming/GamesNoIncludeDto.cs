@@ -1,4 +1,5 @@
 ﻿using Data.Models.Base;
+using Data.Models.Gaming;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -6,14 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Data.Models.Dto
+namespace Data.Models.Dto.Gaming
 {
-	public class GamesDto : Media
+	public class GamesNoIncludeDto : Media
 	{
 		[Display(Name = "Plattform")]
 		public Plattforms Plattforms { get; set; }
 		[Display(Name = "Estimated playtime")]
 		public int? Playtime { get; set; }
-		public MyGameDto? MyGames { get; set; }
 	}
 }

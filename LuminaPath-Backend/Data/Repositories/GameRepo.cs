@@ -1,7 +1,6 @@
 ﻿using Data.Classes;
-using Data.Models;
 using Data.Models.Dto;
-using Data.Services;
+using Data.Models.Gaming;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

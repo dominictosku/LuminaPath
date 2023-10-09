@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Data.Models.Dto
+namespace Data.Models.Dto.Gaming
 {
 	public class MyGameDto
 	{

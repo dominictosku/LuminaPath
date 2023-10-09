@@ -1,7 +1,8 @@
 ﻿using AutoMapper;
-using Data.Models;
 using Data.Models.Base;
-using Data.Models.Dto;
+using Data.Models.Dto.Gaming;
+using Data.Models.Dto.Quests;
+using Data.Models.Gaming;
 using Data.Models.Quests;
 
 namespace LuminaPath.Helper

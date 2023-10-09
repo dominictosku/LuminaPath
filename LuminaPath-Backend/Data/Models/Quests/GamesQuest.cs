@@ -1,4 +1,5 @@
 ﻿using Data.Models.Base;
+using Data.Models.Gaming;
 using System;
 using System.Collections.Generic;
 using System.Linq;
