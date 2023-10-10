@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { useGameStore } from '~/store/games';
-import { MediaFilter } from '~/utils/classes/mediaFilter';
 
 const store = useGameStore();
-const mediaFilter: Ref<MediaFilter> = ref(new MediaFilter())
-mediaFilter.value.PageIndex = store.PageIndex
-await useAsyncData(`${store.Id}${store.PageIndex}`, () => store.Api.getMedia(store.Id, mediaFilter.value))
+store.Filter.PageIndex = store.PageIndex
+await useAsyncData(`${store.Id}${store.PageIndex}`, () => store.Api.getMedia(store.Id, store.Filter))
 
 async function getPaginatedMedia(page: number) {
     if (page < 1) {
@@ -14,8 +12,8 @@ async function getPaginatedMedia(page: number) {
     if (page > store.TotalPages) {
         page = store.TotalPages;
     }
-    mediaFilter.value.PageIndex = page;
-    await store.Api.getMedia(store.Id, mediaFilter.value);
+    store.Filter.PageIndex = page;
+    await store.Api.getMedia(store.Id, store.Filter);
 }
 </script>
 <template>

@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { add } from 'ionicons/icons';
 import Modal from '~/components/Forms/Create.vue';
+import { useGameStore } from '~/store/games';
 const modalProps = { form: "media" }
 const emits = defineEmits([
     'changebool'
 ])
+
+const store = useGameStore()
+
+async function filterMedia(){
+    await store.Api.getMedia(store.Id, store.Filter);
+}
 
 function ChangeView() {
     emits("changebool");
@@ -71,12 +78,12 @@ function ChangeView() {
                 <nuxt-icon name="search" filled />
             </span>
 
-            <input type="text" placeholder="Search" class="block w-full py-1.5 pr-5 text-gray-700
+            <input v-model="store.Filter.SearchString" @keyup.enter="filterMedia" type="text" placeholder="Search" class="block w-full py-1.5 pr-5 text-gray-700
              bg-white border border-gray-200 rounded-lg md:w-80 placeholder-gray-400/70 pl-11
               rtl:pr-11 rtl:pl-5
              dark:bg-gray-900 dark:text-gray-300 dark:border-gray-600
               focus:border-blue-400 dark:focus:border-blue-300 focus:ring-blue-300
-               focus:outline-none focus:ring focus:ring-opacity-40">
+               focus:outline-none focus:ring focus:ring-opacity-40" />
         </div>
     </div>
 </template>
