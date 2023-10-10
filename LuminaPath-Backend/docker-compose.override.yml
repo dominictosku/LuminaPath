@@ -5,6 +5,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ConnectionStrings__Default=server=db;port=3306;database=luminapath;user=root;password=dbuserpassword;
     ports:
      - "16050:80"
      - "16051:443"
