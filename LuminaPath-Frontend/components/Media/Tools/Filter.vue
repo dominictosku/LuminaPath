@@ -24,7 +24,7 @@ function ChangeView() {
         </div>
 
         <div class="">
-            <MediaToolsTabs @changebool="ChangeView" />
+            <MediaToolsFilterTabs @changebool="ChangeView" />
         </div>
     </div>
 

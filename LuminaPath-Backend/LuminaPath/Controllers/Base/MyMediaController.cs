@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LuminaPath.Controllers.Base
 {
+	[Authorize]
 	public abstract class MyMediaController<TEntity, TEntityDto> : GenericController<TEntity, TEntityDto> where TEntity : MyMedia, IMyMedia
 	{
 		private readonly UserManager<LuminaUser> _userManager;
