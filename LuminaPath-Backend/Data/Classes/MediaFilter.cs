@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Data.Models.Base;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,20 +11,13 @@ namespace Data.Classes
 	{
 		public string? SearchString { get; set; }
 		public int PageIndex { get; set; }
-		public StatusOptions Status { get; set; }
+		public ProgressionStatus Status { get; set; }
 
 		public MediaFIlter()
 		{
 			SearchString = "";
 			PageIndex = 1;
-			Status = StatusOptions.Any;
+			Status = ProgressionStatus.Open;
 		}
-	}
-
-	public enum StatusOptions
-	{
-		Any,
-		Completed,
-		Open
 	}
 }

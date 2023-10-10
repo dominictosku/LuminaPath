@@ -18,6 +18,7 @@ namespace LuminaPath.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
+	[Authorize]
 	public class MyGamesController : MyMediaController<MyGame, MyGameDto>
 	{
 		private readonly UserManager<LuminaUser> _userManager;

@@ -10,11 +10,13 @@ namespace Data.Models.Base
 {
     public enum ProgressionStatus
     {
-        Completed,
+		Open,
+        Planned,
         InProgress,
-        Planned
-    }
-    public abstract class MyMedia : IBasicInfo
+        Completed,
+	}
+
+	public abstract class MyMedia : IBasicInfo
     {
         public int Id { get; set; }
         [Range(1, 10)]
