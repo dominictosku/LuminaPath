@@ -14,12 +14,5 @@ namespace LuminaPath.Controllers.Base
 		{
 			Mapper = mapper;
 		}
-
-		[HttpGet("{id}")]
-		[AllowAnonymous]
-		public override async Task<ActionResult<TEntityDto>> GetById(int? id)
-		{
-			return await base.GetById(id);
-		}
 	}
 }

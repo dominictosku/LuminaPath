@@ -17,7 +17,7 @@ namespace Data.Repositories
 			_entities = context.Set<TEntity>();
 		}
 
-		public async Task<IEnumerable<TEntity>> GetAll(
+		public virtual async Task<IEnumerable<TEntity>> GetAll(
 			Expression<Func<TEntity, bool>> filter = null,
 			Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
 			string includeProperties = "")
@@ -45,29 +45,12 @@ namespace Data.Repositories
 			}
 		}
 
-		public async Task<IEnumerable<TEntity>> GetAll(int? count, IEnumerable<string> includes, Expression<Func<TEntity, bool>> filter = null)
-		{
-			IQueryable<TEntity> entities = _entities;
-			if (filter != null)
-			{
-				entities = entities.Where(filter);
-			}
-			foreach (var include in includes)
-			{
-				entities = _entities.Include(include);
-			}
-			return await entities.Take(count ?? 100).ToListAsync();
-		}
-
-		public IEnumerable<TEntity> GetAllNoTrack() =>
-			_entities.AsNoTracking().ToList();
-
-		public async Task<PaginatedList<TEntity>> GetAllPaginated(
-			MediaFIlter mediaFilter,
+		public virtual async Task<PaginatedList<TEntity>> GetAllPaginated(
+			Paging paging,
 			Expression<Func<TEntity, bool>> filter = null,
 			IEnumerable<string> includes = null)
 		{
-			int pageIndex = mediaFilter.PageIndex;
+			int pageIndex = paging.PageIndex;
 			IQueryable<TEntity> entities = _entities;
 			if (filter != null)
 			{
@@ -77,8 +60,15 @@ namespace Data.Repositories
 			{
 				entities = includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include));
 			}
+			if (paging.Count > 0)
+			{
+				return await PaginatedList<TEntity>.CreateAsync(entities, 1, paging.Count);
+			}
 			return await PaginatedList<TEntity>.CreateAsync(entities, pageIndex, 10);
 		}
+
+		public IEnumerable<TEntity> GetAllNoTrack() =>
+			_entities.AsNoTracking().ToList();
 
 		public async Task<TEntity> GetById(int? id, IEnumerable<string> includes = null)
 		{

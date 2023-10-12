@@ -29,7 +29,7 @@ namespace Test.Controller
 					"Apex",
 					"God of War"
 				}; 
-				var filter = new MediaFIlter();
+				var filter = new Paging();
 				var gameRepo = new GameRepo(db);
 				var logger = new Mock<ILogger<GamesController>>();
 				var mapper = db.GetService<IMapper>();

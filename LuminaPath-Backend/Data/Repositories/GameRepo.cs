@@ -13,27 +13,31 @@ namespace Data.Repositories
 {
 	public class GameRepo : GenericRepo<Game>
 	{
-		public GameRepo(LuminaPathDbContext context): base(context) 
+		public GameRepo(LuminaPathDbContext context) : base(context)
 		{
-		}
-		public async Task<PaginatedList<Game>> GetAllPaginated(MediaFIlter mediaFilter, string UserId, Expression<Func<Game, bool>> filter = null)
-		{
-			IQueryable<Game> games = _entities.Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
-			if(filter != null)
-			{
-				games = games.Where(filter);
-			}
-			return await PaginatedList<Game>.CreateAsync(games, mediaFilter?.PageIndex ?? 1, 10);
 		}
 
-		public async Task<IEnumerable<Game>> GetAll(int? count, string UserId, Expression<Func<Game, bool>> filter = null)
+		public async Task<PaginatedList<Game>> GetAllPaginated(
+			Paging paging,
+			string UserId,
+			Expression<Func<Game, bool>> filter = null,
+			IEnumerable<string> includes = null)
 		{
+			int pageIndex = paging.PageIndex;
 			IQueryable<Game> entities = _entities.Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
 			if (filter != null)
 			{
 				entities = entities.Where(filter);
 			}
-			return await entities.Take(count ?? 100).ToListAsync();
+			if (includes != null)
+			{
+				entities = includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include));
+			}
+			if (paging.Count > 0)
+			{
+				return await PaginatedList<Game>.CreateAsync(entities, 1, paging.Count);
+			}
+			return await PaginatedList<Game>.CreateAsync(entities, pageIndex, 10);
 		}
 	}
 }

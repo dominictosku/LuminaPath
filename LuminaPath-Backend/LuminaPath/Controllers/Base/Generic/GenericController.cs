@@ -27,19 +27,11 @@ namespace LuminaPath.Controllers.Base.Generic
 		}
 
 		[HttpGet]
-		public async virtual Task<PaginatedResult<TEntityDto>> Get([FromQuery] MediaFIlter mediaFilter)
+		public async virtual Task<PaginatedResult<TEntityDto>> Get([FromQuery] Paging mediaFilter)
 		{
 			PaginatedList<TEntity> entities = await _service.GetAllPaginated(mediaFilter, includes: _includes);
 			var entitiesDto = Mapper.Map<IEnumerable<TEntity>, IEnumerable<TEntityDto>>(entities);
 			return new PaginatedResult<TEntityDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
-		}
-
-		[HttpGet("All/{count}")]
-		public virtual async Task<IEnumerable<TEntityDto>> GetAll(int? count)
-		{
-			var entities = await _service.GetAll(count, _includes);
-			var entitiesDto = Mapper.Map<IEnumerable<TEntity>, IEnumerable<TEntityDto>>(entities);
-			return entitiesDto;
 		}
 
 		[HttpGet("{id}")]

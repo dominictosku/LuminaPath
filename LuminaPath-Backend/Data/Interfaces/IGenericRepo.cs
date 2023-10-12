@@ -9,12 +9,11 @@ namespace Data.Interfaces
 			Expression<Func<TEntity, bool>> filter = null,
 			Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
 			string includeProperties = "");
-		Task<IEnumerable<TEntity>> GetAll(int? howMany, IEnumerable<string> includes, Expression<Func<TEntity, bool>> filter = null);
-		IEnumerable<TEntity> GetAllNoTrack();
 		Task<PaginatedList<TEntity>> GetAllPaginated(
-			MediaFIlter mediaFilter,
+			Paging paging,
 			Expression<Func<TEntity, bool>> filter = null,
 			IEnumerable<string> includes = null);
+		IEnumerable<TEntity> GetAllNoTrack();
 		Task<TEntity> GetById(int? id, IEnumerable<string> includes = null);
 		Task<TEntity> GetByIdNoTrack(int? id);
 		Task Create(TEntity entity);
