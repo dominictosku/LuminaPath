@@ -35,7 +35,7 @@ namespace LuminaPath.Controllers
 		}
 
 		[HttpGet("games")]
-		public async Task<ActionResult<PaginatedResult<GamesDto>>> GetGames([FromQuery] MediaFIlter filter)
+		public async Task<ActionResult<PaginatedResult<GamesDto>>> GetGames([FromQuery] Paging filter)
 		{
 			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
 			if (user == null)
@@ -48,22 +48,6 @@ namespace LuminaPath.Controllers
 			}
 			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(games);
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
-		}
-
-		[HttpGet("games/All/{count}")]
-		public async Task<ActionResult<IEnumerable<GamesDto>>> GetAllGames(int? count)
-		{
-			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
-			if (user == null)
-				return NotFound("User not found, please login");
-			List<MyGame> entities = await _myGameRepo.GetAll(count ?? 100, user.Id);
-			List<Game> games = new List<Game>();
-			foreach (var myGame in entities)
-			{
-				games.Add(myGame.Game);
-			}
-			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(games);
-			return Ok(entitiesDto);
 		}
 	}
 }

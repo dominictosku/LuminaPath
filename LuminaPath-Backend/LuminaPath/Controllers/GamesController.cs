@@ -27,38 +27,20 @@ namespace LuminaPath.Controllers
 
 		[HttpGet]
 		[AllowAnonymous]
-		public override async Task<PaginatedResult<GamesDto>> Get([FromQuery] MediaFIlter filter)
+		public override async Task<PaginatedResult<GamesDto>> Get([FromQuery] Paging paging)
 		{
 			string userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			PaginatedList<Game> entities;
 			if(userId != null)
 			{
-				entities = await _gameService.GetAllPaginated(filter, userId);
+				entities = await _gameService.GetAllPaginated(paging, userId);
 			}
 			else
 			{
-				entities = await _gameService.GetAllPaginated(filter);
+				entities = await _gameService.GetAllPaginated(paging);
 			}
 			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
-		}
-
-		[HttpGet("All/{count}")]
-		[AllowAnonymous]
-		public override async Task<IEnumerable<GamesDto>> GetAll(int? count)
-		{
-			string userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-			IEnumerable<Game> entities;
-			if (userId != null)
-			{
-				entities = await _gameService.GetAll(count, userId);
-			}
-			else
-			{
-				entities = await _gameService.GetAll(count, new List<string>());
-			}
-			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
-			return entitiesDto;
 		}
 	}
 }

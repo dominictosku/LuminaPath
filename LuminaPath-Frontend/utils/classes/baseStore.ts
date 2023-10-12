@@ -29,19 +29,12 @@ const ChangeActiveValue = (value: any) => {
     ): Promise<PaginateResult<IBasicInfo>> => {
       let response = await fetchPaginatedMedia<IBasicInfo>(
         endPoint + AddEnpoint.value,
-        mediaFilter
+        mediaFilter?.Paging
       );
       if (typeof response === "object" && response != null)
         ChangeActiveValue(response.data);
       PageIndex.value = response.currentPage;
       TotalPages.value = response.pages;
-      return response;
-    },
-
-    getMediaAll: async (endPoint: string, count?: number): Promise<T[]> => {
-      let response = await fetchMediaAll<T>(count ?? 100, endPoint + AddEnpoint.value);
-      if (typeof response === "object" && response != null)
-        ChangeActiveValue(response);
       return response;
     },
 

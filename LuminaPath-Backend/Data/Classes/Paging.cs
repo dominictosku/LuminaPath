@@ -7,9 +7,14 @@ using System.Threading.Tasks;
 
 namespace Data.Classes
 {
-	public class MediaFilter
+	public class Paging
 	{
-		public string? SearchString { get; set; }
-		public ProgressionStatus Status { get; set; }
+		public int PageIndex { get; set; }
+		public int Count { get; set; }
+
+		public Paging()
+		{
+			PageIndex = 1;
+		}
 	}
 }

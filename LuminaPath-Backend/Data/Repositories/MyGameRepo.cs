@@ -20,24 +20,27 @@ namespace Data.Repositories
 		{
 			UserManager = userManager;
 		}
-		public async Task<PaginatedList<MyGame>> GetAllPaginated(MediaFIlter mediaFilter, string UserId, Expression<Func<MyGame, bool>> filter = null)
+		public async Task<PaginatedList<MyGame>> GetAllPaginated(
+			Paging paging,
+			string UserId,
+			Expression<Func<MyGame, bool>> filter = null,
+			IEnumerable<string> includes = null)
 		{
-			IQueryable<MyGame> myGames = _entities.Where(g => g.LuminaUserId == UserId).Include(g => g.Game);
+			int pageIndex = paging.PageIndex;
+			IQueryable<MyGame> entities = _entities.Where(g => g.LuminaUserId == UserId).Include(g => g.Game);
 			if (filter != null)
 			{
-				myGames = myGames.Where(filter);
+				entities = entities.Where(filter);
 			}
-			return await PaginatedList<MyGame>.CreateAsync(myGames, mediaFilter?.PageIndex ?? 1, 10);
-		}
-
-		public async Task<List<MyGame>> GetAll(int count, string UserId, Expression<Func<MyGame, bool>> filter = null)
-		{
-			IQueryable<MyGame> myGames = _entities.Where(g => g.LuminaUserId == UserId).Include(g => g.Game);
-			if (filter != null)
+			if (includes != null)
 			{
-				myGames = myGames.Where(filter);
+				entities = includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include));
 			}
-			return await myGames.Take(count).ToListAsync();
+			if (paging.Count > 0)
+			{
+				return await PaginatedList<MyGame>.CreateAsync(entities, 1, paging.Count);
+			}
+			return await PaginatedList<MyGame>.CreateAsync(entities, pageIndex, 10);
 		}
 	}
 }
