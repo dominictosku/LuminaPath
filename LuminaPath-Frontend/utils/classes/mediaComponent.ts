@@ -16,17 +16,13 @@ export class MediaComponent {
 }
 
 export const MediaColumns = [
-  { key: "status", label: "Status" },
-  { key: "platform", label: "Plattform" },
-  { key: "playtime", label: "Playtime" },
-  { key: "users", label: "Users" },
-  { key: "progress", label: "Progress" },
+  { key: "Status", label: "Status" },
+  { key: "Playtime", label: "Playtime" },
+  { key: "Progress", label: "Progress" },
 ];
 
 export const MyMediaColumns = [
-  { key: "status", label: "Status" },
-  { key: "platform", label: "Plattform" },
-  { key: "playtime", label: "Playtime" },
-  { key: "users", label: "Users" },
-  { key: "progress", label: "Progress" },
+  { key: "Status", label: "Status" },
+  { key: "My Playtime", label: "My Playtime" },
+  { key: "Progress", label: "Progress" },
 ];
