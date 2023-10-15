@@ -10,6 +10,7 @@ const emits = defineEmits([
 const store = useGameStore()
 
 async function filterMedia(){
+    store.Filter.resetPaging();
     await store.Api.getMedia(store.Id, store.Filter);
 }
 

@@ -15,6 +15,11 @@ export class MediaFilter {
     this.Paging = new Paging();
   }
 
+  resetPaging(){
+    this.Paging.PageIndex = 1;
+    this.Paging.Count = 0;
+  }
+
   setCount(count: number){
     this.Paging.Count = count;
     this.Paging.PageIndex = 1;

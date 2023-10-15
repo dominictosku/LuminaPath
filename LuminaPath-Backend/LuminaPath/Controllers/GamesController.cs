@@ -9,6 +9,7 @@ using LuminaPath.Controllers.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 using System.Security.Claims;
 
 namespace LuminaPath.Controllers
@@ -20,24 +21,28 @@ namespace LuminaPath.Controllers
 
 		public GamesController(GameRepo service, ILogger<GamesController> logger, IMapper mapper) : base(service, mapper)
 		{
-			_logger = logger;
-			_includes = new List<string> { "MyGames" };
+			_logger = logger;;
 			_gameService = service;
 		}
 
 		[HttpGet]
 		[AllowAnonymous]
-		public override async Task<PaginatedResult<GamesDto>> Get([FromQuery] Paging paging)
+		public override async Task<PaginatedResult<GamesDto>> Get([FromQuery] MediaFilter mediaFilter)
 		{
 			string userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			PaginatedList<Game> entities;
+			Expression<Func<Game, bool>>? filter = null;
+			if(mediaFilter.SearchString != null)
+			{
+				filter = g => g.Name.Contains(mediaFilter.SearchString);
+			}
 			if(userId != null)
 			{
-				entities = await _gameService.GetAllPaginated(paging, userId);
+				entities = await _gameService.GetAllPaginated(mediaFilter.Paging, userId, filter);
 			}
 			else
 			{
-				entities = await _gameService.GetAllPaginated(paging);
+				entities = await _gameService.GetAllPaginated(mediaFilter.Paging, filter);
 			}
 			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
