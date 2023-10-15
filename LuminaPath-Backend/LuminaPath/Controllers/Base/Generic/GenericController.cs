@@ -18,7 +18,7 @@ namespace LuminaPath.Controllers.Base.Generic
 	public abstract class GenericController<TEntity, TEntityDto> : ControllerBase where TEntity : class, IBasicInfo
 	{
 		protected readonly IGenericRepo<TEntity> _service;
-		protected IEnumerable<string> _includes { get; set; } = new List<string>();
+		protected IEnumerable<string> Includes { get; set; } = new List<string>();
 		public IMapper Mapper;
 		public GenericController(IGenericRepo<TEntity> service, IMapper mapper)
 		{
@@ -27,9 +27,9 @@ namespace LuminaPath.Controllers.Base.Generic
 		}
 
 		[HttpGet]
-		public async virtual Task<PaginatedResult<TEntityDto>> Get([FromQuery] Paging mediaFilter)
+		public async virtual Task<PaginatedResult<TEntityDto>> Get([FromQuery] MediaFilter mediaFilter)
 		{
-			PaginatedList<TEntity> entities = await _service.GetAllPaginated(mediaFilter, includes: _includes);
+			PaginatedList<TEntity> entities = await _service.GetAllPaginated(mediaFilter.Paging, includes: Includes);
 			var entitiesDto = Mapper.Map<IEnumerable<TEntity>, IEnumerable<TEntityDto>>(entities);
 			return new PaginatedResult<TEntityDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
@@ -39,7 +39,7 @@ namespace LuminaPath.Controllers.Base.Generic
 		{
 			if (id == null)
 				return NotFound();
-			var entity = await _service.GetById(id, _includes);
+			var entity = await _service.GetById(id, Includes);
 			if (entity == null)
 				return NotFound();
 			var entitiesDto = Mapper.Map<TEntity, TEntityDto>(entity);

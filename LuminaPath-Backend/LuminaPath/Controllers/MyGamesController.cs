@@ -30,17 +30,17 @@ namespace LuminaPath.Controllers
 		{
 			_userManager = userManager;
 			_logger = logger;
-			_includes = new List<string> { "Game" };
+			Includes = new List<string> { "Game" };
 			_myGameRepo = service;
 		}
 
 		[HttpGet("games")]
-		public async Task<ActionResult<PaginatedResult<GamesDto>>> GetGames([FromQuery] Paging filter)
+		public async Task<ActionResult<PaginatedResult<GamesDto>>> GetGames([FromQuery] MediaFilter mediaFilter)
 		{
 			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
 			if (user == null)
 				return NotFound("User not found, please login");
-			PaginatedList<MyGame> entities = await _myGameRepo.GetAllPaginated(filter, user.Id);
+			PaginatedList<MyGame> entities = await _myGameRepo.GetAllPaginated(mediaFilter.Paging, user.Id);
 			List<Game> games = new List<Game>();
 			foreach (var myGame in entities)
 			{

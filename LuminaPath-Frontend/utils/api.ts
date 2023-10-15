@@ -1,6 +1,6 @@
-import axios from "axios";
 import { UseFetchOptions } from "nuxt/dist/app/composables/fetch";
 import { IBasicInfo } from "~/utils/interfaces/iBasicInfo";
+import { MediaFilter } from "~/utils/classes/mediaFilter";
 import { PaginateResult } from "~/utils/classes/paginatedResult";
 import { type Credentials } from "~/utils/model/user";
 
@@ -9,7 +9,7 @@ const getApiUrl = () => {
   return runtimeConfig.public.API_ENDPOINT;
 };
 
-const fetchConfig = <T>(method: 'GET' | 'POST' | 'DELETE' | 'PUT', param?: any, body?: T) : UseFetchOptions<T> => {
+const fetchConfig = <T>(method: 'GET' | 'POST' | 'DELETE' | 'PUT', param?: any, body?: any) : UseFetchOptions<T> => {
   return {
     method: method,
     baseURL: getApiUrl(),
@@ -36,19 +36,16 @@ export async function fetchPaginatedMedia<T>(
   prefix: string,
   mediaFilter?: MediaFilter
 ): Promise<PaginateResult<T>> {
+  // otherwise the asp.net api does not recognize the paging
+  const params = {
+    "searchString": mediaFilter?.SearchString,
+    "status": mediaFilter?.Status,
+    "paging.pageIndex": mediaFilter?.Paging.PageIndex,
+    "paging.count": mediaFilter?.Paging.Count
+  }
   const url = `/${prefix}`;
-  const config = fetchConfig<T>('GET', mediaFilter)
+  const config = fetchConfig<T>('GET', params)
   const result = await apiCall<PaginateResult<T>>(url, config);
-  return result;
-}
-
-export async function fetchMediaAll<T>(
-  count: number,
-  prefix: string
-): Promise<Array<T>> {
-  const url = `/${prefix}/all/${count}`;
-  const config = fetchConfig<T>('GET')
-  const result = await apiCall<Array<T>>(url, config);
   return result;
 }
 

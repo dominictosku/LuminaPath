@@ -9,12 +9,7 @@ namespace Data.Classes
 {
 	public class Paging
 	{
-		public int PageIndex { get; set; }
+		public int PageIndex { get; set; } = 1;
 		public int Count { get; set; }
-
-		public Paging()
-		{
-			PageIndex = 1;
-		}
 	}
 }
