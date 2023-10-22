@@ -46,10 +46,10 @@ async function deleteGame() {
       <FormKit v-model="game.genre" type="text" name="genre" label="genre" />
       <FormKit v-model="game.releaseDate" type="date" label="Release date" />
       <FormKit v-model="game.playtime" type="number" name="playtime" label="Estimated Playtime" step="1" />
-      <div class="flex justify-end p-3 gap-3">
-        <IonButton class="h-12" v-if="showDelete" @click="deleteGame()" color="danger">delete</IonButton>
-        <IonButton class="h-12" @click="emit('exit')" color="light">close</IonButton>
-        <FormKit type="submit" label="Confirm" />
+      <div class="flex h-12 justify-end gap-3">
+        <IonButton class="" v-if="showDelete" @click="deleteGame()" color="danger">delete</IonButton>
+        <IonButton class="" @click="emit('exit')" color="light">close</IonButton>
+        <FormKit style="height: 3em;" type="submit" label="Save" />
       </div>
     </div>
   </FormKit>
