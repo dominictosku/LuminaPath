@@ -45,6 +45,7 @@ namespace LuminaPath.Controllers
 				entities = await _gameService.GetAllPaginated(mediaFilter.Paging, filter);
 			}
 			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
+			entitiesDto.OrderByDescending(g => g.ReleaseDate);
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
 	}

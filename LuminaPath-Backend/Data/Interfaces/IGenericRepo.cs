@@ -8,7 +8,7 @@ namespace Data.Interfaces
 		Task<IEnumerable<TEntity>> GetAll(
 			Expression<Func<TEntity, bool>> filter = null,
 			Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
-			string includeProperties = "");
+			IEnumerable<string> includes = null);
 		Task<PaginatedList<TEntity>> GetAllPaginated(
 			Paging paging,
 			Expression<Func<TEntity, bool>> filter = null,
