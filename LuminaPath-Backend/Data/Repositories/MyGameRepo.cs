@@ -28,19 +28,8 @@ namespace Data.Repositories
 		{
 			int pageIndex = paging.PageIndex;
 			IQueryable<MyGame> entities = _entities.Where(g => g.LuminaUserId == UserId).Include(g => g.Game);
-			if (filter != null)
-			{
-				entities = entities.Where(filter);
-			}
-			if (includes != null)
-			{
-				entities = includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include));
-			}
-			if (paging.Count > 0)
-			{
-				return await PaginatedList<MyGame>.CreateAsync(entities, 1, paging.Count);
-			}
-			return await PaginatedList<MyGame>.CreateAsync(entities, pageIndex, 10);
+			entities = PrepareEntity(entities, filter, includes);
+			return await CreatePaginatedList(entities, paging);
 		}
 	}
 }

@@ -2,6 +2,7 @@
 using Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using System.Net.NetworkInformation;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Data.Repositories
@@ -20,28 +21,19 @@ namespace Data.Repositories
 		public virtual async Task<IEnumerable<TEntity>> GetAll(
 			Expression<Func<TEntity, bool>> filter = null,
 			Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
-			string includeProperties = "")
+			IEnumerable<string> includes = null)
 		{
-			IQueryable<TEntity> query = _entities;
+			IQueryable<TEntity> entities = _entities;
 
-			if (filter != null)
-			{
-				query = query.Where(filter);
-			}
-
-			foreach (var includeProperty in includeProperties.Split
-				(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-			{
-				query = query.Include(includeProperty);
-			}
+			entities = PrepareEntity(entities, filter, includes);
 
 			if (orderBy != null)
 			{
-				return await orderBy(query).ToListAsync();
+				return await orderBy(entities).ToListAsync();
 			}
 			else
 			{
-				return query.ToList();
+				return entities.ToList();
 			}
 		}
 
@@ -50,8 +42,17 @@ namespace Data.Repositories
 			Expression<Func<TEntity, bool>> filter = null,
 			IEnumerable<string> includes = null)
 		{
-			int pageIndex = paging.PageIndex;
 			IQueryable<TEntity> entities = _entities;
+			entities = PrepareEntity(entities, filter, includes);
+			return await CreatePaginatedList(entities, paging);
+		}
+
+		protected virtual IQueryable<TEntity> PrepareEntity(
+			IQueryable<TEntity> entities,
+			Expression<Func<TEntity, bool>> filter = null,
+			IEnumerable<string> includes = null
+			)
+		{
 			if (filter != null)
 			{
 				entities = entities.Where(filter);
@@ -60,6 +61,12 @@ namespace Data.Repositories
 			{
 				entities = includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include));
 			}
+			return entities;
+		}
+
+		protected virtual async Task<PaginatedList<TEntity>> CreatePaginatedList(IQueryable<TEntity> entities, Paging paging) 
+		{
+			int pageIndex = paging.PageIndex;
 			if (paging.Count > 0)
 			{
 				return await PaginatedList<TEntity>.CreateAsync(entities, 1, paging.Count);
