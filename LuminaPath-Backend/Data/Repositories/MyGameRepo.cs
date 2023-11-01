@@ -28,7 +28,7 @@ namespace Data.Repositories
 		{
 			int pageIndex = paging.PageIndex;
 			IQueryable<MyGame> entities = _entities.Where(g => g.LuminaUserId == UserId).Include(g => g.Game);
-			entities = PrepareEntity(entities, filter, includes);
+			entities = PrepareEntity(entities, filter, e => e.OrderByDescending(g => g.Game.ReleaseDate), includes);
 			return await CreatePaginatedList(entities, paging);
 		}
 	}
