@@ -14,14 +14,55 @@ const ionInfinite = async (ev: any) => {
     }, 500);
 };
 
+const GroupedMedia = computed(() => {
+    const media = store.Media;
+    return media.reduce((result: any, item) => {
+        const date = new Date(item.releaseDate);
+        const month = date.getMonth() + 1; // Months are zero-based, so we add 1 to get the actual month.
+        const year = date.getFullYear();
+        const key = `${year}-${month}`;
+
+        if (!result[key]) {
+            result[key] = [];
+        }
+
+        result[key].push(item);
+        return result;
+    }, {});
+})
+
+const sortedKeys = computed(() => {
+    return Object.keys(GroupedMedia.value).sort((a, b) => {
+        // Convert the keys (in the format "MM-YYYY") to date objects for comparison
+        const dateA: any = new Date(b);
+        const dateB: any = new Date(a);
+        return dateA - dateB;
+    });
+})
+
+function formatMonthYear(dateString: string) {
+    const [year, month] = dateString.split('-');
+    const monthNames = [
+        'January', 'February', 'March', 'April',
+        'May', 'June', 'July', 'August',
+        'September', 'October', 'November', 'December'
+    ];
+
+    const formattedDate = `${monthNames[parseInt(month) - 1]} ${year}`;
+    return formattedDate;
+}
+
 </script>
 
 <template>
-    <ol role="list" class="grid sm:grid-cols-4 grid-cols-2 gap-2">
-        <li class="bg-slate-800" v-for="media in store.Media" :key="media.id" style="--i: 2; --length: 10">
-            <MediaGridData :game="media" />
-        </li>
-    </ol>
+    <div v-for="key in sortedKeys" :key="key">
+        <h2 class="px-12 w-full bg-slate-600">{{ formatMonthYear(key) }}</h2>
+        <ol role="list" class="grid sm:grid-cols-4 grid-cols-2 gap-2">
+            <li class="bg-slate-800" v-for="media in GroupedMedia[key]" :key="media.id" style="--i: 2; --length: 10">
+                <MediaGridData :game="media" />
+            </li>
+        </ol>
+    </div>
     <ion-infinite-scroll @ionInfinite="ionInfinite">
         <ion-infinite-scroll-content></ion-infinite-scroll-content>
     </ion-infinite-scroll>

@@ -24,6 +24,7 @@ namespace Data.Models.Base
         public string? Description { get; set; }
         public string? Genre { get; set; }
 
+        [DataType(DataType.Date)]
 		[Display(Name = "Release Date")]
 		public DateTime? ReleaseDate { get; set; }
     }

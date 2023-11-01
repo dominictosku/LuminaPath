@@ -25,7 +25,7 @@ namespace Data.Repositories
 		{
 			IQueryable<TEntity> entities = _entities;
 
-			entities = PrepareEntity(entities, filter, includes);
+			entities = PrepareEntity(entities, filter, orderBy, includes);
 
 			if (orderBy != null)
 			{
@@ -40,16 +40,18 @@ namespace Data.Repositories
 		public virtual async Task<PaginatedList<TEntity>> GetAllPaginated(
 			Paging paging,
 			Expression<Func<TEntity, bool>> filter = null,
+			Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
 			IEnumerable<string> includes = null)
 		{
 			IQueryable<TEntity> entities = _entities;
-			entities = PrepareEntity(entities, filter, includes);
+			entities = PrepareEntity(entities, filter, orderBy, includes);
 			return await CreatePaginatedList(entities, paging);
 		}
 
 		protected virtual IQueryable<TEntity> PrepareEntity(
 			IQueryable<TEntity> entities,
 			Expression<Func<TEntity, bool>> filter = null,
+			Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
 			IEnumerable<string> includes = null
 			)
 		{
@@ -60,6 +62,10 @@ namespace Data.Repositories
 			if (includes != null)
 			{
 				entities = includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include));
+			}
+			if (orderBy != null)
+			{
+				entities = orderBy(entities);
 			}
 			return entities;
 		}

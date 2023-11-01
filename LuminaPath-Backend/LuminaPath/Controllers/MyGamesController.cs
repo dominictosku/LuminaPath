@@ -47,7 +47,6 @@ namespace LuminaPath.Controllers
 				games.Add(myGame.Game);
 			}
 			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(games);
-			entitiesDto.OrderByDescending(g => g.ReleaseDate);
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
 	}

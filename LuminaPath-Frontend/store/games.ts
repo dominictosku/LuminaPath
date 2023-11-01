@@ -8,7 +8,7 @@ import MyGames from "~/components/Forms//Game/MyForm.vue";
 import Data from "~/components/Media/Table/Game/Data.vue";
 import MyData from "~/components/Media/Table/Game/MyData.vue";
 
-export const useGameStore = defineStore("games", (): IStore<IGame> => {
+export const useGameStore = defineStore("games", (): IStore<Game> => {
   const Type = {
     Games: "Games",
     MyGames: "MyGames",
