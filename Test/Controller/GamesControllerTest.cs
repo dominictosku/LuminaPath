@@ -1,6 +1,7 @@
 using AutoMapper;
 using Data;
 using Data.Classes;
+using Data.Interfaces;
 using Data.Models;
 using Data.Repositories;
 using Data.Services;
@@ -29,15 +30,16 @@ namespace Test.Controller
 					"Apex",
 					"God of War"
 				}; 
-				var filter = new Paging();
+				var filter = new MediaFilter();
 				var gameRepo = new GameRepo(db);
+				var azure = new Mock<IAzureStorage>().Object;
 				var logger = new Mock<ILogger<GamesController>>();
 				var mapper = db.GetService<IMapper>();
 				var games = Seeding.SeedGames(names);
 				db.Games.AddRange(games);
 				await db.SaveChangesAsync();
 
-				GamesController controller = new GamesController(gameRepo, logger.Object, mapper);
+				GamesController controller = new GamesController(gameRepo, logger.Object, mapper, azure);
 				var expectedGames = await db.Games.ToListAsync();
 
 				// Act

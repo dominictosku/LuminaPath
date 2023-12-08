@@ -1,5 +1,5 @@
-import { UseFetchOptions } from "nuxt/dist/app/composables/fetch";
-import { IBasicInfo } from "~/utils/interfaces/iBasicInfo";
+import { type UseFetchOptions } from "nuxt/dist/app/composables/fetch";
+import { type IBasicInfo } from "~/utils/interfaces/iBasicInfo";
 import { MediaFilter } from "~/utils/classes/mediaFilter";
 import { PaginateResult } from "~/utils/classes/paginatedResult";
 import { type Credentials } from "~/utils/model/user";
@@ -9,7 +9,7 @@ const getApiUrl = () => {
   return runtimeConfig.public.API_ENDPOINT;
 };
 
-const fetchConfig = <T>(method: 'GET' | 'POST' | 'DELETE' | 'PUT', param?: any, body?: any) : UseFetchOptions<T> => {
+const fetchConfig = <T>(method: 'GET' | 'POST' | 'DELETE' | 'PUT', param?: any, body?: any): UseFetchOptions<T> => {
   return {
     method: method,
     baseURL: getApiUrl(),
@@ -20,7 +20,21 @@ const fetchConfig = <T>(method: 'GET' | 'POST' | 'DELETE' | 'PUT', param?: any, 
     credentials: 'include',
     params: param,
     body: JSON.stringify(body) ?? null,
-}
+  }
+};
+
+const fetchFormsConfig = <T>(method: 'GET' | 'POST' | 'DELETE' | 'PUT', param?: any, body?: any): UseFetchOptions<T> => {
+  return {
+    method: method,
+    baseURL: getApiUrl(),
+    headers: {
+      Accept: "application/json",
+      "Content-Type": 'multipart/form-data',
+    },
+    credentials: 'include',
+    params: param,
+    body: body,
+  }
 };
 
 const apiCall = async <T>(endpoint: string, fetchConfig: any) => {
@@ -74,6 +88,13 @@ export async function PostMedia<T>(media: IBasicInfo, prefix: string) {
 export async function PutMedia<T>(media: IBasicInfo, prefix: string) {
   const url = `/${prefix}/${media.id}`;
   const config = fetchConfig<IBasicInfo>('PUT', null, media)
+  await apiCall(url, config);
+}
+
+// files
+export async function PostImage<T>(id: number, forms: any, prefix: string) {
+  const url = `/${prefix}`;
+  const config = fetchFormsConfig<IBasicInfo>('POST', null, forms)
   await apiCall(url, config);
 }
 

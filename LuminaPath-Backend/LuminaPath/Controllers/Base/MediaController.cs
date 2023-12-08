@@ -14,5 +14,5 @@ namespace LuminaPath.Controllers.Base
 		{
 			Mapper = mapper;
 		}
-	}
+    }
 }

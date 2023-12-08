@@ -27,5 +27,6 @@ namespace Data.Models.Base
         [DataType(DataType.Date)]
 		[Display(Name = "Release Date")]
 		public DateTime? ReleaseDate { get; set; }
+        public string ImageUrl { get; set; } = string.Empty;
     }
 }
