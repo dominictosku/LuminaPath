@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PropType } from 'nuxt/dist/app/compat/capi';
 import { Game } from '~/utils/model/games';
 const props = defineProps({
     game: {

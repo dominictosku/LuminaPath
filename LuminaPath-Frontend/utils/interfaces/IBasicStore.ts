@@ -1,6 +1,6 @@
 import { MediaComponent } from "~/utils/classes/mediaComponent"
-import { IApi } from "./IApiInterface"
-import { IBasicInfo } from "./iBasicInfo"
+import { type IApi } from "./IApiInterface"
+import { type IBasicInfo } from "./iBasicInfo"
 import {MediaFilter} from "~/utils/classes/mediaFilter"
 
 export interface IStore<T>{
