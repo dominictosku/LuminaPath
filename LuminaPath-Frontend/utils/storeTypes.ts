@@ -1,5 +1,5 @@
-import { IStore } from "~/utils/interfaces/IBasicStore";
-import { IGame } from "~/utils/interfaces/iGames";
+import { type IStore } from "~/utils/interfaces/IBasicStore";
+import { type IGame } from "~/utils/interfaces/iGames";
 type TypeMap = {
   Game: IStore<IGame>;
 };
