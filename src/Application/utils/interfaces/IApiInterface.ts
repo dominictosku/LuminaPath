@@ -1,4 +1,4 @@
-import { IBasicInfo } from "./iBasicInfo";
+import { type IBasicInfo } from "./iBasicInfo";
 import { PaginateResult } from "~/utils/classes/paginatedResult";
 import { MediaFilter } from "~/utils/classes/mediaFilter";
 

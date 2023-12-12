@@ -15,7 +15,6 @@
     "@nuxtjs/ionic": "^0.12.1",
     "@nuxtjs/tailwindcss": "^6.8.0",
     "@types/node": "^18.16.19",
-    "eslint": "^8.45.0",
     "nuxt": "^3.7.0",
     "nuxt3-leaflet": "^1.0.12"
   },
