@@ -1,5 +1,5 @@
-import { IBasicInfo } from "~/utils/interfaces/iBasicInfo";
-import { IGame } from "~/utils/interfaces/iGames";
+import { type IBasicInfo } from "~/utils/interfaces/iBasicInfo";
+import { type IGame } from "~/utils/interfaces/iGames";
 
 export class Game implements IGame, IBasicInfo {
   id: number;

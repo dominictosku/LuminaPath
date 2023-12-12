@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PropType } from "nuxt/dist/app/compat/capi";
 import { useGameStore } from "~/store/games"
 import { Game, MyGame } from "~/utils/model/games";
 
