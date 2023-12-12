@@ -17,7 +17,7 @@ services:
   backend:
     container_name: luminapath-backend
     build:
-      context: ./LuminaPath-Backend
+      context: ./src
       dockerfile: LuminaPath/Dockerfile
     depends_on:
         - db

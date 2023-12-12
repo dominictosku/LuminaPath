@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33424.131
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{6B3FC313-E15A-4067-8AFB-BE761D9636C4}"
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "src\docker-compose.dcproj", "{6B3FC313-E15A-4067-8AFB-BE761D9636C4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Data", "Data\Data.csproj", "{CF3E4D3A-CFF1-48EB-BEB5-606C318E832E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Data", "src\Data\Data.csproj", "{CF3E4D3A-CFF1-48EB-BEB5-606C318E832E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath", "LuminaPath\LuminaPath.csproj", "{3E530078-98B2-490E-A28C-EE3BAE4FC9E3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath", "src\LuminaPath\LuminaPath.csproj", "{3E530078-98B2-490E-A28C-EE3BAE4FC9E3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "..\Test\Test.csproj", "{4C349ECA-B704-48EE-9911-5DA8409F140D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test", "Test\Test.csproj", "{4C349ECA-B704-48EE-9911-5DA8409F140D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

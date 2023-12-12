@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LuminaPath-Backend\Data\Data.csproj" />
-    <ProjectReference Include="..\LuminaPath-Backend\LuminaPath\LuminaPath.csproj" />
+    <ProjectReference Include="..\src\Data\Data.csproj" />
+    <ProjectReference Include="..\srcLuminaPath\LuminaPath.csproj" />
   </ItemGroup>
 
 </Project>
