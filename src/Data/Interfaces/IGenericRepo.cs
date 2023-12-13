@@ -1,7 +1,7 @@
-﻿using Data.Classes;
+﻿using Core.Classes;
 using System.Linq.Expressions;
 
-namespace Data.Interfaces
+namespace Core.Interfaces
 {
 	public interface IGenericRepo<TEntity> where TEntity : class, IBasicInfo
 	{

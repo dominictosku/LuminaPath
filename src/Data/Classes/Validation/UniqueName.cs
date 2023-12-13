@@ -1,13 +1,6 @@
-﻿using Data.Models.Dto;
-using Data.Models.Gaming;
-using System;
-using System.Collections.Generic;
+﻿using Core.Models.Gaming;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Data.Classes.Validation
+namespace Core.Classes.Validation
 {
 	public class UniqueName : ValidationAttribute
 	{

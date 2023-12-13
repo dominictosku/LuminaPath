@@ -1,17 +1,7 @@
-﻿using Data;
-using Data.Models;
-using Data.Repositories;
+﻿using Core;
 using LuminaPath.Helper;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestPlatform.TestHost;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Test.Utilities
 {

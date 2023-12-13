@@ -1,15 +1,10 @@
-﻿using Data.Classes;
-using Data.Models.Dto;
-using Data.Models.Gaming;
+﻿using Core;
+using Core.Classes;
+using Core.Models.Gaming;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Data.Repositories
+namespace Infrastructure.Repositories
 {
 	public class GameRepo : GenericRepo<Game>
 	{

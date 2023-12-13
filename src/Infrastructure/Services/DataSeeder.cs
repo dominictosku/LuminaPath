@@ -1,15 +1,10 @@
 ﻿using Bogus;
-using Data.Models;
-using Data.Models.Gaming;
+using Core;
+using Core.Models;
+using Core.Models.Gaming;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Data.Services
+namespace Infrastructure.Services
 {
 	public static class DataSeeder
 	{

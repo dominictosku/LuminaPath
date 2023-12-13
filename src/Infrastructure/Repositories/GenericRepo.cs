@@ -1,11 +1,10 @@
-﻿using Data.Classes;
-using Data.Interfaces;
+﻿using Core;
+using Core.Classes;
+using Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using System.Net.NetworkInformation;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
-namespace Data.Repositories
+namespace Infrastructure.Repositories
 {
 	public class GenericRepo<TEntity> : IGenericRepo<TEntity> where TEntity : class, IBasicInfo
 	{
@@ -70,7 +69,7 @@ namespace Data.Repositories
 			return entities;
 		}
 
-		protected virtual async Task<PaginatedList<TEntity>> CreatePaginatedList(IQueryable<TEntity> entities, Paging paging) 
+		protected virtual async Task<PaginatedList<TEntity>> CreatePaginatedList(IQueryable<TEntity> entities, Paging paging)
 		{
 			int pageIndex = paging.PageIndex;
 			if (paging.Count > 0)

@@ -1,10 +1,7 @@
 ﻿using AutoMapper;
-using Data.Interfaces;
-using Data.Models.Base;
-using Data.Models.Dto;
+using Core.Interfaces;
+using Core.Models.Base;
 using LuminaPath.Controllers.Base.Generic;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 
 namespace LuminaPath.Controllers.Base
 {
@@ -14,5 +11,5 @@ namespace LuminaPath.Controllers.Base
 		{
 			Mapper = mapper;
 		}
-    }
+	}
 }

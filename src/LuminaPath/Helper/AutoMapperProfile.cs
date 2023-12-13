@@ -1,15 +1,15 @@
 ﻿using AutoMapper;
-using Data.Models.Base;
-using Data.Models.Dto.Gaming;
-using Data.Models.Dto.Quests;
-using Data.Models.Gaming;
-using Data.Models.Quests;
+using Core.Models.Dto.Gaming;
+using Core.Models.Dto.Quests;
+using Core.Models.Gaming;
+using Core.Models.Quests;
 
 namespace LuminaPath.Helper
 {
 	public class AutoMapperProfile : Profile
 	{
-		public AutoMapperProfile() {
+		public AutoMapperProfile()
+		{
 			CreateMap<MyGameDto, MyGame>()
 				.ReverseMap();
 

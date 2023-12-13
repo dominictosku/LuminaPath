@@ -1,12 +1,7 @@
-﻿using Data.Models.Base;
-using System;
-using System.Collections.Generic;
+﻿using Core.Models.Base;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Data.Models.Dto.Gaming
+namespace Core.Models.Dto.Gaming
 {
 	public class MyGameDto
 	{

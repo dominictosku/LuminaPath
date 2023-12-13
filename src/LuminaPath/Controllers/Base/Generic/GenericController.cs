@@ -1,8 +1,7 @@
 ﻿using AutoMapper;
-using Data.Classes;
-using Data.Interfaces;
-using Data.Models;
-using Data.Models.Dto;
+using Core.Classes;
+using Core.Interfaces;
+using Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

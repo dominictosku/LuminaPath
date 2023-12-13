@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Core.Models.Base;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Data.Models.Base;
-using Microsoft.AspNetCore.Http;
 
-namespace Data.Models.Gaming
+namespace Core.Models.Gaming
 {
 	[Flags]
 	public enum Plattforms
@@ -27,7 +20,7 @@ namespace Data.Models.Gaming
 		[Display(Name = "Plattform")]
 		public Plattforms Plattforms { get; set; }
 		[Display(Name = "Estimated playtime")]
-        public int? Playtime { get; set; }
+		public int? Playtime { get; set; }
 		public List<MyGame>? MyGames { get; set; }
 	}
 }

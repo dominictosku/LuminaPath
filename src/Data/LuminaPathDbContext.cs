@@ -1,23 +1,17 @@
-﻿using Data.Models;
-using Data.Models.Base;
-using Data.Models.Gaming;
-using Data.Models.Quests;
-using Microsoft.AspNetCore.Identity;
+﻿using Core.Models;
+using Core.Models.Base;
+using Core.Models.Gaming;
+using Core.Models.Quests;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Data
+namespace Core
 {
 	public class LuminaPathDbContext : IdentityDbContext<LuminaUser>
 	{
-        public LuminaPathDbContext(DbContextOptions<LuminaPathDbContext> options) : base(options)
-        {
-        }
+		public LuminaPathDbContext(DbContextOptions<LuminaPathDbContext> options) : base(options)
+		{
+		}
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{

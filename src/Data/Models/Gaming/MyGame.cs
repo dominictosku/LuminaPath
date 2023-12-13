@@ -1,14 +1,9 @@
-﻿using Data.Interfaces;
-using Data.Models.Base;
-using System;
-using System.Collections.Generic;
+﻿using Core.Interfaces;
+using Core.Models.Base;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Data.Models.Gaming
+namespace Core.Models.Gaming
 {
 	public partial class MyGame : MyMedia, IMyMedia
 	{

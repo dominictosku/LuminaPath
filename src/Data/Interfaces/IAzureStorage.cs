@@ -1,7 +1,7 @@
-﻿using Data.Models.Dto.Blob;
+﻿using Core.Models.Dto.Blob;
 using Microsoft.AspNetCore.Http;
 
-namespace Data.Interfaces
+namespace Core.Interfaces
 {
 	public interface IAzureStorage
 	{

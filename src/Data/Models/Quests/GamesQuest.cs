@@ -1,12 +1,7 @@
-﻿using Data.Models.Base;
-using Data.Models.Gaming;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Core.Models.Base;
+using Core.Models.Gaming;
 
-namespace Data.Models.Quests
+namespace Core.Models.Quests
 {
 	public class GamesQuest : Quest
 	{

@@ -1,22 +1,17 @@
-﻿using Data.Classes;
-using Data.Models;
-using Data.Models.Dto;
-using Data.Models.Gaming;
+﻿using Core;
+using Core.Classes;
+using Core.Models;
+using Core.Models.Gaming;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Data.Repositories
+namespace Infrastructure.Repositories
 {
 	public class MyGameRepo : GenericRepo<MyGame>
 	{
 		public UserManager<LuminaUser> UserManager { get; set; }
-		public MyGameRepo(LuminaPathDbContext context, UserManager<LuminaUser> userManager): base(context) 
+		public MyGameRepo(LuminaPathDbContext context, UserManager<LuminaUser> userManager) : base(context)
 		{
 			UserManager = userManager;
 		}

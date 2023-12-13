@@ -1,14 +1,9 @@
-﻿using Data.Classes;
-using Data.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Core.Classes;
+using Core.Models;
 
-namespace Data.Interfaces
+namespace Core.Interfaces
 {
-    public interface ITokenGenerator
+	public interface ITokenGenerator
 	{
 		public Task<AuthenticationResponse> CreateToken(LuminaUser user);
 	}

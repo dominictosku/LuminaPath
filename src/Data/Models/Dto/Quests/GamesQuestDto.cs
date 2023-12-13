@@ -1,14 +1,8 @@
-﻿using Data.Models.Base;
-using Data.Models.Quests;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Core.Models.Base;
 
-namespace Data.Models.Dto.Quests
+namespace Core.Models.Dto.Quests
 {
-    public class GamesQuestDto : Media
-    {
-    }
+	public class GamesQuestDto : Media
+	{
+	}
 }

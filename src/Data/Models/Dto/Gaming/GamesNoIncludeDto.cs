@@ -1,13 +1,8 @@
-﻿using Data.Models.Base;
-using Data.Models.Gaming;
-using System;
-using System.Collections.Generic;
+﻿using Core.Models.Base;
+using Core.Models.Gaming;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Data.Models.Dto.Gaming
+namespace Core.Models.Dto.Gaming
 {
 	public class GamesNoIncludeDto : Media
 	{

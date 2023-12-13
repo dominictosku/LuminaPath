@@ -1,19 +1,14 @@
 ﻿using AutoMapper;
-using Data.Classes;
-using Data.Interfaces;
-using Data.Models;
-using Data.Models.Dto.Gaming;
-using Data.Models.Gaming;
-using Data.Repositories;
+using Core.Classes;
+using Core.Models;
+using Core.Models.Dto.Gaming;
+using Core.Models.Gaming;
+using Infrastructure.Repositories;
 using LuminaPath.Controllers.Base;
-using LuminaPath.Controllers.Base.Generic;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-
+using Microsoft.Extensions.Logging;
 namespace LuminaPath.Controllers
 {
 	[Route("api/[controller]")]
