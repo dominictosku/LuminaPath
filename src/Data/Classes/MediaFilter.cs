@@ -1,11 +1,6 @@
-﻿using Data.Models.Base;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Core.Models.Base;
 
-namespace Data.Classes
+namespace Core.Classes
 {
 	public class MediaFilter
 	{

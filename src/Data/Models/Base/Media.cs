@@ -1,32 +1,26 @@
-﻿using Data.Classes.Validation;
-using Data.Interfaces;
-using Data.Models;
+﻿using Core.Classes.Validation;
+using Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Data.Models.Base
+namespace Core.Models.Base
 {
-    [Index(nameof(Name), IsUnique = true)]
-    public abstract class Media : IBasicInfo
-    {
-        public int Id { get; set; }
+	[Index(nameof(Name), IsUnique = true)]
+	public abstract class Media : IBasicInfo
+	{
+		public int Id { get; set; }
 
-        [Required]
-        [StringLength(50)]
-        [UniqueName]
-        [Display(Name = "Title")]
-        public string? Name { get; set; }
-        public string? Description { get; set; }
-        public string? Genre { get; set; }
+		[Required]
+		[StringLength(50)]
+		[UniqueName]
+		[Display(Name = "Title")]
+		public string? Name { get; set; }
+		public string? Description { get; set; }
+		public string? Genre { get; set; }
 
-        [DataType(DataType.Date)]
+		[DataType(DataType.Date)]
 		[Display(Name = "Release Date")]
 		public DateTime? ReleaseDate { get; set; }
-        public string ImageUrl { get; set; } = string.Empty;
-    }
+		public string ImageUrl { get; set; } = string.Empty;
+	}
 }

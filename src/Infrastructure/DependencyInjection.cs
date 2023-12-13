@@ -1,23 +1,26 @@
-﻿using Data.Models;
-using Data;
+﻿using Core;
+using Core.Models;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-
-namespace LuminaPath.Services
+namespace Infrastructure
 {
-	public static class LuminaDatabase
+	public static class DependencyInjection
 	{
-		public static void ConfigurateLuminaDatabase(this WebApplicationBuilder builder)
+		public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
 		{
-			var connectionstring = builder.Configuration.GetConnectionString("Default");
-			var Jwt = builder.Configuration.GetSection("Jwt");
-			builder.Services.AddDbContext<LuminaPathDbContext>(options =>
+			var connectionstring = config.GetConnectionString("Default");
+			var Jwt = config.GetSection("Jwt");
+			services.AddDbContext<LuminaPathDbContext>(options =>
 				options.UseMySql(connectionstring, ServerVersion.AutoDetect(connectionstring)));
 
-			builder.Services.AddIdentity<LuminaUser, IdentityRole>(options =>
+			services.AddIdentity<LuminaUser, IdentityRole>(options =>
 			{
 				// Password settings.
 				options.Password.RequireDigit = true;
@@ -42,7 +45,7 @@ namespace LuminaPath.Services
 				.AddDefaultTokenProviders();
 
 			// Authentication options
-			builder.Services
+			services
 				.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 				.AddJwtBearer(options =>
 				{
@@ -67,6 +70,31 @@ namespace LuminaPath.Services
 						}
 					};
 				});
+
+			return services;
+		}
+
+		public static async Task MigrateDevelopment(this WebApplication app)
+		{
+			using (var serviceScope = app.Services.CreateScope())
+			{
+				var services = serviceScope.ServiceProvider;
+				var userManager = serviceScope.ServiceProvider.GetRequiredService<UserManager<LuminaUser>>();
+				var roleManager = serviceScope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+				var context = serviceScope.ServiceProvider.GetRequiredService<LuminaPathDbContext>();
+
+
+				// Migrations
+				try
+				{
+					context.Database.Migrate();
+					await context.SeedDatabase(userManager, roleManager);
+				}
+				catch (Exception e)
+				{
+					Console.WriteLine("Error: ", e);
+				}
+			}
 		}
 	}
 }

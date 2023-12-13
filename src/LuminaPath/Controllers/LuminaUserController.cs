@@ -1,8 +1,7 @@
-﻿using Data.Classes;
-using Data.Interfaces;
-using Data.Models;
-using Data.Models.Dto;
-using Data.Services;
+﻿using Core.Classes;
+using Core.Interfaces;
+using Core.Models;
+using Core.Models.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;

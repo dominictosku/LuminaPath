@@ -1,12 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Org.BouncyCastle.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Data.Classes
+namespace Core.Classes
 {
 	public class PaginatedList<T> : List<T>
 	{
@@ -18,7 +12,7 @@ namespace Data.Classes
 			PageIndex = pageIndex;
 			TotalPages = (int)Math.Ceiling(count / (double)pageSize);
 
-			this.AddRange(items);
+			AddRange(items);
 		}
 
 		public bool HasPreviousPage => PageIndex > 1;

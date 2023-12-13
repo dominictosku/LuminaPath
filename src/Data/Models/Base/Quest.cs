@@ -1,12 +1,7 @@
-﻿using Data.Interfaces;
-using System;
-using System.Collections.Generic;
+﻿using Core.Interfaces;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Data.Models.Base
+namespace Core.Models.Base
 {
 	public class Quest : IBasicInfo
 	{

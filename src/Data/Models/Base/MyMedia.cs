@@ -1,30 +1,25 @@
-﻿using Data.Interfaces;
-using System;
-using System.Collections.Generic;
+﻿using Core.Interfaces;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Data.Models.Base
+namespace Core.Models.Base
 {
-    public enum ProgressionStatus
-    {
+	public enum ProgressionStatus
+	{
 		Open,
-        Planned,
-        InProgress,
-        Completed,
+		Planned,
+		InProgress,
+		Completed,
 	}
 
 	public abstract class MyMedia : IBasicInfo
-    {
-        public int Id { get; set; }
-        [Range(1, 10)]
-        public byte? Rating { get; set; }
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
-        public ProgressionStatus Status { get; set; }
-        public int? TimeSpend { get; set; }
+	{
+		public int Id { get; set; }
+		[Range(1, 10)]
+		public byte? Rating { get; set; }
+		public DateTime? StartDate { get; set; }
+		public DateTime? EndDate { get; set; }
+		public ProgressionStatus Status { get; set; }
+		public int? TimeSpend { get; set; }
 		public string? LuminaUserId { get; set; }
 		public LuminaUser? LuminaUser { get; set; }
 	}

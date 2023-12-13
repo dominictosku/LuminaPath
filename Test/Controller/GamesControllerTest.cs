@@ -1,35 +1,30 @@
 using AutoMapper;
-using Data;
-using Data.Classes;
-using Data.Interfaces;
-using Data.Models;
-using Data.Repositories;
-using Data.Services;
-using Google.Protobuf.WellKnownTypes;
+using Core;
+using Core.Classes;
+using Core.Interfaces;
+using Infrastructure.Repositories;
 using LuminaPath.Controllers;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System;
 using Test.Utilities;
 
 namespace Test.Controller
 {
-    public class GamesControllerTest
-    {
-        [Fact]
-        public async Task GetAsync_GetAllGamesWithMyGames_WhenLoggedIn()
-        {
+	public class GamesControllerTest
+	{
+		[Fact]
+		public async Task GetAsync_GetAllGamesWithMyGames_WhenLoggedIn()
+		{
 			using (var db = new LuminaPathDbContext(Utilities.DbContext.TestDbContextOptions()))
 			{
 				// Arrange
 				string[] names = new string[] {
 					"Apex",
 					"God of War"
-				}; 
+				};
 				var filter = new MediaFilter();
 				var gameRepo = new GameRepo(db);
 				var azure = new Mock<IAzureStorage>().Object;
@@ -51,5 +46,5 @@ namespace Test.Controller
 					actualGames.Data.OrderBy(g => g.Id).Select(g => g.Id));
 			}
 		}
-    }
+	}
 }

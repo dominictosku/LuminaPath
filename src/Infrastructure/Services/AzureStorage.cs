@@ -1,13 +1,12 @@
 ﻿using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using Data.Interfaces;
-using Data.Models.Dto.Blob;
+using Core.Interfaces;
+using Core.Models.Dto.Blob;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Data.Services
+namespace Infrastructure.Services
 {
 	public class AzureStorage : IAzureStorage
 	{

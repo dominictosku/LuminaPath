@@ -1,20 +1,16 @@
-﻿using Data.Classes;
-using Data.Interfaces;
-using Data.Models;
+﻿using Core.Classes;
+using Core.Interfaces;
+using Core.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace Data.Services
+namespace Infrastructure.Services
 {
-    public class JwtService : ITokenGenerator
+	public class JwtService : ITokenGenerator
 	{
 		private const int EXPIRATION_MINUTES = 1;
 
