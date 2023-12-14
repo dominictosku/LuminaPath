@@ -11,7 +11,7 @@ using System.Security.Claims;
 namespace LuminaPath.Controllers.Base.Generic
 {
 	[ApiController]
-	[Authorize(AuthenticationSchemes = "Bearer")]
+	//[Authorize(AuthenticationSchemes = "Bearer")]
 	[Route("api/[controller]")]
 	[Authorize]
 	public abstract class GenericController<TEntity, TEntityDto> : ControllerBase where TEntity : class, IBasicInfo

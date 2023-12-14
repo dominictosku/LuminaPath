@@ -1,4 +1,6 @@
-﻿using Core.Interfaces;
+﻿using Core;
+using Core.Interfaces;
+using Core.Models;
 using Core.Models.Gaming;
 using Core.Models.Quests;
 using Infrastructure;
@@ -7,7 +9,9 @@ using Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -47,6 +51,7 @@ namespace Server
 
 			services.AddEndpointsApiExplorer();
 			services.AddSwaggerGen();
+
 			services.AddScoped<ITokenGenerator, JwtService>();
 			services.AddTransient<IGenericRepo<Game>, GenericRepo<Game>>();
 			services.AddTransient<IGenericRepo<MyGame>, GenericRepo<MyGame>>();
@@ -66,18 +71,7 @@ namespace Server
 				ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 			});
 
-			// Configure the HTTP request pipeline.
-			if (app.Environment.IsDevelopment())
-			{
-				app.UseSwagger();
-				app.UseSwaggerUI();
-				await app.MigrateDevelopment();
-			}
-			else
-			{
-				await app.MigrateDevelopment(); // Temporary add migrations to Production
-				app.UseHsts();
-			}
+			await ConfigureEnvironment(app);
 
 			app.Use(async (context, next) =>
 			{
@@ -99,7 +93,24 @@ namespace Server
 			app.UseAuthentication();
 			app.UseAuthorization();
 
+			app.MapIdentityApi<LuminaUser>();
 			app.MapControllers();
+		}
+
+		private static async Task ConfigureEnvironment(WebApplication app)
+		{
+			// Configure the HTTP request pipeline.
+			if (app.Environment.IsDevelopment())
+			{
+				app.UseSwagger();
+				app.UseSwaggerUI();
+				await app.MigrateDevelopment();
+			}
+			else
+			{
+				await app.MigrateDevelopment(); // Temporary add migrations to Production
+				app.UseHsts();
+			}
 		}
 	}
 }
