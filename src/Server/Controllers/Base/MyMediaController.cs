@@ -2,12 +2,12 @@
 using Core.Interfaces;
 using Core.Models;
 using Core.Models.Base;
-using LuminaPath.Controllers.Base.Generic;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Server.Controllers.Base.Generic;
 
-namespace LuminaPath.Controllers.Base
+namespace Server.Controllers.Base
 {
 	[Authorize]
 	public abstract class MyMediaController<TEntity, TEntityDto> : GenericController<TEntity, TEntityDto> where TEntity : MyMedia, IMyMedia

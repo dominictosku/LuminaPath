@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
 using Core.Interfaces;
 using Core.Models.Base;
-using LuminaPath.Controllers.Base.Generic;
+using Server.Controllers.Base.Generic;
 
-namespace LuminaPath.Controllers.Base
+namespace Server.Controllers.Base
 {
 	public abstract class MediaController<TEntity, TEntityDto> : GenericController<TEntity, TEntityDto> where TEntity : Media, IBasicInfo
 	{

@@ -11,9 +11,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 using System.Security.Claims;
-using LuminaPath.Controllers.Base;
+using Server.Controllers.Base;
 
-namespace LuminaPath.Controllers
+namespace Server.Controllers
 {
 	public class GamesController : MediaController<Game, GamesDto>
 	{

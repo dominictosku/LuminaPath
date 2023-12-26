@@ -3,12 +3,13 @@ using Core.Interfaces;
 using Core.Models;
 using Core.Models.Dto.Quests;
 using Core.Models.Quests;
-using LuminaPath.Controllers.Base.Generic;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Server.Controllers.Base.Generic;
 using System.Security.Claims;
 
-namespace LuminaPath.Controllers
+namespace Server.Controllers
 {
 	public class QuestsController : GenericController<GamesQuest, GamesQuestDto>
 	{

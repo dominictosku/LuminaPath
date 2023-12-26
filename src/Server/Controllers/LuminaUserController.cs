@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace LuminaPath.Controllers
+namespace Server.Controllers
 {
 	[Route("api/[controller]")]
 	[Authorize(AuthenticationSchemes = "Bearer")]

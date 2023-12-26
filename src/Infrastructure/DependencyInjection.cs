@@ -52,8 +52,8 @@ namespace Infrastructure
 
 		private static void AddDefaultIdentity(IServiceCollection services, IConfiguration config)
 		{
-			services.AddAuthorization();
-			services.AddIdentityApiEndpoints<LuminaUser>(options =>
+            services.AddAuthorization();
+            services.AddIdentityApiEndpoints<LuminaUser>(options =>
 			{
 				// Password settings.
 				options.Password.RequireDigit = true;
@@ -75,7 +75,8 @@ namespace Infrastructure
 			})
 				.AddRoles<IdentityRole>()
 				.AddEntityFrameworkStores<LuminaPathDbContext>()
-				.AddDefaultTokenProviders();
+                .AddSignInManager()
+                .AddDefaultTokenProviders();
 		}
 
 		private static void AddCustomBearerIdentity(IServiceCollection services, IConfiguration config)

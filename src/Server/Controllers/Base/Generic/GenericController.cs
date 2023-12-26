@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
-namespace LuminaPath.Controllers.Base.Generic
+namespace Server.Controllers.Base.Generic
 {
 	[ApiController]
 	//[Authorize(AuthenticationSchemes = "Bearer")]
