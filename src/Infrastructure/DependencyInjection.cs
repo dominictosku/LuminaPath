@@ -9,7 +9,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 namespace Infrastructure
 {
 	public static class DependencyInjection

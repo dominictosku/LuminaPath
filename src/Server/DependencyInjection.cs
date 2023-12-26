@@ -93,7 +93,8 @@ namespace Server
 			app.UseAuthentication();
 			app.UseAuthorization();
 
-			app.MapIdentityApi<LuminaUser>();
+			app.MapGroup("/api")
+				.MapIdentityApi<LuminaUser>();
 			app.MapControllers();
 		}
 
