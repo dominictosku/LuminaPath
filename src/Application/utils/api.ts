@@ -101,21 +101,21 @@ export async function PostImage<T>(id: number, forms: any, prefix: string) {
 // User requests
 
 export async function LoginUser(Credentials: Credentials) {
-  const url = "/LuminaUser/BearerToken";
+  const url = "/login?useCookies=true";
   const config = fetchConfig<Credentials>('POST', null, Credentials)
   await apiCall(url, config);
   return "data.token";
 }
 
 export async function RefreshToken() {
-  const url = "/LuminaUser/refresh";
-  const config = fetchConfig('GET')
+  const url = "/refresh";
+  const config = fetchConfig('POST')
   await apiCall(url, config);
 }
 
 export async function GetStatus() {
-  const url = "/LuminaUser/status";
-  const config = fetchConfig('GET')
+  const url = "/refresh";
+  const config = fetchConfig('POST')
   await apiCall(url, config);
 }
 
