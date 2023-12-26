@@ -4,12 +4,12 @@ using Core.Models;
 using Core.Models.Dto.Gaming;
 using Core.Models.Gaming;
 using Infrastructure.Repositories;
-using LuminaPath.Controllers.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-namespace LuminaPath.Controllers
+using Server.Controllers.Base;
+namespace Server.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
