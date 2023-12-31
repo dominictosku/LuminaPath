@@ -90,11 +90,6 @@ namespace Server
 
 			app.UseCors(MyAllowSpecificOrigins);
 			app.UseHttpsRedirection();
-			app.UseAuthentication();
-			app.UseAuthorization();
-
-			app.MapGroup("/api")
-				.MapIdentityApi<LuminaUser>();
 			app.MapControllers();
 		}
 
