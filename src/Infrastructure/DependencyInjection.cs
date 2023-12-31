@@ -3,11 +3,15 @@ using Core.Models;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using System.Net;
 using System.Text;
 namespace Infrastructure
 {
@@ -78,7 +82,16 @@ namespace Infrastructure
                 .AddDefaultTokenProviders();
 		}
 
-		private static void AddCustomBearerIdentity(IServiceCollection services, IConfiguration config)
+        public static void ConfigureInfrastructure(this WebApplication app)
+        {
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.MapGroup("/api")
+                .MapIdentityApi<LuminaUser>();
+        }
+
+        private static void AddCustomBearerIdentity(IServiceCollection services, IConfiguration config)
 		{
 			var Jwt = config.GetSection("Jwt");
 			services.AddIdentity<LuminaUser, IdentityRole>(options =>
