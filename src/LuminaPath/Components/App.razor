@@ -9,11 +9,11 @@
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="LuminaPath.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <HeadOutlet @rendermode="@InteractiveServer" />
+    <HeadOutlet @rendermode="@RenderModeForPage" />
 </head>
 
 <body>
-    <Routes @rendermode="@InteractiveServer" />
+    <Routes @rendermode="@RenderModeForPage" />
     <script src="_framework/blazor.web.js"></script>
 </body>
 
@@ -22,4 +22,7 @@
 @code {
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
+    private IComponentRenderMode? RenderModeForPage => HttpContext.Request.Path.StartsWithSegments("/Account")
+    ? null
+    : InteractiveServer;
 }
