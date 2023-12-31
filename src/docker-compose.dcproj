@@ -2,7 +2,7 @@
 <Project ToolsVersion="15.0" Sdk="Microsoft.Docker.Sdk">
   <PropertyGroup Label="Globals">
     <ProjectVersion>2.1</ProjectVersion>
-	<DockerComposeProjectName>luminapath</DockerComposeProjectName>
+    <DockerComposeProjectName>luminapath</DockerComposeProjectName>
     <DockerTargetOS>Linux</DockerTargetOS>
     <ProjectGuid>6b3fc313-e15a-4067-8afb-be761d9636c4</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
@@ -15,5 +15,6 @@
     </None>
     <None Include="docker-compose.yml" />
     <None Include=".dockerignore" />
+    <None Include="LuminaPath\Components\Pages\Media\Games\Index.razor.cs" />
   </ItemGroup>
 </Project>

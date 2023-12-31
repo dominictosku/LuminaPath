@@ -11,7 +11,10 @@ namespace LuminaPath
         public static IServiceCollection AddBlazor(this IServiceCollection services)
         {
             services.AddRazorComponents()
-                .AddInteractiveServerComponents();
+                .AddInteractiveServerComponents()
+                .AddCircuitOptions(e => {
+					e.DetailedErrors = true;
+				});
 
             services.AddCascadingAuthenticationState();
             services.AddScoped<IdentityUserAccessor>();
