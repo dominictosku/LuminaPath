@@ -11,6 +11,7 @@ builder.Services
 	.AddBlazor();
 
 builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddQuickGridEntityFrameworkAdapter();
 
 var app = builder.Build();
 

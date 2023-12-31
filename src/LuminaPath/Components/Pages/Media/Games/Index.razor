@@ -1,0 +1,30 @@
+﻿@page "/Media/Games"
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+<PageTitle>Games</PageTitle>
+
+<h1>Games</h1>
+
+@if (games == null)
+{
+	<p><em>Loading...</em></p>
+}
+else
+{
+	<div class="grid">
+		<QuickGrid Items="@games" Pagination="@pagination">
+			<PropertyColumn Property="@(c => c.Name)" Sortable="true">
+				<ColumnOptions>
+					<div class="search-box">
+						<input type="search" autofocus @bind="nameFilter" @bind:event="oninput" placeholder="Title..." />
+					</div>
+				</ColumnOptions>
+			</PropertyColumn>
+			<PropertyColumn Property="@(c => c.Description)" Class="game-description" Sortable="true" Align="Align.Right" />
+			<PropertyColumn Property="@(c => c.Genre)" Sortable="true" Align="Align.Right" />
+			<PropertyColumn Property="@(c => c.ReleaseDate)" Sortable="true" Align="Align.Right" />
+		</QuickGrid>
+	</div>
+
+	<Paginator State="@pagination" />
+}

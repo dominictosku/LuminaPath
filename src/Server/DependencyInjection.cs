@@ -127,6 +127,7 @@ namespace Server
 			}
 			else
 			{
+				app.UseExceptionHandler("/Error", createScopeForErrors: true);
 				await app.MigrateDevelopment(); // Temporary add migrations to Production
 				app.UseHsts();
 			}
