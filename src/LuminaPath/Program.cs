@@ -7,8 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services
 	.AddInfrastructure(builder.Configuration)
-	.AddServices(builder.Configuration)
-	.AddServer()
+	.AddServer(builder.Configuration)
 	.AddBlazor();
 
 builder.Services.AddAutoMapper(typeof(Program));
