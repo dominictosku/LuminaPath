@@ -1,6 +1,5 @@
 import { BaseStore } from "~/utils/classes/baseStore";
-import { IStore } from "~/utils/interfaces/IBasicStore";
-import { IGame } from "~/utils/interfaces/iGames";
+import { type IStore } from "~/utils/interfaces/IBasicStore";
 import { Game, MediaFilter } from "#imports";
 import { MediaComponent } from "~/utils/classes/mediaComponent";
 import Games from "~/components/Forms/Game/Form.vue";
