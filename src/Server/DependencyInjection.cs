@@ -54,7 +54,6 @@ namespace Server
 
         private static void AddServices(IServiceCollection services, IConfiguration config)
         {
-            services.AddScoped<ITokenGenerator, JwtService>();
             AddStorageService(services, config);
             AddRepositories(services);
         }
