@@ -4,11 +4,11 @@ import { useGameStore } from '~/store/games';
 const store = useGameStore()
 const countMedia = ref(50)
 store.Filter.setCount(countMedia.value)
-await useAsyncData(`${store.Id}${countMedia.value}`, () => store.Api.getMedia(store.Id, store.Filter))
+await useAsyncData(`${store.Id}${countMedia.value}`, () => store.Api.getMedia())
 const ionInfinite = async (ev: any) => {
     countMedia.value += 50;
     store.Filter.setCount(countMedia.value)
-    await store.Api.getMedia(store.Id, store.Filter);
+    await store.Api.getMedia();
     setTimeout(() => {
         ev.target.complete();
     }, 500);

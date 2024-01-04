@@ -1,5 +1,5 @@
 import { MediaComponent } from "~/utils/classes/mediaComponent"
-import { type IApi } from "./IApiInterface"
+import { type IApi } from "./IApi"
 import { type IBasicInfo } from "./iBasicInfo"
 import {MediaFilter} from "~/utils/classes/mediaFilter"
 

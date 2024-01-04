@@ -3,7 +3,7 @@ import { useGameStore } from '~/store/games';
 
 const store = useGameStore();
 store.Filter.setPageIndex(store.PageIndex)
-await useAsyncData(`${store.Id}${store.PageIndex}`, () => store.Api.getMedia(store.Id, store.Filter))
+await useAsyncData(`${store.Id}${store.PageIndex}`, () => store.Api.getMedia())
 
 async function getPaginatedMedia(page: number) {
     if (page < 1) {
@@ -13,7 +13,7 @@ async function getPaginatedMedia(page: number) {
         page = store.TotalPages;
     }
     store.Filter.setPageIndex(page)
-    await store.Api.getMedia(store.Id, store.Filter);
+    await store.Api.getMedia();
 }
 </script>
 <template>
