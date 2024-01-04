@@ -17,11 +17,9 @@ export const useGameStore = defineStore("games", (): IStore<Game> => {
     Media,
     Filter,
     MainEndpoint,
-    PageIndex,
-    TotalPages,
+    Paging,
     Api,
   } = BaseStore<Game>("games");
-  MainEndpoint.value = "games";
   const GameComponents = new MediaComponent(Games, Data, MediaColumns);
 
   const MyGameComponents = new MediaComponent(MyGames, MyData, MyMediaColumns);
@@ -54,12 +52,9 @@ export const useGameStore = defineStore("games", (): IStore<Game> => {
     Id,
     Media,
     Filter,
-    PageIndex,
+    Paging,
     Type,
-    TotalPages,
     ActiveComponent,
-    GameComponents,
-    MyGameComponents,
     Api,
     changeMode,
   };
