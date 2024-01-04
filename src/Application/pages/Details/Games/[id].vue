@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IGame } from '~/utils/interfaces/iGames';
+import { type IGame } from '~/utils/interfaces/iGames';
 import { useRoute } from 'vue-router';
 import Modal from '~/components/Forms/Create.vue';
 import { create } from 'ionicons/icons';

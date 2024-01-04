@@ -28,21 +28,5 @@ namespace Server.Controllers
 			Includes = new List<string> { "Game" };
 			_myGameRepo = service;
 		}
-
-		[HttpGet("games")]
-		public async Task<ActionResult<PaginatedResult<GamesDto>>> GetGames([FromQuery] MediaFilter mediaFilter)
-		{
-			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
-			if (user == null)
-				return NotFound("User not found, please login");
-			PaginatedList<MyGame> entities = await _myGameRepo.GetAllPaginated(mediaFilter.Paging, user.Id);
-			List<Game> games = new List<Game>();
-			foreach (var myGame in entities)
-			{
-				games.Add(myGame.Game);
-			}
-			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(games);
-			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
-		}
 	}
 }

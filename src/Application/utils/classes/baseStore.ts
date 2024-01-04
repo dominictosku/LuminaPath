@@ -1,35 +1,27 @@
-import { IApi } from "../interfaces/IApiInterface";
-import { IBasicInfo } from "../interfaces/iBasicInfo";
+import { type IApi } from "../interfaces/IApi";
+import { type IBasicInfo } from "../interfaces/iBasicInfo";
 import { MediaFilter } from "./mediaFilter";
 import { PaginateResult } from "./paginatedResult";
 export function BaseStore<T extends IBasicInfo>(id: string) {
-  const Id : Ref<string> = ref(id)
-  const NextEndpoint = ref("")
-  const AddEnpoint = computed(() => {
-    if(NextEndpoint.value == ""){
-      return "";
-    }
-    return `/${NextEndpoint.value}`
-  })
+  const Id: Ref<string> = ref(id);
+  const MainEndpoint = ref("")
   const MediaList: Ref<T[]> = ref([]);
   const PageIndex: Ref<number> = ref(1);
   const TotalPages: Ref<number> = ref(1);
   const Media = computed(() => {
     return MediaList.value;
   });
+  const Filter = ref(new MediaFilter())
 
-const ChangeActiveValue = (value: any) => {
-    MediaList.value = value
-}
+  const ChangeActiveValue = (value: any) => {
+    MediaList.value = value;
+  };
 
   const Api: IApi<IBasicInfo> = {
-    getMedia: async (
-      endPoint: string,
-      mediaFilter?: MediaFilter
-    ): Promise<PaginateResult<IBasicInfo>> => {
+    getMedia: async (): Promise<PaginateResult<IBasicInfo>> => {
       let response = await fetchPaginatedMedia<IBasicInfo>(
-        endPoint + AddEnpoint.value,
-        mediaFilter
+        MainEndpoint.value,
+        Filter.value
       );
       if (typeof response === "object" && response != null)
         ChangeActiveValue(response.data);
@@ -38,13 +30,16 @@ const ChangeActiveValue = (value: any) => {
       return response;
     },
 
-    getMediaById: async (id: number, endPoint: string): Promise<T | undefined> => {
+    getMediaById: async (
+      id: number,
+      endPoint: string
+    ): Promise<T | undefined> => {
       return await fetchMediaById<T>(id, endPoint);
     },
 
     removeMedia: async (id: number, endPoint: string) => {
       await deleteMedia(id, endPoint);
-      await Api.getMedia(endPoint);
+      await Api.getMedia();
       return;
     },
 
@@ -54,15 +49,16 @@ const ChangeActiveValue = (value: any) => {
       } else {
         await PutMedia(media, endPoint);
       }
-      await Api.getMedia(Id.value);
+      await Api.getMedia();
       return;
     },
   };
 
   return {
     Id,
+    MainEndpoint,
+    Filter,
     Media,
-    NextEndpoint,
     PageIndex,
     TotalPages,
     Api,

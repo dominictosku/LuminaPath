@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 using System.Security.Claims;
 using Server.Controllers.Base;
+using Server.Helper;
 
 namespace Server.Controllers
 {
@@ -34,10 +35,14 @@ namespace Server.Controllers
 		{
 			string userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			PaginatedList<Game> entities;
-			Expression<Func<Game, bool>>? filter = null;
+			Expression<Func<Game, bool>>? filter = g => true;
 			if (mediaFilter.SearchString != null)
 			{
 				filter = g => g.Name.Contains(mediaFilter.SearchString);
+			}
+			if (mediaFilter.MyMedia)
+			{
+				filter = filter.And(g => g.MyGames == null ? false : g.MyGames.Where(m => m.LuminaUserId == userId).Count() >= 1);
 			}
 			if (userId != null)
 			{

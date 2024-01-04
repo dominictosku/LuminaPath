@@ -1,6 +1,6 @@
 import { BaseStore } from "~/utils/classes/baseStore";
-import { type IStore } from "~/utils/interfaces/IBasicStore";
-import { Game, MediaFilter } from "#imports";
+import { type IStore } from "~/utils/interfaces/IStore";
+import { Game } from "#imports";
 import { MediaComponent } from "~/utils/classes/mediaComponent";
 import Games from "~/components/Forms/Game/Form.vue";
 import MyGames from "~/components/Forms//Game/MyForm.vue";
@@ -15,28 +15,29 @@ export const useGameStore = defineStore("games", (): IStore<Game> => {
   const {
     Id: id,
     Media,
-    NextEndpoint,
+    Filter,
+    MainEndpoint,
     PageIndex,
     TotalPages,
     Api,
   } = BaseStore<Game>("games");
+  MainEndpoint.value = "games";
   const GameComponents = new MediaComponent(Games, Data, MediaColumns);
 
   const MyGameComponents = new MediaComponent(MyGames, MyData, MyMediaColumns);
   const activeComponent = shallowRef(GameComponents);
-  const Filter = ref(new MediaFilter())
 
   function changeMode(): string {
     if (id.value == Type.MyGames) {
       id.value = Type.Games;
       activeComponent.value = GameComponents;
-      NextEndpoint.value = ""
+      Filter.value.MyMedia = false;
       return "Media";
     }
     else {
       id.value = Type.MyGames;
       activeComponent.value = MyGameComponents;
-      NextEndpoint.value = Type.Games
+      Filter.value.MyMedia = true;
       return "MyMedia";
     } 
   }

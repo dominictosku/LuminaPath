@@ -4,7 +4,7 @@ const store = useGameStore()
 const isGrid = ref(true)
 
 const handleRefresh = async (event: any) => {
-  await store.Api.getMedia(store.Id)
+  await store.Api.getMedia()
   event.target.complete();
 };
 

@@ -53,6 +53,7 @@ export async function fetchPaginatedMedia<T>(
   // otherwise the asp.net api does not recognize the paging
   const params = {
     "searchString": mediaFilter?.SearchString,
+    "myMedia": mediaFilter?.MyMedia,
     "status": mediaFilter?.Status,
     "paging.pageIndex": mediaFilter?.Paging.PageIndex,
     "paging.count": mediaFilter?.Paging.Count
