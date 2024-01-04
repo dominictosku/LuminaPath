@@ -2,12 +2,12 @@ import { type IApi } from "../interfaces/IApi";
 import { type IBasicInfo } from "../interfaces/iBasicInfo";
 import { MediaFilter } from "./mediaFilter";
 import { PaginateResult } from "./paginatedResult";
+import { Pagination } from "./pagination";
 export function BaseStore<T extends IBasicInfo>(id: string) {
   const Id: Ref<string> = ref(id);
-  const MainEndpoint = ref("")
+  const MainEndpoint = ref(id)
   const MediaList: Ref<T[]> = ref([]);
-  const PageIndex: Ref<number> = ref(1);
-  const TotalPages: Ref<number> = ref(1);
+  const Paging = ref(new Pagination())
   const Media = computed(() => {
     return MediaList.value;
   });
@@ -25,8 +25,8 @@ export function BaseStore<T extends IBasicInfo>(id: string) {
       );
       if (typeof response === "object" && response != null)
         ChangeActiveValue(response.data);
-      PageIndex.value = response.currentPage;
-      TotalPages.value = response.pages;
+      Paging.value.PageIndex = response.currentPage;
+      Paging.value.TotalPages = response.pages;
       return response;
     },
 
@@ -59,8 +59,7 @@ export function BaseStore<T extends IBasicInfo>(id: string) {
     MainEndpoint,
     Filter,
     Media,
-    PageIndex,
-    TotalPages,
+    Paging,
     Api,
   };
 }

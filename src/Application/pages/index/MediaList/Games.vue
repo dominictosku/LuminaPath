@@ -8,7 +8,7 @@ const { data: games, pending, error } = await useAsyncData('games', () => store.
 const toggle = async () => {
   refresh.value = !refresh.value
   store.changeMode()
-  await useAsyncData(store.Id, () => store.Api.getMedia())
+  await useAsyncData('games', () => store.Api.getMedia())
 }
 </script>
 <template>

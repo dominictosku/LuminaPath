@@ -2,15 +2,19 @@
 import { useGameStore } from '~/store/games';
 
 const store = useGameStore();
-store.Filter.setPageIndex(store.PageIndex)
-await useAsyncData(`${store.Id}${store.PageIndex}`, () => store.Api.getMedia())
+const PageIndex = computed(() => {
+    return store.Paging.PageIndex;
+})
+
+store.Filter.setPageIndex(store.Paging.PageIndex)
+await useAsyncData(`${store.Id}${store.Paging.PageIndex}`, () => store.Api.getMedia())
 
 async function getPaginatedMedia(page: number) {
     if (page < 1) {
         page = 1;
     }
-    if (page > store.TotalPages) {
-        page = store.TotalPages;
+    if (page > store.Paging.TotalPages) {
+        page = store.Paging.TotalPages;
     }
     store.Filter.setPageIndex(page)
     await store.Api.getMedia();
@@ -26,7 +30,7 @@ async function getPaginatedMedia(page: number) {
                     <span>{{ store.Id }}</span>
                     <ul class="inline-flex items-stretch -space-x-px">
                         <li>
-                            <p @click="getPaginatedMedia(store.PageIndex - 1)"
+                            <p @click="getPaginatedMedia(PageIndex - 1)"
                                 class="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
                                 <span class="sr-only">Previous</span>
                                 <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20"
@@ -37,40 +41,40 @@ async function getPaginatedMedia(page: number) {
                                 </svg>
                             </p>
                         </li>
-                        <li v-if="store.PageIndex > 2">
-                            <p @click="getPaginatedMedia(store.PageIndex - 2)"
+                        <li v-if="PageIndex > 2">
+                            <p @click="getPaginatedMedia(PageIndex - 2)"
                                 class="cursor-pointer flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                                {{ store.PageIndex - 2 }}
+                                {{ PageIndex - 2 }}
                             </p>
                         </li>
-                        <li v-if="store.PageIndex > 1">
-                            <p @click="getPaginatedMedia(store.PageIndex - 1)"
+                        <li v-if="PageIndex > 1">
+                            <p @click="getPaginatedMedia(PageIndex - 1)"
                                 class="cursor-pointer flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                                {{ store.PageIndex - 1 }}
+                                {{ PageIndex - 1 }}
                             </p>
                         </li>
                         <li>
-                            <p @click="getPaginatedMedia(store.PageIndex)" aria-current="page"
+                            <p @click="getPaginatedMedia(PageIndex)" aria-current="page"
                                 class="cursor-pointer z-10 flex items-center justify-center px-3 py-2 text-sm leading-tight border text-primary-600 bg-primary-50 border-primary-300 hover:bg-primary-100 hover:text-primary-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white">
-                                {{ store.PageIndex }}
+                                {{ PageIndex }}
                             </p>
                         </li>
-                        <template v-if="store.PageIndex < store.TotalPages">
-                            <li v-if="store.TotalPages > 2">
-                                <p @click="getPaginatedMedia(store.PageIndex + 1)"
+                        <template v-if="PageIndex < store.Paging.TotalPages">
+                            <li v-if="store.Paging.TotalPages > 2">
+                                <p @click="getPaginatedMedia(PageIndex + 1)"
                                     class="cursor-pointer flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                                    {{ store.PageIndex + 1 }}
+                                    {{ PageIndex + 1 }}
                                 </p>
                             </li>
-                            <li v-if="store.TotalPages > 2 && store.PageIndex != store.TotalPages -1">
-                                <p @click="getPaginatedMedia(store.TotalPages)"
+                            <li v-if="store.Paging.TotalPages > 2 && PageIndex != store.Paging.TotalPages -1">
+                                <p @click="getPaginatedMedia(store.Paging.TotalPages)"
                                     class="cursor-pointer flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                                    {{ store.TotalPages }}
+                                    {{ store.Paging.TotalPages }}
                                 </p>
                             </li>
                         </template>
                         <li>
-                            <p @click="getPaginatedMedia(store.PageIndex + 1)"
+                            <p @click="getPaginatedMedia(PageIndex + 1)"
                                 class="cursor-pointer flex items-center justify-center h-full py-1.5 px-3 leading-tight text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
                                 <span class="sr-only">Next</span>
                                 <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20"
