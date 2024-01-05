@@ -1,0 +1,40 @@
+﻿@page "/Media/Games/Update/{id}"
+@using Core.Models.Gaming
+@inject LuminaPathDbContext context
+@inject NavigationManager navManager
+
+<h1>Edit Game</h1>
+<br />
+
+<Form ButtonText="Update" Game="@Game" loading="@loading"
+      OnValidSubmit="@UpdateUser" />
+
+@code {
+    bool loading = false;
+
+    [Parameter]
+    public string Id { get; set; }
+
+    Game Game = new Game();
+
+    protected async override Task OnParametersSetAsync()
+    {
+        Game = await context.Games.FindAsync(int.Parse(Id)) ?? new Game();
+    }
+
+    async Task UpdateUser()
+    {
+        loading = true;
+        try
+        {
+            context.Games.Update(Game);
+            await context.SaveChangesAsync();
+            navManager.NavigateTo("/Media/Games");
+        }
+        catch (Exception ex)
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+}
