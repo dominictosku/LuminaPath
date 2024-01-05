@@ -1,5 +1,8 @@
 ﻿@page "/Media/Games"
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using Core.Models.Gaming
+@inject LuminaPathDbContext dbContext
+@inject NavigationManager navigation
 
 <PageTitle>Games</PageTitle>
 
@@ -11,6 +14,7 @@
 }
 else
 {
+	<NavLink href="/Media/Games/Create" class="btn btn-sm btn-success mb-2">Add Game</NavLink>
 	<div class="grid">
 		<QuickGrid Items="@games" Pagination="@pagination">
 			<PropertyColumn Property="@(c => c.Name)" Sortable="true">
@@ -23,8 +27,27 @@ else
 			<PropertyColumn Property="@(c => c.Description)" Class="game-description" Sortable="true" Align="Align.Right" />
 			<PropertyColumn Property="@(c => c.Genre)" Sortable="true" Align="Align.Right" />
 			<PropertyColumn Property="@(c => c.ReleaseDate)" Sortable="true" Align="Align.Right" />
+			<TemplateColumn Title="Actions">
+				<div class="flex items-center">
+					<button @onclick="@(() => Update(context))" class="btn btn-sm btn-primary mb-2">Edit</button>
+					<button @onclick="@(() => Delete(context))" class="btn btn-sm btn-danger mb-2">Delete</button>
+				</div>
+			</TemplateColumn>
 		</QuickGrid>
 	</div>
 
 	<Paginator State="@pagination" />
+}
+
+@code {
+	public void Update(Game g)
+	{
+		navigation.NavigateTo($"/Media/Games/Update/{g.Id}");
+	}
+
+	public void Delete(Game g)
+	{
+		dbContext.Games.Remove(g);
+		dbContext.SaveChanges();
+	}
 }
