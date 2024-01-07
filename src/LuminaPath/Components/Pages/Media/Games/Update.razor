@@ -1,5 +1,8 @@
 ﻿@page "/Media/Games/Update/{id}"
 @using Core.Models.Gaming
+@using AutoMapper
+@using LuminaPath.ViewModel
+@inject IMapper mapper
 @inject LuminaPathDbContext context
 @inject NavigationManager navManager
 
@@ -7,7 +10,7 @@
 <br />
 
 <Form ButtonText="Update" Game="@Game" loading="@loading"
-      OnValidSubmit="@UpdateUser" />
+      OnValidSubmit="@UpdateGame" />
 
 @code {
     bool loading = false;
@@ -15,14 +18,15 @@
     [Parameter]
     public string Id { get; set; }
 
-    Game Game = new Game();
+    GameViewModel Game = new GameViewModel();
 
     protected async override Task OnParametersSetAsync()
     {
-        Game = await context.Games.FindAsync(int.Parse(Id)) ?? new Game();
+        var game = await context.Games.FindAsync(int.Parse(Id)) ?? new Game();
+        Game = mapper.Map<Game, GameViewModel>(game);
     }
 
-    async Task UpdateUser()
+    async Task UpdateGame()
     {
         loading = true;
         try
