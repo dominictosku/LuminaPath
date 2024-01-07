@@ -6,7 +6,7 @@ using Core.Models.Dto.Blob;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-namespace Infrastructure.Services
+namespace Server.Services
 {
 	public class AzureStorage : IAzureStorage
 	{
