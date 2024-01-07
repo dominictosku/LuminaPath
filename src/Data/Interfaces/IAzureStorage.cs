@@ -12,12 +12,20 @@ namespace Core.Interfaces
 		/// <returns>Blob with status</returns>
 		Task<BlobResponseDto> UploadAsync(IFormFile file);
 
-		/// <summary>
-		/// This method downloads a file with the specified filename
-		/// </summary>
-		/// <param name="blobFilename">Filename</param>
-		/// <returns>Blob</returns>
-		Task<BlobDto> DownloadAsync(string blobFilename);
+        /// <summary>
+        /// This method uploads a file submitted with the request
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        Task<BlobResponseDto> UploadAsync(Stream file, string fileName);
+
+        /// <summary>
+        /// This method downloads a file with the specified filename
+        /// </summary>
+        /// <param name="blobFilename">Filename</param>
+        /// <returns>Blob</returns>
+        Task<BlobDto> DownloadAsync(string blobFilename);
 
 		/// <summary>
 		/// This method deleted a file with the specified filename

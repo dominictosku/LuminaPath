@@ -3,6 +3,7 @@ using Core.Models.Dto.Gaming;
 using Core.Models.Dto.Quests;
 using Core.Models.Gaming;
 using Core.Models.Quests;
+using LuminaPath.ViewModel;
 
 namespace LuminaPath.Helper
 {
@@ -20,7 +21,10 @@ namespace LuminaPath.Helper
 				.ForMember(dest => dest.MyGames, act => act.MapFrom(src => src.MyGames.FirstOrDefault()))
 				.ReverseMap();
 
-			CreateMap<GamesQuestDto, GamesQuest>()
+            CreateMap<Game, GameViewModel>()
+				.ReverseMap();
+
+            CreateMap<GamesQuestDto, GamesQuest>()
 				.ReverseMap();
 		}
 	}
