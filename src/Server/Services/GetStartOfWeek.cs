@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Services
+﻿namespace Server.Services
 {
 	public static class GetStartOfWeek
 	{

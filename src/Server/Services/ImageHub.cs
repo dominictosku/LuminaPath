@@ -2,7 +2,7 @@ using Core.Interfaces;
 using Core.Models.Dto.Blob;
 using Microsoft.AspNetCore.Http;
 
-namespace Infrastructure.Services
+namespace Server.Services
 {
 	public class ImageHub
 	{
