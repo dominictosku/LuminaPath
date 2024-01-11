@@ -1,0 +1,24 @@
+{
+  "profiles": {
+    "Docker Compose": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "blob": "StartWithoutDebugging",
+        "db": "StartWithoutDebugging",
+        "luminapath": "StartDebugging",
+        "phpmyadmin": "StartWithoutDebugging"
+      }
+    },
+    "services only": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "blob": "StartWithoutDebugging",
+        "db": "StartWithoutDebugging",
+        "luminapath": "DoNotStart",
+        "phpmyadmin": "StartWithoutDebugging"
+      }
+    }
+  }
+}
