@@ -1,18 +1,1 @@
-﻿::deep thead .game-description {
-    width: 15rem;
-}
-
-::deep tbody .game-description {
-    white-space: nowrap;
-    overflow: hidden;
-    max-width: 0;
-    text-overflow: ellipsis;
-}
-
-::deep tr {
-    height: 1.8rem;
-}
-
-    ::deep tr:nth-child(even) {
-        background: rgba(0, 255, 255, 0.12);
-    }
+﻿

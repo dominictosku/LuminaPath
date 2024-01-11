@@ -3,6 +3,7 @@ using LuminaPath.Components;
 using LuminaPath.Components.Account;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using MudBlazor.Services;
 
 namespace LuminaPath
 {
@@ -21,6 +22,8 @@ namespace LuminaPath
             services.AddScoped<IdentityRedirectManager>();
             services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
             services.AddSingleton<IEmailSender<LuminaUser>, IdentityNoOpEmailSender>();
+
+            services.AddMudServices();
 
             return services;
         }
