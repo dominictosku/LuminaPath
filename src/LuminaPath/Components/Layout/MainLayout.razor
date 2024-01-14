@@ -1,12 +1,16 @@
-﻿@inherits LayoutComponentBase
+﻿@using LuminaPath.Constants
+@inherits LayoutComponentBase
 
 <div class="page">
+    <MudThemeProvider Theme="@_theme" IsDarkMode="@true" />
+    <MudDialogProvider />
+    <MudSnackbarProvider />
     <div class="sidebar">
         <NavMenu />
     </div>
 
     <main>
-        <div class="top-row px-4">
+        <div class="top-row px-4 bg-dark">
             <HeaderMenu />
         </div>
 
@@ -21,3 +25,8 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code{
+    private MudTheme _theme = Theme.ApplicationTheme();
+    private bool _isDarkMode = true;
+}

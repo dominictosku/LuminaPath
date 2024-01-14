@@ -1,11 +1,14 @@
 ﻿@page "/Media/Games"
-@using Core.Models.Gaming
+@using AutoMapper
+@using ViewModel
+@using LuminaPath.Pages.Media.Components
 @using Core.Classes
 @using Infrastructure.Repositories
 @using Microsoft.EntityFrameworkCore
 @inject LuminaPathDbContext dbContext
 @inject GameRepo repo
 @inject NavigationManager navigation
+@inject IMapper mapper
 
 <PageTitle>Games</PageTitle>
 
@@ -41,7 +44,7 @@
                                     StartIcon="@Icons.Material.Filled.Add"
                                     Size="Size.Small"
                                     Disabled="@_loading"
-                                    OnClick="Add"
+                                    OnClick="OnCreate"
                                     Style="margin-right: 4px; margin-bottom:4px"
                                     IconColor="Color.Surface">
                              Create
@@ -66,13 +69,15 @@
                              Delete
                          </MudButton>
                      </MudHidden>
+
+                     @* Mobile view *@
                      <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="true">
 
                          <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
                                     StartIcon="@Icons.Material.Filled.Add"
                                     Size="Size.Small"
                                     Disabled="@_loading"
-                                    OnClick="Dummy"
+                                    OnClick="OnCreate"
                                     Style="margin-right: 4px; margin-bottom:4px"
                                     IconColor="Color.Surface">
                              Create
@@ -83,7 +88,7 @@
                                     Disabled="@(!(_selectedItems.Count > 0))"
                                     Size="Size.Small"
                                     Style="margin-right: 4px; margin-bottom:4px"
-                                    OnClick="Dummy"
+                                    OnClick="OnDeleteChecked"
                                     IconColor="Color.Surface">
                              Delete
                          </MudButton>
@@ -104,7 +109,7 @@
                  <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
                           Dense="true"
                           EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-                     <MudMenuItem OnAction="@(() => Update(context.Item))">Edit</MudMenuItem>
+                     <MudMenuItem OnAction="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
 
                      <MudMenuItem OnAction="@(() => Delete(context.Item))">Delete</MudMenuItem>
                  </MudMenu>
@@ -158,7 +163,7 @@
         {
             _loading = true;
 
-            var query = dbContext.Games;
+            var query = dbContext.Games.AsNoTracking();
             var result = await PaginatedList<Game>.CreateAsync(query, state.Page + 1, 15);
 
             return new GridData<Game> { TotalItems = result.Count(), Items = result };
@@ -179,31 +184,108 @@
 
     }
 
-    public void Add()
+    #region Events
+
+    private async Task OnRefresh()
     {
-        navigation.NavigateTo($"/Media/Games/Create");
+        await _table.ReloadServerData();
     }
 
-    public void Update(Game g)
+    private async Task OnCreate()
     {
-        navigation.NavigateTo($"/Media/Games/Update/{g.Id}");
+        var command = new GameViewModel();
+        var parameters = new DialogParameters<MediaFormDialog>
+        {
+            { x=>x.Refresh , new Action(() => _table.ReloadServerData()) },
+            { x=>x.Model, command },
+            { x=>x.loading, _loading },
+            { x=>x.EventCallBack, CreateGame }
+        };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<MediaFormDialog>("Create Game", parameters, options);
+        var state = await dialog.Result;
+        if (!state.Canceled)
+            await _table.ReloadServerData();
     }
 
-    public void Delete(Game g)
+    public async Task OnUpdate(Game g)
     {
-        dbContext.Games.Remove(g);
-        dbContext.SaveChanges();
+        var command = mapper.Map<Game, GameViewModel>(g);
+        var parameters = new DialogParameters<MediaFormDialog>
+        {
+            { x=>x.Refresh , new Action(() => _table.ReloadServerData()) },
+            { x=>x.Model, command },
+            { x=>x.loading, _loading },
+            { x=>x.EventCallBack, UpdateGame }
+        };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<MediaFormDialog>("Update Game", parameters, options);
+        var state = await dialog.Result;
+        if (!state.Canceled)
+            await _table.ReloadServerData();
     }
 
     private async Task OnDeleteChecked()
     {
         var ids = _selectedItems.Select(x => x.Id).ToArray();
 
-        foreach(var id in ids)
+        foreach (var id in ids)
         {
             await repo.Delete(id);
         }
 
         await repo.Save();
     }
+
+    #endregion
+
+    #region CRUD Actions
+    async Task CreateGame(GameViewModel game)
+    {
+        _loading = true;
+        try
+        {
+            await dbContext.Games.AddAsync(game);
+            await dbContext.SaveChangesAsync();
+            Snackbar.Add("Created Game", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to create Game", Severity.Error);
+            _loading = false;
+        }
+
+        await _table.ReloadServerData();
+        _loading = false;
+    }
+
+    async Task UpdateGame(GameViewModel game)
+    {
+        _loading = true;
+        try
+        {
+            dbContext.Games.Update(game);
+            await dbContext.SaveChangesAsync();
+            Snackbar.Add("Updated Game", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Failed to update Game", Severity.Error);
+            _loading = false;
+        }
+
+        dbContext.ChangeTracker.Clear();
+        await _table.ReloadServerData();
+        _loading = false;
+    }
+
+    public async Task Delete(Game g)
+    {
+        dbContext.Games.Remove(g);
+        await dbContext.SaveChangesAsync();
+
+        Snackbar.Add("Deleted Game", Severity.Info);
+        await _table.ReloadServerData();
+    }
+    #endregion
 }
