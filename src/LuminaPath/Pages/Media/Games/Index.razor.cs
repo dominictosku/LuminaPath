@@ -3,7 +3,7 @@ using Core.Models.Gaming;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.QuickGrid;
 
-namespace LuminaPath.Components.Pages.Media.Games
+namespace LuminaPath.Pages.Media.Games
 {
     public partial class Index
     {
