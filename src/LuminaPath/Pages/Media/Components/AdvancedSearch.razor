@@ -2,7 +2,7 @@
 
 <MudExpansionPanel @bind-IsExpanded="_advancedSearchExpanded"
                    Style="border-radius: var(--mud-default-borderradius) !important;"
-                   Class="mud-elevation-25 pa-2 mb-3" Text="Search">
+                   Class="mud-elevation-25 pa-2 mb-3" Text="Filter">
     <MudGrid>
         <MudItem xs="12" sm="6" md="4">
             <MudTextField @bind-Value="Model.SearchString" 
@@ -12,13 +12,13 @@
             </MudTextField>
         </MudItem>
         <MudItem xs="12" sm="6" md="4">
-            <MudDatePicker Clearable="true" @bind-Value="@From"
+            <MudDatePicker Clearable="true" @bind-Value="@Model.From"
                            Placeholder="From"
                            TextChanged="TextChanged">
             </MudDatePicker>
         </MudItem>
         <MudItem xs="12" sm="6" md="4">
-            <MudDatePicker @bind-Value="@To"
+            <MudDatePicker @bind-Value="@Model.To"
                              Clearable="true"
                              Placeholder="To"
                            TextChanged="TextChanged">

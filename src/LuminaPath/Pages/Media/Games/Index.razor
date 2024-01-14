@@ -13,7 +13,7 @@
 <PageTitle>Games</PageTitle>
 
 <h1>Games</h1>
-
+<AdvancedSearch Model="_filter" OnConditionChanged="OnRefresh"></AdvancedSearch>
 <MudDataGrid ServerData="@(ServerReload)"
              FixedHeader="true"
              FixedFooter="true"
@@ -79,6 +79,7 @@
 
     private MudDataGrid<Game> _table = default!;
     private Game _currentDto = new();
+    private MediaFilter _filter = new();
 
     public bool loading;
     public HashSet<Game> selectedItems = new();
