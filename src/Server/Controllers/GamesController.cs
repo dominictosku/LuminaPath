@@ -20,13 +20,12 @@ namespace Server.Controllers
 	{
 		private readonly ILogger<GamesController> _logger;
 		private readonly GameRepo _gameService;
-		private readonly IAzureStorage Storage;
 
-		public GamesController(GameRepo service, ILogger<GamesController> logger, IMapper mapper, IAzureStorage azureStorage) : base(service, mapper)
+		public GamesController(GameRepo service, ILogger<GamesController> logger, IMapper mapper) : base(service, mapper)
 		{
 			_logger = logger; ;
 			_gameService = service;
-			Storage = azureStorage;
+			Includes = new List<string>() { "Image" };
 		}
 
 		[HttpGet]
@@ -50,26 +49,10 @@ namespace Server.Controllers
 			}
 			else
 			{
-				entities = await _gameService.GetAllPaginated(mediaFilter.Paging, filter);
+				entities = await _gameService.GetAllPaginated(mediaFilter.Paging, filter, includes: Includes);
 			}
 			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
-		}
-
-		[HttpPost("Image")]
-		[AllowAnonymous]
-		public async Task<IActionResult> PostImage(IFormFile file)
-		{
-			var result = await Storage.UploadAsync(file);
-			return Ok(new { Message = "File uploaded successfully." });
-		}
-
-		[HttpGet("Image/{url}")]
-		[AllowAnonymous]
-		public async Task<FileStreamResult> GetImage(string url)
-		{
-			var result = await Storage.DownloadAsync(url);
-			return new FileStreamResult(result.Content, result.ContentType);
 		}
 	}
 }

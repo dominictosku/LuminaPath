@@ -19,7 +19,7 @@ namespace Infrastructure.Repositories
 			IEnumerable<string> includes = null)
 		{
 			int pageIndex = paging.PageIndex;
-			IQueryable<Game> entities = _entities.Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
+			IQueryable<Game> entities = _entities.Include(g => g.Image).Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
 			entities = PrepareEntity(entities, filter, e => e.OrderByDescending(g => g.ReleaseDate), includes);
 			return await CreatePaginatedList(entities, paging);
 		}
