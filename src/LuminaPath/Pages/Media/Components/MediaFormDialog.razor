@@ -156,7 +156,7 @@
 			}
 			Model.Image = new()
 				{
-					Uri = Navigation.BaseUri + $"api/games/image/{result.Blob.Name}",
+					Uri = Navigation.BaseUri + $"api/files/{result.Blob.Name}",
 					Name = result.Blob.Name,
 					ContentType = result.Blob.ContentType
 				};

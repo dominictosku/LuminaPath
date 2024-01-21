@@ -1,5 +1,6 @@
-import { type IBasicInfo } from "~/utils/interfaces/iBasicInfo";
-import { type IGame } from "~/utils/interfaces/iGames";
+import { type IBasicInfo } from "../interfaces/iBasicInfo";
+import { type IGame } from "../interfaces/iGames";
+import { MediaFile } from "./mediaFile";
 
 export class Game implements IGame, IBasicInfo {
   id: number;
@@ -10,6 +11,7 @@ export class Game implements IGame, IBasicInfo {
   plattforms: number;
   playtime: number;
   myGames: MyGame | null;
+  image: MediaFile | null;
 
   constructor(myGame?: MyGame) {
     this.id = 0;
@@ -20,6 +22,7 @@ export class Game implements IGame, IBasicInfo {
     this.plattforms = 0;
     this.playtime = 0;
     this.myGames = myGame ?? new MyGame(0);
+    this.image = null;
   }
 }
 
