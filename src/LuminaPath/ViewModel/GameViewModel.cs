@@ -5,6 +5,5 @@ namespace LuminaPath.ViewModel
 {
     public class GameViewModel : Game
     {
-        public Stream? File { get; set; }
     }
 }

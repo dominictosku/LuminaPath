@@ -92,7 +92,7 @@
         {
             loading = true;
 
-            var query = dbContext.Games.AsNoTracking();
+            var query = dbContext.Games.Include(g => g.Image).AsNoTracking();
             var result = await PaginatedList<Game>.CreateAsync(query, state.Page + 1, 15);
 
             return new GridData<Game> { TotalItems = result.Count(), Items = result };
