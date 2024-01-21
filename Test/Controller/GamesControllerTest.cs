@@ -1,7 +1,7 @@
 using AutoMapper;
 using Core;
-using Core.Classes;
-using Core.Interfaces;
+using Core.Entities;
+using Infrastructure.Interfaces;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -13,7 +13,7 @@ using Test.Utilities;
 
 namespace Test.Controller
 {
-	public class GamesControllerTest
+    public class GamesControllerTest
 	{
 		[Fact]
 		public async Task GetAsync_GetAllGamesWithMyGames_WhenLoggedIn()

@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
-using Core.Classes;
+using Core.Entities;
 using Core.Models;
-using Core.Models.Dto.Gaming;
 using Core.Models.Gaming;
+using Infrastructure.Dto.Gaming;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 using Server.Controllers.Base;
 namespace Server.Controllers
 {
-	[Route("api/[controller]")]
+    [Route("api/[controller]")]
 	[ApiController]
 	[Authorize]
 	public class MyGamesController : MyMediaController<MyGame, MyGameDto>

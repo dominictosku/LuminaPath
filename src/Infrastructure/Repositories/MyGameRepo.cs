@@ -1,5 +1,5 @@
 ﻿using Core;
-using Core.Classes;
+using Core.Entities;
 using Core.Models;
 using Core.Models.Gaming;
 using Microsoft.AspNetCore.Identity;

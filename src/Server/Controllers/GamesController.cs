@@ -1,8 +1,4 @@
 ﻿using AutoMapper;
-using Core.Classes;
-using Core.Interfaces;
-using Core.Models.Dto.Blob;
-using Core.Models.Dto.Gaming;
 using Core.Models.Gaming;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +9,10 @@ using System.Linq.Expressions;
 using System.Security.Claims;
 using Server.Controllers.Base;
 using Server.Helper;
+using Infrastructure.Dto.Blob;
+using Infrastructure.Dto.Gaming;
+using Infrastructure.Interfaces;
+using Core.Entities;
 
 namespace Server.Controllers
 {

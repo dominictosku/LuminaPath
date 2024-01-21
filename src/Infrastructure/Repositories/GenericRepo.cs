@@ -1,5 +1,5 @@
 ﻿using Core;
-using Core.Classes;
+using Core.Entities;
 using Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;

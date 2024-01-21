@@ -1,14 +1,14 @@
 ﻿using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using Core.Interfaces;
-using Core.Models.Dto.Blob;
+using Infrastructure.Dto.Blob;
+using Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Server.Services
 {
-	public class AzureStorage : IAzureStorage
+    public class AzureStorage : IAzureStorage
 	{
 		#region Dependency Injection / Constructor
 

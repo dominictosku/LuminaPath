@@ -43,7 +43,7 @@ namespace Core.Migrations
                     b.Property<string>("OwnerId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<DateTime>("StartDate")
+                    b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
@@ -69,9 +69,8 @@ namespace Core.Migrations
                     b.Property<string>("Genre")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<int?>("ImageId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -88,6 +87,8 @@ namespace Core.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ImageId");
 
                     b.HasIndex("Name")
                         .IsUnique();
@@ -110,8 +111,8 @@ namespace Core.Migrations
                     b.Property<string>("LuminaUserId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<byte?>("Rating")
-                        .HasColumnType("tinyint unsigned");
+                    b.Property<short?>("Rating")
+                        .HasColumnType("smallint");
 
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime(6)");
@@ -173,12 +174,6 @@ namespace Core.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<int?>("QuestId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RefreshToken")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("longtext");
 
@@ -198,9 +193,27 @@ namespace Core.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
 
-                    b.HasIndex("QuestId");
-
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("Core.Models.MediaFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("ContentType")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Uri")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MediaFile");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -352,6 +365,15 @@ namespace Core.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("Core.Models.Gaming.Game", b =>
+                {
+                    b.HasOne("Core.Models.MediaFile", "Image")
+                        .WithMany()
+                        .HasForeignKey("ImageId");
+
+                    b.Navigation("Image");
+                });
+
             modelBuilder.Entity("Core.Models.Gaming.MyGame", b =>
                 {
                     b.HasOne("Core.Models.Gaming.Game", "Game")
@@ -361,19 +383,12 @@ namespace Core.Migrations
                         .IsRequired();
 
                     b.HasOne("Core.Models.LuminaUser", "LuminaUser")
-                        .WithMany("PersonalGamings")
+                        .WithMany("MyGames")
                         .HasForeignKey("LuminaUserId");
 
                     b.Navigation("Game");
 
                     b.Navigation("LuminaUser");
-                });
-
-            modelBuilder.Entity("Core.Models.LuminaUser", b =>
-                {
-                    b.HasOne("Core.Models.Base.Quest", null)
-                        .WithMany("Users")
-                        .HasForeignKey("QuestId");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -436,11 +451,6 @@ namespace Core.Migrations
                     b.Navigation("Games");
                 });
 
-            modelBuilder.Entity("Core.Models.Base.Quest", b =>
-                {
-                    b.Navigation("Users");
-                });
-
             modelBuilder.Entity("Core.Models.Gaming.Game", b =>
                 {
                     b.Navigation("MyGames");
@@ -448,7 +458,7 @@ namespace Core.Migrations
 
             modelBuilder.Entity("Core.Models.LuminaUser", b =>
                 {
-                    b.Navigation("PersonalGamings");
+                    b.Navigation("MyGames");
                 });
 #pragma warning restore 612, 618
         }

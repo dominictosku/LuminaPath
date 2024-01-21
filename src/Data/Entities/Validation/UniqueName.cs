@@ -1,6 +1,6 @@
 ﻿using Core.Models.Gaming;
 using System.ComponentModel.DataAnnotations;
-namespace Core.Classes.Validation
+namespace Core.Entities.Validation
 {
 	public class UniqueName : ValidationAttribute
 	{

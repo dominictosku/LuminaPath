@@ -1,4 +1,4 @@
-﻿namespace Core.Classes
+﻿namespace Core.Entities
 {
 	public class Paging
 	{
