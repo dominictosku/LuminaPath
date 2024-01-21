@@ -66,10 +66,10 @@ namespace Server.Controllers
 
 		[HttpGet("Image/{url}")]
 		[AllowAnonymous]
-		public async Task<BlobDto> GetImage(string url)
+		public async Task<FileStreamResult> GetImage(string url)
 		{
 			var result = await Storage.DownloadAsync(url);
-			return result;
+			return new FileStreamResult(result.Content, result.ContentType);
 		}
 	}
 }

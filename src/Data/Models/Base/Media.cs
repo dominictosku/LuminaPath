@@ -10,11 +10,11 @@ namespace Core.Models.Base
 	{
 		public int Id { get; set; }
 
-		[Required]
-		[StringLength(50)]
+		[Required(AllowEmptyStrings = false)]
+		[StringLength(50, MinimumLength = 2)]
 		[UniqueName]
 		[Display(Name = "Title")]
-		public string? Name { get; set; }
+		public string Name { get; set; } = string.Empty;
 
 		public string? Description { get; set; }
 
