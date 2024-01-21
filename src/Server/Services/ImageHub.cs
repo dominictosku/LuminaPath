@@ -1,10 +1,10 @@
-using Core.Interfaces;
-using Core.Models.Dto.Blob;
+using Infrastructure.Dto.Blob;
+using Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Http;
 
 namespace Server.Services
 {
-	public class ImageHub
+    public class ImageHub
 	{
 		private readonly IAzureStorage _azureStorage;
 		public ImageHub(IAzureStorage azureStorage)

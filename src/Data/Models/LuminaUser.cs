@@ -5,7 +5,6 @@ namespace Core.Models
 {
 	public class LuminaUser : IdentityUser
 	{
-		public string? RefreshToken { get; set; }
-		public List<MyGame>? PersonalGamings { get; set; }
+		public List<MyGame>? MyGames { get; set; }
 	}
 }

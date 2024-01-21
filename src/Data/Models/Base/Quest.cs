@@ -9,9 +9,8 @@ namespace Core.Models.Base
 		[Required(ErrorMessage = "Please enter a description")]
 		public string? Description { get; set; }
 		public bool HasStartDate { get; set; } = false;
-		public DateTime StartDate { get; set; } = DateTime.Now;
+		public DateTime? StartDate { get; set; }
 		public string? Location { get; set; }
 		public LuminaUser? Owner { get; set; }
-		public List<LuminaUser>? Users { get; set; }
 	}
 }

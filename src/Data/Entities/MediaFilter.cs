@@ -1,6 +1,6 @@
 ﻿using Core.Models.Base;
 
-namespace Core.Classes
+namespace Core.Entities
 {
 	public class MediaFilter
 	{

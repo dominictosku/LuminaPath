@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
 using Core.Interfaces;
 using Core.Models;
-using Core.Models.Dto.Quests;
 using Core.Models.Quests;
+using Infrastructure.Dto.Quests;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -11,7 +11,7 @@ using System.Security.Claims;
 
 namespace Server.Controllers
 {
-	public class QuestsController : GenericController<GamesQuest, GamesQuestDto>
+    public class QuestsController : GenericController<GamesQuest, GamesQuestDto>
 	{
 		private readonly UserManager<LuminaUser> _userManager;
 		private readonly ILogger<GamesController> _logger;

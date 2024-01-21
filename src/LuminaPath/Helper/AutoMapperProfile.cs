@@ -1,13 +1,13 @@
 ﻿using AutoMapper;
-using Core.Models.Dto.Gaming;
-using Core.Models.Dto.Quests;
 using Core.Models.Gaming;
 using Core.Models.Quests;
+using Infrastructure.Dto.Gaming;
+using Infrastructure.Dto.Quests;
 using LuminaPath.ViewModel;
 
 namespace LuminaPath.Helper
 {
-	public class AutoMapperProfile : Profile
+    public class AutoMapperProfile : Profile
 	{
 		public AutoMapperProfile()
 		{

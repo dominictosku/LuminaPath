@@ -4,6 +4,7 @@ using Core.Models;
 using Core.Models.Gaming;
 using Core.Models.Quests;
 using Infrastructure;
+using Infrastructure.Interfaces;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -19,7 +20,7 @@ using Server.Services;
 using System.Net;
 namespace Server
 {
-	public static class DependencyInjection
+    public static class DependencyInjection
 	{
 		public const string MyAllowSpecificOrigins = "SPAConfig";
 		public static IServiceCollection AddServer(this IServiceCollection services, IConfiguration config)
