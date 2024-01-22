@@ -77,8 +77,7 @@ namespace Server
             services.AddTransient<IGenericRepo<Game>, GenericRepo<Game>>();
             services.AddTransient<IGenericRepo<MyGame>, GenericRepo<MyGame>>();
             services.AddTransient<IGenericRepo<GamesQuest>, GenericRepo<GamesQuest>>();
-            services.AddTransient<GameRepo>();
-            services.AddTransient<MyGameRepo>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
         }
 
 		private static void AddCors(IServiceCollection services)

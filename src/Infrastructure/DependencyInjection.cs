@@ -49,7 +49,7 @@ namespace Infrastructure
 		private static void AddMySqlDatabase(IServiceCollection services, IConfiguration config)
 		{
 			var connectionstring = config.GetConnectionString("Default");
-			services.AddDbContext<LuminaPathDbContext>(options =>
+			services.AddDbContextFactory<LuminaPathDbContext>(options =>
 				options.UseMySql(connectionstring, ServerVersion.AutoDetect(connectionstring)));
 		}
 

@@ -3,6 +3,7 @@ using Core.Entities;
 using Core.Models;
 using Core.Models.Gaming;
 using Infrastructure.Dto.Gaming;
+using Infrastructure.Interfaces;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -18,15 +19,15 @@ namespace Server.Controllers
 	{
 		private readonly UserManager<LuminaUser> _userManager;
 		private readonly ILogger<GamesController> _logger;
-		private readonly MyGameRepo _myGameRepo;
+		private readonly IUnitOfWork unitOfWork;
 
-		public MyGamesController(MyGameRepo service, UserManager<LuminaUser> userManager,
-			ILogger<GamesController> logger, IMapper mapper) : base(service, mapper, userManager)
+		public MyGamesController(IUnitOfWork unitOfWork, UserManager<LuminaUser> userManager,
+			ILogger<GamesController> logger, IMapper mapper) : base(unitOfWork.MyGameRepo, mapper, userManager)
 		{
+			this.unitOfWork = unitOfWork;
 			_userManager = userManager;
 			_logger = logger;
 			Includes = new List<string> { "Game" };
-			_myGameRepo = service;
 		}
 	}
 }
