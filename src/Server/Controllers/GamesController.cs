@@ -13,18 +13,19 @@ using Infrastructure.Dto.Blob;
 using Infrastructure.Dto.Gaming;
 using Infrastructure.Interfaces;
 using Core.Entities;
+using Infrastructure;
 
 namespace Server.Controllers
 {
 	public class GamesController : MediaController<Game, GamesDto>
 	{
 		private readonly ILogger<GamesController> _logger;
-		private readonly GameRepo _gameService;
+		private readonly IUnitOfWork unitOfWork;
 
-		public GamesController(GameRepo service, ILogger<GamesController> logger, IMapper mapper) : base(service, mapper)
+		public GamesController(IUnitOfWork unitOfWork, ILogger<GamesController> logger, IMapper mapper) : base(unitOfWork.GameRepo, mapper)
 		{
 			_logger = logger; ;
-			_gameService = service;
+			this.unitOfWork = unitOfWork;
 			Includes = new List<string>() { "Image" };
 		}
 
@@ -45,11 +46,11 @@ namespace Server.Controllers
 			}
 			if (userId != null)
 			{
-				entities = await _gameService.GetAllPaginated(mediaFilter.Paging, userId, filter);
+				entities = await unitOfWork.GameRepo.GetAllPaginated(mediaFilter.Paging, userId, filter);
 			}
 			else
 			{
-				entities = await _gameService.GetAllPaginated(mediaFilter.Paging, filter, includes: Includes);
+				entities = await unitOfWork.GameRepo.GetAllPaginated(mediaFilter.Paging, filter, includes: Includes);
 			}
 			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);

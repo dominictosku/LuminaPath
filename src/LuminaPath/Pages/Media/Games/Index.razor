@@ -5,8 +5,8 @@
 @using Core.Entities
 @using Infrastructure.Repositories
 @using Microsoft.EntityFrameworkCore
-@inject LuminaPathDbContext dbContext
-@inject GameRepo repo
+@inject IDbContextFactory<LuminaPathDbContext> dbContextFactory
+@inject IUnitOfWork unitOfWork
 @inject NavigationManager navigation
 @inject IMapper mapper
 
@@ -15,207 +15,210 @@
 <h1>Games</h1>
 <AdvancedSearch Model="_filter" OnConditionChanged="OnRefresh"></AdvancedSearch>
 <MudDataGrid ServerData="@(ServerReload)"
-             FixedHeader="true"
-             FixedFooter="true"
-             Virtualize="true"
-             Height="calc(100vh - 370px)"
-             Loading="@loading"
-             MultiSelection="true"
-             @bind-SelectedItems="selectedItems"
-             @bind-SelectedItem="_currentDto"
-             Hover="true" @ref="_table">
-    <ToolBarContent>
-       <TableActions Page="this" />
-     </ToolBarContent>
-     <Columns>
-         <SelectColumn ShowInFooter="false"></SelectColumn>
-         <TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
-             <CellTemplate>
-                 <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
-                          Dense="true"
-                          EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-                     <MudMenuItem OnAction="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
+			 FixedHeader="true"
+			 FixedFooter="true"
+			 Virtualize="true"
+			 Height="calc(100vh - 370px)"
+			 Loading="@loading"
+			 MultiSelection="true"
+			 @bind-SelectedItems="selectedItems"
+			 @bind-SelectedItem="_currentDto"
+			 Hover="true" @ref="_table">
+	<ToolBarContent>
+		<TableActions Page="this" />
+	</ToolBarContent>
+	<Columns>
+		<SelectColumn ShowInFooter="false"></SelectColumn>
+		<TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
+			<CellTemplate>
+				<MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
+						 Dense="true"
+						 EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+					<MudMenuItem OnAction="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
 
-                     <MudMenuItem OnAction="@(() => Delete(context.Item))">Delete</MudMenuItem>
-                 </MudMenu>
-             </CellTemplate>
-         </TemplateColumn>
+					<MudMenuItem OnAction="@(() => Delete(context.Item))">Delete</MudMenuItem>
+				</MudMenu>
+			</CellTemplate>
+		</TemplateColumn>
 
-         <PropertyColumn Property="x => x.Name" Title="Title">
-             <CellTemplate>
-                 <div class="d-flex flex-column">
-                     <MudText Typo="Typo.body2">@context.Item.Name</MudText>
-                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
-                    </div>
-                </CellTemplate>
-            </PropertyColumn>
-            <PropertyColumn Property="x => x.Genre" Title="Genre" />
-        </Columns>
-        <NoRecordsContent>
-            <MudText>No items found</MudText>
-        </NoRecordsContent>
-        <LoadingContent>
-            <MudText>Loading</MudText>
-        </LoadingContent>
-        <PagerContent>
-            <MudDataGridPager />
-        </PagerContent>
-    </MudDataGrid>
+		<PropertyColumn Property="x => x.Name" Title="Title">
+			<CellTemplate>
+				<div class="d-flex flex-column">
+					<MudText Typo="Typo.body2">@context.Item.Name</MudText>
+						<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
+					</div>
+				</CellTemplate>
+			</PropertyColumn>
+			<PropertyColumn Property="x => x.Genre" Title="Genre" />
+		</Columns>
+		<NoRecordsContent>
+			<MudText>No items found</MudText>
+		</NoRecordsContent>
+		<LoadingContent>
+			<MudText>Loading</MudText>
+		</LoadingContent>
+		<PagerContent>
+			<MudDataGridPager />
+		</PagerContent>
+	</MudDataGrid>
 
-    <style>
-        @@import url("https://cdn.jsdelivr.net/npm/@@fancyapps/ui@5.0/dist/fancybox/fancybox.css");
+	<style>
+		@@import url("https://cdn.jsdelivr.net/npm/@@fancyapps/ui@5.0/dist/fancybox/fancybox.css");
 
-        .fancybox__container {
-            --fancybox-bg: rgba(24, 24, 27, 0.85);
-            z-index: 9999;
-        }
+		.fancybox__container {
+			--fancybox-bg: rgba(24, 24, 27, 0.85);
+			z-index: 9999;
+		}
 
-        .mud-table-toolbar {
-            height: 120px !important;
-        }
-    </style>
+		.mud-table-toolbar {
+			height: 120px !important;
+		}
+	</style>
 
-    @code {
+	@code {
 
-    private MudDataGrid<Game> _table = default!;
-    private Game _currentDto = new();
-    private MediaFilter _filter = new();
+	private MudDataGrid<Game> _table = default!;
+	private Game _currentDto = new();
+	private MediaFilter _filter = new();
 
-    public bool loading;
-    public HashSet<Game> selectedItems = new();
+	public bool loading;
+	public HashSet<Game> selectedItems = new();
 
-    private async Task<GridData<Game>> ServerReload(GridState<Game> state)
-    {
-        selectedItems = new HashSet<Game>();
+	private async Task<GridData<Game>> ServerReload(GridState<Game> state)
+	{
+		selectedItems = new HashSet<Game>();
+		loading = true;
+		using var dbContext = dbContextFactory.CreateDbContext();
 
-        try
-        {
-            loading = true;
+		try
+		{
+			var query = dbContext.Games.Include(g => g.Image).AsNoTracking();
+			var result = await PaginatedList<Game>.CreateAsync(query, state.Page + 1, 15);
 
-            var query = dbContext.Games.Include(g => g.Image).AsNoTracking();
-            var result = await PaginatedList<Game>.CreateAsync(query, state.Page + 1, 15);
+			return new GridData<Game> { TotalItems = result.Count(), Items = result };
+		}
+		finally
+		{
+			loading = false;
+		}
+	}
 
-            return new GridData<Game> { TotalItems = result.Count(), Items = result };
-        }
-        finally
-        {
-            loading = false;
-        }
-    }
+	public void OnSearch(string s)
+	{
 
-    public void OnSearch(string s)
-    {
+	}
 
-    }
+	public void Dummy()
+	{
 
-    public void Dummy()
-    {
+	}
 
-    }
+	#region Events
 
-    #region Events
+	public async Task OnRefresh()
+	{
+		await _table.ReloadServerData();
+	}
 
-    public async Task OnRefresh()
-    {
-        await _table.ReloadServerData();
-    }
+	public async Task OnCreate()
+	{
+		var command = new GameViewModel();
+		var parameters = new DialogParameters<MediaFormDialog>
+		{
+			{ x=>x.Refresh , new Action(() => _table.ReloadServerData()) },
+			{ x=>x.Model, command },
+			{ x=>x.loading, loading },
+			{ x=>x.EventCallBack, CreateGame }
+		};
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+		var dialog = DialogService.Show<MediaFormDialog>("Create Game", parameters, options);
+		var state = await dialog.Result;
+		if (!state.Canceled)
+			await _table.ReloadServerData();
+	}
 
-    public async Task OnCreate()
-    {
-        var command = new GameViewModel();
-        var parameters = new DialogParameters<MediaFormDialog>
-        {
-            { x=>x.Refresh , new Action(() => _table.ReloadServerData()) },
-            { x=>x.Model, command },
-            { x=>x.loading, loading },
-            { x=>x.EventCallBack, CreateGame }
-        };
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = DialogService.Show<MediaFormDialog>("Create Game", parameters, options);
-        var state = await dialog.Result;
-        if (!state.Canceled)
-            await _table.ReloadServerData();
-    }
+	public async Task OnUpdate(Game g)
+	{
+		var command = mapper.Map<Game, GameViewModel>(g);
+		var parameters = new DialogParameters<MediaFormDialog>
+		{
+			{ x=>x.Refresh , new Action(() => _table.ReloadServerData()) },
+			{ x=>x.Model, command },
+			{ x=>x.loading, loading },
+			{ x=>x.EventCallBack, UpdateGame }
+		};
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+		var dialog = DialogService.Show<MediaFormDialog>("Update Game", parameters, options);
+		var state = await dialog.Result;
+		if (!state.Canceled)
+			await _table.ReloadServerData();
+	}
 
-    public async Task OnUpdate(Game g)
-    {
-        var command = mapper.Map<Game, GameViewModel>(g);
-        var parameters = new DialogParameters<MediaFormDialog>
-        {
-            { x=>x.Refresh , new Action(() => _table.ReloadServerData()) },
-            { x=>x.Model, command },
-            { x=>x.loading, loading },
-            { x=>x.EventCallBack, UpdateGame }
-        };
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = DialogService.Show<MediaFormDialog>("Update Game", parameters, options);
-        var state = await dialog.Result;
-        if (!state.Canceled)
-            await _table.ReloadServerData();
-    }
+	public async Task OnDeleteChecked()
+	{
+		var ids = selectedItems.Select(x => x.Id).ToArray();
 
-    public async Task OnDeleteChecked()
-    {
-        var ids = selectedItems.Select(x => x.Id).ToArray();
+		foreach (var id in ids)
+		{
+			await unitOfWork.GameRepo.Delete(id);
+		}
 
-        foreach (var id in ids)
-        {
-            await repo.Delete(id);
-        }
+		await unitOfWork.SaveAsync();
+		await _table.ReloadServerData();
+	}
 
-        await repo.Save();
-        await _table.ReloadServerData();
-    }
+	#endregion
 
-    #endregion
+	#region CRUD Actions
+	async Task CreateGame(GameViewModel game)
+	{
+		loading = true;
+		try
+		{
+			using var dbContext = dbContextFactory.CreateDbContext();
+			await dbContext.Games.AddAsync(game);
+			await dbContext.SaveChangesAsync();
+			Snackbar.Add("Created Game", Severity.Success);
+		}
+		catch (Exception ex)
+		{
+			Snackbar.Add("Failed to create Game", Severity.Error);
+			loading = false;
+		}
 
-    #region CRUD Actions
-    async Task CreateGame(GameViewModel game)
-    {
-        loading = true;
-        try
-        {
-            await dbContext.Games.AddAsync(game);
-            await dbContext.SaveChangesAsync();
-            Snackbar.Add("Created Game", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add("Failed to create Game", Severity.Error);
-            loading = false;
-        }
+		await _table.ReloadServerData();
+		loading = false;
+	}
 
-        await _table.ReloadServerData();
-        loading = false;
-    }
+	async Task UpdateGame(GameViewModel game)
+	{
+		loading = true;
+		using var dbContext = dbContextFactory.CreateDbContext();
+		try
+		{
+			dbContext.Games.Update(game);
+			await dbContext.SaveChangesAsync();
+			Snackbar.Add("Updated Game", Severity.Success);
+		}
+		catch (Exception ex)
+		{
+			Snackbar.Add("Failed to update Game", Severity.Error);
+			loading = false;
+		}
 
-    async Task UpdateGame(GameViewModel game)
-    {
-        loading = true;
-        try
-        {
-            dbContext.Games.Update(game);
-            await dbContext.SaveChangesAsync();
-            Snackbar.Add("Updated Game", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add("Failed to update Game", Severity.Error);
-            loading = false;
-        }
+		dbContext.ChangeTracker.Clear();
+		await _table.ReloadServerData();
+		loading = false;
+	}
 
-        dbContext.ChangeTracker.Clear();
-        await _table.ReloadServerData();
-        loading = false;
-    }
+	public async Task Delete(Game g)
+	{
+		using var dbContext = dbContextFactory.CreateDbContext();
+		dbContext.Games.Remove(g);
+		await dbContext.SaveChangesAsync();
 
-    public async Task Delete(Game g)
-    {
-        dbContext.Games.Remove(g);
-        await dbContext.SaveChangesAsync();
-
-        Snackbar.Add("Deleted Game", Severity.Info);
-        await _table.ReloadServerData();
-    }
-    #endregion
+		Snackbar.Add("Deleted Game", Severity.Info);
+		await _table.ReloadServerData();
+	}
+	#endregion
 }
