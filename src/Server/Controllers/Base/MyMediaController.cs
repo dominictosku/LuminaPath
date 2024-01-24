@@ -13,7 +13,7 @@ namespace Server.Controllers.Base
 	public abstract class MyMediaController<TEntity, TEntityDto> : GenericController<TEntity, TEntityDto> where TEntity : MyMedia, IMyMedia
 	{
 		private readonly UserManager<LuminaUser> _userManager;
-		public MyMediaController(IGenericRepo<TEntity> service, IMapper mapper, UserManager<LuminaUser> userManager) : base(service, mapper)
+		public MyMediaController(IGenericRepository<TEntity> service, IMapper mapper, UserManager<LuminaUser> userManager) : base(service, mapper)
 		{
 			_userManager = userManager;
 			Mapper = mapper;

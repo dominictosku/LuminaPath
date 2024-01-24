@@ -74,9 +74,9 @@ namespace Server
 
 		private static void AddRepositories(IServiceCollection services)
 		{
-            services.AddTransient<IGenericRepo<Game>, GenericRepo<Game>>();
-            services.AddTransient<IGenericRepo<MyGame>, GenericRepo<MyGame>>();
-            services.AddTransient<IGenericRepo<GamesQuest>, GenericRepo<GamesQuest>>();
+            services.AddTransient<IGenericRepository<Game>, GenericRepository<Game>>();
+            services.AddTransient<IGenericRepository<MyGame>, GenericRepository<MyGame>>();
+            services.AddTransient<IGenericRepository<GamesQuest>, GenericRepository<GamesQuest>>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
         }
 

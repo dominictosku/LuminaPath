@@ -6,9 +6,9 @@ using System.Linq.Expressions;
 
 namespace Infrastructure.Repositories
 {
-	public class GameRepo : GenericRepo<Game>
+	public class GameRepository : GenericRepository<Game>
 	{
-		public GameRepo(LuminaPathDbContext context) : base(context)
+		public GameRepository(LuminaPathDbContext context) : base(context)
 		{
 		}
 

@@ -8,10 +8,10 @@ using System.Linq.Expressions;
 
 namespace Infrastructure.Repositories
 {
-	public class MyGameRepo : GenericRepo<MyGame>
+	public class MyGameRepository : GenericRepository<MyGame>
 	{
 		public UserManager<LuminaUser> UserManager { get; set; }
-		public MyGameRepo(LuminaPathDbContext context, UserManager<LuminaUser> userManager) : base(context)
+		public MyGameRepository(LuminaPathDbContext context, UserManager<LuminaUser> userManager) : base(context)
 		{
 			UserManager = userManager;
 		}

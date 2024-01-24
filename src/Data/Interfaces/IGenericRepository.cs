@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 
 namespace Core.Interfaces
 {
-	public interface IGenericRepo<TEntity> where TEntity : class, IBasicInfo
+	public interface IGenericRepository<TEntity> where TEntity : class, IBasicInfo
 	{
 		Task<IEnumerable<TEntity>> GetAll(
 			Expression<Func<TEntity, bool>> filter = null,

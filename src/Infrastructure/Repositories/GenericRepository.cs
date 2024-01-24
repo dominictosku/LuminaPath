@@ -6,12 +6,12 @@ using System.Linq.Expressions;
 
 namespace Infrastructure.Repositories
 {
-	public class GenericRepo<TEntity> : IGenericRepo<TEntity> where TEntity : class, IBasicInfo
+	public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity : class, IBasicInfo
 	{
 		private protected readonly LuminaPathDbContext _context;
 		private protected readonly DbSet<TEntity> _entities;
 
-		public GenericRepo(LuminaPathDbContext context)
+		public GenericRepository(LuminaPathDbContext context)
 		{
 			_context = context;
 			_entities = context.Set<TEntity>();

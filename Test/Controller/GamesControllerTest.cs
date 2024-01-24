@@ -26,7 +26,7 @@ namespace Test.Controller
 					"God of War"
 				};
 				var filter = new MediaFilter();
-				var gameRepo = new GameRepo(db);
+				var gameRepo = new GameRepository(db);
 				var azure = new Mock<IAzureStorage>().Object;
 				var logger = new Mock<ILogger<GamesController>>();
 				var mapper = db.GetService<IMapper>();
