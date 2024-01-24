@@ -11,8 +11,8 @@ namespace Infrastructure
 	{
 		private readonly LuminaPathDbContext _context;
 		private UserManager<LuminaUser> userManager;
-		private GameRepo? gameRepo;
-		private MyGameRepo? myGameRepo;
+		private GameRepository? gameRepo;
+		private MyGameRepository? myGameRepo;
 
 		public UnitOfWork(LuminaPathDbContext context, UserManager<LuminaUser> userManager)
 		{
@@ -20,27 +20,27 @@ namespace Infrastructure
 			this.userManager = userManager;
 		}
 
-		public GameRepo GameRepo
+		public GameRepository GameRepo
 		{
 			get
 			{
 
 				if (gameRepo == null)
 				{
-					gameRepo = new GameRepo(_context);
+					gameRepo = new GameRepository(_context);
 				}
 				return gameRepo;
 			}
 		}
 
-		public MyGameRepo MyGameRepo
+		public MyGameRepository MyGameRepo
 		{
 			get
 			{
 
 				if (myGameRepo == null)
 				{
-					myGameRepo = new MyGameRepo(_context, userManager);
+					myGameRepo = new MyGameRepository(_context, userManager);
 				}
 				return myGameRepo;
 			}

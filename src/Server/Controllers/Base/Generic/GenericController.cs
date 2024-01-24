@@ -16,10 +16,10 @@ namespace Server.Controllers.Base.Generic
 	[Authorize]
 	public abstract class GenericController<TEntity, TEntityDto> : ControllerBase where TEntity : class, IBasicInfo
 	{
-		protected readonly IGenericRepo<TEntity> _service;
+		protected readonly IGenericRepository<TEntity> _service;
 		protected IEnumerable<string> Includes { get; set; } = new List<string>();
 		public IMapper Mapper;
-		public GenericController(IGenericRepo<TEntity> service, IMapper mapper)
+		public GenericController(IGenericRepository<TEntity> service, IMapper mapper)
 		{
 			_service = service;
 			Mapper = mapper;

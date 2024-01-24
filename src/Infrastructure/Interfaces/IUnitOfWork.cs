@@ -4,8 +4,8 @@ namespace Infrastructure.Interfaces
 {
     public interface IUnitOfWork
     {
-        GameRepo GameRepo { get; }
-        MyGameRepo MyGameRepo { get; }
+        GameRepository GameRepo { get; }
+        MyGameRepository MyGameRepo { get; }
         void Save();
         Task SaveAsync();
     }
