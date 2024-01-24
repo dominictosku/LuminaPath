@@ -6,8 +6,6 @@ namespace Infrastructure.Interfaces
     {
         GameRepo GameRepo { get; }
         MyGameRepo MyGameRepo { get; }
-
-        void Dispose();
         void Save();
         Task SaveAsync();
     }

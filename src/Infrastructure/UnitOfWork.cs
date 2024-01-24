@@ -7,16 +7,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure
 {
-    public class UnitOfWork : IUnitOfWork, IDisposable
+    public class UnitOfWork : IUnitOfWork
 	{
-		private LuminaPathDbContext context;
+		private readonly LuminaPathDbContext _context;
 		private UserManager<LuminaUser> userManager;
 		private GameRepo? gameRepo;
 		private MyGameRepo? myGameRepo;
 
-		public UnitOfWork(IDbContextFactory<LuminaPathDbContext> dbFactory, UserManager<LuminaUser> userManager)
+		public UnitOfWork(LuminaPathDbContext context, UserManager<LuminaUser> userManager)
 		{
-			context = dbFactory.CreateDbContext();
+			_context = context;
 			this.userManager = userManager;
 		}
 
@@ -27,7 +27,7 @@ namespace Infrastructure
 
 				if (gameRepo == null)
 				{
-					gameRepo = new GameRepo(context);
+					gameRepo = new GameRepo(_context);
 				}
 				return gameRepo;
 			}
@@ -40,7 +40,7 @@ namespace Infrastructure
 
 				if (myGameRepo == null)
 				{
-					myGameRepo = new MyGameRepo(context, userManager);
+					myGameRepo = new MyGameRepo(_context, userManager);
 				}
 				return myGameRepo;
 			}
@@ -48,32 +48,12 @@ namespace Infrastructure
 
 		public void Save()
 		{
-			context.SaveChanges();
+			_context.SaveChanges();
 		}
 
         public async Task SaveAsync()
         {
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
-
-        private bool disposed = false;
-
-		protected virtual void Dispose(bool disposing)
-		{
-			if (!this.disposed)
-			{
-				if (disposing)
-				{
-					context.Dispose();
-				}
-			}
-			this.disposed = true;
-		}
-
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
 	}
 }
