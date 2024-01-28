@@ -1,4 +1,4 @@
-﻿using Application.Controllers.Base.Generic;
+﻿using Application.Controllers.Base;
 using AutoMapper;
 using Domain.Common.Interfaces;
 using Domain.Dto.Quests;
@@ -11,7 +11,7 @@ using System.Security.Claims;
 
 namespace Application.Controllers
 {
-	public class QuestsController : GenericController<GamesQuest, GamesQuestDto>
+    public class QuestsController : GenericController<GamesQuest, GamesQuestDto>
 	{
 		private readonly UserManager<LuminaUser> _userManager;
 		private readonly ILogger<GamesController> _logger;

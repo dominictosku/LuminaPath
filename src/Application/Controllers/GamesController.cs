@@ -13,10 +13,10 @@ using System.Security.Claims;
 
 namespace Application.Controllers
 {
-	public class GamesController : MediaController<Game, GamesDto>
+    public class GamesController : GenericController<Game, GamesDto>
 	{
-		private readonly ILogger<GamesController> _logger;
 		private readonly IUnitOfWork unitOfWork;
+		private readonly ILogger<GamesController> _logger;
 
 		public GamesController(IUnitOfWork unitOfWork, ILogger<GamesController> logger, IMapper mapper) : base(unitOfWork.GameRepo, mapper)
 		{
@@ -29,27 +29,32 @@ namespace Application.Controllers
 		[AllowAnonymous]
 		public override async Task<PaginatedResult<GamesDto>> Get([FromQuery] MediaFilter mediaFilter)
 		{
-			string userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-			PaginatedList<Game> entities;
-			Expression<Func<Game, bool>>? filter = g => true;
+			string? userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			Expression<Func<Game, bool>> filter = GetFilterExpression(mediaFilter, userId);
+
+			PaginatedList<Game> entities = userId != null
+				? await unitOfWork.GameRepo.GetAllPaginated(mediaFilter.Paging, userId, filter)
+				: await unitOfWork.GameRepo.GetAllPaginated(mediaFilter.Paging, filter, includes: Includes);
+
+			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
+			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
+		}
+
+		private Expression<Func<Game, bool>> GetFilterExpression(MediaFilter mediaFilter, string? userId)
+		{
+			Expression<Func<Game, bool>> filter = g => true;
+
 			if (mediaFilter.SearchString != null)
 			{
 				filter = g => g.Name.Contains(mediaFilter.SearchString);
 			}
-			if (mediaFilter.MyMedia)
+
+			if (mediaFilter.MyMedia && userId != null)
 			{
-				filter = filter.And(g => g.MyGames == null ? false : g.MyGames.Where(m => m.LuminaUserId == userId).Count() >= 1);
+				filter = filter.And(g => g.MyGames != null && g.MyGames.Any(m => m.LuminaUserId == userId));
 			}
-			if (userId != null)
-			{
-				entities = await unitOfWork.GameRepo.GetAllPaginated(mediaFilter.Paging, userId, filter);
-			}
-			else
-			{
-				entities = await unitOfWork.GameRepo.GetAllPaginated(mediaFilter.Paging, filter, includes: Includes);
-			}
-			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
-			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
+
+			return filter;
 		}
 	}
 }
