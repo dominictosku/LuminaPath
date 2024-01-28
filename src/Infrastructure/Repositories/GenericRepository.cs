@@ -1,6 +1,6 @@
-﻿using Core;
-using Core.Entities;
-using Core.Interfaces;
+﻿using Domain;
+using Domain.Common.Interfaces;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 

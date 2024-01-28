@@ -1,14 +1,15 @@
-﻿using Core;
-using Core.Entities;
-using Core.Models;
-using Core.Models.Gaming;
+﻿using Domain;
+using Domain.Common.Interfaces;
+using Domain.Entities;
+using Domain.Models;
+using Domain.Models.Gaming;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Infrastructure.Repositories
 {
-	public class MyGameRepository : GenericRepository<MyGame>
+	public class MyGameRepository : GenericRepository<MyGame>, IMyGameRepository
 	{
 		public UserManager<LuminaUser> UserManager { get; set; }
 		public MyGameRepository(LuminaPathDbContext context, UserManager<LuminaUser> userManager) : base(context)

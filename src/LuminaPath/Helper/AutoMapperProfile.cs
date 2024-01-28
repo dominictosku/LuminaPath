@@ -1,13 +1,13 @@
 ﻿using AutoMapper;
-using Core.Models.Gaming;
-using Core.Models.Quests;
-using Infrastructure.Dto.Gaming;
-using Infrastructure.Dto.Quests;
+using Domain.Dto.Gaming;
+using Domain.Dto.Quests;
+using Domain.Models.Gaming;
+using Domain.Models.Quests;
 using LuminaPath.ViewModel;
 
 namespace LuminaPath.Helper
 {
-    public class AutoMapperProfile : Profile
+	public class AutoMapperProfile : Profile
 	{
 		public AutoMapperProfile()
 		{
@@ -21,10 +21,10 @@ namespace LuminaPath.Helper
 				.ForMember(dest => dest.MyGames, act => act.MapFrom(src => src.MyGames.FirstOrDefault()))
 				.ReverseMap();
 
-            CreateMap<Game, GameViewModel>()
+			CreateMap<Game, GameViewModel>()
 				.ReverseMap();
 
-            CreateMap<GamesQuestDto, GamesQuest>()
+			CreateMap<GamesQuestDto, GamesQuest>()
 				.ReverseMap();
 		}
 	}

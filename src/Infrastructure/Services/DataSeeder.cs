@@ -1,7 +1,6 @@
-﻿using Bogus;
-using Core;
-using Core.Models;
-using Core.Models.Gaming;
+﻿using Domain;
+using Domain.Models;
+using Domain.Models.Gaming;
 using Microsoft.AspNetCore.Identity;
 
 namespace Infrastructure.Services
@@ -24,21 +23,16 @@ namespace Infrastructure.Services
 			{
 				return;
 			}
-			List<Game> games = new List<Game>();
-			for (int i = 0; i < 100; i++)
+			List<Game> games = new List<Game>()
 			{
-				games.Add(
-					new Faker<Game>()
-					.RuleFor(o => o.Name, f => f.Commerce.ProductName())
-					.RuleFor(o => o.Description, f => f.Lorem.Text())
-					.RuleFor(o => o.Genre, f => f.Lorem.Word())
-					.RuleFor(o => o.ReleaseDate, f => f.Date.Future())
-					.RuleFor(o => o.Plattforms, f => f.Random.Enum<Plattforms>())
-					.RuleFor(o => o.Playtime, f => f.Random.Byte())
-					.Generate()
-				);
-
-			}
+				new Game
+				{
+					Name = "Apex",
+					Description = "Battle Royal",
+					Genre = "Shooter",
+					ReleaseDate = new DateTime(2019, 2, 4)
+				}
+			};
 			await context.AddRangeAsync(games);
 			await context.SaveChangesAsync();
 		}

@@ -1,4 +1,4 @@
-using Core.Models;
+using Domain.Models;
 using LuminaPath.Components.Account.Pages;
 using LuminaPath.Components.Account.Pages.Manage;
 using Microsoft.AspNetCore.Authentication;

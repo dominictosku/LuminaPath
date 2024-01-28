@@ -1,4 +1,4 @@
-﻿using Core;
+﻿using Domain;
 using LuminaPath.Helper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
