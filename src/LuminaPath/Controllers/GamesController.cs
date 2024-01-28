@@ -1,19 +1,19 @@
-﻿using Application.Controllers.Base;
-using Application.Helper;
+﻿using Application.Helper;
 using AutoMapper;
 using Domain.Common.Interfaces;
 using Domain.Dto.Gaming;
 using Domain.Entities;
 using Domain.Models.Gaming;
+using LuminaPath.Controllers.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 using System.Security.Claims;
 
-namespace Application.Controllers
+namespace LuminaPath.Controllers
 {
-    public class GamesController : GenericController<Game, GamesDto>
+	public class GamesController : GenericController<Game, GamesDto>
 	{
 		private readonly IUnitOfWork unitOfWork;
 		private readonly ILogger<GamesController> _logger;
