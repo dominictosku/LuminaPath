@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Application.Controllers
+namespace LuminaPath.Controllers
 {
 	[ApiController]
 	[Authorize]

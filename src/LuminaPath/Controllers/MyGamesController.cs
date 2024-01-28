@@ -1,16 +1,16 @@
-﻿using Application.Controllers.Base;
-using AutoMapper;
+﻿using AutoMapper;
 using Domain.Common.Interfaces;
 using Domain.Dto.Gaming;
 using Domain.Models;
 using Domain.Models.Gaming;
+using LuminaPath.Controllers.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-namespace Application.Controllers
+namespace LuminaPath.Controllers
 {
-    [Route("api/[controller]")]
+	[Route("api/[controller]")]
 	[ApiController]
 	[Authorize]
 	public class MyGamesController : GenericController<MyGame, MyGameDto>
