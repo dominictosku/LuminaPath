@@ -1,18 +1,17 @@
-﻿using Core;
-using Core.Models;
-using Infrastructure.Interfaces;
+﻿using Domain;
+using Domain.Common.Interfaces;
+using Domain.Models;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure
 {
-    public class UnitOfWork : IUnitOfWork
+	public class UnitOfWork : IUnitOfWork
 	{
 		private readonly LuminaPathDbContext _context;
 		private UserManager<LuminaUser> userManager;
-		private GameRepository? gameRepo;
-		private MyGameRepository? myGameRepo;
+		private IGameRepository? gameRepo;
+		private IMyGameRepository? myGameRepo;
 
 		public UnitOfWork(LuminaPathDbContext context, UserManager<LuminaUser> userManager)
 		{
@@ -20,7 +19,7 @@ namespace Infrastructure
 			this.userManager = userManager;
 		}
 
-		public GameRepository GameRepo
+		public IGameRepository GameRepo
 		{
 			get
 			{
@@ -33,7 +32,7 @@ namespace Infrastructure
 			}
 		}
 
-		public MyGameRepository MyGameRepo
+		public IMyGameRepository MyGameRepo
 		{
 			get
 			{
@@ -51,9 +50,9 @@ namespace Infrastructure
 			_context.SaveChanges();
 		}
 
-        public async Task SaveAsync()
-        {
-            await _context.SaveChangesAsync();
-        }
+		public async Task SaveAsync()
+		{
+			await _context.SaveChangesAsync();
+		}
 	}
 }

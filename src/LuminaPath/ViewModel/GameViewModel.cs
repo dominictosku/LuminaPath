@@ -1,9 +1,8 @@
-﻿using Core.Models.Gaming;
-using Microsoft.AspNetCore.Components.Forms;
+﻿using Domain.Models.Gaming;
 
 namespace LuminaPath.ViewModel
 {
-    public class GameViewModel : Game
-    {
-    }
+	public class GameViewModel : Game
+	{
+	}
 }

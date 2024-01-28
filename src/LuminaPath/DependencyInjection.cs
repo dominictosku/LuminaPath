@@ -1,4 +1,4 @@
-﻿using Core.Models;
+﻿using Domain.Models;
 using LuminaPath.Components;
 using LuminaPath.Components.Account;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -7,36 +7,37 @@ using MudBlazor.Services;
 
 namespace LuminaPath
 {
-    public static class DependencyInjection
-    {
-        public static IServiceCollection AddBlazor(this IServiceCollection services)
-        {
-            services.AddRazorComponents()
-                .AddInteractiveServerComponents()
-                .AddCircuitOptions(e => {
+	public static class DependencyInjection
+	{
+		public static IServiceCollection AddBlazor(this IServiceCollection services)
+		{
+			services.AddRazorComponents()
+				.AddInteractiveServerComponents()
+				.AddCircuitOptions(e =>
+				{
 					e.DetailedErrors = true;
 				});
 
-            services.AddCascadingAuthenticationState();
-            services.AddScoped<IdentityUserAccessor>();
-            services.AddScoped<IdentityRedirectManager>();
-            services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
-            services.AddSingleton<IEmailSender<LuminaUser>, IdentityNoOpEmailSender>();
+			services.AddCascadingAuthenticationState();
+			services.AddScoped<IdentityUserAccessor>();
+			services.AddScoped<IdentityRedirectManager>();
+			services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+			services.AddSingleton<IEmailSender<LuminaUser>, IdentityNoOpEmailSender>();
 
-            services.AddMudServices();
+			services.AddMudServices();
 
-            return services;
-        }
+			return services;
+		}
 
-        public static void UseBlazor(this WebApplication app)
-        {
-            app.UseStaticFiles();
-            app.UseAntiforgery();
-            app.MapRazorComponents<App>()
-                .AddInteractiveServerRenderMode();
+		public static void UseBlazor(this WebApplication app)
+		{
+			app.UseStaticFiles();
+			app.UseAntiforgery();
+			app.MapRazorComponents<App>()
+				.AddInteractiveServerRenderMode();
 
-            // Add additional endpoints required by the Identity /Account Razor components.
-            app.MapAdditionalIdentityEndpoints();
-        }
-    }
+			// Add additional endpoints required by the Identity /Account Razor components.
+			app.MapAdditionalIdentityEndpoints();
+		}
+	}
 }

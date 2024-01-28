@@ -1,18 +1,19 @@
-﻿using Core;
-using Core.Models;
+﻿using Application.Services;
+using Domain;
+using Domain.Common.Interfaces;
+using Domain.Models;
+using Domain.Models.Quests;
+using Infrastructure.Repositories;
 using Infrastructure.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
-using System.Net;
-using System.Text;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 namespace Infrastructure
 {
 	public static class DependencyInjection
@@ -21,6 +22,7 @@ namespace Infrastructure
 		{
 			AddMySqlDatabase(services, config);
 			AddDefaultIdentity(services, config);
+			AddServices(services, config);
 			return services;
 		}
 
@@ -55,8 +57,8 @@ namespace Infrastructure
 
 		private static void AddDefaultIdentity(IServiceCollection services, IConfiguration config)
 		{
-            services.AddAuthorization();
-            services.AddIdentityApiEndpoints<LuminaUser>(options =>
+			services.AddAuthorization();
+			services.AddIdentityApiEndpoints<LuminaUser>(options =>
 			{
 				// Password settings.
 				options.Password.RequireDigit = true;
@@ -78,17 +80,65 @@ namespace Infrastructure
 			})
 				.AddRoles<IdentityRole>()
 				.AddEntityFrameworkStores<LuminaPathDbContext>()
-                .AddSignInManager()
-                .AddDefaultTokenProviders();
+				.AddSignInManager()
+				.AddDefaultTokenProviders();
 		}
 
-        public static void ConfigureInfrastructure(this WebApplication app)
-        {
-            app.UseAuthentication();
-            app.UseAuthorization();
+		private static void AddServices(IServiceCollection services, IConfiguration config)
+		{
+			AddStorageService(services, config);
+			AddRepositories(services);
+		}
 
-            app.MapGroup("/api")
-                .MapIdentityApi<LuminaUser>();
-        }
+		private static void AddStorageService(IServiceCollection services, IConfiguration config)
+		{
+			string connectionString = Environment.GetEnvironmentVariable("AZURE_CONNECTIONSTRING")
+				?? config.GetSection("Azure")["BlobConnectionString"]
+				?? throw new Exception("No blob connectionfound");
+
+			string containerName = config.GetSection("Azure")["BlobContainerName"]
+				?? throw new Exception("No blob container name found");
+
+			services.AddScoped<IAzureStorage, AzureStorage>(s =>
+				new AzureStorage(connectionString, containerName, s.GetRequiredService<ILogger<AzureStorage>>()));
+		}
+
+		private static void AddRepositories(IServiceCollection services)
+		{
+			services.AddTransient<IGenericRepository<GamesQuest>, GenericRepository<GamesQuest>>();
+			services.AddScoped<IUnitOfWork, UnitOfWork>();
+		}
+
+		private static async Task ConfigureEnvironment(WebApplication app)
+		{
+			app.UseForwardedHeaders(new ForwardedHeadersOptions
+			{
+				ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+			});
+
+			// Configure the HTTP request pipeline.
+			if (app.Environment.IsDevelopment())
+			{
+				app.UseSwagger();
+				app.UseSwaggerUI();
+				await app.MigrateDevelopment();
+			}
+			else
+			{
+				app.UseExceptionHandler("/Error", createScopeForErrors: true);
+				await app.MigrateDevelopment(); // Temporary add migrations to Production
+				app.UseHsts();
+			}
+		}
+
+		public static async Task ConfigureInfrastructure(this WebApplication app)
+		{
+			await ConfigureEnvironment(app);
+			app.UseAuthentication();
+			app.UseAuthorization();
+
+			app.MapGroup("/api")
+				.MapIdentityApi<LuminaUser>();
+		}
 	}
 }

@@ -1,4 +1,4 @@
-﻿using Core.Models.Gaming;
+﻿using Domain.Models.Gaming;
 
 namespace Test.Utilities
 {

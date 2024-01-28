@@ -1,13 +1,13 @@
-﻿using LuminaPath;
+﻿using Application;
 using Infrastructure;
-using Server;
+using LuminaPath;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services
 	.AddInfrastructure(builder.Configuration)
-	.AddServer(builder.Configuration)
+	.AddServer()
 	.AddBlazor();
 
 builder.Services.AddAutoMapper(typeof(Program));
@@ -15,8 +15,8 @@ builder.Services.AddQuickGridEntityFrameworkAdapter();
 
 var app = builder.Build();
 
-app.ConfigureInfrastructure();
-await app.ConfigureServer();
+await app.ConfigureInfrastructure();
+app.ConfigureServer();
 
 app.UseBlazor();
 

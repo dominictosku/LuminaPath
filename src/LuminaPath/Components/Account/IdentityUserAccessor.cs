@@ -1,4 +1,4 @@
-using Core.Models;
+using Domain.Models;
 using Microsoft.AspNetCore.Identity;
 
 namespace LuminaPath.Components.Account
