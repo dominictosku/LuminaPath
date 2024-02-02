@@ -1,10 +1,10 @@
 using AutoMapper;
-using Domain;
 using Domain.Common.Interfaces;
 using Domain.Entities;
 using Domain.Models;
 using Infrastructure;
 using Infrastructure.Repositories;
+using Infrastructure.Services;
 using LuminaPath.Controllers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +30,8 @@ namespace Test.Controller
 				};
 				var filter = new MediaFilter();
 				var userManager = new Mock<UserManager<LuminaUser>>();
-				var unitOfWork = new UnitOfWork(db, userManager.Object);
+				var gameRepo = new Mock<GameRepository>();
+				var gameService = new Mock<GameService>();
 				var azure = new Mock<IAzureStorage>().Object;
 				var logger = new Mock<ILogger<GamesController>>();
 				var mapper = db.GetService<IMapper>();
@@ -38,7 +39,7 @@ namespace Test.Controller
 				db.Games.AddRange(games);
 				await db.SaveChangesAsync();
 
-				GamesController controller = new GamesController(unitOfWork, logger.Object, mapper);
+				GamesController controller = new GamesController(gameRepo.Object, gameService.Object, logger.Object, mapper);
 				var expectedGames = await db.Games.ToListAsync();
 
 				// Act
@@ -47,7 +48,7 @@ namespace Test.Controller
 				// Assert
 				Assert.Equal(
 					expectedGames.OrderBy(m => m.Id).Select(m => m.Id),
-					actualGames.Data.OrderBy(g => g.Id).Select(g => g.Id));
+					actualGames.Value.Data.OrderBy(g => g.Id).Select(g => g.Id));
 			}
 		}
 	}

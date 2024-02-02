@@ -1,12 +1,12 @@
-﻿using Domain;
-using Domain.Common.Interfaces;
+﻿using Domain.Common.Interfaces;
 using Domain.Entities;
+using Infrastructure.Interfaces.Repositories;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Infrastructure.Repositories
 {
-	public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity : class, IBasicInfo
+    public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity : class, IBasicInfo
 	{
 		private protected readonly LuminaPathDbContext _context;
 		private protected readonly DbSet<TEntity> _entities;

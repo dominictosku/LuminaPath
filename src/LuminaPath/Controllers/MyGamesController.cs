@@ -3,6 +3,8 @@ using Domain.Common.Interfaces;
 using Domain.Dto.Gaming;
 using Domain.Models;
 using Domain.Models.Gaming;
+using Infrastructure.Interfaces.Repositories;
+using Infrastructure.Services;
 using LuminaPath.Controllers.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,21 +17,21 @@ namespace LuminaPath.Controllers
 	[Authorize]
 	public class MyGamesController : GenericController<MyGame, MyGameDto>
 	{
-		private readonly IUnitOfWork unitOfWork;
-		private readonly UserManager<LuminaUser> _userManager;
+        protected new readonly IMyGameRepository _repository;
+        private readonly UserManager<LuminaUser> _userManager;
 		private readonly ILogger<GamesController> _logger;
 
-		public MyGamesController(IUnitOfWork unitOfWork, UserManager<LuminaUser> userManager,
-			ILogger<GamesController> logger, IMapper mapper) : base(unitOfWork.MyGameRepo, mapper)
+		public MyGamesController(IMyGameRepository myrepository, MyGameService service, UserManager<LuminaUser> userManager,
+			ILogger<GamesController> logger, IMapper mapper) : base(service, mapper)
 		{
-			this.unitOfWork = unitOfWork;
+			_repository = myrepository;
 			_userManager = userManager;
 			_logger = logger;
 			Includes = new List<string> { "Game" };
 		}
 
 		[HttpPost]
-		public override async Task<ActionResult<MyGameDto>> PostAsync(MyGame viewModel)
+		public override async Task<ActionResult> PostAsync(MyGame viewModel)
 		{
 			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
 			if (user == null)
@@ -58,7 +60,7 @@ namespace LuminaPath.Controllers
 
 		protected bool IsMediaAlreadyAdded(int id, int myId, string userId)
 		{
-			var entities = _service.GetAllNoTrack();
+			var entities = _repository.GetAllNoTrack();
 			return entities.Any(e => e.MediaId == id && e.Id != myId && e.LuminaUserId == userId);
 		}
 	}

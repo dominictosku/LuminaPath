@@ -2,6 +2,8 @@
 using Domain.Common.Interfaces;
 using Domain.Entities;
 using Domain.Models;
+using Infrastructure.Interfaces.Repositories;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,113 +12,66 @@ using System.Security.Claims;
 
 namespace LuminaPath.Controllers.Base
 {
-	[ApiController]
+    [ApiController]
 	//[Authorize(AuthenticationSchemes = "Bearer")]
 	[Route("api/[controller]")]
 	[Authorize]
 	public abstract class GenericController<TEntity, TEntityDto> : ControllerBase where TEntity : class, IBasicInfo
 	{
-		protected readonly IGenericRepository<TEntity> _service;
+		protected readonly GenericModelService<TEntity> _service;
 		protected IEnumerable<string> Includes { get; set; } = new List<string>();
 		public IMapper Mapper;
-		public GenericController(IGenericRepository<TEntity> service, IMapper mapper)
+		public GenericController(GenericModelService<TEntity> service, IMapper mapper)
 		{
 			_service = service;
 			Mapper = mapper;
 		}
 
 		[HttpGet]
-		public async virtual Task<PaginatedResult<TEntityDto>> Get([FromQuery] MediaFilter mediaFilter)
+		public async virtual Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)
 		{
-			PaginatedList<TEntity> entities = await _service.GetAllPaginated(mediaFilter.Paging, includes: Includes);
-			var entitiesDto = Mapper.Map<IEnumerable<TEntity>, IEnumerable<TEntityDto>>(entities);
-			return new PaginatedResult<TEntityDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
+			var result = await _service.GetAndMapEntities<TEntityDto>(mediaFilter, Includes);
+			return result.Match<ActionResult<PaginatedResult<TEntityDto>>>(
+				m => Ok(m),
+				f => BadRequest(f));
 		}
 
 		[HttpGet("{id}")]
 		public async virtual Task<ActionResult<TEntityDto>> GetById(int? id)
 		{
-			if (id == null)
-				return NotFound();
-			var entity = await _service.GetById(id, Includes);
-			if (entity == null)
-				return NotFound();
-			var entitiesDto = Mapper.Map<TEntity, TEntityDto>(entity);
-			return Ok(entitiesDto);
-		}
+			var result = await _service.GetById<TEntityDto>(id, Includes);
+            return result.Match<ActionResult<TEntityDto>>(
+				m => Ok(m),
+				f => NotFound(f));
+        }
 
 		[HttpPost]
-		public virtual async Task<ActionResult<TEntityDto>> PostAsync(TEntity viewModel)
-		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest();
-			}
-			var entity = viewModel;
-			var entityDto = Mapper.Map<TEntityDto>(viewModel);
-			await _service.Create(entity);
-			await _service.Save();
+        public virtual async Task<ActionResult> PostAsync(TEntity viewModel)
+        {
+            var result = await _service.PostAsync<TEntityDto>(viewModel, ModelState);
+            return result.Match<ActionResult>(
+                m => CreatedAtAction("GetById", new { id = viewModel.Id }, m),
+                f => BadRequest(f)
+                );
+        }
 
-			return CreatedAtAction("GetById", new { id = viewModel.Id }, entityDto);
-		}
-
-		[HttpPut("{id}")]
+        [HttpPut("{id}")]
 		public virtual async Task<IActionResult> PutAsync(int id, TEntity viewModel)
 		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ModelState);
-			}
-
-			if (id != viewModel.Id)
-			{
-				return BadRequest("Invalid ID");
-			}
-
-			var entity = await _service.GetByIdNoTrack(id);
-			if (entity == null)
-			{
-				return NotFound();
-			}
-
-			_service.Update(viewModel);
-
-			try
-			{
-				await _service.Save();
-			}
-			catch (DbUpdateConcurrencyException)
-			{
-				if (!MyMediaExists(id))
-				{
-					return NotFound();
-				}
-				else
-				{
-					throw;
-				}
-			}
-
-			return NoContent();
+			var result = await _service.PutAsync<TEntityDto>(id, viewModel, ModelState);
+			return result.Match<IActionResult>(
+				m => Ok(m),
+				f => BadRequest(f));
 		}
 
 		[HttpDelete]
 		public virtual async Task<IActionResult> DeleteAsync(int? id)
 		{
-			if (id == null || _service.GetAll() == null)
-			{
-				return NotFound();
-			}
-			var personalGaming = await _service.GetById(id);
-
-			if (personalGaming != null)
-			{
-				await _service.Delete(id);
-				await _service.Save();
-			}
-
-			return new JsonResult("Ok");
-		}
+            var result = await _service.DeleteAsync(id);
+            return result.Match<IActionResult>(
+                m => Ok(),
+                f => NotFound(f));
+        }
 
 		protected async Task<(LuminaUser user, string UserId)> GetUserAndUserIdAsync(UserManager<LuminaUser> userManager)
 		{
@@ -126,12 +81,6 @@ namespace LuminaPath.Controllers.Base
 
 			LuminaUser user = await userManager.FindByIdAsync(userId);
 			return (user, userId);
-		}
-
-		protected bool MyMediaExists(int id)
-		{
-			var entities = _service.GetAll().Result;
-			return entities.Any(e => e.Id == id);
 		}
 	}
 }
