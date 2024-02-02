@@ -1,8 +1,8 @@
 ﻿using Application.Services;
-using Domain;
 using Domain.Common.Interfaces;
 using Domain.Models;
 using Domain.Models.Quests;
+using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
@@ -16,11 +16,11 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 namespace Infrastructure
 {
-	public static class DependencyInjection
+    public static class DependencyInjection
 	{
 		public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
 		{
-			AddMySqlDatabase(services, config);
+			AddDatabase(services, config);
 			AddDefaultIdentity(services, config);
 			AddServices(services, config);
 			return services;
@@ -48,11 +48,12 @@ namespace Infrastructure
 			}
 		}
 
-		private static void AddMySqlDatabase(IServiceCollection services, IConfiguration config)
+		private static void AddDatabase(IServiceCollection services, IConfiguration config)
 		{
 			var connectionstring = config.GetConnectionString("Default");
 			services.AddDbContextFactory<LuminaPathDbContext>(options =>
 				options.UseMySql(connectionstring, ServerVersion.AutoDetect(connectionstring)));
+			services.AddScoped<ILuminaPathDbContext, LuminaPathDbContext>();
 		}
 
 		private static void AddDefaultIdentity(IServiceCollection services, IConfiguration config)
@@ -88,6 +89,7 @@ namespace Infrastructure
 		{
 			AddStorageService(services, config);
 			AddRepositories(services);
+			AddModelService(services);
 		}
 
 		private static void AddStorageService(IServiceCollection services, IConfiguration config)
@@ -103,11 +105,18 @@ namespace Infrastructure
 				new AzureStorage(connectionString, containerName, s.GetRequiredService<ILogger<AzureStorage>>()));
 		}
 
-		private static void AddRepositories(IServiceCollection services)
+        private static void AddModelService(IServiceCollection services)
+        {
+            services.AddScoped<GameService>();
+            services.AddScoped<MyGameService>();
+        }
+
+        private static void AddRepositories(IServiceCollection services)
 		{
-			services.AddTransient<IGenericRepository<GamesQuest>, GenericRepository<GamesQuest>>();
-			services.AddScoped<IUnitOfWork, UnitOfWork>();
-		}
+			services.AddScoped<IGameRepository, GameRepository>();
+            services.AddScoped<IMyGameRepository, MyGameRepository>();
+            services.AddScoped<IQuestRepository, QuestRepository>();
+        }
 
 		private static async Task ConfigureEnvironment(WebApplication app)
 		{

@@ -4,6 +4,8 @@ using Domain.Common.Interfaces;
 using Domain.Dto.Gaming;
 using Domain.Entities;
 using Domain.Models.Gaming;
+using Infrastructure.Interfaces.Repositories;
+using Infrastructure.Services;
 using LuminaPath.Controllers.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,26 +17,26 @@ namespace LuminaPath.Controllers
 {
 	public class GamesController : GenericController<Game, GamesDto>
 	{
-		private readonly IUnitOfWork unitOfWork;
-		private readonly ILogger<GamesController> _logger;
+        protected readonly IGameRepository _repository;
+        private readonly ILogger<GamesController> _logger;
 
-		public GamesController(IUnitOfWork unitOfWork, ILogger<GamesController> logger, IMapper mapper) : base(unitOfWork.GameRepo, mapper)
+		public GamesController(IGameRepository gameRepo, GameService service, ILogger<GamesController> logger, IMapper mapper) : base(service, mapper)
 		{
-			_logger = logger; ;
-			this.unitOfWork = unitOfWork;
-			Includes = new List<string>() { "Image" };
+			_repository = gameRepo;
+			_logger = logger;
+            Includes = new List<string>() { "Image" };
 		}
 
 		[HttpGet]
 		[AllowAnonymous]
-		public override async Task<PaginatedResult<GamesDto>> Get([FromQuery] MediaFilter mediaFilter)
+		public override async Task<ActionResult<PaginatedResult<GamesDto>>> Get([FromQuery] MediaFilter mediaFilter)
 		{
 			string? userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			Expression<Func<Game, bool>> filter = GetFilterExpression(mediaFilter, userId);
 
 			PaginatedList<Game> entities = userId != null
-				? await unitOfWork.GameRepo.GetAllPaginated(mediaFilter.Paging, userId, filter)
-				: await unitOfWork.GameRepo.GetAllPaginated(mediaFilter.Paging, filter, includes: Includes);
+				? await _repository.GetAllPaginated(mediaFilter.Paging, userId, filter)
+				: await _repository.GetAllPaginated(mediaFilter.Paging, filter, includes: Includes);
 
 			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<GamesDto>>(entities);
 			return new PaginatedResult<GamesDto>(entitiesDto, entities.PageIndex, entities.TotalPages);

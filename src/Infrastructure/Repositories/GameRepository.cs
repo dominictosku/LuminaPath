@@ -1,13 +1,12 @@
-﻿using Domain;
-using Domain.Common.Interfaces;
-using Domain.Entities;
+﻿using Domain.Entities;
 using Domain.Models.Gaming;
+using Infrastructure.Interfaces.Repositories;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Infrastructure.Repositories
 {
-	public class GameRepository : GenericRepository<Game>, IGameRepository
+    public class GameRepository : GenericRepository<Game>, IGameRepository
 	{
 		public GameRepository(LuminaPathDbContext context) : base(context)
 		{
