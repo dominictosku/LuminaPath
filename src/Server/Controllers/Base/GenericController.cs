@@ -10,9 +10,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
-namespace LuminaPath.Controllers.Base
+namespace Server.Controllers.Base
 {
-    [ApiController]
+	[ApiController]
 	//[Authorize(AuthenticationSchemes = "Bearer")]
 	[Route("api/[controller]")]
 	[Authorize]
@@ -35,27 +35,27 @@ namespace LuminaPath.Controllers.Base
 		public async virtual Task<ActionResult<TEntityDto>> GetById(int? id)
 		{
 			var result = await _service.GetById<TEntityDto>(id, Includes);
-            return result.Match<ActionResult<TEntityDto>>(
+			return result.Match<ActionResult<TEntityDto>>(
 				m => Ok(m),
 				f => NotFound(f));
-        }
+		}
 
 		[HttpPost]
-        public virtual async Task<ActionResult> PostAsync(TEntity viewModel)
-        {
+		public virtual async Task<ActionResult> PostAsync(TEntity viewModel)
+		{
 			if (!ModelState.IsValid)
 			{
 				return BadRequest(ModelState);
 			}
 
 			var result = await _service.PostAsync<TEntityDto>(viewModel);
-            return result.Match<ActionResult>(
-                m => CreatedAtAction("GetById", new { id = viewModel.Id }, m),
-                f => BadRequest(f)
-                );
-        }
+			return result.Match<ActionResult>(
+				m => CreatedAtAction("GetById", new { id = viewModel.Id }, m),
+				f => BadRequest(f)
+				);
+		}
 
-        [HttpPut("{id}")]
+		[HttpPut("{id}")]
 		public virtual async Task<IActionResult> PutAsync(int id, TEntity viewModel)
 		{
 			if (!ModelState.IsValid)
@@ -77,11 +77,11 @@ namespace LuminaPath.Controllers.Base
 		[HttpDelete]
 		public virtual async Task<IActionResult> DeleteAsync(int? id)
 		{
-            var result = await _service.DeleteAsync(id);
-            return result.Match<IActionResult>(
-                m => Ok(),
-                f => NotFound(f));
-        }
+			var result = await _service.DeleteAsync(id);
+			return result.Match<IActionResult>(
+				m => Ok(),
+				f => NotFound(f));
+		}
 
 		protected async Task<(LuminaUser? user, string? UserId)> GetUserAndUserIdAsync(UserManager<LuminaUser> userManager)
 		{
@@ -90,7 +90,7 @@ namespace LuminaPath.Controllers.Base
 				return (null, null);
 
 			LuminaUser? user = await userManager.FindByIdAsync(userId);
-			if(user == null)
+			if (user == null)
 				return (null, null);
 			return (user, userId);
 		}
