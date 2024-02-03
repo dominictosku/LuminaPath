@@ -17,14 +17,14 @@ namespace LuminaPath.Controllers
 	[Authorize]
 	public class MyGamesController : GenericController<MyGame, MyGameDto>
 	{
-        protected new readonly IMyGameRepository _repository;
+		private readonly new MyGameService _service;
         private readonly UserManager<LuminaUser> _userManager;
 		private readonly ILogger<GamesController> _logger;
 
-		public MyGamesController(IMyGameRepository myrepository, MyGameService service, UserManager<LuminaUser> userManager,
+		public MyGamesController(MyGameService service, UserManager<LuminaUser> userManager,
 			ILogger<GamesController> logger, IMapper mapper) : base(service, mapper)
 		{
-			_repository = myrepository;
+			_service = service;
 			_userManager = userManager;
 			_logger = logger;
 			Includes = new List<string> { "Game" };
@@ -33,35 +33,37 @@ namespace LuminaPath.Controllers
 		[HttpPost]
 		public override async Task<ActionResult> PostAsync(MyGame viewModel)
 		{
-			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
-			if (user == null)
-				return NotFound("User not found, please login");
-			if (IsMediaAlreadyAdded(viewModel.MediaId, viewModel.Id, userId))
+			if (!ModelState.IsValid)
 			{
-				return BadRequest("This is game already added");
+				return BadRequest(ModelState);
 			}
-			viewModel.LuminaUserId = user.Id;
-			return await base.PostAsync(viewModel);
+
+			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
+			var result = await _service.PostAsync<MyGameDto>(viewModel, user);
+			return result.Match<ActionResult>(
+				m => CreatedAtAction("GetById", new { id = viewModel.Id }, m),
+				f => BadRequest(f)
+				);
 		}
 
 		[HttpPut("{id}")]
 		public override async Task<IActionResult> PutAsync(int id, MyGame viewModel)
 		{
-			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
-			if (user == null)
-				return NotFound("User not found, please login");
-			if (IsMediaAlreadyAdded(viewModel.MediaId, viewModel.Id, userId))
+			if (!ModelState.IsValid)
 			{
-				return BadRequest("This is game already added");
+				return BadRequest(ModelState);
 			}
-			viewModel.LuminaUserId = user.Id;
-			return await base.PutAsync(id, viewModel);
-		}
 
-		protected bool IsMediaAlreadyAdded(int id, int myId, string userId)
-		{
-			var entities = _repository.GetAllNoTrack();
-			return entities.Any(e => e.MediaId == id && e.Id != myId && e.LuminaUserId == userId);
+			if (id != viewModel.Id)
+			{
+				return BadRequest("Id does not match entity");
+			}
+
+			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
+			var result = await _service.PutAsync<MyGameDto>(viewModel, user);
+			return result.Match<IActionResult>(
+				m => Ok(m),
+				f => BadRequest(f));
 		}
 	}
 }

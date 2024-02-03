@@ -43,12 +43,8 @@ namespace Infrastructure.Services
             return entitiesDto;
         }
 
-        public virtual async Task<Result<Dto, ModelStateDictionary>> PostAsync<Dto>(TEntity viewModel, ModelStateDictionary modelState)
+        public virtual async Task<Result<Dto, FailedResult>> PostAsync<Dto>(TEntity viewModel)
         {
-            if (!modelState.IsValid)
-            {
-                return modelState;
-            }
             var entity = viewModel;
             var entityDto = Mapper.Map<Dto>(viewModel);
             await _repository.Create(entity);
@@ -57,25 +53,14 @@ namespace Infrastructure.Services
             return entityDto;
         }
 
-        public virtual async Task<Result<Dto, ModelStateDictionary>> PutAsync<Dto>(int id, TEntity viewModel, ModelStateDictionary modelState)
+        public virtual async Task<Result<Dto, FailedResult>> PutAsync<Dto>(TEntity viewModel)
         {
-            if (!modelState.IsValid)
-            {
-                return modelState;
-            }
-
-            if (id != viewModel.Id)
-            {
-                modelState.AddModelError("IdError", "Id does not match entity");
-                return modelState;
-            }
-
+            var id = viewModel.Id;
             var entity = await _repository.GetByIdNoTrack(id);
             if (entity == null)
             {
-                modelState.AddModelError("IdError", "Entity not found");
-                return modelState;
-            }
+                return new FailedResult("Entity not found");
+			}
 
             _repository.Update(viewModel);
 
@@ -87,9 +72,8 @@ namespace Infrastructure.Services
             {
                 if (!MyMediaExists(id))
                 {
-                    modelState.AddModelError("dbError", "Entity could not be saved");
-                    return modelState;
-                }
+					return new FailedResult("Entity could not be saved");
+				}
                 else
                 {
                     throw;
