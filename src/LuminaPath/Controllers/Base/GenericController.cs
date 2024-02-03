@@ -16,16 +16,11 @@ namespace LuminaPath.Controllers.Base
 	//[Authorize(AuthenticationSchemes = "Bearer")]
 	[Route("api/[controller]")]
 	[Authorize]
-	public abstract class GenericController<TEntity, TEntityDto> : ControllerBase where TEntity : class, IBasicInfo
+	public abstract class GenericController<TEntity, TEntityDto>(GenericModelService<TEntity> service, IMapper mapper) : ControllerBase where TEntity : class, IBasicInfo
 	{
-		protected readonly GenericModelService<TEntity> _service;
+		protected readonly GenericModelService<TEntity> _service = service;
 		protected IEnumerable<string> Includes { get; set; } = new List<string>();
-		public IMapper Mapper;
-		public GenericController(GenericModelService<TEntity> service, IMapper mapper)
-		{
-			_service = service;
-			Mapper = mapper;
-		}
+		public IMapper Mapper = mapper;
 
 		[HttpGet]
 		public async virtual Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)
