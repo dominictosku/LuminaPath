@@ -1,6 +1,7 @@
 ﻿using Application;
 using Infrastructure;
 using LuminaPath;
+using Server;
 
 var builder = WebApplication.CreateBuilder(args);
 

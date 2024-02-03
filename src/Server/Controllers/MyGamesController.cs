@@ -5,12 +5,12 @@ using Domain.Models;
 using Domain.Models.Gaming;
 using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Services;
-using LuminaPath.Controllers.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-namespace LuminaPath.Controllers
+using Server.Controllers.Base;
+namespace Server.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
@@ -18,7 +18,7 @@ namespace LuminaPath.Controllers
 	public class MyGamesController : GenericController<MyGame, MyGameDto>
 	{
 		private readonly new MyGameService _service;
-        private readonly UserManager<LuminaUser> _userManager;
+		private readonly UserManager<LuminaUser> _userManager;
 		private readonly ILogger<GamesController> _logger;
 
 		public MyGamesController(MyGameService service, UserManager<LuminaUser> userManager,

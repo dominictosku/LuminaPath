@@ -6,25 +6,25 @@ using Domain.Entities;
 using Domain.Models.Gaming;
 using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Services;
-using LuminaPath.Controllers.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Server.Controllers.Base;
 using System.Linq.Expressions;
 using System.Security.Claims;
 
-namespace LuminaPath.Controllers
+namespace Server.Controllers
 {
 	public class GamesController : GenericController<Game, GamesDto>
 	{
 		private readonly new GameService _service;
-        private readonly ILogger<GamesController> _logger;
+		private readonly ILogger<GamesController> _logger;
 
 		public GamesController(IGameRepository gameRepo, GameService service, ILogger<GamesController> logger, IMapper mapper) : base(service, mapper)
 		{
 			_service = service;
 			_logger = logger;
-            Includes = new List<string>() { "Image" };
+			Includes = new List<string>() { "Image" };
 		}
 
 		[HttpGet]

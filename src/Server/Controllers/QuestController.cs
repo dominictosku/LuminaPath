@@ -4,15 +4,15 @@ using Domain.Models;
 using Domain.Models.Quests;
 using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Services;
-using LuminaPath.Controllers.Base;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Server.Controllers.Base;
 using System.Security.Claims;
 
-namespace LuminaPath.Controllers
+namespace Server.Controllers
 {
-    public class QuestsController : GenericController<GamesQuest, GamesQuestDto>
+	public class QuestsController : GenericController<GamesQuest, GamesQuestDto>
 	{
 		private readonly UserManager<LuminaUser> _userManager;
 		private readonly ILogger<GamesController> _logger;
