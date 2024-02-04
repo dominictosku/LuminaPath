@@ -68,7 +68,7 @@
              </MudHidden>
          </div>
 
-         <MudTextField T="string" ValueChanged="@(s => Page.OnSearch(s))" Placeholder="search..." Adornment="Adornment.End"
+         <MudTextField T="string" ValueChanged="@Page.ReloadData" Placeholder="search..." Adornment="Adornment.End"
                        AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
          </MudTextField>
 
