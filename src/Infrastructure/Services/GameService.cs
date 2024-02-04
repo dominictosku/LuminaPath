@@ -34,7 +34,7 @@ namespace Infrastructure.Services
 			return new PaginatedResult<TDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
 
-		private Expression<Func<Game, bool>> GetFilterExpression(MediaFilter mediaFilter, string? userId)
+		public static Expression<Func<Game, bool>> GetFilterExpression(MediaFilter mediaFilter, string? userId = null)
 		{
 			Expression<Func<Game, bool>> filter = g => true;
 
@@ -43,7 +43,17 @@ namespace Infrastructure.Services
 				filter = g => g.Name.Contains(mediaFilter.SearchString);
 			}
 
-			if (mediaFilter.MyMedia && userId != null)
+            if (mediaFilter.From != null)
+            {
+                filter = filter.And(g => g.ReleaseDate > mediaFilter.From);
+            }
+
+            if (mediaFilter.To != null)
+            {
+                filter = filter.And(g => g.ReleaseDate < mediaFilter.To);
+            }
+
+            if (mediaFilter.MyMedia && userId != null)
 			{
 				filter = filter.And(g => g.MyGames != null && g.MyGames.Any(m => m.LuminaUserId == userId));
 			}

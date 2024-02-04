@@ -60,7 +60,7 @@ namespace Infrastructure.Repositories
 			}
 			if (includes != null)
 			{
-				entities = includes.Aggregate(_entities.AsQueryable(), (current, include) => current.Include(include));
+				entities = includes.Aggregate(entities, (current, include) => current.Include(include));
 			}
 			if (orderBy != null)
 			{
