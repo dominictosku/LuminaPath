@@ -8,21 +8,14 @@
             <MudTextField @bind-Value="Model.SearchString" 
                           Placeholder="Search Media"
                           Clearable="true"
-                          TextChanged="TextChanged">
+                          TextChanged="Search">
             </MudTextField>
         </MudItem>
         <MudItem xs="12" sm="6" md="4">
-            <MudDatePicker Clearable="true" @bind-Value="@Model.From"
-                           Placeholder="From"
-                           TextChanged="TextChanged">
-            </MudDatePicker>
+            <MudDatePicker Clearable="true" Placeholder="From" PickerClosed="Search" @bind-Date="@Model.From" />
         </MudItem>
         <MudItem xs="12" sm="6" md="4">
-            <MudDatePicker @bind-Value="@Model.To"
-                             Clearable="true"
-                             Placeholder="To"
-                           TextChanged="TextChanged">
-            </MudDatePicker>
+            <MudDatePicker Clearable="true" Placeholder="To" PickerClosed="Search" @bind-Date="@Model.To" />
         </MudItem>
     </MudGrid>
 </MudExpansionPanel>
@@ -32,18 +25,15 @@
     [EditorRequired][Parameter]
     public MediaFilter Model { get; set; } = default!;
     [EditorRequired][Parameter]
-    public EventCallback<string> OnConditionChanged { get; set; }
-
-    public DateTime From { get; set; }
-    public DateTime To { get; set; }
+    public EventCallback OnConditionChanged { get; set; }
 
     private bool _advancedSearchExpanded;
 
-    private async Task TextChanged(string date)
+    private async Task Search()
     {
         if (_advancedSearchExpanded)
         {
-            await OnConditionChanged.InvokeAsync(date);
+            await OnConditionChanged.InvokeAsync();
         }
     }
 
