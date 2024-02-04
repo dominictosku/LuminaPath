@@ -13,43 +13,46 @@
 <PageTitle>Games</PageTitle>
 
 <h1>Games</h1>
-<AdvancedSearch Model="_filter" OnConditionChanged="OnRefresh"></AdvancedSearch>
-<MudDataGrid ServerData="@(ServerReload)"
-			 FixedHeader="true"
-			 FixedFooter="true"
-			 Virtualize="true"
-			 Height="calc(100vh - 370px)"
-			 Loading="@loading"
-			 MultiSelection="true"
-			 @bind-SelectedItems="selectedItems"
-			 @bind-SelectedItem="_currentDto"
-			 Hover="true" @ref="_table">
-	<ToolBarContent>
-		<TableActions Page="this" />
-	</ToolBarContent>
-	<Columns>
-		<SelectColumn ShowInFooter="false"></SelectColumn>
-		<TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
-			<CellTemplate>
-				<MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
-						 Dense="true"
-						 EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-					<MudMenuItem OnAction="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
+<MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary">@ToggleText</MudButton>
+<AdvancedSearch Model="_filter" OnConditionChanged="ReloadData"></AdvancedSearch>
+@if (IsGrid)
+{
+	<MudDataGrid ServerData="@(ServerReload)"
+				 FixedHeader="true"
+				 FixedFooter="true"
+				 Virtualize="true"
+				 Height="calc(100vh - 370px)"
+				 Loading="@loading"
+				 MultiSelection="true"
+				 @bind-SelectedItems="selectedItems"
+				 @bind-SelectedItem="_currentDto"
+				 Hover="true" @ref="_table">
+		<ToolBarContent>
+			<TableActions Page="this" />
+		</ToolBarContent>
+		<Columns>
+			<SelectColumn ShowInFooter="false"></SelectColumn>
+			<TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
+				<CellTemplate>
+					<MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
+							 Dense="true"
+							 EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+						<MudMenuItem OnAction="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
 
-					<MudMenuItem OnAction="@(() => Delete(context.Item))">Delete</MudMenuItem>
-				</MudMenu>
-			</CellTemplate>
-		</TemplateColumn>
-
-		<PropertyColumn Property="x => x.Name" Title="Title">
-			<CellTemplate>
-				<div class="d-flex flex-column">
-					<MudText Typo="Typo.body2">@context.Item.Name</MudText>
-						<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
-					</div>
+						<MudMenuItem OnAction="@(() => Delete(context.Item))">Delete</MudMenuItem>
+					</MudMenu>
 				</CellTemplate>
-			</PropertyColumn>
-			<PropertyColumn Property="x => x.Genre" Title="Genre" />
+			</TemplateColumn>
+
+			<PropertyColumn Property="x => x.Name" Title="Title">
+				<CellTemplate>
+					<div class="d-flex flex-column">
+						<MudText Typo="Typo.body2">@context.Item.Name</MudText>
+							<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
+						</div>
+					</CellTemplate>
+				</PropertyColumn>
+				<PropertyColumn Property="x => x.Genre" Title="Genre" />
 		</Columns>
 		<NoRecordsContent>
 			<MudText>No items found</MudText>
@@ -61,33 +64,50 @@
 			<MudDataGridPager />
 		</PagerContent>
 	</MudDataGrid>
+}
+else
+{
+	<MudGrid Spacing="2">
+		@foreach (var game in Games)
+		{
+			<MudCard Class="w-25">
+				<MudCardMedia Image="@game.Image?.Uri" Height="200" />
+				<MudCardContent>
+					<MudText Typo="Typo.h5">@game.Name</MudText>
+					<MudText Typo="Typo.body2">@game.Description</MudText>
+				</MudCardContent>
+				<MudCardActions>
+					<MudButton OnClick="@(() => OnUpdate(game))" Variant="Variant.Text" Color="Color.Primary">Edit</MudButton>
+					<MudButton Variant="Variant.Text" Color="Color.Primary">Add To List</MudButton>
+				</MudCardActions>
+			</MudCard>
+		}
+	</MudGrid>
+}
 
-	<style>
-		@@import url("https://cdn.jsdelivr.net/npm/@@fancyapps/ui@5.0/dist/fancybox/fancybox.css");
-	</style>
+<style>
+	@@import url("https://cdn.jsdelivr.net/npm/@@fancyapps/ui@5.0/dist/fancybox/fancybox.css");
+</style>
 
-	@code {
+@code {
 
+	private List<Game> Games = new();
 	private MudDataGrid<Game> _table = default!;
 	private Game _currentDto = new();
 	private MediaFilter _filter = new();
 
+	public bool IsGrid = true;
 	public bool loading;
 	public HashSet<Game> selectedItems = new();
+	public string ToggleText => IsGrid ? "Grid View" : "Table View";
 
 	private async Task<GridData<Game>> ServerReload(GridState<Game> state)
 	{
 		selectedItems = new HashSet<Game>();
 		loading = true;
-		using var dbContext = dbContextFactory.CreateDbContext();
-
 		try
 		{
-			var gameRepo = new GameRepository(dbContext);
-			var paging = new Paging(state.Page + 1, 15);
-			var filter = GameService.GetFilterExpression(_filter);
-			var includes = new List<string>() { "Image" };
-			var result = await gameRepo.GetAllPaginated(paging, filter, includes: includes);
+			var result = await GetData(state.Page + 1);
 
 			return new GridData<Game> { TotalItems = result.Count(), Items = result };
 		}
@@ -97,9 +117,33 @@
 		}
 	}
 
-	public async Task OnSearch(string s)
+	public async Task ReloadData()
 	{
-		await _table.ReloadServerData();
+		if (IsGrid)
+		{
+			await _table.ReloadServerData();
+		}
+		else
+		{
+			Games = await GetData(1);
+			StateHasChanged();
+		}
+	}
+
+	private async Task SwitchView()
+	{
+		IsGrid = !IsGrid;
+		await ReloadData();
+	}
+
+	private async Task<PaginatedList<Game>> GetData(int pageIndex)
+	{
+		using var dbContext = dbContextFactory.CreateDbContext();
+		var gameRepo = new GameRepository(dbContext);
+		var paging = new Paging(pageIndex, 15);
+		var filter = GameService.GetFilterExpression(_filter);
+		var includes = new List<string>() { "Image" };
+		return await gameRepo.GetAllPaginated(paging, filter, includes: includes);
 	}
 
 	public void Dummy()
@@ -108,18 +152,12 @@
 	}
 
 	#region Events
-
-	public async Task OnRefresh()
-	{
-		await _table.ReloadServerData();
-	}
-
 	public async Task OnCreate()
 	{
 		var command = new GameViewModel();
 		var parameters = new DialogParameters<MediaFormDialog>
 		{
-			{ x=>x.Refresh , new Action(() => _table.ReloadServerData()) },
+			{ x=>x.Refresh , new Action(async () => await ReloadData()) },
 			{ x=>x.Model, command },
 			{ x=>x.loading, loading },
 			{ x=>x.EventCallBack, CreateGame }
@@ -128,7 +166,7 @@
 		var dialog = DialogService.Show<MediaFormDialog>("Create Game", parameters, options);
 		var state = await dialog.Result;
 		if (!state.Canceled)
-			await _table.ReloadServerData();
+			await ReloadData();
 	}
 
 	public async Task OnUpdate(Game g)
@@ -136,7 +174,7 @@
 		var command = mapper.Map<Game, GameViewModel>(g);
 		var parameters = new DialogParameters<MediaFormDialog>
 		{
-			{ x=>x.Refresh , new Action(() => _table.ReloadServerData()) },
+			{ x=>x.Refresh , new Action(async () => await ReloadData()) },
 			{ x=>x.Model, command },
 			{ x=>x.loading, loading },
 			{ x=>x.EventCallBack, UpdateGame }
@@ -145,7 +183,7 @@
 		var dialog = DialogService.Show<MediaFormDialog>("Update Game", parameters, options);
 		var state = await dialog.Result;
 		if (!state.Canceled)
-			await _table.ReloadServerData();
+			await ReloadData();
 	}
 
 	public async Task OnDeleteChecked()
@@ -160,7 +198,7 @@
 		}
 
 		await dbContext.SaveChangesAsync();
-		await _table.ReloadServerData();
+		await ReloadData();
 	}
 
 	#endregion
@@ -182,7 +220,7 @@
 			loading = false;
 		}
 
-		await _table.ReloadServerData();
+		await ReloadData();
 		loading = false;
 	}
 
@@ -202,8 +240,7 @@
 			loading = false;
 		}
 
-		dbContext.ChangeTracker.Clear();
-		await _table.ReloadServerData();
+		await ReloadData();
 		loading = false;
 	}
 
@@ -214,7 +251,7 @@
 		await dbContext.SaveChangesAsync();
 
 		Snackbar.Add("Deleted Game", Severity.Info);
-		await _table.ReloadServerData();
+		await ReloadData();
 	}
 	#endregion
 }
