@@ -1,8 +1,9 @@
-﻿using AutoMapper;
+﻿using Application.Common.Interfaces.Repositories;
+using AutoMapper;
+using Domain.Common.Entities;
+using Domain.Common.Entities.Results;
 using Domain.Common.Interfaces;
-using Domain.Entities;
 using Domain.Models;
-using Infrastructure.Interfaces.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Services
 {
-    public class GenericModelService<TEntity> where TEntity : class, IBasicInfo
+	public class GenericModelService<TEntity> where TEntity : class, IBasicInfo
     {
         public readonly IGenericRepository<TEntity> _repository;
         public IMapper Mapper;

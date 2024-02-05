@@ -1,5 +1,5 @@
 ﻿using Domain.Common.Interfaces;
-using Domain.Models.Gaming;
+using Domain.Models;
 using System.ComponentModel.DataAnnotations;
 namespace Domain.Common.Validation
 {

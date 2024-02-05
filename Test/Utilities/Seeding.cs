@@ -1,8 +1,8 @@
-﻿using Domain.Models.Gaming;
+﻿using Domain.Models;
 
 namespace Test.Utilities
 {
-	public static class Seeding
+    public static class Seeding
 	{
 		public static List<Game> SeedGames(IEnumerable<string> names)
 		{

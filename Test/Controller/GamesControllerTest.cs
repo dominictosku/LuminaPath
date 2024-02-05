@@ -1,5 +1,5 @@
+using Application.Common.Interfaces;
 using AutoMapper;
-using Domain.Common.Interfaces;
 using Domain.Entities;
 using Domain.Models;
 using Infrastructure;

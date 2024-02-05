@@ -1,8 +1,7 @@
 ﻿using AutoMapper;
+using Domain.Common.Entities;
 using Domain.Common.Interfaces;
-using Domain.Entities;
 using Domain.Models;
-using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;

@@ -1,14 +1,11 @@
 ﻿using Domain.Common.Interfaces;
 using Domain.Models;
-using Domain.Models.Base;
-using Domain.Models.Gaming;
-using Domain.Models.Quests;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure
 {
-    public class LuminaPathDbContext : IdentityDbContext<LuminaUser>, ILuminaPathDbContext
+	public class LuminaPathDbContext : IdentityDbContext<LuminaUser>, ILuminaPathDbContext
     {
         public LuminaPathDbContext(DbContextOptions<LuminaPathDbContext> options) : base(options)
         {

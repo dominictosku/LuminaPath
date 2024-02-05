@@ -1,8 +1,7 @@
-﻿using Application.Services;
+﻿using Application.Common.Interfaces;
+using Application.Common.Interfaces.Repositories;
 using Domain.Common.Interfaces;
 using Domain.Models;
-using Domain.Models.Quests;
-using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
@@ -18,7 +17,7 @@ using Microsoft.Extensions.Logging;
 using System.Net;
 namespace Infrastructure
 {
-    public static class DependencyInjection
+	public static class DependencyInjection
 	{
 		public const string MyAllowSpecificOrigins = "SPAConfig";
 

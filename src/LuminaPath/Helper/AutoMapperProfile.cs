@@ -1,13 +1,12 @@
-﻿using AutoMapper;
-using Domain.Dto.Gaming;
-using Domain.Dto.Quests;
-using Domain.Models.Gaming;
-using Domain.Models.Quests;
+﻿using Application.Common.Features.Gaming.Dto;
+using Application.Common.Features.Quests.Dto;
+using AutoMapper;
+using Domain.Models;
 using LuminaPath.ViewModel;
 
 namespace LuminaPath.Helper
 {
-	public class AutoMapperProfile : Profile
+    public class AutoMapperProfile : Profile
 	{
 		public AutoMapperProfile()
 		{
