@@ -1,9 +1,7 @@
-﻿using AutoMapper;
+﻿using Application.Common.Features.Gaming.Dto;
+using AutoMapper;
 using Domain.Common.Interfaces;
-using Domain.Dto.Gaming;
 using Domain.Models;
-using Domain.Models.Gaming;
-using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -12,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Server.Controllers.Base;
 namespace Server.Controllers
 {
-	[Route("api/[controller]")]
+    [Route("api/[controller]")]
 	[ApiController]
 	[Authorize]
 	public class MyGamesController : GenericController<MyGame, MyGameDto>

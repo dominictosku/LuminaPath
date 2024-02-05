@@ -1,8 +1,8 @@
-﻿using Domain.Models.Gaming;
+﻿using Domain.Models;
 
 namespace LuminaPath.ViewModel
 {
-	public class GameViewModel : Game
+    public class GameViewModel : Game
 	{
 	}
 }

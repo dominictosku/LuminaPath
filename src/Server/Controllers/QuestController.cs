@@ -1,8 +1,7 @@
-﻿using AutoMapper;
-using Domain.Dto.Quests;
+﻿using Application.Common.Features.Quests.Dto;
+using Application.Common.Interfaces.Repositories;
+using AutoMapper;
 using Domain.Models;
-using Domain.Models.Quests;
-using Infrastructure.Interfaces.Repositories;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

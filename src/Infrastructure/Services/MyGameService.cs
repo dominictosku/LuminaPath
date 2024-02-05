@@ -1,8 +1,7 @@
-﻿using AutoMapper;
-using Domain.Entities;
+﻿using Application.Common.Interfaces.Repositories;
+using AutoMapper;
+using Domain.Common.Entities.Results;
 using Domain.Models;
-using Domain.Models.Gaming;
-using Infrastructure.Interfaces.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Services
 {
-    public class MyGameService : GenericModelService<MyGame>
+	public class MyGameService : GenericModelService<MyGame>
     {
 		protected readonly new IMyGameRepository _repository;
 		public MyGameService(IMyGameRepository repo, IMapper mapper) : base(repo, mapper) 

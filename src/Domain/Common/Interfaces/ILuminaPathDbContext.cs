@@ -1,6 +1,4 @@
-﻿using Domain.Models.Base;
-using Domain.Models.Gaming;
-using Domain.Models.Quests;
+﻿using Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Domain.Common.Interfaces

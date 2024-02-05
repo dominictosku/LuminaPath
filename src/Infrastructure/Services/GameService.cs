@@ -1,9 +1,9 @@
-﻿using Application.Helper;
+﻿using Application.Common.Extensions;
+using Application.Common.Interfaces.Repositories;
 using AutoMapper;
-using Domain.Dto.Gaming;
-using Domain.Entities;
-using Domain.Models.Gaming;
-using Infrastructure.Interfaces.Repositories;
+using Domain.Common.Entities;
+using Domain.Common.Entities.Results;
+using Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Services
 {
-    public class GameService : GenericModelService<Game>
+	public class GameService : GenericModelService<Game>
     {
 		protected new readonly IGameRepository _repository;
 		public GameService(IGameRepository repo, IMapper mapper) : base(repo, mapper) 

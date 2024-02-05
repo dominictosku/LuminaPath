@@ -1,10 +1,9 @@
-﻿using Application.Helper;
+﻿using Application.Common.Features.Gaming.Dto;
+using Application.Common.Interfaces.Repositories;
 using AutoMapper;
+using Domain.Common.Entities;
 using Domain.Common.Interfaces;
-using Domain.Dto.Gaming;
-using Domain.Entities;
-using Domain.Models.Gaming;
-using Infrastructure.Interfaces.Repositories;
+using Domain.Models;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

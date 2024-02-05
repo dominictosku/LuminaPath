@@ -1,11 +1,10 @@
 ﻿using Domain;
 using Domain.Models;
-using Domain.Models.Gaming;
 using Microsoft.AspNetCore.Identity;
 
 namespace Infrastructure.Services
 {
-	public static class DataSeeder
+    public static class DataSeeder
 	{
 		public static async Task SeedDatabase(this LuminaPathDbContext context, UserManager<LuminaUser> userManager, RoleManager<IdentityRole> roleManager)
 		{
