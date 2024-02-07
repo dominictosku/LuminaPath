@@ -24,7 +24,7 @@ namespace Server.Controllers
 		}
 
 		[HttpPost]
-		public override async Task<ActionResult> PostAsync(GamesQuest viewModel)
+		public override async Task<ActionResult> PostAsync(GamesQuestDto viewModel)
 		{
 			string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			if (userId == null)
@@ -33,6 +33,7 @@ namespace Server.Controllers
 			if (user == null)
 				return NotFound("User not found, please login");
 			viewModel.Owner = user;
+
 			return await base.PostAsync(viewModel);
 		}
 	}

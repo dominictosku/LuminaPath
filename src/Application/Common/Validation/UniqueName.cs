@@ -1,7 +1,8 @@
-﻿using Domain.Common.Interfaces;
+﻿using Application.Common.Features.Gaming.Dto;
+using Application.Common.Interfaces;
 using Domain.Models;
 using System.ComponentModel.DataAnnotations;
-namespace Domain.Common.Validation
+namespace Application.Common.Validation
 {
 	public class UniqueName : ValidationAttribute
 	{
@@ -13,7 +14,7 @@ namespace Domain.Common.Validation
 		protected override ValidationResult? IsValid(
 			object? value, ValidationContext validationContext)
 		{
-			Game game = (Game)validationContext.ObjectInstance;
+			GamesDto game = (GamesDto)validationContext.ObjectInstance;
 			ILuminaPathDbContext _context = (ILuminaPathDbContext)validationContext
 												.GetService(typeof(ILuminaPathDbContext))!;
 

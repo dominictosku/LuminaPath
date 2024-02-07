@@ -1,7 +1,7 @@
 ﻿using Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Domain.Common.Interfaces
+namespace Application.Common.Interfaces
 {
 	public interface ILuminaPathDbContext
 	{
@@ -9,5 +9,6 @@ namespace Domain.Common.Interfaces
 		DbSet<GamesQuest> GamesQuests { get; set; }
 		DbSet<MyGame> MyGames { get; set; }
 		DbSet<Quest> Quests { get; set; }
+		Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 	}
 }

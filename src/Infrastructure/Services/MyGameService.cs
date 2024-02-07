@@ -14,14 +14,14 @@ using System.Threading.Tasks;
 namespace Infrastructure.Services
 {
 	public class MyGameService : GenericModelService<MyGame>
-    {
+	{
 		protected readonly new IMyGameRepository _repository;
-		public MyGameService(IMyGameRepository repo, IMapper mapper) : base(repo, mapper) 
+		public MyGameService(IMyGameRepository repo, IMapper mapper) : base(repo, mapper)
 		{
 			_repository = repo;
 		}
 
-		public async Task<Result<Dto, FailedResult>> PostAsync<Dto>(MyGame viewModel, LuminaUser? user)
+		public async Task<Result<MyGame, FailedResult>> PostAsync(MyGame viewModel, LuminaUser? user)
 		{
 			if (user == null)
 				return new FailedResult("User not found, please login");
@@ -31,10 +31,10 @@ namespace Infrastructure.Services
 			}
 			viewModel.LuminaUserId = user.Id;
 
-			return await base.PostAsync<Dto>(viewModel);
+			return await base.PostAsync(viewModel);
 		}
 
-		public async Task<Result<Dto, FailedResult>> PutAsync<Dto>(MyGame viewModel, LuminaUser? user)
+		public async Task<Result<MyGame, FailedResult>> PutAsync(MyGame viewModel, LuminaUser? user)
 		{
 			if (user == null)
 				return new FailedResult("User not found, please login");
@@ -43,7 +43,7 @@ namespace Infrastructure.Services
 				return new FailedResult("This is game already added");
 			}
 			viewModel.LuminaUserId = user.Id;
-			return await base.PutAsync<Dto>(viewModel);
+			return await base.PutAsync(viewModel);
 		}
 
 		protected bool IsMediaAlreadyAdded(int id, int myId, string userId)

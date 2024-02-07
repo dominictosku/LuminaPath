@@ -15,7 +15,9 @@ namespace Server.Controllers.Base
 	//[Authorize(AuthenticationSchemes = "Bearer")]
 	[Route("api/[controller]")]
 	[Authorize]
-	public abstract class GenericController<TEntity, TEntityDto>(GenericModelService<TEntity> service, IMapper mapper) : ControllerBase where TEntity : class, IBasicInfo
+	public abstract class GenericController<TEntity, TEntityDto>(GenericModelService<TEntity> service, IMapper mapper) : ControllerBase
+		where TEntity : class, IBasicInfo
+		where TEntityDto : class, IBasicInfo
 	{
 		protected readonly GenericModelService<TEntity> _service = service;
 		protected IEnumerable<string> Includes { get; set; } = new List<string>();
@@ -33,43 +35,35 @@ namespace Server.Controllers.Base
 		[HttpGet("{id}")]
 		public async virtual Task<ActionResult<TEntityDto>> GetById(int? id)
 		{
-			var result = await _service.GetById<TEntityDto>(id, Includes);
+			var result = await _service.GetById(id, Includes);
 			return result.Match<ActionResult<TEntityDto>>(
-				m => Ok(m),
+				m => Ok(Mapper.Map<TEntityDto>(m)),
 				f => NotFound(f));
 		}
 
 		[HttpPost]
-		public virtual async Task<ActionResult> PostAsync(TEntity viewModel)
+		public virtual async Task<ActionResult> PostAsync(TEntityDto viewModel)
 		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ModelState);
-			}
-
-			var result = await _service.PostAsync<TEntityDto>(viewModel);
+			var entity = Mapper.Map<TEntity>(viewModel);
+			var result = await _service.PostAsync(entity);
 			return result.Match<ActionResult>(
-				m => CreatedAtAction("GetById", new { id = viewModel.Id }, m),
+				m => CreatedAtAction("GetById", new { id = viewModel.Id }, Mapper.Map<TEntityDto>(m)),
 				f => BadRequest(f)
 				);
 		}
 
 		[HttpPut("{id}")]
-		public virtual async Task<IActionResult> PutAsync(int id, TEntity viewModel)
+		public virtual async Task<IActionResult> PutAsync(int id, TEntityDto viewModel)
 		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ModelState);
-			}
-
 			if (id != viewModel.Id)
 			{
 				return BadRequest("Id does not match entity");
 			}
 
-			var result = await _service.PutAsync<TEntityDto>(viewModel);
+			var entity = Mapper.Map<TEntity>(viewModel);
+			var result = await _service.PutAsync(entity);
 			return result.Match<IActionResult>(
-				m => Ok(m),
+				m => Ok(Mapper.Map<TEntityDto>(m)),
 				f => BadRequest(f));
 		}
 

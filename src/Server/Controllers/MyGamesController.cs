@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Server.Controllers.Base;
 namespace Server.Controllers
 {
-    [Route("api/[controller]")]
+	[Route("api/[controller]")]
 	[ApiController]
 	[Authorize]
 	public class MyGamesController : GenericController<MyGame, MyGameDto>
@@ -29,7 +29,7 @@ namespace Server.Controllers
 		}
 
 		[HttpPost]
-		public override async Task<ActionResult> PostAsync(MyGame viewModel)
+		public override async Task<ActionResult> PostAsync(MyGameDto viewModel)
 		{
 			if (!ModelState.IsValid)
 			{
@@ -37,30 +37,27 @@ namespace Server.Controllers
 			}
 
 			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
-			var result = await _service.PostAsync<MyGameDto>(viewModel, user);
+			var entity = Mapper.Map<MyGame>(viewModel);
+			var result = await _service.PostAsync(entity, user);
 			return result.Match<ActionResult>(
-				m => CreatedAtAction("GetById", new { id = viewModel.Id }, m),
+				m => CreatedAtAction("GetById", new { id = viewModel.Id }, Mapper.Map<MyGameDto>(m)),
 				f => BadRequest(f)
 				);
 		}
 
 		[HttpPut("{id}")]
-		public override async Task<IActionResult> PutAsync(int id, MyGame viewModel)
+		public override async Task<IActionResult> PutAsync(int id, MyGameDto viewModel)
 		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ModelState);
-			}
-
 			if (id != viewModel.Id)
 			{
 				return BadRequest("Id does not match entity");
 			}
 
 			var (user, userId) = await GetUserAndUserIdAsync(_userManager);
-			var result = await _service.PutAsync<MyGameDto>(viewModel, user);
+			var entity = Mapper.Map<MyGame>(viewModel);
+			var result = await _service.PutAsync(entity, user);
 			return result.Match<IActionResult>(
-				m => Ok(m),
+				m => Ok(Mapper.Map<MyGameDto>(m)),
 				f => BadRequest(f));
 		}
 	}
