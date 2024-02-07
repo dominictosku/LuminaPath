@@ -15,9 +15,9 @@ using System.Threading.Tasks;
 namespace Infrastructure.Services
 {
 	public class GameService : GenericModelService<Game>
-    {
+	{
 		protected new readonly IGameRepository _repository;
-		public GameService(IGameRepository repo, IMapper mapper) : base(repo, mapper) 
+		public GameService(IGameRepository repo, IMapper mapper) : base(repo, mapper)
 		{
 			_repository = repo;
 		}
@@ -30,7 +30,7 @@ namespace Infrastructure.Services
 				? await _repository.GetAllPaginated(mediaFilter.Paging, userId, filter)
 				: await _repository.GetAllPaginated(mediaFilter.Paging, filter, includes: includes);
 
-			var entitiesDto = Mapper.Map<IEnumerable<Game>, IEnumerable<TDto>>(entities);
+			var entitiesDto = _mapper.Map<IEnumerable<Game>, IEnumerable<TDto>>(entities);
 			return new PaginatedResult<TDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
 
@@ -43,17 +43,17 @@ namespace Infrastructure.Services
 				filter = g => g.Name.Contains(mediaFilter.SearchString);
 			}
 
-            if (mediaFilter.From != null)
-            {
-                filter = filter.And(g => g.ReleaseDate > mediaFilter.From);
-            }
+			if (mediaFilter.From != null)
+			{
+				filter = filter.And(g => g.ReleaseDate > mediaFilter.From);
+			}
 
-            if (mediaFilter.To != null)
-            {
-                filter = filter.And(g => g.ReleaseDate < mediaFilter.To);
-            }
+			if (mediaFilter.To != null)
+			{
+				filter = filter.And(g => g.ReleaseDate < mediaFilter.To);
+			}
 
-            if (mediaFilter.MyMedia && userId != null)
+			if (mediaFilter.MyMedia && userId != null)
 			{
 				filter = filter.And(g => g.MyGames != null && g.MyGames.Any(m => m.LuminaUserId == userId));
 			}
