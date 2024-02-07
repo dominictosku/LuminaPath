@@ -35,7 +35,6 @@ async function confirm() {
 async function deleteGame() {
   await store.Api.removeMedia(game.value.id, store.Type.MyGames)
   emit('exit')
-  router.back()
 }
 </script>
 <template>
