@@ -7,25 +7,35 @@
     <MudDialogProvider />
     <MudSnackbarProvider />
 
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
     <ErrorBoundary @ref="errorBoundary">
         <ChildContent>
             <main>
-                <div class="top-row px-4 bg-dark">
-                    <HeaderMenu />
-                </div>
-                <div id="components-reconnect-modal">
-                    <p class="alert alert-danger">
-                        Connection to the server lost
-                    </p>
-                </div>
-
-                <article class="content px-4">
-                    @Body
-                </article>
+                <MudLayout>
+                    <MudAppBar Elevation="1" Class="border-bottom">
+                        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+                        <MudSpacer />
+                        <HeaderMenu />
+                        <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Inherit" Edge="Edge.End" />
+                    </MudAppBar>
+                    <MudDrawer @bind-Open="_drawerOpen" Elevation="2">
+                        <MudDrawerHeader Class="border-bottom top-row navbar navbar-dark">
+							<div class="container-fluid">
+								<a class="navbar-brand" href="">LuminaPath</a>
+							</div>
+                        </MudDrawerHeader>
+                        <NavMenu />
+                    </MudDrawer>
+                    <MudMainContent>
+                        <article class="content px-4">
+                            <div id="components-reconnect-modal">
+                                <p class="alert alert-danger">
+                                    Connection to the server lost
+                                </p>
+                            </div>
+                            @Body
+                        </article>
+                    </MudMainContent>
+                </MudLayout>
             </main>
         </ChildContent>
         <ErrorContent Context="Exception">
@@ -47,20 +57,15 @@
     </ErrorBoundary>
 </div>
 
-<style>
-    #components-reconnect-modal {
-        display: none;
-    }
-
-        #components-reconnect-modal.components-reconnect-show,
-        #components-reconnect-modal.components-reconnect-failed,
-        #components-reconnect-modal.components-reconnect-rejected {
-            display: block;
-        }
-</style>
-
 @code {
     private ErrorBoundary? errorBoundary;
+
+    bool _drawerOpen = true;
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
 
     protected override void OnParametersSet()
     {
