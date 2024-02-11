@@ -1,4 +1,6 @@
-﻿<div class="d-flex align-start flex-grow-1">
+﻿@using Application.Common.Interfaces.Pages
+@using LuminaPath.Pages.Media.Games
+<div class="d-flex align-start flex-grow-1">
     <div class="flex-grow-1" />
 
     <div class="d-flex flex-column justify-end">
@@ -6,7 +8,7 @@
             <MudHidden Breakpoint="Breakpoint.SmAndDown">
                 <MudButton DisableElevation Variant="Variant.Outlined"
                             Size="Size.Small"
-                            Disabled="@Page.loading"
+                            Disabled="@loading"
                             OnClick="@(() => Page.Dummy())"
                             StartIcon="@Icons.Material.Filled.Refresh" IconColor="Color.Surface" Color="Color.Primary"
                             Style="margin-right: 4px; margin-bottom:4px">
@@ -16,7 +18,7 @@
                  <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
                             StartIcon="@Icons.Material.Filled.Add"
                             Size="Size.Small"
-                            Disabled="@Page.loading"
+                            Disabled="@loading"
                             OnClick="Page.OnCreate"
                             Style="margin-right: 4px; margin-bottom:4px"
                             IconColor="Color.Surface">
@@ -25,7 +27,7 @@
                  <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
                             StartIcon="@Icons.Material.Filled.ContentCopy"
                             Size="Size.Small"
-                            Disabled="@(Page.selectedItems.Count != 1)"
+                            Disabled="@(selectedItems.Count != 1)"
                             OnClick="Page.Dummy"
                             Style="margin-right: 4px; margin-bottom:4px"
                             IconColor="Color.Surface">
@@ -34,7 +36,7 @@
 
                  <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Error"
                             StartIcon="@Icons.Material.Filled.Delete"
-                            Disabled="@(!(Page.selectedItems.Count > 0))"
+                            Disabled="@(!(selectedItems.Count > 0))"
                             Size="Size.Small"
                             Style="margin-right: 4px; margin-bottom:4px"
                             OnClick="Page.OnDeleteChecked"
@@ -49,7 +51,7 @@
                  <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
                             StartIcon="@Icons.Material.Filled.Add"
                             Size="Size.Small"
-                            Disabled="@Page.loading"
+                            Disabled="@loading"
                             OnClick="Page.OnCreate"
                             Style="margin-right: 4px; margin-bottom:4px"
                             IconColor="Color.Surface">
@@ -58,7 +60,7 @@
 
                  <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Error"
                             StartIcon="@Icons.Material.Filled.Delete"
-                            Disabled="@(!(Page.selectedItems.Count > 0))"
+                            Disabled="@(!(selectedItems.Count > 0))"
                             Size="Size.Small"
                             Style="margin-right: 4px; margin-bottom:4px"
                             OnClick="Page.OnDeleteChecked"
@@ -78,5 +80,13 @@
 @code{
     [EditorRequired]
     [Parameter]
-    public LuminaPath.Pages.Media.Games.Index Page { get; set; } = default!;
+    public ITableActions Page { get; set; } = default!;
+
+    [EditorRequired]
+    [Parameter]
+    public bool loading { get; set; } = default!;
+
+    [EditorRequired]
+    [Parameter]
+    public HashSet<Game> selectedItems { get; set; } = default!;
 }
