@@ -1,37 +1,45 @@
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Pages;
 using AutoMapper;
 using Domain.Common.Entities;
 using Domain.Models;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
-using LuminaPath.Pages.Media.Components;
+using LuminaPath.Pages.Documents.Components;
 using LuminaPath.ViewModel;
+using Microsoft.AspNetCore.Components;
+using Microsoft.EntityFrameworkCore;
 using MudBlazor;
+using System.Linq.Expressions;
 
-namespace LuminaPath.Pages.Media.Games
+namespace LuminaPath.Pages.Documents
 {
-    public partial class Index : ITableActions<Game>
+    public partial class Index : ITableActions<Document>
 	{
-
-		private List<Game> Games = new();
-		private MudDataGrid<Game> _table = default!;
-		private Game _currentDto = new();
+		private MudDataGrid<Document> _table = default!;
+		private Document _currentDto = new();
 		private MediaFilter _filter = new();
+
+		[Inject]
+		public IAzureStorage Storage { get; set; } = default!;
+
+		[Inject]
+		public ILogger<Index> Logger { get; set; } = default!;
 
 		public bool IsGrid = true;
 		public bool loading;
-		public HashSet<Game> selectedItems = new();
+		public HashSet<Document> selectedItems = new();
 		public string ToggleText => IsGrid ? "Grid View" : "Table View";
 
-		private async Task<GridData<Game>> ServerReload(GridState<Game> state)
+		private async Task<GridData<Document>> ServerReload(GridState<Document> state)
 		{
-			selectedItems = new HashSet<Game>();
+			selectedItems = new HashSet<Document>();
 			loading = true;
 			try
 			{
 				var result = await GetData(state.Page + 1);
 
-				return new GridData<Game> { TotalItems = result.Count(), Items = result };
+				return new GridData<Document> { TotalItems = result.Count(), Items = result };
 			}
 			finally
 			{
@@ -41,16 +49,8 @@ namespace LuminaPath.Pages.Media.Games
 
 		public async Task ReloadData()
 		{
-			if (IsGrid)
-			{
-				await _table.ReloadServerData();
-			}
-			else
-			{
-				Games = await GetData(1);
-				StateHasChanged();
-			}
-		}
+            await _table.ReloadServerData();
+        }
 
 		private async Task SwitchView()
 		{
@@ -58,15 +58,15 @@ namespace LuminaPath.Pages.Media.Games
 			await ReloadData();
 		}
 
-		private async Task<PaginatedList<Game>> GetData(int pageIndex)
+		private async Task<PaginatedList<Document>> GetData(int pageIndex)
 		{
-			using var gameService = new GameService(new GameRepository(dbContextFactory.CreateDbContext()), mapper);
-			_filter.Paging = new Paging(pageIndex, 15);
-            var includes = new List<string>() { "Image" };
-			return await gameService.GetEntities(_filter, includes);
+			using var dbContext = dbContextFactory.CreateDbContext();
+			var documentService = new DocumentService(dbContext, Storage, Logger);
+			var paging = new Paging(pageIndex, 15);
+			return await documentService.GetAllPaginated(paging);
 		}
 
-		public void Dummy()
+        public void Dummy()
 		{
 
 		}
@@ -74,8 +74,8 @@ namespace LuminaPath.Pages.Media.Games
 		#region Events
 		public async Task OnCreate()
 		{
-			var command = new GameViewModel();
-			var parameters = new DialogParameters<MediaFormDialog>
+			var command = new Document();
+			var parameters = new DialogParameters<DocumentFormDialog>
 		{
 			{ x=>x.Refresh , new Action(async () => await ReloadData()) },
 			{ x=>x.Model, command },
@@ -83,16 +83,16 @@ namespace LuminaPath.Pages.Media.Games
 			{ x=>x.EventCallBack, CreateGame }
 		};
 			var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-			var dialog = DialogService.Show<MediaFormDialog>("Create Game", parameters, options);
+			var dialog = DialogService.Show<DocumentFormDialog>("Create document", parameters, options);
 			var state = await dialog.Result;
 			if (!state.Canceled)
 				await ReloadData();
 		}
 
-		public async Task OnUpdate(Game g)
+		public async Task OnUpdate(Document g)
 		{
-			var command = mapper.Map<Game, GameViewModel>(g);
-			var parameters = new DialogParameters<MediaFormDialog>
+			var command = g;
+			var parameters = new DialogParameters<DocumentFormDialog>
 		{
 			{ x=>x.Refresh , new Action(async () => await ReloadData()) },
 			{ x=>x.Model, command },
@@ -100,7 +100,7 @@ namespace LuminaPath.Pages.Media.Games
 			{ x=>x.EventCallBack, UpdateGame }
 		};
 			var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-			var dialog = DialogService.Show<MediaFormDialog>("Update Game", parameters, options);
+			var dialog = DialogService.Show<DocumentFormDialog>("Update document", parameters, options);
 			var state = await dialog.Result;
 			if (!state.Canceled)
 				await ReloadData();
@@ -124,19 +124,19 @@ namespace LuminaPath.Pages.Media.Games
 		#endregion
 
 		#region CRUD Actions
-		async Task CreateGame(GameViewModel game)
+		async Task CreateGame(Document entity)
 		{
 			loading = true;
 			try
 			{
 				using var dbContext = dbContextFactory.CreateDbContext();
-				await dbContext.Games.AddAsync(game);
+				await dbContext.Documents.AddAsync(entity);
 				await dbContext.SaveChangesAsync();
-				Snackbar.Add("Created Game", Severity.Success);
+				Snackbar.Add("Created Document", Severity.Success);
 			}
 			catch (Exception ex)
 			{
-				Snackbar.Add("Failed to create Game", Severity.Error);
+				Snackbar.Add("Failed to create Document", Severity.Error);
 				loading = false;
 			}
 
@@ -144,13 +144,13 @@ namespace LuminaPath.Pages.Media.Games
 			loading = false;
 		}
 
-		async Task UpdateGame(GameViewModel game)
+		async Task UpdateGame(Document entity)
 		{
 			loading = true;
 			using var dbContext = dbContextFactory.CreateDbContext();
 			try
 			{
-				dbContext.Games.Update(game);
+				dbContext.Documents.Update(entity);
 				await dbContext.SaveChangesAsync();
 				Snackbar.Add("Updated Game", Severity.Success);
 			}
@@ -164,13 +164,13 @@ namespace LuminaPath.Pages.Media.Games
 			loading = false;
 		}
 
-		public async Task Delete(Game g)
+		public async Task Delete(Document g)
 		{
 			using var dbContext = dbContextFactory.CreateDbContext();
-			dbContext.Games.Remove(g);
+			dbContext.Documents.Remove(g);
 			await dbContext.SaveChangesAsync();
 
-			Snackbar.Add("Deleted Game", Severity.Info);
+			Snackbar.Add("Deleted Document", Severity.Info);
 			await ReloadData();
 		}
 		#endregion

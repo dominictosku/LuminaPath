@@ -26,7 +26,7 @@ namespace Application.Common.Features.Gaming.Dto
 
 		[Display(Name = "Estimated playtime")] public int? Playtime { get; set; }
 
-		public MediaFile? Image { get; set; }
+		public Document? Image { get; set; }
 
 		public MyGameDto? MyGames { get; set; }
 
@@ -51,6 +51,6 @@ namespace Application.Common.Features.Gaming.Dto
 
 		[Display(Name = "Estimated playtime")] public int? Playtime { get; set; }
 
-		public MediaFile? Image { get; set; }
+		public Document? Image { get; set; }
 	}
 }

@@ -32,9 +32,7 @@ namespace Server.Controllers
 		{
 			string? userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			var result = await _service.GetAndMapEntities<GamesDto>(mediaFilter, Includes, userId);
-			return result.Match<ActionResult<PaginatedResult<GamesDto>>>(
-				m => Ok(m),
-				f => BadRequest(f));
+			return Ok(result);
 		}
 	}
 }

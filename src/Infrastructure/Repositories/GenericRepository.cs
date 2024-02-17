@@ -113,6 +113,12 @@ namespace Infrastructure.Repositories
 
 		public async Task Save() =>
 		  await _context.SaveChangesAsync();
-	}
-	#endregion
+
+		#endregion
+
+        public void Dispose()
+        {
+            _context.Dispose();
+        }
+    }
 }

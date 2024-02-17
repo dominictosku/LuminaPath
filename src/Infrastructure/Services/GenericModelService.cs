@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Services
 {
-	public class GenericModelService<TEntity> where TEntity : class, IBasicInfo
+	public class GenericModelService<TEntity> : IDisposable where TEntity : class, IBasicInfo
 	{
 		public readonly IGenericRepository<TEntity> _repository;
 		public readonly IMapper _mapper;
@@ -26,7 +26,12 @@ namespace Infrastructure.Services
 			_mapper = mapper;
 		}
 
-		public async virtual Task<Result<PaginatedResult<TDto>, FailedResult>> GetAndMapEntities<TDto>(MediaFilter mediaFilter, IEnumerable<string> includes)
+        public async virtual Task<PaginatedList<TEntity>> GetEntities(MediaFilter mediaFilter, IEnumerable<string> includes)
+        {
+            return await _repository.GetAllPaginated(mediaFilter.Paging, includes: includes);
+        }
+
+        public async virtual Task<PaginatedResult<TDto>> GetAndMapEntities<TDto>(MediaFilter mediaFilter, IEnumerable<string> includes)
 		{
 			PaginatedList<TEntity> entities = await _repository.GetAllPaginated(mediaFilter.Paging, includes: includes);
 			var entitiesDto = _mapper.Map<IEnumerable<TEntity>, IEnumerable<TDto>>(entities);
@@ -103,5 +108,10 @@ namespace Infrastructure.Services
 			var entities = _repository.GetAll().Result;
 			return entities.Any(e => e.Id == id);
 		}
-	}
+
+        public void Dispose()
+        {
+			_repository.Dispose();
+        }
+    }
 }

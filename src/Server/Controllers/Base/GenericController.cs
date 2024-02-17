@@ -12,7 +12,6 @@ using System.Security.Claims;
 namespace Server.Controllers.Base
 {
 	[ApiController]
-	//[Authorize(AuthenticationSchemes = "Bearer")]
 	[Route("api/[controller]")]
 	[Authorize]
 	public abstract class GenericController<TEntity, TEntityDto>(GenericModelService<TEntity> service, IMapper mapper) : ControllerBase
@@ -27,9 +26,7 @@ namespace Server.Controllers.Base
 		public async virtual Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)
 		{
 			var result = await _service.GetAndMapEntities<TEntityDto>(mediaFilter, Includes);
-			return result.Match<ActionResult<PaginatedResult<TEntityDto>>>(
-				m => Ok(m),
-				f => BadRequest(f));
+			return Ok(result);
 		}
 
 		[HttpGet("{id}")]

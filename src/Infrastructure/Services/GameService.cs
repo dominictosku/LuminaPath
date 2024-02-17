@@ -22,7 +22,16 @@ namespace Infrastructure.Services
 			_repository = repo;
 		}
 
-		public async Task<Result<PaginatedResult<TDto>, FailedResult>> GetAndMapEntities<TDto>(MediaFilter mediaFilter, IEnumerable<string> includes, string? userId)
+        public async Task<PaginatedList<Game>> GetEntities(MediaFilter mediaFilter, IEnumerable<string> includes, string? userId)
+        {
+            Expression<Func<Game, bool>> filter = GetFilterExpression(mediaFilter, userId);
+
+            return userId != null
+                ? await _repository.GetAllPaginated(mediaFilter.Paging, userId, filter)
+                : await _repository.GetAllPaginated(mediaFilter.Paging, filter, includes: includes);
+        }
+
+        public async Task<PaginatedResult<TDto>> GetAndMapEntities<TDto>(MediaFilter mediaFilter, IEnumerable<string> includes, string? userId)
 		{
 			Expression<Func<Game, bool>> filter = GetFilterExpression(mediaFilter, userId);
 
@@ -34,7 +43,7 @@ namespace Infrastructure.Services
 			return new PaginatedResult<TDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
 		}
 
-		public static Expression<Func<Game, bool>> GetFilterExpression(MediaFilter mediaFilter, string? userId = null)
+		private static Expression<Func<Game, bool>> GetFilterExpression(MediaFilter mediaFilter, string? userId = null)
 		{
 			Expression<Func<Game, bool>> filter = g => true;
 
@@ -60,5 +69,5 @@ namespace Infrastructure.Services
 
 			return filter;
 		}
-	}
+    }
 }

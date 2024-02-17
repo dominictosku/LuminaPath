@@ -1,11 +1,10 @@
 using Application.Common.Interfaces;
 using AutoMapper;
-using Domain.Entities;
+using Domain.Common.Entities;
 using Domain.Models;
 using Infrastructure;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
-using LuminaPath.Controllers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;

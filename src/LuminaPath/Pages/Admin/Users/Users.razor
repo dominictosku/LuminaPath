@@ -1,0 +1,341 @@
+﻿@page "/Admin/Users"
+@using Application.Common.Features.User.Dto
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Linq.Expressions
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using LuminaPath.Pages.Admin.Users.Components
+@inherits OwningComponentBase
+@implements IDisposable
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>@Title</PageTitle>
+
+<MudDataGrid @ref="_table"
+             FixedHeader="true"
+             FixedFooter="false"
+             Height="calc(100vh - 300px)"
+             @bind-RowsPerPage="_defaultPageSize"
+             Hover="true"
+             MultiSelection="true"
+             @bind-SelectedItems="_selectedItems"
+             Loading="@_loading"
+             ServerData="@(ServerReload)">
+    <ToolBarContent>
+        <div class="d-flex align-start flex-grow-1">
+            <div class="d-flex gap-4">
+                <MudIcon Icon="@Icons.Material.Filled.SwitchAccount" Size="Size.Large"/>
+                <div class="d-flex flex-column">
+                    <MudText Typo="Typo.caption">Users</MudText>
+                </div>
+            </div>
+            <div class="flex-grow-1"/>
+            <div class="d-flex flex-column justify-end">
+                <div class="d-flex">
+                    <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                        <MudButton DisableElevation Variant="Variant.Outlined"
+                                   Size="Size.Small"
+                                   Disabled="@_loading"
+                                   OnClick="@(OnRefresh)"
+                                   StartIcon="@Icons.Material.Filled.Refresh" IconColor="Color.Surface" Color="Color.Primary"
+                                   Style="margin-right: 4px; margin-bottom:4px">
+                            Refresh
+                        </MudButton>
+                            <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Add"
+                                       Size="Size.Small"
+                                       Style="margin-right: 4px; margin-bottom:4px"
+                                       OnClick="OnCreate"
+                                       IconColor="Color.Surface">
+                                New
+                            </MudButton>
+                            <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Delete"
+                                       Disabled="@(!(_selectedItems.Count > 0))"
+                                       Size="Size.Small"
+                                       Style="margin-right: 4px; margin-bottom:4px"
+                                       OnClick="OnDeleteChecked"
+                                       IconColor="Color.Surface">
+                                Delete
+                            </MudButton>
+                    </MudHidden>
+                    <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="true">
+
+                            <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Add"
+                                       Size="Size.Small"
+                                       Style="margin-right: 4px; margin-bottom:4px"
+                                       OnClick="OnCreate"
+                                       IconColor="Color.Surface">
+                                New
+                            </MudButton>
+                            <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Delete"
+                                       Disabled="@(!(_selectedItems.Count > 0))"
+                                       Size="Size.Small"
+                                       Style="margin-right: 4px; margin-bottom:4px"
+                                       OnClick="OnDeleteChecked"
+                                       IconColor="Color.Surface">
+                                Delete
+                            </MudButton>
+                    </MudHidden>
+                </div>
+                    <MudStack Row="true" AlignItems="AlignItems.Stretch">
+                     <MudSelect T="string" Placeholder="Status" Value="@_searchStatus" Clearable="true" ValueChanged="@(OnSearchStatus)" Style="width:150px">
+                            @foreach (var str in _roles)
+                            {
+                                <MudSelectItem Value="@str">@str</MudSelectItem>
+                            }
+                        </MudSelect>
+                        <MudTextField T="string" Immediate="false" ValueChanged="@(OnSearch)" Value="@_searchString" Placeholder="Search" Adornment="Adornment.End"
+                                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
+                        </MudTextField>
+                    </MudStack>
+            </div>
+        </div>
+    </ToolBarContent>
+    <Columns>
+        <SelectColumn ShowInFooter="false"></SelectColumn>
+        <TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
+            <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
+                             Dense="true"
+                             EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+                            <MudMenuItem OnAction="@(() => OnEdit(context.Item))">Edit</MudMenuItem>
+                            <MudMenuItem OnAction="@(() => OnDelete(context.Item))">Delete</MudMenuItem>
+                            @if (!context.Item.LockoutEnabled)
+                            {
+                                <MudMenuItem OnAction=@(() => OnSetActive(context.Item))>Deactive user</MudMenuItem>
+                            }
+                            else
+                            {
+                                <MudMenuItem OnAction=@(() => OnSetActive(context.Item))>Activate user</MudMenuItem>
+                            }
+                            <MudMenuItem OnAction=@(() => OnResetPassword(context.Item))>Reset password</MudMenuItem>
+                    </MudMenu>
+            </CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn Property="x => x.UserName" Title="Name">
+            <CellTemplate>
+                <div class="d-flex align-items-center">
+                    <MudBadge Color="true ? Color.Success : Color.Error" Overlap="false" Dot="true" Bordered="true">
+                        <MudAvatar>
+                            @if (false)
+                            {
+                                @context.Item.UserName.First()
+                            }
+                            else
+                            {
+                                <MudImage Src="url"></MudImage>
+                            }
+                        </MudAvatar>
+                    </MudBadge>
+                    <div class="pl-3">
+                        <MudText Class="ml-2 align-self-center">@context.Item.UserName</MudText>
+                        <MudText Typo="Typo.body2" Class="ml-2 align-self-center mud-text-secondary">@context.Item.Email</MudText>
+                    </div>
+                </div>
+            </CellTemplate>
+        </PropertyColumn>
+        <PropertyColumn Property="x => x.Email" Title="Email">
+            <CellTemplate>
+                <div class="d-flex flex-column">
+                    <MudText Typo="Typo.body2">@context.Item.Email</MudText>
+                </div>
+            </CellTemplate>
+        </PropertyColumn>
+        <PropertyColumn Property="x => x.LockoutEnabled" Title="Active">
+            <CellTemplate>
+                <div>
+                    @if (!context.Item.LockoutEnabled)
+                    {
+                        <MudChip Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.CheckCircleOutline">Active</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip Class="flex-grow-0" Color="Color.Surface" Size="Size.Small" Icon="@Icons.Material.Filled.HighlightOff">Locked</MudChip>
+                    }
+                </div>
+            </CellTemplate>
+        </PropertyColumn>
+
+    </Columns>
+
+    <PagerContent>
+        <MudDataGridPager PageSizeOptions="@(new[] { 10, 15, 30, 50, 100, 500, 1000 })"/>
+    </PagerContent>
+</MudDataGrid>
+
+<style>
+    .mud-table-toolbar {
+        height: 120px !important;
+    }
+</style>
+
+@code {
+    [Inject]
+    public UserManager<LuminaUser> UserManager { get; set; } = default!;
+
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private int _defaultPageSize = 15;
+    private HashSet<LuminaUser> _selectedItems = new();
+    private readonly LuminaUser _currentDto = new();
+    private string _searchString = string.Empty;
+    private string Title { get; set; } = "Users";
+
+    private TimeSpan RefreshInterval => TimeSpan.FromSeconds(60);
+
+    private MudDataGrid<LuminaUser> _table = null!;
+    private bool _processing;
+    private bool _loading;
+    private bool _exporting;
+    private bool _uploading;
+    private List<string?> _roles = new();
+    private string? _searchStatus;
+
+    private async Task<GridData<LuminaUser>> ServerReload(GridState<LuminaUser> state)
+    {
+        try
+        {
+            _loading = true;
+            Expression<Func<LuminaUser, bool>> searchPredicate = x =>
+                x.UserName!.ToLower().Contains(_searchString) ||
+                x.Email!.ToLower().Contains(_searchString);
+            var query = UserManager.Users.Where(searchPredicate);
+
+            var items = await query
+                .OrderBy(u => u.UserName)
+                .Skip(state.Page * state.PageSize).Take(state.PageSize).ToListAsync();
+            var total = UserManager.Users.Count(searchPredicate);
+            return new GridData<LuminaUser> { TotalItems = total, Items = items };
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnSearch(string text)
+    {
+        if (_loading)
+            return;
+        _searchString = text.ToLower();
+        await _table.ReloadServerData();
+    }
+
+    private async Task OnSearchStatus()
+    {
+        
+    }
+
+    private async Task OnRefresh()
+    {
+        await _table.ReloadServerData();
+    }
+
+    private async Task OnCreate()
+    {
+        var model = new UserDto { Email = "", UserName = "" };
+        var parameters = new DialogParameters<UserFormDialog>
+        {
+            { x => x.Model, model }
+        };
+        var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = DialogService.Show<UserFormDialog>("Create User", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            var applicationUser = new LuminaUser
+            {
+                UserName = model.UserName,
+                Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
+                LockoutEnabled = model.LockoutEnabled
+            };
+            var password = model.Password;
+            var state = await UserManager.CreateAsync(applicationUser, password!);
+
+            if (state.Succeeded)
+            {
+                Snackbar.Add("User created", Severity.Info);
+                await OnRefresh();
+            }
+            else
+            {
+                Snackbar.Add($"{string.Join(",", state.Errors.Select(x => x.Description).ToArray())}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OnEdit(LuminaUser item)
+    {
+        var model = new UserDto()
+            {
+                Id = item.Id,
+                Email = item.Email,
+                UserName = item.UserName,
+                LockoutEnabled = item.LockoutEnabled,
+                PhoneNumber = item.PhoneNumber
+            };
+        var parameters = new DialogParameters<UserFormDialog>
+        {
+            { x => x.Model, model }
+        };
+        var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = DialogService.Show<UserFormDialog>("Edit User", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            var user = await UserManager.FindByIdAsync(item.Id!) ?? throw new Exception($"The application user [{item.Id}] was not found.");
+            var state = await AuthState;
+            user.Email = model.Email;
+            user.PhoneNumber = model.PhoneNumber;
+            user.UserName = model.UserName;
+            user.LockoutEnabled = model.LockoutEnabled;
+            var identityResult = await UserManager.UpdateAsync(user);
+            if (identityResult.Succeeded)
+            {
+                Snackbar.Add($"Updated user", Severity.Info);
+                await OnRefresh();
+            }
+            else
+            {
+                Snackbar.Add($"{string.Join(",", identityResult.Errors.Select(x => x.Description).ToArray())}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OnDelete(LuminaUser dto)
+    {
+
+    }
+
+    private async Task OnDeleteChecked()
+    {
+        var state = await AuthState;
+        var currentUserId = "";
+        var isSelectedItemContainCurrentUser = _selectedItems.Any(x => x.Id == currentUserId);
+    }
+
+    private async Task OnSetActive(LuminaUser item)
+    {
+        var user = await UserManager.FindByIdAsync(item.Id!) ?? throw new Exception($"Application user not found {item.Id}.");
+        user.LockoutEnabled = !item.LockoutEnabled;
+        var state = await UserManager.UpdateAsync(user);
+        item.LockoutEnabled = !item.LockoutEnabled;
+        if (state.Succeeded)
+        {
+            Snackbar.Add($"Updated status", Severity.Info);
+        }
+        else
+        {
+            Snackbar.Add($"{string.Join(",", state.Errors.Select(x => x.Description).ToArray())}", Severity.Error);
+        }
+    }
+
+    private async Task OnResetPassword(LuminaUser item)
+    {
+    }
+}

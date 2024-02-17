@@ -18,7 +18,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="Pages\Admin\Users\Components\UserForm.razor" />
+    <None Include="Pages\Admin\Users\Components\UserFormDialog.razor" />
+    <None Include="Pages\Admin\Users\Users.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid.EntityFrameworkAdapter" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
     <PackageReference Include="MudBlazor" Version="6.12.0" />
   </ItemGroup>

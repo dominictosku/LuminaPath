@@ -22,6 +22,7 @@ namespace Infrastructure
             throw new NotImplementedException();
         }
 
+        public DbSet<Document> Documents { get; set; }
         public DbSet<Game> Games { get; set; }
         public DbSet<MyGame> MyGames { get; set; }
         public DbSet<Quest> Quests { get; set; }
