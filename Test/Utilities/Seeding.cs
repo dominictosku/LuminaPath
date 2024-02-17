@@ -1,4 +1,5 @@
-﻿using Domain.Models;
+﻿using Domain.Common.Enums;
+using Domain.Models;
 
 namespace Test.Utilities
 {

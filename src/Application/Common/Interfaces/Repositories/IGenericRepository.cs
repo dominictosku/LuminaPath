@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 namespace Application.Common.Interfaces.Repositories
 {
-	public interface IGenericRepository<TEntity> where TEntity : class, IBasicInfo
+	public interface IGenericRepository<TEntity> : IDisposable where TEntity : class, IBasicInfo
 	{
 		Task<IEnumerable<TEntity>> GetAll(
 			Expression<Func<TEntity, bool>> filter = null,

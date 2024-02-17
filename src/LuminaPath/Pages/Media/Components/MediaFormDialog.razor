@@ -1,6 +1,9 @@
 @using Application.Common.Interfaces
+@using Infrastructure.Services
 @using LuminaPath.Components.Dialogs
+@using Microsoft.EntityFrameworkCore
 @using ViewModel
+@using Domain.Common.Entities.Results
 @using Severity = MudBlazor.Severity
 @using Color = MudBlazor.Color
 @inherits MudComponentBase
@@ -9,6 +12,7 @@
 @inject IAzureStorage Storage
 @inject ILogger<MediaFormDialog> logger
 @inject NavigationManager Navigation
+@inject IDbContextFactory<LuminaPathDbContext> dbContextFactory
 
 <MudDialog>
 	<DialogContent>
@@ -97,6 +101,8 @@
 	[Parameter]
 	public bool loading { get; set; }
 
+	public string ErrorMessage = "";
+
 	private MudForm? _form;
 	private bool _uploading;
 
@@ -114,6 +120,7 @@
 	{
 		if (Model.Image != null)
 		{
+			var documentService = new DocumentService(dbContextFactory.CreateDbContext(), Storage, logger);
 			var parameters = new DialogParameters<ConfirmationDialog>
 			{
 				{ x=>x.ContentText, $"Delete Image?" }
@@ -124,7 +131,8 @@
 
 			if (!state.Canceled)
 			{
-				await Storage.DeleteAsync(Model.Name);
+				await documentService.DeleteDocument(Model.Image);
+				Model.Image = null;
 			}
 		}
 	}
@@ -136,36 +144,15 @@
 
 	private async Task SubmitFile(InputFileChangeEventArgs e)
 	{
+		var documentService = new DocumentService(dbContextFactory.CreateDbContext(), Storage, logger);
 		_uploading = true;
 		var file = e.File;
-		await UploadFile(file);
+		var result = await documentService.CreateDocument(file, Navigation.BaseUri);
+		Model.Image = result.Match<Document?>(
+					success: val => val,
+					failure: _ => null
+				);
 		_uploading = false;
-	}
-
-	private async Task UploadFile(IBrowserFile file)
-	{
-		Stream fs = file.OpenReadStream(MaxAllowedSize);
-		try
-		{
-			string imageName = Guid.NewGuid().ToString();
-			var result = await Storage.UploadAsync(fs, imageName);
-			if (result.Error)
-			{
-				logger.LogError("Could not Upload file, error: {0}", result.Status);
-				return;
-			}
-			Model.Image = new()
-				{
-					Uri = Navigation.BaseUri + $"api/files/{result.Blob.Name}",
-					Name = result.Blob.Name,
-					ContentType = result.Blob.ContentType
-				};
-
-		}
-		catch (Exception e)
-		{
-			logger.LogError("Could not {0}. Error: {1}", "Upload File", e);
-		}
 	}
 
 	private void Cancel()

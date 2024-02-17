@@ -1,0 +1,91 @@
+﻿@using Application.Common.Features.User.Dto
+@inherits MudComponentBase
+@inject ISnackbar Snackbar
+
+
+<MudForm Model="@Model" @ref="@_form">
+    <InputFile id="UploadPhoto" OnChange="UploadPhoto" hidden accept=".jpg, .jpeg, .png"/>
+    <MudGrid>
+        <MudItem sm="12">
+            <div class="d-flex justify-center">
+
+                @if (string.IsNullOrEmpty(""))
+                {
+                    <MudAvatar Style="height:128px; width:128px; font-size:2rem;">@Model.UserName.ToUpper().FirstOrDefault()</MudAvatar>
+                }
+                else
+                {
+                    <MudAvatar Style="height:128px; width:128px; font-size:2rem;">
+                        <MudImage Src="url"></MudImage>
+                    </MudAvatar>
+                }
+                <MudTooltip Text="Click upload a photo.">
+                    <MudIconButton HtmlTag="label"
+                                   Color="Color.Info"
+                                   Icon="@Icons.Material.Filled.PhotoCamera"
+                                   for="UploadPhoto">
+                    </MudIconButton>
+                </MudTooltip>
+            </div>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTextField For="@(() => Model.UserName)" @bind-Value="Model.UserName" Label="User Name" Variant="Variant.Text"></MudTextField>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTextField For="@(() => Model.Email)" @bind-Value="Model.Email" Label="E-mail" Variant="Variant.Text"></MudTextField>
+        </MudItem>
+        @if (string.IsNullOrEmpty(Model.Id))
+        {
+            <MudItem xs="12" sm="6">
+                <MudTextField Label="Password" @bind-Value="Model.Password" Class="mt-4" Variant="Variant.Text" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField Label="Confirm Password" @bind-Value="passwordConfirmed" Class="mt-4" Variant="Variant.Text" />
+            </MudItem>
+        }
+        <MudItem xs="12" sm="6">
+            <MudTextField For="@(() => Model.PhoneNumber)" @bind-Value="Model.PhoneNumber" Label="Phone Number" Variant="Variant.Text"></MudTextField>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudText Typo="Typo.caption">Status</MudText>
+            <div class="d-fex">
+                <MudCheckBox For="@(() => Model.LockoutEnabled)" T="bool" @bind-value="Model.LockoutEnabled" Label="Active"></MudCheckBox>
+            </div>
+        </MudItem>
+    </MudGrid>
+</MudForm>
+
+@code{
+
+    public class CheckItem
+    {
+        public string Key { get; set; } = string.Empty;
+        public bool Value { get; set; }
+    }
+
+    [EditorRequired][Parameter] public UserDto Model { get; set; } = default!;
+
+    [EditorRequired][Parameter] public EventCallback<UserDto> OnFormSubmit { get; set; }
+
+    private string passwordConfirmed = "";
+
+    private MudForm? _form = default!;
+    private List<CheckItem> Roles { get; set; } = new();
+
+    private async Task UploadPhoto(InputFileChangeEventArgs e)
+    {
+
+    }
+
+    public async Task Submit()
+    {
+        if (_form is not null)
+        {
+            await _form.Validate();
+            if (_form.IsValid)
+            {
+                await OnFormSubmit.InvokeAsync(Model);
+            }
+        }
+    }
+}

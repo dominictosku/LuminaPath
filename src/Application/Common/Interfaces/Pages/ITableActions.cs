@@ -2,15 +2,15 @@
 
 namespace Application.Common.Interfaces.Pages
 {
-    public interface ITableActions
+    public interface ITableActions<T>
     {
         string ToggleText { get; }
 
-        Task Delete(Game g);
+        Task Delete(T g);
         void Dummy();
         Task OnCreate();
         Task OnDeleteChecked();
-        Task OnUpdate(Game g);
+        Task OnUpdate(T g);
         Task ReloadData();
     }
 }

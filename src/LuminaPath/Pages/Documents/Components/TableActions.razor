@@ -80,7 +80,7 @@
 @code{
     [EditorRequired]
     [Parameter]
-    public ITableActions<Game> Page { get; set; } = default!;
+    public ITableActions<Document> Page { get; set; } = default!;
 
     [EditorRequired]
     [Parameter]
@@ -88,5 +88,5 @@
 
     [EditorRequired]
     [Parameter]
-    public HashSet<Game> selectedItems { get; set; } = default!;
+    public HashSet<Document> selectedItems { get; set; } = default!;
 }

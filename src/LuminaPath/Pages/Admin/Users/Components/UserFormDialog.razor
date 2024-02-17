@@ -1,0 +1,37 @@
+@using Application.Common.Features.User.Dto
+@inherits MudComponentBase
+
+<MudDialog>
+    <DialogContent>
+        <UserForm @ref="@_userForm" Model="Model" OnFormSubmit="OnFormSubmitHandler"></UserForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code{
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public UserDto Model { get; set; } = default!;
+
+    private UserForm? _userForm;
+
+    protected async Task Submit()
+    {
+        await _userForm!.Submit();
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    protected Task OnFormSubmitHandler(UserDto model)
+    {
+        MudDialog.Close(DialogResult.Ok(model));
+        return Task.CompletedTask;
+    }
+
+}
