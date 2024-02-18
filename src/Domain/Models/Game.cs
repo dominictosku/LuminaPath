@@ -1,5 +1,5 @@
-﻿using Domain.Common.Entities.Base;
-using Domain.Common.Enums;
+﻿using Domain.Common.Enums;
+using Domain.Models.Base;
 using System.ComponentModel.DataAnnotations;
 
 namespace Domain.Models

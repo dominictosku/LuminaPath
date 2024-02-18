@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Logging;
 using Application.Common.Interfaces;
+using Domain.Models.Base;
 
 namespace Infrastructure.Services
 {
@@ -90,6 +91,17 @@ namespace Infrastructure.Services
 			{
 				_logger.LogError("Could not Upload File. error: {ex}", ex);
 			}
+		}
+
+		public async Task DeleteMediaDocument(Media entity)
+		{
+			if (entity.Image is null)
+				return;
+			var image = entity.Image;
+			entity.Image = null;
+			_context.Update(entity);
+			_context.SaveChanges();
+			await DeleteDocument(image);
 		}
 
 		protected virtual async Task<PaginatedList<Document>> CreatePaginatedList(IQueryable<Document> entities, Paging paging)

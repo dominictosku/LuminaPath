@@ -30,10 +30,12 @@ namespace Server.Controllers
 
 		[HttpGet("{url}")]
 		[AllowAnonymous]
-		public async Task<FileStreamResult> GetImage(string url)
+		public async Task<IActionResult> GetImage(string url)
 		{
 			var result = await Storage.DownloadAsync(url);
-			return new FileStreamResult(result.Content, result.ContentType);
+			if (result is null || result.Content is null)
+				return File("/images/placeholder.png", "images/png");
+			return new FileStreamResult(result.Content, result.ContentType ?? "images/png");
 		}
 	}
 }

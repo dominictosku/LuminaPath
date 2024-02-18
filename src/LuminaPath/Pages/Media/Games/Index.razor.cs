@@ -114,7 +114,10 @@ namespace LuminaPath.Pages.Media.Games
 
 			foreach (var id in ids)
 			{
-				await gameRepo.Delete(id);
+				Game existing = await dbContext.Games.FindAsync(id) ?? throw new Exception("id not found");
+				if (existing.Image is not null)
+					dbContext.Documents.Remove(existing.Image);
+				dbContext.Games.Remove(existing);
 			}
 
 			await dbContext.SaveChangesAsync();
@@ -167,6 +170,8 @@ namespace LuminaPath.Pages.Media.Games
 		public async Task Delete(Game g)
 		{
 			using var dbContext = dbContextFactory.CreateDbContext();
+			if(g.Image is not null)
+				dbContext.Documents.Remove(g.Image);
 			dbContext.Games.Remove(g);
 			await dbContext.SaveChangesAsync();
 
