@@ -1,10 +1,10 @@
-﻿using Domain.Common.Entities.Base;
-using Domain.Common.Interfaces;
+﻿using Domain.Common.Interfaces;
+using Domain.Models.Base;
 using System.ComponentModel.DataAnnotations;
 
 namespace Application.Common.Features.Gaming.Dto
 {
-	public class MyGameDto : IBasicInfo
+    public class MyGameDto : IBasicInfo
 	{
 		public int Id { get; set; }
 		[Range(1, 10)]

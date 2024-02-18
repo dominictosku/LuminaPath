@@ -131,8 +131,7 @@
 
 			if (!state.Canceled)
 			{
-				await documentService.DeleteDocument(Model.Image);
-				Model.Image = null;
+				await documentService.DeleteMediaDocument(Model);
 			}
 		}
 	}

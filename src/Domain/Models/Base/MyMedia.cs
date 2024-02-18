@@ -2,7 +2,7 @@
 using Domain.Models;
 using System.ComponentModel.DataAnnotations;
 
-namespace Domain.Common.Entities.Base
+namespace Domain.Models.Base
 {
     public enum ProgressionStatus
     {
