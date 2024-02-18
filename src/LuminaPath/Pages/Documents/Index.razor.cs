@@ -1,16 +1,12 @@
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Pages;
-using AutoMapper;
 using Domain.Common.Entities;
 using Domain.Models;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
 using LuminaPath.Pages.Documents.Components;
-using LuminaPath.ViewModel;
 using Microsoft.AspNetCore.Components;
-using Microsoft.EntityFrameworkCore;
 using MudBlazor;
-using System.Linq.Expressions;
 
 namespace LuminaPath.Pages.Documents
 {
@@ -80,7 +76,7 @@ namespace LuminaPath.Pages.Documents
 			{ x=>x.Refresh , new Action(async () => await ReloadData()) },
 			{ x=>x.Model, command },
 			{ x=>x.loading, loading },
-			{ x=>x.EventCallBack, CreateGame }
+			{ x=>x.EventCallBack, Create }
 		};
 			var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 			var dialog = DialogService.Show<DocumentFormDialog>("Create document", parameters, options);
@@ -89,15 +85,15 @@ namespace LuminaPath.Pages.Documents
 				await ReloadData();
 		}
 
-		public async Task OnUpdate(Document g)
+		public async Task OnUpdate(Document entity)
 		{
-			var command = g;
+			var command = entity;
 			var parameters = new DialogParameters<DocumentFormDialog>
 		{
 			{ x=>x.Refresh , new Action(async () => await ReloadData()) },
 			{ x=>x.Model, command },
 			{ x=>x.loading, loading },
-			{ x=>x.EventCallBack, UpdateGame }
+			{ x=>x.EventCallBack, Update }
 		};
 			var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 			var dialog = DialogService.Show<DocumentFormDialog>("Update document", parameters, options);
@@ -124,7 +120,7 @@ namespace LuminaPath.Pages.Documents
 		#endregion
 
 		#region CRUD Actions
-		async Task CreateGame(Document entity)
+		async Task Create(Document entity)
 		{
 			loading = true;
 			try
@@ -144,7 +140,7 @@ namespace LuminaPath.Pages.Documents
 			loading = false;
 		}
 
-		async Task UpdateGame(Document entity)
+		async Task Update(Document entity)
 		{
 			loading = true;
 			using var dbContext = dbContextFactory.CreateDbContext();
@@ -164,11 +160,11 @@ namespace LuminaPath.Pages.Documents
 			loading = false;
 		}
 
-		public async Task Delete(Document g)
+		public async Task Delete(Document entity)
 		{
 			using var dbContext = dbContextFactory.CreateDbContext();
-			dbContext.Documents.Remove(g);
-			await dbContext.SaveChangesAsync();
+			var documentService = new DocumentService(dbContextFactory.CreateDbContext(), Storage, logger);
+			await documentService.DeleteDocument(entity);
 
 			Snackbar.Add("Deleted Document", Severity.Info);
 			await ReloadData();
