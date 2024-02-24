@@ -2,7 +2,6 @@ using Application.Common.Interfaces;
 using Application.Common.Interfaces.Pages;
 using Domain.Common.Entities;
 using Domain.Models;
-using Infrastructure.Repositories;
 using Infrastructure.Services;
 using LuminaPath.Pages.Documents.Components;
 using Microsoft.AspNetCore.Components;
@@ -10,7 +9,7 @@ using MudBlazor;
 
 namespace LuminaPath.Pages.Documents
 {
-    public partial class Index : ITableActions<Document>
+	public partial class Index : ITableActions<Document>
 	{
 		private MudDataGrid<Document> _table = default!;
 		private Document _currentDto = new();
@@ -45,8 +44,8 @@ namespace LuminaPath.Pages.Documents
 
 		public async Task ReloadData()
 		{
-            await _table.ReloadServerData();
-        }
+			await _table.ReloadServerData();
+		}
 
 		private async Task SwitchView()
 		{
@@ -62,7 +61,7 @@ namespace LuminaPath.Pages.Documents
 			return await documentService.GetAllPaginated(paging);
 		}
 
-        public void Dummy()
+		public void Dummy()
 		{
 
 		}
@@ -105,12 +104,12 @@ namespace LuminaPath.Pages.Documents
 		public async Task OnDeleteChecked()
 		{
 			using var dbContext = dbContextFactory.CreateDbContext();
-			var gameRepo = new GameRepository(dbContext);
+			var gameService = new GameService(dbContext, mapper);
 			var ids = selectedItems.Select(x => x.Id).ToArray();
 
 			foreach (var id in ids)
 			{
-				await gameRepo.Delete(id);
+				await gameService.DeleteAsync(id);
 			}
 
 			await dbContext.SaveChangesAsync();

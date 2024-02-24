@@ -1,5 +1,5 @@
-﻿using Application.Common.Interfaces.Repositories;
-using AutoMapper;
+﻿using AutoMapper;
+using Domain.Common.Entities;
 using Domain.Common.Entities.Results;
 using Domain.Models;
 using Microsoft.AspNetCore.Identity;
@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,13 +16,23 @@ namespace Infrastructure.Services
 {
 	public class MyGameService : GenericModelService<MyGame>
 	{
-		protected readonly new IMyGameRepository _repository;
-		public MyGameService(IMyGameRepository repo, IMapper mapper) : base(repo, mapper)
+		public MyGameService(LuminaPathDbContext dbContext, IMapper mapper) : base(dbContext, mapper)
 		{
-			_repository = repo;
 		}
 
-		public async Task<Result<MyGame, FailedResult>> PostAsync(MyGame viewModel, LuminaUser? user)
+        public async Task<PaginatedList<MyGame>> GetAllPaginated(
+			Paging paging,
+			string UserId,
+			Expression<Func<MyGame, bool>> filter = null,
+			IEnumerable<string> includes = null)
+        {
+            int pageIndex = paging.PageIndex;
+            IQueryable<MyGame> entities = _entities.Where(g => g.LuminaUserId == UserId).Include(g => g.Game);
+            entities = PrepareEntity(entities, filter, e => e.OrderByDescending(g => g.Game.ReleaseDate), includes);
+            return await CreatePaginatedList(entities, paging);
+        }
+
+        public async Task<Result<MyGame, FailedResult>> PostAsync(MyGame viewModel, LuminaUser? user)
 		{
 			if (user == null)
 				return new FailedResult("User not found, please login");
@@ -48,7 +59,7 @@ namespace Infrastructure.Services
 
 		protected bool IsMediaAlreadyAdded(int id, int myId, string userId)
 		{
-			var entities = _repository.GetAllNoTrack();
+			var entities = _entities.AsNoTracking().ToList() ;
 			return entities.Any(e => e.MediaId == id && e.Id != myId && e.LuminaUserId == userId);
 		}
 

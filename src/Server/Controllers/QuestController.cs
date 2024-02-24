@@ -1,5 +1,4 @@
 ﻿using Application.Common.Features.Quests.Dto;
-using Application.Common.Interfaces.Repositories;
 using AutoMapper;
 using Domain.Models;
 using Infrastructure.Services;
@@ -16,8 +15,8 @@ namespace Server.Controllers
 		private readonly UserManager<LuminaUser> _userManager;
 		private readonly ILogger<GamesController> _logger;
 
-		public QuestsController(IQuestRepository repository, ILogger<GamesController> logger,
-			IMapper mapper, UserManager<LuminaUser> userManager) : base(new GenericModelService<GamesQuest>(repository, mapper), mapper)
+		public QuestsController(QuestService service, ILogger<GamesController> logger,
+			IMapper mapper, UserManager<LuminaUser> userManager) : base(service, mapper)
 		{
 			_logger = logger;
 			_userManager = userManager;

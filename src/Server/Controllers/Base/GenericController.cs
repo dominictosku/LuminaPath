@@ -6,7 +6,6 @@ using Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Server.Controllers.Base
@@ -14,11 +13,11 @@ namespace Server.Controllers.Base
 	[ApiController]
 	[Route("api/[controller]")]
 	[Authorize]
-	public abstract class GenericController<TEntity, TEntityDto>(GenericModelService<TEntity> service, IMapper mapper) : ControllerBase
+	public abstract class GenericController<TEntity, TEntityDto>(IGenericModelService<TEntity> service, IMapper mapper) : ControllerBase
 		where TEntity : class, IBasicInfo
 		where TEntityDto : class, IBasicInfo
 	{
-		protected readonly GenericModelService<TEntity> _service = service;
+		protected readonly IGenericModelService<TEntity> _service = service;
 		protected IEnumerable<string> Includes { get; set; } = new List<string>();
 		public IMapper Mapper = mapper;
 
@@ -33,9 +32,7 @@ namespace Server.Controllers.Base
 		public async virtual Task<ActionResult<TEntityDto>> GetById(int? id)
 		{
 			var result = await _service.GetById(id, Includes);
-			return result.Match<ActionResult<TEntityDto>>(
-				m => Ok(Mapper.Map<TEntityDto>(m)),
-				f => NotFound(f));
+			return Ok(Mapper.Map<TEntityDto>(result));
 		}
 
 		[HttpPost]

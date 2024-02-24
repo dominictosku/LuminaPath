@@ -1,9 +1,9 @@
 ﻿using Application.Common.Extensions;
-using Application.Common.Interfaces.Repositories;
 using AutoMapper;
 using Domain.Common.Entities;
 using Domain.Common.Entities.Results;
 using Domain.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,19 +16,20 @@ namespace Infrastructure.Services
 {
 	public class GameService : GenericModelService<Game>
 	{
-		protected new readonly IGameRepository _repository;
-		public GameService(IGameRepository repo, IMapper mapper) : base(repo, mapper)
+		public GameService(LuminaPathDbContext dbContext, IMapper mapper) : base(dbContext, mapper)
 		{
-			_repository = repo;
+
 		}
 
-        public async Task<PaginatedList<Game>> GetEntities(MediaFilter mediaFilter, IEnumerable<string> includes, string? userId)
+        public async Task<PaginatedList<Game>> GetAllPaginated(
+            MediaFilter mediaFilter,
+			string UserId,
+			Expression<Func<Game, bool>> filter = null,
+			IEnumerable<string> includes = null)
         {
-            Expression<Func<Game, bool>> filter = GetFilterExpression(mediaFilter, userId);
-
-            return userId != null
-                ? await _repository.GetAllPaginated(mediaFilter.Paging, userId, filter)
-                : await _repository.GetAllPaginated(mediaFilter.Paging, filter, includes: includes);
+            IQueryable<Game> entities = _entities.Include(g => g.Image).Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
+            entities = PrepareEntity(entities, filter, e => e.OrderByDescending(g => g.ReleaseDate), includes);
+            return await CreatePaginatedList(entities, mediaFilter.Paging);
         }
 
         public async Task<PaginatedResult<TDto>> GetAndMapEntities<TDto>(MediaFilter mediaFilter, IEnumerable<string> includes, string? userId)
@@ -36,8 +37,8 @@ namespace Infrastructure.Services
 			Expression<Func<Game, bool>> filter = GetFilterExpression(mediaFilter, userId);
 
 			PaginatedList<Game> entities = userId != null
-				? await _repository.GetAllPaginated(mediaFilter.Paging, userId, filter)
-				: await _repository.GetAllPaginated(mediaFilter.Paging, filter, includes: includes);
+				? await GetAllPaginated(mediaFilter, userId, filter)
+				: await GetAllPaginated(mediaFilter, includes, filter);
 
 			var entitiesDto = _mapper.Map<IEnumerable<Game>, IEnumerable<TDto>>(entities);
 			return new PaginatedResult<TDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
