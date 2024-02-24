@@ -1,7 +1,5 @@
 ﻿using Application.Common.Interfaces;
-using Application.Common.Interfaces.Repositories;
 using Domain.Models;
-using Infrastructure.Repositories;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -121,7 +119,6 @@ namespace Infrastructure
 		private static void AddServices(IServiceCollection services, IConfiguration config)
 		{
 			AddStorageService(services, config);
-			AddRepositories(services);
 			AddModelService(services);
 		}
 
@@ -138,18 +135,12 @@ namespace Infrastructure
 				new AzureStorage(connectionString, containerName, s.GetRequiredService<ILogger<AzureStorage>>()));
 		}
 
-        private static void AddModelService(IServiceCollection services)
-        {
-            services.AddScoped<GameService>();
-            services.AddScoped<MyGameService>();
-        }
-
-        private static void AddRepositories(IServiceCollection services)
+		private static void AddModelService(IServiceCollection services)
 		{
-			services.AddScoped<IGameRepository, GameRepository>();
-            services.AddScoped<IMyGameRepository, MyGameRepository>();
-            services.AddScoped<IQuestRepository, QuestRepository>();
-        }
+			services.AddScoped<GameService>();
+			services.AddScoped<MyGameService>();
+			services.AddScoped<QuestService>();
+		}
 
 		private static async Task ConfigureEnvironment(WebApplication app)
 		{

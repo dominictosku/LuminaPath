@@ -1,5 +1,4 @@
 ﻿using Application.Common.Features.Gaming.Dto;
-using Application.Common.Interfaces.Repositories;
 using AutoMapper;
 using Domain.Common.Entities;
 using Domain.Common.Interfaces;
@@ -19,7 +18,7 @@ namespace Server.Controllers
 		private readonly new GameService _service;
 		private readonly ILogger<GamesController> _logger;
 
-		public GamesController(IGameRepository gameRepo, GameService service, ILogger<GamesController> logger, IMapper mapper) : base(service, mapper)
+		public GamesController(GameService service, ILogger<GamesController> logger, IMapper mapper) : base(service, mapper)
 		{
 			_service = service;
 			_logger = logger;

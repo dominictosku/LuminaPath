@@ -2,7 +2,6 @@ using Application.Common.Interfaces.Pages;
 using AutoMapper;
 using Domain.Common.Entities;
 using Domain.Models;
-using Infrastructure.Repositories;
 using Infrastructure.Services;
 using LuminaPath.Pages.Media.Components;
 using LuminaPath.ViewModel;
@@ -10,7 +9,7 @@ using MudBlazor;
 
 namespace LuminaPath.Pages.Media.Games
 {
-    public partial class Index : ITableActions<Game>
+	public partial class Index : ITableActions<Game>
 	{
 
 		private List<Game> Games = new();
@@ -60,10 +59,10 @@ namespace LuminaPath.Pages.Media.Games
 
 		private async Task<PaginatedList<Game>> GetData(int pageIndex)
 		{
-			using var gameService = new GameService(new GameRepository(dbContextFactory.CreateDbContext()), mapper);
+			using var gameService = new GameService(dbContextFactory.CreateDbContext(), mapper);
 			_filter.Paging = new Paging(pageIndex, 15);
-            var includes = new List<string>() { "Image" };
-			return await gameService.GetEntities(_filter, includes);
+			var includes = new List<string>() { "Image" };
+			return await gameService.GetAllPaginated(_filter, includes);
 		}
 
 		public void Dummy()
@@ -109,7 +108,6 @@ namespace LuminaPath.Pages.Media.Games
 		public async Task OnDeleteChecked()
 		{
 			using var dbContext = dbContextFactory.CreateDbContext();
-			var gameRepo = new GameRepository(dbContext);
 			var ids = selectedItems.Select(x => x.Id).ToArray();
 
 			foreach (var id in ids)
@@ -170,7 +168,7 @@ namespace LuminaPath.Pages.Media.Games
 		public async Task Delete(Game g)
 		{
 			using var dbContext = dbContextFactory.CreateDbContext();
-			if(g.Image is not null)
+			if (g.Image is not null)
 				dbContext.Documents.Remove(g.Image);
 			dbContext.Games.Remove(g);
 			await dbContext.SaveChangesAsync();
