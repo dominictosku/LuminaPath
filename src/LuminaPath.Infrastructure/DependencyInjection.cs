@@ -1,0 +1,203 @@
+﻿using LuminaPath.Core.Common.Interfaces;
+using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Services;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using System.Net;
+namespace LuminaPath.Infrastructure
+{
+	public static class DependencyInjection
+	{
+		public const string MyAllowSpecificOrigins = "SPAConfig";
+
+		public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
+		{
+			AddDatabase(services, config);
+			AddDefaultIdentity(services, config);
+			AddServices(services, config);
+			AddCors(services);
+			return services;
+		}
+
+		private static void AddCors(IServiceCollection services)
+		{
+			services.AddCors(o => o.AddPolicy(MyAllowSpecificOrigins, builder =>
+			{
+				builder.WithOrigins("http://localhost:3000")
+					   .WithOrigins("http://127.0.0.1:3000")
+					   .AllowAnyMethod()
+					   .AllowAnyHeader()
+					   .AllowCredentials();
+			}));
+		}
+
+		private static void AddMiddleware(WebApplication app)
+		{
+			app.Use(async (context, next) =>
+			{
+				await next();
+
+				if (context.Response.StatusCode == (int)HttpStatusCode.Unauthorized)
+				{
+					await context.Response.WriteAsync("Session expired, please login");
+				}
+
+				if (context.Response.StatusCode == (int)HttpStatusCode.Forbidden)
+				{
+					await context.Response.WriteAsync("You have not permission to access this");
+				}
+			});
+		}
+
+		public static async Task MigrateDevelopment(this WebApplication app)
+		{
+			using (var serviceScope = app.Services.CreateScope())
+			{
+				var services = serviceScope.ServiceProvider;
+				var userManager = serviceScope.ServiceProvider.GetRequiredService<UserManager<LuminaUser>>();
+				var roleManager = serviceScope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+				var context = serviceScope.ServiceProvider.GetRequiredService<LuminaPathDbContext>();
+
+				// Migrations
+				try
+				{
+					context.Database.Migrate();
+					await context.SeedDatabase(userManager, roleManager);
+				}
+				catch (Exception e)
+				{
+					Console.Error.WriteLine("Error when migrating: ", e);
+				}
+			}
+		}
+
+		private static void AddDatabase(IServiceCollection services, IConfiguration config)
+		{
+			var connectionstring = config.GetConnectionString("Default");
+			services.AddDbContextFactory<LuminaPathDbContext>(options =>
+				options.UseMySql(connectionstring, ServerVersion.AutoDetect(connectionstring)));
+			services.AddScoped<ILuminaPathDbContext, LuminaPathDbContext>();
+		}
+
+		private static void AddDefaultIdentity(IServiceCollection services, IConfiguration config)
+		{
+			services.AddAuthorization();
+			services.AddIdentityApiEndpoints<LuminaUser>(options =>
+			{
+				// Password settings.
+				options.Password.RequireDigit = true;
+				options.Password.RequireLowercase = true;
+				options.Password.RequireNonAlphanumeric = true;
+				options.Password.RequireUppercase = true;
+				options.Password.RequiredLength = 6;
+				options.Password.RequiredUniqueChars = 1;
+
+				// Lockout settings.
+				options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(120);
+				options.Lockout.MaxFailedAccessAttempts = 10;
+
+				// User settings.
+				options.SignIn.RequireConfirmedAccount = true;
+				options.User.AllowedUserNameCharacters =
+				"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+				options.User.RequireUniqueEmail = true;
+			})
+				.AddRoles<IdentityRole>()
+				.AddEntityFrameworkStores<LuminaPathDbContext>()
+				.AddSignInManager()
+				.AddDefaultTokenProviders();
+		}
+
+		private static void AddServices(IServiceCollection services, IConfiguration config)
+		{
+			AddStorageService(services, config);
+			AddModelService(services);
+		}
+
+		private static void AddStorageService(IServiceCollection services, IConfiguration config)
+		{
+			string connectionString = Environment.GetEnvironmentVariable("AZURE_CONNECTIONSTRING")
+				?? config.GetSection("Azure")["BlobConnectionString"]
+				?? throw new Exception("No blob connectionfound");
+
+			string containerName = config.GetSection("Azure")["BlobContainerName"]
+				?? throw new Exception("No blob container name found");
+
+			services.AddScoped<IAzureStorage, AzureStorage>(s =>
+				new AzureStorage(connectionString, containerName, s.GetRequiredService<ILogger<AzureStorage>>()));
+		}
+
+		private static void AddModelService(IServiceCollection services)
+		{
+			services.AddScoped<GameService>();
+			services.AddScoped<MyGameService>();
+			services.AddScoped<QuestService>();
+		}
+
+		private static async Task ConfigureEnvironment(WebApplication app)
+		{
+			app.UseForwardedHeaders(new ForwardedHeadersOptions
+			{
+				ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+			});
+
+			// Configure the HTTP request pipeline.
+			if (app.Environment.IsDevelopment())
+			{
+				app.UseSwagger();
+				app.UseSwaggerUI();
+				await app.MigrateDevelopment();
+			}
+			else
+			{
+				app.UseExceptionHandler("/Error", createScopeForErrors: true);
+				await app.MigrateDevelopment(); // Temporary add migrations to Production
+				app.UseHsts();
+			}
+		}
+
+		public static async Task ConfigureInfrastructure(this WebApplication app)
+		{
+			AddMiddleware(app);
+
+			app.UseCors(MyAllowSpecificOrigins);
+			app.UseHttpsRedirection();
+
+			await ConfigureEnvironment(app);
+			app.UseAuthentication();
+			app.UseAuthorization();
+		}
+
+		public static IServiceCollection AddServer(this IServiceCollection services)
+		{
+			AddApi(services);
+			return services;
+		}
+
+		private static void AddApi(IServiceCollection services)
+		{
+			services.AddEndpointsApiExplorer();
+			services.AddSwaggerGen();
+			services.AddControllers(options =>
+			{
+				options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider());
+			});
+		}
+
+		public static void ConfigureServer(this WebApplication app)
+		{
+			app.MapControllers();
+			app.MapGroup("/api")
+				.MapIdentityApi<LuminaUser>();
+		}
+	}
+}

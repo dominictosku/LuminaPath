@@ -1,10 +1,13 @@
-using Application.Common.Interfaces.Pages;
 using AutoMapper;
-using Domain.Common.Entities;
-using Domain.Models;
-using Infrastructure.Services;
-using LuminaPath.Pages.Media.Components;
+using LuminaPath.Infrastructure.Services;
+using LuminaPath.Core.Common.Entities;
+using LuminaPath.Core.Models;
+using LuminaPath.UI.Shared.Interfaces;
+using LuminaPath.UI.Shared.Media;
 using LuminaPath.ViewModel;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.Logging;
 using MudBlazor;
 
 namespace LuminaPath.Pages.Media.Games
@@ -73,14 +76,16 @@ namespace LuminaPath.Pages.Media.Games
 		#region Events
 		public async Task OnCreate()
 		{
-			var command = new GameViewModel();
+			var command = new Game();
 			var parameters = new DialogParameters<MediaFormDialog>
-		{
-			{ x=>x.Refresh , new Action(async () => await ReloadData()) },
-			{ x=>x.Model, command },
-			{ x=>x.loading, loading },
-			{ x=>x.EventCallBack, CreateGame }
-		};
+			{
+				{ x=>x.Refresh , new Action(async () => await ReloadData()) },
+				{ x=>x.Model, command },
+				{ x=>x.loading, loading },
+				{ x=>x.EventCallBack, CreateGame },
+				{ x=>x.OnSubmitFile, SubmitFile },
+				{ x=>x.OnDeleteImage, DeleteImage }
+			};
 			var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 			var dialog = DialogService.Show<MediaFormDialog>("Create Game", parameters, options);
 			var state = await dialog.Result;
@@ -92,12 +97,14 @@ namespace LuminaPath.Pages.Media.Games
 		{
 			var command = mapper.Map<Game, GameViewModel>(g);
 			var parameters = new DialogParameters<MediaFormDialog>
-		{
-			{ x=>x.Refresh , new Action(async () => await ReloadData()) },
-			{ x=>x.Model, command },
-			{ x=>x.loading, loading },
-			{ x=>x.EventCallBack, UpdateGame }
-		};
+			{
+				{ x=>x.Refresh , new Action(async () => await ReloadData()) },
+				{ x=>x.Model, command },
+				{ x=>x.loading, loading },
+				{ x=>x.EventCallBack, UpdateGame },
+				{ x=>x.OnSubmitFile, SubmitFile },
+				{ x=>x.OnDeleteImage, DeleteImage }
+			};
 			var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 			var dialog = DialogService.Show<MediaFormDialog>("Update Game", parameters, options);
 			var state = await dialog.Result;
@@ -125,7 +132,7 @@ namespace LuminaPath.Pages.Media.Games
 		#endregion
 
 		#region CRUD Actions
-		async Task CreateGame(GameViewModel game)
+		async Task CreateGame(Game game)
 		{
 			loading = true;
 			try
@@ -145,7 +152,7 @@ namespace LuminaPath.Pages.Media.Games
 			loading = false;
 		}
 
-		async Task UpdateGame(GameViewModel game)
+		async Task UpdateGame(Game game)
 		{
 			loading = true;
 			using var dbContext = dbContextFactory.CreateDbContext();
@@ -175,6 +182,25 @@ namespace LuminaPath.Pages.Media.Games
 
 			Snackbar.Add("Deleted Game", Severity.Info);
 			await ReloadData();
+		}
+
+		private async Task<Document?> SubmitFile(IBrowserFile file)
+		{
+			var documentService = new DocumentService(dbContextFactory.CreateDbContext(), Storage, logger);
+			var result = await documentService.CreateDocument(file, Navigation.BaseUri);
+			return result.Match<Document?>(
+				success: val => val,
+				failure: _ => null
+			);
+		}
+
+		private async Task DeleteImage(Game model)
+		{
+			if (model.Image != null)
+			{
+				var documentService = new DocumentService(dbContextFactory.CreateDbContext(), Storage, logger);
+				await documentService.DeleteMediaDocument(model);
+			}
 		}
 		#endregion
 	}

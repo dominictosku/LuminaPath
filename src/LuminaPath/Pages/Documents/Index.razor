@@ -1,7 +1,7 @@
 ﻿@page "/Documents"
 @using AutoMapper
+@using LuminaPath.UI.Shared.Documents
 @using Microsoft.EntityFrameworkCore
-@using LuminaPath.Pages.Documents.Components;
 @inject IDbContextFactory<LuminaPathDbContext> dbContextFactory
 @inject NavigationManager navigation
 @inject IMapper mapper
@@ -11,64 +11,64 @@
 
 <h1>Documents</h1>
 <MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary">@ToggleText</MudButton>
-    <AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" />
-    <MudDataGrid ServerData="@(ServerReload)"
-                 FixedHeader="true"
-                 FixedFooter="true"
-                 Virtualize="true"
-                 Height="calc(100vh - 370px)"
-                 Loading="@loading"
-                 MultiSelection="true"
-                 @bind-SelectedItems="selectedItems"
-                 @bind-SelectedItem="_currentDto"
-                 Hover="true" @ref="_table">
-        <ToolBarContent>
-            <TableActions Page="this" loading="loading" selectedItems="selectedItems" />
-        </ToolBarContent>
-        <Columns>
-            <SelectColumn ShowInFooter="false"></SelectColumn>
-            <TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
-                <CellTemplate>
-                    <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
-                             Dense="true"
-                             EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-                        <MudMenuItem OnAction="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
+<AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" />
+<MudDataGrid ServerData="@(ServerReload)"
+             FixedHeader="true"
+             FixedFooter="true"
+             Virtualize="true"
+             Height="calc(100vh - 370px)"
+             Loading="@loading"
+             MultiSelection="true"
+             @bind-SelectedItems="selectedItems"
+             @bind-SelectedItem="_currentDto"
+             Hover="true" @ref="_table">
+    <ToolBarContent>
+        <TableActions Page="this" loading="loading" selectedItems="selectedItems" />
+    </ToolBarContent>
+    <Columns>
+        <SelectColumn ShowInFooter="false"></SelectColumn>
+        <TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
+            <CellTemplate>
+                <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
+                         Dense="true"
+                         EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+                    <MudMenuItem OnAction="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
 
-                        <MudMenuItem OnAction="@(() => Delete(context.Item))">Delete</MudMenuItem>
-                    </MudMenu>
-                </CellTemplate>
-            </TemplateColumn>
+                    <MudMenuItem OnAction="@(() => Delete(context.Item))">Delete</MudMenuItem>
+                </MudMenu>
+            </CellTemplate>
+        </TemplateColumn>
 
-            <PropertyColumn Property="x => x.Name" Title="Title">
-                <CellTemplate>
-                    <div class="d-flex flex-column">
-                        <MudText Typo="Typo.body2">@context.Item.Name</MudText>
-                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
-                    </div>
-                </CellTemplate>
-            </PropertyColumn>
-        </Columns>
-        <NoRecordsContent>
-            <MudText>No items found</MudText>
-        </NoRecordsContent>
-        <LoadingContent>
-            <MudText>Loading</MudText>
-        </LoadingContent>
-        <PagerContent>
-            <MudDataGridPager />
-        </PagerContent>
-    </MudDataGrid>
+        <PropertyColumn Property="x => x.Name" Title="Title">
+            <CellTemplate>
+                <div class="d-flex flex-column">
+                    <MudText Typo="Typo.body2">@context.Item.Name</MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
+                </div>
+            </CellTemplate>
+        </PropertyColumn>
+    </Columns>
+    <NoRecordsContent>
+        <MudText>No items found</MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudText>Loading</MudText>
+    </LoadingContent>
+    <PagerContent>
+        <MudDataGridPager />
+    </PagerContent>
+</MudDataGrid>
 
-    <style>
-        @@import url("https://cdn.jsdelivr.net/npm/@@fancyapps/ui@5.0/dist/fancybox/fancybox.css");
+<style>
+    @@import url("https://cdn.jsdelivr.net/npm/@@fancyapps/ui@5.0/dist/fancybox/fancybox.css");
 
-        .fancybox__container {
-            --fancybox-bg: rgba(24, 24, 27, 0.85);
-            z-index: 9999;
-        }
+    .fancybox__container {
+        --fancybox-bg: rgba(24, 24, 27, 0.85);
+        z-index: 9999;
+    }
 
-        .mud-table-toolbar {
-            height: 120px !important;
-        }
-    </style>
+    .mud-table-toolbar {
+        height: 120px !important;
+    }
+</style>
 

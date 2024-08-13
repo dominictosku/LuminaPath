@@ -1,7 +1,6 @@
-﻿using Application;
-using Infrastructure;
-using LuminaPath;
-using Server;
+﻿using LuminaPath;
+using LuminaPath.UI.Shared;
+using LuminaPath.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
 	.AddInfrastructure(builder.Configuration)
 	.AddServer()
-	.AddBlazor();
+	.AddBlazor()
+	.AddUILibrary();
 
 builder.Services.AddAutoMapper(typeof(Program));
 

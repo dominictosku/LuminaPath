@@ -1,11 +1,11 @@
-using Domain.Models;
+using LuminaPath.Core.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 
 namespace LuminaPath.Pages.Account
 {
-    // Remove the "else if (EmailSender is IdentityNoOpEmailSender)" block from RegisterConfirmation.razor after updating with a real implementation.
-    internal sealed class IdentityNoOpEmailSender : IEmailSender<LuminaUser>
+	// Remove the "else if (EmailSender is IdentityNoOpEmailSender)" block from RegisterConfirmation.razor after updating with a real implementation.
+	internal sealed class IdentityNoOpEmailSender : IEmailSender<LuminaUser>
     {
         private readonly IEmailSender emailSender = new NoOpEmailSender();
 

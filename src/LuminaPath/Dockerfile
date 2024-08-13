@@ -10,10 +10,10 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["src/LuminaPath/LuminaPath.csproj", "src/LuminaPath/"]
-COPY ["src/Data/Core.csproj", "src/Data/"]
-COPY ["src/Infrastructure/Infrastructure.csproj", "src/Infrastructure/"]
-COPY ["src/Server/Server.csproj", "src/Server/"]
-RUN dotnet restore "./src/LuminaPath/./LuminaPath.csproj"
+COPY ["src/LuminaPath.Core/LuminaPath.Core.csproj", "src/LuminaPath.Core/"]
+COPY ["src/LuminaPath.Infrastructure/LuminaPath.Infrastructure.csproj", "src/LuminaPath.Infrastructure/"]
+COPY ["src/LuminaPath.UI.Shared/LuminaPath.UI.Shared.csproj", "src/LuminaPath.UI.Shared/"]
+RUN dotnet restore "./src/LuminaPath/LuminaPath.csproj"
 COPY . .
 WORKDIR "/src/src/LuminaPath"
 RUN dotnet build "./LuminaPath.csproj" -c $BUILD_CONFIGURATION -o /app/build

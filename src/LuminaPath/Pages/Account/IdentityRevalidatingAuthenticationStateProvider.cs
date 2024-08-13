@@ -1,4 +1,4 @@
-using Domain.Models;
+using LuminaPath.Core.Models;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Identity;
@@ -7,9 +7,9 @@ using System.Security.Claims;
 
 namespace LuminaPath.Pages.Account
 {
-    // This is a server-side AuthenticationStateProvider that revalidates the security stamp for the connected user
-    // every 30 minutes an interactive circuit is connected.
-    internal sealed class IdentityRevalidatingAuthenticationStateProvider(
+	// This is a server-side AuthenticationStateProvider that revalidates the security stamp for the connected user
+	// every 30 minutes an interactive circuit is connected.
+	internal sealed class IdentityRevalidatingAuthenticationStateProvider(
             ILoggerFactory loggerFactory,
             IServiceScopeFactory scopeFactory,
             IOptions<IdentityOptions> options)
