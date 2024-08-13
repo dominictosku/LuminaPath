@@ -1,5 +1,5 @@
-﻿using Domain.Models;
-using LuminaPath.Components;
+﻿using LuminaPath.Components;
+using LuminaPath.Core.Models;
 using LuminaPath.Pages.Account;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -7,7 +7,7 @@ using MudBlazor.Services;
 
 namespace LuminaPath
 {
-    public static class DependencyInjection
+	public static class DependencyInjection
 	{
 		public static IServiceCollection AddBlazor(this IServiceCollection services)
 		{
@@ -23,8 +23,6 @@ namespace LuminaPath
 			services.AddScoped<IdentityRedirectManager>();
 			services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 			services.AddSingleton<IEmailSender<LuminaUser>, IdentityNoOpEmailSender>();
-
-			services.AddMudServices();
 
 			return services;
 		}

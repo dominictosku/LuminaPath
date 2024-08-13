@@ -1,0 +1,70 @@
+﻿@using LuminaPath.Constants
+@using LuminaPath.MauiClientApp.Constants
+@using Microsoft.Extensions.Hosting
+@using MudBlazor;
+@inherits LayoutComponentBase
+
+<div class="page">
+    <MudThemeProvider Theme="@_theme" IsDarkMode="@true" />
+    <MudDialogProvider />
+    <MudSnackbarProvider />
+    <MudPopoverProvider />
+
+    <ErrorBoundary @ref="errorBoundary">
+        <ChildContent>
+            <main>
+                <MudLayout>
+                    <MudAppBar Elevation="1" Class="border-bottom">
+                        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+                        <MudSpacer />
+                        <HeaderMenu />
+                        <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Inherit" Edge="Edge.End" />
+                    </MudAppBar>
+                    <MudDrawer @bind-Open="_drawerOpen" Elevation="2">
+                        <MudDrawerHeader Class="border-bottom top-row navbar navbar-dark">
+                            <div class="container-fluid">
+                                <a class="navbar-brand" href="">LuminaPath</a>
+                            </div>
+                        </MudDrawerHeader>
+                        <NavMenu />
+                    </MudDrawer>
+                    <MudMainContent>
+                        <article class="content px-4">
+                            <div id="components-reconnect-modal">
+                                <p class="alert alert-danger">
+                                    Connection to the server lost
+                                </p>
+                            </div>
+                            @Body
+                        </article>
+                    </MudMainContent>
+                </MudLayout>
+            </main>
+        </ChildContent>
+        <ErrorContent Context="Exception">
+            <div class="alert alert-danger container">
+                @Exception.Message
+                @Exception.StackTrace
+                @Exception.InnerException
+            </div>
+        </ErrorContent>
+    </ErrorBoundary>
+</div>
+
+@code {
+    private ErrorBoundary? errorBoundary;
+
+    bool _drawerOpen = true;
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    protected override void OnParametersSet()
+    {
+        errorBoundary?.Recover();
+    }
+    private MudTheme _theme = Theme.ApplicationTheme();
+    private bool _isDarkMode = true;
+}

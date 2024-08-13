@@ -9,13 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath", "src\LuminaPat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test", "Test\Test.csproj", "{4C349ECA-B704-48EE-9911-5DA8409F140D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "src\Infrastructure\Infrastructure.csproj", "{00EBE30A-E780-4678-A17A-5D59184AE516}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.Infrastructure", "src\LuminaPath.Infrastructure\LuminaPath.Infrastructure.csproj", "{00EBE30A-E780-4678-A17A-5D59184AE516}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "src\Domain\Domain.csproj", "{19B6D8E9-43BF-4B08-8AF7-C7063244FBB9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.Core", "src\LuminaPath.Core\LuminaPath.Core.csproj", "{76529DA0-197B-4091-91B7-D84078D733CD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Application", "src\Application\Application.csproj", "{76529DA0-197B-4091-91B7-D84078D733CD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.MauiClientApp", "src\LuminaPath.MauiClientApp\LuminaPath.MauiClientApp.csproj", "{5D13A5A5-4342-4DEA-B0AE-0E69BBFBD88B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "src\Server\Server.csproj", "{BE56C882-F20D-4FDB-B7BD-224049686137}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.UI.Shared", "src\LuminaPath.UI.Shared\LuminaPath.UI.Shared.csproj", "{19F844A6-2971-4E65-A4C9-89FF68D7E277}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,18 +39,20 @@ Global
 		{00EBE30A-E780-4678-A17A-5D59184AE516}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{00EBE30A-E780-4678-A17A-5D59184AE516}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{00EBE30A-E780-4678-A17A-5D59184AE516}.Release|Any CPU.Build.0 = Release|Any CPU
-		{19B6D8E9-43BF-4B08-8AF7-C7063244FBB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{19B6D8E9-43BF-4B08-8AF7-C7063244FBB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{19B6D8E9-43BF-4B08-8AF7-C7063244FBB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{19B6D8E9-43BF-4B08-8AF7-C7063244FBB9}.Release|Any CPU.Build.0 = Release|Any CPU
 		{76529DA0-197B-4091-91B7-D84078D733CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{76529DA0-197B-4091-91B7-D84078D733CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{76529DA0-197B-4091-91B7-D84078D733CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{76529DA0-197B-4091-91B7-D84078D733CD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BE56C882-F20D-4FDB-B7BD-224049686137}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE56C882-F20D-4FDB-B7BD-224049686137}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE56C882-F20D-4FDB-B7BD-224049686137}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE56C882-F20D-4FDB-B7BD-224049686137}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D13A5A5-4342-4DEA-B0AE-0E69BBFBD88B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D13A5A5-4342-4DEA-B0AE-0E69BBFBD88B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D13A5A5-4342-4DEA-B0AE-0E69BBFBD88B}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{5D13A5A5-4342-4DEA-B0AE-0E69BBFBD88B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D13A5A5-4342-4DEA-B0AE-0E69BBFBD88B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D13A5A5-4342-4DEA-B0AE-0E69BBFBD88B}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{19F844A6-2971-4E65-A4C9-89FF68D7E277}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19F844A6-2971-4E65-A4C9-89FF68D7E277}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19F844A6-2971-4E65-A4C9-89FF68D7E277}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19F844A6-2971-4E65-A4C9-89FF68D7E277}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

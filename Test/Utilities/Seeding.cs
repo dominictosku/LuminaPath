@@ -1,9 +1,9 @@
-﻿using Domain.Common.Enums;
-using Domain.Models;
+﻿using LuminaPath.Core.Common.Enums;
+using LuminaPath.Core.Models;
 
 namespace Test.Utilities
 {
-    public static class Seeding
+	public static class Seeding
 	{
 		public static List<Game> SeedGames(IEnumerable<string> names)
 		{

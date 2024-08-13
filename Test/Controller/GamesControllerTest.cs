@@ -1,18 +1,18 @@
-using Application.Common.Interfaces;
 using AutoMapper;
-using Domain.Common.Entities;
-using Domain.Models;
-using Infrastructure;
-using Infrastructure.Repositories;
-using Infrastructure.Services;
+using LuminaPath.Core.Common.Entities;
+using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Repositories;
+using LuminaPath.Core.Common.Interfaces;
+using LuminaPath.Core.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Server.Controllers;
 using Test.Utilities;
+using LuminaPath.Infrastructure.Services;
+using LuminaPath.Infrastructure.Controllers;
 
 namespace Test.Controller
 {

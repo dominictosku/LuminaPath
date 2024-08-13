@@ -1,17 +1,21 @@
 ﻿@page "/Media/Games"
+@using LuminaPath.Core.Common.Interfaces
 @using AutoMapper
+@using LuminaPath.UI.Shared.Media
 @using Microsoft.EntityFrameworkCore
-@using LuminaPath.Pages.Media.Components;
 @inject IDbContextFactory<LuminaPathDbContext> dbContextFactory
-@inject NavigationManager navigation
+@inject NavigationManager Navigation
 @inject IMapper mapper
+@inject IAzureStorage Storage;
+@inject ILogger<Index> logger;
 
 <PageTitle>Games</PageTitle>
 
 <h1>Games</h1>
 <MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary">@ToggleText</MudButton>
 <AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" />
-@if (IsGrid){
+@if (IsGrid)
+{
 	<MudDataGrid ServerData="@(ServerReload)"
 				 FixedHeader="true"
 				 FixedFooter="true"
@@ -32,9 +36,9 @@
 					<MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
 							 Dense="true"
 							 EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-						<MudMenuItem OnAction="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
+						<MudMenuItem OnClick="@(async () => await OnUpdate(context.Item))">Edit</MudMenuItem>
 
-						<MudMenuItem OnAction="@(() => Delete(context.Item))">Delete</MudMenuItem>
+						<MudMenuItem OnClick="@(async () => await Delete(context.Item))">Delete</MudMenuItem>
 					</MudMenu>
 				</CellTemplate>
 			</TemplateColumn>
@@ -43,8 +47,8 @@
 				<CellTemplate>
 					<div class="d-flex flex-column">
 						<MudText Typo="Typo.body2">@context.Item.Name</MudText>
-							<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
-						</div>
+						<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
+					</div>
 				</CellTemplate>
 			</PropertyColumn>
 			<PropertyColumn Property="x => x.Genre" Title="Genre" />
@@ -74,7 +78,7 @@ else
 						<MudCardMedia Image="@game.Image?.Uri" Height="200" />
 						<MudCardContent Style="height:80px;">
 							<MudText Typo="Typo.h5">@game.Name</MudText>
-								<MudText Typo="Typo.body2">@game.Description</MudText>
+							<MudText Typo="Typo.body2">@game.Description</MudText>
 						</MudCardContent>
 						<MudCardActions Style="height:50px;">
 							<MudButton OnClick="@(() => OnUpdate(game))" Variant="Variant.Text" Color="Color.Primary">Edit</MudButton>
