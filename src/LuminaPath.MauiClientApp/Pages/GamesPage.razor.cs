@@ -1,34 +1,35 @@
 using MudBlazor;
-using LuminaPath.UI.Shared.Media;
 using LuminaPath.MauiClientApp.Database;
 using LuminaPath.UI.Shared.Interfaces;
+using LuminaPath.MauiClientApp.Models;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Common.Entities;
+using LuminaPath.MauiClientApp.Components.Media;
+using LuminaPath.MauiClientApp.ViewModel;
 
 namespace LuminaPath.MauiClientApp.Pages
 {
-	public partial class GamesPage : ITableActions<Game>
+	public partial class GamesPage : ITableActions<GameViewModel>
 	{
-		private GamesDatabase database;
-		private List<Game> Games = new();
-		private MudDataGrid<Game> _table = default!;
-		private Game _currentDto = new();
+		private List<GameViewModel> Games = new();
+		private MudDataGrid<GameViewModel> _table = default!;
+		private GameViewModel _currentDto = new();
 		private MediaFilter _filter = new();
 
 		public bool IsGrid = true;
 		public bool loading;
-		public HashSet<Game> selectedItems = new();
+		public HashSet<GameViewModel> selectedItems = new();
 		public string ToggleText => IsGrid ? "Grid View" : "Table View";
 
-		private async Task<GridData<Game>> ServerReload(GridState<Game> state)
+		private async Task<GridData<GameViewModel>> ServerReload(GridState<GameViewModel> state)
 		{
-			selectedItems = new HashSet<Game>();
+			selectedItems = new HashSet<GameViewModel>();
 			loading = true;
 			try
 			{
 				var result = await GetData(state.Page + 1);
 
-				return new GridData<Game> { TotalItems = result.Count(), Items = result };
+				return new GridData<GameViewModel> { TotalItems = result.Count(), Items = result };
 			}
 			finally
 			{
@@ -55,13 +56,14 @@ namespace LuminaPath.MauiClientApp.Pages
 			await ReloadData();
 		}
 
-		private async Task<PaginatedList<Game>> GetData(int pageIndex)
+		private async Task<PaginatedList<GameViewModel>> GetData(int pageIndex)
 		{
 			_filter.Paging = new Paging(pageIndex, 15);
 			var includes = new List<string>() { "Image" };
 			//return await gameService.GetEntities(_filter, includes);
-			var games = await database.GetItemsAsync();
-			return await PaginatedList<Game>.CreateAsync(games.AsQueryable(),0,100);
+			var localGames = await database.GetItemsAsync() ?? new List<LocalGame>();
+			var games = localGames.Select(x => new GameViewModel(x)).ToList();
+			return PaginatedList<GameViewModel>.CreateAsync(games, 0, 100);
 		}
 
 		public void Dummy()
@@ -72,7 +74,7 @@ namespace LuminaPath.MauiClientApp.Pages
 		#region Events
 		public async Task OnCreate()
 		{
-			var command = new Game();
+			var command = new GameViewModel();
 			var parameters = new DialogParameters<MediaFormDialog>
 		{
 			{ x=>x.Refresh , new Action(async () => await ReloadData()) },
@@ -87,7 +89,7 @@ namespace LuminaPath.MauiClientApp.Pages
 				await ReloadData();
 		}
 
-		public async Task OnUpdate(Game g)
+		public async Task OnUpdate(GameViewModel g)
 		{
 			var command = g;
 			var parameters = new DialogParameters<MediaFormDialog>
@@ -110,12 +112,12 @@ namespace LuminaPath.MauiClientApp.Pages
 
 			foreach (var id in ids)
 			{
-				Game existing = await database.GetItemAsync(id) ?? throw new Exception("id not found");
-				if (existing.Image is not null)
-				{
-					//dbContext.Documents.Remove(existing.Image);
-				}
-				await database.DeleteItemAsync((Models.Game)existing);
+				LocalGame existing = await database.GetItemAsync(id) ?? throw new Exception("id not found");
+				//if (existing.Image is not null)
+				//{
+				//	dbContext.Documents.Remove(existing.Image);
+				//}
+				await database.DeleteItemAsync(existing);
 			}
 			await ReloadData();
 		}
@@ -123,12 +125,13 @@ namespace LuminaPath.MauiClientApp.Pages
 		#endregion
 
 		#region CRUD Actions
-		async Task CreateGame(Game game)
+		async Task CreateGame(GameViewModel game)
 		{
 			loading = true;
 			try
 			{
-				await database.SaveItemAsync((Models.Game)game);
+				var LocalGame = mapper.Map<LocalGame>(game);
+				await database.SaveItemAsync(LocalGame);
 				Snackbar.Add("Created Game", Severity.Success);
 			}
 			catch (Exception ex)
@@ -141,12 +144,13 @@ namespace LuminaPath.MauiClientApp.Pages
 			loading = false;
 		}
 
-		async Task UpdateGame(Game game)
+		async Task UpdateGame(GameViewModel game)
 		{
 			loading = true;
 			try
 			{
-				await database.SaveItemAsync((Models.Game)game);
+				var LocalGame = mapper.Map<LocalGame>(game);
+				await database.SaveItemAsync(LocalGame);
 				Snackbar.Add("Updated Game", Severity.Success);
 			}
 			catch (Exception ex)
@@ -159,13 +163,14 @@ namespace LuminaPath.MauiClientApp.Pages
 			loading = false;
 		}
 
-		public async Task Delete(Game g)
+		public async Task Delete(GameViewModel game)
 		{
 			//if (g.Image is not null)
 			//	dbContext.Documents.Remove(g.Image);
 			//dbContext.Games.Remove(g);
 			//await dbContext.SaveChangesAsync();
-			await database.DeleteItemAsync((Models.Game)g);
+			var LocalGame = mapper.Map<LocalGame>(game);
+			await database.DeleteItemAsync(LocalGame);
 
 			Snackbar.Add("Deleted Game", Severity.Info);
 			await ReloadData();

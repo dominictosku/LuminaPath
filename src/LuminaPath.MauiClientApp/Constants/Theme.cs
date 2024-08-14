@@ -2,7 +2,7 @@
 using Button = MudBlazor.Button;
 using Shadow = MudBlazor.Shadow;
 
-namespace LuminaPath.Constants
+namespace LuminaPath.MauiClientApp.Constants
 {
 	public class Theme
 	{

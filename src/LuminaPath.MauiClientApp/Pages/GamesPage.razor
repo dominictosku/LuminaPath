@@ -1,10 +1,11 @@
 ﻿@page "/Games"
 @using AutoMapper
 @using LuminaPath.MauiClientApp.Database
+@using LuminaPath.MauiClientApp.Components.Media
 @using Microsoft.EntityFrameworkCore
-@using LuminaPath.UI.Shared.Media
 @inject NavigationManager navigation
-@inject IMapper mapper
+@inject GamesDatabase database;
+@inject IMapper mapper;
 
 <PageTitle>Games</PageTitle>
 
@@ -32,9 +33,9 @@
 					<MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
 							 Dense="true"
 							 EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-						<MudMenuItem OnAction="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
+						<MudMenuItem OnClick="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
 
-						<MudMenuItem OnAction="@(() => Delete(context.Item))">Delete</MudMenuItem>
+						<MudMenuItem OnClick="@(() => Delete(context.Item))">Delete</MudMenuItem>
 					</MudMenu>
 				</CellTemplate>
 			</TemplateColumn>
