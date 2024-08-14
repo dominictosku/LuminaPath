@@ -10,7 +10,7 @@
         "phpmyadmin": "StartWithoutDebugging"
       }
     },
-    "services only": {
+    "Database Only": {
       "commandName": "DockerCompose",
       "commandVersion": "1.0",
       "serviceActions": {
