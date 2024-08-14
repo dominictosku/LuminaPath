@@ -5,8 +5,8 @@ services:
     image: ${DOCKER_REGISTRY-}luminapath
     container_name: luminapath
     build:
-      context: .
-      dockerfile: luminapath/Dockerfile  
+      context: ../
+      dockerfile: LuminaPath/Dockerfile  
     depends_on:
         - db
   db:
