@@ -12,7 +12,7 @@ namespace LuminaPath.Core.Models.Base
 
 	public abstract class MyMedia : IBasicInfo
 	{
-		public virtual int Id { get; set; }
+		public int Id { get; set; }
 		[Range(1, 10)]
 		public short? Rating { get; set; }
 		public DateTime? StartDate { get; set; }

@@ -1,12 +1,18 @@
-﻿using LuminaPath.Core.Common.Interfaces;
-using Microsoft.EntityFrameworkCore;
+﻿using SQLite;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
+using LuminaPath.Core.Common.Enums;
+using LuminaPath.Core.Models;
 
-namespace LuminaPath.Core.Models.Base
+namespace LuminaPath.MauiClientApp.Models
 {
-	[Index(nameof(Name), IsUnique = true)]
-	public abstract class Media : IBasicInfo
+	public class LocalGame
 	{
+		[PrimaryKey, AutoIncrement]
 		public int Id { get; set; }
 
 		[Required(AllowEmptyStrings = false)]
@@ -20,8 +26,12 @@ namespace LuminaPath.Core.Models.Base
 		[DataType(DataType.Date)]
 		[Display(Name = "Release Date")] public DateTime? ReleaseDate { get; set; }
 
-		public Document? Image { get; set; }
+		[Display(Name = "Plattform")]
+		public Plattforms Plattforms { get; set; }
+		[Display(Name = "Estimated playtime")]
+		public int? Playtime { get; set; }
 
+		[Indexed]
 		public int? ImageId { get; set; }
 	}
 }

@@ -14,22 +14,24 @@ namespace LuminaPath.MauiClientApp.Database
 				return;
 
 			Database = new SQLiteAsyncConnection(DatabaseConstant.DatabasePath, DatabaseConstant.Flags);
-			var result = await Database.CreateTableAsync<Game>();
+			await Database.CreateTableAsync<LocalDocument>();
+			await Database.CreateTableAsync<LocalGame>();
+			await Database.CreateTableAsync<LocalMyGame>();
 		}
 
-		public async Task<List<Game>> GetItemsAsync()
+		public async Task<List<LocalGame>> GetItemsAsync()
 		{
 			await Init();
-			return await Database.Table<Game>().ToListAsync();
+			return await Database.Table<LocalGame>().ToListAsync();
 		}
 
-		public async Task<Game> GetItemAsync(int id)
+		public async Task<LocalGame> GetItemAsync(int id)
 		{
 			await Init();
-			return await Database.Table<Game>().Where(i => i.Id == id).FirstOrDefaultAsync();
+			return await Database.Table<LocalGame>().Where(i => i.Id == id).FirstOrDefaultAsync();
 		}
 
-		public async Task<int> SaveItemAsync(Game item)
+		public async Task<int> SaveItemAsync(LocalGame item)
 		{
 			await Init();
 			if (item.Id != 0)
@@ -38,7 +40,7 @@ namespace LuminaPath.MauiClientApp.Database
 				return await Database.InsertAsync(item);
 		}
 
-		public async Task<int> DeleteItemAsync(Game item)
+		public async Task<int> DeleteItemAsync(LocalGame item)
 		{
 			await Init();
 			return await Database.DeleteAsync(item);
