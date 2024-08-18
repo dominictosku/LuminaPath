@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace LuminaPath.Core.Common.Interfaces
 {
-	public interface IAzureStorage
+	public interface IStorageService
 	{
 		/// <summary>
 		/// This method uploads a file submitted with the request

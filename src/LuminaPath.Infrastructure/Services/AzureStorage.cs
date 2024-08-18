@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace LuminaPath.Infrastructure.Services
 {
-	public class AzureStorage : IAzureStorage
+	public class AzureStorage : IStorageService
 	{
 		#region Dependency Injection / Constructor
 

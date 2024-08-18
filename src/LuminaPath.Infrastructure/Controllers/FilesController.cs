@@ -12,9 +12,9 @@ namespace LuminaPath.Infrastructure.Controllers
 	public class FilesController : ControllerBase
 	{
 		private readonly ILogger<FilesController> _logger;
-		private readonly IAzureStorage Storage;
+		private readonly IStorageService Storage;
 
-		public FilesController(ILogger<FilesController> logger, IAzureStorage azureStorage)
+		public FilesController(ILogger<FilesController> logger, IStorageService azureStorage)
 		{
 			_logger = logger; ;
 			Storage = azureStorage;

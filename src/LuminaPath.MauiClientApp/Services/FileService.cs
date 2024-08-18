@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace LuminaPath.MauiClientApp.Services
 {
-    public class FileService : IAzureStorage
+    public class FileService : IStorageService
     {
         public async Task<List<BlobDto>> ListAsync()
         {

@@ -1,4 +1,6 @@
 ﻿using LuminaPath.Core.Common.Entities.Results;
+using LuminaPath.Core.Common.Enums;
+using LuminaPath.Core.Common.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,24 +9,13 @@ using System.Threading.Tasks;
 
 namespace LuminaPath.Core.Models
 {
-	public class Document
+    public class Document : IDocument
 	{
 		public int Id { get; set; }
 		public string? Name { get; set; }
 		public string? Description { get; set; }
-		public string? Uri { get; set; }
+		public string? Path { get; set; }
 		public string? ContentType { get; set; }
 		public DocumentType DocumentType { get; set; } = default!;
-
-		public string? URL => $"/api/files/{Name}";
-	}
-
-	public enum DocumentType
-	{
-		Document,
-		Image,
-		PDF,
-		Excel,
-		Others
 	}
 }

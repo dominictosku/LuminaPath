@@ -8,17 +8,18 @@ using LuminaPath.Core.Models.Base;
 using LuminaPath.Core.Common.Entities;
 using LuminaPath.Core.Common.Entities.Results;
 using LuminaPath.Core.Models;
+using LuminaPath.Core.Common.Enums;
 
 namespace LuminaPath.Infrastructure.Services
 {
 	public class DocumentService
 	{
 		private readonly LuminaPathDbContext _context;
-		private readonly IAzureStorage _storage;
+		private readonly IStorageService _storage;
 		private readonly ILogger _logger;
 		private const long MaxAllowedSize = 3145728;
 
-		public DocumentService(LuminaPathDbContext context, IAzureStorage storage, ILogger logger)
+		public DocumentService(LuminaPathDbContext context, IStorageService storage, ILogger logger)
 		{
 			_context = context;
 			_storage = storage;
@@ -53,7 +54,7 @@ namespace LuminaPath.Infrastructure.Services
 				{
 					Name = result.Blob.Name,
 					Description = "Image for media",
-					Uri = baseUrl + $"api/files/{result.Blob.Name}",
+					Path = baseUrl + $"api/files/{result.Blob.Name}",
 					ContentType = result.Blob.ContentType,
 					DocumentType = DocumentType.Image
 				};

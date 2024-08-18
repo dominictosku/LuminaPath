@@ -2,6 +2,8 @@
 @using AutoMapper
 @using LuminaPath.MauiClientApp.Database
 @using LuminaPath.MauiClientApp.Components.Media
+@using LuminaPath.MauiClientApp.ViewModel
+@using LuminaPath.UI.Shared.Media
 @using Microsoft.EntityFrameworkCore
 @inject NavigationManager navigation
 @inject GamesDatabase database;
@@ -24,7 +26,7 @@
 				 @bind-SelectedItem="_currentDto"
 				 Hover="true" @ref="_table">
 		<ToolBarContent>
-			<TableActions Page="this" loading="loading" selectedItems="selectedItems" />
+			<TableActions TItem="GameViewModel" Page="this" loading="loading" selectedItems="selectedItems" />
 		</ToolBarContent>
 		<Columns>
 			<SelectColumn ShowInFooter="false"></SelectColumn>
@@ -72,7 +74,7 @@ else
 			{
 				<MudItem>
 					<MudCard Outlined="true">
-						<MudCardMedia Image="@game.Image?.Uri" Height="200" />
+						<MudCardMedia Image="@game.Image?.Path" Height="200" />
 						<MudCardContent Style="height:80px;">
 							<MudText Typo="Typo.h5">@game.Name</MudText>
 								<MudText Typo="Typo.body2">@game.Description</MudText>
