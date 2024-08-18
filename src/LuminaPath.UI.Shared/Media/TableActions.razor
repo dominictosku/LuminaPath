@@ -1,5 +1,6 @@
 ﻿@using LuminaPath.UI.Shared.Interfaces;
 @using LuminaPath.Core.Models
+@typeparam TItem
 <div class="d-flex align-start flex-grow-1">
     <div class="flex-grow-1" />
 
@@ -80,7 +81,7 @@
 @code{
     [EditorRequired]
     [Parameter]
-    public ITableActions<Game> Page { get; set; } = default!;
+    public ITableActions<TItem> Page { get; set; } = default!;
 
     [EditorRequired]
     [Parameter]
@@ -88,5 +89,5 @@
 
     [EditorRequired]
     [Parameter]
-    public HashSet<Game> selectedItems { get; set; } = default!;
+    public HashSet<TItem> selectedItems { get; set; } = default!;
 }

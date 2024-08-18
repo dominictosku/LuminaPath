@@ -132,7 +132,7 @@ namespace LuminaPath.Infrastructure
 			string containerName = config.GetSection("Azure")["BlobContainerName"]
 				?? throw new Exception("No blob container name found");
 
-			services.AddScoped<IAzureStorage, AzureStorage>(s =>
+			services.AddScoped<IStorageService, AzureStorage>(s =>
 				new AzureStorage(connectionString, containerName, s.GetRequiredService<ILogger<AzureStorage>>()));
 		}
 

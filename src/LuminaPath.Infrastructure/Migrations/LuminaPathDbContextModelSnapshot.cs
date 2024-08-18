@@ -7,9 +7,9 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Infrastructure.Migrations
+namespace LuminaPath.Infrastructure.Migrations
 {
-	[DbContext(typeof(LuminaPathDbContext))]
+    [DbContext(typeof(LuminaPathDbContext))]
     partial class LuminaPathDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
@@ -19,7 +19,7 @@ namespace Infrastructure.Migrations
                 .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity("Domain.Models.Document", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.Document", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -37,7 +37,7 @@ namespace Infrastructure.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Uri")
+                    b.Property<string>("Path")
                         .HasColumnType("longtext");
 
                     b.HasKey("Id");
@@ -45,7 +45,7 @@ namespace Infrastructure.Migrations
                     b.ToTable("Documents");
                 });
 
-            modelBuilder.Entity("Domain.Models.Game", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -84,7 +84,7 @@ namespace Infrastructure.Migrations
                     b.ToTable("Games");
                 });
 
-            modelBuilder.Entity("Domain.Models.LuminaUser", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.LuminaUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("varchar(255)");
@@ -148,7 +148,7 @@ namespace Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Domain.Models.MyGame", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.MyGame", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -184,7 +184,7 @@ namespace Infrastructure.Migrations
                     b.ToTable("MyGames");
                 });
 
-            modelBuilder.Entity("Domain.Models.Quest", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.Quest", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -354,9 +354,9 @@ namespace Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Domain.Models.GamesQuest", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.GamesQuest", b =>
                 {
-                    b.HasBaseType("Domain.Models.Quest");
+                    b.HasBaseType("LuminaPath.Core.Models.Quest");
 
                     b.Property<int?>("GamesId")
                         .HasColumnType("int");
@@ -366,24 +366,24 @@ namespace Infrastructure.Migrations
                     b.HasDiscriminator().HasValue("GamesQuest");
                 });
 
-            modelBuilder.Entity("Domain.Models.Game", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
                 {
-                    b.HasOne("Domain.Models.Document", "Image")
+                    b.HasOne("LuminaPath.Core.Models.Document", "Image")
                         .WithMany()
                         .HasForeignKey("ImageId");
 
                     b.Navigation("Image");
                 });
 
-            modelBuilder.Entity("Domain.Models.MyGame", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.MyGame", b =>
                 {
-                    b.HasOne("Domain.Models.Game", "Game")
+                    b.HasOne("LuminaPath.Core.Models.Game", "Game")
                         .WithMany("MyGames")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Models.LuminaUser", "LuminaUser")
+                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "LuminaUser")
                         .WithMany("MyGames")
                         .HasForeignKey("LuminaUserId");
 
@@ -392,9 +392,9 @@ namespace Infrastructure.Migrations
                     b.Navigation("LuminaUser");
                 });
 
-            modelBuilder.Entity("Domain.Models.Quest", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.Quest", b =>
                 {
-                    b.HasOne("Domain.Models.LuminaUser", "Owner")
+                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "Owner")
                         .WithMany()
                         .HasForeignKey("OwnerId");
 
@@ -412,7 +412,7 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("Domain.Models.LuminaUser", null)
+                    b.HasOne("LuminaPath.Core.Models.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -421,7 +421,7 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("Domain.Models.LuminaUser", null)
+                    b.HasOne("LuminaPath.Core.Models.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -436,7 +436,7 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Models.LuminaUser", null)
+                    b.HasOne("LuminaPath.Core.Models.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -445,28 +445,28 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("Domain.Models.LuminaUser", null)
+                    b.HasOne("LuminaPath.Core.Models.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Domain.Models.GamesQuest", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.GamesQuest", b =>
                 {
-                    b.HasOne("Domain.Models.Game", "Games")
+                    b.HasOne("LuminaPath.Core.Models.Game", "Games")
                         .WithMany()
                         .HasForeignKey("GamesId");
 
                     b.Navigation("Games");
                 });
 
-            modelBuilder.Entity("Domain.Models.Game", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
                 {
                     b.Navigation("MyGames");
                 });
 
-            modelBuilder.Entity("Domain.Models.LuminaUser", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.LuminaUser", b =>
                 {
                     b.Navigation("MyGames");
                 });

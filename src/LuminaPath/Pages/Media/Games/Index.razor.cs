@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
+using LuminaPath.Pages.Media.Components;
 
 namespace LuminaPath.Pages.Media.Games
 {

@@ -1,7 +1,6 @@
 using AutoMapper;
 using LuminaPath.Core.Common.Entities;
 using LuminaPath.Infrastructure;
-using LuminaPath.Infrastructure.Repositories;
 using LuminaPath.Core.Common.Interfaces;
 using LuminaPath.Core.Models;
 using Microsoft.AspNetCore.Identity;
@@ -30,16 +29,15 @@ namespace Test.Controller
 				};
 				var filter = new MediaFilter();
 				var userManager = new Mock<UserManager<LuminaUser>>();
-				var gameRepo = new Mock<GameRepository>();
 				var gameService = new Mock<GameService>();
-				var azure = new Mock<IAzureStorage>().Object;
+				var azure = new Mock<IStorageService>().Object;
 				var logger = new Mock<ILogger<GamesController>>();
 				var mapper = db.GetService<IMapper>();
 				var games = Seeding.SeedGames(names);
 				db.Games.AddRange(games);
 				await db.SaveChangesAsync();
 
-				GamesController controller = new GamesController(gameRepo.Object, gameService.Object, logger.Object, mapper);
+				GamesController controller = new GamesController(gameService.Object, logger.Object, mapper);
 				var expectedGames = await db.Games.ToListAsync();
 
 				// Act

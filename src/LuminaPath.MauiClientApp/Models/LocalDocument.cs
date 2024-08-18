@@ -4,28 +4,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using LuminaPath.Core.Common.Interfaces;
+using LuminaPath.Core.Common.Enums;
 
 namespace LuminaPath.MauiClientApp.Models
 {
-    public class LocalDocument
-    {
+    public class LocalDocument : IDocument
+	{
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
         public string? Name { get; set; }
         public string? Description { get; set; }
-        public string? Uri { get; set; }
+        public string? Path { get; set; }
         public string? ContentType { get; set; }
         public DocumentType DocumentType { get; set; } = default!;
-
-        public string? URL => $"/api/files/{Name}";
-    }
-
-    public enum DocumentType
-    {
-        Document,
-        Image,
-        PDF,
-        Excel,
-        Others
     }
 }

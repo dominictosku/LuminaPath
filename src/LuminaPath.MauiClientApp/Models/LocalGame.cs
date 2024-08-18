@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
 using LuminaPath.Core.Common.Enums;
 using LuminaPath.Core.Models;
+using LuminaPath.Core.Common.Interfaces;
 
 namespace LuminaPath.MauiClientApp.Models
 {

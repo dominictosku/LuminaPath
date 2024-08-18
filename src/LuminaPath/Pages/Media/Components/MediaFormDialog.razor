@@ -1,6 +1,7 @@
 @using LuminaPath.Core.Common.Interfaces
 @using LuminaPath.Core.Models
-@using LuminaPath.UI.Shared.Components.Dialogs
+@using LuminaPath.UI.Shared.Dialogs
+@using LuminaPath.UI.Shared.Media
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.EntityFrameworkCore
 @using LuminaPath.Core.Common.Entities.Results
@@ -8,12 +9,7 @@
 @using Microsoft.JSInterop
 @using Severity = MudBlazor.Severity
 @using Color = MudBlazor.Color
-@inherits MudComponentBase
-
-@inject IJSRuntime JS
-@inject IAzureStorage Storage
-@inject ILogger<MediaFormDialog> logger
-@inject NavigationManager Navigation
+@inherits BaseFormDialog<Game, Document>
 
 <MudDialog>
 	<DialogContent>
@@ -25,7 +21,7 @@
 					<div style="float:left; position: relative; width: 160px; height: 80px; margin: 10px;">
 						<MudTooltip Delay="500" Text="@Model.Name">
 							<MudImage ObjectFit="ObjectFit.Cover" Height="80" Width="160"
-									  Src="@Model.Image.Uri"
+									  Src="@Model.Image.Path"
 									  Alt="@Model.Name"
 									  Elevation="25"
 									  Class="mr-2 rounded-lg" />
@@ -84,80 +80,5 @@
 </MudDialog>
 
 @code {
-	[CascadingParameter]
-	private MudDialogInstance MudDialog { get; set; } = default!;
-
-	[EditorRequired]
-	[Parameter]
-	public Game Model { get; set; } = default!;
-
-	[EditorRequired]
-	[Parameter]
-	public Func<Game, Task> EventCallBack { get; set; } = default!;
-
-	[EditorRequired]
-	[Parameter]
-	public Func<Game, Task> OnDeleteImage { get; set; } = default!;
-
-	[EditorRequired]
-	[Parameter]
-	public Func<IBrowserFile, Task<Document?>> OnSubmitFile { get; set; } = default!;
-
-	[Parameter]
-	public Action? Refresh { get; set; }
-
-
-	[Parameter]
-	public bool loading { get; set; }
-
-	public string ErrorMessage = "";
-
 	private MudForm? _form;
-	private bool _uploading;
-
-
-	private const long MaxAllowedSize = 3145728;
-	public IBrowserFile? File { get; set; }
-
-	public async Task Submit()
-	{
-		await EventCallBack(Model);
-		MudDialog.Close(DialogResult.Ok(true));
-	}
-
-	private async Task DeleteImage()
-	{
-		if (Model.Image != null)
-		{
-			var parameters = new DialogParameters<ConfirmationDialog>
-			{
-				{ x=>x.ContentText, $"Delete Image?" }
-			};
-			var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
-			var dialog = DialogService.Show<ConfirmationDialog>("Delete Image", parameters, options);
-			var state = await dialog.Result;
-
-			if (!state.Canceled)
-			{
-				await OnDeleteImage(Model);
-			}
-		}
-	}
-
-	private async Task PreviewImage()
-	{
-
-	}
-
-	private async Task SubmitFile(IBrowserFile file)
-	{
-		_uploading = true;
-		Model.Image = await OnSubmitFile(file);
-		_uploading = false;
-	}
-
-	private void Cancel()
-	{
-		MudDialog.Cancel();
-	}
 }

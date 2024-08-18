@@ -2,10 +2,11 @@ using LuminaPath.Infrastructure.Services;
 using LuminaPath.Core.Common.Entities;
 using LuminaPath.Core.Common.Interfaces;
 using LuminaPath.Core.Models;
-using LuminaPath.UI.Shared.Documents;
+using LuminaPath.UI.Shared.Media;
 using LuminaPath.UI.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
+using LuminaPath.Pages.Documents.Components;
 
 namespace LuminaPath.Pages.Documents
 {
@@ -16,7 +17,7 @@ namespace LuminaPath.Pages.Documents
         private MediaFilter _filter = new();
 
         [Inject]
-        public IAzureStorage Storage { get; set; } = default!;
+        public IStorageService Storage { get; set; } = default!;
 
         [Inject]
         public ILogger<Index> Logger { get; set; } = default!;

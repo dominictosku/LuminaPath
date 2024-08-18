@@ -1,6 +1,7 @@
 ﻿@page "/Documents"
 @using AutoMapper
-@using LuminaPath.UI.Shared.Documents
+@using LuminaPath.Pages.Documents.Components
+@using LuminaPath.UI.Shared.Media
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<LuminaPathDbContext> dbContextFactory
 @inject NavigationManager navigation
@@ -23,7 +24,7 @@
              @bind-SelectedItem="_currentDto"
              Hover="true" @ref="_table">
     <ToolBarContent>
-        <TableActions Page="this" loading="loading" selectedItems="selectedItems" />
+        <TableActions TItem="Document" Page="this" loading="loading" selectedItems="selectedItems" />
     </ToolBarContent>
     <Columns>
         <SelectColumn ShowInFooter="false"></SelectColumn>

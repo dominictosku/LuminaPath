@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 namespace LuminaPath.Core.Models.Base
 {
 	[Index(nameof(Name), IsUnique = true)]
-	public abstract class Media : IBasicInfo
+	public abstract class Media : IMedia<Document>
 	{
 		public int Id { get; set; }
 

@@ -1,13 +1,14 @@
 ﻿using LuminaPath.MauiClientApp.Models;
 using System;
 using System.Collections.Generic;
+using LuminaPath.Core.Common.Interfaces;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace LuminaPath.MauiClientApp.ViewModel
 {
-    public class GameViewModel : LocalGame
+    public class GameViewModel : LocalGame, IMedia<LocalDocument>
     {
         public GameViewModel()
         {
