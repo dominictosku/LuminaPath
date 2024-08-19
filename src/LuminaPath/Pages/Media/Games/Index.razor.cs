@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
 using LuminaPath.Pages.Media.Components;
+using LuminaPath.Infrastructure;
 
 namespace LuminaPath.Pages.Media.Games
 {
@@ -20,6 +21,7 @@ namespace LuminaPath.Pages.Media.Games
 		private MudDataGrid<Game> _table = default!;
 		private Game _currentDto = new();
 		private MediaFilter _filter = new();
+		private IBrowserFile? currentImage;
 
 		public bool IsGrid = true;
 		public bool loading;
@@ -121,10 +123,8 @@ namespace LuminaPath.Pages.Media.Games
 			foreach (var id in ids)
 			{
 				Game existing = await dbContext.Games.FindAsync(id) ?? throw new Exception("id not found");
-				if (existing.Image is not null)
-					dbContext.Documents.Remove(existing.Image);
-				dbContext.Games.Remove(existing);
-			}
+                await DeleteMedia(existing);
+            }
 
 			await dbContext.SaveChangesAsync();
 			await ReloadData();
@@ -139,7 +139,8 @@ namespace LuminaPath.Pages.Media.Games
 			try
 			{
 				using var dbContext = dbContextFactory.CreateDbContext();
-				await dbContext.Games.AddAsync(game);
+				await SaveFile(dbContext, game);
+                await dbContext.Games.AddAsync(game);
 				await dbContext.SaveChangesAsync();
 				Snackbar.Add("Created Game", Severity.Success);
 			}
@@ -175,24 +176,36 @@ namespace LuminaPath.Pages.Media.Games
 
 		public async Task Delete(Game g)
 		{
-			using var dbContext = dbContextFactory.CreateDbContext();
-			if (g.Image is not null)
-				dbContext.Documents.Remove(g.Image);
-			dbContext.Games.Remove(g);
-			await dbContext.SaveChangesAsync();
-
+			await DeleteMedia(g);
 			Snackbar.Add("Deleted Game", Severity.Info);
 			await ReloadData();
 		}
 
-		private async Task<Document?> SubmitFile(IBrowserFile file)
+		private async Task DeleteMedia(Game g)
 		{
-			var documentService = new DocumentService(dbContextFactory.CreateDbContext(), Storage, logger);
-			var result = await documentService.CreateDocument(file, Navigation.BaseUri);
-			return result.Match<Document?>(
-				success: val => val,
-				failure: _ => null
-			);
+            using var dbContext = dbContextFactory.CreateDbContext();
+            var documentService = new DocumentService(dbContextFactory.CreateDbContext(), Storage, logger);
+            await documentService.DeleteMediaDocument(g);
+            dbContext.Games.Remove(g);
+            await dbContext.SaveChangesAsync();
+        }
+
+        private async Task SaveFile(LuminaPathDbContext context, Game game)
+        {
+            if (currentImage is not null)
+            {
+                var documentService = new DocumentService(dbContextFactory.CreateDbContext(), Storage, logger);
+                var result = await documentService.CreateDocument(currentImage, game);
+                game.Image = result.Match<Document>(
+                    s => s,
+                    f => null);
+            }
+        }
+
+        private async Task SubmitFile(IBrowserFile file)
+		{
+			await Task.Yield();
+			currentImage = file;
 		}
 
 		private async Task DeleteImage(Game model)

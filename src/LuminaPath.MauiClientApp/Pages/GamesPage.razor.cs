@@ -63,7 +63,7 @@ namespace LuminaPath.MauiClientApp.Pages
 			//return await gameService.GetEntities(_filter, includes);
 			var localGames = await database.GetItemsAsync() ?? new List<LocalGame>();
 			var games = localGames.Select(x => new GameViewModel(x)).ToList();
-			return PaginatedList<GameViewModel>.CreateAsync(games, 0, 100);
+			return PaginatedList<GameViewModel>.Create(games, 0, 100);
 		}
 
 		public void Dummy()

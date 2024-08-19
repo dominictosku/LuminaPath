@@ -31,7 +31,7 @@ namespace LuminaPath.UI.Shared.Media
 
 		[EditorRequired]
 		[Parameter]
-		public Func<IBrowserFile, Task<TDocument?>> OnSubmitFile { get; set; } = default!;
+		public Func<IBrowserFile, Task> OnSubmitFile { get; set; } = default!;
 
 		[Parameter]
 		public Action? Refresh { get; set; }
@@ -81,7 +81,7 @@ namespace LuminaPath.UI.Shared.Media
 		public async Task SubmitFile(IBrowserFile file)
 		{
 			_uploading = true;
-			Model.Image = await OnSubmitFile(file);
+			await OnSubmitFile(file);
 			_uploading = false;
 		}
 

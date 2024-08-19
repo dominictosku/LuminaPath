@@ -29,7 +29,7 @@ namespace LuminaPath.Core.Common.Entities
 			return new PaginatedList<T>(items, count, pageIndex, pageSize);
 		}
 
-		public static PaginatedList<T> CreateAsync(
+		public static PaginatedList<T> Create(
 			IEnumerable<T> source, int pageIndex, int pageSize)
 		{
 			var count = source.Count();

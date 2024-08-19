@@ -39,5 +39,8 @@ namespace LuminaPath.Core.Common.Interfaces
 		/// </summary>
 		/// <returns>Blobs in a list</returns>
 		Task<List<BlobDto>> ListAsync();
-	}
+
+		Task<bool> RenameAsync(string oldName, string newName);
+
+    }
 }

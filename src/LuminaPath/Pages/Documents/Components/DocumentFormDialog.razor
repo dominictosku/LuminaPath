@@ -1,9 +1,11 @@
 @using LuminaPath.Core.Common.Enums
 @using LuminaPath.Core.Common.Interfaces
 @using LuminaPath.Core.Models
+@using LuminaPath.Infrastructure.Services
 @using LuminaPath.UI.Shared.Dialogs
 @using LuminaPath.Core.Common.Entities.Results
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop
 @using Severity = MudBlazor.Severity
@@ -14,13 +16,14 @@
 @inject IStorageService Storage
 @inject ILogger<DocumentFormDialog> logger
 @inject NavigationManager Navigation
+@inject IDbContextFactory<LuminaPathDbContext> dbContextFactory
 
 <MudDialog>
     <DialogContent>
         <MudForm Model="@Model" @ref="@_form">
             <div class="d-fex">
                 <MudText Typo="Typo.body2">Image</MudText>
-                @if (Model.Path is not null)
+                @if (Model.Url is not null)
                 {
                     <div style="float:left; position: relative; width: 160px; height: 80px; margin: 10px;">
                         <MudTooltip Delay="500" Text="@Model.Name">
@@ -147,26 +150,13 @@
 
     private async Task<Result<Document, FailedResult>> UploadFile(IBrowserFile file)
     {
-        Stream fs = file.OpenReadStream(MaxAllowedSize);
+        using Stream fs = file.OpenReadStream(MaxAllowedSize);
         try
         {
-            string imageName = Guid.NewGuid().ToString();
-            var result = await Storage.UploadAsync(fs, imageName);
-            if (result.Error)
-            {
-                logger.LogError("Could not Upload file, error: {0}", result.Status);
-                return new FailedResult("Could not upload file");
-            }
-
-            return new Document()
-                {
-                    Name = result.Blob.Name,
-                    Description = "Image for media",
-                    Path = Navigation.BaseUri + $"api/files/{result.Blob.Name}",
-                    ContentType = result.Blob.ContentType,
-                    DocumentType = DocumentType.Image
-                };
-
+            using var dbContext = dbContextFactory.CreateDbContext();
+            var documentService = new DocumentService(dbContextFactory.CreateDbContext(), Storage, logger);
+            var result = await documentService.CreateDocument(file);
+            return result;
         }
         catch (Exception ex)
         {

@@ -31,12 +31,12 @@ namespace LuminaPath.Infrastructure.Services
 			return await CreatePaginatedList(entities, mediaFilter.Paging);
 		}
 
-		public async virtual Task<PaginatedResult<TDto>> GetAndMapEntities<TDto>(MediaFilter mediaFilter, IEnumerable<string> includes)
+		public async virtual Task<PaginatedList<TDto>> GetAndMapEntities<TDto>(MediaFilter mediaFilter, IEnumerable<string> includes)
 		{
 			PaginatedList<TEntity> entities = await GetAllPaginated(mediaFilter, includes: includes);
 			var entitiesDto = _mapper.Map<IEnumerable<TEntity>, IEnumerable<TDto>>(entities);
-			return new PaginatedResult<TDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
-		}
+			return CreatePaginatedList<TDto>(entitiesDto, mediaFilter.Paging);
+        }
 
 		public async virtual Task<TEntity> GetById(int? id, IEnumerable<string>? includes = null)
 		{
@@ -118,7 +118,17 @@ namespace LuminaPath.Infrastructure.Services
 			return await PaginatedList<TEntity>.CreateAsync(entities, pageIndex, 10);
 		}
 
-		protected virtual IQueryable<TEntity> PrepareEntity(
+        protected virtual PaginatedList<TDto> CreatePaginatedList<TDto>(IEnumerable<TDto> entities, Paging paging)
+        {
+            int pageIndex = paging.PageIndex;
+            if (paging.Count > 0)
+            {
+                return PaginatedList<TDto>.Create(entities, 1, paging.Count);
+            }
+            return PaginatedList<TDto>.Create(entities, pageIndex, 10);
+        }
+
+        protected virtual IQueryable<TEntity> PrepareEntity(
 			IQueryable<TEntity> entities,
 			Expression<Func<TEntity, bool>> filter = null,
 			Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,

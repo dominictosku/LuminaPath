@@ -36,5 +36,10 @@ namespace LuminaPath.MauiClientApp.Services
         {
             throw new NotImplementedException();
         }
+
+        public async Task<bool> RenameAsync(string oldName, string newName)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
