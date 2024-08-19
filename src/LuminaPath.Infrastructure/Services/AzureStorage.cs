@@ -213,5 +213,31 @@ namespace LuminaPath.Infrastructure.Services
 			return new BlobResponseDto { Error = false, Status = $"File: {blobFilename} has been successfully deleted." };
 
 		}
-	}
+
+        public async Task<bool> RenameAsync(string oldName, string newName)
+        {
+            BlobContainerClient client = new BlobContainerClient(_storageConnectionString, _storageContainerName);
+
+            BlobClient source = client.GetBlobClient(oldName);
+            BlobClient target = client.GetBlobClient(newName);
+			using var oldFile = await source.OpenReadAsync();
+
+            try
+            {
+                // Delete the file
+                await target.UploadAsync(oldFile);
+				await source.DeleteAsync();
+            }
+            catch (RequestFailedException ex)
+                when (ex.ErrorCode == BlobErrorCode.BlobNotFound)
+            {
+                // File did not exist, log to console and return new response to requesting method
+                _logger.LogError($"File {oldName} was not found.");
+                return false;
+            }
+
+            // Return a new BlobResponseDto to the requesting method
+            return true;
+        }
+    }
 }

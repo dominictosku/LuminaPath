@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Logging;
 using LuminaPath.Core.Common.Interfaces;
 using LuminaPath.Core.Models.Base;
@@ -9,6 +8,7 @@ using LuminaPath.Core.Common.Entities;
 using LuminaPath.Core.Common.Entities.Results;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Common.Enums;
+using System.Text.RegularExpressions;
 
 namespace LuminaPath.Infrastructure.Services
 {
@@ -37,12 +37,20 @@ namespace LuminaPath.Infrastructure.Services
 			return await CreatePaginatedList(entities, paging);
 		}
 
-		public async Task<Result<Document, FailedResult>> CreateDocument(IBrowserFile file, string baseUrl)
+		public async Task<Result<Document, FailedResult>> CreateDocument(IBrowserFile file, Media? media = null)
 		{
 			Stream fs = file.OpenReadStream(MaxAllowedSize);
 			try
 			{
-				string imageName = Guid.NewGuid().ToString();
+				string imageName = string.Empty;
+				if(media is not null)
+				{
+					imageName = $"{media.Id}-{media.Name}";
+                }
+                else
+				{
+                    imageName = SanitizeFileName(file.Name);
+                }
 				var result = await _storage.UploadAsync(fs, imageName);
 				if (result.Error)
 				{
@@ -54,7 +62,7 @@ namespace LuminaPath.Infrastructure.Services
 				{
 					Name = result.Blob.Name,
 					Description = "Image for media",
-					Path = baseUrl + $"api/files/{result.Blob.Name}",
+					Path = string.Empty,
 					ContentType = result.Blob.ContentType,
 					DocumentType = DocumentType.Image
 				};
@@ -94,6 +102,16 @@ namespace LuminaPath.Infrastructure.Services
 			}
 		}
 
+        public async Task RenameMediaImage(Media media)
+        {
+            await _storage.RenameAsync(media.Image.Name, $"{media.Id}-{media.Name}");
+        }
+
+        public async Task RenameDocument(string oldName, string newName)
+		{
+			await _storage.RenameAsync(oldName, newName);
+		}
+
 		public async Task DeleteMediaDocument(Media entity)
 		{
 			if (entity.Image is null)
@@ -105,7 +123,13 @@ namespace LuminaPath.Infrastructure.Services
 			await DeleteDocument(image);
 		}
 
-		protected virtual async Task<PaginatedList<Document>> CreatePaginatedList(IQueryable<Document> entities, Paging paging)
+        private string SanitizeFileName(string fileName)
+        {
+            // Remove any invalid characters from the file name
+            return Regex.Replace(fileName, @"[^a-zA-Z0-9_\.-]", "_");
+        }
+
+        protected virtual async Task<PaginatedList<Document>> CreatePaginatedList(IQueryable<Document> entities, Paging paging)
 		{
 			int pageIndex = paging.PageIndex;
 			if (paging.Count > 0)

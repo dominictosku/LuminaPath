@@ -27,7 +27,7 @@ namespace LuminaPath.Infrastructure.Controllers
 
 		[HttpGet]
 		[AllowAnonymous]
-		public override async Task<ActionResult<PaginatedResult<GamesDto>>> Get([FromQuery] MediaFilter mediaFilter)
+		public override async Task<ActionResult<PaginatedList<GamesDto>>> Get([FromQuery] MediaFilter mediaFilter)
 		{
 			string? userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			var result = await _service.GetAndMapEntities<GamesDto>(mediaFilter, Includes, userId);

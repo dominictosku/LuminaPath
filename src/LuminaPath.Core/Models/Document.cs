@@ -17,5 +17,6 @@ namespace LuminaPath.Core.Models
 		public string? Path { get; set; }
 		public string? ContentType { get; set; }
 		public DocumentType DocumentType { get; set; } = default!;
+		public string Url => $"api/files/{Name}";
 	}
 }

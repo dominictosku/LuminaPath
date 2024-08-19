@@ -33,7 +33,7 @@ namespace LuminaPath.Infrastructure.Services
 			return await CreatePaginatedList(entities, mediaFilter.Paging);
 		}
 
-		public async Task<PaginatedResult<TDto>> GetAndMapEntities<TDto>(MediaFilter mediaFilter, IEnumerable<string> includes, string? userId)
+		public async Task<PaginatedList<TDto>> GetAndMapEntities<TDto>(MediaFilter mediaFilter, IEnumerable<string> includes, string? userId)
 		{
 			Expression<Func<Game, bool>> filter = GetFilterExpression(mediaFilter, userId);
 
@@ -41,8 +41,8 @@ namespace LuminaPath.Infrastructure.Services
 				? await GetAllPaginated(mediaFilter, userId, filter)
 				: await GetAllPaginated(mediaFilter, includes, filter);
 
-			var entitiesDto = _mapper.Map<IEnumerable<Game>, IEnumerable<TDto>>(entities);
-			return new PaginatedResult<TDto>(entitiesDto, entities.PageIndex, entities.TotalPages);
+			var entitiesDto = _mapper.Map<IEnumerable<Game>, IEnumerable<TDto>>(entities);            
+            return CreatePaginatedList(entitiesDto, mediaFilter.Paging);
 		}
 
 		private static Expression<Func<Game, bool>> GetFilterExpression(MediaFilter mediaFilter, string? userId = null)
