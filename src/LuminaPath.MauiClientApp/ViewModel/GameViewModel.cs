@@ -21,6 +21,8 @@ namespace LuminaPath.MauiClientApp.ViewModel
             Description = game.Description;
             Plattforms = game.Plattforms;
         }
+
+        public LocalMyGame? MyGame { get; set; }
         public LocalDocument? Image { get; set; }
     }
 }

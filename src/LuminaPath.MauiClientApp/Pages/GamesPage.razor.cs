@@ -130,8 +130,14 @@ namespace LuminaPath.MauiClientApp.Pages
 			loading = true;
 			try
 			{
+				var myGame = game.MyGame;
 				var LocalGame = mapper.Map<LocalGame>(game);
-				await database.SaveItemAsync(LocalGame);
+				var gameId = await database.SaveItemAsync(LocalGame);
+				if(myGame is not null)
+				{
+					myGame.GameId = gameId;
+					await database.SaveMyGameAsync(myGame);
+				}
 				Snackbar.Add("Created Game", Severity.Success);
 			}
 			catch (Exception ex)
