@@ -1,4 +1,5 @@
-﻿using LuminaPath.Core.Common.Interfaces;
+﻿using LuminaPath.Core.Common.Enums;
+using LuminaPath.Core.Common.Interfaces;
 using LuminaPath.Core.Models.Base;
 using System.ComponentModel.DataAnnotations;
 

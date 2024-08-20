@@ -22,7 +22,7 @@ namespace LuminaPath.MauiClientApp
 
 			builder.Services.AddMauiBlazorWebView();
 			builder.Services.AddUILibrary();
-			builder.Services.AddSingleton<GamesDatabase>();
+			builder.Services.AddSingleton<LuminaDatabase>();
 			builder.Services.AddSingleton<IStorageService, FileService>();
 			builder.Services.AddAutoMapper(typeof(LuminaMapperProfile));
 

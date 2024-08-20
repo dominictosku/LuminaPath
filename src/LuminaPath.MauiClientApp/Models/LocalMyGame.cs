@@ -6,17 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
 using LuminaPath.Core.Common.Enums;
+using LuminaPath.Core.Common.Interfaces;
 
 namespace LuminaPath.MauiClientApp.Models
 {
-	public enum ProgressionStatus
-	{
-		Planned,
-		InProgress,
-		Completed,
-	}
-
-	public class LocalMyGame
+	public class LocalMyGame : IBasicInfo
 	{
 		[PrimaryKey, AutoIncrement]
 		public int Id { get; set; }

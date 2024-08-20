@@ -1,4 +1,4 @@
-﻿using LuminaPath.Core.Models.Base;
+﻿using LuminaPath.Core.Common.Enums;
 
 namespace LuminaPath.Core.Common.Entities
 {

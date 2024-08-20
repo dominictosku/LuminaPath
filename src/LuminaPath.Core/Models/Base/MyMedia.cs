@@ -1,15 +1,9 @@
-﻿using LuminaPath.Core.Common.Interfaces;
+﻿using LuminaPath.Core.Common.Enums;
+using LuminaPath.Core.Common.Interfaces;
 using System.ComponentModel.DataAnnotations;
 
 namespace LuminaPath.Core.Models.Base
 {
-	public enum ProgressionStatus
-	{
-		Planned,
-		InProgress,
-		Completed,
-	}
-
 	public abstract class MyMedia : IBasicInfo
 	{
 		public int Id { get; set; }
