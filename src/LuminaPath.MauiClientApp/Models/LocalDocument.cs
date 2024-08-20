@@ -18,5 +18,7 @@ namespace LuminaPath.MauiClientApp.Models
         public string? Path { get; set; }
         public string? ContentType { get; set; }
         public DocumentType DocumentType { get; set; } = default!;
+        [Indexed]
+        public int GameId { get; set; }
     }
 }

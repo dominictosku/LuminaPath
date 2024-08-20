@@ -31,8 +31,5 @@ namespace LuminaPath.MauiClientApp.Models
 		public Plattforms Plattforms { get; set; }
 		[Display(Name = "Estimated playtime")]
 		public int? Playtime { get; set; }
-
-		[Indexed]
-		public int? ImageId { get; set; }
 	}
 }
