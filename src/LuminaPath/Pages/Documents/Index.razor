@@ -33,9 +33,9 @@
                 <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
                          Dense="true"
                          EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-                    <MudMenuItem OnAction="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
+                    <MudMenuItem OnClick="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
 
-                    <MudMenuItem OnAction="@(() => Delete(context.Item))">Delete</MudMenuItem>
+                    <MudMenuItem OnClick="@(() => Delete(context.Item))">Delete</MudMenuItem>
                 </MudMenu>
             </CellTemplate>
         </TemplateColumn>
