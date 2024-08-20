@@ -19,6 +19,43 @@ namespace LuminaPath.Infrastructure.Migrations
                 .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
+            modelBuilder.Entity("LuminaPath.Core.Models.Base.Media", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("varchar(5)");
+
+                    b.Property<string>("Genre")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<DateTime?>("ReleaseDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Media");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("Media");
+
+                    b.UseTphMappingStrategy();
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.Document", b =>
                 {
                     b.Property<int>("Id")
@@ -34,6 +71,9 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<int>("DocumentType")
                         .HasColumnType("int");
 
+                    b.Property<int?>("MediaId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .HasColumnType("longtext");
 
@@ -42,46 +82,10 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Documents");
-                });
-
-            modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Genre")
-                        .HasColumnType("longtext");
-
-                    b.Property<int?>("ImageId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<int>("Plattforms")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Playtime")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ReleaseDate")
-                        .HasColumnType("datetime(6)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ImageId");
-
-                    b.HasIndex("Name")
+                    b.HasIndex("MediaId")
                         .IsUnique();
 
-                    b.ToTable("Games");
+                    b.ToTable("Documents");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.LuminaUser", b =>
@@ -354,6 +358,19 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
+                {
+                    b.HasBaseType("LuminaPath.Core.Models.Base.Media");
+
+                    b.Property<int>("Plattforms")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Playtime")
+                        .HasColumnType("int");
+
+                    b.HasDiscriminator().HasValue("Game");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.GamesQuest", b =>
                 {
                     b.HasBaseType("LuminaPath.Core.Models.Quest");
@@ -366,13 +383,13 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasDiscriminator().HasValue("GamesQuest");
                 });
 
-            modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.Document", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.Document", "Image")
-                        .WithMany()
-                        .HasForeignKey("ImageId");
+                    b.HasOne("LuminaPath.Core.Models.Base.Media", "Media")
+                        .WithOne("Image")
+                        .HasForeignKey("LuminaPath.Core.Models.Document", "MediaId");
 
-                    b.Navigation("Image");
+                    b.Navigation("Media");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.MyGame", b =>
@@ -461,12 +478,17 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Navigation("Games");
                 });
 
-            modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.Base.Media", b =>
+                {
+                    b.Navigation("Image");
+                });
+
+            modelBuilder.Entity("LuminaPath.Core.Models.LuminaUser", b =>
                 {
                     b.Navigation("MyGames");
                 });
 
-            modelBuilder.Entity("LuminaPath.Core.Models.LuminaUser", b =>
+            modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
                 {
                     b.Navigation("MyGames");
                 });

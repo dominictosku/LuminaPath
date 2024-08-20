@@ -11,7 +11,5 @@ namespace LuminaPath.Core.Common.Interfaces
 	{
 		public int Id { get; set; }
 		public TDocument? Image { get; set; }
-
-		public int? ImageId { get; set; }
 	}
 }

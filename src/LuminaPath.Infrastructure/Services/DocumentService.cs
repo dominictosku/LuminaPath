@@ -45,7 +45,8 @@ namespace LuminaPath.Infrastructure.Services
 				string imageName = string.Empty;
 				if(media is not null)
 				{
-					imageName = $"{media.Id}-{media.Name}";
+					await DeleteDocument(media.Image);
+					imageName = $"{media.Name}-{Guid.NewGuid()}";
                 }
                 else
 				{

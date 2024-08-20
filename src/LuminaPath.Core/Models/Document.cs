@@ -1,6 +1,7 @@
 ﻿using LuminaPath.Core.Common.Entities.Results;
 using LuminaPath.Core.Common.Enums;
 using LuminaPath.Core.Common.Interfaces;
+using LuminaPath.Core.Models.Base;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,5 +19,7 @@ namespace LuminaPath.Core.Models
 		public string? ContentType { get; set; }
 		public DocumentType DocumentType { get; set; } = default!;
 		public string Url => $"api/files/{Name}";
+		public Media? Media { get; set; }
+		public int? MediaId { get; set; }
 	}
 }

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LuminaPath.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class init : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -70,24 +70,26 @@ namespace LuminaPath.Infrastructure.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Documents",
+                name: "Media",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Name = table.Column<string>(type: "longtext", nullable: true)
+                    Name = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Description = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Path = table.Column<string>(type: "longtext", nullable: true)
+                    Genre = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    ContentType = table.Column<string>(type: "longtext", nullable: true)
+                    ReleaseDate = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    Discriminator = table.Column<string>(type: "varchar(5)", maxLength: 5, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    DocumentType = table.Column<int>(type: "int", nullable: false)
+                    Plattforms = table.Column<int>(type: "int", nullable: true),
+                    Playtime = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Documents", x => x.Id);
+                    table.PrimaryKey("PK_Media", x => x.Id);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -219,29 +221,29 @@ namespace LuminaPath.Infrastructure.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Games",
+                name: "Documents",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Plattforms = table.Column<int>(type: "int", nullable: false),
-                    Playtime = table.Column<int>(type: "int", nullable: true),
-                    Name = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
+                    Name = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Description = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Genre = table.Column<string>(type: "longtext", nullable: true)
+                    Path = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    ReleaseDate = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    ImageId = table.Column<int>(type: "int", nullable: true)
+                    ContentType = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    DocumentType = table.Column<int>(type: "int", nullable: false),
+                    MediaId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Games", x => x.Id);
+                    table.PrimaryKey("PK_Documents", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Games_Documents_ImageId",
-                        column: x => x.ImageId,
-                        principalTable: "Documents",
+                        name: "FK_Documents_Media_MediaId",
+                        column: x => x.MediaId,
+                        principalTable: "Media",
                         principalColumn: "Id");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
@@ -270,9 +272,9 @@ namespace LuminaPath.Infrastructure.Migrations
                         principalTable: "AspNetUsers",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_MyGames_Games_GameId",
+                        name: "FK_MyGames_Media_GameId",
                         column: x => x.GameId,
-                        principalTable: "Games",
+                        principalTable: "Media",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 })
@@ -307,9 +309,9 @@ namespace LuminaPath.Infrastructure.Migrations
                         principalTable: "AspNetUsers",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Quests_Games_GamesId",
+                        name: "FK_Quests_Media_GamesId",
                         column: x => x.GamesId,
-                        principalTable: "Games",
+                        principalTable: "Media",
                         principalColumn: "Id");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
@@ -352,13 +354,14 @@ namespace LuminaPath.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Games_ImageId",
-                table: "Games",
-                column: "ImageId");
+                name: "IX_Documents_MediaId",
+                table: "Documents",
+                column: "MediaId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Games_Name",
-                table: "Games",
+                name: "IX_Media_Name",
+                table: "Media",
                 column: "Name",
                 unique: true);
 
@@ -402,6 +405,9 @@ namespace LuminaPath.Infrastructure.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "Documents");
+
+            migrationBuilder.DropTable(
                 name: "MyGames");
 
             migrationBuilder.DropTable(
@@ -414,10 +420,7 @@ namespace LuminaPath.Infrastructure.Migrations
                 name: "AspNetUsers");
 
             migrationBuilder.DropTable(
-                name: "Games");
-
-            migrationBuilder.DropTable(
-                name: "Documents");
+                name: "Media");
         }
     }
 }

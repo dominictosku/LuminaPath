@@ -21,7 +21,5 @@ namespace LuminaPath.Core.Models.Base
 		[Display(Name = "Release Date")] public DateTime? ReleaseDate { get; set; }
 
 		public Document? Image { get; set; }
-
-		public int? ImageId { get; set; }
 	}
 }
