@@ -4,13 +4,13 @@
       "commandName": "DockerCompose",
       "commandVersion": "1.0",
       "serviceActions": {
+        "luminapath": "StartDebugging",
         "blob": "StartWithoutDebugging",
         "db": "StartWithoutDebugging",
-        "luminapath": "StartDebugging",
         "phpmyadmin": "StartWithoutDebugging"
       }
     },
-    "Database Only": {
+    "Database only": {
       "commandName": "DockerCompose",
       "commandVersion": "1.0",
       "serviceActions": {

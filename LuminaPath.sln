@@ -13,9 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.Core", "src\Lumi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.UI.Shared", "src\LuminaPath.UI.Shared\LuminaPath.UI.Shared.csproj", "{19F844A6-2971-4E65-A4C9-89FF68D7E277}"
 EndProject
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "src\Docker\docker-compose.dcproj", "{6B3FC313-E15A-4067-8AFB-BE761D9636C4}"
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "src\Docker\docker-compose.dcproj", "{74C9C020-527B-457D-B7E4-AB6D666CE9CE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.MauiClientApp", "src\LuminaPath.MauiClientApp\LuminaPath.MauiClientApp.csproj", "{8863B8F1-8D7E-4AD0-9751-A22696E71290}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.MauiClientApp", "src\LuminaPath.MauiClientApp\LuminaPath.MauiClientApp.csproj", "{EF0858F6-08DA-4DF0-8E7F-E67B8AC2FA68}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -54,21 +54,21 @@ Global
 		{19F844A6-2971-4E65-A4C9-89FF68D7E277}.NoVariablesDefault|Any CPU.Build.0 = Release|Any CPU
 		{19F844A6-2971-4E65-A4C9-89FF68D7E277}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{19F844A6-2971-4E65-A4C9-89FF68D7E277}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6B3FC313-E15A-4067-8AFB-BE761D9636C4}.Debug|Any CPU.ActiveCfg = NoVariablesDefault
-		{6B3FC313-E15A-4067-8AFB-BE761D9636C4}.Debug|Any CPU.Build.0 = NoVariablesDefault
-		{6B3FC313-E15A-4067-8AFB-BE761D9636C4}.NoVariablesDefault|Any CPU.ActiveCfg = NoVariablesDefault
-		{6B3FC313-E15A-4067-8AFB-BE761D9636C4}.NoVariablesDefault|Any CPU.Build.0 = NoVariablesDefault
-		{6B3FC313-E15A-4067-8AFB-BE761D9636C4}.Release|Any CPU.ActiveCfg = NoVariablesDefault
-		{6B3FC313-E15A-4067-8AFB-BE761D9636C4}.Release|Any CPU.Build.0 = NoVariablesDefault
-		{8863B8F1-8D7E-4AD0-9751-A22696E71290}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8863B8F1-8D7E-4AD0-9751-A22696E71290}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8863B8F1-8D7E-4AD0-9751-A22696E71290}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{8863B8F1-8D7E-4AD0-9751-A22696E71290}.NoVariablesDefault|Any CPU.ActiveCfg = Debug|Any CPU
-		{8863B8F1-8D7E-4AD0-9751-A22696E71290}.NoVariablesDefault|Any CPU.Build.0 = Debug|Any CPU
-		{8863B8F1-8D7E-4AD0-9751-A22696E71290}.NoVariablesDefault|Any CPU.Deploy.0 = Debug|Any CPU
-		{8863B8F1-8D7E-4AD0-9751-A22696E71290}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8863B8F1-8D7E-4AD0-9751-A22696E71290}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8863B8F1-8D7E-4AD0-9751-A22696E71290}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.Debug|Any CPU.ActiveCfg = NoVariablesDefault
+		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.Debug|Any CPU.Build.0 = NoVariablesDefault
+		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.NoVariablesDefault|Any CPU.ActiveCfg = NoVariablesDefault
+		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.NoVariablesDefault|Any CPU.Build.0 = NoVariablesDefault
+		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.Release|Any CPU.ActiveCfg = NoVariablesDefault
+		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.Release|Any CPU.Build.0 = NoVariablesDefault
+		{EF0858F6-08DA-4DF0-8E7F-E67B8AC2FA68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF0858F6-08DA-4DF0-8E7F-E67B8AC2FA68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF0858F6-08DA-4DF0-8E7F-E67B8AC2FA68}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{EF0858F6-08DA-4DF0-8E7F-E67B8AC2FA68}.NoVariablesDefault|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF0858F6-08DA-4DF0-8E7F-E67B8AC2FA68}.NoVariablesDefault|Any CPU.Build.0 = Debug|Any CPU
+		{EF0858F6-08DA-4DF0-8E7F-E67B8AC2FA68}.NoVariablesDefault|Any CPU.Deploy.0 = Debug|Any CPU
+		{EF0858F6-08DA-4DF0-8E7F-E67B8AC2FA68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF0858F6-08DA-4DF0-8E7F-E67B8AC2FA68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF0858F6-08DA-4DF0-8E7F-E67B8AC2FA68}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

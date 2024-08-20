@@ -3,10 +3,9 @@ version: '3.4'
 services:
   luminapath:
     image: ${DOCKER_REGISTRY-}luminapath
-    container_name: luminapath
     build:
       context: ../
-      dockerfile: LuminaPath/Dockerfile  
+      dockerfile: LuminaPath/Dockerfile
     depends_on:
         - db
   db:
@@ -18,7 +17,7 @@ services:
      volumes:
          - luminapath-DB:/var/lib/mysql
      ports:
-         - "3306:3306"
+         - "3307:3306"
   phpmyadmin:
       image: phpmyadmin:latest
       container_name: luminapath-phpmyadmin
