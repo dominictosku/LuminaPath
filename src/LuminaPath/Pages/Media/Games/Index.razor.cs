@@ -160,6 +160,7 @@ namespace LuminaPath.Pages.Media.Games
 			using var dbContext = dbContextFactory.CreateDbContext();
 			try
 			{
+				await SaveFile(dbContext, game);
 				dbContext.Games.Update(game);
 				await dbContext.SaveChangesAsync();
 				Snackbar.Add("Updated Game", Severity.Success);
@@ -200,6 +201,7 @@ namespace LuminaPath.Pages.Media.Games
                     s => s,
                     f => null);
             }
+			currentImage = null;
         }
 
         private async Task SubmitFile(IBrowserFile file)
