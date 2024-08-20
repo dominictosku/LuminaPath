@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.UI.Shared", "src
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "src\Docker\docker-compose.dcproj", "{74C9C020-527B-457D-B7E4-AB6D666CE9CE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.MauiClientApp", "src\LuminaPath.MauiClientApp\LuminaPath.MauiClientApp.csproj", "{74C17DEC-86A7-44E0-9590-841527A47321}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.MauiClientApp", "src\LuminaPath.MauiClientApp\LuminaPath.MauiClientApp.csproj", "{387D9844-B61B-4FE4-BE0E-142E78AD523D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -60,15 +60,15 @@ Global
 		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.NoVariablesDefault|Any CPU.Build.0 = NoVariablesDefault
 		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.Release|Any CPU.ActiveCfg = NoVariablesDefault
 		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.Release|Any CPU.Build.0 = NoVariablesDefault
-		{74C17DEC-86A7-44E0-9590-841527A47321}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{74C17DEC-86A7-44E0-9590-841527A47321}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{74C17DEC-86A7-44E0-9590-841527A47321}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{74C17DEC-86A7-44E0-9590-841527A47321}.NoVariablesDefault|Any CPU.ActiveCfg = Debug|Any CPU
-		{74C17DEC-86A7-44E0-9590-841527A47321}.NoVariablesDefault|Any CPU.Build.0 = Debug|Any CPU
-		{74C17DEC-86A7-44E0-9590-841527A47321}.NoVariablesDefault|Any CPU.Deploy.0 = Debug|Any CPU
-		{74C17DEC-86A7-44E0-9590-841527A47321}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{74C17DEC-86A7-44E0-9590-841527A47321}.Release|Any CPU.Build.0 = Release|Any CPU
-		{74C17DEC-86A7-44E0-9590-841527A47321}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{387D9844-B61B-4FE4-BE0E-142E78AD523D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{387D9844-B61B-4FE4-BE0E-142E78AD523D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{387D9844-B61B-4FE4-BE0E-142E78AD523D}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{387D9844-B61B-4FE4-BE0E-142E78AD523D}.NoVariablesDefault|Any CPU.ActiveCfg = Debug|Any CPU
+		{387D9844-B61B-4FE4-BE0E-142E78AD523D}.NoVariablesDefault|Any CPU.Build.0 = Debug|Any CPU
+		{387D9844-B61B-4FE4-BE0E-142E78AD523D}.NoVariablesDefault|Any CPU.Deploy.0 = Debug|Any CPU
+		{387D9844-B61B-4FE4-BE0E-142E78AD523D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{387D9844-B61B-4FE4-BE0E-142E78AD523D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{387D9844-B61B-4FE4-BE0E-142E78AD523D}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
