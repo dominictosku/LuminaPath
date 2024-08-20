@@ -45,5 +45,14 @@ namespace LuminaPath.MauiClientApp.Database
 			await Init();
 			return await Database.DeleteAsync(item);
 		}
+
+		public async Task<int> SaveMyGameAsync(LocalMyGame item)
+		{
+			await Init();
+			if (item.Id != 0)
+				return await Database.UpdateAsync(item);
+			else
+				return await Database.InsertAsync(item);
+		}
 	}
 }
