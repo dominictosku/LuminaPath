@@ -11,7 +11,7 @@ using LuminaPath.Core.Common.Interfaces;
 
 namespace LuminaPath.MauiClientApp.Models
 {
-	public class LocalGame
+	public class LocalGame : IBasicInfo
 	{
 		[PrimaryKey, AutoIncrement]
 		public int Id { get; set; }

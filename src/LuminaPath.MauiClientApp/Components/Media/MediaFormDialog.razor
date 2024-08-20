@@ -1,3 +1,4 @@
+@using LuminaPath.Core.Common.Enums
 @using LuminaPath.Core.Common.Interfaces
 @using LuminaPath.Core.Models
 @using LuminaPath.MauiClientApp.Models
@@ -76,9 +77,12 @@
 					<MudForm Model="@Model" @ref="@_form2">
 						<MudGrid>
 							<MudItem xs="12">
-								<MudTextField Label="Title" @bind-Value="Model.MyGame.Status" For="@(() => Model.MyGame.Status)" Required="true"
-									RequiredError="Status is Required">
-								</MudTextField>
+								<MudSelect @bind-Value="Model.MyGame.Status" Label="Status">
+									@foreach (ProgressionStatus item in Enum.GetValues(typeof(ProgressionStatus)))
+									{
+										<MudSelectItem Value="@item">@item.ToString()</MudSelectItem>
+									}
+								</MudSelect>
 							</MudItem>
 						</MudGrid>
 					</MudForm>
