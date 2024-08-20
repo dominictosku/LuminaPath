@@ -2,9 +2,10 @@
 <Project ToolsVersion="15.0" Sdk="Microsoft.Docker.Sdk">
   <PropertyGroup Label="Globals">
     <ProjectVersion>2.1</ProjectVersion>
-    <DockerComposeProjectName>luminapath</DockerComposeProjectName>
     <DockerTargetOS>Linux</DockerTargetOS>
-    <ProjectGuid>6b3fc313-e15a-4067-8afb-be761d9636c4</ProjectGuid>
+    <DockerComposeProjectName>luminapath</DockerComposeProjectName>
+    <DockerPublishLocally>False</DockerPublishLocally>
+    <ProjectGuid>74c9c020-527b-457d-b7e4-ab6d666ce9ce</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
     <DockerServiceUrl>{Scheme}://localhost:{ServicePort}/swagger</DockerServiceUrl>
     <DockerServiceName>luminapath</DockerServiceName>
