@@ -41,14 +41,21 @@ namespace LuminaPath.Core.Common.Entities
 	}
 	public class PaginatedResult<T>
 	{
-		public PaginatedResult(IEnumerable<T> items, int currentPage, int pages)
+        public PaginatedResult(PaginatedList<T> list)
+        {
+            Data = list;
+            PageIndex = list.PageIndex;
+            TotalPages = list.TotalPages;
+        }
+
+        public PaginatedResult(IEnumerable<T> items, int currentPage, int pages)
 		{
 			Data = items;
-			CurrentPage = currentPage;
-			Pages = pages;
+            PageIndex = currentPage;
+            TotalPages = pages;
 		}
 		public IEnumerable<T> Data { get; set; }
-		public int CurrentPage { get; set; }
-		public int Pages { get; set; }
+		public int PageIndex { get; set; }
+		public int TotalPages { get; set; }
 	}
 }

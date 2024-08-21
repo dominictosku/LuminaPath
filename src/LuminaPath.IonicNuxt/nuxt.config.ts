@@ -1,16 +1,19 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   ssr: false,
+
   imports: {
     dirs: [
       'utils/**'
     ]
   },
+
   runtimeConfig: {
     public: {
       API_ENDPOINT: process.env.NUXT_API_ENDPOINT,
     },
   },
+
   css: [
       '@ionic/core/css/core.css',
       '@ionic/core/css/normalize.css',
@@ -20,9 +23,11 @@ export default defineNuxtConfig({
       '~/theme/variables.css',
       '~/assets/css/customTailwind.css'
   ],
+
   alias: {
     pinia: "/node_modules/@pinia/nuxt/node_modules/pinia/dist/pinia.mjs"
   },
+
   modules: [
     '@nuxtjs/tailwindcss',
     '@nuxtjs/ionic',
@@ -32,6 +37,7 @@ export default defineNuxtConfig({
     'nuxt-icons',
     'nuxt3-leaflet'
   ],
+
   pinia: {
     autoImports: [
       // automatically imports `defineStore`
@@ -39,5 +45,7 @@ export default defineNuxtConfig({
       ['defineStore', 'definePiniaStore'], // import { defineStore as definePiniaStore } from 'pinia'
     ],
   },
-  devtools: { enabled: true }
+
+  devtools: { enabled: true },
+  compatibilityDate: '2024-08-21'
 })
