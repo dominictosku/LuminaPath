@@ -22,10 +22,10 @@ namespace LuminaPath.Infrastructure.Controllers.Base
 		public IMapper Mapper = mapper;
 
 		[HttpGet]
-		public async virtual Task<ActionResult<PaginatedList<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)
+		public async virtual Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)
 		{
 			var result = await _service.GetAndMapEntities<TEntityDto>(mediaFilter, Includes);
-			return Ok(result);
+			return Ok(new PaginatedResult<TEntityDto>(result));
 		}
 
 		[HttpGet("{id}")]

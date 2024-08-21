@@ -1,9 +1,9 @@
-export class PaginateResult<T>{
+export class PaginateResult<T> {
     data: Array<T>
     currentPage: number;
     pages: number;
 
-    constructor(){
+    constructor() {
         this.data = []
         this.currentPage = 1
         this.pages = 1
