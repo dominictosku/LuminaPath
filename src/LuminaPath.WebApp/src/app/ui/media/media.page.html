@@ -4,10 +4,34 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Media</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content :fullscreen="true">
+  <div>
+    Loading
+  </div>
+  <div>
+    Error
+  </div>
+  <div class="mt-4">
+    <ion-button class="m-2" (click)="toggle()">Table</ion-button>
+    <div>
+      <div class="mx-4">
+        <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+          <ion-refresher-content></ion-refresher-content>
+        </ion-refresher>
+      </div>
+      @if(isGrid){
+      <!-- Table view -->
+      <div v-if="!isGrid" id="Table" class="tabcontent m-4">
+        <app-pagination />
+        <app-table />
+        <app-pagination />
+      </div>
+      }@else {
+      <!-- Gallery view -->
+      <div id="Grid" class="tabcontent">
+        <app-grid />
+      </div>
+      }
+    </div>
+  </div>
 </ion-content>

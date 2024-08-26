@@ -13,14 +13,21 @@ export class Game implements IGame, IBasicInfo {
   myGames: MyGame | null;
   image: MediaFile | null;
 
-  constructor(myGame?: MyGame) {
+  constructor(
+    name?: string | null,
+    description?: string | null,
+    releaseDate?: Date | null,
+    genre?: string | null,
+    plattforms?: number | null,
+    playtime?: number | null,
+    myGame?: MyGame | null) {
     this.id = 0;
-    this.name = "";
-    this.description = "";
-    this.releaseDate = new Date;
-    this.genre = "";
-    this.plattforms = 0;
-    this.playtime = 0;
+    this.name = name ?? "";
+    this.description = description ?? "";
+    this.releaseDate = releaseDate ?? new Date;
+    this.genre = genre ?? "";
+    this.plattforms = plattforms ?? 0;
+    this.playtime = playtime ?? 0;
     this.myGames = myGame ?? new MyGame(0);
     this.image = null;
   }
