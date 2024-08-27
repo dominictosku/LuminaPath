@@ -5,23 +5,25 @@
 </ion-header>
 
 <ion-content :fullscreen="true">
-  <div>
-    Loading
-  </div>
-  <div>
-    Error
-  </div>
+  <app-selector />
+  @if(pending){
+  <app-loading />
+  }@else if (error)
+  {
+  <app-error />
+  }@else {
   <div class="mt-4">
-    <ion-button class="m-2" (click)="toggle()">Table</ion-button>
+    <ion-button class="m-2" (click)="toggleMediaType()">Games</ion-button>
     <div>
       <div class="mx-4">
+        <app-filter (toggleGrid)="changeIsGrid()" />
         <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
           <ion-refresher-content></ion-refresher-content>
         </ion-refresher>
       </div>
-      @if(isGrid){
+      @if(!isGrid){
       <!-- Table view -->
-      <div v-if="!isGrid" id="Table" class="tabcontent m-4">
+      <div id="Table" class="tabcontent m-4">
         <app-pagination />
         <app-table />
         <app-pagination />
@@ -34,4 +36,5 @@
       }
     </div>
   </div>
+  }
 </ion-content>

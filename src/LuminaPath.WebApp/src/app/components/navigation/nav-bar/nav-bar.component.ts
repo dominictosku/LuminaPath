@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { IonButton, IonIcon, IonHeader } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { logoAmplify } from 'ionicons/icons';
 
 @Component({
   standalone: true,
@@ -10,7 +12,9 @@ import { IonButton, IonIcon, IonHeader } from '@ionic/angular/standalone';
 })
 export class NavBarComponent implements OnInit {
 
-  constructor() { }
+  constructor() {
+    addIcons({ logoAmplify });
+  }
 
   ngOnInit() { }
 
