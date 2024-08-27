@@ -6,10 +6,20 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./pagination.component.scss'],
   standalone: true,
 })
-export class PaginationComponent  implements OnInit {
+export class PaginationComponent implements OnInit {
 
   constructor() { }
 
-  ngOnInit() {}
+  ngOnInit() { }
 
+  PageIndex = 1;
+  totalPages = 10;
+  async getPaginatedMedia(page: number) {
+    if (page < 1) {
+      page = 1;
+    }
+    if (page > this.totalPages) {
+      page = this.totalPages;
+    }
+  }
 }
