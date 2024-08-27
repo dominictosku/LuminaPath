@@ -1,4 +1,7 @@
 import { Routes } from '@angular/router';
+import {
+  AuthGuardService as AuthGuard
+} from './core/middleware/auth-guard.service';
 
 export const routes: Routes = [
   {
@@ -11,10 +14,28 @@ export const routes: Routes = [
   },
   {
     path: 'media',
-    loadComponent: () => import('./ui/media/media.page').then(m => m.MediaPage)
+    loadComponent: () => import('./ui/media/media.page').then(m => m.MediaPage),
+    canActivate: [AuthGuard]
   },
   {
     path: 'planing',
-    loadComponent: () => import('./ui/planing/planing.page').then(m => m.PlaningPage)
+    loadComponent: () => import('./ui/planing/planing.page').then(m => m.PlaningPage),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'auth/login',
+    loadComponent: () => import('./ui/auth/login/login.page').then(m => m.LoginPage)
+  },
+  {
+    path: 'auth/create',
+    loadComponent: () => import('./ui/auth/user-create/user-create.page').then(m => m.UserCreatePage)
+  },
+  {
+    path: 'login',
+    loadComponent: () => import('./ui/auth/login/login.page').then(m => m.LoginPage)
+  },
+  {
+    path: 'user-create',
+    loadComponent: () => import('./ui/auth/user-create/user-create.page').then(m => m.UserCreatePage)
   },
 ];
