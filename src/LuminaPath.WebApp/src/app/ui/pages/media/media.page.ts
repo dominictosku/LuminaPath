@@ -8,7 +8,7 @@ import { PaginationComponent } from "../../components/tools/pagination/paginatio
 import { ErrorComponent } from "../../components/events/error/error.component";
 import { LoadingComponent } from "../../components/events/loading/loading.component";
 import { SelectorComponent } from "../../components/tools/selector/selector.component";
-import { FilterComponent } from "../../components/tools/filter/filter.component";
+import { FilterComponent } from "../../components/media/filter/filter.component";
 
 @Component({
   selector: 'app-media',
