@@ -10,32 +10,32 @@ export const routes: Routes = [
   },
   {
     path: 'home',
-    loadComponent: () => import('./ui/home/home.page').then(m => m.HomePage)
+    loadComponent: () => import('./ui/pages/home/home.page').then(m => m.HomePage)
   },
   {
     path: 'media',
-    loadComponent: () => import('./ui/media/media.page').then(m => m.MediaPage),
+    loadComponent: () => import('./ui/pages/media/media.page').then(m => m.MediaPage),
     canActivate: [AuthGuard]
   },
   {
     path: 'planing',
-    loadComponent: () => import('./ui/planing/planing.page').then(m => m.PlaningPage),
+    loadComponent: () => import('./ui/pages/planing/planing.page').then(m => m.PlaningPage),
     canActivate: [AuthGuard]
   },
   {
     path: 'auth/login',
-    loadComponent: () => import('./ui/auth/login/login.page').then(m => m.LoginPage)
+    loadComponent: () => import('./ui/pages/login/login.page').then(m => m.LoginPage)
   },
   {
     path: 'auth/create',
-    loadComponent: () => import('./ui/auth/user-create/user-create.page').then(m => m.UserCreatePage)
+    loadComponent: () => import('./ui/pages/user-create/user-create.page').then(m => m.UserCreatePage)
   },
   {
     path: 'login',
-    loadComponent: () => import('./ui/auth/login/login.page').then(m => m.LoginPage)
+    loadComponent: () => import('./ui/pages/login/login.page').then(m => m.LoginPage)
   },
   {
     path: 'user-create',
-    loadComponent: () => import('./ui/auth/user-create/user-create.page').then(m => m.UserCreatePage)
+    loadComponent: () => import('./ui/pages/user-create/user-create.page').then(m => m.UserCreatePage)
   },
 ];
