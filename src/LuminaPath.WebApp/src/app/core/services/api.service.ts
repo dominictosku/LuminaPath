@@ -14,7 +14,7 @@ export class ApiService {
   constructor(private http: HttpClient) { }
 
   getApiUrl = () => {
-    return "/"
+    return ""
     return environment.endpoint;
   };
 
@@ -32,7 +32,7 @@ export class ApiService {
 
   apiCall<T>(method: 'GET' | 'POST' | 'DELETE' | 'PUT', endpoint: string, options: any) {
     try {
-      return this.http.request<T>(method, this.getApiUrl() + "api" + endpoint, options);
+      return this.http.request<T>(method, this.getApiUrl() + "/api" + endpoint, options);
     } catch (error) {
       console.error("api call failed");
       throw error;
