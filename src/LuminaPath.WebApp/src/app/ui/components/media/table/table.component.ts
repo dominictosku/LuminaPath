@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { GameService } from 'src/app/core/services/game.service';
 import { GamesComponent } from "../data/games/games.component";
+import { Game } from 'src/app/core/models/games';
 
 @Component({
   standalone: true,
@@ -11,11 +12,19 @@ import { GamesComponent } from "../data/games/games.component";
 })
 export class TableComponent implements OnInit {
 
-  constructor(private gameService: GameService) { }
+  constructor(private gameService: GameService) {
+    this.getGames();
+  }
 
   ngOnInit() { }
 
-  medias = this.gameService.get()
+  getGames() {
+    this.gameService.getMedia().subscribe((event: any) => {
+      this.medias = event.data
+    });
+  }
+
+  medias: Game[] = []
   labels = this.gameService.labels
 
   route() {

@@ -1,28 +1,57 @@
 import { Injectable } from '@angular/core';
-import { Game } from '../utils/model/games';
+import { Game } from '../models/games';
+import { ApiService } from './api.service';
+import { MediaFilter } from '../entities/mediaFilter';
+import { IBasicInfo } from '../interfaces/iBasicInfo';
+import { HttpClient } from '@angular/common/http';
+import { HttpClientInMemoryWebApiModule } from 'angular-in-memory-web-api';
+import { InMemoryDataService } from './in-memory-data.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GameService {
 
-  constructor() { }
+  constructor(private api: ApiService) {
+    HttpClientInMemoryWebApiModule.forRoot(
+      InMemoryDataService, { dataEncapsulation: false }
+    );
+  }
+
+  public type = {
+    Games: "Games",
+    MyGames: "MyGames",
+  };
+
   public labels = [
     "Title",
     "Description",
     "Status",
     "Release"
   ]
+  Id: string = "games";
 
-  public get(): Game[] {
-    var games = [
-      new Game("Test", "Test"),
-      new Game("Test", "Test"),
-      new Game("Test", "Test"),
-      new Game("Test", "Test"),
-      new Game("Test", "Test"),
-      new Game("Test", "Test")
-    ]
-    return games;
+
+  getMedia(filter?: MediaFilter | undefined) {
+    let response = this.api.fetchPaginatedMedia<Game>(this.Id, filter);
+    return response;
+  }
+
+  getMediaById(id: number, endPoint: string) {
+    return this.api.fetchMediaById(id, endPoint);
+  }
+
+  removeMedia(id: number, endPoint: string) {
+    this.api.deleteMedia(id, endPoint);
+    return;
+  }
+
+  createMedia(media: IBasicInfo, endPoint: string) {
+    if (media.id == 0) {
+      this.api.PostMedia(media, endPoint);
+    } else {
+      this.api.PutMedia(media, endPoint);
+    }
+    return;
   }
 }

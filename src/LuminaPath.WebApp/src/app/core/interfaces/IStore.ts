@@ -2,7 +2,7 @@ import { MediaComponent } from "~/utils/classes/mediaComponent"
 import { type IApi } from "./IApi"
 import { type IBasicInfo } from "./iBasicInfo"
 import { MediaFilter } from "~/utils/classes/mediaFilter"
-import { Pagination } from "../classes/pagination"
+import { Pagination } from "../entities/pagination"
 
 export interface IStore<T>{
     Id:  globalThis.ComputedRef<string>
@@ -13,7 +13,7 @@ export interface IStore<T>{
         Games: string,
         MyGames: string,
       };
-    ActiveComponent: Ref<MediaComponent> 
+    ActiveComponent: Ref<MediaComponent>
     Api: IApi<IBasicInfo>
     changeMode(): string
 }
