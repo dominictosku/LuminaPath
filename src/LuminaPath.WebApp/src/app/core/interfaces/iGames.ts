@@ -1,4 +1,4 @@
-import { MyGame } from "../model/games";
+import { MyGame } from "../models/games";
 export interface IGame {
   id: number;
   name: string;
