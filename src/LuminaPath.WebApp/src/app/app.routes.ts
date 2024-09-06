@@ -31,11 +31,7 @@ export const routes: Routes = [
     loadComponent: () => import('./ui/pages/user-create/user-create.page').then(m => m.UserCreatePage)
   },
   {
-    path: 'login',
-    loadComponent: () => import('./ui/pages/login/login.page').then(m => m.LoginPage)
-  },
-  {
-    path: 'user-create',
-    loadComponent: () => import('./ui/pages/user-create/user-create.page').then(m => m.UserCreatePage)
+    path: 'test',
+    loadComponent: () => import('./ui/pages/test/test.page').then(m => m.TestPage)
   },
 ];
