@@ -9,6 +9,7 @@ import { AppComponent } from './app/app.component';
 import { importProvidersFrom } from '@angular/core';
 import { HttpClientInMemoryWebApiModule } from 'angular-in-memory-web-api';
 import { IonicModule } from '@ionic/angular';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -17,7 +18,8 @@ bootstrapApplication(AppComponent, {
     // remove in production
     importProvidersFrom([
       HttpClientInMemoryWebApiModule.forRoot(InMemoryDataService),
-      IonicModule.forRoot({})
+      IonicModule.forRoot({}),
+      BrowserAnimationsModule
     ]),
     provideIonicAngular(),
     provideRouter(routes, withPreloading(PreloadAllModules)),

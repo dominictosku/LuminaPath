@@ -30,6 +30,7 @@
     "@ionic/angular": "^8.0.0",
     "angular-in-memory-web-api": "^0.18.0",
     "flowbite": "^2.5.1",
+    "primeng": "^17.18.9",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.2"
