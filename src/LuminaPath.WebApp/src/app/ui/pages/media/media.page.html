@@ -1,0 +1,40 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Media</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content :fullscreen="true">
+  <app-selector />
+  @if(pending){
+  <app-loading />
+  }@else if (error)
+  {
+  <app-error />
+  }@else {
+  <div class="mt-4">
+    <ion-button class="m-2" (click)="toggleMediaType()">Games</ion-button>
+    <div>
+      <div class="mx-4">
+        <app-filter (toggleGrid)="changeIsGrid()" />
+        <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+          <ion-refresher-content></ion-refresher-content>
+        </ion-refresher>
+      </div>
+      @if(!isGrid){
+      <!-- Table view -->
+      <div id="Table" class="tabcontent m-4">
+        <app-pagination />
+        <app-table />
+        <app-pagination />
+      </div>
+      }@else {
+      <!-- Gallery view -->
+      <div id="Grid" class="tabcontent">
+        <app-grid />
+      </div>
+      }
+    </div>
+  </div>
+  }
+</ion-content>
