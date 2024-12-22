@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.Services;
+using Radzen;
 
 namespace LuminaPath.UI.Shared
 {
@@ -8,7 +9,8 @@ namespace LuminaPath.UI.Shared
 		public static IServiceCollection AddUILibrary(this IServiceCollection services)
 		{
 			services.AddMudServices();
-			return services;
+            services.AddRadzenComponents();
+            return services;
 		}
 	}
 }
