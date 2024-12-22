@@ -46,7 +46,7 @@ namespace Test.Controller
 				// Assert
 				Assert.Equal(
 					expectedGames.OrderBy(m => m.Id).Select(m => m.Id),
-					actualGames.Value.OrderBy(g => g.Id).Select(g => g.Id));
+					actualGames.Value.Data.OrderBy(g => g.Id).Select(g => g.Id));
 			}
 		}
 	}
