@@ -1,4 +1,5 @@
 ﻿@using LuminaPath.Constants
+@using Radzen.Blazor
 @inherits LayoutComponentBase
 @inject IHostEnvironment HostEnvironment
 
@@ -7,6 +8,8 @@
     <MudDialogProvider />
     <MudSnackbarProvider />
     <MudPopoverProvider />
+
+    <RadzenComponents @rendermode="InteractiveAuto" />
 
     <ErrorBoundary @ref="errorBoundary">
         <ChildContent>
