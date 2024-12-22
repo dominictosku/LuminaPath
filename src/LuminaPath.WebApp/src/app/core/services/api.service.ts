@@ -15,7 +15,6 @@ export class ApiService {
 
   getApiUrl = () => {
     return ""
-    return environment.endpoint;
   };
 
   getHttpOptions = (param?: any, body?: any): any => {
