@@ -121,6 +121,7 @@ namespace LuminaPath.Infrastructure
 		{
 			AddStorageService(services, config);
 			AddModelService(services);
+			services.AddTransient<FileSystemService>();
 		}
 
 		private static void AddStorageService(IServiceCollection services, IConfiguration config)
