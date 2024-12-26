@@ -1,6 +1,7 @@
 ﻿using LuminaPath.Core.Common.Interfaces;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Services;
+using LuminaPath.Infrastructure.Services.Third_Party;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -15,7 +16,7 @@ using Microsoft.Extensions.Logging;
 using System.Net;
 namespace LuminaPath.Infrastructure
 {
-	public static class DependencyInjection
+    public static class DependencyInjection
 	{
 		public const string MyAllowSpecificOrigins = "SPAConfig";
 
@@ -121,7 +122,8 @@ namespace LuminaPath.Infrastructure
 		{
 			AddStorageService(services, config);
 			AddModelService(services);
-			services.AddTransient<FileSystemService>();
+            services.AddTransient<PSNService>();
+            services.AddTransient<FileSystemService>();
 		}
 
 		private static void AddStorageService(IServiceCollection services, IConfiguration config)
