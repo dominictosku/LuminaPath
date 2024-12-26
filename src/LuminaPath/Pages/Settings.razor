@@ -1,0 +1,23 @@
+﻿@page "/settings"
+@using LuminaPath.Infrastructure.Services
+@using Radzen.Blazor
+@inject FileSystemService fileSystemService
+<h3>Settings</h3>
+<RadzenStack>
+	<RadzenLabel Text="PSN Bearer Token" />
+	<RadzenTextBox @bind-Value="bearerToken" />
+	<RadzenButton Text="Save" Click="SaveBearer" />
+</RadzenStack>
+@code {
+	private string bearerToken;
+
+	protected override void OnInitialized()
+	{
+		bearerToken = fileSystemService.GetBearer();
+	}
+
+	void SaveBearer()
+	{
+		fileSystemService.WriteBearer(bearerToken);
+	}
+}
