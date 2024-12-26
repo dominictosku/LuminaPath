@@ -12,7 +12,7 @@ namespace TestPSN.Classes
         public class GameData
         {
             [JsonPropertyName("titles")]
-            public List<Title> Titles { get; set; }
+            public List<Title> Titles { get; set; } = new();
 
             [JsonPropertyName("nextOffset")]
             public int? NextOffset { get; set; }

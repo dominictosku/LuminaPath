@@ -1,0 +1,75 @@
+﻿@page "/import"
+@using LuminaPath.Core.Models.Third_Party
+@using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.Third_Party
+@using Radzen
+@using Radzen.Blazor
+@using static TestPSN.Classes.PSNTitles
+@inject PSNService psnService
+@inject FileSystemService fileSystemService
+<h3>Import</h3>
+
+@{
+	var baseInclude = nameof(Game.GameInfo) + ".";
+	var psnIdInclude = baseInclude + nameof(GameInfo.PsnId);
+	var firstPlayed = baseInclude + nameof(GameInfo.FirstPlayed);
+	var lastPlayed = baseInclude + nameof(GameInfo.LastPlayed);
+	var trackendHours = baseInclude + nameof(GameInfo.TrackedHours);
+}
+<RadzenTabs>
+	<Tabs>
+		<RadzenTabsItem Text="PSN">
+			<RadzenButton Text="Import Games" Click="ImportGames" />
+			<RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="false" AllowSorting="true" PageSize="5" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
+							Data="@games">
+				<Columns>
+					<RadzenDataGridColumn Width="20px" Property="@nameof(Game.Id)" Title="ID" />
+					<RadzenDataGridColumn Width="20px" Property="@nameof(Game.Name)" Title="Title" />
+					<RadzenDataGridColumn Width="20px" Property="@firstPlayed" Title="First played at" />
+					<RadzenDataGridColumn Width="20px" Property="@lastPlayed" Title="Last played at" />
+					<RadzenDataGridColumn Width="20px" Property="@trackendHours" Title="Playtime in Hours" />
+					<RadzenDataGridColumn Width="20px" Property="@psnIdInclude" Title="PSNId" />
+				</Columns>
+			</RadzenDataGrid>
+		</RadzenTabsItem>
+	</Tabs>
+</RadzenTabs>
+
+@code {
+	IQueryable<Game> games;
+
+	protected override void OnInitialized()
+	{
+		var bearer = fileSystemService.GetBearer();
+		psnService.SetBearer(bearer);
+	}
+
+	async Task ImportGames()
+	{
+		var gameData = await GetGameData();
+		var result = psnService.ConvertPSNTitles(gameData);
+		games = result.AsQueryable();
+	}
+
+	async Task<GameData> GetGameData()
+	{
+		GameData gameData = new();
+		int currentIteration = 0;
+
+		while (true)
+		{
+			if (currentIteration >= 5)
+				break;
+			int offSet = currentIteration * 200;
+			var result = await psnService.GetMyTitles(offSet);
+			gameData.Titles.AddRange(result.Titles);
+
+			if (result.NextOffset == null || result.NextOffset <= 0)
+				break;
+
+			currentIteration++;
+		}
+
+		return gameData;
+	}
+}
