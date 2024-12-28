@@ -1,4 +1,5 @@
 ﻿@page "/Media/MyGames"
+@using LuminaPath.Components.BaseAuth
 @using LuminaPath.Core.Common.Entities
 @using LuminaPath.Core.Common.Interfaces
 @using AutoMapper
@@ -15,6 +16,7 @@
 @inject IMapper mapper
 @inject IStorageService Storage;
 @inject ILogger<Index> logger;
+@inherits BaseAuth
 @implements ITableActions<MyGame>
 
 <PageTitle>Games</PageTitle>
@@ -232,6 +234,7 @@ else
 		loading = true;
 		try
 		{
+			game.LuminaUserId = UserId;
 			await myGameService.PostAsync(game);
 			Snackbar.Add("Added Game to List", Severity.Success);
 		}
@@ -250,6 +253,7 @@ else
 		loading = true;
 		try
 		{
+			game.LuminaUserId = UserId;
 			await myGameService.PutAsync(game);
 			Snackbar.Add("Updated Game", Severity.Success);
 		}

@@ -28,7 +28,16 @@ namespace LuminaPath.Infrastructure.Services
 			return dbContext.Set<TEntity>();
 		}
 
-		public async virtual Task<PaginatedList<TEntity>> GetAllPaginated(MediaFilter mediaFilter, IEnumerable<string> includes,
+        public async virtual Task<List<TEntity>> GetAll()
+        {
+            using (var dbContext = await GetDbContextAsync())
+            {
+                IQueryable<TEntity> entities = GetEntities(dbContext);
+                return await entities.ToListAsync();
+            }
+        }
+
+        public async virtual Task<PaginatedList<TEntity>> GetAllPaginated(MediaFilter mediaFilter, IEnumerable<string> includes,
 			Expression<Func<TEntity, bool>> filter = null,
 			Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null)
 		{
