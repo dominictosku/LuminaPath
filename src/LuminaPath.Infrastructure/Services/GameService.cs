@@ -17,7 +17,7 @@ namespace LuminaPath.Infrastructure.Services
 {
 	public class GameService : GenericModelService<Game>
 	{
-		public GameService(LuminaPathDbContext dbContext, IMapper mapper) : base(dbContext, mapper)
+		public GameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IMapper mapper) : base(dbContextFactory, mapper)
 		{
 
 		}
@@ -28,7 +28,9 @@ namespace LuminaPath.Infrastructure.Services
 			Expression<Func<Game, bool>> filter = null,
 			IEnumerable<string> includes = null)
 		{
-			IQueryable<Game> entities = _entities.Include(g => g.Image).Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
+			using var context = await GetDbContextAsync();
+			IQueryable<Game> entities = GetEntities(context);
+			entities = entities.Include(g => g.Image).Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
 			entities = PrepareEntity(entities, filter, e => e.OrderByDescending(g => g.ReleaseDate), includes);
 			return await CreatePaginatedList(entities, mediaFilter.Paging);
 		}

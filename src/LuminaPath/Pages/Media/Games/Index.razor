@@ -9,6 +9,7 @@
 @using LuminaPath.ViewModel
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<LuminaPathDbContext> dbContextFactory
+@inject GameService gameService
 @inject NavigationManager Navigation
 @inject IMapper mapper
 @inject IStorageService Storage;
@@ -159,7 +160,6 @@ else
 
 	private async Task<PaginatedList<Game>> GetData(int pageIndex)
 	{
-		using var gameService = new GameService(dbContextFactory.CreateDbContext(), mapper);
 		_filter.Paging = new Paging(pageIndex, 15);
 		var includes = new List<string>() { "Image" };
 		return await gameService.GetAllPaginated(_filter, includes);

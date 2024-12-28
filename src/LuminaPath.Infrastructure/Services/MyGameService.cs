@@ -17,7 +17,7 @@ namespace LuminaPath.Infrastructure.Services
 {
 	public class MyGameService : GenericModelService<MyGame>
 	{
-		public MyGameService(LuminaPathDbContext dbContext, IMapper mapper) : base(dbContext, mapper)
+		public MyGameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IMapper mapper) : base(dbContextFactory, mapper)
 		{
 		}
 
@@ -28,7 +28,9 @@ namespace LuminaPath.Infrastructure.Services
 			IEnumerable<string> includes = null)
 		{
 			int pageIndex = paging.PageIndex;
-			IQueryable<MyGame> entities = _entities.Where(g => g.LuminaUserId == UserId).Include(g => g.Game);
+			var context = await GetDbContextAsync();
+			IQueryable<MyGame> entities = GetEntities(context);
+			entities = entities.Where(g => g.LuminaUserId == UserId).Include(g => g.Game);
 			entities = PrepareEntity(entities, filter, e => e.OrderByDescending(g => g.Game.ReleaseDate), includes);
 			return await CreatePaginatedList(entities, paging);
 		}
@@ -37,7 +39,7 @@ namespace LuminaPath.Infrastructure.Services
 		{
 			if (user == null)
 				return new FailedResult("User not found, please login");
-			if (IsMediaAlreadyAdded(viewModel.MediaId, viewModel.Id, user.Id))
+			if (await IsMediaAlreadyAdded(viewModel.MediaId, viewModel.Id, user.Id))
 			{
 				return new FailedResult("This is game already added");
 			}
@@ -50,7 +52,7 @@ namespace LuminaPath.Infrastructure.Services
 		{
 			if (user == null)
 				return new FailedResult("User not found, please login");
-			if (IsMediaAlreadyAdded(viewModel.MediaId, viewModel.Id, user.Id))
+			if (await IsMediaAlreadyAdded(viewModel.MediaId, viewModel.Id, user.Id))
 			{
 				return new FailedResult("This is game already added");
 			}
@@ -58,10 +60,12 @@ namespace LuminaPath.Infrastructure.Services
 			return await base.PutAsync(viewModel);
 		}
 
-		protected bool IsMediaAlreadyAdded(int id, int myId, string userId)
+		protected async Task<bool> IsMediaAlreadyAdded(int id, int myId, string userId)
 		{
-			var entities = _entities.AsNoTracking().ToList();
-			return entities.Any(e => e.MediaId == id && e.Id != myId && e.LuminaUserId == userId);
+			using var context = await GetDbContextAsync();
+			var entities = GetEntities(context);
+			var result = entities.AsNoTracking().ToList();
+			return result.Any(e => e.MediaId == id && e.Id != myId && e.LuminaUserId == userId);
 		}
 
 	}

@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace LuminaPath.Infrastructure.Services
 {
 	public class QuestService : GenericModelService<GamesQuest>
 	{
-		public QuestService(LuminaPathDbContext dbContext, IMapper mapper) : base(dbContext, mapper)
+		public QuestService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IMapper mapper) : base(dbContextFactory, mapper)
 		{
 		}
 	}
