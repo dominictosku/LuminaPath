@@ -28,7 +28,16 @@ namespace LuminaPath.Infrastructure.Services
 			return games;
 		}
 
-		public async Task<PaginatedList<MyGame>> GetAllPaginated(
+        public async Task<List<MyGame>> GetMyGames(string UserId, Expression<Func<MyGame, bool>> filter = null)
+        {
+            var context = await GetDbContextAsync();
+            IQueryable<MyGame> entities = GetEntities(context);
+            entities = entities.Where(g => g.LuminaUserId == UserId).Include(g => g.Game);
+            entities = PrepareEntity(entities, filter, e => e.OrderByDescending(g => g.Game.ReleaseDate));
+            return await entities.ToListAsync();
+        }
+
+        public async Task<PaginatedList<MyGame>> GetAllPaginated(
 			Paging paging,
 			string UserId,
 			Expression<Func<MyGame, bool>> filter = null,

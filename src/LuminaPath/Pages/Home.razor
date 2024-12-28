@@ -1,7 +1,38 @@
 ﻿@page "/"
+@using LuminaPath.Components.BaseAuth
+@using LuminaPath.Core.Common.Enums
+@using LuminaPath.Infrastructure.Services
+@inherits BaseAuth
+@inject MyGameService myGameService
 
 <PageTitle>Home</PageTitle>
 
 <h1>LuminaPath</h1>
 
 Track your Journey
+
+<h3>Your Main Games</h3>
+@foreach(var game in CurrentMainGames)
+{   
+<MudCard>
+    <MudCardContent>
+        <MudText>@game.Game.Name</MudText>
+            <MudText Typo="Typo.body2">@game.Status</MudText>
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton Variant="Variant.Text" Color="Color.Primary">Learn More</MudButton>
+    </MudCardActions>
+</MudCard>
+}
+
+@code{
+    List<MyGame> CurrentMainGames = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (UserId == null) return;
+        var result = await myGameService.GetMyGames(UserId);
+        CurrentMainGames = result.Where(x => x.Status == GameStatus.MainGame).ToList();
+    }
+}
