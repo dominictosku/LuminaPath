@@ -6,37 +6,45 @@
     <nav class="flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                <MudIcon Icon="@Icons.Material.Filled.Home" Title="Home" />
+                <span class="bi" aria-hidden="true"></span> Home
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="Media/Games">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Games
+                <MudIcon Icon="@Icons.Material.Filled.Games" Title="Games" />
+                <span class="bi" aria-hidden="true"></span> Games
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="Media/MyGames">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> MyGames
+                <MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Title="MyGames" />
+                <span class="bi" aria-hidden="true"></span> My Games
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="Documents">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Documents
+                <MudIcon Icon="@Icons.Material.Filled.FileOpen" Title="MyGames" />
+                <span class="bi" aria-hidden="true"></span> Documents
             </NavLink>
         </div>
 
+        <MudDivider DividerType="DividerType.FullWidth" Light="true" Class="my-2" />
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="import">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Import
+                <MudIcon Icon="@Icons.Material.Filled.Downloading" Title="Import" />
+                <span class="bi" aria-hidden="true"></span> Import
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="settings">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Settings
+                <MudIcon Icon="@Icons.Material.Filled.Settings" Title="Settings" />
+                <span class="bi" aria-hidden="true"></span> Settings
             </NavLink>
         </div>
 
@@ -44,7 +52,8 @@
             <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Title="Me" />
+                        <span class="bi" aria-hidden="true"></span> @context.User.Identity?.Name
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
@@ -52,14 +61,16 @@
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
                         <button type="submit" class="nav-link">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                            <MudIcon Icon="@Icons.Material.Filled.Logout" Title="Logout" />
+                            <span class="bi" aria-hidden="true"></span> Logout
                         </button>
                     </form>
                 </div>
                 <MudNavGroup Class="nav-item px-3" Title="Admin" Expanded="true">
                     <div class="nav-item px-3">
                         <NavLink class="nav-link" href="Admin/Users">
-                            <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Users
+                            <MudIcon Icon="@Icons.Material.Filled.Group" Title="Users" />
+                            <span class="bi" aria-hidden="true"></span> Users
                         </NavLink>
                     </div>
                 </MudNavGroup>
@@ -67,12 +78,14 @@
             <NotAuthorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Register">
-                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
+                        <MudIcon Icon="@Icons.Material.Filled.AppRegistration" Title="Register" />
+                        <span class="bi" aria-hidden="true"></span> Register
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Login">
-                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
+                        <MudIcon Icon="@Icons.Material.Filled.Login" Title="Login" />
+                        <span class="bi" aria-hidden="true"></span> Login
                     </NavLink>
                 </div>
             </NotAuthorized>
