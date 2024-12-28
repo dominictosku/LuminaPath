@@ -121,8 +121,10 @@ namespace LuminaPath.Infrastructure
 		private static void AddServices(IServiceCollection services, IConfiguration config)
 		{
 			AddStorageService(services, config);
-			AddModelService(services);
-            services.AddTransient<PSNService>();
+			services.AddScoped<GameService>();
+			services.AddScoped<MyGameService>();
+			services.AddScoped<QuestService>();
+			services.AddTransient<PSNService>();
             services.AddTransient<FileSystemService>();
 		}
 
@@ -137,13 +139,6 @@ namespace LuminaPath.Infrastructure
 
 			services.AddScoped<IStorageService, AzureStorage>(s =>
 				new AzureStorage(connectionString, containerName, s.GetRequiredService<ILogger<AzureStorage>>()));
-		}
-
-		private static void AddModelService(IServiceCollection services)
-		{
-			services.AddScoped<GameService>();
-			services.AddScoped<MyGameService>();
-			services.AddScoped<QuestService>();
 		}
 
 		private static async Task ConfigureEnvironment(WebApplication app)
