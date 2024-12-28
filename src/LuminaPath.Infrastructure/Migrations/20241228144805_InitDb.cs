@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LuminaPath.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class InitDb : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -82,6 +82,8 @@ namespace LuminaPath.Infrastructure.Migrations
                     Genre = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     ReleaseDate = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    Source = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     Discriminator = table.Column<string>(type: "varchar(5)", maxLength: 5, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Plattforms = table.Column<int>(type: "int", nullable: true),
@@ -249,6 +251,31 @@ namespace LuminaPath.Infrastructure.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "GameInfo",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    GameId = table.Column<int>(type: "int", nullable: false),
+                    PsnId = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    TrackedHours = table.Column<double>(type: "double", nullable: false),
+                    FirstPlayed = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    LastPlayed = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GameInfo", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_GameInfo_Media_GameId",
+                        column: x => x.GameId,
+                        principalTable: "Media",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "MyGames",
                 columns: table => new
                 {
@@ -258,7 +285,6 @@ namespace LuminaPath.Infrastructure.Migrations
                     Rating = table.Column<short>(type: "smallint", nullable: true),
                     StartDate = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     EndDate = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    Status = table.Column<int>(type: "int", nullable: false),
                     TimeSpend = table.Column<int>(type: "int", nullable: true),
                     LuminaUserId = table.Column<string>(type: "varchar(255)", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4")
@@ -360,6 +386,12 @@ namespace LuminaPath.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_GameInfo_GameId",
+                table: "GameInfo",
+                column: "GameId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Media_Name",
                 table: "Media",
                 column: "Name",
@@ -406,6 +438,9 @@ namespace LuminaPath.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Documents");
+
+            migrationBuilder.DropTable(
+                name: "GameInfo");
 
             migrationBuilder.DropTable(
                 name: "MyGames");

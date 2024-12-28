@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LuminaPath.Infrastructure.Migrations
 {
     [DbContext(typeof(LuminaPathDbContext))]
-    [Migration("20241226174849_GameGameInfo")]
-    partial class GameGameInfo
+    [Migration("20241228144805_InitDb")]
+    partial class InitDb
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -180,9 +180,6 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
                     b.Property<int?>("TimeSpend")
                         .HasColumnType("int");
 
@@ -253,7 +250,6 @@ namespace LuminaPath.Infrastructure.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("PsnId")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<double>("TrackedHours")

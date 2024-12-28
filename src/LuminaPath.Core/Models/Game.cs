@@ -12,6 +12,6 @@ namespace LuminaPath.Core.Models
 		[Display(Name = "Estimated playtime")]
 		public int? Playtime { get; set; }
 		public List<MyGame>? MyGames { get; set; }
-		public GameInfo GameInfo { get; set; } = new();
+		public GameInfo? GameInfo { get; set; }
 	}
 }

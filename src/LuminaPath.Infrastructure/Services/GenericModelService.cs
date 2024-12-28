@@ -10,7 +10,7 @@ namespace LuminaPath.Infrastructure.Services
 	public class GenericModelService<TEntity> : IGenericModelService<TEntity> where TEntity : class, IBasicInfo
 	{
 		protected readonly IMapper _mapper;
-		private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
+		protected readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
 
 		public GenericModelService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IMapper mapper)
 		{
@@ -91,8 +91,7 @@ namespace LuminaPath.Infrastructure.Services
 					return new FailedResult("Entity not found");
 				}
 
-				entities.Attach(entity);
-				dbContext.Entry(entity).State = EntityState.Modified;
+				dbContext.Update(entity);
 
 				try
 				{

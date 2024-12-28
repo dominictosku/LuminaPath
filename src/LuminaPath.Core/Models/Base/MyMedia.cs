@@ -11,7 +11,6 @@ namespace LuminaPath.Core.Models.Base
 		public short? Rating { get; set; }
 		public DateTime? StartDate { get; set; }
 		public DateTime? EndDate { get; set; }
-		public ProgressionStatus Status { get; set; }
 		public int? TimeSpend { get; set; }
 		public string? LuminaUserId { get; set; }
 		public LuminaUser? LuminaUser { get; set; }
