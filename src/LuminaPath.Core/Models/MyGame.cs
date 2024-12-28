@@ -11,8 +11,8 @@ namespace LuminaPath.Core.Models
 		[Required(ErrorMessage = "No {0} was choosen")]
 		[Display(Name = "Game")]
 		[NotMapped]
-		public GameStatus Status { get; set; }
 		public int MediaId => GameId;
+		public GameStatus Status { get; set; }
 		public int GameId { get; set; }
 		public Game? Game { get; set; }
 	}
