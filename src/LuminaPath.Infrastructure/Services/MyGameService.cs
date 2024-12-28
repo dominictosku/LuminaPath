@@ -21,6 +21,13 @@ namespace LuminaPath.Infrastructure.Services
 		{
 		}
 
+		public async Task<List<Game>> GetDropdownGames()
+		{
+			var context = await GetDbContextAsync();
+			var games = context.Games.ToList();
+			return games;
+		}
+
 		public async Task<PaginatedList<MyGame>> GetAllPaginated(
 			Paging paging,
 			string UserId,
@@ -67,6 +74,5 @@ namespace LuminaPath.Infrastructure.Services
 			var result = entities.AsNoTracking().ToList();
 			return result.Any(e => e.MediaId == id && e.Id != myId && e.LuminaUserId == userId);
 		}
-
 	}
 }

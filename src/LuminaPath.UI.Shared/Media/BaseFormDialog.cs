@@ -9,13 +9,13 @@ using MudBlazor;
 
 namespace LuminaPath.UI.Shared.Media
 {
-	public class BaseFormDialog<TEntity, TDocument> : MudComponentBase where TEntity : IMedia<TDocument> where TDocument : IDocument
+	public class BaseFormDialog<TEntity> : MudComponentBase
 	{
 		[Inject]
 		public IDialogService DialogService { get; set; } = default!;
 
 		[CascadingParameter]
-		private MudDialogInstance MudDialog { get; set; } = default!;
+		public MudDialogInstance MudDialog { get; set; } = default!;
 
 		[EditorRequired]
 		[Parameter]
@@ -24,14 +24,6 @@ namespace LuminaPath.UI.Shared.Media
 		[EditorRequired]
 		[Parameter]
 		public Func<TEntity, Task> EventCallBack { get; set; } = default!;
-
-		[EditorRequired]
-		[Parameter]
-		public Func<TEntity, Task> OnDeleteImage { get; set; } = default!;
-
-		[EditorRequired]
-		[Parameter]
-		public Func<IBrowserFile, Task> OnSubmitFile { get; set; } = default!;
 
 		[Parameter]
 		public Action? Refresh { get; set; }
@@ -44,9 +36,10 @@ namespace LuminaPath.UI.Shared.Media
 
 		public bool _uploading;
 
+		public async Task PreviewImage()
+		{
 
-		private const long MaxAllowedSize = 3145728;
-		public IBrowserFile? File { get; set; }
+		}
 
 		public async Task Submit()
 		{
@@ -54,36 +47,6 @@ namespace LuminaPath.UI.Shared.Media
 			MudDialog.Close(DialogResult.Ok(true));
 		}
 
-		public async Task DeleteImage()
-		{
-			if (Model.Image != null)
-			{
-				var parameters = new DialogParameters<ConfirmationDialog>
-			{
-				{ x=>x.ContentText, $"Delete Image?" }
-			};
-				var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
-				var dialog = DialogService.Show<ConfirmationDialog>("Delete Image", parameters, options);
-				var state = await dialog.Result;
-
-				if (!state.Canceled)
-				{
-					await OnDeleteImage(Model);
-				}
-			}
-		}
-
-		public async Task PreviewImage()
-		{
-
-		}
-
-		public async Task SubmitFile(IBrowserFile file)
-		{
-			_uploading = true;
-			await OnSubmitFile(file);
-			_uploading = false;
-		}
 
 		public void Cancel()
 		{

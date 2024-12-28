@@ -177,9 +177,6 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
                     b.Property<int?>("TimeSpend")
                         .HasColumnType("int");
 

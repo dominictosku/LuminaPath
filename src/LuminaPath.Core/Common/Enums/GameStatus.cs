@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 
 namespace LuminaPath.Core.Common.Enums
 {
-	public enum ProgressionStatus
+	public enum GameStatus
 	{
+		OnHold,
 		Planned,
-		InProgress,
+		Playing,
+		StoryComplete,
 		Completed,
+		MainGame
 	}
 }

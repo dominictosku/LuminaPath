@@ -1,0 +1,57 @@
+@using LuminaPath.Core.Common.Enums
+@using LuminaPath.Core.Common.Interfaces
+@using LuminaPath.Core.Models
+@using LuminaPath.UI.Shared.Dialogs
+@using LuminaPath.UI.Shared.Media
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.EntityFrameworkCore
+@using LuminaPath.Core.Common.Entities.Results
+@using Microsoft.Extensions.Logging
+@using Microsoft.JSInterop
+@using Severity = MudBlazor.Severity
+@using Color = MudBlazor.Color
+@inherits BaseFormDialog<MyGame>
+
+<MudDialog>
+	<DialogContent>
+		<MudForm Model="@Model" @ref="@_form">
+			<MudGrid>
+				<MudItem xs="12">
+					<MudSelect @bind-Value="Model.GameId" Label="Select Game" Clearable="true">
+						@foreach (var game in GameSelect)
+						{
+							<MudSelectItem Value="game.Id">@game.Name</MudSelectItem>
+						}
+					</MudSelect>
+				</MudItem>
+				<MudItem xs="12">
+					<MudSelect @bind-Value="Model.Status" Label="Status">
+						@foreach (var status in Enum.GetValues(typeof(GameStatus)).Cast<GameStatus>())
+						{
+							<MudSelectItem Value="status">@status</MudSelectItem>
+						}
+					</MudSelect>
+				</MudItem>
+			</MudGrid>
+		</MudForm>
+	</DialogContent>
+	<DialogActions>
+		<MudButton OnClick="Cancel">Cancel</MudButton>
+		<MudButton OnClick="Submit" Disabled="@loading">
+			@if (loading)
+			{
+				<span class="spinner-border spinner-border-sm mr-1"></span>
+			}
+			Save
+		</MudButton>
+	</DialogActions>
+</MudDialog>
+
+@code {
+	[Parameter]
+	public List<Game> GameSelect { get; set; } = new();
+
+	Game selectedGame => GameSelect.FirstOrDefault(x => x.Id == Model.GameId) ?? new();
+
+	private MudForm? _form;
+}
