@@ -121,9 +121,10 @@ namespace LuminaPath.Infrastructure
 		private static void AddServices(IServiceCollection services, IConfiguration config)
 		{
 			AddStorageService(services, config);
-			services.AddScoped<GameService>();
+            services.AddScoped<GameService>();
 			services.AddScoped<MyGameService>();
 			services.AddScoped<QuestService>();
+            services.AddScoped<DocumentService>();
 			services.AddTransient<PSNService>();
             services.AddTransient<FileSystemService>();
 		}

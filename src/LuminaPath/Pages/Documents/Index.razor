@@ -6,7 +6,7 @@
 @using LuminaPath.UI.Shared.Interfaces
 @using LuminaPath.UI.Shared.Media
 @using Microsoft.EntityFrameworkCore
-@inject IDbContextFactory<LuminaPathDbContext> dbContextFactory
+@inject DocumentService documentService
 @inject GameService gameService
 @inject NavigationManager navigation
 @inject IMapper mapper
@@ -123,8 +123,6 @@
 
     private async Task<PaginatedList<Document>> GetData(int pageIndex)
     {
-        using var dbContext = dbContextFactory.CreateDbContext();
-        var documentService = new DocumentService(dbContext, Storage, Logger);
         var paging = new Paging(pageIndex, 15);
         return await documentService.GetAllPaginated(paging);
     }
@@ -189,9 +187,6 @@
         loading = true;
         try
         {
-            using var dbContext = dbContextFactory.CreateDbContext();
-            await dbContext.Documents.AddAsync(entity);
-            await dbContext.SaveChangesAsync();
             Snackbar.Add("Created Document", Severity.Success);
         }
         catch (Exception ex)
@@ -207,11 +202,8 @@
     async Task Update(Document entity)
     {
         loading = true;
-        using var dbContext = dbContextFactory.CreateDbContext();
         try
         {
-            dbContext.Documents.Update(entity);
-            await dbContext.SaveChangesAsync();
             Snackbar.Add("Updated Game", Severity.Success);
         }
         catch (Exception ex)
@@ -226,8 +218,6 @@
 
     public async Task Delete(Document entity)
     {
-        using var dbContext = dbContextFactory.CreateDbContext();
-        var documentService = new DocumentService(dbContextFactory.CreateDbContext(), Storage, logger);
         await documentService.DeleteDocument(entity);
 
         Snackbar.Add("Deleted Document", Severity.Info);
