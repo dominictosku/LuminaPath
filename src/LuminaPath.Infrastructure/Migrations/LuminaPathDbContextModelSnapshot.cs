@@ -17,7 +17,7 @@ namespace LuminaPath.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.11")
+                .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -38,7 +38,7 @@ namespace LuminaPath.Infrastructure.Migrations
                         .HasMaxLength(5)
                         .HasColumnType("varchar(5)");
 
-                    b.Property<string>("Genres")
+                    b.PrimitiveCollection<string>("Genres")
                         .IsRequired()
                         .HasColumnType("longtext");
 
@@ -61,7 +61,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.ToTable("Media");
 
-                    b.HasDiscriminator<string>("Discriminator").HasValue("Media");
+                    b.HasDiscriminator().HasValue("Media");
 
                     b.UseTphMappingStrategy();
                 });
@@ -245,7 +245,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.ToTable("Quests");
 
-                    b.HasDiscriminator<string>("Discriminator").HasValue("Quest");
+                    b.HasDiscriminator().HasValue("Quest");
 
                     b.UseTphMappingStrategy();
                 });
