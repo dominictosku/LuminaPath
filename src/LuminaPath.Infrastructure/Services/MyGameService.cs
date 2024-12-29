@@ -13,16 +13,9 @@ namespace LuminaPath.Infrastructure.Services
         {
         }
 
-        public async Task<List<Game>> GetDropdownGames()
-        {
-            var context = await GetDbContextAsync();
-            var games = context.Games.ToList();
-            return games;
-        }
-
         public async Task<List<MyGame>> GetMyGames(string UserId, Expression<Func<MyGame, bool>> filter = null)
         {
-            var context = await GetDbContextAsync();
+            using var context = await GetDbContextAsync();
             IQueryable<MyGame> entities = GetEntities(context);
             entities = entities.Where(g => g.LuminaUserId == UserId).Include(g => g.Game);
             entities = PrepareEntity(entities, filter, e => e.OrderByDescending(g => g.Game.ReleaseDate));
@@ -36,7 +29,7 @@ namespace LuminaPath.Infrastructure.Services
             IEnumerable<string> includes = null)
         {
             int pageIndex = paging.PageIndex;
-            var context = await GetDbContextAsync();
+            using var context = await GetDbContextAsync();
             IQueryable<MyGame> entities = GetEntities(context);
             entities = entities.Where(g => g.LuminaUserId == UserId).Include(g => g.Game);
             entities = PrepareEntity(entities, filter, e => e.OrderByDescending(g => g.Game.ReleaseDate), includes);

@@ -14,6 +14,18 @@ namespace LuminaPath.Infrastructure.Services
 
         }
 
+        public async Task<List<Game>> GetDropdownGames()
+        {
+            using var context = await GetDbContextAsync();
+            return context.Games.ToList();
+        }
+
+        public async Task<List<Game>> GetDropdownGames(string searchName)
+        {
+            using var context = await GetDbContextAsync();
+            return context.Games.Where(x => LuminaPathDbContext.Soundex(x.Name) == LuminaPathDbContext.Soundex(searchName)).ToList();
+        }
+
         public async Task<PaginatedList<Game>> GetAllPaginated(
             MediaFilter mediaFilter,
             string UserId,
