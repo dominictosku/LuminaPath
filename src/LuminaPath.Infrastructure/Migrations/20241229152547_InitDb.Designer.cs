@@ -3,6 +3,7 @@ using System;
 using LuminaPath.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -11,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LuminaPath.Infrastructure.Migrations
 {
     [DbContext(typeof(LuminaPathDbContext))]
-    [Migration("20241228144805_InitDb")]
+    [Migration("20241229152547_InitDb")]
     partial class InitDb
     {
         /// <inheritdoc />
@@ -19,14 +20,18 @@ namespace LuminaPath.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
             modelBuilder.Entity("LuminaPath.Core.Models.Base.Media", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
@@ -36,13 +41,14 @@ namespace LuminaPath.Infrastructure.Migrations
                         .HasMaxLength(5)
                         .HasColumnType("varchar(5)");
 
-                    b.Property<string>("Genre")
+                    b.Property<string>("Genres")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<DateTime?>("ReleaseDate")
                         .HasColumnType("datetime(6)");
@@ -68,6 +74,8 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ContentType")
                         .HasColumnType("longtext");
@@ -165,6 +173,8 @@ namespace LuminaPath.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime(6)");
 
@@ -172,7 +182,11 @@ namespace LuminaPath.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("LuminaUserId")
+                        .IsRequired()
                         .HasColumnType("varchar(255)");
+
+                    b.Property<int>("Priortiy")
+                        .HasColumnType("int");
 
                     b.Property<short?>("Rating")
                         .HasColumnType("smallint");
@@ -180,8 +194,11 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int?>("TimeSpend")
+                    b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<double?>("TimeSpend")
+                        .HasColumnType("double");
 
                     b.HasKey("Id");
 
@@ -197,6 +214,8 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -239,6 +258,8 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("FirstPlayed")
                         .HasColumnType("datetime(6)");
@@ -295,6 +316,8 @@ namespace LuminaPath.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<string>("ClaimType")
                         .HasColumnType("longtext");
 
@@ -317,6 +340,8 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ClaimType")
                         .HasColumnType("longtext");
@@ -435,7 +460,9 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasOne("LuminaPath.Core.Models.LuminaUser", "LuminaUser")
                         .WithMany("MyGames")
-                        .HasForeignKey("LuminaUserId");
+                        .HasForeignKey("LuminaUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Game");
 
@@ -534,8 +561,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
             modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
                 {
-                    b.Navigation("GameInfo")
-                        .IsRequired();
+                    b.Navigation("GameInfo");
 
                     b.Navigation("MyGames");
                 });

@@ -15,7 +15,7 @@ namespace Test.Utilities
 					{
 						Name = name,
 						Description = "Battle Royale",
-						Genre = "Shooter",
+						Genres = { "Shooter" },
 						ReleaseDate = new DateTime(2017, 07, 28),
 						Plattforms = Plattforms.Playstation,
 						Playtime = 100

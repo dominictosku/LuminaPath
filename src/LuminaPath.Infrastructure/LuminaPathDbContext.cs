@@ -1,5 +1,7 @@
 ﻿using LuminaPath.Core.Common.Interfaces;
 using LuminaPath.Core.Models;
+using LuminaPath.Core.Models.Base;
+using LuminaPath.Infrastructure.ModelConfiugration;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,7 +16,8 @@ namespace LuminaPath.Infrastructure
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			base.OnModelCreating(modelBuilder);
-		}
+			modelBuilder.ApplyConfiguration(new GameConfiguration());
+        }
 
 		[DbFunction(Name = "SOUNDEX", IsBuiltIn = true)]
 		public static string Soundex(string query)

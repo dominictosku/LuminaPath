@@ -75,11 +75,11 @@ namespace LuminaPath.Infrastructure.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Name = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
+                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Description = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Genre = table.Column<string>(type: "longtext", nullable: true)
+                    Genres = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     ReleaseDate = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     Source = table.Column<string>(type: "longtext", nullable: false)
@@ -281,12 +281,14 @@ namespace LuminaPath.Infrastructure.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Status = table.Column<int>(type: "int", nullable: false),
                     GameId = table.Column<int>(type: "int", nullable: false),
                     Rating = table.Column<short>(type: "smallint", nullable: true),
+                    Priortiy = table.Column<int>(type: "int", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     EndDate = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    TimeSpend = table.Column<int>(type: "int", nullable: true),
-                    LuminaUserId = table.Column<string>(type: "varchar(255)", nullable: true)
+                    TimeSpend = table.Column<double>(type: "double", nullable: true),
+                    LuminaUserId = table.Column<string>(type: "varchar(255)", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
@@ -296,7 +298,8 @@ namespace LuminaPath.Infrastructure.Migrations
                         name: "FK_MyGames_AspNetUsers_LuminaUserId",
                         column: x => x.LuminaUserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_MyGames_Media_GameId",
                         column: x => x.GameId,

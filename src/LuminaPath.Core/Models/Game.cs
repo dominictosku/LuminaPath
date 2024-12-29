@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LuminaPath.Core.Models
 {
-	public partial class Game : Media
+	public class Game : Media
 	{
 		[Display(Name = "Plattform")]
 		public Plattforms Plattforms { get; set; }

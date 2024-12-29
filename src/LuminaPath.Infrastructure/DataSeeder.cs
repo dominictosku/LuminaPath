@@ -28,7 +28,7 @@ namespace LuminaPath.Infrastructure
                 {
                     Name = "Apex",
                     Description = "Battle Royal",
-                    Genre = "Shooter",
+                    Genres = { "Shooter" },
                     ReleaseDate = new DateTime(2019, 2, 4)
                 }
             };
