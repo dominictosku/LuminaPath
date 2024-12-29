@@ -11,11 +11,12 @@
 @using LuminaPath.UI.Shared.Media
 @using LuminaPath.ViewModel
 @using Microsoft.EntityFrameworkCore
+@inherits BaseAuth
+@implements ITableActions<MyGame>
+@inject GameService gameService
 @inject MyGameService myGameService
 @inject NavigationManager Navigation
 @inject IMapper mapper
-@inherits BaseAuth
-@implements ITableActions<MyGame>
 
 <PageTitle>Games</PageTitle>
 
@@ -175,7 +176,7 @@ else
 	#region Events
 	public async Task OnCreate()
 	{
-		var dropdownGames = await myGameService.GetDropdownGames();
+		var dropdownGames = await gameService.GetDropdownGames();
 		var command = new MyGame();
 		var parameters = new DialogParameters<MyGameFormDialog>
 			{
@@ -195,7 +196,7 @@ else
 	public async Task OnUpdate(MyGame g)
 	{
 		var command = g;
-		var dropdownGames = await myGameService.GetDropdownGames();
+		var dropdownGames = await gameService.GetDropdownGames();
 		var parameters = new DialogParameters<MyGameFormDialog>
 			{
 				{ x=>x.Refresh , new Action(async () => await ReloadData()) },

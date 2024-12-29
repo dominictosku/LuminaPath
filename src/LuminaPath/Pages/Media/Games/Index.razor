@@ -57,7 +57,13 @@
 					</div>
 				</CellTemplate>
 			</PropertyColumn>
-			<PropertyColumn Property="x => x.Genres" Title="Genre" />
+			<PropertyColumn Property="x => x.Genres" Title="Genre" >
+				<CellTemplate>
+					<div class="d-flex flex-column">
+						<MudText Typo="Typo.body2" Class="mud-text-secondary">@string.Join(",", context.Item.Genres)</MudText>
+					</div>
+				</CellTemplate>
+			</PropertyColumn>
 		</Columns>
 		<NoRecordsContent>
 			<MudText>No items found</MudText>
