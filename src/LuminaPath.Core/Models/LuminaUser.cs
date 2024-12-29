@@ -2,8 +2,8 @@
 
 namespace LuminaPath.Core.Models
 {
-	public class LuminaUser : IdentityUser
-	{
-		public List<MyGame>? MyGames { get; set; }
-	}
+    public class LuminaUser : IdentityUser
+    {
+        public List<MyGame>? MyGames { get; set; }
+    }
 }

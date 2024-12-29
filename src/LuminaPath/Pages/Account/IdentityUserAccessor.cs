@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace LuminaPath.Pages.Account
 {
-	internal sealed class IdentityUserAccessor(UserManager<LuminaUser> userManager, IdentityRedirectManager redirectManager)
+    internal sealed class IdentityUserAccessor(UserManager<LuminaUser> userManager, IdentityRedirectManager redirectManager)
     {
         public async Task<LuminaUser> GetRequiredUserAsync(HttpContext context)
         {

@@ -1,5 +1,4 @@
-﻿using LuminaPath.Core;
-using LuminaPath.Core.Models;
+﻿using LuminaPath.Core.Models;
 using Microsoft.AspNetCore.Identity;
 
 namespace LuminaPath.Infrastructure

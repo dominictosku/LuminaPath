@@ -1,15 +1,11 @@
 ﻿using LuminaPath.Core.Models;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using static TestPSN.Classes.PSNProfile;
-using static TestPSN.Classes.PSNTitles;
-using static TestPSN.Classes.PSNTrophy;
+using static LuminaPath.Infrastructure.Classes.PSNProfile;
+using static LuminaPath.Infrastructure.Classes.PSNTitles;
+using static LuminaPath.Infrastructure.Classes.PSNTrophy;
 
 namespace LuminaPath.Infrastructure.Services.Third_Party
 {
@@ -32,7 +28,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
             int seconds = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) : 0;
 
             // Convert the total time to hours
-            double totalHours = hours + minutes / 60.0 + seconds / 3600.0;
+            double totalHours = hours + (minutes / 60.0) + (seconds / 3600.0);
             return Math.Round(totalHours, 2); // Return rounded value (to 2 decimal places)
         }
 
@@ -56,13 +52,13 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
         {
             List<Game> list = new List<Game>();
             var titles = gameData.Titles;
-            foreach (var title in titles) 
+            foreach (var title in titles)
             {
                 var game = new Game()
                 {
                     Name = title.Name,
                     Source = "PSN",
-                    GameInfo = { 
+                    GameInfo = {
                         FirstPlayed = title.FirstPlayedDateTime,
                         LastPlayed = title.LastPlayedDateTime,
                         PsnId = title.TitleId,
