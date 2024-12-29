@@ -24,7 +24,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
 		[HttpGet]
 		public async virtual Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)
 		{
-			var result = await _service.GetAndMapEntities<TEntityDto>(mediaFilter, Includes);
+			var result = await _service.GetAllPaginated<TEntityDto>(mediaFilter, Includes);
 			return Ok(new PaginatedResult<TEntityDto>(result));
 		}
 
