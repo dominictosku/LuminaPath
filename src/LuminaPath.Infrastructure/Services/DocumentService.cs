@@ -14,16 +14,21 @@ namespace LuminaPath.Infrastructure.Services
 {
 	public class DocumentService
 	{
-		private readonly LuminaPathDbContext _context;
+		private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
 		private readonly IStorageService _storage;
-		private readonly ILogger _logger;
+		private readonly ILogger<DocumentService> _logger;
 		private const long MaxAllowedSize = 3145728;
 
-		public DocumentService(LuminaPathDbContext context, IStorageService storage, ILogger logger)
+		public DocumentService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IStorageService storage, ILogger<DocumentService> logger)
 		{
-			_context = context;
+			_dbContextFactory = dbContextFactory;
 			_storage = storage;
 			_logger = logger;
+		}
+
+		protected async Task<LuminaPathDbContext> GetDbContextAsync()
+		{
+			return await _dbContextFactory.CreateDbContextAsync();
 		}
 
 		public virtual async Task<PaginatedList<Document>> GetAllPaginated(
@@ -32,7 +37,8 @@ namespace LuminaPath.Infrastructure.Services
 			Func<IQueryable<Document>, IOrderedQueryable<Document>> orderBy = null,
 			IEnumerable<string> includes = null)
 		{
-			IQueryable<Document> entities = _context.Documents;
+			using var context = await GetDbContextAsync();
+			IQueryable<Document> entities = context.Documents;
 			entities = PrepareEntity(entities, filter, orderBy, includes);
 			return await CreatePaginatedList(entities, paging);
 		}
@@ -80,7 +86,8 @@ namespace LuminaPath.Infrastructure.Services
 		{
 			try
 			{
-				var existingDocument = _context.Documents.Single(d => d.Id == document.Id);
+				using var context = await GetDbContextAsync();
+				var existingDocument = context.Documents.Single(d => d.Id == document.Id);
 				if (existingDocument is null)
 				{
 					_logger.LogError("Could not find file, document: {0}", document.Name);
@@ -94,8 +101,8 @@ namespace LuminaPath.Infrastructure.Services
 					return;
 				}
 
-				_context.Documents.Remove(existingDocument);
-				_context.SaveChanges();
+				context.Documents.Remove(existingDocument);
+				context.SaveChanges();
 			}
 			catch (Exception ex)
 			{
@@ -115,12 +122,13 @@ namespace LuminaPath.Infrastructure.Services
 
 		public async Task DeleteMediaDocument(Media entity)
 		{
+			using var context = await GetDbContextAsync();
 			if (entity.Image is null)
 				return;
 			var image = entity.Image;
 			entity.Image = null;
-			_context.Update(entity);
-			_context.SaveChanges();
+			context.Update(entity);
+			context.SaveChanges();
 			await DeleteDocument(image);
 		}
 

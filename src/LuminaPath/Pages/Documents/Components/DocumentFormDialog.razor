@@ -16,7 +16,7 @@
 @inject IStorageService Storage
 @inject ILogger<DocumentFormDialog> logger
 @inject NavigationManager Navigation
-@inject IDbContextFactory<LuminaPathDbContext> dbContextFactory
+@inject DocumentService documentService
 
 <MudDialog>
     <DialogContent>
@@ -153,8 +153,6 @@
         using Stream fs = file.OpenReadStream(MaxAllowedSize);
         try
         {
-            using var dbContext = dbContextFactory.CreateDbContext();
-            var documentService = new DocumentService(dbContextFactory.CreateDbContext(), Storage, logger);
             var result = await documentService.CreateDocument(file);
             return result;
         }
