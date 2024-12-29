@@ -2,7 +2,7 @@
 
 namespace LuminaPath.ViewModel
 {
-	public class GameViewModel : Game
-	{
-	}
+    public class GameViewModel : Game
+    {
+    }
 }

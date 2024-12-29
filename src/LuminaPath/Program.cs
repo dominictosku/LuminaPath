@@ -1,6 +1,6 @@
 ﻿using LuminaPath;
-using LuminaPath.UI.Shared;
 using LuminaPath.Infrastructure;
+using LuminaPath.UI.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,10 +11,10 @@ builder.Services.AddSpaStaticFiles(configuration =>
 
 // Add services to the container.
 builder.Services
-	.AddInfrastructure(builder.Configuration)
-	.AddServer()
-	.AddBlazor()
-	.AddUILibrary();
+    .AddInfrastructure(builder.Configuration)
+    .AddServer()
+    .AddBlazor()
+    .AddUILibrary();
 
 builder.Services.AddAutoMapper(typeof(Program));
 

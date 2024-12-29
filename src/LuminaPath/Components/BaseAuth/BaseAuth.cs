@@ -8,16 +8,16 @@ namespace LuminaPath.Components.BaseAuth
         [Inject]
         public AuthenticationStateProvider GetAuthenticationStateAsync { get; set; }
         public string UserId { get; set; }
-		public string UserName { get; set; }
+        public string UserName { get; set; }
 
-		protected override async Task OnInitializedAsync()
+        protected override async Task OnInitializedAsync()
         {
             var authstate = await GetAuthenticationStateAsync.GetAuthenticationStateAsync();
             var user = authstate.User;
             if (!user.Identity.IsAuthenticated) return;
             var name = user.Identity.Name;
-			UserName = name;
-			UserId = user.FindFirst(c => c.Type.Contains("nameidentifier"))?.Value;
-		}
+            UserName = name;
+            UserId = user.FindFirst(c => c.Type.Contains("nameidentifier"))?.Value;
+        }
     }
 }

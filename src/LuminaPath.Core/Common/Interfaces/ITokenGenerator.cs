@@ -3,8 +3,8 @@ using LuminaPath.Core.Models;
 
 namespace LuminaPath.Core.Common.Interfaces
 {
-	public interface ITokenGenerator
-	{
-		public Task<AuthenticationResponse> CreateToken(LuminaUser user);
-	}
+    public interface ITokenGenerator
+    {
+        public Task<AuthenticationResponse> CreateToken(LuminaUser user);
+    }
 }

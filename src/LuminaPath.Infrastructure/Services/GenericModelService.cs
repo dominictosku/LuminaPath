@@ -28,7 +28,7 @@ namespace LuminaPath.Infrastructure.Services
             return dbContext.Set<TEntity>();
         }
 
-        public async virtual Task<List<TEntity>> GetAll()
+        public virtual async Task<List<TEntity>> GetAll()
         {
             using (var dbContext = await GetDbContextAsync())
             {
@@ -36,7 +36,7 @@ namespace LuminaPath.Infrastructure.Services
             }
         }
 
-        public async virtual Task<PaginatedList<TEntity>> GetAllPaginated(
+        public virtual async Task<PaginatedList<TEntity>> GetAllPaginated(
             MediaFilter mediaFilter,
             IEnumerable<string> includes,
             Expression<Func<TEntity, bool>> filter = null,
@@ -45,7 +45,7 @@ namespace LuminaPath.Infrastructure.Services
             return await GetAllPaginated<TEntity>(mediaFilter, includes, filter, orderBy);
         }
 
-        public async virtual Task<PaginatedList<Dto>> GetAllPaginated<Dto>(
+        public virtual async Task<PaginatedList<Dto>> GetAllPaginated<Dto>(
             MediaFilter mediaFilter,
             IEnumerable<string> includes,
             Expression<Func<TEntity, bool>> filter = null,
@@ -69,7 +69,7 @@ namespace LuminaPath.Infrastructure.Services
             }
         }
 
-        public async virtual Task<TEntity> GetById(int? id, IEnumerable<string>? includes = null)
+        public virtual async Task<TEntity> GetById(int? id, IEnumerable<string>? includes = null)
         {
             if (id == null)
                 throw new Exception("No id given");
