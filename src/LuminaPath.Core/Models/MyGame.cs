@@ -6,14 +6,16 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LuminaPath.Core.Models
 {
-	public partial class MyGame : MyMedia, IMyMedia
+	public class MyGame : MyMedia, IMyMedia
 	{
-		[Required(ErrorMessage = "No {0} was choosen")]
-		[Display(Name = "Game")]
 		[NotMapped]
 		public int MediaId => GameId;
 		public GameStatus Status { get; set; }
-		public int GameId { get; set; }
+
+        [Required(ErrorMessage = "No {0} was choosen")]
+        [Display(Name = "Game Id")]
+        public int GameId { get; set; }
+
 		public Game? Game { get; set; }
 	}
 }
