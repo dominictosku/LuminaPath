@@ -9,30 +9,62 @@
 
 <h1>LuminaPath</h1>
 
-Track your Journey
+<h3>Track your Journey</h3>
 
-<h3>Your Main Games</h3>
+<MudDivider Class="m-3" Light="true" />
+
+<h2>Your Main Games</h2>
 @foreach(var game in CurrentMainGames)
 {   
-<MudCard>
-    <MudCardContent>
-        <MudText>@game.Game.Name</MudText>
+    <MudCard>
+        <MudCardContent>
+            <MudText>@game.Game.Name</MudText>
             <MudText Typo="Typo.body2">@game.Status</MudText>
-    </MudCardContent>
-    <MudCardActions>
-        <MudButton Variant="Variant.Text" Color="Color.Primary">Learn More</MudButton>
-    </MudCardActions>
-</MudCard>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Text" Color="Color.Primary">Learn More</MudButton>
+        </MudCardActions>
+    </MudCard>
+}
+
+@if(User is not null && User.LuminaUserInfo is not null)
+{
+    <MudText> PSN Statistic </MudText>
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">Trophy level @User.LuminaUserInfo.PSNTrophyLevel</MudPaper>
+        </MudItem>
+        <MudItem xs="6">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">Platin @User.LuminaUserInfo.PSNPlatinum</MudPaper>
+        </MudItem>
+        <MudItem xs="6">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">Gold @User.LuminaUserInfo.PSNGold</MudPaper>
+        </MudItem>
+        <MudItem xs="3">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">Silver @User.LuminaUserInfo.PSNSilver</MudPaper>
+        </MudItem>
+        <MudItem xs="3">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">Bronze @User.LuminaUserInfo.PSNBronze</MudPaper>
+        </MudItem>
+        <MudItem xs="3">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">Hours</MudPaper>
+        </MudItem>
+        <MudItem xs="3">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">Other</MudPaper>
+        </MudItem>
+    </MudGrid>
 }
 
 @code{
     List<MyGame> CurrentMainGames = new();
+    int totalHours;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
         if (UserId == null) return;
         var result = await myGameService.GetMyGames(UserId);
+        totalHours = result.Sum(r => (int)r.TimeSpend.Value);
         CurrentMainGames = result.Where(x => x.Status == GameStatus.MainGame).ToList();
     }
 }

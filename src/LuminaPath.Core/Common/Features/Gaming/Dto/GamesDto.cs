@@ -1,7 +1,9 @@
 ﻿using LuminaPath.Core.Common.Enums;
 using LuminaPath.Core.Common.Interfaces;
 using LuminaPath.Core.Common.Validation;
+using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Base;
+using LuminaPath.Core.Models.Third_Party;
 using System.ComponentModel.DataAnnotations;
 
 namespace LuminaPath.Core.Common.Features.Gaming.Dto
@@ -51,6 +53,9 @@ namespace LuminaPath.Core.Common.Features.Gaming.Dto
 
         [Display(Name = "Estimated playtime")] public int? Playtime { get; set; }
 
-        public Document? Image { get; set; }
+        public string Source { get; set; } = string.Empty;
+
+        public MediaDocument? Image { get; set; }
+        public GameInfo? GameInfo { get; set; }    
     }
 }

@@ -40,6 +40,8 @@ namespace LuminaPath.Infrastructure.Migrations
                 {
                     Id = table.Column<string>(type: "varchar(255)", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
+                    FullName = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     UserName = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     NormalizedUserName = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: true)
@@ -232,8 +234,13 @@ namespace LuminaPath.Infrastructure.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     PSNOnlineId = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    AccountId = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4")
+                    PSNAccountId = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    PSNTrophyLevel = table.Column<int>(type: "int", nullable: false),
+                    PSNBronze = table.Column<int>(type: "int", nullable: false),
+                    PSNSilver = table.Column<int>(type: "int", nullable: false),
+                    PSNGold = table.Column<int>(type: "int", nullable: false),
+                    PSNPlatinum = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -295,10 +302,7 @@ namespace LuminaPath.Infrastructure.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     GameId = table.Column<int>(type: "int", nullable: false),
                     PsnId = table.Column<string>(type: "longtext", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    TrackedHours = table.Column<double>(type: "double", nullable: false),
-                    FirstPlayed = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    LastPlayed = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
@@ -382,6 +386,29 @@ namespace LuminaPath.Infrastructure.Migrations
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
+            migrationBuilder.CreateTable(
+                name: "MyGameInfo",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    MyGameId = table.Column<int>(type: "int", nullable: false),
+                    TrackedHours = table.Column<double>(type: "double", nullable: false),
+                    FirstPlayed = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    LastPlayed = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MyGameInfo", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MyGameInfo_MyGames_MyGameId",
+                        column: x => x.MyGameId,
+                        principalTable: "MyGames",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -449,6 +476,12 @@ namespace LuminaPath.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_MyGameInfo_MyGameId",
+                table: "MyGameInfo",
+                column: "MyGameId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MyGames_GameId",
                 table: "MyGames",
                 column: "GameId");
@@ -497,13 +530,16 @@ namespace LuminaPath.Infrastructure.Migrations
                 name: "LuminaUserInfo");
 
             migrationBuilder.DropTable(
-                name: "MyGames");
+                name: "MyGameInfo");
 
             migrationBuilder.DropTable(
                 name: "Quests");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
+
+            migrationBuilder.DropTable(
+                name: "MyGames");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
