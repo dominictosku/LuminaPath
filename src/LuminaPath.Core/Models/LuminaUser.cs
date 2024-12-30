@@ -5,6 +5,7 @@ namespace LuminaPath.Core.Models
 {
     public class LuminaUser : IdentityUser
     {
+        public string FullName { get; set; }
         public List<UserDocument> Documents { get; set; }
         public LuminaUserInfo LuminaUserInfo { get; set; }
         public List<MyGame>? MyGames { get; set; }

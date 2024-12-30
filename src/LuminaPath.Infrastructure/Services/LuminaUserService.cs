@@ -51,19 +51,22 @@ namespace LuminaPath.Infrastructure.Services
 
         public async Task<IdentityResult?> CreateUser(UserDto model) 
         {
+            var lockedOut = !model.Active;
             var applicationUser = new LuminaUser
             {
-                UserName = model.UserName,
+                FullName = model.UserName,
+                UserName = model.Email,
                 Email = model.Email,
                 PhoneNumber = model.PhoneNumber,
-                LockoutEnabled = model.LockoutEnabled,
+                LockoutEnabled = lockedOut,
+                LockoutEnd = lockedOut ? DateTime.Now.AddDays(60) : null,
                 EmailConfirmed = true
             };
             var password = model.Password;
             var state = await _userManager.CreateAsync(applicationUser, password!);
             if (state.Succeeded && model.Role != string.Empty)
             {
-                var user = await _userManager.FindByNameAsync(model.UserName);
+                var user = await _userManager.FindByEmailAsync(model.Email);
                 await AddUserToRole(user, model.Role);
             }
             return state;
@@ -71,11 +74,14 @@ namespace LuminaPath.Infrastructure.Services
 
         public async Task<IdentityResult> UpdateUser(UserDto model) 
         {
+            var lockedOut = !model.Active;
             var user = await _userManager.FindByIdAsync(model.Id!) ?? throw new Exception($"The application user [{model.Id}] was not found.");
+            user.FullName = model.UserName;
             user.Email = model.Email;
             user.PhoneNumber = model.PhoneNumber;
-            user.UserName = model.UserName;
-            user.LockoutEnabled = model.LockoutEnabled;
+            user.UserName = model.Email;
+            user.LockoutEnabled = lockedOut;
+            user.LockoutEnd = lockedOut ? DateTime.Now.AddDays(60) : null;
             if (model.Role != string.Empty)
             {
                 await AddUserToRole(user, model.Role);
@@ -103,9 +109,10 @@ namespace LuminaPath.Infrastructure.Services
 
         public async Task<IdentityResult> SetUserActive(string userId, bool active)
         {
+            bool lockedOut = !active;
             var user = await _userManager.FindByIdAsync(userId!) ?? throw new Exception($"Application user not found {userId}.");
-            user.LockoutEnd = active ? DateTime.Now.AddDays(60) : null;
-            user.LockoutEnabled = active;
+            user.LockoutEnd = lockedOut ? DateTime.Now.AddDays(60) : null;
+            user.LockoutEnabled = lockedOut;
             return await _userManager.UpdateAsync(user);
         }
 
