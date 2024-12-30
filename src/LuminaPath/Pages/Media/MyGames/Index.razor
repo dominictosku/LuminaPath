@@ -62,7 +62,13 @@
 					</div>
 				</CellTemplate>
 			</PropertyColumn>
-			<PropertyColumn Property="x => x.Game.Genres" Title="Genre" />
+			<PropertyColumn Property="x => x.Game.Genres" Title="Genre">
+				<CellTemplate>
+					<div class="d-flex flex-column">
+						<MudText Typo="Typo.body2">@string.Join(",", context.Item.Game.Genres)</MudText>						
+					</div>
+				</CellTemplate>
+				</PropertyColumn>
 			<PropertyColumn Property="x => x.Status" Title="Status" />
 		</Columns>
 		<NoRecordsContent>
