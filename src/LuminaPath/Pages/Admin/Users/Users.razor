@@ -104,17 +104,17 @@ ServerData="@(ServerReload)">
                 <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
                 Dense="true"
                 EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-                    <MudMenuItem OnAction="@(() => OnEdit(context.Item))">Edit</MudMenuItem>
-                    <MudMenuItem OnAction="@(() => OnDelete(context.Item))">Delete</MudMenuItem>
+                    <MudMenuItem OnClick="@(() => OnEdit(context.Item))">Edit</MudMenuItem>
+                    <MudMenuItem OnClick="@(() => OnDelete(context.Item))">Delete</MudMenuItem>
                     @if (!context.Item.LockoutEnabled)
                     {
-                        <MudMenuItem OnAction=@(() => OnSetActive(context.Item))>Deactive user</MudMenuItem>
+                        <MudMenuItem OnClick=@(() => OnSetActive(context.Item))>Deactive user</MudMenuItem>
                     }
                     else
                     {
-                        <MudMenuItem OnAction=@(() => OnSetActive(context.Item))>Activate user</MudMenuItem>
+                        <MudMenuItem OnClick=@(() => OnSetActive(context.Item))>Activate user</MudMenuItem>
                     }
-                    <MudMenuItem OnAction=@(() => OnResetPassword(context.Item))>Reset password</MudMenuItem>
+                    <MudMenuItem OnClick=@(() => OnResetPassword(context.Item))>Reset password</MudMenuItem>
                 </MudMenu>
             </CellTemplate>
         </TemplateColumn>
@@ -286,7 +286,8 @@ ServerData="@(ServerReload)">
 
     private async Task OnDelete(LuminaUser dto)
     {
-
+        await UserService.DeleteUser(dto.Id);
+        await OnRefresh();
     }
 
     private async Task OnDeleteChecked()
@@ -294,6 +295,11 @@ ServerData="@(ServerReload)">
         var state = await AuthState;
         var currentUserId = "";
         var isSelectedItemContainCurrentUser = _selectedItems.Any(x => x.Id == currentUserId);
+        if (isSelectedItemContainCurrentUser) return;
+        foreach(var item in _selectedItems)
+            await UserService.DeleteUser(item.Id);
+
+        await OnRefresh();
     }
 
     private async Task OnSetActive(LuminaUser item)

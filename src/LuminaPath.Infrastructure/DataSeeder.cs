@@ -1,4 +1,5 @@
 ﻿using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 
 namespace LuminaPath.Infrastructure
@@ -37,10 +38,12 @@ namespace LuminaPath.Infrastructure
 
         public static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
         {
-            // Create roles if they don't exist
-            if (!await roleManager.RoleExistsAsync("Administrator"))
+            foreach (var role in LuminaUserService.Roles) 
             {
-                await roleManager.CreateAsync(new IdentityRole("Administrator"));
+                if (!await roleManager.RoleExistsAsync(role))
+                {
+                    await roleManager.CreateAsync(new IdentityRole(role));
+                }
             }
         }
 
@@ -53,6 +56,7 @@ namespace LuminaPath.Infrastructure
                 {
                     UserName = adminEmail,
                     Email = adminEmail,
+                    LockoutEnabled = false,
                     EmailConfirmed = true
                 };
 

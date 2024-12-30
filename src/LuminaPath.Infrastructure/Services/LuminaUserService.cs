@@ -15,6 +15,7 @@ namespace LuminaPath.Infrastructure.Services
 {
     public class LuminaUserService
     {
+        public static readonly string[] Roles = ["Administrator", "Editor"];
         private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
         private readonly UserManager<LuminaUser> _userManager;
         public LuminaUserService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, UserManager<LuminaUser> userManager)
@@ -55,10 +56,17 @@ namespace LuminaPath.Infrastructure.Services
                 UserName = model.UserName,
                 Email = model.Email,
                 PhoneNumber = model.PhoneNumber,
-                LockoutEnabled = model.LockoutEnabled
+                LockoutEnabled = model.LockoutEnabled,
+                EmailConfirmed = true
             };
             var password = model.Password;
-            return await _userManager.CreateAsync(applicationUser, password!);
+            var state = await _userManager.CreateAsync(applicationUser, password!);
+            if (state.Succeeded && model.Role != string.Empty)
+            {
+                var user = await _userManager.FindByNameAsync(model.UserName);
+                await AddUserToRole(user, model.Role);
+            }
+            return state;
         }
 
         public async Task<IdentityResult> UpdateUser(UserDto model) 
@@ -68,6 +76,10 @@ namespace LuminaPath.Infrastructure.Services
             user.PhoneNumber = model.PhoneNumber;
             user.UserName = model.UserName;
             user.LockoutEnabled = model.LockoutEnabled;
+            if (model.Role != string.Empty)
+            {
+                await AddUserToRole(user, model.Role);
+            }
             return await _userManager.UpdateAsync(user);
         }
 
@@ -78,11 +90,29 @@ namespace LuminaPath.Infrastructure.Services
             return await _userManager.UpdateAsync(user);
         }
 
+        public async Task AddUserToRole(LuminaUser user, string role)
+        {
+            if (!Roles.Contains(role)) return;
+            foreach(var existingRole in Roles)
+            {
+                if(await _userManager.IsInRoleAsync(user, existingRole))
+                    await _userManager.RemoveFromRoleAsync(user, existingRole);
+            }
+            await _userManager.AddToRoleAsync(user, role);
+        }
+
         public async Task<IdentityResult> SetUserActive(string userId, bool active)
         {
             var user = await _userManager.FindByIdAsync(userId!) ?? throw new Exception($"Application user not found {userId}.");
+            user.LockoutEnd = active ? DateTime.Now.AddDays(60) : null;
             user.LockoutEnabled = active;
             return await _userManager.UpdateAsync(user);
+        }
+
+        public async Task DeleteUser(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId) ?? throw new Exception("User not found");
+            await _userManager.DeleteAsync(user);
         }
     }
 }
