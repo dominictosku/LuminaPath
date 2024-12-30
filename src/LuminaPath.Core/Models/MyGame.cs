@@ -1,6 +1,7 @@
 ﻿using LuminaPath.Core.Common.Enums;
 using LuminaPath.Core.Common.Interfaces;
 using LuminaPath.Core.Models.Base;
+using LuminaPath.Core.Models.Third_Party;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -17,5 +18,6 @@ namespace LuminaPath.Core.Models
         public int GameId { get; set; }
 
         public Game? Game { get; set; }
+        public MyGameInfo? MyGameInfo { get; set; }
     }
 }

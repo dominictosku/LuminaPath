@@ -1,5 +1,7 @@
 ﻿using LuminaPath.Core.Common.Enums;
+using LuminaPath.Core.Common.Features.Gaming.Dto;
 using LuminaPath.Core.Models;
+using LuminaPath.Core.Models.Third_Party;
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -102,24 +104,29 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
             }
         }
 
-        public List<Game> ConvertPSNTitles(GameData gameData)
+        public List<MyGameDto> ConvertPSNTitles(GameData gameData)
         {
-            List<Game> list = new List<Game>();
+            List<MyGameDto> list = new List<MyGameDto>();
             var titles = gameData.Titles;
             foreach (var title in titles)
             {
                 var plattform = title.Category.Contains("ps4") ? Plattforms.Playstation4 : Plattforms.Playstation5;
-                var game = new Game()
+                var game = new MyGameDto()
                 {
-                    Name = title.Name,
-                    Source = "PSN",
-                    Plattforms = plattform,
-                    GameInfo = new(){
+                    MyGameInfo = new()
+                    {
                         FirstPlayed = title.FirstPlayedDateTime,
                         LastPlayed = title.LastPlayedDateTime,
-                        PsnId = title.TitleId,
                         TrackedHours = DurationToHours(title.PlayDuration)
-                    }
+                    },
+                    Game = new(){
+                        Name = title.Name,
+                        Source = "PSN",
+                        Plattforms = plattform,
+                        GameInfo = new(){
+                            PsnId = title.TitleId,
+                        }
+                    },
                 };
                 list.Add(game);
             }

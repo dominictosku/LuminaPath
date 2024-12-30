@@ -54,6 +54,7 @@ namespace LuminaPath.Infrastructure
             {
                 var adminUser = new LuminaUser
                 {
+                    FullName = "Admin",
                     UserName = adminEmail,
                     Email = adminEmail,
                     LockoutEnabled = false,

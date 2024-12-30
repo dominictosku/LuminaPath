@@ -1,5 +1,6 @@
 ﻿using LuminaPath.Core.Common.Enums;
 using LuminaPath.Core.Common.Interfaces;
+using LuminaPath.Core.Models.Third_Party;
 using System.ComponentModel.DataAnnotations;
 
 namespace LuminaPath.Core.Common.Features.Gaming.Dto
@@ -15,5 +16,6 @@ namespace LuminaPath.Core.Common.Features.Gaming.Dto
         public int? TimeSpend { get; set; }
         public int GameId { get; set; }
         public GamesNoIncludeDto? Game { get; set; }
+        public MyGameInfo MyGameInfo { get; set; } = new();
     }
 }

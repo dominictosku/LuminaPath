@@ -10,7 +10,7 @@ namespace LuminaPath.Helper
     {
         public AutoMapperProfile()
         {
-            CreateMap<MyGameDto, MyGame>()
+            CreateMap<Core.Common.Features.Gaming.Dto.MyGameDto, MyGame>()
                 .ReverseMap();
 
             CreateMap<GamesNoIncludeDto, Game>()
