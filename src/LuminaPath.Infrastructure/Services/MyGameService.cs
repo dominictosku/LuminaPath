@@ -3,7 +3,14 @@ using LuminaPath.Core.Common.Entities;
 using LuminaPath.Core.Common.Entities.Results;
 using LuminaPath.Core.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Formats.Asn1;
+using System.Globalization;
+using System;
 using System.Linq.Expressions;
+using CsvHelper;
+using System.IO;
+using CsvHelper.Configuration;
+using CsvHelper.TypeConversion;
 
 namespace LuminaPath.Infrastructure.Services
 {
@@ -67,12 +74,55 @@ namespace LuminaPath.Infrastructure.Services
             await context.SaveChangesAsync();
         }
 
+        public async Task<byte[]> ExportAsCSV(LuminaUser user)
+        {
+            using var context = await GetDbContextAsync();
+            var myGames = await context.MyGames
+                .Where(g => g.LuminaUserId == user.Id)
+                .Include(g => g.MyGameInfo)
+                .Include(g => g.Game)
+                    .ThenInclude(g => g.GameInfo)
+                .ToListAsync();
+
+            // Using MemoryStream to write the CSV
+            using var memoryStream = new MemoryStream();
+            using (var writer = new StreamWriter(memoryStream))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            {
+                var options = new TypeConverterOptions { Formats = new[] { "dd.MM.yyyy HH:mm" } };
+                csv.Context.TypeConverterOptionsCache.AddOptions<DateTime>(options);
+                csv.Context.TypeConverterOptionsCache.AddOptions<DateTime?>(options);
+                csv.Context.RegisterClassMap<MyGameMap>();
+                csv.WriteRecords(myGames);
+                writer.Flush(); // Ensure all data is written to the stream
+            }
+
+            return memoryStream.ToArray();
+        }
+
         protected async Task<bool> IsMediaAlreadyAdded(int id, int myId, string userId)
         {
             using var context = await GetDbContextAsync();
             var entities = GetEntities(context);
             var result = entities.AsNoTracking().ToList();
             return result.Any(e => e.MediaId == id && e.Id != myId && e.LuminaUserId == userId);
+        }
+
+        public sealed class MyGameMap : ClassMap<MyGame>
+        {
+            public MyGameMap()
+            {
+                Map(m => m.Game.Id);
+                Map(m => m.Game.Name);
+                Map(m => m.Status);
+                Map(m => m.Game.ReleaseDate);
+                Map(m => m.Game.Plattforms);
+                Map(m => m.Game.Source);
+                Map(m => m.MyGameInfo.FirstPlayed);
+                Map(m => m.MyGameInfo.LastPlayed);
+                Map(m => m.MyGameInfo.TrackedHours);
+                Map(m => m.Game.GameInfo.PsnId);
+            }
         }
     }
 }
