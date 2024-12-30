@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -236,11 +237,23 @@ namespace LuminaPath.Infrastructure.Migrations
                     ContentType = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     DocumentType = table.Column<int>(type: "int", nullable: false),
-                    MediaId = table.Column<int>(type: "int", nullable: true)
+                    Discriminator = table.Column<string>(type: "varchar(13)", maxLength: 13, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    MediaId = table.Column<int>(type: "int", nullable: true),
+                    Album = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    UserId1 = table.Column<string>(type: "varchar(255)", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    UserId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Documents", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Documents_AspNetUsers_UserId1",
+                        column: x => x.UserId1,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Documents_Media_MediaId",
                         column: x => x.MediaId,
@@ -386,6 +399,11 @@ namespace LuminaPath.Infrastructure.Migrations
                 table: "Documents",
                 column: "MediaId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Documents_UserId1",
+                table: "Documents",
+                column: "UserId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_GameInfo_GameId",

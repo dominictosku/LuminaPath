@@ -6,16 +6,16 @@
 @using LuminaPath.UI.Shared.Interfaces
 @using LuminaPath.UI.Shared.Media
 @using Microsoft.EntityFrameworkCore
-@inject DocumentService documentService
+@inject DocumentService DocumentService
 @inject GameService gameService
 @inject NavigationManager navigation
 @inject IMapper mapper
 @inject ILogger<Index> logger
-@implements ITableActions<Document>
+@implements ITableActions<MediaDocument>
 
-<PageTitle>Documents</PageTitle>
+<PageTitle>MediaDocuments</PageTitle>
 
-<h1>Documents</h1>
+<h1>MediaDocuments</h1>
 <MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary">@ToggleText</MudButton>
 <AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" />
 <MudDataGrid ServerData="@(ServerReload)"
@@ -29,7 +29,7 @@
              @bind-SelectedItem="_currentDto"
              Hover="true" @ref="_table">
     <ToolBarContent>
-        <TableActions TItem="Document" Page="this" loading="loading" selectedItems="selectedItems" />
+        <TableActions TItem="MediaDocument" Page="this" loading="loading" selectedItems="selectedItems" />
     </ToolBarContent>
     <Columns>
         <SelectColumn ShowInFooter="false"></SelectColumn>
@@ -79,8 +79,8 @@
 </style>
 
 @code{
-    private MudDataGrid<Document> _table = default!;
-    private Document _currentDto = new();
+    private MudDataGrid<MediaDocument> _table = default!;
+    private MediaDocument _currentDto = new();
     private MediaFilter _filter = new();
 
     [Inject]
@@ -91,18 +91,18 @@
 
     public bool IsGrid = true;
     public bool loading;
-    public HashSet<Document> selectedItems = new();
+    public HashSet<MediaDocument> selectedItems = new();
     public string ToggleText => IsGrid ? "Grid View" : "Table View";
 
-    private async Task<GridData<Document>> ServerReload(GridState<Document> state)
+    private async Task<GridData<MediaDocument>> ServerReload(GridState<MediaDocument> state)
     {
-        selectedItems = new HashSet<Document>();
+        selectedItems = new HashSet<MediaDocument>();
         loading = true;
         try
         {
             var result = await GetData(state.Page + 1);
 
-            return new GridData<Document> { TotalItems = result.Count(), Items = result };
+            return new GridData<MediaDocument> { TotalItems = result.Count(), Items = result };
         }
         finally
         {
@@ -121,10 +121,10 @@
         await ReloadData();
     }
 
-    private async Task<PaginatedList<Document>> GetData(int pageIndex)
+    private async Task<PaginatedList<MediaDocument>> GetData(int pageIndex)
     {
         var paging = new Paging(pageIndex, 15);
-        return await documentService.GetAllPaginated(paging);
+        return await DocumentService.GetAllPaginated(paging);
     }
 
     public void Dummy()
@@ -135,7 +135,7 @@
     #region Events
     public async Task OnCreate()
     {
-        var command = new Document();
+        var command = new MediaDocument();
         var parameters = new DialogParameters<DocumentFormDialog>
         {
             { x=>x.Refresh , new Action(async () => await ReloadData()) },
@@ -144,13 +144,13 @@
             { x=>x.EventCallBack, Create }
         };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = DialogService.Show<DocumentFormDialog>("Create document", parameters, options);
+        var dialog = DialogService.Show<DocumentFormDialog>("Create MediaDocument", parameters, options);
         var state = await dialog.Result;
         if (!state.Canceled)
             await ReloadData();
     }
 
-    public async Task OnUpdate(Document entity)
+    public async Task OnUpdate(MediaDocument entity)
     {
         var command = entity;
         var parameters = new DialogParameters<DocumentFormDialog>
@@ -161,7 +161,7 @@
             { x=>x.EventCallBack, Update }
         };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = DialogService.Show<DocumentFormDialog>("Update document", parameters, options);
+        var dialog = DialogService.Show<DocumentFormDialog>("Update MediaDocument", parameters, options);
         var state = await dialog.Result;
         if (!state.Canceled)
             await ReloadData();
@@ -182,16 +182,16 @@
     #endregion
 
     #region CRUD Actions
-    async Task Create(Document entity)
+    async Task Create(MediaDocument entity)
     {
         loading = true;
         try
         {
-            Snackbar.Add("Created Document", Severity.Success);
+            Snackbar.Add("Created MediaDocument", Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add("Failed to create Document", Severity.Error);
+            Snackbar.Add("Failed to create MediaDocument", Severity.Error);
             loading = false;
         }
 
@@ -199,7 +199,7 @@
         loading = false;
     }
 
-    async Task Update(Document entity)
+    async Task Update(MediaDocument entity)
     {
         loading = true;
         try
@@ -216,11 +216,11 @@
         loading = false;
     }
 
-    public async Task Delete(Document entity)
+    public async Task Delete(MediaDocument entity)
     {
-        await documentService.DeleteDocument(entity);
+        await DocumentService.DeleteDocument(entity);
 
-        Snackbar.Add("Deleted Document", Severity.Info);
+        Snackbar.Add("Deleted MediaDocument", Severity.Info);
         await ReloadData();
     }
     #endregion

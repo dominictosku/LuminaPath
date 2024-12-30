@@ -1,7 +1,7 @@
 ﻿using LuminaPath.Core.Common.Enums;
 using LuminaPath.Core.Common.Interfaces;
 using LuminaPath.Core.Common.Validation;
-using LuminaPath.Core.Models;
+using LuminaPath.Core.Models.Base;
 using System.ComponentModel.DataAnnotations;
 
 namespace LuminaPath.Core.Common.Features.Gaming.Dto

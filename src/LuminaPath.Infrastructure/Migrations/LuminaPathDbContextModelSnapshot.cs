@@ -22,6 +22,43 @@ namespace LuminaPath.Infrastructure.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("LuminaPath.Core.Models.Base.Document", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("varchar(13)");
+
+                    b.Property<int>("DocumentType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Path")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Documents");
+
+                    b.HasDiscriminator().HasValue("Document");
+
+                    b.UseTphMappingStrategy();
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.Base.Media", b =>
                 {
                     b.Property<int>("Id")
@@ -64,40 +101,6 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasDiscriminator().HasValue("Media");
 
                     b.UseTphMappingStrategy();
-                });
-
-            modelBuilder.Entity("LuminaPath.Core.Models.Document", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ContentType")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("DocumentType")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("MediaId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Path")
-                        .HasColumnType("longtext");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MediaId")
-                        .IsUnique();
-
-                    b.ToTable("Documents");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.LuminaUser", b =>
@@ -413,6 +416,38 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.MediaDocument", b =>
+                {
+                    b.HasBaseType("LuminaPath.Core.Models.Base.Document");
+
+                    b.Property<int?>("MediaId")
+                        .HasColumnType("int");
+
+                    b.HasIndex("MediaId")
+                        .IsUnique();
+
+                    b.HasDiscriminator().HasValue("MediaDocument");
+                });
+
+            modelBuilder.Entity("LuminaPath.Core.Models.UserDocument", b =>
+                {
+                    b.HasBaseType("LuminaPath.Core.Models.Base.Document");
+
+                    b.Property<string>("Album")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId1")
+                        .HasColumnType("varchar(255)");
+
+                    b.HasIndex("UserId1");
+
+                    b.HasDiscriminator().HasValue("UserDocument");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
                 {
                     b.HasBaseType("LuminaPath.Core.Models.Base.Media");
@@ -436,15 +471,6 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasIndex("GamesId");
 
                     b.HasDiscriminator().HasValue("GamesQuest");
-                });
-
-            modelBuilder.Entity("LuminaPath.Core.Models.Document", b =>
-                {
-                    b.HasOne("LuminaPath.Core.Models.Base.Media", "Media")
-                        .WithOne("Image")
-                        .HasForeignKey("LuminaPath.Core.Models.Document", "MediaId");
-
-                    b.Navigation("Media");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.MyGame", b =>
@@ -535,6 +561,24 @@ namespace LuminaPath.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("LuminaPath.Core.Models.MediaDocument", b =>
+                {
+                    b.HasOne("LuminaPath.Core.Models.Base.Media", "Media")
+                        .WithOne("Image")
+                        .HasForeignKey("LuminaPath.Core.Models.MediaDocument", "MediaId");
+
+                    b.Navigation("Media");
+                });
+
+            modelBuilder.Entity("LuminaPath.Core.Models.UserDocument", b =>
+                {
+                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId1");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.GamesQuest", b =>
