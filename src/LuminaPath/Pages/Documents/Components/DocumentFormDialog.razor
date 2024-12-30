@@ -90,14 +90,14 @@
 
     [EditorRequired]
     [Parameter]
-    public Document Model { get; set; } = default!;
+    public MediaDocument Model { get; set; } = default!;
 
     [Parameter]
     public Action? Refresh { get; set; }
 
     [EditorRequired]
     [Parameter]
-    public Func<Document, Task> EventCallBack { get; set; } = default!;
+    public Func<MediaDocument, Task> EventCallBack { get; set; } = default!;
 
     [Parameter]
     public bool loading { get; set; }
@@ -148,7 +148,7 @@
         _uploading = false;
     }
 
-    private async Task<Result<Document, FailedResult>> UploadFile(IBrowserFile file)
+    private async Task<Result<MediaDocument, FailedResult>> UploadFile(IBrowserFile file)
     {
         using Stream fs = file.OpenReadStream(MaxAllowedSize);
         try

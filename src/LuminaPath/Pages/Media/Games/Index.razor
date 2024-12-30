@@ -285,7 +285,7 @@ else
 		if (currentImage is not null)
 		{
 			var result = await documentService.CreateDocument(currentImage, game);
-			game.Image = result.Match<Document>(
+			game.Image = result.Match<MediaDocument>(
 				s => s,
 				f => null);
 		}

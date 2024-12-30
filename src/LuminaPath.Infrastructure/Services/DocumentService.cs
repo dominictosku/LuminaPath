@@ -31,19 +31,19 @@ namespace LuminaPath.Infrastructure.Services
             return await _dbContextFactory.CreateDbContextAsync();
         }
 
-        public virtual async Task<PaginatedList<Document>> GetAllPaginated(
+        public virtual async Task<PaginatedList<MediaDocument>> GetAllPaginated(
             Paging paging,
-            Expression<Func<Document, bool>> filter = null,
-            Func<IQueryable<Document>, IOrderedQueryable<Document>> orderBy = null,
+            Expression<Func<MediaDocument, bool>> filter = null,
+            Func<IQueryable<MediaDocument>, IOrderedQueryable<MediaDocument>> orderBy = null,
             IEnumerable<string> includes = null)
         {
             using var context = await GetDbContextAsync();
-            IQueryable<Document> entities = context.Documents;
+            IQueryable<MediaDocument> entities = context.MediaDocuments;
             entities = PrepareEntity(entities, filter, orderBy, includes);
             return await CreatePaginatedList(entities, paging);
         }
 
-        public async Task<Result<Document, FailedResult>> CreateDocument(IBrowserFile file, Media? media = null)
+        public async Task<Result<MediaDocument, FailedResult>> CreateDocument(IBrowserFile file, Media? media = null)
         {
             Stream fs = file.OpenReadStream(MaxAllowedSize);
             try
@@ -65,7 +65,7 @@ namespace LuminaPath.Infrastructure.Services
                     return new FailedResult("Could not upload file");
                 }
 
-                return new Document()
+                return new MediaDocument()
                 {
                     Name = result.Blob.Name,
                     Description = "Image for media",
@@ -92,12 +92,12 @@ namespace LuminaPath.Infrastructure.Services
             await _storage.RenameAsync(oldName, newName);
         }
 
-        public async Task DeleteDocument(Document document)
+        public async Task DeleteDocument(MediaDocument document)
         {
             try
             {
                 using var context = await GetDbContextAsync();
-                var existingDocument = context.Documents.Single(d => d.Id == document.Id);
+                var existingDocument = context.MediaDocuments.Single(d => d.Id == document.Id);
                 if (existingDocument is null)
                 {
                     _logger.LogError("Could not find file, document: {0}", document.Name);
@@ -145,20 +145,20 @@ namespace LuminaPath.Infrastructure.Services
             return Regex.Replace(fileName, @"[^a-zA-Z0-9_\.-]", "_");
         }
 
-        protected virtual async Task<PaginatedList<Document>> CreatePaginatedList(IQueryable<Document> entities, Paging paging)
+        protected virtual async Task<PaginatedList<MediaDocument>> CreatePaginatedList(IQueryable<MediaDocument> entities, Paging paging)
         {
             int pageIndex = paging.PageIndex;
             if (paging.Count > 0)
             {
-                return await PaginatedList<Document>.CreateAsync(entities, 1, paging.Count);
+                return await PaginatedList<MediaDocument>.CreateAsync(entities, 1, paging.Count);
             }
-            return await PaginatedList<Document>.CreateAsync(entities, pageIndex, 10);
+            return await PaginatedList<MediaDocument>.CreateAsync(entities, pageIndex, 10);
         }
 
-        protected virtual IQueryable<Document> PrepareEntity(
-            IQueryable<Document> entities,
-            Expression<Func<Document, bool>> filter = null,
-            Func<IQueryable<Document>, IOrderedQueryable<Document>> orderBy = null,
+        protected virtual IQueryable<MediaDocument> PrepareEntity(
+            IQueryable<MediaDocument> entities,
+            Expression<Func<MediaDocument, bool>> filter = null,
+            Func<IQueryable<MediaDocument>, IOrderedQueryable<MediaDocument>> orderBy = null,
             IEnumerable<string> includes = null
             )
         {

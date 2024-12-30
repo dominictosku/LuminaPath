@@ -1,8 +1,7 @@
 ﻿using LuminaPath.Core.Common.Enums;
 using LuminaPath.Core.Common.Interfaces;
-using LuminaPath.Core.Models.Base;
 
-namespace LuminaPath.Core.Models
+namespace LuminaPath.Core.Models.Base
 {
     public class Document : IDocument
     {
@@ -13,7 +12,5 @@ namespace LuminaPath.Core.Models
         public string? ContentType { get; set; }
         public DocumentType DocumentType { get; set; } = default!;
         public string Url => $"api/files/{Name}";
-        public Media? Media { get; set; }
-        public int? MediaId { get; set; }
     }
 }
