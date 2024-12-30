@@ -82,6 +82,16 @@ namespace LuminaPath.Infrastructure.Services
             }
         }
 
+        public async Task RenameMediaImage(Media media)
+        {
+            await _storage.RenameAsync(media.Image.Name, $"{media.Id}-{media.Name}");
+        }
+
+        public async Task RenameDocument(string oldName, string newName)
+        {
+            await _storage.RenameAsync(oldName, newName);
+        }
+
         public async Task DeleteDocument(Document document)
         {
             try
@@ -101,6 +111,13 @@ namespace LuminaPath.Infrastructure.Services
                     return;
                 }
 
+                if (existingDocument.MediaId != null || existingDocument.MediaId < 0) 
+                {
+                    var media = await context.Games.FindAsync(existingDocument.MediaId);
+                    await DeleteMediaDocument(media, context);
+                    return;
+                }
+
                 context.Documents.Remove(existingDocument);
                 context.SaveChanges();
             }
@@ -110,19 +127,9 @@ namespace LuminaPath.Infrastructure.Services
             }
         }
 
-        public async Task RenameMediaImage(Media media)
+        public async Task DeleteMediaDocument(Media entity, LuminaPathDbContext _context = null)
         {
-            await _storage.RenameAsync(media.Image.Name, $"{media.Id}-{media.Name}");
-        }
-
-        public async Task RenameDocument(string oldName, string newName)
-        {
-            await _storage.RenameAsync(oldName, newName);
-        }
-
-        public async Task DeleteMediaDocument(Media entity)
-        {
-            using var context = await GetDbContextAsync();
+            using var context = _context ?? await GetDbContextAsync();
             if (entity.Image is null)
                 return;
             var image = entity.Image;
@@ -168,18 +175,6 @@ namespace LuminaPath.Infrastructure.Services
                 entities = orderBy(entities);
             }
             return entities;
-        }
-
-        private static Expression<Func<Document, bool>> GetFilterExpression(MediaFilter mediaFilter, string? userId = null)
-        {
-            Expression<Func<Document, bool>> filter = g => true;
-
-            if (mediaFilter.SearchString != null)
-            {
-                filter = g => g.Name.Contains(mediaFilter.SearchString);
-            }
-
-            return filter;
         }
     }
 }

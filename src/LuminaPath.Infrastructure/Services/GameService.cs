@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using LuminaPath.Core.Common.Entities;
+using LuminaPath.Core.Common.Entities.Results;
 using LuminaPath.Core.Common.Extensions;
 using LuminaPath.Core.Models;
 using Microsoft.EntityFrameworkCore;
@@ -9,9 +10,18 @@ namespace LuminaPath.Infrastructure.Services
 {
     public class GameService : GenericModelService<Game>
     {
-        public GameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IMapper mapper) : base(dbContextFactory, mapper)
+        private readonly DocumentService _documentService;
+        public GameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, DocumentService documentService, IMapper mapper) : base(dbContextFactory, mapper)
         {
+            _documentService = documentService;
+        }
 
+        public override async Task<Result<int, FailedResult>> DeleteAsync(int? id)
+        {
+            using var context = await GetDbContextAsync();
+            var existing = await context.Games.Include(x => x.Image).FirstAsync(x => x.Id == id);
+            await _documentService.DeleteMediaDocument(existing, context);
+            return await base.DeleteAsync(id);
         }
 
         public async Task<List<Game>> GetDropdownGames()

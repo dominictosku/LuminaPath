@@ -277,7 +277,6 @@ else
 
 	private async Task DeleteMedia(Game g)
 	{
-		await documentService.DeleteMediaDocument(g);
 		await gameService.DeleteAsync(g.Id);
 	}
 
