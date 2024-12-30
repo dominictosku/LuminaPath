@@ -1,4 +1,5 @@
 ﻿@using LuminaPath.Core.Common.Features.User.Dto
+@using LuminaPath.Infrastructure.Services
 @inherits MudComponentBase
 @inject ISnackbar Snackbar
 
@@ -43,6 +44,14 @@
                 <MudTextField Label="Confirm Password" @bind-Value="passwordConfirmed" Class="mt-4" Variant="Variant.Text" />
             </MudItem>
         }
+        <MudItem xs="12" sm="6">
+            <MudSelect @bind-Value="Model.Role" Label="Role">
+                @foreach (var role in LuminaUserService.Roles)
+                {
+                    <MudSelectItem Value="role">@role</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
         <MudItem xs="12" sm="6">
             <MudTextField For="@(() => Model.PhoneNumber)" @bind-Value="Model.PhoneNumber" Label="Phone Number" Variant="Variant.Text"></MudTextField>
         </MudItem>
