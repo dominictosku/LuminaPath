@@ -23,17 +23,15 @@ namespace LuminaPath.Infrastructure.Services
         }
 
         public async Task<PaginatedList<MyGame>> GetAllPaginated(
-            Paging paging,
             string UserId,
+            MediaFilter mediaFilter,
             Expression<Func<MyGame, bool>> filter = null,
-            IEnumerable<string> includes = null)
+            Func<IQueryable<MyGame>, IOrderedQueryable<MyGame>> orderBy = null)
         {
-            int pageIndex = paging.PageIndex;
-            using var context = await GetDbContextAsync();
-            IQueryable<MyGame> entities = GetEntities(context);
-            entities = entities.Where(g => g.LuminaUserId == UserId).Include(g => g.Game);
-            entities = PrepareEntity(entities, filter, e => e.OrderByDescending(g => g.Game.ReleaseDate), includes);
-            return await CreatePaginatedList(entities, paging);
+            if (orderBy == null)
+                orderBy = e => e.OrderBy(g => g.Game.ReleaseDate);
+            Expression<Func<MyGame, bool>> userFilter = g => g.LuminaUserId == UserId;
+            return await base.GetAllPaginated(mediaFilter, [ "Game" ], userFilter, orderBy);
         }
 
         public async Task<Result<MyGame, FailedResult>> PostAsync(MyGame viewModel, LuminaUser? user)

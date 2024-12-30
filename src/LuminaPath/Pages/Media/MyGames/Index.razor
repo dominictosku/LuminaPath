@@ -165,7 +165,7 @@ else
 	{
 		_filter.Paging = new Paging(pageIndex, 15);
 		var includes = new List<string>() { "Game" };
-		return await myGameService.GetAllPaginated(_filter, includes);
+		return await myGameService.GetAllPaginated(UserId, _filter);
 	}
 
 	public void Dummy()
