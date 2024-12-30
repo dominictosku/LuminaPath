@@ -25,6 +25,7 @@
 @if (IsGrid)
 {
 	<MudDataGrid ServerData="@(ServerReload)"
+	Filterable="true"
 	FixedHeader="true"
 	FixedFooter="true"
 	Virtualize="true"
@@ -132,17 +133,47 @@ else
 
 	private async Task<GridData<Game>> ServerReload(GridState<Game> state)
 	{
-		selectedItems = new HashSet<Game>();
-		loading = true;
 		try
 		{
-			var result = await GetData(state.Page + 1);
+			var result = await GetData();
+			Games = result;
 
-			return new GridData<Game> { TotalItems = result.Count(), Items = result };
+			if (state.SortDefinitions.Count > 0)
+			{
+				var firstSort = state.SortDefinitions.First();
+				result = firstSort.Descending
+					? result.OrderByDescending(firstSort.SortFunc).ToList()
+					: result.OrderBy(firstSort.SortFunc).ToList();
+			}
+
+			if (state.FilterDefinitions.Any())
+			{
+				var filterFunctions = state.FilterDefinitions.Select(x => x.GenerateFilterFunction());
+				result = result
+					.Where(x => filterFunctions.All(f => f(x)))
+					.ToList();
+			}
+
+			var totalNumberOfFilteredItems = result.Count;
+
+			result = result
+				.Skip(state.Page * state.PageSize)
+				.Take(state.PageSize)
+				.ToList();
+
+			return new GridData<Game>
+				{
+					Items = result,
+					TotalItems = totalNumberOfFilteredItems
+				};
 		}
-		finally
+		catch (TaskCanceledException)
 		{
-			loading = false;
+			return new GridData<Game>
+				{
+					Items = [],
+					TotalItems = 0
+				};
 		}
 	}
 
@@ -154,7 +185,7 @@ else
 		}
 		else
 		{
-			Games = await GetData(1);
+			Games = await GetData();
 			StateHasChanged();
 		}
 	}
@@ -165,11 +196,9 @@ else
 		await ReloadData();
 	}
 
-	private async Task<PaginatedList<Game>> GetData(int pageIndex)
+	private async Task<List<Game>> GetData()
 	{
-		_filter.Paging = new Paging(pageIndex, 15);
-		var includes = new List<string>() { "Image" };
-		return await gameService.GetAllPaginated(_filter, includes);
+		return await gameService.GetAll();
 	}
 
 	public void Dummy()
