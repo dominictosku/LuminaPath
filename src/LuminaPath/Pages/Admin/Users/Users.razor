@@ -1,5 +1,6 @@
 ﻿@page "/Admin/Users"
 @using LuminaPath.Core.Common.Features.User.Dto
+@using LuminaPath.Infrastructure.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Linq.Expressions
 @using Microsoft.AspNetCore.Identity
@@ -9,19 +10,20 @@
 @implements IDisposable
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject LuminaUserService UserService
 
 <PageTitle>@Title</PageTitle>
 
 <MudDataGrid @ref="_table"
-             FixedHeader="true"
-             FixedFooter="false"
-             Height="calc(100vh - 300px)"
-             @bind-RowsPerPage="_defaultPageSize"
-             Hover="true"
-             MultiSelection="true"
-             @bind-SelectedItems="_selectedItems"
-             Loading="@_loading"
-             ServerData="@(ServerReload)">
+FixedHeader="true"
+FixedFooter="false"
+Height="calc(100vh - 300px)"
+@bind-RowsPerPage="_defaultPageSize"
+Hover="true"
+MultiSelection="true"
+@bind-SelectedItems="_selectedItems"
+Loading="@_loading"
+ServerData="@(ServerReload)">
     <ToolBarContent>
         <div class="d-flex align-start flex-grow-1">
             <div class="d-flex gap-4">
@@ -35,63 +37,63 @@
                 <div class="d-flex">
                     <MudHidden Breakpoint="Breakpoint.SmAndDown">
                         <MudButton DisableElevation Variant="Variant.Outlined"
-                                   Size="Size.Small"
-                                   Disabled="@_loading"
-                                   OnClick="@(OnRefresh)"
-                                   StartIcon="@Icons.Material.Filled.Refresh" IconColor="Color.Surface" Color="Color.Primary"
-                                   Style="margin-right: 4px; margin-bottom:4px">
+                        Size="Size.Small"
+                        Disabled="@_loading"
+                        OnClick="@(OnRefresh)"
+                        StartIcon="@Icons.Material.Filled.Refresh" IconColor="Color.Surface" Color="Color.Primary"
+                        Style="margin-right: 4px; margin-bottom:4px">
                             Refresh
                         </MudButton>
-                            <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
-                                       StartIcon="@Icons.Material.Filled.Add"
-                                       Size="Size.Small"
-                                       Style="margin-right: 4px; margin-bottom:4px"
-                                       OnClick="OnCreate"
-                                       IconColor="Color.Surface">
-                                New
-                            </MudButton>
-                            <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Error"
-                                       StartIcon="@Icons.Material.Filled.Delete"
-                                       Disabled="@(!(_selectedItems.Count > 0))"
-                                       Size="Size.Small"
-                                       Style="margin-right: 4px; margin-bottom:4px"
-                                       OnClick="OnDeleteChecked"
-                                       IconColor="Color.Surface">
-                                Delete
-                            </MudButton>
+                        <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
+                        StartIcon="@Icons.Material.Filled.Add"
+                        Size="Size.Small"
+                        Style="margin-right: 4px; margin-bottom:4px"
+                        OnClick="OnCreate"
+                        IconColor="Color.Surface">
+                            New
+                        </MudButton>
+                        <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Error"
+                        StartIcon="@Icons.Material.Filled.Delete"
+                        Disabled="@(!(_selectedItems.Count > 0))"
+                        Size="Size.Small"
+                        Style="margin-right: 4px; margin-bottom:4px"
+                        OnClick="OnDeleteChecked"
+                        IconColor="Color.Surface">
+                            Delete
+                        </MudButton>
                     </MudHidden>
                     <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="true">
 
-                            <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
-                                       StartIcon="@Icons.Material.Filled.Add"
-                                       Size="Size.Small"
-                                       Style="margin-right: 4px; margin-bottom:4px"
-                                       OnClick="OnCreate"
-                                       IconColor="Color.Surface">
-                                New
-                            </MudButton>
-                            <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Error"
-                                       StartIcon="@Icons.Material.Filled.Delete"
-                                       Disabled="@(!(_selectedItems.Count > 0))"
-                                       Size="Size.Small"
-                                       Style="margin-right: 4px; margin-bottom:4px"
-                                       OnClick="OnDeleteChecked"
-                                       IconColor="Color.Surface">
-                                Delete
-                            </MudButton>
+                        <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
+                        StartIcon="@Icons.Material.Filled.Add"
+                        Size="Size.Small"
+                        Style="margin-right: 4px; margin-bottom:4px"
+                        OnClick="OnCreate"
+                        IconColor="Color.Surface">
+                            New
+                        </MudButton>
+                        <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Error"
+                        StartIcon="@Icons.Material.Filled.Delete"
+                        Disabled="@(!(_selectedItems.Count > 0))"
+                        Size="Size.Small"
+                        Style="margin-right: 4px; margin-bottom:4px"
+                        OnClick="OnDeleteChecked"
+                        IconColor="Color.Surface">
+                            Delete
+                        </MudButton>
                     </MudHidden>
                 </div>
-                    <MudStack Row="true" AlignItems="AlignItems.Stretch">
-                     <MudSelect T="string" Placeholder="Status" Value="@_searchStatus" Clearable="true" ValueChanged="@(OnSearchStatus)" Style="width:150px">
-                            @foreach (var str in _roles)
-                            {
-                                <MudSelectItem Value="@str">@str</MudSelectItem>
-                            }
-                        </MudSelect>
-                        <MudTextField T="string" Immediate="false" ValueChanged="@(OnSearch)" Value="@_searchString" Placeholder="Search" Adornment="Adornment.End"
-                                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
-                        </MudTextField>
-                    </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Stretch">
+                    <MudSelect T="string" Placeholder="Status" Value="@_searchStatus" Clearable="true" ValueChanged="@(OnSearchStatus)" Style="width:150px">
+                        @foreach (var str in _roles)
+                        {
+                            <MudSelectItem Value="@str">@str</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudTextField T="string" Immediate="false" ValueChanged="@(OnSearch)" Value="@_searchString" Placeholder="Search" Adornment="Adornment.End"
+                    AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
+                    </MudTextField>
+                </MudStack>
             </div>
         </div>
     </ToolBarContent>
@@ -99,21 +101,21 @@
         <SelectColumn ShowInFooter="false"></SelectColumn>
         <TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
             <CellTemplate>
-                    <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
-                             Dense="true"
-                             EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-                            <MudMenuItem OnAction="@(() => OnEdit(context.Item))">Edit</MudMenuItem>
-                            <MudMenuItem OnAction="@(() => OnDelete(context.Item))">Delete</MudMenuItem>
-                            @if (!context.Item.LockoutEnabled)
-                            {
-                                <MudMenuItem OnAction=@(() => OnSetActive(context.Item))>Deactive user</MudMenuItem>
-                            }
-                            else
-                            {
-                                <MudMenuItem OnAction=@(() => OnSetActive(context.Item))>Activate user</MudMenuItem>
-                            }
-                            <MudMenuItem OnAction=@(() => OnResetPassword(context.Item))>Reset password</MudMenuItem>
-                    </MudMenu>
+                <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
+                Dense="true"
+                EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+                    <MudMenuItem OnAction="@(() => OnEdit(context.Item))">Edit</MudMenuItem>
+                    <MudMenuItem OnAction="@(() => OnDelete(context.Item))">Delete</MudMenuItem>
+                    @if (!context.Item.LockoutEnabled)
+                    {
+                        <MudMenuItem OnAction=@(() => OnSetActive(context.Item))>Deactive user</MudMenuItem>
+                    }
+                    else
+                    {
+                        <MudMenuItem OnAction=@(() => OnSetActive(context.Item))>Activate user</MudMenuItem>
+                    }
+                    <MudMenuItem OnAction=@(() => OnResetPassword(context.Item))>Reset password</MudMenuItem>
+                </MudMenu>
             </CellTemplate>
         </TemplateColumn>
         <PropertyColumn Property="x => x.UserName" Title="Name">
@@ -169,14 +171,11 @@
 
 <style>
     .mud-table-toolbar {
-        height: 120px !important;
+    height: 120px !important;
     }
 </style>
 
 @code {
-    [Inject]
-    public UserManager<LuminaUser> UserManager { get; set; } = default!;
-
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
     private int _defaultPageSize = 15;
@@ -200,16 +199,8 @@
         try
         {
             _loading = true;
-            Expression<Func<LuminaUser, bool>> searchPredicate = x =>
-                x.UserName!.ToLower().Contains(_searchString) ||
-                x.Email!.ToLower().Contains(_searchString);
-            var query = UserManager.Users.Where(searchPredicate);
-
-            var items = await query
-                .OrderBy(u => u.UserName)
-                .Skip(state.Page * state.PageSize).Take(state.PageSize).ToListAsync();
-            var total = UserManager.Users.Count(searchPredicate);
-            return new GridData<LuminaUser> { TotalItems = total, Items = items };
+            var result = await UserService.GetPaginatedUsers(_searchString, state.Page * state.PageSize, state.PageSize);
+            return new GridData<LuminaUser> { TotalItems = result.total, Items = result.items };
         }
         finally
         {
@@ -227,7 +218,7 @@
 
     private async Task OnSearchStatus()
     {
-        
+
     }
 
     private async Task OnRefresh()
@@ -247,15 +238,7 @@
         var result = await dialog.Result;
         if (!result.Canceled)
         {
-            var applicationUser = new LuminaUser
-            {
-                UserName = model.UserName,
-                Email = model.Email,
-                PhoneNumber = model.PhoneNumber,
-                LockoutEnabled = model.LockoutEnabled
-            };
-            var password = model.Password;
-            var state = await UserManager.CreateAsync(applicationUser, password!);
+            var state = await UserService.CreateUser(model);
 
             if (state.Succeeded)
             {
@@ -288,13 +271,7 @@
         var result = await dialog.Result;
         if (!result.Canceled)
         {
-            var user = await UserManager.FindByIdAsync(item.Id!) ?? throw new Exception($"The application user [{item.Id}] was not found.");
-            var state = await AuthState;
-            user.Email = model.Email;
-            user.PhoneNumber = model.PhoneNumber;
-            user.UserName = model.UserName;
-            user.LockoutEnabled = model.LockoutEnabled;
-            var identityResult = await UserManager.UpdateAsync(user);
+            var identityResult = await UserService.UpdateUser(model);
             if (identityResult.Succeeded)
             {
                 Snackbar.Add($"Updated user", Severity.Info);
@@ -321,9 +298,7 @@
 
     private async Task OnSetActive(LuminaUser item)
     {
-        var user = await UserManager.FindByIdAsync(item.Id!) ?? throw new Exception($"Application user not found {item.Id}.");
-        user.LockoutEnabled = !item.LockoutEnabled;
-        var state = await UserManager.UpdateAsync(user);
+        var state = await UserService.SetUserActive(item.Id, item.LockoutEnabled);
         item.LockoutEnabled = !item.LockoutEnabled;
         if (state.Succeeded)
         {
