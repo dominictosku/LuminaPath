@@ -6,35 +6,27 @@ services:
     build:
       context: ../
       dockerfile: LuminaPath/Dockerfile
+    environment:
+        ConnectionStrings__Default: "server=db;database=luminapath;user=${MYSQL_USER};password=${MYSQL_PASSWORD};"
     depends_on:
         - db
   db:
      image: mysql:latest
      container_name: luminapath_DB
      environment:
-       MYSQL_ROOT_PASSWORD: dbuserpassword
+       MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
        MYSQL_DATABASE: luminapath
      volumes:
          - luminapath-DB:/var/lib/mysql
-     ports:
-         - "3307:3306"
-  phpmyadmin:
-      image: phpmyadmin:latest
-      container_name: luminapath-phpmyadmin
-      ports:
-          - 8087:80
-      depends_on:
-          - db
-      environment:
-          PMA_HOST: db
-          PMA_PORT: 3306
+     expose:
+         - "3306"
   blob:
     image: mcr.microsoft.com/azure-storage/azurite
     container_name: luminapath-blob
     volumes:
       - luminapath-blob:/data
-    ports:
-      - 10000:10000
+    expose:
+      - 10000
 
 volumes:
     luminapath-DB:
