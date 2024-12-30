@@ -1,25 +1,54 @@
 ﻿@page "/settings"
 @using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.Third_Party
 @using Microsoft.AspNetCore.Authorization
 @using Radzen.Blazor
 @attribute [Authorize(Roles = "Administrator")]
+@inject PSNService psnService
 @inject FileSystemService fileSystemService
+@inject IJSRuntime Js
 <h3>Settings</h3>
 <RadzenStack>
+	<RadzenLabel Text="Npsso" />
+	<RadzenTextBox @bind-Value="npsso" />
+
+	<RadzenLabel Text="Response" />
+
+	<RadzenTextBox Disabled="true" @bind-Value="result" />
+	<MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
+		<RadzenButton Text="Get" Click="GetBearer" />
+		<RadzenButton Icon="Link" Click="CopyToClipboard" />
+	</MudButtonGroup>
+
+
 	<RadzenLabel Text="PSN Bearer Token" />
 	<RadzenTextBox @bind-Value="bearerToken" />
 	<RadzenButton Text="Save" Click="SaveBearer" />
 </RadzenStack>
 @code {
+	private string npsso;
 	private string bearerToken;
+	private string result;
 
 	protected override void OnInitialized()
 	{
 		bearerToken = fileSystemService.GetBearer();
 	}
 
+	async Task CopyToClipboard()
+	{
+		await Js.InvokeVoidAsync("navigator.clipboard.writeText", result);
+		Snackbar.Add("Copied to Clipboard", Severity.Info);
+	}
+
+	async Task GetBearer()
+	{
+		result = await psnService.GetAuthenticationToken(npsso);
+	}
+
 	void SaveBearer()
 	{
 		fileSystemService.WriteBearer(bearerToken);
+		Snackbar.Add("Saved bearer", Severity.Success);
 	}
 }
