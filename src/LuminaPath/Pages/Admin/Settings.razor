@@ -1,6 +1,8 @@
 ﻿@page "/settings"
 @using LuminaPath.Infrastructure.Services
+@using Microsoft.AspNetCore.Authorization
 @using Radzen.Blazor
+@attribute [Authorize(Roles = "Administrator")]
 @inject FileSystemService fileSystemService
 <h3>Settings</h3>
 <RadzenStack>
