@@ -108,13 +108,13 @@ ServerData="@(ServerReload)">
                 EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
                     <MudMenuItem OnClick="@(() => OnEdit(context.Item))">Edit</MudMenuItem>
                     <MudMenuItem OnClick="@(() => OnDelete(context.Item))">Delete</MudMenuItem>
-                    @if (!context.Item.LockoutEnabled)
+                    @if (!IsLocked(context.Item))
                     {
-                        <MudMenuItem OnClick=@(() => OnSetActive(context.Item))>Deactive user</MudMenuItem>
+                        <MudMenuItem OnClick=@(() => OnSetActive(context.Item, false))>Deactive user</MudMenuItem>
                     }
                     else
                     {
-                        <MudMenuItem OnClick=@(() => OnSetActive(context.Item))>Activate user</MudMenuItem>
+                        <MudMenuItem OnClick=@(() => OnSetActive(context.Item, true))>Activate user</MudMenuItem>
                     }
                     <MudMenuItem OnClick=@(() => OnResetPassword(context.Item))>Reset password</MudMenuItem>
                 </MudMenu>
@@ -152,7 +152,7 @@ ServerData="@(ServerReload)">
         <PropertyColumn Property="x => x.LockoutEnabled" Title="Active">
             <CellTemplate>
                 <div>
-                    @if (context.Item.LockoutEnabled && context.Item.LockoutEnd != null && context.Item.LockoutEnd >= DateTime.Now)
+                    @if (IsLocked(context.Item))
                     {
                         <MudChip Class="flex-grow-0" Color="Color.Surface" Size="Size.Small" Icon="@Icons.Material.Filled.HighlightOff">Locked</MudChip>
                     }
@@ -195,6 +195,8 @@ ServerData="@(ServerReload)">
     private bool _uploading;
     private List<string?> _roles = new();
     private string? _searchStatus;
+
+    bool IsLocked(LuminaUser user) => user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd >= DateTime.Now;
 
     private async Task<GridData<LuminaUser>> ServerReload(GridState<LuminaUser> state)
     {
@@ -304,10 +306,9 @@ ServerData="@(ServerReload)">
         await OnRefresh();
     }
 
-    private async Task OnSetActive(LuminaUser item)
+    private async Task OnSetActive(LuminaUser item, bool active)
     {
-        var state = await UserService.SetUserActive(item.Id, item.LockoutEnabled);
-        item.LockoutEnabled = !item.LockoutEnabled;
+        var state = await UserService.SetUserActive(item.Id, active);
         if (state.Succeeded)
         {
             Snackbar.Add($"Updated status", Severity.Info);
@@ -316,6 +317,7 @@ ServerData="@(ServerReload)">
         {
             Snackbar.Add($"{string.Join(",", state.Errors.Select(x => x.Description).ToArray())}", Severity.Error);
         }
+        await OnRefresh();
     }
 
     private async Task OnResetPassword(LuminaUser item)
