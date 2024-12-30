@@ -150,13 +150,13 @@ ServerData="@(ServerReload)">
         <PropertyColumn Property="x => x.LockoutEnabled" Title="Active">
             <CellTemplate>
                 <div>
-                    @if (!context.Item.LockoutEnabled)
+                    @if (context.Item.LockoutEnabled && context.Item.LockoutEnd != null && context.Item.LockoutEnd >= DateTime.Now)
                     {
-                        <MudChip Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.CheckCircleOutline">Active</MudChip>
+                        <MudChip Class="flex-grow-0" Color="Color.Surface" Size="Size.Small" Icon="@Icons.Material.Filled.HighlightOff">Locked</MudChip>
                     }
                     else
                     {
-                        <MudChip Class="flex-grow-0" Color="Color.Surface" Size="Size.Small" Icon="@Icons.Material.Filled.HighlightOff">Locked</MudChip>
+                        <MudChip Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.CheckCircleOutline">Active</MudChip>
                     }
                 </div>
             </CellTemplate>
@@ -228,7 +228,7 @@ ServerData="@(ServerReload)">
 
     private async Task OnCreate()
     {
-        var model = new UserDto { Email = "", UserName = "" };
+        var model = new UserDto { Email = "", UserName = "", Active = true };
         var parameters = new DialogParameters<UserFormDialog>
         {
             { x => x.Model, model }
@@ -259,7 +259,7 @@ ServerData="@(ServerReload)">
                 Id = item.Id,
                 Email = item.Email,
                 UserName = item.UserName,
-                LockoutEnabled = item.LockoutEnabled,
+                Active = !item.LockoutEnabled,
                 PhoneNumber = item.PhoneNumber
             };
         var parameters = new DialogParameters<UserFormDialog>

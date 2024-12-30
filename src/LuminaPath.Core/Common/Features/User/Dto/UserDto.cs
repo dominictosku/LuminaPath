@@ -13,6 +13,6 @@ namespace LuminaPath.Core.Common.Features.User.Dto
         public string Email { get; set; } = string.Empty;
         public string Role {  get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
-        public bool LockoutEnabled { get; set; }
+        public bool Active { get; set; }
     }
 }
