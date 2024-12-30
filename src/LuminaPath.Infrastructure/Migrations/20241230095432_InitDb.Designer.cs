@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LuminaPath.Infrastructure.Migrations
 {
     [DbContext(typeof(LuminaPathDbContext))]
-    [Migration("20241230093924_InitDb")]
+    [Migration("20241230095432_InitDb")]
     partial class InitDb
     {
         /// <inheritdoc />
@@ -287,6 +287,34 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.ToTable("GameInfo");
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.LuminaUserInfo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccountId")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PSNOnlineId")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("LuminaUserInfo");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -440,13 +468,11 @@ namespace LuminaPath.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId1")
+                    b.Property<string>("UserId")
+                        .IsRequired()
                         .HasColumnType("varchar(255)");
 
-                    b.HasIndex("UserId1");
+                    b.HasIndex("UserId");
 
                     b.HasDiscriminator().HasValue("UserDocument");
                 });
@@ -515,6 +541,17 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Navigation("Game");
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.LuminaUserInfo", b =>
+                {
+                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "User")
+                        .WithOne("LuminaUserInfo")
+                        .HasForeignKey("LuminaPath.Core.Models.Third_Party.LuminaUserInfo", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -578,8 +615,10 @@ namespace LuminaPath.Infrastructure.Migrations
             modelBuilder.Entity("LuminaPath.Core.Models.UserDocument", b =>
                 {
                     b.HasOne("LuminaPath.Core.Models.LuminaUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId1");
+                        .WithMany("Documents")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -600,6 +639,11 @@ namespace LuminaPath.Infrastructure.Migrations
 
             modelBuilder.Entity("LuminaPath.Core.Models.LuminaUser", b =>
                 {
+                    b.Navigation("Documents");
+
+                    b.Navigation("LuminaUserInfo")
+                        .IsRequired();
+
                     b.Navigation("MyGames");
                 });
 

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace LuminaPath.Infrastructure.Classes
+namespace LuminaPath.Core.Common.Entities.PSN
 {
     public class PSNTrophy
     {
