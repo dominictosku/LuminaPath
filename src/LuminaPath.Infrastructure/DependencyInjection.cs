@@ -125,6 +125,7 @@ namespace LuminaPath.Infrastructure
             services.AddScoped<MyGameService>();
             services.AddScoped<QuestService>();
             services.AddScoped<DocumentService>();
+            services.AddScoped<LuminaUserService>();
             services.AddTransient<PSNService>();
             services.AddTransient<FileSystemService>();
         }
