@@ -4,6 +4,7 @@
 @using LuminaPath.Core.Models.Third_Party
 @using LuminaPath.Infrastructure.Services
 @using LuminaPath.Infrastructure.Services.Third_Party
+@using Microsoft.AspNetCore.Authorization
 @using Radzen
 @using Radzen.Blazor
 @using static LuminaPath.Core.Common.Entities.PSN.PSNTitles
@@ -13,6 +14,7 @@
 @inject FileSystemService fileSystemService
 @inject GameService gameService
 @inject Radzen.DialogService dialogService
+@attribute [Authorize]
 <h3>Import</h3>
 
 @{
@@ -86,6 +88,7 @@
 			model.PSNSilver = trophies.EarnedTrophies.Silver;
 			model.PSNBronze = trophies.EarnedTrophies.Bronze;
 			await userService.UpdateThirdParty(UserId, model);
+			Snackbar.Add("Imported Profile", Severity.Success);
 		}
 		catch
 		{

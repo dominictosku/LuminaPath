@@ -35,7 +35,8 @@ namespace LuminaPath.Infrastructure.Services
                             PsnId = game.Game.GameInfo.PsnId
                         },
                         MyGames = [ new MyGame() {
-                            LuminaUserId = user.Id
+                            LuminaUserId = user.Id,
+                            MyGameInfo = game.MyGameInfo
                         }]
                     };
                     if(gamesToAdd.Any(g => g.Name == newGame.Name))
