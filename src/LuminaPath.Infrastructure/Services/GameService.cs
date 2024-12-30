@@ -61,6 +61,14 @@ namespace LuminaPath.Infrastructure.Services
             await context.SaveChangesAsync();
         }
 
+        public override async Task<List<Game>> GetAll()
+        {
+            using (var dbContext = await GetDbContextAsync())
+            {
+                return await GetEntities(dbContext).Include(g => g.GameInfo).Include(g => g.Image).ToListAsync();
+            }
+        }
+
         public override async Task<Result<int, FailedResult>> DeleteAsync(int? id)
         {
             using var context = await GetDbContextAsync();

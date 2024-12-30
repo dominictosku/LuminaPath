@@ -28,6 +28,7 @@
 @if (IsGrid)
 {
 	<MudDataGrid ServerData="@(ServerReload)"
+				 Filterable="true"
 				 FixedHeader="true"
 				 FixedFooter="true"
 				 Virtualize="true"
@@ -65,10 +66,10 @@
 			<PropertyColumn Property="x => x.Game.Genres" Title="Genre">
 				<CellTemplate>
 					<div class="d-flex flex-column">
-						<MudText Typo="Typo.body2">@string.Join(",", context.Item.Game.Genres)</MudText>						
+						<MudText Typo="Typo.body2">@string.Join(",", context.Item.Game.Genres)</MudText>
 					</div>
 				</CellTemplate>
-				</PropertyColumn>
+			</PropertyColumn>
 			<PropertyColumn Property="x => x.Status" Title="Status" />
 		</Columns>
 		<NoRecordsContent>
@@ -122,7 +123,7 @@ else
 	}
 </style>
 
-@code{
+@code {
 	private List<MyGame> Games = new();
 	private MudDataGrid<MyGame> _table = default!;
 	private MyGame _currentDto = new();
@@ -136,17 +137,47 @@ else
 
 	private async Task<GridData<MyGame>> ServerReload(GridState<MyGame> state)
 	{
-		selectedItems = new HashSet<MyGame>();
-		loading = true;
 		try
 		{
-			var result = await GetData(state.Page + 1);
+			var result = await GetData();
+			Games = result;
 
-			return new GridData<MyGame> { TotalItems = result.Count(), Items = result };
+			if (state.SortDefinitions.Count > 0)
+			{
+				var firstSort = state.SortDefinitions.First();
+				result = firstSort.Descending
+					? result.OrderByDescending(firstSort.SortFunc).ToList()
+					: result.OrderBy(firstSort.SortFunc).ToList();
+			}
+
+			if (state.FilterDefinitions.Any())
+			{
+				var filterFunctions = state.FilterDefinitions.Select(x => x.GenerateFilterFunction());
+				result = result
+					.Where(x => filterFunctions.All(f => f(x)))
+					.ToList();
+			}
+
+			var totalNumberOfFilteredItems = result.Count;
+
+			result = result
+				.Skip(state.Page * state.PageSize)
+				.Take(state.PageSize)
+				.ToList();
+
+			return new GridData<MyGame>
+				{
+					Items = result,
+					TotalItems = totalNumberOfFilteredItems
+				};
 		}
-		finally
+		catch (TaskCanceledException)
 		{
-			loading = false;
+			return new GridData<MyGame>
+				{
+					Items = [],
+					TotalItems = 0
+				};
 		}
 	}
 
@@ -158,7 +189,7 @@ else
 		}
 		else
 		{
-			Games = await GetData(1);
+			Games = await GetData();
 			StateHasChanged();
 		}
 	}
@@ -169,11 +200,9 @@ else
 		await ReloadData();
 	}
 
-	private async Task<PaginatedList<MyGame>> GetData(int pageIndex)
+	private async Task<List<MyGame>> GetData()
 	{
-		_filter.Paging = new Paging(pageIndex, 15);
-		var includes = new List<string>() { "Game" };
-		return await myGameService.GetAllPaginated(UserId, _filter);
+		return await myGameService.GetMyGames(UserId);
 	}
 
 	public void Dummy()
