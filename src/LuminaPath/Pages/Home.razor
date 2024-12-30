@@ -76,7 +76,6 @@
         await base.OnInitializedAsync();
         if (UserId == null) return;
         var result = await myGameService.GetMyGames(UserId);
-        totalHours = result.Sum(r => (int)r.TimeSpend.Value);
         CurrentMainGames = result.Where(x => x.Status == GameStatus.MainGame).ToList();
     }
 }

@@ -110,7 +110,8 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
             var titles = gameData.Titles;
             foreach (var title in titles)
             {
-                var plattform = title.Category.Contains("ps4") ? Plattforms.Playstation4 : Plattforms.Playstation5;
+                var plattform = title.Category.ToLower().Contains("ps4") ? Plattforms.Playstation4 : Plattforms.Playstation5;
+                var gameName = plattform == Plattforms.Playstation4 ? title.Name + " PS4" : title.Name;
                 var game = new MyGameDto()
                 {
                     MyGameInfo = new()
@@ -120,7 +121,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
                         TrackedHours = DurationToHours(title.PlayDuration)
                     },
                     Game = new(){
-                        Name = title.Name,
+                        Name = gameName,
                         Source = "PSN",
                         Plattforms = plattform,
                         GameInfo = new(){

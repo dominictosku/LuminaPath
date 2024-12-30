@@ -2,6 +2,7 @@
 using LuminaPath.Core.Common.Entities;
 using LuminaPath.Core.Common.Entities.Results;
 using LuminaPath.Core.Common.Extensions;
+using LuminaPath.Core.Common.Features.Gaming.Dto;
 using LuminaPath.Core.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -14,6 +15,49 @@ namespace LuminaPath.Infrastructure.Services
         public GameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, DocumentService documentService, IMapper mapper) : base(dbContextFactory, mapper)
         {
             _documentService = documentService;
+        }
+
+        public async Task ImportGames(LuminaUser user, List<MyGameDto> games)
+        {
+            using var context = await GetDbContextAsync();
+            List<Game> gamesToAdd = new();
+            foreach (var game in games) 
+            {
+                if(!context.Games.Any(g => g.GameInfo != null && g.GameInfo.PsnId == game.Game.GameInfo.PsnId))
+                {                    
+                    var newGame = new Game()
+                    {
+                        Name = game.Game.Name,
+                        Plattforms = game.Game.Plattforms,
+                        Source = "PSN",
+                        GameInfo = new()
+                        {
+                            PsnId = game.Game.GameInfo.PsnId
+                        },
+                        MyGames = [ new MyGame() {
+                            LuminaUserId = user.Id
+                        }]
+                    };
+                    if(gamesToAdd.Any(g => g.Name == newGame.Name))
+                        newGame.Name = newGame.Name + " Duplicate " + game.Game.GameInfo.PsnId;
+                    gamesToAdd.Add(newGame);
+                }
+                else
+                {
+                    var existingGame = context.Games.Where(g => g.GameInfo.PsnId == game.Game.GameInfo.PsnId).First();
+                    if (existingGame.MyGames.Any(g => g.LuminaUserId == user.Id))
+                    {
+                        var myGame = existingGame.MyGames.First(g => g.LuminaUserId == user.Id);
+                        myGame.MyGameInfo = game.MyGameInfo;
+                    }
+                    else
+                    {
+                        context.MyGames.Add(new MyGame() { GameId = existingGame.Id, LuminaUserId = user.Id, MyGameInfo = game.MyGameInfo });
+                    }
+                }
+            }
+            await context.Games.AddRangeAsync(gamesToAdd);
+            await context.SaveChangesAsync();
         }
 
         public override async Task<Result<int, FailedResult>> DeleteAsync(int? id)
