@@ -3,9 +3,9 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using static LuminaPath.Infrastructure.Classes.PSNProfile;
-using static LuminaPath.Infrastructure.Classes.PSNTitles;
-using static LuminaPath.Infrastructure.Classes.PSNTrophy;
+using static LuminaPath.Core.Common.Entities.PSN.PSNProfile;
+using static LuminaPath.Core.Common.Entities.PSN.PSNTitles;
+using static LuminaPath.Core.Common.Entities.PSN.PSNTrophy;
 
 namespace LuminaPath.Infrastructure.Services.Third_Party
 {

@@ -223,6 +223,31 @@ namespace LuminaPath.Infrastructure.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "LuminaUserInfo",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    UserId = table.Column<string>(type: "varchar(255)", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    PSNOnlineId = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    AccountId = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LuminaUserInfo", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_LuminaUserInfo_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "Documents",
                 columns: table => new
                 {
@@ -242,18 +267,18 @@ namespace LuminaPath.Infrastructure.Migrations
                     MediaId = table.Column<int>(type: "int", nullable: true),
                     Album = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    UserId1 = table.Column<string>(type: "varchar(255)", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    UserId = table.Column<int>(type: "int", nullable: true)
+                    UserId = table.Column<string>(type: "varchar(255)", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Documents", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Documents_AspNetUsers_UserId1",
-                        column: x => x.UserId1,
+                        name: "FK_Documents_AspNetUsers_UserId",
+                        column: x => x.UserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Documents_Media_MediaId",
                         column: x => x.MediaId,
@@ -401,14 +426,20 @@ namespace LuminaPath.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Documents_UserId1",
+                name: "IX_Documents_UserId",
                 table: "Documents",
-                column: "UserId1");
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_GameInfo_GameId",
                 table: "GameInfo",
                 column: "GameId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LuminaUserInfo_UserId",
+                table: "LuminaUserInfo",
+                column: "UserId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -461,6 +492,9 @@ namespace LuminaPath.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "GameInfo");
+
+            migrationBuilder.DropTable(
+                name: "LuminaUserInfo");
 
             migrationBuilder.DropTable(
                 name: "MyGames");

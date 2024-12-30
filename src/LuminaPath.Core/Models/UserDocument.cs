@@ -11,6 +11,6 @@ namespace LuminaPath.Core.Models
     {
         public string Album { get; set; } = string.Empty;
         public LuminaUser User { get; set; }
-        public int UserId { get; set; }
+        public string UserId { get; set; }
     }
 }
