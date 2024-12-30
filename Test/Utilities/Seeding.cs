@@ -17,7 +17,7 @@ namespace Test.Utilities
 						Description = "Battle Royale",
 						Genres = { "Shooter" },
 						ReleaseDate = new DateTime(2017, 07, 28),
-						Plattforms = Plattforms.Playstation,
+						Plattforms = Plattforms.Playstation5,
 						Playtime = 100
 					}
 				);
