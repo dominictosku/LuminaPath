@@ -7,7 +7,7 @@
 @using LuminaPath.UI.Shared.Media
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
-@attribute [Authorize(Roles = "Editor")]
+@attribute [Authorize(Roles = "Administrator, Editor")]
 @inject DocumentService DocumentService
 @inject GameService gameService
 @inject NavigationManager navigation
