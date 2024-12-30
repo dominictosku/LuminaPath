@@ -1,11 +1,14 @@
 ﻿@page "/import"
+@using LuminaPath.Components.BaseAuth
 @using LuminaPath.Core.Models.Third_Party
 @using LuminaPath.Infrastructure.Services
 @using LuminaPath.Infrastructure.Services.Third_Party
 @using Radzen
 @using Radzen.Blazor
 @using static LuminaPath.Core.Common.Entities.PSN.PSNTitles
+@inherits BaseAuth
 @inject PSNService psnService
+@inject LuminaUserService userService
 @inject FileSystemService fileSystemService
 <h3>Import</h3>
 
@@ -19,36 +22,79 @@
 <RadzenTabs>
 	<Tabs>
 		<RadzenTabsItem Text="PSN">
-			<RadzenButton Text="Import Games" Click="ImportGames" />
-			<RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="false" AllowSorting="true" PageSize="5" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
-							Data="@games">
-				<Columns>
-					<RadzenDataGridColumn Width="20px" Property="@nameof(Game.Id)" Title="ID" />
-					<RadzenDataGridColumn Width="20px" Property="@nameof(Game.Name)" Title="Title" />
-					<RadzenDataGridColumn Width="20px" Property="@firstPlayed" Title="First played at" />
-					<RadzenDataGridColumn Width="20px" Property="@lastPlayed" Title="Last played at" />
-					<RadzenDataGridColumn Width="20px" Property="@trackendHours" Title="Playtime in Hours" />
-					<RadzenDataGridColumn Width="20px" Property="@psnIdInclude" Title="PSNId" />
-				</Columns>
-			</RadzenDataGrid>
+			<RadzenStack>
+				<RadzenLabel Text="Enter you PSN UserName" />
+				<RadzenTextBox @bind-Value="model.PSNOnlineId" />
+				<RadzenButton Click="ImportProfile" Text="Check Profile" />
+			</RadzenStack>
+
+			<MudDivider DividerType="DividerType.FullWidth" Light="true" Class="m-3" />
+
+			<RadzenStack>
+				<RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="false" AllowSorting="true" PageSize="5" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
+								Data="@games">
+					<Columns>
+						<RadzenDataGridColumn Width="20px" Property="@nameof(Game.Id)" Title="ID" />
+						<RadzenDataGridColumn Width="20px" Property="@nameof(Game.Name)" Title="Title" />
+						<RadzenDataGridColumn Width="20px" Property="@firstPlayed" Title="First played at" />
+						<RadzenDataGridColumn Width="20px" Property="@lastPlayed" Title="Last played at" />
+						<RadzenDataGridColumn Width="20px" Property="@trackendHours" Title="Playtime in Hours" />
+						<RadzenDataGridColumn Width="20px" Property="@psnIdInclude" Title="PSNId" />
+					</Columns>
+				</RadzenDataGrid>
+				<RadzenButton Text="Import Games" Click="ImportGames" />
+			</RadzenStack>
+		</RadzenTabsItem>
+		<RadzenTabsItem Text="Steam">
+			<div> Coming soon </div>
 		</RadzenTabsItem>
 	</Tabs>
 </RadzenTabs>
 
 @code {
 	IQueryable<Game> games;
+	LuminaUserInfo model = new();
 
-	protected override void OnInitialized()
+	protected override async Task OnInitializedAsync()
 	{
+		await base.OnInitializedAsync();
+		if (User.LuminaUserInfo != null)
+			model = User.LuminaUserInfo;
 		var bearer = fileSystemService.GetBearer();
 		psnService.SetBearer(bearer);
 	}
 
+	async Task ImportProfile()
+	{
+		try
+		{
+			var profile = await psnService.GetProfile(model.PSNOnlineId);
+			model.AccountId = profile.Profile.AccountId;
+			await userService.UpdateThirdParty(UserId, model);
+		}
+		catch
+		{
+			Snackbar.Add("Profile not found", Severity.Warning);
+		}
+	}
+
 	async Task ImportGames()
 	{
-		var gameData = await GetGameData();
-		var result = psnService.ConvertPSNTitles(gameData);
-		games = result.AsQueryable();
+		if (model.AccountId == null || model.AccountId == string.Empty)
+		{
+			Snackbar.Add("Please import your profile first", Severity.Info);
+			return;
+		}
+		try
+		{
+			var gameData = await GetGameData();
+			var result = psnService.ConvertPSNTitles(gameData);
+			games = result.AsQueryable();
+
+		}catch
+		{
+			Snackbar.Add("Admin token expired, please notify the admin", Severity.Warning);
+		}
 	}
 
 	async Task<GameData> GetGameData()
@@ -61,7 +107,7 @@
 			if (currentIteration >= 5)
 				break;
 			int offSet = currentIteration * 200;
-			var result = await psnService.GetMyTitles(offSet);
+			var result = await psnService.GetTitles(offSet, model.AccountId);
 			gameData.Titles.AddRange(result.Titles);
 
 			if (result.NextOffset == null || result.NextOffset <= 0)

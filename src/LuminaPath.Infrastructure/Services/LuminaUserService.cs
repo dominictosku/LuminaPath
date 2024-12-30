@@ -46,7 +46,7 @@ namespace LuminaPath.Infrastructure.Services
         public async Task<LuminaUser?> GetUser(string id)
         {
             using var context = await GetDbContextAsync();
-            return await context.Users.FirstOrDefaultAsync(x => x.Id == id);
+            return await context.Users.Include(u => u.LuminaUserInfo).FirstOrDefaultAsync(x => x.Id == id);
         }
 
         public async Task<IdentityResult?> CreateUser(UserDto model) 
