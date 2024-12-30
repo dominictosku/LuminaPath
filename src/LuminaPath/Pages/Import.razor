@@ -11,6 +11,8 @@
 @inject PSNService psnService
 @inject LuminaUserService userService
 @inject FileSystemService fileSystemService
+@inject GameService gameService
+@inject Radzen.DialogService dialogService
 <h3>Import</h3>
 
 @{
@@ -35,6 +37,9 @@
 			<MudDivider DividerType="DividerType.FullWidth" Light="true" Class="m-3" />
 
 			<RadzenStack>
+				@if(games?.Any() ?? false){
+					<RadzenButton Text="Import Games" Click="AddGamesToLibrary" />
+				}
 				<RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="false" AllowSorting="true" PageSize="5" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
 				Data="@games">
 					<Columns>
@@ -46,7 +51,7 @@
 						<RadzenDataGridColumn Width="20px" Property="@psnIdInclude" Title="PSNId" />
 					</Columns>
 				</RadzenDataGrid>
-				<RadzenButton Text="Import Games" Click="ImportGames" />
+				<RadzenButton Text="Check Games" Click="ImportGames" />
 			</RadzenStack>
 		</RadzenTabsItem>
 		<RadzenTabsItem Text="Steam">
@@ -85,6 +90,16 @@
 		catch
 		{
 			Snackbar.Add("Profile not found", Severity.Warning);
+		}
+	}
+
+	async Task AddGamesToLibrary()
+	{
+		bool? confirm = await dialogService.Confirm("Add shown games to library?", "Add to Library");
+		if(confirm is not null && confirm.Value)
+		{
+			await gameService.ImportGames(User, games.ToList());
+			Snackbar.Add("Added games to library", Severity.Success);
 		}
 	}
 

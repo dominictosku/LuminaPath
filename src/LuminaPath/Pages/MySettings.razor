@@ -1,0 +1,21 @@
+﻿@page "/mySettings"
+@using LuminaPath.Components.BaseAuth
+@using LuminaPath.Infrastructure.Services
+@using Microsoft.AspNetCore.Authorization
+@inherits BaseAuth
+@attribute [Authorize]
+@inject Radzen.DialogService dialogService
+@inject MyGameService myGameService 
+<h3>MySettings</h3>
+
+<MudButton OnClick="DeleteAll" Color="Color.Error"> Delete data </MudButton>
+
+@code {
+	async Task DeleteAll(){
+		bool? confirm = await dialogService.Confirm("This will delete all your created lists", "Are you sure?");
+		if(confirm is not null && confirm.Value)
+		{
+			await myGameService.DeleteMyData(User);
+		}
+	}
+}

@@ -59,6 +59,14 @@ namespace LuminaPath.Infrastructure.Services
             return await base.PutAsync(viewModel);
         }
 
+        public async Task DeleteMyData(LuminaUser user)
+        {
+            using var context = await GetDbContextAsync();
+            var myGames = context.MyGames.Where(g => g.LuminaUserId == user.Id);
+            context.MyGames.RemoveRange(myGames);
+            await context.SaveChangesAsync();
+        }
+
         protected async Task<bool> IsMediaAlreadyAdded(int id, int myId, string userId)
         {
             using var context = await GetDbContextAsync();
