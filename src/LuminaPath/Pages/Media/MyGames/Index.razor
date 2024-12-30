@@ -10,8 +10,10 @@
 @using LuminaPath.UI.Shared.Interfaces
 @using LuminaPath.UI.Shared.Media
 @using LuminaPath.ViewModel
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @inherits BaseAuth
+@attribute [Authorize]
 @implements ITableActions<MyGame>
 @inject GameService gameService
 @inject MyGameService myGameService

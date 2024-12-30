@@ -1,11 +1,13 @@
 ﻿@page "/Admin/Users"
 @using LuminaPath.Core.Common.Features.User.Dto
 @using LuminaPath.Infrastructure.Services
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Linq.Expressions
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using LuminaPath.Pages.Admin.Users.Components
+@attribute [Authorize(Roles = "Administrator")]
 @inherits OwningComponentBase
 @implements IDisposable
 @inject ISnackbar Snackbar
