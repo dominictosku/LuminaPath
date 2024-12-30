@@ -32,7 +32,7 @@
 
 			<RadzenStack>
 				<RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="false" AllowSorting="true" PageSize="5" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
-								Data="@games">
+				Data="@games">
 					<Columns>
 						<RadzenDataGridColumn Width="20px" Property="@nameof(Game.Id)" Title="ID" />
 						<RadzenDataGridColumn Width="20px" Property="@nameof(Game.Name)" Title="Title" />
@@ -69,7 +69,13 @@
 		try
 		{
 			var profile = await psnService.GetProfile(model.PSNOnlineId);
-			model.AccountId = profile.Profile.AccountId;
+			model.PSNAccountId = profile.Profile.AccountId;
+			var trophies = await psnService.GetUserProfileTrophy(model.PSNAccountId);
+			model.PSNTrophyLevel = trophies.TrophyLevel;
+			model.PSNPlatinum = trophies.EarnedTrophies.Platinum;
+			model.PSNGold = trophies.EarnedTrophies.Gold;
+			model.PSNSilver = trophies.EarnedTrophies.Silver;
+			model.PSNBronze = trophies.EarnedTrophies.Bronze;
 			await userService.UpdateThirdParty(UserId, model);
 		}
 		catch
@@ -80,7 +86,7 @@
 
 	async Task ImportGames()
 	{
-		if (model.AccountId == null || model.AccountId == string.Empty)
+		if (model.PSNAccountId == null || model.PSNAccountId == string.Empty)
 		{
 			Snackbar.Add("Please import your profile first", Severity.Info);
 			return;
@@ -107,7 +113,7 @@
 			if (currentIteration >= 5)
 				break;
 			int offSet = currentIteration * 200;
-			var result = await psnService.GetTitles(offSet, model.AccountId);
+			var result = await psnService.GetTitles(offSet, model.PSNAccountId);
 			gameData.Titles.AddRange(result.Titles);
 
 			if (result.NextOffset == null || result.NextOffset <= 0)

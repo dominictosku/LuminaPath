@@ -152,7 +152,16 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
 
         }
 
-        public async Task<TrophyData> GetUserTrophies(string accountId)
+        public async Task<TrophyProfileData> GetUserProfileTrophy(string accountId)
+        {
+            string apiUrl = $"https://m.np.playstation.com/api/trophy/v1/users/{accountId}/trophySummary";
+            var responseData = await MakeRequest(apiUrl);
+            TrophyProfileData trophyData = JsonSerializer.Deserialize<TrophyProfileData>(responseData);
+            return trophyData;
+        }
+
+
+        public async Task<TrophyData> GetUserTrophyTitles(string accountId)
         {
             string apiUrl = $"https://m.np.playstation.com/api/trophy/v1/users/{accountId}/trophyTitles";
             var responseData = await MakeRequest(apiUrl);

@@ -13,6 +13,34 @@ namespace LuminaPath.Core.Common.Entities.PSN
             public int TotalItemCount { get; set; }
         }
 
+        public class TrophyProfileData
+        {
+            [JsonPropertyName("accountId")]
+            public string AccountId { get; set; }
+
+            [JsonPropertyName("trophyLevel")]
+            public int TrophyLevel { get; set; }
+
+            [JsonPropertyName("trophyPoint")]
+            public int TrophyPoint { get; set; }
+
+            [JsonPropertyName("trophyLevelBasePoint")]
+            public int TrophyLevelBasePoint { get; set; }
+
+            [JsonPropertyName("trophyLevelNextPoint")]
+            public int TrophyLevelNextPoint { get; set; }
+
+            [JsonPropertyName("progress")]
+            public int Progress { get; set; }
+
+            [JsonPropertyName("tier")]
+            public int Tier { get; set; }
+
+            [JsonPropertyName("earnedTrophies")]
+            public EarnedTrophies EarnedTrophies { get; set; }
+        }
+
+
         public class TrophyTitle
         {
             [JsonPropertyName("npServiceName")]
