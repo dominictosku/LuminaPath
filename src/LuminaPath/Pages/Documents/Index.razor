@@ -20,16 +20,12 @@
 <h1>MediaDocuments</h1>
 <MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary">@ToggleText</MudButton>
 <AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" />
-<MudDataGrid ServerData="@(ServerReload)"
-             FixedHeader="true"
-             FixedFooter="true"
-             Virtualize="true"
-             Height="calc(100vh - 370px)"
+<LuminaPath.Pages.Media.Components.LuminaGrid ServerData="@(ServerReload)"
              Loading="@loading"
              MultiSelection="true"
              @bind-SelectedItems="selectedItems"
              @bind-SelectedItem="_currentDto"
-             Hover="true" @ref="_table">
+             @ref="_table">
     <ToolBarContent>
         <TableActions TItem="MediaDocument" Page="this" loading="loading" selectedItems="selectedItems" />
     </ToolBarContent>
@@ -65,7 +61,7 @@
     <PagerContent>
         <MudDataGridPager />
     </PagerContent>
-</MudDataGrid>
+</LuminaPath.Pages.Media.Components.LuminaGrid>
 
 <style>
     @@import url("https://cdn.jsdelivr.net/npm/@@fancyapps/ui@5.0/dist/fancybox/fancybox.css");

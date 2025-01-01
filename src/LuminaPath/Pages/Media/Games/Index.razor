@@ -24,17 +24,12 @@
 <AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" />
 @if (IsGrid)
 {
-	<MudDataGrid ServerData="@(ServerReload)"
-	Filterable="true"
-	FixedHeader="true"
-	FixedFooter="true"
-	Virtualize="true"
-	Height="calc(100vh - 370px)"
+	<LuminaGrid GetData="@(GetData)"
+	T="Game"
 	Loading="@loading"
-	MultiSelection="true"
 	@bind-SelectedItems="selectedItems"
 	@bind-SelectedItem="_currentDto"
-	Hover="true" @ref="_table">
+	@ref="_table">
 		<ToolBarContent>
 			<TableActions TItem="Game" Page="this" loading="loading" selectedItems="selectedItems" />
 		</ToolBarContent>
@@ -77,7 +72,7 @@
 		<PagerContent>
 			<MudDataGridPager />
 		</PagerContent>
-	</MudDataGrid>
+	</LuminaGrid>
 }
 else
 {
@@ -131,52 +126,6 @@ else
 	public HashSet<Game> selectedItems = new();
 	public string ToggleText => IsGrid ? "Grid View" : "Table View";
 
-	private async Task<GridData<Game>> ServerReload(GridState<Game> state)
-	{
-		try
-		{
-			var result = await GetData();
-			Games = result;
-
-			if (state.SortDefinitions.Count > 0)
-			{
-				var firstSort = state.SortDefinitions.First();
-				result = firstSort.Descending
-					? result.OrderByDescending(firstSort.SortFunc).ToList()
-					: result.OrderBy(firstSort.SortFunc).ToList();
-			}
-
-			if (state.FilterDefinitions.Any())
-			{
-				var filterFunctions = state.FilterDefinitions.Select(x => x.GenerateFilterFunction());
-				result = result
-					.Where(x => filterFunctions.All(f => f(x)))
-					.ToList();
-			}
-
-			var totalNumberOfFilteredItems = result.Count;
-
-			result = result
-				.Skip(state.Page * state.PageSize)
-				.Take(state.PageSize)
-				.ToList();
-
-			return new GridData<Game>
-				{
-					Items = result,
-					TotalItems = totalNumberOfFilteredItems
-				};
-		}
-		catch (TaskCanceledException)
-		{
-			return new GridData<Game>
-				{
-					Items = [],
-					TotalItems = 0
-				};
-		}
-	}
-
 	public async Task ReloadData()
 	{
 		if (IsGrid)
@@ -198,7 +147,9 @@ else
 
 	private async Task<List<Game>> GetData()
 	{
-		return await gameService.GetAll();
+		var result = await gameService.GetAll();
+		Games = result;
+		return result;
 	}
 
 	public void Dummy()
