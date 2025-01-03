@@ -31,12 +31,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="MudBlazor" Version="7.15.0" />
+    <PackageReference Include="Radzen.Blazor" Version="5.7.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\LuminaPath.Core\LuminaPath.Core.csproj" />
     <ProjectReference Include="..\LuminaPath.Infrastructure\LuminaPath.Infrastructure.csproj" />
-    <ProjectReference Include="..\LuminaPath.UI.Shared\LuminaPath.UI.Shared.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,7 @@
 ﻿using LuminaPath;
 using LuminaPath.Infrastructure;
-using LuminaPath.UI.Shared;
+using MudBlazor.Services;
+using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,12 +10,15 @@ builder.Services.AddSpaStaticFiles(configuration =>
     configuration.RootPath = "../LuminaPath.WebApp/www";
 });
 
+
 // Add services to the container.
 builder.Services
     .AddInfrastructure(builder.Configuration)
     .AddServer()
-    .AddBlazor()
-    .AddUILibrary();
+    .AddBlazor();
+
+builder.Services.AddMudServices();
+builder.Services.AddRadzenComponents();
 
 builder.Services.AddAutoMapper(typeof(Program));
 
