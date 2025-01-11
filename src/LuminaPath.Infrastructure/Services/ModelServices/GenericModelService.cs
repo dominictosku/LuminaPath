@@ -4,6 +4,7 @@ using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices
 {
@@ -11,6 +12,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
     {
         protected readonly IMapper _mapper;
         protected readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
+
+        public virtual string[] Includes { get; set; }
 
         public GenericModelService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IMapper mapper)
         {
@@ -32,7 +35,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             using (var dbContext = await GetDbContextAsync())
             {
-                return await GetEntities(dbContext).ToListAsync();
+                IQueryable<TEntity> query = GetEntities(dbContext);
+                query = Includes.Aggregate(query, (current, include) => current.Include(include));
+                return await query.ToListAsync();
             }
         }
 

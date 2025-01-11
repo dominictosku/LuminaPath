@@ -1,4 +1,6 @@
-﻿namespace LuminaPath.Infrastructure.Helper
+﻿using System.Globalization;
+
+namespace LuminaPath.Infrastructure.Helper
 {
     public static class DateHelper
     {
@@ -6,6 +8,20 @@
         {
             int diff = (7 + (dt.DayOfWeek - startOfWeek)) % 7;
             return dt.AddDays(-1 * diff).Date;
+        }
+
+        public static DateTime ParseISODate(string dateStr)
+        {
+            try
+            {
+                // Parse ISO 8601 date string
+                DateTime dt = DateTime.Parse(dateStr, null, DateTimeStyles.RoundtripKind);
+                return dt;
+            }
+            catch (FormatException)
+            {
+                return new DateTime(); // Return the original string if parsing fails
+            }
         }
     }
 }

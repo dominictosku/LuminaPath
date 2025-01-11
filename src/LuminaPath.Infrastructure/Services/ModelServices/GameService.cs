@@ -12,61 +12,10 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
     public class GameService : GenericModelService<Game>
     {
         private readonly DocumentService _documentService;
+        public override string[] Includes { get; set; } = [nameof(Game.GameInfo), nameof(Game.MyGames), nameof(Game.Image)];
         public GameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, DocumentService documentService, IMapper mapper) : base(dbContextFactory, mapper)
         {
             _documentService = documentService;
-        }
-
-        public async Task ImportGames(LuminaUser user, List<MyGameDto> games)
-        {
-            using var context = await GetDbContextAsync();
-            List<Game> gamesToAdd = new();
-            foreach (var game in games)
-            {
-                if (!context.Games.Any(g => g.GameInfo != null && g.GameInfo.PsnId == game.Game.GameInfo.PsnId))
-                {
-                    var newGame = new Game()
-                    {
-                        Name = game.Game.Name,
-                        Plattforms = game.Game.Plattforms,
-                        Source = "PSN",
-                        GameInfo = new()
-                        {
-                            PsnId = game.Game.GameInfo.PsnId
-                        },
-                        MyGames = [ new MyGame() {
-                            LuminaUserId = user.Id,
-                            MyGameInfo = game.MyGameInfo
-                        }]
-                    };
-                    if (gamesToAdd.Any(g => g.Name == newGame.Name))
-                        newGame.Name = newGame.Name + " Duplicate " + game.Game.GameInfo.PsnId;
-                    gamesToAdd.Add(newGame);
-                }
-                else
-                {
-                    var existingGame = context.Games.Where(g => g.GameInfo.PsnId == game.Game.GameInfo.PsnId).First();
-                    if (existingGame.MyGames.Any(g => g.LuminaUserId == user.Id))
-                    {
-                        var myGame = existingGame.MyGames.First(g => g.LuminaUserId == user.Id);
-                        myGame.MyGameInfo = game.MyGameInfo;
-                    }
-                    else
-                    {
-                        context.MyGames.Add(new MyGame() { GameId = existingGame.Id, LuminaUserId = user.Id, MyGameInfo = game.MyGameInfo });
-                    }
-                }
-            }
-            await context.Games.AddRangeAsync(gamesToAdd);
-            await context.SaveChangesAsync();
-        }
-
-        public override async Task<List<Game>> GetAll()
-        {
-            using (var dbContext = await GetDbContextAsync())
-            {
-                return await GetEntities(dbContext).Include(g => g.GameInfo).Include(g => g.Image).ToListAsync();
-            }
         }
 
         public override async Task<Result<int, FailedResult>> DeleteAsync(int? id)
@@ -77,16 +26,13 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return await base.DeleteAsync(id);
         }
 
-        public async Task<List<Game>> GetDropdownGames()
+        public async Task<List<Game>> GetDropdownGames(string? searchName = null)
         {
             using var context = await GetDbContextAsync();
-            return context.Games.ToList();
-        }
-
-        public async Task<List<Game>> GetDropdownGames(string searchName)
-        {
-            using var context = await GetDbContextAsync();
-            return context.Games.Where(x => LuminaPathDbContext.Soundex(x.Name) == LuminaPathDbContext.Soundex(searchName)).ToList();
+            IQueryable<Game> query = context.Games;
+            if (searchName is not null)
+                query = query.Where(x => LuminaPathDbContext.Soundex(x.Name) == LuminaPathDbContext.Soundex(searchName));
+            return await query.ToListAsync();
         }
 
         public async Task<PaginatedList<Game>> GetAllPaginated(

@@ -1,6 +1,7 @@
 ﻿using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Enums;
-using System.Globalization;
+using LuminaPath.Core.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -12,8 +13,9 @@ using static LuminaPath.Core.Entities.PSN.PSNTrophy;
 
 namespace LuminaPath.Infrastructure.Services.Third_Party
 {
-    public class PSNService
+    public class PSNService(IDbContextFactory<LuminaPathDbContext> dbContextFactory)
     {
+        private IDbContextFactory<LuminaPathDbContext> _dbContextFactory = dbContextFactory;
         string bearerToken = string.Empty;
 
         public void SetBearer(string token) => bearerToken = token;
@@ -231,18 +233,60 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
             return Math.Round(totalHours, 2); // Return rounded value (to 2 decimal places)
         }
 
-        private static DateTime FormatDate(string dateStr)
+        public async Task ImportGames(LuminaUser user, List<MyGameDto> gamesToImport)
         {
-            try
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            List<Game> gamesToAdd = new();
+            IQueryable<Game> games = context.Games.Include(g => g.GameInfo).Include(g => g.MyGames);
+            foreach (var gameToImport in gamesToImport)
             {
-                // Parse ISO 8601 date string
-                DateTime dt = DateTime.Parse(dateStr, null, DateTimeStyles.RoundtripKind);
-                return dt;
+                if (games.Any(g => g.GameInfo != null && g.GameInfo.PsnId == gameToImport.Game.GameInfo.PsnId))
+                {
+                    var existingGame = games.FirstOrDefault(g => g.GameInfo.PsnId == gameToImport.Game.GameInfo.PsnId);
+                    if (existingGame == null)
+                        throw new Exception("Error when importing games");
+                    if (existingGame.MyGames?.Any(g => g.LuminaUserId == user.Id) ?? false)
+                    {
+                        var myGameId = existingGame.MyGames.First(g => g.LuminaUserId == user.Id).Id;
+                        var myGame = context.MyGames.Include(g => g.MyGameInfo).First(g => g.Id == myGameId);
+                        if(myGame.MyGameInfo == null)
+                            myGame.MyGameInfo = gameToImport.MyGameInfo;
+                        else
+                        {
+                            myGame.MyGameInfo.FirstPlayed = gameToImport.MyGameInfo.FirstPlayed;
+                            myGame.MyGameInfo.LastPlayed = gameToImport.MyGameInfo.LastPlayed;
+                            myGame.MyGameInfo.TrackedHours = gameToImport.MyGameInfo.TrackedHours;
+                        }
+                        context.MyGames.Update(myGame);
+                    }
+                    else
+                    {
+                        context.MyGames.Add(new MyGame() { GameId = existingGame.Id, LuminaUserId = user.Id, MyGameInfo = gameToImport.MyGameInfo });
+                    }
+                }
+                else
+                {
+                    var newGame = new Game()
+                    {
+                        Name = gameToImport.Game.Name,
+                        Plattforms = gameToImport.Game.Plattforms,
+                        Source = "PSN",
+                        GameInfo = new()
+                        {
+                            PsnId = gameToImport.Game.GameInfo.PsnId
+                        },
+                        MyGames = [ new MyGame() {
+                            LuminaUserId = user.Id,
+                            MyGameInfo = gameToImport.MyGameInfo
+                        }]
+                    };
+                    if (gamesToAdd.Any(g => g.Name == newGame.Name))
+                        newGame.Name = newGame.Name + " Duplicate " + gameToImport.Game.GameInfo.PsnId;
+                    gamesToAdd.Add(newGame);
+                }
             }
-            catch (FormatException)
-            {
-                return new DateTime(); // Return the original string if parsing fails
-            }
+            await context.Games.AddRangeAsync(gamesToAdd);
+            await context.SaveChangesAsync();
         }
 
         public class TokenResponse

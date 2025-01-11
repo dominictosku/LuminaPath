@@ -13,7 +13,6 @@
 @inject PSNService psnService
 @inject LuminaUserService userService
 @inject FileSystemService fileSystemService
-@inject GameService gameService
 @inject Radzen.DialogService dialogService
 @attribute [Authorize]
 <h3>Import</h3>
@@ -102,7 +101,7 @@
 		bool? confirm = await dialogService.Confirm("Add shown games to library?", "Add to Library");
 		if(confirm is not null && confirm.Value)
 		{
-			await gameService.ImportGames(User, games.ToList());
+			await psnService.ImportGames(User, games.ToList());
 			Snackbar.Add("Added games to library", Severity.Success);
 		}
 	}
