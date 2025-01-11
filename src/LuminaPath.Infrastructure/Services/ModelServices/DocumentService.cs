@@ -43,7 +43,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return await CreatePaginatedList(entities, paging);
         }
 
-        public async Task<Result<MediaDocument, FailedResult>> CreateDocument(IBrowserFile file, Media? media = null)
+        public async Task<Result<MediaDocument, FailedResult>> CreateDocument(IBrowserFile file, IMedia<MediaDocument>? media = null)
         {
             Stream fs = file.OpenReadStream(MaxAllowedSize);
             try
@@ -127,7 +127,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
         }
 
-        public async Task DeleteMediaDocument(Media entity, LuminaPathDbContext _context = null)
+        public async Task DeleteMediaDocument(IMedia<MediaDocument> entity, LuminaPathDbContext _context = null)
         {
             using var context = _context ?? await GetDbContextAsync();
             if (entity.Image is null)
