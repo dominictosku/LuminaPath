@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
-namespace LuminaPath.Infrastructure.Services.ModelServices
+namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 {
     public class GenericModelService<TEntity> : IGenericModelService<TEntity> where TEntity : class, IBasicInfo
     {

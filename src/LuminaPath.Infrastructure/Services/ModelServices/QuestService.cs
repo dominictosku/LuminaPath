@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices

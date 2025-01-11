@@ -148,7 +148,7 @@ else
 
 	private async Task<List<MyGame>> GetData()
 	{
-		var result = await myGameService.GetMyGames(UserId);
+		var result = await myGameService.GetMyMedia(UserId);
 		Games = result;
 		return result;
 	}
@@ -218,8 +218,7 @@ else
 		loading = true;
 		try
 		{
-			game.LuminaUserId = UserId;
-			await myGameService.PostAsync(game);
+			await myGameService.PostAsync(game, User);
 			Snackbar.Add("Added Game to List", Severity.Success);
 		}
 		catch (Exception ex)
@@ -237,8 +236,7 @@ else
 		loading = true;
 		try
 		{
-			game.LuminaUserId = UserId;
-			await myGameService.PutAsync(game);
+			await myGameService.PutAsync(game, User);
 			Snackbar.Add("Updated Game", Severity.Success);
 		}
 		catch (Exception ex)

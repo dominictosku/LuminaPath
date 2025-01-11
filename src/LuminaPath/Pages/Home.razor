@@ -76,7 +76,7 @@
     {
         await base.OnInitializedAsync();
         if (UserId == null) return;
-        var result = await myGameService.GetMyGames(UserId);
+        var result = await myGameService.GetMyMedia(UserId);
         CurrentMainGames = result.Where(x => x.Status == GameStatus.MainGame).ToList();
     }
 }

@@ -1,0 +1,264 @@
+﻿using AutoMapper;
+using LuminaPath.Core.Entities.Results;
+using LuminaPath.Core.Entities;
+using LuminaPath.Core.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Text;
+using System.Threading.Tasks;
+using LuminaPath.Core.Models;
+
+namespace LuminaPath.Infrastructure.Services.ModelServices.Base
+{
+    abstract public class GenericMyModelService<TEntity> where TEntity : class, IMyMedia
+    {
+        protected readonly IMapper _mapper;
+        protected readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
+
+        public virtual string[] Includes { get; set; } = [];
+        protected abstract Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> DefaultOrderBy { get; }
+
+        public GenericMyModelService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IMapper mapper)
+        {
+            _dbContextFactory = dbContextFactory;
+            _mapper = mapper;
+        }
+
+        protected async Task<LuminaPathDbContext> GetDbContextAsync()
+        {
+            return await _dbContextFactory.CreateDbContextAsync();
+        }
+
+        protected DbSet<TEntity> GetEntities(LuminaPathDbContext dbContext)
+        {
+            return dbContext.Set<TEntity>();
+        }
+
+        public virtual async Task<List<TEntity>> GetAll()
+        {
+            using (var dbContext = await GetDbContextAsync())
+            {
+                IQueryable<TEntity> query = GetEntities(dbContext);
+                query = QueryDefaultIncludes(query);
+                return await query.ToListAsync();
+            }
+        }
+
+        public async Task<List<TEntity>> GetMyMedia(string UserId, Expression<Func<TEntity, bool>> filter = null)
+        {
+            using var context = await GetDbContextAsync();
+            IQueryable<TEntity> entities = GetEntities(context);
+            entities = entities.Where(g => g.LuminaUserId == UserId);
+            entities = QueryDefaultIncludes(entities);
+            entities = PrepareEntity(entities, filter, DefaultOrderBy);
+            return await entities.ToListAsync();
+        }
+
+        public virtual async Task<PaginatedList<TEntity>> GetAllPaginated(
+            string UserId,
+            MediaFilter mediaFilter,
+            Expression<Func<TEntity, bool>> filter = null,
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null)
+        {
+            if (orderBy == null)
+                orderBy = DefaultOrderBy;
+            Expression<Func<TEntity, bool>> userFilter = g => g.LuminaUserId == UserId;
+            return await GetAllPaginated<TEntity>(mediaFilter, Includes, userFilter, orderBy);
+        }
+
+        public virtual async Task<PaginatedList<Dto>> GetAllPaginated<Dto>(
+            MediaFilter mediaFilter,
+            IEnumerable<string> includes,
+            Expression<Func<TEntity, bool>> filter = null,
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null)
+        {
+            using (var dbContext = await GetDbContextAsync())
+            {
+                IQueryable<TEntity> entities = GetEntities(dbContext);
+                entities = PrepareEntity(entities, filter, orderBy, includes);
+
+                var paginatedEntities = await CreatePaginatedList(entities, mediaFilter.Paging);
+
+                if (typeof(Dto) == typeof(TEntity))
+                {
+                    return paginatedEntities as PaginatedList<Dto>;
+                }
+
+                var mappedEntities = _mapper.Map<IEnumerable<TEntity>, IEnumerable<Dto>>(paginatedEntities);
+
+                return CreatePaginatedList(mappedEntities, mediaFilter.Paging);
+            }
+        }
+
+        public virtual async Task<TEntity> GetById(int? id, IEnumerable<string>? includes = null)
+        {
+            if (id == null)
+                throw new Exception("No id given");
+
+            using (var dbContext = await GetDbContextAsync())
+            {
+                IQueryable<TEntity> entities = GetEntities(dbContext);
+                if (includes != null)
+                {
+                    entities = includes.Aggregate(entities, (current, include) => current.Include(include));
+                }
+
+                return await entities.FirstOrDefaultAsync(e => e.Id == id) ?? throw new Exception("Entity not found");
+            }
+        }
+
+        public async Task<Result<TEntity, FailedResult>> PostAsync(TEntity viewModel, LuminaUser? user)
+        {
+            if (user == null)
+                return new FailedResult("User not found, please login");
+            if (await IsMediaAlreadyAdded(viewModel.MediaId, viewModel.Id, user.Id))
+            {
+                return new FailedResult("This is game already added");
+            }
+            viewModel.LuminaUserId = user.Id;
+
+            return await PostAsync(viewModel);
+        }
+
+        public async Task<Result<TEntity, FailedResult>> PutAsync(TEntity viewModel, LuminaUser? user)
+        {
+            if (user == null)
+                return new FailedResult("User not found, please login");
+            if (await IsMediaAlreadyAdded(viewModel.MediaId, viewModel.Id, user.Id))
+            {
+                return new FailedResult("This is game already added");
+            }
+            viewModel.LuminaUserId = user.Id;
+            return await PutAsync(viewModel);
+        }
+
+        public async Task DeleteMyData(LuminaUser user)
+        {
+            using var context = await GetDbContextAsync();
+            var myEntities = GetEntities(context).Where(g => g.LuminaUserId == user.Id);
+            context.RemoveRange(myEntities);
+            await context.SaveChangesAsync();
+        }
+
+        private async Task<Result<TEntity, FailedResult>> PostAsync(TEntity entity)
+        {
+            using (var dbContext = await GetDbContextAsync())
+            {
+                var entities = GetEntities(dbContext);
+                await entities.AddAsync(entity);
+                await dbContext.SaveChangesAsync();
+                return entity;
+            }
+        }
+
+        private async Task<Result<TEntity, FailedResult>> PutAsync(TEntity entity)
+        {
+            var id = entity.Id;
+
+            using (var dbContext = await GetDbContextAsync())
+            {
+                var entities = GetEntities(dbContext);
+                var existingEntity = await entities.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id) ?? throw new Exception("Entity not found");
+
+                dbContext.Update(entity);
+
+                try
+                {
+                    await dbContext.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!EntityExists(id, dbContext))
+                    {
+                        return new FailedResult("Entity could not be saved");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
+                return entity;
+            }
+        }
+
+        public virtual async Task<Result<int, FailedResult>> DeleteAsync(int? id)
+        {
+            if (id == null)
+                return new FailedResult("Entry not found");
+
+            using (var dbContext = await GetDbContextAsync())
+            {
+                var entity = await GetById(id);
+                var entities = GetEntities(dbContext);
+
+                entities.Remove(entity);
+                await dbContext.SaveChangesAsync();
+
+                return id.Value;
+            }
+        }
+
+        protected virtual async Task<PaginatedList<TEntity>> CreatePaginatedList(IQueryable<TEntity> entities, Paging paging)
+        {
+            int pageIndex = paging.PageIndex;
+            if (paging.Count > 0)
+            {
+                return await PaginatedList<TEntity>.CreateAsync(entities, 1, paging.Count);
+            }
+            return await PaginatedList<TEntity>.CreateAsync(entities, pageIndex, 10);
+        }
+
+        protected virtual PaginatedList<TDto> CreatePaginatedList<TDto>(IEnumerable<TDto> entities, Paging paging)
+        {
+            int pageIndex = paging.PageIndex;
+            if (paging.Count > 0)
+            {
+                return PaginatedList<TDto>.Create(entities, 1, paging.Count);
+            }
+            return PaginatedList<TDto>.Create(entities, pageIndex, 10);
+        }
+
+        protected virtual IQueryable<TEntity> PrepareEntity(
+            IQueryable<TEntity> entities,
+            Expression<Func<TEntity, bool>> filter = null,
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
+            IEnumerable<string> includes = null)
+        {
+            if (filter != null)
+            {
+                entities = entities.Where(filter);
+            }
+            if (includes != null)
+            {
+                entities = includes.Aggregate(entities, (current, include) => current.Include(include));
+            }
+            if (orderBy != null)
+            {
+                entities = orderBy(entities);
+            }
+            return entities;
+        }
+
+        private IQueryable<TEntity> QueryDefaultIncludes(IQueryable<TEntity> query)
+        {
+            return Includes.Aggregate(query, (current, include) => current.Include(include));
+        }
+
+        protected async Task<bool> IsMediaAlreadyAdded(int id, int myId, string userId)
+        {
+            using var context = await GetDbContextAsync();
+            var entities = GetEntities(context);
+            var result = entities.AsNoTracking().ToList();
+            return result.Any(e => e.MediaId == id && e.Id != myId && e.LuminaUserId == userId);
+        }
+
+        protected bool EntityExists(int id, LuminaPathDbContext dbContext)
+        {
+            return dbContext.Set<TEntity>().Any(e => e.Id == id);
+        }
+    }
+}

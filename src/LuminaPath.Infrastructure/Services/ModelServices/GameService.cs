@@ -4,6 +4,7 @@ using LuminaPath.Core.Entities;
 using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Extensions;
 using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
