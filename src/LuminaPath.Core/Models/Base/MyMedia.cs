@@ -1,4 +1,4 @@
-﻿using LuminaPath.Core.Common.Interfaces;
+﻿using LuminaPath.Core.Interfaces;
 using System.ComponentModel.DataAnnotations;
 
 namespace LuminaPath.Core.Models.Base

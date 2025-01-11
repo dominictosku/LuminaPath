@@ -1,6 +1,4 @@
-﻿using LuminaPath.Core.Models;
-
-namespace LuminaPath.Components.Interfaces
+﻿namespace LuminaPath.Components.Interfaces
 {
     public interface ITableActions<T>
     {

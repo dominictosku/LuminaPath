@@ -1,8 +1,7 @@
 ﻿using AutoMapper;
-using LuminaPath.Core.Common.Entities;
-using LuminaPath.Core.Common.Interfaces;
+using LuminaPath.Core.Entities;
+using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models;
-using LuminaPath.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

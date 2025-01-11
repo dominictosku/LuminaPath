@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
-using LuminaPath.Core.Common.Features.Quests.Dto;
+using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Controllers.Base;
-using LuminaPath.Infrastructure.Services;
+using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;

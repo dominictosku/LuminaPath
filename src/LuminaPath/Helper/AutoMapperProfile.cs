@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
-using LuminaPath.Core.Common.Features.Gaming.Dto;
-using LuminaPath.Core.Common.Features.Quests.Dto;
+using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Models;
 using LuminaPath.ViewModel;
 
@@ -10,7 +9,7 @@ namespace LuminaPath.Helper
     {
         public AutoMapperProfile()
         {
-            CreateMap<Core.Common.Features.Gaming.Dto.MyGameDto, MyGame>()
+            CreateMap<MyGameDto, MyGame>()
                 .ReverseMap();
 
             CreateMap<GamesNoIncludeDto, Game>()

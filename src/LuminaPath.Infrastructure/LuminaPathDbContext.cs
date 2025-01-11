@@ -1,4 +1,4 @@
-﻿using LuminaPath.Core.Common.Interfaces;
+﻿using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Base;
 using LuminaPath.Infrastructure.ModelConfiugration;

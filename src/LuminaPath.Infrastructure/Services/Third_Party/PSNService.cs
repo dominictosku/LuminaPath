@@ -1,16 +1,14 @@
-﻿using LuminaPath.Core.Common.Enums;
-using LuminaPath.Core.Common.Features.Gaming.Dto;
-using LuminaPath.Core.Models;
-using LuminaPath.Core.Models.Third_Party;
+﻿using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Enums;
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Web;
-using static LuminaPath.Core.Common.Entities.PSN.PSNProfile;
-using static LuminaPath.Core.Common.Entities.PSN.PSNTitles;
-using static LuminaPath.Core.Common.Entities.PSN.PSNTrophy;
+using static LuminaPath.Core.Entities.PSN.PSNProfile;
+using static LuminaPath.Core.Entities.PSN.PSNTitles;
+using static LuminaPath.Core.Entities.PSN.PSNTrophy;
 
 namespace LuminaPath.Infrastructure.Services.Third_Party
 {
@@ -120,11 +118,13 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
                         LastPlayed = title.LastPlayedDateTime,
                         TrackedHours = DurationToHours(title.PlayDuration)
                     },
-                    Game = new(){
+                    Game = new()
+                    {
                         Name = gameName,
                         Source = "PSN",
                         Plattforms = plattform,
-                        GameInfo = new(){
+                        GameInfo = new()
+                        {
                             PsnId = title.TitleId,
                         }
                     },

@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Components.Web.Virtualization;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using MudBlazor;
-using LuminaPath.Core.Models;
 
 namespace LuminaPath.Pages.Media.Components
 {

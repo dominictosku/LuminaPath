@@ -1,5 +1,5 @@
-﻿using LuminaPath.Core.Common.Enums;
-using LuminaPath.Core.Common.Interfaces;
+﻿using LuminaPath.Core.Enums;
+using LuminaPath.Core.Interfaces;
 
 namespace LuminaPath.Core.Models.Base
 {

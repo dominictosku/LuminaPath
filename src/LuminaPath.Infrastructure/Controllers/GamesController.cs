@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
-using LuminaPath.Core.Common.Entities;
-using LuminaPath.Core.Common.Features.Gaming.Dto;
+using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Entities;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Controllers.Base;
-using LuminaPath.Infrastructure.Services;
+using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;

@@ -1,5 +1,5 @@
 ﻿using LuminaPath.Components.Dialogs;
-using LuminaPath.Core.Common.Interfaces;
+using LuminaPath.Core.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using MudBlazor;

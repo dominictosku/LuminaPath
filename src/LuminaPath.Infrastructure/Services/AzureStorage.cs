@@ -1,8 +1,8 @@
 ﻿using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using LuminaPath.Core.Common.Features.Files.Dto;
-using LuminaPath.Core.Common.Interfaces;
+using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 

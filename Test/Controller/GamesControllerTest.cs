@@ -1,7 +1,5 @@
 using AutoMapper;
-using LuminaPath.Core.Common.Entities;
 using LuminaPath.Infrastructure;
-using LuminaPath.Core.Common.Interfaces;
 using LuminaPath.Core.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -10,12 +8,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Test.Utilities;
-using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Controllers;
+using LuminaPath.Infrastructure.Services.ModelServices;
+using LuminaPath.Core.Interfaces;
+using LuminaPath.Core.Entities;
 
 namespace Test.Controller
 {
-	public class GamesControllerTest
+    public class GamesControllerTest
 	{
 		[Fact]
 		public async Task GetAsync_GetAllGamesWithMyGames_WhenLoggedIn()

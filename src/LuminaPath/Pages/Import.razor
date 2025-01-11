@@ -1,13 +1,14 @@
 ﻿@page "/import"
 @using LuminaPath.Components.BaseAuth
-@using LuminaPath.Core.Common.Features.Gaming.Dto
+@using LuminaPath.Core.Dtos
 @using LuminaPath.Core.Models.Third_Party
 @using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.ModelServices
 @using LuminaPath.Infrastructure.Services.Third_Party
 @using Microsoft.AspNetCore.Authorization
 @using Radzen
 @using Radzen.Blazor
-@using static LuminaPath.Core.Common.Entities.PSN.PSNTitles
+@using static LuminaPath.Core.Entities.PSN.PSNTitles
 @inherits BaseAuth
 @inject PSNService psnService
 @inject LuminaUserService userService

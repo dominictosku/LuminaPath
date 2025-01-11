@@ -1,5 +1,5 @@
 ﻿using LuminaPath.Core.Models;
-using LuminaPath.Infrastructure.Services;
+using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Identity;
 
 namespace LuminaPath.Infrastructure
@@ -38,7 +38,7 @@ namespace LuminaPath.Infrastructure
 
         public static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
         {
-            foreach (var role in LuminaUserService.Roles) 
+            foreach (var role in LuminaUserService.Roles)
             {
                 if (!await roleManager.RoleExistsAsync(role))
                 {

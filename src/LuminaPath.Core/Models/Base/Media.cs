@@ -1,4 +1,4 @@
-﻿using LuminaPath.Core.Common.Interfaces;
+﻿using LuminaPath.Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
