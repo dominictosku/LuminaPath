@@ -2,10 +2,8 @@
 
 namespace LuminaPath.Core.Interfaces
 {
-    public interface IMyMedia
+    public interface IMyMedia : IBasicInfo
     {
-        public int Id { get; set; }
-
         public int MediaId { get; }
 
         public string LuminaUserId { get; set; }

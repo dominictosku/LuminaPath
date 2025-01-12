@@ -12,8 +12,7 @@
 @inject GameService GameService
 @inject NavigationManager Navigation
 @inject IMapper mapper
-@implements ITableActions<Game>
-@inherits BaseGridActions<Game>
+@inherits MediaGridActions<Game, GameFormDialog>
 
 <PageTitle>Games</PageTitle>
 
@@ -157,53 +156,17 @@ else
 		return result;
 	}
 
-	#region Events
-	public async Task OnCreate()
+	protected override DialogParameters<GameFormDialog> CreateDialogParameters(Game command, Func<Game, Task> OnSubmit)
 	{
-		if (!CanUserEdit){
-			Snackbar.Add("No permission to edit", Severity.Info);
-			return;
-		}
-		var command = new Game();
-		var parameters = new DialogParameters<GameFormDialog>
+		return new DialogParameters<GameFormDialog>
 			{
 				{ x=>x.Refresh , new Action(async () => await ReloadData()) },
 				{ x=>x.Model, command },
 				{ x=>x.loading, loading },
-				{ x=>x.EventCallBack, CreateGame },
+				{ x=>x.EventCallBack, OnSubmit },
 				{ x=>x.OnSubmitFile, SubmitFile },
 				{ x=>x.OnDeleteImage, DeleteImage }
 			};
-		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-		var dialog = DialogService.Show<GameFormDialog>("Create Game", parameters, options);
-		var state = await dialog.Result;
-		if (!state.Canceled)
-			await ReloadData();
 	}
-
-	public async Task OnUpdate(Game g)
-	{
-		if (!CanUserEdit)
-		{
-			Snackbar.Add("No permission to edit", Severity.Info);
-			return;
-		}
-		var command = mapper.Map<Game, GameViewModel>(g);
-		var parameters = new DialogParameters<GameFormDialog>
-			{
-				{ x=>x.Refresh , new Action(async () => await ReloadData()) },
-				{ x=>x.Model, command },
-				{ x=>x.loading, loading },
-				{ x=>x.EventCallBack, UpdateGame },
-				{ x=>x.OnSubmitFile, SubmitFile },
-				{ x=>x.OnDeleteImage, DeleteImage }
-			};
-		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-		var dialog = DialogService.Show<GameFormDialog>("Update Game", parameters, options);
-		var state = await dialog.Result;
-		if (!state.Canceled)
-			await ReloadData();
-	}
-	#endregion
 }
 

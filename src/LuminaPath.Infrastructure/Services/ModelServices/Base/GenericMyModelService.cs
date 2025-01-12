@@ -13,7 +13,7 @@ using LuminaPath.Core.Models;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 {
-    abstract public class GenericMyModelService<TEntity> where TEntity : class, IMyMedia
+    abstract public class GenericMyModelService<TEntity> : IGenericMyModelService<TEntity> where TEntity : class, IBasicInfo, IMyMedia
     {
         protected readonly IMapper _mapper;
         protected readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
