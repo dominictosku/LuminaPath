@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 {
-    public interface IGenericMyModelService<TEntity> : IBaseModelService<TEntity> where TEntity : class, IBasicInfo, IMyMedia
+    public interface IGenericMyModelService<TEntity> where TEntity : class, IBasicInfo, IMyMedia
     {
         string[] Includes { get; set; }
 
