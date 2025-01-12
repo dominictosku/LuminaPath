@@ -114,14 +114,6 @@ else
 @code{
 	private List<Game> Games = new();
 	private MudDataGrid<Game> _table = default!;
-	private Game _currentDto = new();
-	private MediaFilter _filter = new();
-	private IBrowserFile? currentImage;
-
-	public bool IsGrid = true;
-	public bool loading;
-	public HashSet<Game> selectedItems = new();
-	public string ToggleText => IsGrid ? "Grid View" : "Table View";
 
 	protected override void OnInitialized()
 	{

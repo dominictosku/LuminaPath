@@ -119,14 +119,6 @@ else
 	private List<MyGame> Games = new();
 	private List<Game> DropdownGames = new();
 	private MudDataGrid<MyGame> _table = default!;
-	private MyGame _currentDto = new();
-	private MediaFilter _filter = new();
-	private IBrowserFile? currentImage;
-
-	public bool IsGrid = true;
-	public bool loading;
-	public HashSet<MyGame> selectedItems = new();
-	public string ToggleText => IsGrid ? "Grid View" : "Table View";
 
 	protected override async Task OnInitializedAsync()
 	{
