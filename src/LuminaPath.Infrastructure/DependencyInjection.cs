@@ -30,16 +30,17 @@ namespace LuminaPath.Infrastructure
             return services;
         }
 
-        private static void AddCors(IServiceCollection services)
+        private static void AddCors(IServiceCollection services, IConfiguration config)
         {
-            services.AddCors(o => o.AddPolicy(MyAllowSpecificOrigins, builder =>
-            {
-                builder.WithOrigins("http://localhost:3000")
-                       .WithOrigins("http://127.0.0.1:3000")
-                       .AllowAnyMethod()
-                       .AllowAnyHeader()
-                       .AllowCredentials();
-            }));
+            string frontendUrl = config["FrontendUrl"] ??
+                throw new ArgumentException("Missing frontend url in appsettings.");
+
+
+            services.AddCors(options => options.AddPolicy(MyAllowSpecificOrigins, policy => policy
+                .WithOrigins(frontendUrl)
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials()));
         }
 
         private static void AddMiddleware(WebApplication app)
