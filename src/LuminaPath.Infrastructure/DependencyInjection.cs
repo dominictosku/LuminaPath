@@ -157,6 +157,7 @@ namespace LuminaPath.Infrastructure
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
+                //app.UseSwaggerUI(options => options.SwaggerEndpoint("/opeanapi/v1.json", "Luminapath")); // for upgrade to dotnet 9
                 await app.MigrateDevelopment();
             }
             else
