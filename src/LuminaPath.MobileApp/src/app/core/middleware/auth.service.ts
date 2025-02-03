@@ -1,3 +1,7 @@
+import { environment } from 'src/environments/environment';
+import { User } from '../models/user';
+import { Observable } from 'rxjs/internal/Observable';
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
 @Injectable({
@@ -5,12 +9,14 @@ import { Injectable } from '@angular/core';
 })
 export class AuthService {
   private refreshInProgress = false;
-  private apiUrl = environment.apiUrl;
+  private apiUrl = environment.endpoint;
 
   constructor(private http: HttpClient) {}
 
-  getUserInfo(): Observable<MLPUser> {
-    return this.http.get<MLPUser>(`${this.apiUrl}/user/info`, {
+  public isAuthenticated() { return false; };
+
+  getUserInfo(): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/user/info`, {
       withCredentials: true,
     });
   }
