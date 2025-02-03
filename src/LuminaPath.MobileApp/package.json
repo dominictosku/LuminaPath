@@ -1,5 +1,5 @@
 {
-  "name": "LuminaPath.WebApp",
+  "name": "luminapath",
   "version": "0.0.1",
   "author": "Ionic Framework",
   "homepage": "https://ionicframework.com/",
@@ -30,7 +30,7 @@
     "@ionic/angular": "^8.4.3",
     "angular-in-memory-web-api": "^0.18.0",
     "flowbite": "^2.5.1",
-    "primeng": "^17.18.9",
+    "primeng": "^17.18.15",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.2"
