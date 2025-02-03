@@ -5,11 +5,10 @@ import { IonContent, IonHeader, IonTitle, IonToolbar, IonButton } from '@ionic/a
 import { Credentials } from 'src/app/core/models/user';
 
 @Component({
-  selector: 'app-login',
-  templateUrl: './login.page.html',
-  styleUrls: ['./login.page.scss'],
-  standalone: true,
-  imports: [IonContent, IonHeader, IonTitle, IonButton, IonToolbar, CommonModule, FormsModule]
+    selector: 'app-login',
+    templateUrl: './login.page.html',
+    styleUrls: ['./login.page.scss'],
+    imports: [IonContent, IonHeader, IonTitle, IonButton, IonToolbar, CommonModule, FormsModule]
 })
 export class LoginPage implements OnInit {
 

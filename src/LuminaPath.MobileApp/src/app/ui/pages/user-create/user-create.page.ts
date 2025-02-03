@@ -5,11 +5,10 @@ import { IonContent, IonHeader, IonTitle, IonToolbar, IonButton } from '@ionic/a
 import { Credentials } from 'src/app/core/models/user';
 
 @Component({
-  selector: 'app-user-create',
-  templateUrl: './user-create.page.html',
-  styleUrls: ['./user-create.page.scss'],
-  standalone: true,
-  imports: [IonContent, IonHeader, IonTitle, IonToolbar, IonButton, CommonModule, FormsModule]
+    selector: 'app-user-create',
+    templateUrl: './user-create.page.html',
+    styleUrls: ['./user-create.page.scss'],
+    imports: [IonContent, IonHeader, IonTitle, IonToolbar, IonButton, CommonModule, FormsModule]
 })
 export class UserCreatePage implements OnInit {
 

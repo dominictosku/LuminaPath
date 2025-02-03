@@ -11,11 +11,10 @@ import { SelectorComponent } from "../../components/tools/selector/selector.comp
 import { FilterComponent } from "../../components/media/filter/filter.component";
 
 @Component({
-  selector: 'app-media',
-  templateUrl: './media.page.html',
-  styleUrls: ['./media.page.scss'],
-  standalone: true,
-  imports: [IonRefresherContent, IonContent, IonHeader, IonTitle, IonToolbar, IonButton, IonRefresher, CommonModule, FormsModule, TableComponent, GridComponent, PaginationComponent, ErrorComponent, LoadingComponent, SelectorComponent, FilterComponent]
+    selector: 'app-media',
+    templateUrl: './media.page.html',
+    styleUrls: ['./media.page.scss'],
+    imports: [IonRefresherContent, IonContent, IonHeader, IonTitle, IonToolbar, IonButton, IonRefresher, CommonModule, FormsModule, TableComponent, GridComponent, PaginationComponent, ErrorComponent, LoadingComponent, SelectorComponent, FilterComponent]
 })
 export class MediaPage implements OnInit {
 

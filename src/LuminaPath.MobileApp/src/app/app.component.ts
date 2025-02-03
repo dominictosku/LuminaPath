@@ -4,10 +4,9 @@ import { initFlowbite } from 'flowbite';
 import { NavBarComponent } from './ui/components/navigation/nav-bar/nav-bar.component'
 
 @Component({
-  selector: 'app-root',
-  templateUrl: 'app.component.html',
-  standalone: true,
-  imports: [IonApp, IonRouterOutlet, NavBarComponent],
+    selector: 'app-root',
+    templateUrl: 'app.component.html',
+    imports: [IonApp, IonRouterOutlet, NavBarComponent]
 })
 export class AppComponent {
   constructor() { }

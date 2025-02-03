@@ -3,11 +3,10 @@ import { addIcons } from "ionicons";
 import { GridGameDataComponent } from "../data/grid/grid-game-data/grid-game-data.component";
 
 @Component({
-  standalone: true,
-  selector: 'app-grid',
-  templateUrl: './grid.component.html',
-  styleUrls: ['./grid.component.scss'],
-  imports: [GridGameDataComponent],
+    selector: 'app-grid',
+    templateUrl: './grid.component.html',
+    styleUrls: ['./grid.component.scss'],
+    imports: [GridGameDataComponent]
 })
 export class GridComponent implements OnInit {
 

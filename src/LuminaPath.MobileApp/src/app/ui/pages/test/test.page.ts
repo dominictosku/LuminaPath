@@ -10,11 +10,10 @@ interface City {
 }
 
 @Component({
-  selector: 'app-test',
-  templateUrl: './test.page.html',
-  styleUrls: ['./test.page.scss'],
-  standalone: true,
-  imports: [IonContent, IonHeader, IonTitle, IonToolbar, CommonModule, FormsModule, DropdownModule]
+    selector: 'app-test',
+    templateUrl: './test.page.html',
+    styleUrls: ['./test.page.scss'],
+    imports: [IonContent, IonHeader, IonTitle, IonToolbar, CommonModule, FormsModule, DropdownModule]
 })
 export class TestPage implements OnInit {
 

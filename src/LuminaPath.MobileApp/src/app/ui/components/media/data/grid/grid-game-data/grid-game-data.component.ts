@@ -8,11 +8,10 @@ import { addIcons } from "ionicons";
 import { create } from 'ionicons/icons';
 
 @Component({
-  selector: 'app-grid-game-data',
-  standalone: true,
-  templateUrl: './grid-game-data.component.html',
-  styleUrls: ['./grid-game-data.component.scss'],
-  imports: [IonInfiniteScrollContent, IonFab, IonFabButton, IonIcon, IonInfiniteScroll]
+    selector: 'app-grid-game-data',
+    templateUrl: './grid-game-data.component.html',
+    styleUrls: ['./grid-game-data.component.scss'],
+    imports: [IonInfiniteScrollContent, IonFab, IonFabButton, IonIcon, IonInfiniteScroll]
 })
 export class GridGameDataComponent implements OnInit {
 

@@ -5,11 +5,10 @@ import { IonIcon, IonFab, IonFabButton } from "@ionic/angular/standalone";
 import { FormsModule } from '@angular/forms';
 
 @Component({
-  selector: 'app-filter',
-  templateUrl: './filter.component.html',
-  styleUrls: ['./filter.component.scss'],
-  imports: [IonFabButton, IonFab, IonIcon, FormsModule],
-  standalone: true,
+    selector: 'app-filter',
+    templateUrl: './filter.component.html',
+    styleUrls: ['./filter.component.scss'],
+    imports: [IonFabButton, IonFab, IonIcon, FormsModule]
 })
 export class FilterComponent implements OnInit {
 

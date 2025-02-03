@@ -4,11 +4,10 @@ import { GamesComponent } from "../data/table/games/games.component";
 import { Game } from 'src/app/core/models/games';
 
 @Component({
-  standalone: true,
-  selector: 'app-table',
-  templateUrl: './table.component.html',
-  styleUrls: ['./table.component.scss'],
-  imports: [GamesComponent],
+    selector: 'app-table',
+    templateUrl: './table.component.html',
+    styleUrls: ['./table.component.scss'],
+    imports: [GamesComponent]
 })
 export class TableComponent implements OnInit {
 
