@@ -3,34 +3,21 @@ import { Game } from '../models/games';
 import { ApiService } from './api.service';
 import { MediaFilter } from '../entities/mediaFilter';
 import { IBasicInfo } from '../interfaces/iBasicInfo';
-import { HttpClient } from '@angular/common/http';
-import { HttpClientInMemoryWebApiModule } from 'angular-in-memory-web-api';
 import { InMemoryDataService } from './in-memory-data.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class GameService {
-
-  constructor(private api: ApiService) {
-    HttpClientInMemoryWebApiModule.forRoot(
-      InMemoryDataService, { dataEncapsulation: false }
-    );
-  }
+  constructor(private api: ApiService) {}
 
   public type = {
-    Games: "Games",
-    MyGames: "MyGames",
+    Games: 'Games',
+    MyGames: 'MyGames',
   };
 
-  public labels = [
-    "Title",
-    "Description",
-    "Status",
-    "Release"
-  ]
-  Id: string = "games";
-
+  public labels = ['Title', 'Description', 'Status', 'Release'];
+  Id: string = 'games';
 
   getMedia(filter?: MediaFilter | undefined) {
     let response = this.api.fetchPaginatedMedia<Game>(this.Id, filter);

@@ -15,12 +15,11 @@ import {
   provideHttpClient,
   withInterceptorsFromDi,
 } from '@angular/common/http';
-import { InMemoryDataService } from './app/core/services/in-memory-data.service';
+import { InMemoryDataService } from '../app/core/services/in-memory-data.service';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeng/themes/aura';
-import { routes } from './app/app.routes';
+import { routes } from '../app/app.routes';
 import { importProvidersFrom } from '@angular/core';
-import { HttpClientInMemoryWebApiModule } from 'angular-in-memory-web-api';
 import { IonicModule } from '@ionic/angular';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { CookieInterceptor } from './core/middleware/CookieInterceptor.service';
@@ -39,11 +38,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptorsFromDi()),
     { provide: HTTP_INTERCEPTORS, useClass: CookieInterceptor, multi: true },
     // remove in production
-    importProvidersFrom([
-      HttpClientInMemoryWebApiModule.forRoot(InMemoryDataService),
-      IonicModule.forRoot({}),
-      BrowserAnimationsModule,
-    ]),
+    importProvidersFrom([IonicModule.forRoot({}), BrowserAnimationsModule]),
     provideIonicAngular(),
     provideRouter(routes, withPreloading(PreloadAllModules)),
   ],
