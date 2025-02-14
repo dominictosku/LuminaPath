@@ -13,7 +13,9 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
-  public isAuthenticated() { return false; };
+  public isAuthenticated() {
+    return false;
+  }
 
   getUserInfo(): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/user/info`, {
@@ -35,7 +37,6 @@ export class AuthService {
     );
   }
 
-  // Check if the user is logged in
   isLoggedIn(): Observable<boolean> {
     return this.http.get<boolean>(`${this.apiUrl}/auth/check`, {
       withCredentials: true,

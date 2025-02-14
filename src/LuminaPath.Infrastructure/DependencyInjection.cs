@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +27,8 @@ namespace LuminaPath.Infrastructure
             AddDatabase(services, config);
             AddDefaultIdentity(services, config);
             AddServices(services, config);
-            AddCors(services);
+            AddCors(services, config);
+            services.AddOpenApi();
             return services;
         }
 
@@ -118,6 +120,11 @@ namespace LuminaPath.Infrastructure
                 .AddEntityFrameworkStores<LuminaPathDbContext>()
                 .AddSignInManager()
                 .AddDefaultTokenProviders();
+
+            services.ConfigureApplicationCookie(options =>
+            {
+                options.Cookie.SameSite = SameSiteMode.None;
+            });
         }
 
         private static void AddServices(IServiceCollection services, IConfiguration config)
@@ -155,8 +162,11 @@ namespace LuminaPath.Infrastructure
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
-                app.UseSwagger();
-                app.UseSwaggerUI();
+                app.MapOpenApi();
+                app.UseSwaggerUI(options =>
+                {
+                    options.SwaggerEndpoint("/openapi/v1.json", "LuminaPath Api");
+                });
                 //app.UseSwaggerUI(options => options.SwaggerEndpoint("/opeanapi/v1.json", "Luminapath")); // for upgrade to dotnet 9
                 await app.MigrateDevelopment();
             }
@@ -189,7 +199,6 @@ namespace LuminaPath.Infrastructure
         private static void AddApi(IServiceCollection services)
         {
             services.AddEndpointsApiExplorer();
-            services.AddSwaggerGen();
             services.AddControllers(options =>
             {
                 options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider());
@@ -201,6 +210,18 @@ namespace LuminaPath.Infrastructure
             app.MapControllers();
             app.MapGroup("/api")
                 .MapIdentityApi<LuminaUser>();
+            app.MapPost("/api/logout", async (SignInManager<LuminaUser> signInManager,
+                [FromBody] object empty) =>
+            {
+                if (empty != null)
+                {
+                    await signInManager.SignOutAsync();
+                    return Results.Ok();
+                }
+                return Results.Unauthorized();
+            })
+            .WithOpenApi()
+            .RequireAuthorization();
         }
     }
 }
