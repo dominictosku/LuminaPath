@@ -1,7 +1,7 @@
 import { Component, HostBinding, signal } from '@angular/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { initFlowbite } from 'flowbite';
-import { NavBarComponent } from './ui/components/navigation/nav-bar/nav-bar.component'
+import { NavBarComponent } from './shared/components/navigation/nav-bar/nav-bar.component'
 
 @Component({
     selector: 'app-root',

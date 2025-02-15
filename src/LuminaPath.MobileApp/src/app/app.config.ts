@@ -15,7 +15,7 @@ import {
   provideHttpClient,
   withInterceptorsFromDi,
 } from '@angular/common/http';
-import { InMemoryDataService } from '../app/core/services/in-memory-data.service';
+import { InMemoryDataService } from './shared/services/in-memory-data.service';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeng/themes/aura';
 import { routes } from '../app/app.routes';
