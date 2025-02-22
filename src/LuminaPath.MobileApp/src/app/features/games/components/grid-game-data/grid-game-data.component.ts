@@ -20,7 +20,7 @@ export class GridGameDataComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.gameService.getMedia().subscribe((event: any) => {
+    this.gameService.getAll().subscribe((event: any) => {
       this.games = event.data
     });
   }
@@ -39,7 +39,7 @@ export class GridGameDataComponent implements OnInit {
 
   ionInfinite = async (ev: any) => {
     this.countMedia += 50;
-    this.gameService.getMedia().subscribe((event: any) => {
+    this.gameService.getAll().subscribe((event: any) => {
       this.games = event.data
     });
     setTimeout(() => {

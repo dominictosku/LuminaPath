@@ -1,5 +1,5 @@
 import { environment } from 'src/environments/environment';
-import { User } from '../models/user.model';
+import { Credentials, User } from '../models/user.model';
 import { Observable } from 'rxjs/internal/Observable';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
@@ -23,15 +23,15 @@ export class AuthService {
     });
   }
 
-  login(credentials: { username: string; password: string }) {
-    return this.http.post(`${this.apiUrl}/auth/login`, credentials, {
+  login(credentials: Credentials) {
+    return this.http.post(`${this.apiUrl}/login?useCookies=true`, credentials, {
       withCredentials: true,
     });
   }
 
   logout() {
     return this.http.post(
-      `${this.apiUrl}/auth/logout`,
+      `${this.apiUrl}/logout`,
       {},
       { withCredentials: true }
     );

@@ -24,7 +24,6 @@ namespace LuminaPath.Infrastructure.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous]
         public override async Task<ActionResult<PaginatedResult<GamesDto>>> Get([FromQuery] MediaFilter mediaFilter)
         {
             string? userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;

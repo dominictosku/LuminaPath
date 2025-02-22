@@ -27,7 +27,7 @@ export class CookieInterceptor implements HttpInterceptor {
             }),
             catchError((refreshError) => {
               this.authService.logout();
-              this.router.navigate(['/login']);
+              this.router.navigate(['/auth/login']);
               return throwError(() => new Error(refreshError));
             })
           );
