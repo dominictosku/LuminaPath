@@ -1,5 +1,3 @@
-version: '3.4'
-
 services:
   luminapath:
     image: ${DOCKER_REGISTRY-}luminapath
@@ -7,19 +5,19 @@ services:
       context: ../
       dockerfile: LuminaPath/Dockerfile
     environment:
-        ConnectionStrings__Default: "server=db;database=luminapath;user=${MYSQL_USER};password=${MYSQL_PASSWORD};"
+      ConnectionStrings__Default: "server=db;database=luminapath;user=${MYSQL_USER};password=${MYSQL_PASSWORD};"
     depends_on:
-        - db
+      - db
   db:
-     image: mysql:latest
-     container_name: luminapath_DB
-     environment:
-       MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
-       MYSQL_DATABASE: luminapath
-     volumes:
-         - luminapath-DB:/var/lib/mysql
-     expose:
-         - "3306"
+    image: mysql:latest
+    container_name: luminapath_DB
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: luminapath
+    volumes:
+      - luminapath-DB:/var/lib/mysql
+    expose:
+      - "3306"
   blob:
     image: mcr.microsoft.com/azure-storage/azurite
     container_name: luminapath-blob
@@ -29,5 +27,5 @@ services:
       - 10000
 
 volumes:
-    luminapath-DB:
-    luminapath-blob: 
+  luminapath-DB:
+  luminapath-blob:
