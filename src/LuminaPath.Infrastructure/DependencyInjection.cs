@@ -87,7 +87,8 @@ namespace LuminaPath.Infrastructure
 
         private static void AddDatabase(IServiceCollection services, IConfiguration config)
         {
-            var connectionstring = config.GetConnectionString("Default");
+            var connectionstring = Environment.GetEnvironmentVariable("MYSQLCONNSTR_DB") 
+                ?? config.GetConnectionString("Default");
             services.AddDbContextFactory<LuminaPathDbContext>(options =>
                 options.UseMySql(connectionstring, ServerVersion.AutoDetect(connectionstring)));
             services.AddScoped<ILuminaPathDbContext, LuminaPathDbContext>();
