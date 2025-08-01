@@ -19,9 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Pages\Admin\Users\Components\UserForm.razor" />
-    <None Include="Pages\Admin\Users\Components\UserFormDialog.razor" />
-    <None Include="Pages\Admin\Users\Users.razor" />
+    <None Include="Features\Admin\Users\Components\UserForm.razor" />
+    <None Include="Features\Admin\Users\Components\UserFormDialog.razor" />
+    <None Include="Features\Admin\Users\Users.razor" />
   </ItemGroup>
 
   <ItemGroup>

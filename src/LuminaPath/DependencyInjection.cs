@@ -1,6 +1,6 @@
 ﻿using LuminaPath.Components;
 using LuminaPath.Core.Models;
-using LuminaPath.Pages.Account;
+using LuminaPath.Features.Auth.Account;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 

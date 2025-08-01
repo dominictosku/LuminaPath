@@ -1,0 +1,82 @@
+﻿@page "/"
+@using LuminaPath.Core.Enums
+@using LuminaPath.Features.Auth
+@using LuminaPath.Infrastructure.Services;
+@using LuminaPath.Infrastructure.Services.ModelServices
+@inherits BaseAuth
+@inject MyGameService myGameService
+
+<PageTitle>Home</PageTitle>
+
+<h1>LuminaPath</h1>
+
+<h4>Track your Journey</h4>
+
+<MudDivider Class="m-3" Light="true" />
+
+<h3>Your Main Games</h3>
+@foreach(var game in CurrentMainGames)
+{   
+    <MudCard>
+        <MudCardContent>
+            <MudText>@game.Game.Name</MudText>
+            <MudText Typo="Typo.body2">@game.Status</MudText>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Text" Color="Color.Primary">Learn More</MudButton>
+        </MudCardActions>
+    </MudCard>
+}
+
+<MudDivider Class="m-3" Light="true" />
+
+@if(User is not null && User.LuminaUserInfo is not null)
+{
+    <h3> PSN Statistic </h3>
+    <MudGrid Class="pb-4">
+        <MudItem xs="12">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">
+                <MudIcon Icon=@Icons.Material.Filled.CheckCircle Color="Color.Success" /> Trophy level @User.LuminaUserInfo.PSNTrophyLevel
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="6">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">
+                <MudIcon Icon=@Icons.Material.Filled.CheckCircle Color="Color.Primary" />Platin @User.LuminaUserInfo.PSNPlatinum
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="6">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">
+                <MudIcon Icon=@Icons.Material.Filled.CheckCircle Color="Color.Warning" /> Gold @User.LuminaUserInfo.PSNGold
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="3">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">
+                <MudIcon Icon=@Icons.Material.Filled.CheckCircle Color="Color.Default" /> Silver @User.LuminaUserInfo.PSNSilver
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="3">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">
+                <MudIcon Icon=@Icons.Material.Filled.CheckCircle Color="Color.Secondary" />Bronze @User.LuminaUserInfo.PSNBronze
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="3">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">Hours</MudPaper>
+        </MudItem>
+        <MudItem xs="3">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">Other</MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code{
+    List<MyGame> CurrentMainGames = new();
+    int totalHours;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (UserId == null) return;
+        var result = await myGameService.GetMyMedia(UserId);
+        CurrentMainGames = result.Where(x => x.Status == GameStatus.MainGame).ToList();
+    }
+}

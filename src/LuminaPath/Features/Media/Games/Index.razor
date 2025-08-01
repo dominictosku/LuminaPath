@@ -1,0 +1,163 @@
+﻿@page "/Media/Games"
+@using AutoMapper
+@using LuminaPath.Core.Entities
+@using LuminaPath.Features.Media.Components
+@using LuminaPath.Features.Media.Games.Components
+@using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.ModelServices
+@using LuminaPath.Pages.Media
+@using LuminaPath.Pages.Media.Components
+@using Microsoft.EntityFrameworkCore
+@inject GameService GameService
+@inject NavigationManager Navigation
+@inject IMapper mapper
+@inherits MediaGridActions<Game, GameFormDialog>
+
+<PageTitle>Games</PageTitle>
+
+<h1>Games</h1>
+<MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary">@ToggleText</MudButton>
+<AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" />
+@if (IsGrid)
+{
+	<LuminaGrid GetData="@(GetData)"
+	T="Game"
+	Loading="@loading"
+	@bind-SelectedItems="selectedItems"
+	@bind-SelectedItem="_currentDto"
+	@ref="_table">
+		<ToolBarContent>
+			<TableActions TItem="Game" Page="this" loading="loading" selectedItems="selectedItems" />
+		</ToolBarContent>
+		<Columns>
+			<SelectColumn ShowInFooter="false"></SelectColumn>
+			<TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
+				<CellTemplate>
+					<MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
+					Dense="true"
+					EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+						<MudMenuItem OnClick="@(async () => await OnUpdate(context.Item))">Edit</MudMenuItem>
+
+						<MudMenuItem OnClick="@(async () => await Delete(context.Item))">Delete</MudMenuItem>
+					</MudMenu>
+				</CellTemplate>
+			</TemplateColumn>
+
+			<PropertyColumn Property="x => x.Name" Title="Title">
+				<CellTemplate>
+					<div class="d-flex flex-column">
+						<MudText Typo="Typo.body2">@context.Item.Name</MudText>
+						<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
+					</div>
+				</CellTemplate>
+			</PropertyColumn>
+			<PropertyColumn Property="x => x.Genres" Title="Genre" >
+				<CellTemplate>
+					<div class="d-flex flex-column">
+						<MudText Typo="Typo.body2" Class="mud-text-secondary">@string.Join(",", context.Item.Genres)</MudText>
+					</div>
+				</CellTemplate>
+			</PropertyColumn>
+		</Columns>
+		<NoRecordsContent>
+			<MudText>No items found</MudText>
+		</NoRecordsContent>
+		<LoadingContent>
+			<MudText>Loading</MudText>
+		</LoadingContent>
+		<PagerContent>
+			<MudDataGridPager />
+		</PagerContent>
+	</LuminaGrid>
+}
+else
+{
+	<MudContainer MaxWidth="MaxWidth.ExtraLarge" Style="background-color:#121e2d;">
+		<MudToolBar class="mud-table-toolbar">
+			<TableActions Page="this" loading="loading" selectedItems="selectedItems" />
+		</MudToolBar>
+		<MudGrid Spacing="2">
+			@foreach (var game in Games)
+			{
+				<MudItem>
+					<MudCard Outlined="true">
+						<MudCardMedia Image="@game.Image?.Url" Height="200" />
+						<MudCardContent Style="height:80px;">
+							<MudText Typo="Typo.h5">@game.Name</MudText>
+							<MudText Typo="Typo.body2">@game.Description</MudText>
+						</MudCardContent>
+						<MudCardActions Style="height:50px;">
+							<MudButton OnClick="@(() => OnUpdate(game))" Variant="Variant.Text" Color="Color.Primary">Edit</MudButton>
+							<MudButton Variant="Variant.Text" Color="Color.Primary">Add To List</MudButton>
+						</MudCardActions>
+					</MudCard>
+				</MudItem>
+			}
+		</MudGrid>
+	</MudContainer>
+}
+
+<style>
+	@@import url("https://cdn.jsdelivr.net/npm/@@fancyapps/ui@5.0/dist/fancybox/fancybox.css");
+
+	.fancybox__container {
+	--fancybox-bg: rgba(24, 24, 27, 0.85);
+	z-index: 9999;
+	}
+
+	.mud-table-toolbar {
+	height: 120px !important;
+	}
+</style>
+
+@code{
+	private List<Game> Games = new();
+	private MudDataGrid<Game> _table = default!;
+
+	protected override void OnInitialized()
+	{
+		// Assign the injected service to the base class property
+		ModelService = GameService;
+		base.OnInitialized();
+	}
+
+	public override async Task ReloadData()
+	{
+		if (IsGrid)
+		{
+			await _table.ReloadServerData();
+		}
+		else
+		{
+			Games = await GetData();
+			StateHasChanged();
+		}
+	}
+
+	private async Task SwitchView()
+	{
+		IsGrid = !IsGrid;
+		await ReloadData();
+	}
+
+	private async Task<List<Game>> GetData()
+	{
+		var result = await GameService.GetAll();
+		Games = result;
+		return result;
+	}
+
+	protected override DialogParameters<GameFormDialog> CreateDialogParameters(Game command, Func<Game, Task> OnSubmit)
+	{
+		return new DialogParameters<GameFormDialog>
+			{
+				{ x=>x.Refresh , new Action(async () => await ReloadData()) },
+				{ x=>x.Model, command },
+				{ x=>x.loading, loading },
+				{ x=>x.EventCallBack, OnSubmit },
+				{ x=>x.OnSubmitFile, SubmitFile },
+				{ x=>x.OnDeleteImage, DeleteImage }
+			};
+	}
+}
+

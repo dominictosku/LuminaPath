@@ -1,0 +1,172 @@
+@using LuminaPath.Components.Dialogs
+@using LuminaPath.Core.Entities.Results
+@using LuminaPath.Core.Interfaces
+@using LuminaPath.Core.Models
+@using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.ModelServices
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Logging
+@using Microsoft.JSInterop
+@using Severity = MudBlazor.Severity
+@using Color = MudBlazor.Color
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inherits MudComponentBase
+
+@inject IJSRuntime JS
+@inject IStorageService Storage
+@inject ILogger<DocumentFormDialog> logger
+@inject NavigationManager Navigation
+@inject DocumentService documentService
+
+<MudDialog>
+    <DialogContent>
+        <MudForm Model="@Model" @ref="@_form">
+            <div class="d-fex">
+                <MudText Typo="Typo.body2">Image</MudText>
+                @if (Model.Url is not null)
+                {
+                    <div style="float:left; position: relative; width: 160px; height: 80px; margin: 10px;">
+                        <MudTooltip Delay="500" Text="@Model.Name">
+                            <MudImage ObjectFit="ObjectFit.Cover" Height="80" Width="160"
+                                      Src="@Model.Path"
+                                      Alt="@Model.Name"
+                                      Elevation="25"
+                                      Class="mr-2 rounded-lg" />
+                        </MudTooltip>
+                        <div style="position: absolute;top: 0px;left: 0px; z-index: 2990;">
+                            <MudIconButton OnClick="@(() => PreviewImage())" Icon="@Icons.Material.Filled.Image" aria-label="preview" Color="Color.Info" Size="MudBlazor.Size.Small"></MudIconButton>
+                        </div>
+                        <div style="position: absolute;top: 0px;right: 0px; z-index: 2990;">
+                            <MudIconButton OnClick="@(() => DeleteImage())" Icon="@Icons.Material.Filled.Delete" aria-label="delete" Color="Color.Error" Size="MudBlazor.Size.Small"></MudIconButton>
+                        </div>
+                    </div>
+                }
+            </div>
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField Label="Title" @bind-Value="Model.Name"
+                                  For="@(() => Model.Name)"
+                                  Required="true"
+                                  RequiredError="Title is Required">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Description"
+                                  Lines="3"
+                                  For="@(() => Model.Description)"
+                                  @bind-Value="Model.Description">
+                    </MudTextField>
+                </MudItem>
+                <MudItem>
+                    <div class="d-flex flex-row gap-4 mb-2">
+                        <MudFileUpload T="IBrowserFile" SuppressOnChangeWhenInvalid="true"
+                                       @bind-File="File" OnFilesChanged="SubmitFile">
+                                <MudButton HtmlTag="label" Disabled="_uploading"
+                                           Variant="Variant.Filled"
+                                           Color="Color.Primary">
+                                    Upload
+                                </MudButton>
+                        </MudFileUpload>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Submit" disabled="@loading">
+            @if (loading)
+            {
+                <span class="spinner-border spinner-border-sm mr-1"></span>
+            }
+            Save
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; } = default!;
+
+    [EditorRequired]
+    [Parameter]
+    public MediaDocument Model { get; set; } = default!;
+
+    [Parameter]
+    public Action? Refresh { get; set; }
+
+    [EditorRequired]
+    [Parameter]
+    public Func<MediaDocument, Task> EventCallBack { get; set; } = default!;
+
+    [Parameter]
+    public bool loading { get; set; }
+
+    public string ErrorMessage = "";
+
+    private MudForm? _form;
+    private bool _uploading;
+
+
+    private const long MaxAllowedSize = 3145728;
+    public IBrowserFile? File { get; set; }
+
+    public async Task Submit()
+    {
+        await EventCallBack(Model);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private async Task DeleteImage()
+    {
+
+        var parameters = new DialogParameters<ConfirmationDialog>
+            {
+                { x=>x.ContentText, $"Delete Image?" }
+            };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = DialogService.Show<ConfirmationDialog>("Delete Image", parameters, options);
+        var state = await dialog.Result;
+
+        if (!state.Canceled)
+        {
+            await Storage.DeleteAsync(Model.Name);
+        }
+
+    }
+
+    private async Task PreviewImage()
+    {
+
+    }
+
+    private async Task SubmitFile(InputFileChangeEventArgs e)
+    {
+        _uploading = true;
+        var file = e.File;
+        var result = await UploadFile(file);
+        _uploading = false;
+    }
+
+    private async Task<Result<MediaDocument, FailedResult>> UploadFile(IBrowserFile file)
+    {
+        using Stream fs = file.OpenReadStream(MaxAllowedSize);
+        try
+        {
+            var result = await documentService.CreateDocument(file);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("Could not Upload File. error: {ex}", ex);
+            return new FailedResult("Could not upload file");
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

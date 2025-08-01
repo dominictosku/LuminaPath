@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Models;
-using LuminaPath.ViewModel;
+using LuminaPath.Features.Media.Games.ViewModel;
 
 namespace LuminaPath.Helper
 {

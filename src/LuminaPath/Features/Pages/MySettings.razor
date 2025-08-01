@@ -1,0 +1,49 @@
+﻿@page "/mySettings"
+@using LuminaPath.Features.Auth
+@using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.ModelServices
+@using Microsoft.AspNetCore.Authorization
+@inherits BaseAuth
+@attribute [Authorize]
+@inject Radzen.DialogService dialogService
+@inject MyGameService myGameService
+@inject IJSRuntime JS
+<h3>MySettings</h3>
+
+<MudButton OnClick="DownloadFileFromStream" Color="Color.Primary"> Download my data as CSV </MudButton>
+<MudButton OnClick="DeleteAll" Color="Color.Error"> Delete data </MudButton>
+
+<script>
+    window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+      const arrayBuffer = await contentStreamReference.arrayBuffer();
+      const blob = new Blob([arrayBuffer]);
+      const url = URL.createObjectURL(blob);
+      const anchorElement = document.createElement('a');
+      anchorElement.href = url;
+      anchorElement.download = fileName ?? '';
+      anchorElement.click();
+      anchorElement.remove();
+      URL.revokeObjectURL(url);
+    }
+</script>
+
+@code {
+
+    async Task DownloadFileFromStream()
+    {
+        var fileStream = new MemoryStream(await myGameService.ExportAsCSV(User));
+        var fileName = "myGames.csv";
+
+        using var streamRef = new DotNetStreamReference(stream: fileStream);
+
+        await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    }
+
+	async Task DeleteAll(){
+		bool? confirm = await dialogService.Confirm("This will delete all your created lists", "Are you sure?");
+		if(confirm is not null && confirm.Value)
+		{
+			await myGameService.DeleteMyData(User);
+		}
+	}
+}

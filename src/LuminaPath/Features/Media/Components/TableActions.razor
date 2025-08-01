@@ -1,0 +1,93 @@
+﻿@using LuminaPath.Core.Models
+@using LuminaPath.Features.Media
+@typeparam TItem
+<div class="d-flex align-start flex-grow-1">
+    <div class="flex-grow-1" />
+
+    <div class="d-flex flex-column justify-end">
+        <div class="d-flex">
+            <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                <MudButton DisableElevation Variant="Variant.Outlined"
+                            Size="Size.Small"
+                            Disabled="@loading"
+                            OnClick="@(() => Page.Dummy())"
+                            StartIcon="@Icons.Material.Filled.Refresh" IconColor="Color.Surface" Color="Color.Primary"
+                            Style="margin-right: 4px; margin-bottom:4px">
+                     Refresh
+                 </MudButton>
+
+                 <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
+                            StartIcon="@Icons.Material.Filled.Add"
+                            Size="Size.Small"
+                            Disabled="@loading"
+                            OnClick="Page.OnCreate"
+                            Style="margin-right: 4px; margin-bottom:4px"
+                            IconColor="Color.Surface">
+                     Create
+                 </MudButton>
+                 <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
+                            StartIcon="@Icons.Material.Filled.ContentCopy"
+                            Size="Size.Small"
+                            Disabled="@(selectedItems.Count != 1)"
+                            OnClick="Page.Dummy"
+                            Style="margin-right: 4px; margin-bottom:4px"
+                            IconColor="Color.Surface">
+                     Copy
+                 </MudButton>
+
+                 <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Error"
+                            StartIcon="@Icons.Material.Filled.Delete"
+                            Disabled="@(!(selectedItems.Count > 0))"
+                            Size="Size.Small"
+                            Style="margin-right: 4px; margin-bottom:4px"
+                            OnClick="Page.OnDeleteChecked"
+                            IconColor="Color.Surface">
+                     Delete
+                 </MudButton>
+             </MudHidden>
+
+             @* Mobile view *@
+             <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="true">
+
+                 <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
+                            StartIcon="@Icons.Material.Filled.Add"
+                            Size="Size.Small"
+                            Disabled="@loading"
+                            OnClick="Page.OnCreate"
+                            Style="margin-right: 4px; margin-bottom:4px"
+                            IconColor="Color.Surface">
+                     Create
+                 </MudButton>
+
+                 <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Error"
+                            StartIcon="@Icons.Material.Filled.Delete"
+                            Disabled="@(!(selectedItems.Count > 0))"
+                            Size="Size.Small"
+                            Style="margin-right: 4px; margin-bottom:4px"
+                            OnClick="Page.OnDeleteChecked"
+                            IconColor="Color.Surface">
+                     Delete
+                 </MudButton>
+             </MudHidden>
+         </div>
+
+         <MudTextField T="string" ValueChanged="@Page.ReloadData" Placeholder="search..." Adornment="Adornment.End"
+                       AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
+         </MudTextField>
+
+     </div>
+ </div>
+
+@code{
+    [EditorRequired]
+    [Parameter]
+    public ITableActions<TItem> Page { get; set; } = default!;
+
+    [EditorRequired]
+    [Parameter]
+    public bool loading { get; set; } = default!;
+
+    [EditorRequired]
+    [Parameter]
+    public HashSet<TItem> selectedItems { get; set; } = default!;
+}
