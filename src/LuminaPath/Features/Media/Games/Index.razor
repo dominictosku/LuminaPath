@@ -3,6 +3,7 @@
 @using LuminaPath.Core.Entities
 @using LuminaPath.Features.Media.Components
 @using LuminaPath.Features.Media.Games.Components
+@using LuminaPath.Features.Media.Games.ViewModel
 @using LuminaPath.Infrastructure.Services
 @using LuminaPath.Infrastructure.Services.ModelServices
 @using LuminaPath.Pages.Media
@@ -10,8 +11,7 @@
 @using Microsoft.EntityFrameworkCore
 @inject GameService GameService
 @inject NavigationManager Navigation
-@inject IMapper mapper
-@inherits MediaGridActions<Game, GameFormDialog>
+@inherits MediaGridActions<Game, GameViewModel, GameFormDialog>
 
 <PageTitle>Games</PageTitle>
 
@@ -21,20 +21,20 @@
 @if (IsGrid)
 {
 	<LuminaGrid GetData="@(GetData)"
-	T="Game"
-	Loading="@loading"
-	@bind-SelectedItems="selectedItems"
-	@bind-SelectedItem="_currentDto"
-	@ref="_table">
+		T="GameViewModel"
+		Loading="@loading"
+		@bind-SelectedItems="selectedItems"
+		@bind-SelectedItem="_currentDto"
+		@ref="_table">
 		<ToolBarContent>
-			<TableActions TItem="Game" Page="this" loading="loading" selectedItems="selectedItems" />
+			<TableActions TItem="GameViewModel" Page="this" loading="loading" selectedItems="selectedItems" />
 		</ToolBarContent>
 		<Columns>
 			<SelectColumn ShowInFooter="false"></SelectColumn>
 			<TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
 				<CellTemplate>
 					<MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
-					Dense="true"
+						Dense="true"
 					EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
 						<MudMenuItem OnClick="@(async () => await OnUpdate(context.Item))">Edit</MudMenuItem>
 
@@ -111,8 +111,8 @@ else
 </style>
 
 @code{
-	private List<Game> Games = new();
-	private MudDataGrid<Game> _table = default!;
+	private List<GameViewModel> Games = new();
+	private MudDataGrid<GameViewModel> _table = default!;
 
 	protected override void OnInitialized()
 	{
@@ -140,14 +140,15 @@ else
 		await ReloadData();
 	}
 
-	private async Task<List<Game>> GetData()
+	private async Task<List<GameViewModel>> GetData()
 	{
 		var result = await GameService.GetAll();
-		Games = result;
-		return result;
+		var games = mapper.Map<List<GameViewModel>>(result);
+		Games = games;
+		return games;
 	}
 
-	protected override DialogParameters<GameFormDialog> CreateDialogParameters(Game command, Func<Game, Task> OnSubmit)
+	protected override DialogParameters<GameFormDialog> CreateDialogParameters(GameViewModel command, Func<GameViewModel, Task> OnSubmit)
 	{
 		return new DialogParameters<GameFormDialog>
 			{

@@ -1,8 +1,9 @@
-﻿using LuminaPath.Core.Models;
+﻿using LuminaPath.Core.Interfaces;
+using LuminaPath.Core.Models;
 
 namespace LuminaPath.Features.Media.Games.ViewModel
 {
-    public class GameViewModel : Game
+    public class GameViewModel : Game, IMedia<MediaDocument>
     {
     }
 }

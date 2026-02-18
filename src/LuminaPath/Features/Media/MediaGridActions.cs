@@ -1,4 +1,5 @@
-﻿using LuminaPath.Core.Interfaces;
+﻿using AutoMapper;
+using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models;
 using LuminaPath.Features.Media;
 using LuminaPath.Infrastructure.Services.ModelServices;
@@ -8,38 +9,45 @@ using MudBlazor;
 
 namespace LuminaPath.Pages.Media
 {
-    public abstract class MediaGridActions<TEntity, TForm>() : BaseGridActions<TEntity, TForm>, ITableActions<TEntity>
+    public abstract class MediaGridActions<TEntity, TViewModel, TForm>() : BaseGridActions<TViewModel, TForm>, ITableActions<TViewModel>
         where TEntity : class, IMedia<MediaDocument>, new()
+        where TViewModel : class, IMedia<MediaDocument>, new()
         where TForm : IComponent
     {
         protected IGenericModelService<TEntity> ModelService { get; set; }
 
         [Inject]
+        public IMapper mapper { get; set; }
+
+        [Inject]
         public DocumentService documentService { get; set; }
 
-        public override async Task<TEntity> GetById(int id)
+        public override async Task<TViewModel> GetById(int id)
         {
-            return await ModelService.GetById(id);
+            var result = await ModelService.GetById(id);
+            return mapper.Map<TViewModel>(result);
         }
 
-        public override async Task Save(TEntity entity)
+        public override async Task Save(TViewModel viewModel)
         {
+            var entity = mapper.Map<TEntity>(viewModel);
             await SaveFile(entity);
             await ModelService.PostAsync(entity);
         }
 
-        public override async Task Update(TEntity entity)
+        public override async Task Update(TViewModel viewModel)
         {
+            var entity = mapper.Map<TEntity>(viewModel);
             await SaveFile(entity);
             await ModelService.PutAsync(entity);
         }
 
-        public override async Task DeleteMedia(TEntity entity)
+        public override async Task DeleteMedia(TViewModel entity)
         {
             await ModelService.DeleteAsync(entity.Id);
         }
 
-        public async Task SaveFile(TEntity game)
+        public async Task SaveFile(TEntity entity)
         {
             if (!CanUserEdit)
             {
@@ -48,8 +56,8 @@ namespace LuminaPath.Pages.Media
             }
             if (currentImage is not null)
             {
-                var result = await documentService.CreateDocument(currentImage, game);
-                game.Image = result.Match<MediaDocument>(
+                var result = await documentService.CreateDocument(currentImage, entity);
+                entity.Image = result.Match<MediaDocument>(
                     s => s,
                     f => null);
             }

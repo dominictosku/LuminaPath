@@ -1,4 +1,5 @@
 @using LuminaPath.Core.Models
+@using LuminaPath.Features.Media.Games.ViewModel
 @using LuminaPath.Infrastructure.Services
 @using LuminaPath.Infrastructure.Services.ModelServices
 @using LuminaPath.Pages.Media.Components
@@ -8,7 +9,7 @@
 @using Microsoft.JSInterop
 @using Severity = MudBlazor.Severity
 @using Color = MudBlazor.Color
-@inherits MediaFormDialog<Game, MediaDocument>
+@inherits MediaFormDialog<GameViewModel, MediaDocument>
 @inject GameService gameService
 
 <MudDialog>
