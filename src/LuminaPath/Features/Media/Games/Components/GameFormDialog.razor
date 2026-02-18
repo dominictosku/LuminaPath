@@ -7,110 +7,297 @@
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop
+@using LuminaPath.Core.Enums;
 @using Severity = MudBlazor.Severity
 @using Color = MudBlazor.Color
 @inherits MediaFormDialog<GameViewModel, MediaDocument>
 @inject GameService gameService
 
 <MudDialog>
-	<DialogContent>
-		<MudForm @ref="form" Model="Model">
-			<div class="d-fex">
-				<MudText Typo="Typo.body2">Image</MudText>
-				@if (Model.Image is not null)
-				{
-					<div style="float:left; position: relative; width: 160px; height: 80px; margin: 10px;">
-						<MudTooltip Delay="500" Text="@Model.Name">
-							<MudImage ObjectFit="ObjectFit.Cover" Height="80" Width="160"
-							Src="@Model.Image.Url"
-							Alt="@Model.Name"
-							Elevation="25"
-							Class="mr-2 rounded-lg" />
-						</MudTooltip>
-						<div style="position: absolute;top: 0px;left: 0px; z-index: 2990;">
-							<MudIconButton OnClick="@(() => PreviewImage())" Icon="@Icons.Material.Filled.Image" aria-label="preview" Color="Color.Info" Size="MudBlazor.Size.Small"></MudIconButton>
-						</div>
-						<div style="position: absolute;top: 0px;right: 0px; z-index: 2990;">
-							<MudIconButton OnClick="@(async () => await DeleteImage())" Icon="@Icons.Material.Filled.Delete" aria-label="delete" Color="Color.Error" Size="MudBlazor.Size.Small"></MudIconButton>
-						</div>
-					</div>
-				}
-			</div>
-			<MudGrid>
-				<MudItem xs="12">
-					<MudAutocomplete Label="Title" @bind-Value="Model.Name" Required="true"
-					SearchFunc="@SearchAsync" Immediate="true" CoerceValue="true" ResetValueOnEmptyText="true"
-					AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary"
-					Validation="@(new Func<string, IEnumerable<string>>(Validate))"
-					For="@(() => Model.Name)" />
-					@if (success1)
-					{
-						<MudText Color="Color.Success">Success</MudText>
-					}
-				</MudItem>
-				<MudItem xs="12">
-					<MudTextField Label="Description"
-					Lines="3"
-					For="@(() => Model.Description)"
-					@bind-Value="Model.Description">
-					</MudTextField>
-				</MudItem>
-				<MudItem xs="12">
-					<div class="d-flex flex-row gap-4 mb-2">
-						<MudFileUpload T="IBrowserFile" FilesChanged="SubmitFile">
-							<ActivatorContent>
-								<MudButton Variant="Variant.Filled"
-								Color="Color.Primary"
-								StartIcon="@Icons.Material.Filled.CloudUpload"
-								Disabled="_uploading">
-									Upload Files
-								</MudButton>
-							</ActivatorContent>
-						</MudFileUpload>
-					</div>
-				</MudItem>
-			</MudGrid>
-		</MudForm>
-	</DialogContent>
-	<DialogActions>
-		<MudButton OnClick="Cancel">Cancel</MudButton>
-		<MudButton OnClick="Submit" Disabled="@loading">
-			@if (loading)
-			{
-				<span class="spinner-border spinner-border-sm mr-1"></span>
-			}
-			Save
-		</MudButton>
-	</DialogActions>
+    <DialogContent>
+        <MudForm @ref="form" Model="Model">
+            <div class="d-flex">
+                <MudText Typo="Typo.body2">Image</MudText>
+                @if (Model.Image is not null)
+                {
+                    <div style="float:left; position: relative; width: 160px; height: 80px; margin: 10px;">
+                        <MudTooltip Delay="500" Text="@Model.Name">
+                            <MudImage ObjectFit="ObjectFit.Cover" Height="80" Width="160"
+                                      Src="@Model.Image.Url"
+                                      Alt="@Model.Name"
+                                      Elevation="25"
+                                      Class="mr-2 rounded-lg" />
+                        </MudTooltip>
+                        <div style="position: absolute;top: 0px;left: 0px; z-index: 2990;">
+                            <MudIconButton OnClick="@(() => PreviewImage())" Icon="@Icons.Material.Filled.Image" aria-label="preview" Color="Color.Info" Size="MudBlazor.Size.Small"></MudIconButton>
+                        </div>
+                        <div style="position: absolute;top: 0px;right: 0px; z-index: 2990;">
+                            <MudIconButton OnClick="@(async () => await DeleteImage())" Icon="@Icons.Material.Filled.Delete" aria-label="delete" Color="Color.Error" Size="MudBlazor.Size.Small"></MudIconButton>
+                        </div>
+                    </div>
+                }
+            </div>
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudAutocomplete Label="Title" @bind-Value="Model.Name" Required="true"
+                                     SearchFunc="@SearchAsync" Immediate="true" CoerceValue="true" ResetValueOnEmptyText="true"
+                                     AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary"
+                                     Validation="@(new Func<string, IEnumerable<string>>(Validate))"
+                                     For="@(() => Model.Name)" />
+                    @if (success1)
+                    {
+                        <MudText Color="Color.Success">Success</MudText>
+                    }
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Description"
+                                  Lines="3"
+                                  For="@(() => Model.Description)"
+                                  @bind-Value="Model.Description">
+                    </MudTextField>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="Plattforms"
+                               Label="Platform"
+                               @bind-Value="Model.Plattforms"
+                               Required="true">
+                        @foreach (var platform in Enum.GetValues<Plattforms>())
+                        {
+                            <MudSelectItem Value="@platform">@platform</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudNumericField T="int?"
+                                     Label="Estimated Playtime (hours)"
+                                     @bind-Value="Model.Playtime"
+                                     Min="0"
+                                     Immediate="true" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="Release Date"
+                                   @bind-Date="Model.ReleaseDate"
+                                   DateFormat="dd.MM.yyyy"
+                                   Clearable="true" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Source"
+                                  @bind-Value="Model.Source"
+                                  For="@(() => Model.Source)" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudAutocomplete T="string"
+                                     Label="Genres"
+                                     @bind-Value="newGenre"
+                                     SearchFunc="SearchGenres"
+                                     CoerceText="true"
+                                     ResetValueOnEmptyText="true"
+                                     AdornmentIcon="@Icons.Material.Filled.Add"
+                                     OnBlur="AddGenre" />
+
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        @foreach (var genre in Model.Genres)
+                        {
+                            <MudChip Closeable="true"
+                                     T="string"
+                                     OnClose="@(() => RemoveGenre(genre))"
+                                     Color="Color.Primary">
+                                @genre
+                            </MudChip>
+                        }
+                    </div>
+                </MudItem>
+
+                <MudExpansionPanels>
+                    <MudExpansionPanel Text="Advanced Game Info">
+                        <!-- GameInfo fields here -->
+                    </MudExpansionPanel>
+                </MudExpansionPanels>
+
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="_createMyGame"
+                               Color="Color.Primary"
+                               Label="Also create MyGame entry" />
+                </MudItem>
+
+                @if (_createMyGame)
+                {
+                    <MudItem xs="12">
+                        <MudPaper Class="pa-4 mt-2" Elevation="1">
+                            <MudText Typo="Typo.h6">My Game Settings</MudText>
+
+                            <MudGrid>
+                                <MudItem xs="12" sm="6">
+                                    <MudDatePicker Label="Started On"
+                                                   @bind-Date="_myGame.StartDate"
+                                                   Clearable="true" />
+                                </MudItem>
+
+                                <MudItem xs="12" sm="6">
+                                    <MudDatePicker Label="Finished On"
+                                                   @bind-Date="_myGame.EndDate"
+                                                   Clearable="true" />
+                                </MudItem>
+
+                                <MudItem xs="12" sm="6">
+                                    <MudNumericField T="short?"
+                                                     Label="Personal Rating (1–10)"
+                                                     @bind-Value="_myGame.Rating"
+                                                     Min="1"
+                                                     Max="10" />
+                                </MudItem>
+
+                                <MudItem xs="12" sm="6">
+                                    <MudSelect T="GameStatus"
+                                               Label="Status"
+                                               @bind-Value="_myGame.Status">
+                                        @foreach (var status in Enum.GetValues<GameStatus>())
+                                        {
+                                            <MudSelectItem Value="@status">@status</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    </MudItem>
+                }
+
+
+                <MudItem xs="12">
+                    <div class="d-flex flex-row gap-4 mb-2">
+                        <MudFileUpload T="IBrowserFile" FilesChanged="SubmitFile">
+                            <ActivatorContent>
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.CloudUpload"
+                                           Disabled="_uploading">
+                                    Upload Files
+                                </MudButton>
+                            </ActivatorContent>
+                        </MudFileUpload>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Submit" Disabled="@loading">
+            @if (loading)
+            {
+                <span class="spinner-border spinner-border-sm mr-1"></span>
+            }
+            Save
+        </MudButton>
+    </DialogActions>
 </MudDialog>
 
 @code {
-	MudForm form;
-	private bool success1;
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+    MudForm form;
+    private bool success1;
 
 
-	private List<string> games = new();
+    private List<string> games = new();
+    public List<MyGame>? MyGames { get; set; }
+    private bool _createMyGame = false;
 
-	private async Task<IEnumerable<string>> SearchAsync(string value, CancellationToken token)
-	{
-		var dropdownGames = await gameService.GetDropdownGames(value);
+    private MyGame _myGame = new()
+    {
+        StartDate = DateTime.Today
+    };
 
-		games = dropdownGames.Select(x => x.Name).ToList();
+    private string? newGenre;
 
-		return games;
-	}
+    protected override void OnInitialized()
+    {
+        if (Model.MyGames?.Any() == true)
+        {
+            _createMyGame = true;
+            _myGame = Model.MyGames.First();
+        }
 
-	private IEnumerable<string> Validate(string value)
-	{
-		if (string.IsNullOrWhiteSpace(value))
-		{
-			yield return "The Title is required";
-			yield break;
-		}
+        base.OnInitialized();
+    }
 
-		if (games.Contains(value))
-		{
-			yield return "Game already exists";
-		}
-	}
+    public override async Task Submit()
+    {
+        await form.Validate();
+
+        if (!form.IsValid)
+            return;
+
+        if (_createMyGame)
+        {
+            Model.MyGames ??= new List<MyGame>();
+            _myGame.Game = Model;
+            var state = await AuthState;
+            var user = state.User;
+            var userId = user.FindFirst(c => c.Type.Contains("nameidentifier"))?.Value;
+            _myGame.LuminaUserId = userId;
+
+            Model.MyGames.Add(_myGame);
+        }
+
+        await base.Submit();
+    }
+
+
+    private Task<IEnumerable<string>> SearchGenres(string value, CancellationToken token)
+    {
+        var predefined = new List<string>
+    {
+        "RPG", "Action", "Adventure", "Strategy",
+        "Simulation", "Puzzle", "Shooter", "Indie"
+    };
+
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult(predefined.AsEnumerable());
+
+        return Task.FromResult(predefined
+            .Where(x => x.Contains(value, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private void AddGenre()
+    {
+        if (!string.IsNullOrWhiteSpace(newGenre) &&
+            !Model.Genres.Contains(newGenre))
+        {
+            Model.Genres.Add(newGenre);
+        }
+
+        newGenre = string.Empty;
+    }
+
+    private void RemoveGenre(string genre)
+    {
+        Model.Genres.Remove(genre);
+    }
+
+    private async Task<IEnumerable<string>> SearchAsync(string value, CancellationToken token)
+    {
+        var dropdownGames = await gameService.GetDropdownGames(value);
+
+        games = dropdownGames.Select(x => x.Name).ToList();
+
+        return games;
+    }
+
+    private IEnumerable<string> Validate(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            yield return "The Title is required";
+            yield break;
+        }
+
+        if (games.Any(x => x.Equals(value, StringComparison.OrdinalIgnoreCase)))
+        {
+            yield return "Game already exists";
+        }
+    }
 }

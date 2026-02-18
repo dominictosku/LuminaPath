@@ -35,7 +35,7 @@ namespace LuminaPath.Pages.Media.Components
 
         }
 
-        public async Task Submit()
+        public virtual async Task Submit()
         {
             await EventCallBack(Model);
             MudDialog.Close(DialogResult.Ok(true));
