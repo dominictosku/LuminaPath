@@ -365,3 +365,6 @@ FodyWeavers.xsd
 
 # Secrets
 .env
+
+# rider
+.idea
