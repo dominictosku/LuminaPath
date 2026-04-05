@@ -6,8 +6,7 @@
       "serviceActions": {
         "luminapath": "StartDebugging",
         "blob": "StartWithoutDebugging",
-        "db": "StartWithoutDebugging",
-        "phpmyadmin": "StartWithoutDebugging"
+        "db": "StartWithoutDebugging"
       }
     },
     "Database only": {
@@ -16,8 +15,7 @@
       "serviceActions": {
         "blob": "StartWithoutDebugging",
         "db": "StartWithoutDebugging",
-        "luminapath": "DoNotStart",
-        "phpmyadmin": "StartWithoutDebugging"
+        "luminapath": "DoNotStart"
       }
     }
   }

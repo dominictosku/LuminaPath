@@ -87,10 +87,10 @@ namespace LuminaPath.Infrastructure
 
         private static void AddDatabase(IServiceCollection services, IConfiguration config)
         {
-            var connectionstring = Environment.GetEnvironmentVariable("MYSQLCONNSTR_DB") 
+            var connectionstring = Environment.GetEnvironmentVariable("POSTGRESQL_DB") 
                 ?? config.GetConnectionString("Default");
             services.AddDbContextFactory<LuminaPathDbContext>(options =>
-                options.UseMySql(connectionstring, ServerVersion.AutoDetect(connectionstring)));
+                options.UseNpgsql(connectionstring));
             services.AddScoped<ILuminaPathDbContext, LuminaPathDbContext>();
         }
 

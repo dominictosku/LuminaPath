@@ -170,14 +170,12 @@
                 <MudItem xs="12">
                     <div class="d-flex flex-row gap-4 mb-2">
                         <MudFileUpload T="IBrowserFile" FilesChanged="SubmitFile">
-                            <ActivatorContent>
                                 <MudButton Variant="Variant.Filled"
                                            Color="Color.Primary"
                                            StartIcon="@Icons.Material.Filled.CloudUpload"
                                            Disabled="_uploading">
                                     Upload Files
                                 </MudButton>
-                            </ActivatorContent>
                         </MudFileUpload>
                     </div>
                 </MudItem>
@@ -226,7 +224,7 @@
 
     public override async Task Submit()
     {
-        await form.Validate();
+        await form.ValidateAsync();
 
         if (!form.IsValid)
             return;
@@ -239,6 +237,8 @@
             var user = state.User;
             var userId = user.FindFirst(c => c.Type.Contains("nameidentifier"))?.Value;
             _myGame.LuminaUserId = userId;
+            _myGame.StartDate = DateTime.SpecifyKind(_myGame.StartDate.Value, DateTimeKind.Utc); // Todo! Set globally
+            _myGame.EndDate = DateTime.SpecifyKind(_myGame.StartDate.Value, DateTimeKind.Utc);
 
             Model.MyGames.Add(_myGame);
         }

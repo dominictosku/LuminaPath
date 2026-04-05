@@ -31,8 +31,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             using var context = await GetDbContextAsync();
             IQueryable<Game> query = context.Games;
-            if (searchName is not null)
-                query = query.Where(x => LuminaPathDbContext.Soundex(x.Name) == LuminaPathDbContext.Soundex(searchName));
+            //if (searchName is not null) Todo! Adapt to Postgres
+            //    query = query.Where(u => LuminaPathDbContext.pg_trgm(u.Name, searchName) > 0.3).OrderByDescending(u => LuminaPathDbContext.pg_trgm(u.Name, searchName));
             return await query.ToListAsync();
         }
 

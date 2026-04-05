@@ -19,8 +19,8 @@ namespace LuminaPath.Infrastructure
             modelBuilder.ApplyConfiguration(new GameConfiguration());
         }
 
-        [DbFunction(Name = "SOUNDEX", IsBuiltIn = true)]
-        public static string Soundex(string query)
+        [DbFunction("pg_trgm", IsBuiltIn = true)]
+        public static double pg_trgm(string a, string b)
         {
             throw new NotImplementedException();
         }

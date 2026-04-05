@@ -13,7 +13,10 @@ namespace Test.Utilities
 			// Create a new service provider to create a new in-memory database.
 			var serviceProvider = new ServiceCollection()
 				.AddEntityFrameworkInMemoryDatabase()
-				.AddAutoMapper(typeof(AutoMapperProfile))
+				.AddAutoMapper(cfg =>
+				{
+				    cfg.AddProfile<AutoMapperProfile>();
+				})
 				.BuildServiceProvider();
 
 			// Create a new options instance using an in-memory database and 

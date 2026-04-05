@@ -5,19 +5,21 @@ services:
       context: ../
       dockerfile: LuminaPath/Dockerfile
     environment:
-      ConnectionStrings__Default: "server=db;database=luminapath;user=${MYSQL_USER};password=${MYSQL_PASSWORD};"
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=luminapath;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};"
     depends_on:
       - db
   db:
-    image: mysql:latest
+    image: postgres:latest
     container_name: luminapath_DB
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_DATABASE: luminapath
+      POSTGRES_DB: luminapath
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - luminapath-DB:/var/lib/mysql
-    expose:
-      - "3306"
+      - luminapath-DB:/var/lib/postgresql
+      - ./init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
   blob:
     image: mcr.microsoft.com/azure-storage/azurite
     container_name: luminapath-blob

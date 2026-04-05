@@ -4,7 +4,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8001
       - ASPNETCORE_HTTPS_PORTS=8002
-      - ConnectionStrings__Default=server=db;database=luminapath;user=root;password=dbuserpassword;
+      - ConnectionStrings__Default=Host=db;Port=5432;Database=luminapath;Username=dev;Password=dbuserpassword;
     ports:
       - "7012:8001"
       - "7013:8002"
@@ -12,22 +12,7 @@ services:
       - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
   db:
-    image: mysql:latest
-    container_name: luminapath_DB
     environment:
-      MYSQL_ROOT_PASSWORD: dbuserpassword
-    ports:
-      - "3307:3306"
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: luminapath-phpmyadmin
-    ports:
-      - 8087:80
-    depends_on:
-      - db
-    environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-  blob:
-    ports:
-      - 10000:10000
+      POSTGRES_DB: luminapath
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dbuserpassword

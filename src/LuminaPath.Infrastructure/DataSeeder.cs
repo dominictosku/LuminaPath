@@ -29,7 +29,7 @@ namespace LuminaPath.Infrastructure
                     Name = "Apex",
                     Description = "Battle Royal",
                     Genres = { "Shooter" },
-                    ReleaseDate = new DateTime(2019, 2, 4)
+                    ReleaseDate = new DateTime(2019, 2, 4, 0, 0, 0, DateTimeKind.Utc)
                 }
             };
             await context.AddRangeAsync(games);
