@@ -27,10 +27,9 @@ namespace LuminaPath.Pages.Media.Components
                 { x=>x.ContentText, $"Delete Image?" }
             };
                 var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
-                var dialog = DialogService.Show<ConfirmationDialog>("Delete Image", parameters, options);
-                var state = await dialog.Result;
+                var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Delete Image", parameters, options);
 
-                if (!state.Canceled)
+                if (!dialog.Result.IsCanceled)
                 {
                     await OnDeleteImage(Model);
                 }

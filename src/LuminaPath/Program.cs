@@ -1,4 +1,5 @@
 ﻿using LuminaPath;
+using LuminaPath.Helper;
 using LuminaPath.Infrastructure;
 using MudBlazor.Services;
 using Radzen;
@@ -20,7 +21,10 @@ builder.Services
 builder.Services.AddMudServices();
 builder.Services.AddRadzenComponents();
 
-builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<AutoMapperProfile>();
+});
 
 var app = builder.Build();
 

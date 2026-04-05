@@ -199,7 +199,7 @@ ServerData="@(ServerReload)">
 
     bool IsLocked(LuminaUser user) => user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd >= DateTime.Now;
 
-    private async Task<GridData<LuminaUser>> ServerReload(GridState<LuminaUser> state)
+    private async Task<GridData<LuminaUser>> ServerReload(GridState<LuminaUser> state, CancellationToken token)
     {
         try
         {
@@ -239,9 +239,9 @@ ServerData="@(ServerReload)">
             { x => x.Model, model }
         };
         var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = DialogService.Show<UserFormDialog>("Create User", parameters, options);
-        var result = await dialog.Result;
-        if (!result.Canceled)
+        var dialog = await DialogService.ShowAsync<UserFormDialog>("Create User", parameters, options);
+
+        if (!dialog.Result.IsCanceled)
         {
             var state = await UserService.CreateUser(model);
 
@@ -272,9 +272,8 @@ ServerData="@(ServerReload)">
             { x => x.Model, model }
         };
         var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = DialogService.Show<UserFormDialog>("Edit User", parameters, options);
-        var result = await dialog.Result;
-        if (!result.Canceled)
+        var dialog = await DialogService.ShowAsync<UserFormDialog>("Edit User", parameters, options);
+        if (!dialog.Result.IsCanceled)
         {
             var identityResult = await UserService.UpdateUser(model);
             if (identityResult.Succeeded)

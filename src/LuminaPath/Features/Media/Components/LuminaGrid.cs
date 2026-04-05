@@ -21,7 +21,7 @@ namespace LuminaPath.Pages.Media.Components
         [Parameter]
         public Func<Task<List<T>>> GetData { get; set; } = default!;
 
-        private async Task<GridData<T>> ServerReload(GridState<T> state)
+        private async Task<GridData<T>> ServerReload(GridState<T> state, CancellationToken token)
         {
             try
             {

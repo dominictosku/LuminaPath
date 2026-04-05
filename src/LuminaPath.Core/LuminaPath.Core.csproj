@@ -1,18 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AutoMapper" Version="13.0.1" />
-		<PackageReference Include="Azure.Storage.Blobs" Version="12.23.0" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
-		<PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.3.0" />
-		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.2.efcore.9.0.0" />
-		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="7.2.0" />
+		<PackageReference Include="AutoMapper" Version="16.1.1" />
+		<PackageReference Include="Azure.Storage.Blobs" Version="12.27.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
+		<PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.17.0" />
+		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.1.7" />
 	</ItemGroup>
 
 </Project>

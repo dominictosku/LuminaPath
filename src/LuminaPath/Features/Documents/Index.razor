@@ -97,7 +97,7 @@
     public HashSet<MediaDocument> selectedItems = new();
     public string ToggleText => IsGrid ? "Grid View" : "Table View";
 
-    private async Task<GridData<MediaDocument>> ServerReload(GridState<MediaDocument> state)
+    private async Task<GridData<MediaDocument>> ServerReload(GridState<MediaDocument> state, CancellationToken token)
     {
         selectedItems = new HashSet<MediaDocument>();
         loading = true;
@@ -147,9 +147,8 @@
             { x=>x.EventCallBack, Create }
         };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = DialogService.Show<DocumentFormDialog>("Create MediaDocument", parameters, options);
-        var state = await dialog.Result;
-        if (!state.Canceled)
+        var dialog = await DialogService.ShowAsync<DocumentFormDialog>("Create MediaDocument", parameters, options);
+        if (!dialog.Result.IsCanceled)
             await ReloadData();
     }
 
@@ -164,9 +163,8 @@
             { x=>x.EventCallBack, Update }
         };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = DialogService.Show<DocumentFormDialog>("Update MediaDocument", parameters, options);
-        var state = await dialog.Result;
-        if (!state.Canceled)
+        var dialog = await DialogService.ShowAsync<DocumentFormDialog>("Update MediaDocument", parameters, options);
+        if (!dialog.Result.IsCanceled)
             await ReloadData();
     }
 

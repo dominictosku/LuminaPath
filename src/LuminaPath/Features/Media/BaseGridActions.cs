@@ -50,9 +50,8 @@ namespace LuminaPath.Pages.Media
             var command = new TEntity();
             var parameters = CreateDialogParameters(command, CreateGame);
             var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-            var dialog = DialogService.Show<TForm>("Create Media", parameters, options);
-            var state = await dialog.Result;
-            if (!state.Canceled)
+            var dialog = await DialogService.ShowAsync<TForm>("Create Media", parameters, options);
+            if (!dialog.Result.IsCanceled)
                 await ReloadData();
         }
 
@@ -66,9 +65,8 @@ namespace LuminaPath.Pages.Media
             var command = media;
             var parameters = CreateDialogParameters(media, UpdateGame);
             var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-            var dialog = DialogService.Show<TForm>("Update Media", parameters, options);
-            var state = await dialog.Result;
-            if (!state.Canceled)
+            var dialog = await DialogService.ShowAsync<TForm>("Update Media", parameters, options);
+            if (!dialog.Result.IsCanceled)
                 await ReloadData();
         }
 

@@ -9,7 +9,7 @@ namespace LuminaPath.Pages.Media.Components
         public IDialogService DialogService { get; set; } = default!;
 
         [CascadingParameter]
-        public MudDialogInstance MudDialog { get; set; } = default!;
+        public IMudDialogInstance MudDialog { get; set; } = default!;
 
         [EditorRequired]
         [Parameter]
