@@ -142,6 +142,29 @@ namespace LuminaPath.Infrastructure
 
         private static void AddStorageService(IServiceCollection services, IConfiguration config)
         {
+            string provider = Environment.GetEnvironmentVariable("STORAGE_PROVIDER")
+                ?? config.GetSection("Storage")["Provider"]
+                ?? "Azure";
+
+            if (provider.Equals("FileSystem", StringComparison.OrdinalIgnoreCase))
+            {
+                string storagePath = Environment.GetEnvironmentVariable("STORAGE_PATH")
+                    ?? config.GetSection("Storage")["Path"]
+                    ?? Path.Combine("App_Data", "storage");
+
+                services.AddScoped<IStorageService, FileSystemStorage>(s =>
+                {
+                    var environment = s.GetRequiredService<IHostEnvironment>();
+                    var fullPath = Path.IsPathRooted(storagePath)
+                        ? storagePath
+                        : Path.Combine(environment.ContentRootPath, storagePath);
+
+                    return new FileSystemStorage(fullPath, s.GetRequiredService<ILogger<FileSystemStorage>>());
+                });
+
+                return;
+            }
+
             string connectionString = Environment.GetEnvironmentVariable("AZURE_CONNECTIONSTRING")
                 ?? config.GetSection("Azure")["BlobConnectionString"]
                 ?? throw new Exception("No blob connectionfound");

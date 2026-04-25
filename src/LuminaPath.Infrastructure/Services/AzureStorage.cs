@@ -51,7 +51,7 @@ namespace LuminaPath.Infrastructure.Services
             return files;
         }
 
-        public async Task<BlobDto> DownloadAsync(string blobFilename)
+        public async Task<BlobDto?> DownloadAsync(string blobFilename)
         {
             // Get a reference to a container named in appsettings.json
             BlobContainerClient client = new BlobContainerClient(_storageConnectionString, _storageContainerName);
@@ -107,7 +107,7 @@ namespace LuminaPath.Infrastructure.Services
                 await using (Stream? data = blob.OpenReadStream())
                 {
                     // Upload the file async
-                    await client.UploadAsync(data);
+                    await client.UploadAsync(data, new BlobHttpHeaders { ContentType = blob.ContentType });
                 }
 
                 // Everything is OK and file got uploaded
@@ -115,6 +115,7 @@ namespace LuminaPath.Infrastructure.Services
                 response.Error = false;
                 response.Blob.Uri = client.Uri.AbsoluteUri;
                 response.Blob.Name = client.Name;
+                response.Blob.ContentType = blob.ContentType;
 
             }
             // If the file already exists, we catch the exception and do not upload it
@@ -140,7 +141,7 @@ namespace LuminaPath.Infrastructure.Services
             return response;
         }
 
-        public async Task<BlobResponseDto> UploadAsync(Stream blob, string fileName)
+        public async Task<BlobResponseDto> UploadAsync(Stream blob, string fileName, string? contentType = null)
         {
             // Create new upload response object that we can return to the requesting method
             BlobResponseDto response = new();
@@ -157,7 +158,7 @@ namespace LuminaPath.Infrastructure.Services
                 await using (Stream? data = blob)
                 {
                     // Upload the file async
-                    await client.UploadAsync(data);
+                    await client.UploadAsync(data, new BlobHttpHeaders { ContentType = contentType });
                 }
 
                 // Everything is OK and file got uploaded
@@ -165,6 +166,7 @@ namespace LuminaPath.Infrastructure.Services
                 response.Error = false;
                 response.Blob.Uri = client.Uri.AbsoluteUri;
                 response.Blob.Name = client.Name;
+                response.Blob.ContentType = contentType;
 
             }
             // If the file already exists, we catch the exception and do not upload it

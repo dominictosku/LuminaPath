@@ -17,15 +17,16 @@ namespace LuminaPath.Core.Interfaces
         /// </summary>
         /// <param name="file"></param>
         /// <param name="fileName"></param>
+        /// <param name="contentType"></param>
         /// <returns></returns>
-        Task<BlobResponseDto> UploadAsync(Stream file, string fileName);
+        Task<BlobResponseDto> UploadAsync(Stream file, string fileName, string? contentType = null);
 
         /// <summary>
         /// This method downloads a file with the specified filename
         /// </summary>
         /// <param name="blobFilename">Filename</param>
         /// <returns>Blob</returns>
-        Task<BlobDto> DownloadAsync(string blobFilename);
+        Task<BlobDto?> DownloadAsync(string blobFilename);
 
         /// <summary>
         /// This method deleted a file with the specified filename

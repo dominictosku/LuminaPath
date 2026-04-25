@@ -58,7 +58,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 {
                     imageName = SanitizeFileName(file.Name);
                 }
-                var result = await _storage.UploadAsync(fs, imageName);
+                var result = await _storage.UploadAsync(fs, imageName, file.ContentType);
                 if (result.Error)
                 {
                     _logger.LogError("Could not Upload file, error: {0}", result.Status);
