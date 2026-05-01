@@ -87,7 +87,7 @@ ServerData="@(ServerReload)">
                     </MudHidden>
                 </div>
                 <MudStack Row="true" AlignItems="AlignItems.Stretch">
-                    <MudSelect T="string" Placeholder="Status" Value="@_searchStatus" Clearable="true" ValueChanged="@(OnSearchStatus)" Style="width:150px">
+                    <MudSelect T="string" Placeholder="Status" @bind-Value="SearchStatus" Clearable="true" Style="width:150px">
                         @foreach (var str in _roles)
                         {
                             <MudSelectItem Value="@str">@str</MudSelectItem>
@@ -126,7 +126,7 @@ ServerData="@(ServerReload)">
                 <div class="d-flex align-items-center">
                     <MudBadge Color="true ? Color.Success : Color.Error" Overlap="false" Dot="true" Bordered="true">
                         <MudAvatar>
-                            @if (false)
+                            @if (!string.IsNullOrWhiteSpace(context.Item.UserName))
                             {
                                 @context.Item.UserName.First()
                             }
@@ -183,19 +183,13 @@ ServerData="@(ServerReload)">
 
     private int _defaultPageSize = 15;
     private HashSet<LuminaUser> _selectedItems = new();
-    private readonly LuminaUser _currentDto = new();
     private string _searchString = string.Empty;
     private string Title { get; set; } = "Users";
 
-    private TimeSpan RefreshInterval => TimeSpan.FromSeconds(60);
-
     private MudDataGrid<LuminaUser> _table = null!;
-    private bool _processing;
     private bool _loading;
-    private bool _exporting;
-    private bool _uploading;
     private List<string?> _roles = new();
-    private string? _searchStatus;
+    private string? SearchStatus { get; set; }
 
     bool IsLocked(LuminaUser user) => user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd >= DateTime.Now;
 
@@ -240,8 +234,9 @@ ServerData="@(ServerReload)">
         };
         var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<UserFormDialog>("Create User", parameters, options);
+        var result = await dialog.Result;
 
-        if (!dialog.Result.IsCanceled)
+        if (result?.Canceled != true)
         {
             var state = await UserService.CreateUser(model);
 
@@ -262,10 +257,10 @@ ServerData="@(ServerReload)">
         var model = new UserDto()
             {
                 Id = item.Id,
-                Email = item.Email,
-                UserName = item.UserName,
+                Email = item.Email ?? string.Empty,
+                UserName = item.UserName ?? string.Empty,
                 Active = !item.LockoutEnabled,
-                PhoneNumber = item.PhoneNumber
+                PhoneNumber = item.PhoneNumber ?? string.Empty
             };
         var parameters = new DialogParameters<UserFormDialog>
         {
@@ -273,7 +268,8 @@ ServerData="@(ServerReload)">
         };
         var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<UserFormDialog>("Edit User", parameters, options);
-        if (!dialog.Result.IsCanceled)
+        var result = await dialog.Result;
+        if (result?.Canceled != true)
         {
             var identityResult = await UserService.UpdateUser(model);
             if (identityResult.Succeeded)
@@ -297,7 +293,7 @@ ServerData="@(ServerReload)">
     private async Task OnDeleteChecked()
     {
         var state = await AuthState;
-        var currentUserId = "";
+        var currentUserId = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         var isSelectedItemContainCurrentUser = _selectedItems.Any(x => x.Id == currentUserId);
         if (isSelectedItemContainCurrentUser) return;
         foreach(var item in _selectedItems)

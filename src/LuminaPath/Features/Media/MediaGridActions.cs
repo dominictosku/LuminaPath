@@ -14,13 +14,13 @@ namespace LuminaPath.Pages.Media
         where TViewModel : class, IMedia<MediaDocument>, new()
         where TForm : IComponent
     {
-        protected IGenericModelService<TEntity> ModelService { get; set; }
+        protected IGenericModelService<TEntity> ModelService { get; set; } = default!;
 
         [Inject]
-        public IMapper mapper { get; set; }
+        public IMapper mapper { get; set; } = default!;
 
         [Inject]
-        public DocumentService documentService { get; set; }
+        public DocumentService documentService { get; set; } = default!;
 
         public override async Task<TViewModel> GetById(int id)
         {
@@ -57,7 +57,7 @@ namespace LuminaPath.Pages.Media
             if (currentImage is not null)
             {
                 var result = await documentService.CreateDocument(currentImage, entity);
-                entity.Image = result.Match<MediaDocument>(
+                entity.Image = result.Match<MediaDocument?>(
                     s => s,
                     f => null);
             }

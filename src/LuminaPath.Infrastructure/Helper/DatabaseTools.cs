@@ -20,6 +20,12 @@ namespace LuminaPath.Infrastructure.Helper
 
                 // Start the process
                 var process = Process.Start(processInfo);
+                if (process == null)
+                {
+                    Console.WriteLine("Could not start the database backup process.");
+                    return;
+                }
+
                 process.WaitForExit();
 
                 if (process.ExitCode == 0)

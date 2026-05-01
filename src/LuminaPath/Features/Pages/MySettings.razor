@@ -8,6 +8,7 @@
 @inject Radzen.DialogService dialogService
 @inject MyGameService myGameService
 @inject IJSRuntime JS
+@inject ISnackbar Snackbar
 <h3>MySettings</h3>
 
 <MudButton OnClick="DownloadFileFromStream" Color="Color.Primary"> Download my data as CSV </MudButton>
@@ -31,6 +32,12 @@
 
     async Task DownloadFileFromStream()
     {
+        if (User is null)
+        {
+            Snackbar.Add("Please sign in before exporting your data", Severity.Info);
+            return;
+        }
+
         var fileStream = new MemoryStream(await myGameService.ExportAsCSV(User));
         var fileName = "myGames.csv";
 
@@ -40,6 +47,12 @@
     }
 
 	async Task DeleteAll(){
+		if (User is null)
+		{
+			Snackbar.Add("Please sign in before deleting your data", Severity.Info);
+			return;
+		}
+
 		bool? confirm = await dialogService.Confirm("This will delete all your created lists", "Are you sure?");
 		if(confirm is not null && confirm.Value)
 		{

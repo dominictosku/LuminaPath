@@ -13,10 +13,10 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
         Task<Result<int, FailedResult>> DeleteAsync(int? id);
         Task DeleteMyData(LuminaUser user);
         Task<List<TEntity>> GetAll();
-        Task<PaginatedList<TEntity>> GetAllPaginated(string UserId, MediaFilter mediaFilter, Expression<Func<TEntity, bool>> filter = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null);
-        Task<PaginatedList<Dto>> GetAllPaginated<Dto>(MediaFilter mediaFilter, IEnumerable<string> includes, Expression<Func<TEntity, bool>> filter = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null);
+        Task<PaginatedList<TEntity>> GetAllPaginated(string UserId, MediaFilter mediaFilter, Expression<Func<TEntity, bool>>? filter = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null);
+        Task<PaginatedList<Dto>> GetAllPaginated<Dto>(MediaFilter mediaFilter, IEnumerable<string> includes, Expression<Func<TEntity, bool>>? filter = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null);
         Task<TEntity> GetById(int? id, IEnumerable<string>? includes = null);
-        Task<List<TEntity>> GetMyMedia(string UserId, Expression<Func<TEntity, bool>> filter = null);
+        Task<List<TEntity>> GetMyMedia(string UserId, Expression<Func<TEntity, bool>>? filter = null);
         Task<Result<TEntity, FailedResult>> PostAsync(TEntity viewModel, LuminaUser? user);
         Task<Result<TEntity, FailedResult>> PutAsync(TEntity viewModel, LuminaUser? user);
     }

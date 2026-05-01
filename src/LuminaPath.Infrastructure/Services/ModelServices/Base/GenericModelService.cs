@@ -13,7 +13,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
         protected readonly IMapper _mapper;
         protected readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
 
-        public virtual string[] Includes { get; set; }
+        public virtual string[] Includes { get; set; } = [];
 
         public GenericModelService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IMapper mapper)
         {
@@ -44,8 +44,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
         public virtual async Task<PaginatedList<TEntity>> GetAllPaginated(
             MediaFilter mediaFilter,
             IEnumerable<string> includes,
-            Expression<Func<TEntity, bool>> filter = null,
-            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null)
+            Expression<Func<TEntity, bool>>? filter = null,
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null)
         {
             return await GetAllPaginated<TEntity>(mediaFilter, includes, filter, orderBy);
         }
@@ -53,8 +53,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
         public virtual async Task<PaginatedList<Dto>> GetAllPaginated<Dto>(
             MediaFilter mediaFilter,
             IEnumerable<string> includes,
-            Expression<Func<TEntity, bool>> filter = null,
-            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null)
+            Expression<Func<TEntity, bool>>? filter = null,
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null)
         {
             using (var dbContext = await GetDbContextAsync())
             {
@@ -65,7 +65,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 
                 if (typeof(Dto) == typeof(TEntity))
                 {
-                    return paginatedEntities as PaginatedList<Dto>;
+                    return (PaginatedList<Dto>)(object)paginatedEntities;
                 }
 
                 var mappedEntities = _mapper.Map<IEnumerable<TEntity>, IEnumerable<Dto>>(paginatedEntities);
@@ -172,9 +172,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 
         protected virtual IQueryable<TEntity> PrepareEntity(
             IQueryable<TEntity> entities,
-            Expression<Func<TEntity, bool>> filter = null,
-            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null,
-            IEnumerable<string> includes = null)
+            Expression<Func<TEntity, bool>>? filter = null,
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
+            IEnumerable<string>? includes = null)
         {
             if (filter != null)
             {

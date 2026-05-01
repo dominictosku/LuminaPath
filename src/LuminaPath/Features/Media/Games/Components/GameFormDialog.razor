@@ -45,10 +45,6 @@
                                      AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary"
                                      Validation="@(new Func<string, IEnumerable<string>>(Validate))"
                                      For="@(() => Model.Name)" />
-                    @if (success1)
-                    {
-                        <MudText Color="Color.Success">Success</MudText>
-                    }
                 </MudItem>
                 <MudItem xs="12">
                     <MudTextField Label="Description"
@@ -207,8 +203,7 @@
 
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
-    MudForm form;
-    private bool success1;
+    MudForm form = default!;
 
 
     private List<string> games = new();
@@ -248,10 +243,22 @@
             _myGame.Game = Model;
             var state = await AuthState;
             var user = state.User;
-            var userId = user.FindFirst(c => c.Type.Contains("nameidentifier"))?.Value;
+            var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? user.FindFirst(c => c.Type.Contains("nameidentifier", StringComparison.OrdinalIgnoreCase))?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return;
+            }
+
             _myGame.LuminaUserId = userId;
-            _myGame.StartDate = DateTime.SpecifyKind(_myGame.StartDate.Value, DateTimeKind.Utc); // Todo! Set globally
-            _myGame.EndDate = DateTime.SpecifyKind(_myGame.StartDate.Value, DateTimeKind.Utc);
+            if (_myGame.StartDate.HasValue)
+            {
+                _myGame.StartDate = DateTime.SpecifyKind(_myGame.StartDate.Value, DateTimeKind.Utc);
+            }
+            if (_myGame.EndDate.HasValue)
+            {
+                _myGame.EndDate = DateTime.SpecifyKind(_myGame.EndDate.Value, DateTimeKind.Utc);
+            }
 
             Model.MyGames.Add(_myGame);
         }

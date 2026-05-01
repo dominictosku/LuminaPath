@@ -20,7 +20,7 @@ namespace LuminaPath.Infrastructure.Services
             }
             var json = File.ReadAllText(filePath);
             var data = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-            return data;
+            return data ?? new Dictionary<string, string>();
         }
 
         public string GetBearer()

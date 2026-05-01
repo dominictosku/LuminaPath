@@ -43,7 +43,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return await context.Users.Include(u => u.LuminaUserInfo).FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public async Task<IdentityResult?> CreateUser(UserDto model)
+        public async Task<IdentityResult> CreateUser(UserDto model)
         {
             var lockedOut = !model.Active;
             var applicationUser = new LuminaUser
@@ -61,7 +61,10 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             if (state.Succeeded && model.Role != string.Empty)
             {
                 var user = await _userManager.FindByEmailAsync(model.Email);
-                await AddUserToRole(user, model.Role);
+                if (user is not null)
+                {
+                    await AddUserToRole(user, model.Role);
+                }
             }
             return state;
         }

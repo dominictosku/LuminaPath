@@ -152,6 +152,12 @@
 
 	async Task ImportProfile()
 	{
+		if (string.IsNullOrWhiteSpace(UserId))
+		{
+			Snackbar.Add("Please sign in before importing a profile", Severity.Info);
+			return;
+		}
+
 		try
 		{
 			var profile = await psnService.GetProfile(model.PSNOnlineId);

@@ -39,12 +39,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         public async Task<PaginatedList<Game>> GetAllPaginated(
             MediaFilter mediaFilter,
             string UserId,
-            Expression<Func<Game, bool>> filter = null,
-            IEnumerable<string> includes = null)
+            Expression<Func<Game, bool>>? filter = null,
+            IEnumerable<string>? includes = null)
         {
             using var context = await GetDbContextAsync();
             IQueryable<Game> entities = GetEntities(context);
-            entities = entities.Include(g => g.Image).Include(g => g.MyGames.Where(p => p.LuminaUserId == UserId));
+            entities = entities.Include(g => g.Image).Include(g => g.MyGames!.Where(p => p.LuminaUserId == UserId));
             entities = PrepareEntity(entities, filter, e => e.OrderByDescending(g => g.ReleaseDate), includes);
             return await CreatePaginatedList(entities, mediaFilter.Paging);
         }

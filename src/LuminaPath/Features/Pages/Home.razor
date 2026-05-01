@@ -19,7 +19,7 @@
 {   
     <MudCard>
         <MudCardContent>
-            <MudText>@game.Game.Name</MudText>
+            <MudText>@game.Game?.Name</MudText>
             <MudText Typo="Typo.body2">@game.Status</MudText>
         </MudCardContent>
         <MudCardActions>
@@ -70,12 +70,11 @@
 
 @code{
     List<MyGame> CurrentMainGames = new();
-    int totalHours;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        if (UserId == null) return;
+        if (string.IsNullOrWhiteSpace(UserId)) return;
         var result = await myGameService.GetMyMedia(UserId);
         CurrentMainGames = result.Where(x => x.Status == GameStatus.MainGame).ToList();
     }

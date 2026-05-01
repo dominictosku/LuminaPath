@@ -134,7 +134,10 @@
 
         if (!dialog.Result.IsCanceled)
         {
-            await Storage.DeleteAsync(Model.Name);
+            if (!string.IsNullOrWhiteSpace(Model.Name))
+            {
+                await Storage.DeleteAsync(Model.Name);
+            }
         }
 
     }

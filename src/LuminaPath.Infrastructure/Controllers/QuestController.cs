@@ -25,10 +25,10 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpPost]
         public override async Task<ActionResult> PostAsync(GamesQuestDto viewModel)
         {
-            string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized("Please Login");
-            LuminaUser user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 return NotFound("User not found, please login");
             viewModel.Owner = user;

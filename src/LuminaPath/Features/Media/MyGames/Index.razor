@@ -46,18 +46,18 @@
 				</CellTemplate>
 			</TemplateColumn>
 
-			<PropertyColumn Property="x => x.Game.Name" Title="Title">
+			<PropertyColumn Property="x => x.Game!.Name" Title="Title">
 				<CellTemplate>
 					<div class="d-flex flex-column">
-						<MudText Typo="Typo.body2">@context.Item.Game.Name</MudText>
-						<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Game.Description</MudText>
+						<MudText Typo="Typo.body2">@context.Item.Game?.Name</MudText>
+						<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Game?.Description</MudText>
 					</div>
 				</CellTemplate>
 			</PropertyColumn>
-			<PropertyColumn Property="x => x.Game.Genres" Title="Genre">
+			<PropertyColumn Property="x => x.Game!.Genres" Title="Genre">
 				<CellTemplate>
 					<div class="d-flex flex-column">
-						<MudText Typo="Typo.body2">@string.Join(",", context.Item.Game.Genres)</MudText>
+						<MudText Typo="Typo.body2">@string.Join(",", context.Item.Game?.Genres ?? [])</MudText>
 					</div>
 				</CellTemplate>
 			</PropertyColumn>
@@ -85,10 +85,10 @@ else
 			{
 				<MudItem>
 					<MudCard Outlined="true">
-						<MudCardMedia Image="@game.Game.Image?.Url" Height="200" />
+						<MudCardMedia Image="@game.Game?.Image?.Url" Height="200" />
 						<MudCardContent Style="height:80px;">
-							<MudText Typo="Typo.h5">@game.Game.Name</MudText>
-							<MudText Typo="Typo.body2">@game.Game.Description</MudText>
+							<MudText Typo="Typo.h5">@game.Game?.Name</MudText>
+							<MudText Typo="Typo.body2">@game.Game?.Description</MudText>
 						</MudCardContent>
 						<MudCardActions Style="height:50px;">
 							<MudButton OnClick="@(() => OnUpdate(game))" Variant="Variant.Text" Color="Color.Primary">Edit</MudButton>
@@ -146,6 +146,11 @@ else
 
 	private async Task<List<MyGame>> GetData()
 	{
+		if (string.IsNullOrWhiteSpace(UserId))
+		{
+			return [];
+		}
+
 		var result = await ModelService.GetMyMedia(UserId);
 		Games = result;
 		return result;

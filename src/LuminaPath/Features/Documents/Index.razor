@@ -190,7 +190,7 @@
         {
             Snackbar.Add("Created MediaDocument", Severity.Success);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             Snackbar.Add("Failed to create MediaDocument", Severity.Error);
             loading = false;
@@ -207,7 +207,7 @@
         {
             Snackbar.Add("Updated Game", Severity.Success);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             Snackbar.Add("Failed to update Game", Severity.Error);
             loading = false;

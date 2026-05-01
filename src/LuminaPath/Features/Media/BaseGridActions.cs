@@ -22,10 +22,10 @@ namespace LuminaPath.Pages.Media
         protected IBrowserFile? currentImage;
 
         [Inject]
-        public IDialogService DialogService { get; set; }
+        public IDialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ISnackbar Snackbar { get; set; }
+        public ISnackbar Snackbar { get; set; } = default!;
 
         public bool IsGrid = true;
         public bool loading;
@@ -103,7 +103,7 @@ namespace LuminaPath.Pages.Media
                 await Save(game);
                 Snackbar.Add("Created Game", Severity.Success);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Snackbar.Add("Failed to create Game", Severity.Error);
                 loading = false;
@@ -126,7 +126,7 @@ namespace LuminaPath.Pages.Media
                 await Update(game);
                 Snackbar.Add("Updated Game", Severity.Success);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Snackbar.Add("Failed to update Game", Severity.Error);
                 loading = false;

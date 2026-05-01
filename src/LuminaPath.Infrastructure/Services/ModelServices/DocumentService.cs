@@ -33,9 +33,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         public virtual async Task<PaginatedList<MediaDocument>> GetAllPaginated(
             Paging paging,
-            Expression<Func<MediaDocument, bool>> filter = null,
-            Func<IQueryable<MediaDocument>, IOrderedQueryable<MediaDocument>> orderBy = null,
-            IEnumerable<string> includes = null)
+            Expression<Func<MediaDocument, bool>>? filter = null,
+            Func<IQueryable<MediaDocument>, IOrderedQueryable<MediaDocument>>? orderBy = null,
+            IEnumerable<string>? includes = null)
         {
             using var context = await GetDbContextAsync();
             IQueryable<MediaDocument> entities = context.MediaDocuments;
@@ -84,7 +84,18 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         public async Task RenameMediaImage(Media media)
         {
-            await _storage.RenameAsync(media.Image.Name, $"{media.Id}-{media.Name}");
+            if (media.Image is null)
+            {
+                return;
+            }
+
+            var imageName = media.Image.Name;
+            if (string.IsNullOrWhiteSpace(imageName))
+            {
+                return;
+            }
+
+            await _storage.RenameAsync(imageName, $"{media.Id}-{media.Name}");
         }
 
         public async Task RenameDocument(string oldName, string newName)
@@ -92,15 +103,25 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             await _storage.RenameAsync(oldName, newName);
         }
 
-        public async Task DeleteDocument(MediaDocument document)
+        public async Task DeleteDocument(MediaDocument? document)
         {
+            if (document is null)
+            {
+                return;
+            }
+
             try
             {
                 using var context = await GetDbContextAsync();
-                var existingDocument = context.MediaDocuments.Single(d => d.Id == document.Id);
+                var existingDocument = context.MediaDocuments.SingleOrDefault(d => d.Id == document.Id);
                 if (existingDocument is null)
                 {
                     _logger.LogError("Could not find file, document: {0}", document.Name);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(document.Name))
+                {
                     return;
                 }
 
@@ -127,8 +148,13 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
         }
 
-        public async Task DeleteMediaDocument(IMedia<MediaDocument> entity, LuminaPathDbContext _context = null)
+        public async Task DeleteMediaDocument(IMedia<MediaDocument>? entity, LuminaPathDbContext? _context = null)
         {
+            if (entity is null)
+            {
+                return;
+            }
+
             using var context = _context ?? await GetDbContextAsync();
             if (entity.Image is null)
                 return;
@@ -157,9 +183,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         protected virtual IQueryable<MediaDocument> PrepareEntity(
             IQueryable<MediaDocument> entities,
-            Expression<Func<MediaDocument, bool>> filter = null,
-            Func<IQueryable<MediaDocument>, IOrderedQueryable<MediaDocument>> orderBy = null,
-            IEnumerable<string> includes = null
+            Expression<Func<MediaDocument, bool>>? filter = null,
+            Func<IQueryable<MediaDocument>, IOrderedQueryable<MediaDocument>>? orderBy = null,
+            IEnumerable<string>? includes = null
             )
         {
             if (filter != null)

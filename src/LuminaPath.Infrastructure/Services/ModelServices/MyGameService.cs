@@ -19,7 +19,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         }
 
         public override string[] Includes { get; set; } = ["Game"];
-        protected override Func<IQueryable<MyGame>, IOrderedQueryable<MyGame>> DefaultOrderBy => e => e.OrderByDescending(g => g.Game.ReleaseDate);
+        protected override Func<IQueryable<MyGame>, IOrderedQueryable<MyGame>> DefaultOrderBy => e => e.OrderByDescending(g => g.Game!.ReleaseDate);
 
         public async Task<byte[]> ExportAsCSV(LuminaUser user)
         {
@@ -28,7 +28,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 .Where(g => g.LuminaUserId == user.Id)
                 .Include(g => g.MyGameInfo)
                 .Include(g => g.Game)
-                    .ThenInclude(g => g.GameInfo)
+                    .ThenInclude(g => g!.GameInfo)
                 .OrderBy(g => g.Game!.Name)
                 .ToListAsync();
 
@@ -51,16 +51,16 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             public MyGameMap()
             {
-                Map(m => m.Game.Id);
-                Map(m => m.Game.Name);
+                Map(m => m.Game!.Id);
+                Map(m => m.Game!.Name);
                 Map(m => m.Status);
-                Map(m => m.Game.ReleaseDate);
-                Map(m => m.Game.Plattforms);
-                Map(m => m.Game.Source);
-                Map(m => m.MyGameInfo.FirstPlayed);
-                Map(m => m.MyGameInfo.LastPlayed);
-                Map(m => m.MyGameInfo.TrackedHours);
-                Map(m => m.Game.GameInfo.PsnId);
+                Map(m => m.Game!.ReleaseDate);
+                Map(m => m.Game!.Plattforms);
+                Map(m => m.Game!.Source);
+                Map(m => m.MyGameInfo!.FirstPlayed);
+                Map(m => m.MyGameInfo!.LastPlayed);
+                Map(m => m.MyGameInfo!.TrackedHours);
+                Map(m => m.Game!.GameInfo!.PsnId);
             }
         }
     }
