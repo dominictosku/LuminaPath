@@ -34,8 +34,8 @@ namespace LuminaPath.Infrastructure.Controllers
         {
             var result = await Storage.DownloadAsync(url);
             if (result is null || result.Content is null)
-                return File("/images/placeholder.png", "images/png");
-            return new FileStreamResult(result.Content, result.ContentType ?? "images/png");
+                return File("/images/placeholder.png", "image/png");
+            return new FileStreamResult(result.Content, result.ContentType ?? "image/png");
         }
     }
 }

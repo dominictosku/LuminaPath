@@ -366,5 +366,8 @@ FodyWeavers.xsd
 # Secrets
 .env
 
+# Local file-system storage uploads
+/src/LuminaPath/App_Data/storage/
+
 # rider
 .idea
