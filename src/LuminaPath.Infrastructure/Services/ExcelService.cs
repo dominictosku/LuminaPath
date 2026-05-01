@@ -201,7 +201,16 @@ namespace LuminaPath.Infrastructure.Services
                 }
             }
 
-            await context.SaveChangesAsync();
+            try
+            {
+                await context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                var message = ex.InnerException?.Message ?? ex.Message;
+                result.Errors.Add($"Database save failed: {message}");
+            }
+
             return result;
         }
 
@@ -251,7 +260,7 @@ namespace LuminaPath.Infrastructure.Services
             game.Name = GetText(worksheet, row, headerMap, "name") ?? game.Name;
             game.Description = GetText(worksheet, row, headerMap, "description") ?? game.Description;
             game.Source = GetText(worksheet, row, headerMap, "source") ?? game.Source;
-            game.ReleaseDate = GetDate(worksheet, row, headerMap, "releasedate") ?? game.ReleaseDate;
+            game.ReleaseDate = ToUtcDate(GetDate(worksheet, row, headerMap, "releasedate")) ?? game.ReleaseDate;
             game.Playtime = GetInt(worksheet, row, headerMap, "playtime", "estimatedplaytime") ?? game.Playtime;
 
             var platform = GetText(worksheet, row, headerMap, "plattform", "platform");
@@ -283,19 +292,23 @@ namespace LuminaPath.Infrastructure.Services
 
             myGame.Priortiy = GetInt(worksheet, row, headerMap, "priority", "priortiy") ?? myGame.Priortiy;
             myGame.Rating = GetShort(worksheet, row, headerMap, "rating") ?? myGame.Rating;
-            myGame.StartDate = GetDate(worksheet, row, headerMap, "startdate", "startedon") ?? myGame.StartDate;
-            myGame.EndDate = GetDate(worksheet, row, headerMap, "enddate", "finishedon") ?? myGame.EndDate;
+            myGame.StartDate = ToUtcDate(GetDate(worksheet, row, headerMap, "startdate", "startedon")) ?? myGame.StartDate;
+            myGame.EndDate = ToUtcDate(GetDate(worksheet, row, headerMap, "enddate", "finishedon")) ?? myGame.EndDate;
             myGame.TimeSpend = GetDouble(worksheet, row, headerMap, "timespend", "timespent") ?? myGame.TimeSpend;
 
-            var firstPlayed = GetDate(worksheet, row, headerMap, "firstplayed");
-            var lastPlayed = GetDate(worksheet, row, headerMap, "lastplayed");
+            var firstPlayed = ToUtcDate(GetDate(worksheet, row, headerMap, "firstplayed"));
+            var lastPlayed = ToUtcDate(GetDate(worksheet, row, headerMap, "lastplayed"));
             var trackedHours = GetDouble(worksheet, row, headerMap, "trackedhours", "playtimeinhours");
 
             if (firstPlayed.HasValue || lastPlayed.HasValue || trackedHours.HasValue)
             {
-                myGame.MyGameInfo ??= new MyGameInfo();
-                myGame.MyGameInfo.FirstPlayed = firstPlayed ?? myGame.MyGameInfo.FirstPlayed;
-                myGame.MyGameInfo.LastPlayed = lastPlayed ?? myGame.MyGameInfo.LastPlayed;
+                myGame.MyGameInfo ??= new MyGameInfo
+                {
+                    FirstPlayed = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc),
+                    LastPlayed = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc)
+                };
+                myGame.MyGameInfo.FirstPlayed = firstPlayed ?? ToUtcDate(myGame.MyGameInfo.FirstPlayed) ?? DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc);
+                myGame.MyGameInfo.LastPlayed = lastPlayed ?? ToUtcDate(myGame.MyGameInfo.LastPlayed) ?? DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc);
                 myGame.MyGameInfo.TrackedHours = trackedHours ?? myGame.MyGameInfo.TrackedHours;
             }
         }
@@ -375,6 +388,21 @@ namespace LuminaPath.Infrastructure.Services
                 || DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out date)
                 ? date
                 : null;
+        }
+
+        private static DateTime? ToUtcDate(DateTime? date)
+        {
+            if (!date.HasValue)
+            {
+                return null;
+            }
+
+            return date.Value.Kind switch
+            {
+                DateTimeKind.Utc => date.Value,
+                DateTimeKind.Local => date.Value.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(date.Value, DateTimeKind.Utc)
+            };
         }
 
         private static IXLCell? GetCell(IXLWorksheet worksheet, int row, Dictionary<string, int> headerMap, params string[] headers)

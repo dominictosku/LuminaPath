@@ -16,3 +16,16 @@ services:
       POSTGRES_DB: luminapath
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dbuserpassword
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  pgadmin_data:

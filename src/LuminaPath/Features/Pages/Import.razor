@@ -234,8 +234,12 @@
 
 		try
 		{
-			await using var stream = file.OpenReadStream(MaxExcelFileSize);
-			_excelResult = await excelService.ImportGamesAsync(stream, User);
+			await using var uploadStream = file.OpenReadStream(MaxExcelFileSize);
+			using var importStream = new MemoryStream();
+			await uploadStream.CopyToAsync(importStream);
+			importStream.Position = 0;
+
+			_excelResult = await excelService.ImportGamesAsync(importStream, User);
 
 			if (_excelResult.Errors.Any())
 			{
