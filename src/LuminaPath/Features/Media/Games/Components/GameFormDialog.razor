@@ -8,6 +8,7 @@
 @using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop
 @using LuminaPath.Core.Enums;
+@using LuminaPath.Core.Models.Third_Party
 @using Severity = MudBlazor.Severity
 @using Color = MudBlazor.Color
 @inherits MediaFormDialog<GameViewModel, MediaDocument>
@@ -112,11 +113,19 @@
                     </div>
                 </MudItem>
 
-                <MudExpansionPanels>
-                    <MudExpansionPanel Text="Advanced Game Info">
-                        <!-- GameInfo fields here -->
-                    </MudExpansionPanel>
-                </MudExpansionPanels>
+                <MudItem xs="12">
+                    <MudExpansionPanels>
+                        <MudExpansionPanel Text="Advanced Game Info">
+                            <MudGrid>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField Label="PSN ID"
+                                                  @bind-Value="Model.GameInfo!.PsnId"
+                                                  For="@(() => Model.GameInfo!.PsnId)" />
+                                </MudItem>
+                            </MudGrid>
+                        </MudExpansionPanel>
+                    </MudExpansionPanels>
+                </MudItem>
 
                 <MudItem xs="12">
                     <MudSwitch @bind-Value="_createMyGame"
@@ -170,12 +179,15 @@
                 <MudItem xs="12">
                     <div class="d-flex flex-row gap-4 mb-2">
                         <MudFileUpload T="IBrowserFile" FilesChanged="SubmitFile">
+                            <CustomContent Context="fileUpload">
                                 <MudButton Variant="Variant.Filled"
                                            Color="Color.Primary"
                                            StartIcon="@Icons.Material.Filled.CloudUpload"
-                                           Disabled="_uploading">
+                                           Disabled="_uploading"
+                                           OnClick="@fileUpload.OpenFilePickerAsync">
                                     Upload Files
                                 </MudButton>
+                            </CustomContent>
                         </MudFileUpload>
                     </div>
                 </MudItem>
@@ -213,6 +225,8 @@
 
     protected override void OnInitialized()
     {
+        Model.GameInfo ??= new GameInfo();
+
         if (Model.MyGames?.Any() == true)
         {
             _createMyGame = true;
