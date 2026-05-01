@@ -103,8 +103,7 @@
                     <div class="d-flex flex-wrap gap-2 mt-2">
                         @foreach (var genre in Model.Genres)
                         {
-                            <MudChip Closeable="true"
-                                     T="string"
+                            <MudChip T="string"
                                      OnClose="@(() => RemoveGenre(genre))"
                                      Color="Color.Primary">
                                 @genre

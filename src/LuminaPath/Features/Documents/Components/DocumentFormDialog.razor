@@ -62,12 +62,15 @@
                 <MudItem>
                     <div class="d-flex flex-row gap-4 mb-2">
                         <MudFileUpload T="IBrowserFile" SuppressOnChangeWhenInvalid="true"
-                                       @bind-File="File" OnFilesChanged="SubmitFile">
+                                       OnFilesChanged="SubmitFile">
+                            <CustomContent Context="fileUpload">
                                 <MudButton HtmlTag="label" Disabled="_uploading"
                                            Variant="Variant.Filled"
-                                           Color="Color.Primary">
+                                           Color="Color.Primary"
+                                           OnClick="@fileUpload.OpenFilePickerAsync">
                                     Upload
                                 </MudButton>
+                            </CustomContent>
                         </MudFileUpload>
                     </div>
                 </MudItem>
@@ -145,6 +148,7 @@
     {
         _uploading = true;
         var file = e.File;
+        File = file;
         var result = await UploadFile(file);
         _uploading = false;
     }

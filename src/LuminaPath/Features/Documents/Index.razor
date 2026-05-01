@@ -38,7 +38,7 @@
         <SelectColumn ShowInFooter="false"></SelectColumn>
         <TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
             <CellTemplate>
-                <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
+                <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DropShadow="false" Size="Size.Small"
                          Dense="true"
                          EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
                     <MudMenuItem OnClick="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>

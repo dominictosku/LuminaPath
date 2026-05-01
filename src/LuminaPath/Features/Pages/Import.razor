@@ -133,7 +133,7 @@
 
 @code {
 	const long MaxExcelFileSize = 10 * 1024 * 1024;
-	IQueryable<MyGameDto> games;
+	IQueryable<MyGameDto>? games;
 	LuminaUserInfo model = new();
 	ExcelService.GameExcelImportResult? _excelResult;
 	bool _excelImporting;
@@ -141,8 +141,11 @@
 	protected override async Task OnInitializedAsync()
 	{
 		await base.OnInitializedAsync();
-		if (User.LuminaUserInfo != null)
+		if (User?.LuminaUserInfo != null)
+		{
 			model = User.LuminaUserInfo;
+		}
+
 		var bearer = fileSystemService.GetBearer();
 		psnService.SetBearer(bearer);
 	}
@@ -173,6 +176,12 @@
 		bool? confirm = await dialogService.Confirm("Add shown games to library?", "Add to Library");
 		if(confirm is not null && confirm.Value)
 		{
+			if (User is null || games is null)
+			{
+				Snackbar.Add("No games available to import", Severity.Info);
+				return;
+			}
+
 			await psnService.ImportGames(User, games.ToList());
 			Snackbar.Add("Added games to library", Severity.Success);
 		}
@@ -207,7 +216,7 @@
 			if (currentIteration >= 5)
 				break;
 			int offSet = currentIteration * 200;
-			var result = await psnService.GetTitles(offSet, model.PSNAccountId);
+			var result = await psnService.GetTitles(offSet, model.PSNAccountId!);
 			gameData.Titles.AddRange(result.Titles);
 
 			if (result.NextOffset == null || result.NextOffset <= 0)
@@ -221,6 +230,12 @@
 
 	async Task DownloadExcel()
 	{
+		if (User is null)
+		{
+			Snackbar.Add("Please sign in before exporting games", Severity.Info);
+			return;
+		}
+
 		var fileStream = new MemoryStream(await excelService.ExportGamesAsync(User));
 		using var streamRef = new DotNetStreamReference(stream: fileStream);
 
@@ -229,26 +244,20 @@
 
 	async Task ImportExcel(IBrowserFile file)
 	{
+		if (User is null)
+		{
+			Snackbar.Add("Please sign in before importing games", Severity.Info);
+			return;
+		}
+
 		_excelImporting = true;
 		_excelResult = null;
 
 		try
 		{
-			await using var uploadStream = file.OpenReadStream(MaxExcelFileSize);
-			using var importStream = new MemoryStream();
-			await uploadStream.CopyToAsync(importStream);
-			importStream.Position = 0;
-
+			using var importStream = await CopyToMemoryStream(file);
 			_excelResult = await excelService.ImportGamesAsync(importStream, User);
-
-			if (_excelResult.Errors.Any())
-			{
-				Snackbar.Add($"Imported {_excelResult.RowsImported} rows with {_excelResult.Errors.Count} warnings", Severity.Warning);
-			}
-			else
-			{
-				Snackbar.Add($"Imported {_excelResult.RowsImported} rows", Severity.Success);
-			}
+			ShowExcelImportResult(_excelResult);
 		}
 		catch (Exception ex)
 		{
@@ -258,5 +267,25 @@
 		{
 			_excelImporting = false;
 		}
+	}
+
+	static async Task<MemoryStream> CopyToMemoryStream(IBrowserFile file)
+	{
+		await using var uploadStream = file.OpenReadStream(MaxExcelFileSize);
+		var importStream = new MemoryStream();
+		await uploadStream.CopyToAsync(importStream);
+		importStream.Position = 0;
+		return importStream;
+	}
+
+	void ShowExcelImportResult(ExcelService.GameExcelImportResult result)
+	{
+		if (result.Errors.Any())
+		{
+			Snackbar.Add($"Imported {result.RowsImported} rows with {result.Errors.Count} warnings", Severity.Warning);
+			return;
+		}
+
+		Snackbar.Add($"Imported {result.RowsImported} rows", Severity.Success);
 	}
 }

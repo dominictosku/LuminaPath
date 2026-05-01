@@ -39,7 +39,7 @@ ServerData="@(ServerReload)">
             <div class="d-flex flex-column justify-end">
                 <div class="d-flex">
                     <MudHidden Breakpoint="Breakpoint.SmAndDown">
-                        <MudButton DisableElevation Variant="Variant.Outlined"
+                        <MudButton DropShadow="false" Variant="Variant.Outlined"
                         Size="Size.Small"
                         Disabled="@_loading"
                         OnClick="@(OnRefresh)"
@@ -47,7 +47,7 @@ ServerData="@(ServerReload)">
                         Style="margin-right: 4px; margin-bottom:4px">
                             Refresh
                         </MudButton>
-                        <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
+                        <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Primary"
                         StartIcon="@Icons.Material.Filled.Add"
                         Size="Size.Small"
                         Style="margin-right: 4px; margin-bottom:4px"
@@ -55,7 +55,7 @@ ServerData="@(ServerReload)">
                         IconColor="Color.Surface">
                             New
                         </MudButton>
-                        <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Error"
+                        <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Error"
                         StartIcon="@Icons.Material.Filled.Delete"
                         Disabled="@(!(_selectedItems.Count > 0))"
                         Size="Size.Small"
@@ -67,7 +67,7 @@ ServerData="@(ServerReload)">
                     </MudHidden>
                     <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="true">
 
-                        <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Primary"
+                        <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Primary"
                         StartIcon="@Icons.Material.Filled.Add"
                         Size="Size.Small"
                         Style="margin-right: 4px; margin-bottom:4px"
@@ -75,7 +75,7 @@ ServerData="@(ServerReload)">
                         IconColor="Color.Surface">
                             New
                         </MudButton>
-                        <MudButton DisableElevation Variant="Variant.Outlined" Color="Color.Error"
+                        <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Error"
                         StartIcon="@Icons.Material.Filled.Delete"
                         Disabled="@(!(_selectedItems.Count > 0))"
                         Size="Size.Small"
@@ -104,7 +104,7 @@ ServerData="@(ServerReload)">
         <SelectColumn ShowInFooter="false"></SelectColumn>
         <TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
             <CellTemplate>
-                <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DisableElevation="true" Size="Size.Small"
+                <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DropShadow="false" Size="Size.Small"
                 Dense="true"
                 EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
                     <MudMenuItem OnClick="@(() => OnEdit(context.Item))">Edit</MudMenuItem>
