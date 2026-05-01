@@ -133,6 +133,7 @@ namespace LuminaPath.Infrastructure
             AddStorageService(services, config);
             services.AddScoped<GameService>();
             services.AddScoped<MyGameService>();
+            services.AddScoped<ExcelService>();
             services.AddScoped<QuestService>();
             services.AddScoped<DocumentService>();
             services.AddScoped<LuminaUserService>();

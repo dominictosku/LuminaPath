@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using CsvHelper;
 using CsvHelper.Configuration;
 using CsvHelper.TypeConversion;
@@ -29,9 +29,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 .Include(g => g.MyGameInfo)
                 .Include(g => g.Game)
                     .ThenInclude(g => g.GameInfo)
+                .OrderBy(g => g.Game!.Name)
                 .ToListAsync();
 
-            // Using MemoryStream to write the CSV
             using var memoryStream = new MemoryStream();
             using (var writer = new StreamWriter(memoryStream))
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
@@ -41,7 +41,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 csv.Context.TypeConverterOptionsCache.AddOptions<DateTime?>(options);
                 csv.Context.RegisterClassMap<MyGameMap>();
                 csv.WriteRecords(myGames);
-                writer.Flush(); // Ensure all data is written to the stream
+                writer.Flush();
             }
 
             return memoryStream.ToArray();

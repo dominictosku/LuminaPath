@@ -6,6 +6,7 @@
 @using LuminaPath.Infrastructure.Services.ModelServices
 @using LuminaPath.Infrastructure.Services.Third_Party
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 @using Radzen
 @using Radzen.Blazor
 @using static LuminaPath.Core.Entities.PSN.PSNTitles
@@ -13,9 +14,11 @@
 @inject PSNService psnService
 @inject LuminaUserService userService
 @inject FileSystemService fileSystemService
+@inject ExcelService excelService
 @inject Radzen.DialogService dialogService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 @attribute [Authorize]
 <h3>Import</h3>
 
@@ -61,12 +64,79 @@
 		<RadzenTabsItem Text="Steam">
 			<div> Coming soon </div>
 		</RadzenTabsItem>
+		<RadzenTabsItem Text="Excel">
+			<MudStack Spacing="3">
+				<MudStack Row="true" Spacing="2">
+					<MudButton OnClick="DownloadExcel"
+							   Variant="MudBlazor.Variant.Filled"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.Download">
+						Export Games
+					</MudButton>
+
+					<MudFileUpload T="IBrowserFile"
+								   Accept=".xlsx"
+								   FilesChanged="ImportExcel">
+						<CustomContent Context="fileUpload">
+							<MudButton OnClick="@fileUpload.OpenFilePickerAsync"
+									   Variant="MudBlazor.Variant.Filled"
+									   Color="Color.Secondary"
+									   StartIcon="@Icons.Material.Filled.Upload"
+									   Disabled="_excelImporting">
+								Import Excel
+							</MudButton>
+						</CustomContent>
+					</MudFileUpload>
+				</MudStack>
+
+				@if (_excelImporting)
+				{
+					<MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+				}
+
+				@if (_excelResult is not null)
+				{
+					<MudAlert Severity="@(_excelResult.Errors.Any() ? Severity.Warning : Severity.Success)">
+						Imported @_excelResult.RowsImported rows.
+						Games: @_excelResult.CreatedGames created, @_excelResult.UpdatedGames updated.
+						My games: @_excelResult.CreatedMyGames created, @_excelResult.UpdatedMyGames updated.
+					</MudAlert>
+
+					@if (_excelResult.Errors.Any())
+					{
+						<MudList T="string" Dense="true">
+							@foreach (var error in _excelResult.Errors.Take(10))
+							{
+								<MudListItem Text="@error" />
+							}
+						</MudList>
+					}
+				}
+			</MudStack>
+		</RadzenTabsItem>
 	</Tabs>
 </RadzenTabs>
 
+<script>
+	window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+		const arrayBuffer = await contentStreamReference.arrayBuffer();
+		const blob = new Blob([arrayBuffer]);
+		const url = URL.createObjectURL(blob);
+		const anchorElement = document.createElement('a');
+		anchorElement.href = url;
+		anchorElement.download = fileName ?? '';
+		anchorElement.click();
+		anchorElement.remove();
+		URL.revokeObjectURL(url);
+	}
+</script>
+
 @code {
+	const long MaxExcelFileSize = 10 * 1024 * 1024;
 	IQueryable<MyGameDto> games;
 	LuminaUserInfo model = new();
+	ExcelService.GameExcelImportResult? _excelResult;
+	bool _excelImporting;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -147,5 +217,42 @@
 		}
 
 		return gameData;
+	}
+
+	async Task DownloadExcel()
+	{
+		var fileStream = new MemoryStream(await excelService.ExportGamesAsync(User));
+		using var streamRef = new DotNetStreamReference(stream: fileStream);
+
+		await JS.InvokeVoidAsync("downloadFileFromStream", "LuminaDatabase.xlsx", streamRef);
+	}
+
+	async Task ImportExcel(IBrowserFile file)
+	{
+		_excelImporting = true;
+		_excelResult = null;
+
+		try
+		{
+			await using var stream = file.OpenReadStream(MaxExcelFileSize);
+			_excelResult = await excelService.ImportGamesAsync(stream, User);
+
+			if (_excelResult.Errors.Any())
+			{
+				Snackbar.Add($"Imported {_excelResult.RowsImported} rows with {_excelResult.Errors.Count} warnings", Severity.Warning);
+			}
+			else
+			{
+				Snackbar.Add($"Imported {_excelResult.RowsImported} rows", Severity.Success);
+			}
+		}
+		catch (Exception ex)
+		{
+			Snackbar.Add($"Excel import failed: {ex.Message}", Severity.Error);
+		}
+		finally
+		{
+			_excelImporting = false;
+		}
 	}
 }
