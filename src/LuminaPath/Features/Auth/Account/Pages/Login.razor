@@ -71,10 +71,15 @@
     private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = null!;
+    private InputModel Input { get; set; } = default!;
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        Input ??= new();
+    }
 
     protected override async Task OnInitializedAsync()
     {

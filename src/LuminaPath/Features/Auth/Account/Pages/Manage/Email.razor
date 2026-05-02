@@ -64,7 +64,12 @@
     private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm(FormName = "change-email")]
-    private InputModel Input { get; set; } = null!;
+    private InputModel Input { get; set; } = default!;
+
+    protected override void OnParametersSet()
+    {
+        Input ??= new();
+    }
 
     protected override async Task OnInitializedAsync()
     {
