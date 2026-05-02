@@ -42,6 +42,7 @@ export class MyGame implements IBasicInfo {
   timeSpend: number;
   gameId: number;
   game: Game | null;
+  myGameInfo: MyGameInfo | null;
 
   constructor(gameId: number) {
     this.id = 0;
@@ -52,6 +53,23 @@ export class MyGame implements IBasicInfo {
     this.timeSpend = 0;
     this.game = null;
     this.gameId = gameId;
+    this.myGameInfo = null;
+  }
+}
+
+export class MyGameInfo {
+  id: number;
+  myGameId: number;
+  trackedHours: number;
+  firstPlayed: Date | null;
+  lastPlayed: Date | null;
+
+  constructor() {
+    this.id = 0;
+    this.myGameId = 0;
+    this.trackedHours = 0;
+    this.firstPlayed = null;
+    this.lastPlayed = null;
   }
 }
 

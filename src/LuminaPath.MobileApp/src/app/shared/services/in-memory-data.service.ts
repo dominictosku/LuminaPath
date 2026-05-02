@@ -20,8 +20,8 @@ export class InMemoryDataService {
     ]
     let games = new PaginateResult<Game>();
     games.data = data;
-    games.PageIndex = 1;
-    games.TotalPages = 1;
+    games.pageIndex = 1;
+    games.totalPages = 1;
     return { games };
   }
 

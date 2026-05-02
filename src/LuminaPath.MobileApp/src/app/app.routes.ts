@@ -10,7 +10,8 @@ export const routes: Routes = [
   },
   {
     path: 'home',
-    loadComponent: () => import('./features/dashboard/pages/home.page').then(m => m.HomePage)
+    loadComponent: () => import('./features/dashboard/pages/home.page').then(m => m.HomePage),
+    canActivate: [AuthGuard]
   },
   {
     path: 'media',

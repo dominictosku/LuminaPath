@@ -89,6 +89,6 @@ export class GridGameDataComponent implements OnInit {
     if (game == undefined || game.image == null) {
       return "assets/png/Placeholder.png";
     }
-    return game.image.uri;
+    return game.image.uri ?? game.image.url ?? "assets/png/Placeholder.png";
   }
 }

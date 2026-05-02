@@ -1,13 +1,194 @@
-<ion-header [translucent]="true">
+<ion-header class="dashboard-header">
   <ion-toolbar>
-    <ion-title>Home</ion-title>
+    <ion-title>LuminaPath</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" aria-label="Refresh dashboard" (click)="loadDashboard()">
+        <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Home</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content [fullscreen]="true" class="dashboard-shell">
+  <ion-refresher slot="fixed" (ionRefresh)="loadDashboard($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <main class="dashboard">
+    <section class="hero" *ngIf="!isLoading; else heroLoading">
+      <div class="hero__media">
+        <img [src]="imageFor(featuredGame)" alt="" />
+      </div>
+      <div class="hero__content">
+        <span class="eyebrow">
+          <ion-icon name="sparkles-outline"></ion-icon>
+          Today
+        </span>
+        <h1>{{ featuredGame?.name || 'Your library is ready' }}</h1>
+        <p>
+          {{ featuredGame ? statusLabel(featuredGame) + ' on ' + platformLabel(featuredGame.platforms) : 'Log in and start shaping your game plan.' }}
+        </p>
+
+        <div class="hero__progress" *ngIf="featuredGame">
+          <div class="hero__progress-label">
+            <span>{{ playedLabel(featuredGame) }}</span>
+            <strong>{{ heroProgress }}%</strong>
+          </div>
+          <div class="progress-track">
+            <span [style.width.%]="heroProgress"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <ng-template #heroLoading>
+      <section class="hero hero--loading">
+        <ion-skeleton-text animated></ion-skeleton-text>
+      </section>
+    </ng-template>
+
+    <section class="notice" *ngIf="errorMessage">
+      <ion-icon name="flame-outline"></ion-icon>
+      <span>{{ errorMessage }}</span>
+    </section>
+
+    <section class="metric-grid">
+      <article class="metric metric--{{ metric.tone }}" *ngFor="let metric of metrics">
+        <div class="metric__icon">
+          <ion-icon [name]="metric.icon"></ion-icon>
+        </div>
+        <div>
+          <span>{{ metric.label }}</span>
+          <strong>{{ metric.value }}</strong>
+          <small>{{ metric.detail }}</small>
+        </div>
+      </article>
+    </section>
+
+    <section class="section-block section-block--split">
+      <div>
+        <span class="eyebrow">Momentum</span>
+        <h2>{{ playedHours }} hours logged</h2>
+      </div>
+      <div class="completion-ring" [style.--value]="completionRate + '%'">
+        <strong>{{ completionRate }}%</strong>
+        <span>done</span>
+      </div>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="game-controller-outline"></ion-icon>
+            Playing
+          </span>
+          <h2>Keep Going</h2>
+        </div>
+        <ion-badge>{{ playingGames.length }}</ion-badge>
+      </div>
+
+      <div class="horizontal-list" *ngIf="playingGames.length; else noPlaying">
+        <article class="game-card game-card--large" *ngFor="let game of playingGames; trackBy: trackByGameId">
+          <img [src]="imageFor(game)" alt="" />
+          <div class="game-card__body">
+            <ion-badge>{{ statusLabel(game) }}</ion-badge>
+            <h3>{{ game.name }}</h3>
+            <p>{{ platformLabel(game.platforms) }} · {{ remainingLabel(game) }}</p>
+            <div class="progress-track">
+              <span [style.width.%]="progressOf(game)"></span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <ng-template #noPlaying>
+        <div class="empty-state">
+          <ion-icon name="game-controller-outline"></ion-icon>
+          <span>No active games yet.</span>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="calendar-clear-outline"></ion-icon>
+            Releases
+          </span>
+          <h2>Coming Up</h2>
+        </div>
+      </div>
+
+      <div class="release-list" *ngIf="upcomingReleases.length; else noReleases">
+        <article class="release-item" *ngFor="let game of upcomingReleases; trackBy: trackByGameId">
+          <div class="release-date">
+            <strong>{{ daysUntil(game) }}</strong>
+            <span>{{ releaseLabel(game) }}</span>
+          </div>
+          <div class="release-info">
+            <h3>{{ game.name }}</h3>
+            <p>{{ game.genre || 'No genre' }} · {{ platformLabel(game.platforms) }}</p>
+          </div>
+        </article>
+      </div>
+
+      <ng-template #noReleases>
+        <div class="empty-state">
+          <ion-icon name="calendar-clear-outline"></ion-icon>
+          <span>No upcoming releases in the current list.</span>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="trending-up-outline"></ion-icon>
+            Backlog
+          </span>
+          <h2>Biggest Commitments</h2>
+        </div>
+      </div>
+
+      <div class="backlog-list" *ngIf="backlogGames.length; else noBacklog">
+        <article class="backlog-item" *ngFor="let game of backlogGames; trackBy: trackByGameId">
+          <div>
+            <h3>{{ game.name }}</h3>
+            <p>{{ playedLabel(game) }} · {{ remainingLabel(game) }}</p>
+          </div>
+          <strong>{{ game.playtime || 0 }}h</strong>
+        </article>
+      </div>
+
+      <ng-template #noBacklog>
+        <div class="empty-state">
+          <ion-icon name="checkmark-done-outline"></ion-icon>
+          <span>No planned backlog found.</span>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="library-outline"></ion-icon>
+            Library
+          </span>
+          <h2>Recently Added</h2>
+        </div>
+      </div>
+
+      <div class="library-grid">
+        <article class="mini-card" *ngFor="let game of recentGames; trackBy: trackByGameId">
+          <img [src]="imageFor(game)" alt="" />
+          <h3>{{ game.name }}</h3>
+          <p>{{ platformLabel(game.platforms) }}</p>
+        </article>
+      </div>
+    </section>
+  </main>
 </ion-content>

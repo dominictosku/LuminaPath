@@ -55,7 +55,7 @@ namespace LuminaPath.Core.Dtos
 
         public string Source { get; set; } = string.Empty;
 
-        public MediaDocument? Image { get; set; }
+        public Document? Image { get; set; }
         public GameInfo? GameInfo { get; set; }
     }
 }

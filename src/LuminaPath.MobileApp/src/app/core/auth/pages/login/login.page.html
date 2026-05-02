@@ -35,10 +35,16 @@
         </div>
       </div>
 
+      <p *ngIf="errorMessage" class="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        {{ errorMessage }}
+      </p>
+
       <div>
-        <ion-button (click)="login()" type="submit" label="Sign in">Login</ion-button>
+        <ion-button (click)="login()" type="submit" label="Sign in" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'Signing in...' : 'Login' }}
+        </ion-button>
       </div>
-      <ion-button size="small" router-link="/Auth/Create" class="float-right">Create new account</ion-button>
+      <ion-button size="small" router-link="/auth/create" class="float-right">Create new account</ion-button>
     </div>
   </div>
 </ion-content>

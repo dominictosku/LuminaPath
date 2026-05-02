@@ -34,12 +34,12 @@ namespace LuminaPath.Infrastructure
 
         private static void AddCors(IServiceCollection services, IConfiguration config)
         {
-            string frontendUrl = config["FrontendUrl"] ??
-                throw new ArgumentException("Missing frontend url in appsettings.");
+            string[] frontendUrls = config.GetSection("FrontendUrls").Get<string[]>()
+                ?? [config["FrontendUrl"] ?? throw new ArgumentException("Missing frontend url in appsettings.")];
 
 
             services.AddCors(options => options.AddPolicy(MyAllowSpecificOrigins, policy => policy
-                .WithOrigins(frontendUrl)
+                .WithOrigins(frontendUrls)
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials()));

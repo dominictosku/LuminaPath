@@ -1,9 +1,11 @@
 export class User implements IUserInfo {
   userName: string;
+  email: string;
   age: number;
 
   constructor() {
     this.userName = 'Please login';
+    this.email = '';
     this.age = 0
   }
 }
@@ -22,6 +24,7 @@ export class Credentials implements ICredentials {
 
 export interface IUserInfo {
   userName: string
+  email: string
   age: number
 }
 

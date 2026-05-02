@@ -117,7 +117,7 @@ namespace LuminaPath.Core.Mapping
                 Platforms = source.Platforms,
                 Playtime = source.Playtime,
                 Source = source.Source,
-                Image = source.Image,
+                Image = MapDocument<MediaDocument>(source.Image),
                 GameInfo = source.GameInfo
             };
         }
@@ -150,7 +150,7 @@ namespace LuminaPath.Core.Mapping
                 Platforms = source.Platforms,
                 Playtime = source.Playtime,
                 Source = source.Source,
-                Image = source.Image,
+                Image = MapDocument<Document>(source.Image),
                 GameInfo = source.GameInfo
             };
         }
@@ -166,7 +166,7 @@ namespace LuminaPath.Core.Mapping
                 ReleaseDate = source.ReleaseDate,
                 Platforms = source.Platforms,
                 Playtime = source.Playtime,
-                Image = source.Image,
+                Image = MapDocument<Document>(source.Image),
                 MyGames = source.MyGames == null ? null : Map<MyGameDto>(source.MyGames.FirstOrDefault())
             };
         }
@@ -225,7 +225,7 @@ namespace LuminaPath.Core.Mapping
                 TimeSpend = source.TimeSpend.HasValue ? Convert.ToInt32(source.TimeSpend.Value) : null,
                 GameId = source.GameId,
                 Game = source.Game == null ? null : Map<GamesNoIncludeDto>(source.Game),
-                MyGameInfo = source.MyGameInfo ?? new()
+                MyGameInfo = MapMyGameInfo(source.MyGameInfo) ?? new()
             };
         }
 

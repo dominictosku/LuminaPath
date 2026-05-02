@@ -4,7 +4,7 @@ import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 import { PaginateResult } from 'src/app/core/entities/paginatedResult';
 import { Credentials } from 'src/app/core/auth/models/user.model';
 import { IBasicInfo } from 'src/app/core/interfaces/iBasicInfo';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -18,8 +18,11 @@ export class ApiService<T> {
     this.apiUrl = `${environment.endpoint}/${endpoint}`;
    }
   
-  getAll(): Observable<T[]> {
-    return this.http.get<T[]>(this.apiUrl, this.httpConfig);
+  getAll(mediaFilter?: MediaFilter): Observable<PaginateResult<T>> {
+    return this.http.get<PaginateResult<T>>(this.apiUrl, {
+      ...this.httpConfig,
+      params: this.createFilterParams(mediaFilter),
+    });
   }
 
   get(id: number): Observable<T> {
@@ -38,21 +41,28 @@ export class ApiService<T> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`, this.httpConfig);
   }
 
-  getAllPaginated(
-    mediaFilter?: MediaFilter
-  ) {
-    // otherwise the asp.net api does not recognize the paging
-    let params = null;
-    const filterParams = {
-      "searchString": mediaFilter?.SearchString,
-      "myMedia": mediaFilter?.MyMedia,
-      "status": mediaFilter?.Status,
-      "paging.pageIndex": mediaFilter?.Paging.PageIndex,
-      "paging.count": mediaFilter?.Paging.Count
+  getAllPaginated(mediaFilter?: MediaFilter): Observable<PaginateResult<T>> {
+    return this.getAll(mediaFilter);
+  }
+
+  private createFilterParams(mediaFilter?: MediaFilter): HttpParams {
+    if (!mediaFilter) {
+      return new HttpParams();
     }
-    if (mediaFilter) {
-      params = filterParams;
+
+    let params = new HttpParams()
+      .set('myMedia', String(mediaFilter.MyMedia))
+      .set('paging.pageIndex', String(mediaFilter.Paging.PageIndex))
+      .set('paging.count', String(mediaFilter.Paging.Count));
+
+    if (mediaFilter.SearchString) {
+      params = params.set('searchString', mediaFilter.SearchString);
     }
-    return this.http.get<PaginateResult<T>>(this.apiUrl, { withCredentials: true});
+
+    if (mediaFilter.Status !== undefined && mediaFilter.Status !== null) {
+      params = params.set('status', String(mediaFilter.Status));
+    }
+
+    return params;
   }
 }

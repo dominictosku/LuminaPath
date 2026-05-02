@@ -6,7 +6,7 @@ import {
   HttpInterceptor,
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 import { AuthService } from '../auth/services/auth.service';
 import { Router } from '@angular/router';
 
@@ -18,21 +18,14 @@ export class CookieInterceptor implements HttpInterceptor {
     request: HttpRequest<any>,
     next: HttpHandler
   ): Observable<HttpEvent<any>> {
+    const isAuthRequest = request.url.includes('/login') || request.url.includes('/logout');
+
     return next.handle(request).pipe(
       catchError((error) => {
-        if (error.status === 401) {
-          return this.authService.refreshSession().pipe(
-            switchMap(() => {
-              return next.handle(request);
-            }),
-            catchError((refreshError) => {
-              this.authService.logout();
-              this.router.navigate(['/auth/login']);
-              return throwError(() => new Error(refreshError));
-            })
-          );
+        if (error.status === 401 && !isAuthRequest) {
+          this.router.navigate(['/auth/login']);
         }
-        return throwError(() => new Error(error));
+        return throwError(() => error);
       })
     );
   }

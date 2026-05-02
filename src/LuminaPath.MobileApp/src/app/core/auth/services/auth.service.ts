@@ -1,6 +1,6 @@
 import { environment } from 'src/environments/environment';
 import { Credentials, User } from '../models/user.model';
-import { Observable } from 'rxjs/internal/Observable';
+import { BehaviorSubject, catchError, map, Observable, of, tap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
@@ -8,17 +8,19 @@ import { Injectable } from '@angular/core';
   providedIn: 'root',
 })
 export class AuthService {
-  private refreshInProgress = false;
   private apiUrl = environment.endpoint;
+  private authenticated = false;
+  private authenticatedSubject = new BehaviorSubject<boolean>(false);
+  readonly authenticated$ = this.authenticatedSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
   public isAuthenticated() {
-    return false;
+    return this.authenticated;
   }
 
   getUserInfo(): Observable<User> {
-    return this.http.get<User>(`${this.apiUrl}/user/info`, {
+    return this.http.get<User>(`${this.apiUrl}/manage/info`, {
       withCredentials: true,
     });
   }
@@ -26,7 +28,7 @@ export class AuthService {
   login(credentials: Credentials) {
     return this.http.post(`${this.apiUrl}/login?useCookies=true`, credentials, {
       withCredentials: true,
-    });
+    }).pipe(tap(() => this.setAuthenticated(true)));
   }
 
   logout() {
@@ -34,20 +36,38 @@ export class AuthService {
       `${this.apiUrl}/logout`,
       {},
       { withCredentials: true }
+    ).pipe(
+      tap(() => this.setAuthenticated(false)),
+      catchError((error) => {
+        this.setAuthenticated(false);
+        throw error;
+      })
     );
   }
 
   isLoggedIn(): Observable<boolean> {
-    return this.http.get<boolean>(`${this.apiUrl}/auth/check`, {
-      withCredentials: true,
-    });
+    return this.getUserInfo().pipe(
+      map(() => {
+        this.setAuthenticated(true);
+        return true;
+      }),
+      catchError(() => {
+        this.setAuthenticated(false);
+        return of(false);
+      })
+    );
   }
 
   refreshSession(): Observable<any> {
-    return this.http.post(
-      `${this.apiUrl}/auth/refresh`,
-      {},
-      { withCredentials: true }
-    );
+    return this.isLoggedIn();
+  }
+
+  clearSession() {
+    this.setAuthenticated(false);
+  }
+
+  private setAuthenticated(value: boolean) {
+    this.authenticated = value;
+    this.authenticatedSubject.next(value);
   }
 }

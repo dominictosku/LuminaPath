@@ -1,11 +1,11 @@
 export class PaginateResult<T> {
     data: Array<T>
-    PageIndex: number;
-    TotalPages: number;
+    pageIndex: number;
+    totalPages: number;
 
     constructor() {
         this.data = []
-        this.PageIndex = 1
-        this.TotalPages = 1
+        this.pageIndex = 1
+        this.totalPages = 1
     }
 }

@@ -15,6 +15,8 @@ import { firstValueFrom } from 'rxjs';
 })
 export class LoginPage implements OnInit {
   credentials = new Credentials()
+  errorMessage = '';
+  isSubmitting = false;
 
   constructor(private authService: AuthService, private route: Router) {
     this.credentials.email = "admin@example.com"
@@ -24,7 +26,16 @@ export class LoginPage implements OnInit {
   ngOnInit() { }
 
   async login(){
-    await firstValueFrom(this.authService.login(this.credentials));
-    this.route.navigate(['/'])
+    this.errorMessage = '';
+    this.isSubmitting = true;
+
+    try {
+      await firstValueFrom(this.authService.login(this.credentials));
+      this.route.navigate(['/home']);
+    } catch {
+      this.errorMessage = 'Login failed. Check the API is running and the credentials are correct.';
+    } finally {
+      this.isSubmitting = false;
+    }
   }
 }
