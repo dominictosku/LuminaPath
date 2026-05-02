@@ -12,22 +12,72 @@
 <MudDialog>
 	<DialogContent>
 		<MudForm Model="@Model" @ref="@_form">
-			<MudGrid>
+			<MudGrid Spacing="3">
 				<MudItem xs="12">
-					<MudSelect @bind-Value="Model.GameId" Label="Select Game" Clearable="true">
+					<div class="selected-game-preview">
+						<div class="selected-cover" style="background-image: url('@SelectedGameCover');"></div>
+						<div>
+							<MudText Typo="Typo.subtitle1">@SelectedGameName</MudText>
+							<MudText Typo="Typo.body2" Class="mud-text-secondary">@SelectedGameDetail</MudText>
+						</div>
+					</div>
+				</MudItem>
+				<MudItem xs="12">
+					<MudSelect @bind-Value="Model.GameId" Label="Game" Clearable="true" Variant="Variant.Outlined">
 						@foreach (var game in GameSelect)
 						{
 							<MudSelectItem Value="game.Id">@game.Name</MudSelectItem>
 						}
 					</MudSelect>
 				</MudItem>
-				<MudItem xs="12">
-					<MudSelect @bind-Value="Model.Status" Label="Status">
+				<MudItem xs="12" sm="6">
+					<MudSelect @bind-Value="Model.Status" Label="Status" Variant="Variant.Outlined">
 						@foreach (var status in Enum.GetValues(typeof(GameStatus)).Cast<GameStatus>())
 						{
 							<MudSelectItem Value="status">@status</MudSelectItem>
 						}
 					</MudSelect>
+				</MudItem>
+				<MudItem xs="12" sm="3">
+					<MudNumericField T="int" @bind-Value="Model.Priority" Label="Priority" Min="1" Max="4" Variant="Variant.Outlined" />
+				</MudItem>
+				<MudItem xs="12" sm="3">
+					<MudNumericField T="short?" @bind-Value="Model.Rating" Label="Rating" Min="@((short?)1)" Max="@((short?)10)" Variant="Variant.Outlined" />
+				</MudItem>
+				<MudItem xs="12" sm="6">
+					<MudDatePicker Label="Started On" @bind-Date="Model.StartDate" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" Clearable="true" />
+				</MudItem>
+				<MudItem xs="12" sm="6">
+					<MudDatePicker Label="Finished On" @bind-Date="Model.EndDate" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" Clearable="true" />
+				</MudItem>
+				<MudItem xs="12">
+					<div class="time-summary">
+						<div class="time-summary-heading">
+							<MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Primary" />
+							<div>
+								<MudText Typo="Typo.subtitle1">Played Time</MudText>
+								<MudText Typo="Typo.body2" Class="mud-text-secondary">Manual time is editable. Third-party tracking stays read-only.</MudText>
+							</div>
+						</div>
+						<MudGrid Spacing="2">
+							<MudItem xs="12" md="4">
+								<MudNumericField T="double?" @bind-Value="Model.TimeSpend" Label="Manual hours" Min="@((double?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" />
+							</MudItem>
+							<MudItem xs="12" md="4">
+								<MudTextField T="string" Value="@FormatHours(ThirdPartyHours)" Label="Third-party tracked" ReadOnly="true" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" />
+							</MudItem>
+							<MudItem xs="12" md="4">
+								<MudTextField T="string" Value="@FormatHours(TotalPlayedHours)" Label="Total played" ReadOnly="true" Variant="Variant.Filled" Adornment="Adornment.End" AdornmentText="h" />
+							</MudItem>
+						</MudGrid>
+						@if (HasThirdPartyPlayData)
+						{
+							<div class="third-party-range">
+								<span>First tracked: @FormatTrackedDate(Model.MyGameInfo?.FirstPlayed)</span>
+								<span>Last tracked: @FormatTrackedDate(Model.MyGameInfo?.LastPlayed)</span>
+							</div>
+						}
+					</div>
 				</MudItem>
 			</MudGrid>
 		</MudForm>
@@ -48,7 +98,77 @@
 	[Parameter]
 	public List<Game> GameSelect { get; set; } = new();
 
-	Game selectedGame => GameSelect.FirstOrDefault(x => x.Id == Model.GameId) ?? new();
+	private Game? SelectedGame => GameSelect.FirstOrDefault(x => x.Id == Model.GameId) ?? Model.Game;
+	private string SelectedGameName => SelectedGame?.Name ?? "Select a game";
+	private string SelectedGameDetail => SelectedGame?.Genres?.Count > 0
+		? string.Join(" / ", SelectedGame.Genres.Take(3))
+		: SelectedGame?.Description ?? "Choose the game this entry belongs to";
+	private string SelectedGameCover => string.IsNullOrWhiteSpace(SelectedGame?.Image?.Url)
+		? "/Images/Placeholder.png"
+		: $"/{SelectedGame.Image.Url}";
+	private double ManualHours => Model.TimeSpend ?? 0;
+	private double ThirdPartyHours => Model.MyGameInfo?.TrackedHours ?? 0;
+	private double TotalPlayedHours => ManualHours + ThirdPartyHours;
+	private bool HasThirdPartyPlayData => Model.MyGameInfo is not null
+		&& (Model.MyGameInfo.TrackedHours > 0
+			|| Model.MyGameInfo.FirstPlayed != default
+			|| Model.MyGameInfo.LastPlayed != default);
 
 	private MudForm? _form;
+
+	private static string FormatHours(double hours)
+	{
+		return hours <= 0 ? "0" : hours.ToString("0.##");
+	}
+
+	private static string FormatTrackedDate(DateTime? date)
+	{
+		return date is null || date == default ? "Not tracked" : date.Value.ToString("dd.MM.yyyy");
+	}
 }
+
+<style>
+	.selected-game-preview {
+		display: grid;
+		grid-template-columns: 72px 1fr;
+		gap: 14px;
+		align-items: center;
+		min-height: 88px;
+		padding: 10px;
+		border: 1px solid rgba(255, 255, 255, .08);
+		border-radius: 8px;
+		background: rgba(255, 255, 255, .03);
+	}
+
+	.selected-cover {
+		width: 72px;
+		height: 72px;
+		border-radius: 6px;
+		background-color: #263346;
+		background-size: cover;
+		background-position: center;
+	}
+
+	.time-summary {
+		display: grid;
+		gap: 14px;
+		padding: 16px;
+		border: 1px solid rgba(255, 255, 255, .08);
+		border-radius: 8px;
+		background: rgba(118, 228, 196, .06);
+	}
+
+	.time-summary-heading {
+		display: flex;
+		gap: 12px;
+		align-items: center;
+	}
+
+	.third-party-range {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		color: var(--mud-palette-text-secondary);
+		font-size: .86rem;
+	}
+</style>

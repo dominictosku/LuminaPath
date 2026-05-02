@@ -155,7 +155,7 @@ else
 
 	public override async Task<MyGame> GetById(int id)
 	{
-		return await ModelService.GetById(id);
+		return await ModelService.GetById(id, ModelService.Includes);
 	}
 
 	public override async Task Save(MyGame entity)

@@ -31,7 +31,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         public async Task<List<Game>> GetDropdownGames(string? searchName = null)
         {
             using var context = await GetDbContextAsync();
-            IQueryable<Game> query = context.Games;
+            IQueryable<Game> query = context.Games.Include(game => game.Image);
             //if (searchName is not null) Todo! Adapt to Postgres
             //    query = query.Where(u => LuminaPathDbContext.pg_trgm(u.Name, searchName) > 0.3).OrderByDescending(u => LuminaPathDbContext.pg_trgm(u.Name, searchName));
             return await query.ToListAsync();
