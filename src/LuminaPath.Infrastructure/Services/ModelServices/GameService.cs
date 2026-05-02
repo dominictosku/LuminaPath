@@ -1,8 +1,8 @@
-﻿using AutoMapper;
 using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Extensions;
+using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +14,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
     {
         private readonly DocumentService _documentService;
         public override string[] Includes { get; set; } = [nameof(Game.GameInfo), nameof(Game.MyGames), nameof(Game.Image)];
-        public GameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, DocumentService documentService, IMapper mapper) : base(dbContextFactory, mapper)
+        public GameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, DocumentService documentService, IObjectMapper mapper) : base(dbContextFactory, mapper)
         {
             _documentService = documentService;
         }

@@ -1,7 +1,7 @@
-﻿using AutoMapper;
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Interfaces;
+using LuminaPath.Core.Mapping;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
@@ -10,12 +10,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 {
     public class GenericModelService<TEntity> : IGenericModelService<TEntity> where TEntity : class, IBasicInfo
     {
-        protected readonly IMapper _mapper;
+        protected readonly IObjectMapper _mapper;
         protected readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
 
         public virtual string[] Includes { get; set; } = [];
 
-        public GenericModelService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IMapper mapper)
+        public GenericModelService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IObjectMapper mapper)
         {
             _dbContextFactory = dbContextFactory;
             _mapper = mapper;

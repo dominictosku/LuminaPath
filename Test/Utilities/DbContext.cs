@@ -1,5 +1,5 @@
-﻿using LuminaPath.Core;
-using LuminaPath.Helper;
+using LuminaPath.Core;
+using LuminaPath.Core.Mapping;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using LuminaPath.Infrastructure;
@@ -13,10 +13,7 @@ namespace Test.Utilities
 			// Create a new service provider to create a new in-memory database.
 			var serviceProvider = new ServiceCollection()
 				.AddEntityFrameworkInMemoryDatabase()
-				.AddAutoMapper(cfg =>
-				{
-				    cfg.AddProfile<AutoMapperProfile>();
-				})
+				.AddScoped<IObjectMapper, ObjectMapper>()
 				.BuildServiceProvider();
 
 			// Create a new options instance using an in-memory database and 

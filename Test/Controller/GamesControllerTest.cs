@@ -1,7 +1,8 @@
-using AutoMapper;
 using LuminaPath.Infrastructure;
+using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +21,8 @@ namespace Test.Controller
 		[Fact]
 		public async Task GetAsync_GetAllGamesWithMyGames_WhenLoggedIn()
 		{
-			using (var db = new LuminaPathDbContext(Utilities.DbContext.TestDbContextOptions()))
+			var dbOptions = Utilities.DbContext.TestDbContextOptions();
+			using (var db = new LuminaPathDbContext(dbOptions))
 			{
 				// Arrange
 				string[] names = new string[] {
@@ -28,25 +30,30 @@ namespace Test.Controller
 					"God of War"
 				};
 				var filter = new MediaFilter();
-				var userManager = new Mock<UserManager<LuminaUser>>();
-				var gameService = new Mock<GameService>();
+				var dbContextFactory = new Mock<IDbContextFactory<LuminaPathDbContext>>();
+				dbContextFactory.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+					.ReturnsAsync(() => new LuminaPathDbContext(dbOptions));
 				var azure = new Mock<IStorageService>().Object;
 				var logger = new Mock<ILogger<GamesController>>();
-				var mapper = db.GetService<IMapper>();
+				var mapper = db.GetService<IObjectMapper>();
+				var documentService = new DocumentService(dbContextFactory.Object, azure, new Mock<ILogger<DocumentService>>().Object);
+				var gameService = new GameService(dbContextFactory.Object, documentService, mapper);
 				var games = Seeding.SeedGames(names);
 				db.Games.AddRange(games);
 				await db.SaveChangesAsync();
 
-				GamesController controller = new GamesController(gameService.Object, logger.Object, mapper);
+				GamesController controller = new GamesController(gameService, logger.Object, mapper);
 				var expectedGames = await db.Games.ToListAsync();
 
 				// Act
 				var actualGames = await controller.Get(filter);
+				var okResult = Assert.IsType<OkObjectResult>(actualGames.Result);
+				var paginatedResult = Assert.IsType<PaginatedResult<GamesDto>>(okResult.Value);
 
 				// Assert
 				Assert.Equal(
 					expectedGames.OrderBy(m => m.Id).Select(m => m.Id),
-					actualGames.Value.Data.OrderBy(g => g.Id).Select(g => g.Id));
+					paginatedResult.Data.OrderBy(g => g.Id).Select(g => g.Id));
 			}
 		}
 	}

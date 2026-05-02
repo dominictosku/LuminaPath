@@ -1,5 +1,5 @@
-﻿using AutoMapper;
 using LuminaPath.Core.Interfaces;
+using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Features.Media;
 using LuminaPath.Infrastructure.Services.ModelServices;
@@ -17,7 +17,7 @@ namespace LuminaPath.Pages.Media
         protected IGenericModelService<TEntity> ModelService { get; set; } = default!;
 
         [Inject]
-        public IMapper mapper { get; set; } = default!;
+        public IObjectMapper mapper { get; set; } = default!;
 
         [Inject]
         public DocumentService documentService { get; set; } = default!;

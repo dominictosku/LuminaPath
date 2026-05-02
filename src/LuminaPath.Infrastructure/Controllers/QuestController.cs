@@ -1,5 +1,5 @@
-﻿using AutoMapper;
 using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Controllers.Base;
 using LuminaPath.Infrastructure.Services.ModelServices;
@@ -16,7 +16,7 @@ namespace LuminaPath.Infrastructure.Controllers
         private readonly ILogger<GamesController> _logger;
 
         public QuestsController(QuestService service, ILogger<GamesController> logger,
-            IMapper mapper, UserManager<LuminaUser> userManager) : base(service, mapper)
+            IObjectMapper mapper, UserManager<LuminaUser> userManager) : base(service, mapper)
         {
             _logger = logger;
             _userManager = userManager;

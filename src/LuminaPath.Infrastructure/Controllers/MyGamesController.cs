@@ -1,5 +1,5 @@
-﻿using AutoMapper;
 using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Controllers.Base;
 using LuminaPath.Infrastructure.Services.ModelServices;
@@ -17,7 +17,7 @@ namespace LuminaPath.Infrastructure.Controllers
         private readonly ILogger<GamesController> _logger;
 
         public MyGamesController(MyGameService service, UserManager<LuminaUser> userManager,
-            ILogger<GamesController> logger, IMapper mapper) : base(service, userManager, mapper)
+            ILogger<GamesController> logger, IObjectMapper mapper) : base(service, userManager, mapper)
         {
             _logger = logger;
             Includes = new List<string> { "Game" };

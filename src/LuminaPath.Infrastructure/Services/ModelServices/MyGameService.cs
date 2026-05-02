@@ -1,9 +1,9 @@
-using AutoMapper;
 using CsvHelper;
 using CsvHelper.Configuration;
 using CsvHelper.TypeConversion;
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Entities.Results;
+using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +14,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 {
     public class MyGameService : GenericMyModelService<MyGame>
     {
-        public MyGameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IMapper mapper) : base(dbContextFactory, mapper)
+        public MyGameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IObjectMapper mapper) : base(dbContextFactory, mapper)
         {
         }
 

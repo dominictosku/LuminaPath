@@ -1,6 +1,6 @@
-﻿using AutoMapper;
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Interfaces;
+using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -12,13 +12,13 @@ namespace LuminaPath.Infrastructure.Controllers.Base
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public abstract class GenericController<TEntity, TEntityDto>(IGenericModelService<TEntity> service, IMapper mapper) : ControllerBase
+    public abstract class GenericController<TEntity, TEntityDto>(IGenericModelService<TEntity> service, IObjectMapper mapper) : ControllerBase
         where TEntity : class, IBasicInfo
         where TEntityDto : class, IBasicInfo
     {
         protected readonly IGenericModelService<TEntity> _service = service;
         protected IEnumerable<string> Includes { get; set; } = new List<string>();
-        public IMapper Mapper = mapper;
+        public IObjectMapper Mapper = mapper;
 
         [HttpGet]
         public virtual async Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)

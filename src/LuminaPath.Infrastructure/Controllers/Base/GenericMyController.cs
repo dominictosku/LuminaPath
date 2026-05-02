@@ -1,6 +1,6 @@
-﻿using AutoMapper;
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Interfaces;
+using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
@@ -17,14 +17,14 @@ namespace LuminaPath.Infrastructure.Controllers.Base
 {
     public abstract class GenericMyController<TEntity, TEntityDto>(GenericMyModelService<TEntity> service,
             UserManager<LuminaUser> userManager,
-            IMapper mapper) : ControllerBase
+            IObjectMapper mapper) : ControllerBase
         where TEntity : class, IMyMedia
         where TEntityDto : class, IBasicInfo
     {
         protected readonly GenericMyModelService<TEntity> _service = service;
         protected readonly UserManager<LuminaUser> _userManager = userManager;
         protected IEnumerable<string> Includes { get; set; } = new List<string>();
-        public IMapper Mapper = mapper;
+        public IObjectMapper Mapper = mapper;
 
         [HttpGet]
         public virtual async Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)

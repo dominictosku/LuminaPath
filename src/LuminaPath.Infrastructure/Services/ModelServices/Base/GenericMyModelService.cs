@@ -1,7 +1,7 @@
-﻿using AutoMapper;
 using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Interfaces;
+using LuminaPath.Core.Mapping;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -15,13 +15,13 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 {
     abstract public class GenericMyModelService<TEntity> : IGenericMyModelService<TEntity> where TEntity : class, IBasicInfo, IMyMedia
     {
-        protected readonly IMapper _mapper;
+        protected readonly IObjectMapper _mapper;
         protected readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
 
         public virtual string[] Includes { get; set; } = [];
         protected abstract Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> DefaultOrderBy { get; }
 
-        public GenericMyModelService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IMapper mapper)
+        public GenericMyModelService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IObjectMapper mapper)
         {
             _dbContextFactory = dbContextFactory;
             _mapper = mapper;
