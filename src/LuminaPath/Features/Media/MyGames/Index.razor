@@ -23,7 +23,7 @@
 	<MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@ViewIcon">@ToggleText</MudButton>
 </div>
 
-<AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" />
+<AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" ShowPersonalFilters="true" />
 
 @if (IsGrid)
 {
@@ -387,8 +387,87 @@ else
 		}
 
 		var result = await ModelService.GetMyMedia(UserId);
+		result = ApplyFilters(result).ToList();
 		Games = result;
 		return result;
+	}
+
+	private IEnumerable<MyGame> ApplyFilters(IEnumerable<MyGame> games)
+	{
+		if (!string.IsNullOrWhiteSpace(_filter.SearchString))
+		{
+			var search = _filter.SearchString.Trim();
+			games = games.Where(myGame =>
+				Contains(myGame.Game?.Name, search) ||
+				Contains(myGame.Game?.Description, search) ||
+				Contains(myGame.Game?.Source, search) ||
+				myGame.Game?.Genres.Any(genre => Contains(genre, search)) == true ||
+				myGame.Status.ToString().Contains(search, StringComparison.OrdinalIgnoreCase));
+		}
+
+		if (_filter.From is not null)
+		{
+			games = games.Where(myGame => myGame.Game?.ReleaseDate >= _filter.From);
+		}
+
+		if (_filter.To is not null)
+		{
+			games = games.Where(myGame => myGame.Game?.ReleaseDate <= _filter.To);
+		}
+
+		if (_filter.Platform is not null)
+		{
+			games = games.Where(myGame => myGame.Game?.Platforms.HasFlag(_filter.Platform.Value) == true);
+		}
+
+		if (_filter.Status is not null)
+		{
+			games = games.Where(myGame => myGame.Status == _filter.Status);
+		}
+
+		if (!string.IsNullOrWhiteSpace(_filter.Genre))
+		{
+			var genreFilter = _filter.Genre.Trim();
+			games = games.Where(myGame => myGame.Game?.Genres.Any(genre => Contains(genre, genreFilter)) == true);
+		}
+
+		if (!string.IsNullOrWhiteSpace(_filter.Source))
+		{
+			var sourceFilter = _filter.Source.Trim();
+			games = games.Where(myGame => Contains(myGame.Game?.Source, sourceFilter));
+		}
+
+		if (_filter.MinPlaytime is not null)
+		{
+			games = games.Where(myGame => myGame.Game?.Playtime >= _filter.MinPlaytime);
+		}
+
+		if (_filter.MaxPlaytime is not null)
+		{
+			games = games.Where(myGame => myGame.Game?.Playtime <= _filter.MaxPlaytime);
+		}
+
+		if (_filter.Priority is not null)
+		{
+			games = games.Where(myGame => myGame.Priority == _filter.Priority);
+		}
+
+		if (_filter.MinRating is not null)
+		{
+			games = games.Where(myGame => myGame.Rating >= _filter.MinRating);
+		}
+
+		if (_filter.MinPlayedHours is not null)
+		{
+			games = games.Where(myGame => TotalHours(myGame) >= _filter.MinPlayedHours);
+		}
+
+		if (_filter.OnlyWithRemainingHours)
+		{
+			games = games.Where(myGame => RemainingFor(myGame) > 0);
+		}
+
+		return games;
 	}
 
 	public override async Task<MyGame> GetById(int id)
@@ -456,6 +535,12 @@ else
 		return ManualHours(myGame) + ThirdPartyHours(myGame);
 	}
 
+	private static double RemainingFor(MyGame myGame)
+	{
+		var estimate = myGame.Game?.Playtime ?? 0;
+		return Math.Max(0, estimate - TotalHours(myGame));
+	}
+
 	private static string FormatHours(double hours)
 	{
 		return hours <= 0 ? "0" : hours.ToString("0.##");
@@ -491,6 +576,11 @@ else
 			GameStatus.Planned => "status-planned",
 			_ => "status-default"
 		};
+	}
+
+	private static bool Contains(string? value, string search)
+	{
+		return value?.Contains(search, StringComparison.OrdinalIgnoreCase) == true;
 	}
 
 	protected override DialogParameters<MyGameFormDialog> CreateDialogParameters(MyGame command, Func<MyGame, Task> OnSubmit)

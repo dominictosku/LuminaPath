@@ -1,40 +1,220 @@
 @using LuminaPath.Core.Entities
+@using LuminaPath.Core.Enums
 
-<MudExpansionPanel @bind-Expanded="_advancedSearchExpanded"
-                   Style="border-radius: var(--mud-default-borderradius) !important;"
-                   Class="mud-elevation-25 pa-2 mb-3" Text="Filter">
-    <MudGrid>
-        <MudItem xs="12" sm="6" md="4">
-            <MudTextField @bind-Value="Model.SearchString" 
-                          Placeholder="Search Media"
-                          Clearable="true"
-                          TextChanged="Search">
-            </MudTextField>
-        </MudItem>
-        <MudItem xs="12" sm="6" md="4">
-            <MudDatePicker Clearable="true" Placeholder="From" PickerClosed="Search" @bind-Date="@Model.From" />
-        </MudItem>
-        <MudItem xs="12" sm="6" md="4">
-            <MudDatePicker Clearable="true" Placeholder="To" PickerClosed="Search" @bind-Date="@Model.To" />
-        </MudItem>
-    </MudGrid>
-</MudExpansionPanel>
+<MudExpansionPanels Class="filter-shell mb-3" Elevation="0">
+    <MudExpansionPanel @bind-Expanded="_advancedSearchExpanded">
+        <TitleContent>
+            <div class="filter-title">
+                <MudIcon Icon="@Icons.Material.Filled.FilterAlt" Color="Color.Primary" />
+                <div>
+                    <MudText Typo="Typo.subtitle1">Filters</MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">@ActiveFilterText</MudText>
+                </div>
+            </div>
+        </TitleContent>
+        <ChildContent>
+            <MudGrid Spacing="2" Class="filter-grid">
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="Model.SearchString"
+                                  Label="Search"
+                                  Placeholder="Title, description, genre, source"
+                                  Clearable="true"
+                                  Immediate="true"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  TextChanged="Search" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="4">
+                    <MudDatePicker Clearable="true"
+                                   Label="Release from"
+                                   DateFormat="dd.MM.yyyy"
+                                   Variant="Variant.Outlined"
+                                   PickerClosed="Search"
+                                   @bind-Date="@Model.From" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="4">
+                    <MudDatePicker Clearable="true"
+                                   Label="Release to"
+                                   DateFormat="dd.MM.yyyy"
+                                   Variant="Variant.Outlined"
+                                   PickerClosed="Search"
+                                   @bind-Date="@Model.To" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudSelect T="Platforms?" @bind-Value="Model.Platform" Label="Platform" Clearable="true" Variant="Variant.Outlined">
+                        @foreach (var platform in Enum.GetValues<Platforms>())
+                        {
+                            <MudSelectItem T="Platforms?" Value="@((Platforms?)platform)">@platform</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudTextField @bind-Value="Model.Genre"
+                                  Label="Genre"
+                                  Clearable="true"
+                                  Immediate="true"
+                                  Variant="Variant.Outlined"
+                                  TextChanged="Search" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudTextField @bind-Value="Model.Source"
+                                  Label="Source"
+                                  Clearable="true"
+                                  Immediate="true"
+                                  Variant="Variant.Outlined"
+                                  TextChanged="Search" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudNumericField T="int?" @bind-Value="Model.MinPlaytime" Label="Min estimate" Min="@((int?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudNumericField T="int?" @bind-Value="Model.MaxPlaytime" Label="Max estimate" Min="@((int?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" />
+                </MudItem>
+
+                @if (ShowPersonalFilters)
+                {
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudSelect T="GameStatus?" @bind-Value="Model.Status" Label="Status" Clearable="true" Variant="Variant.Outlined">
+                            @foreach (var status in Enum.GetValues<GameStatus>())
+                            {
+                                <MudSelectItem T="GameStatus?" Value="@((GameStatus?)status)">@status</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudSelect T="int?" @bind-Value="Model.Priority" Label="Priority" Clearable="true" Variant="Variant.Outlined">
+                            @foreach (var priority in Enumerable.Range(1, 4))
+                            {
+                                <MudSelectItem T="int?" Value="@((int?)priority)">@priority</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudNumericField T="short?" @bind-Value="Model.MinRating" Label="Min rating" Min="@((short?)1)" Max="@((short?)10)" Variant="Variant.Outlined" />
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudNumericField T="double?" @bind-Value="Model.MinPlayedHours" Label="Min played" Min="@((double?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="3" Class="d-flex align-center">
+                        <MudCheckBox @bind-Value="Model.OnlyWithRemainingHours" Label="Only remaining hours" Color="Color.Primary" />
+                    </MudItem>
+                }
+
+                <MudItem xs="12">
+                    <div class="filter-actions">
+                        <MudButton OnClick="Search" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Search">Apply</MudButton>
+                        <MudButton OnClick="Clear" Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Clear">Clear</MudButton>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </ChildContent>
+    </MudExpansionPanel>
+</MudExpansionPanels>
+
+<style>
+    .filter-shell {
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: var(--mud-palette-surface);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, .12);
+        overflow: hidden;
+    }
+
+    .filter-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .filter-grid {
+        padding-top: 4px;
+    }
+
+    .filter-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding-top: 4px;
+    }
+</style>
 
 @code
 {
-    [EditorRequired][Parameter]
+    [EditorRequired]
+    [Parameter]
     public MediaFilter Model { get; set; } = default!;
-    [EditorRequired][Parameter]
+
+    [EditorRequired]
+    [Parameter]
     public EventCallback OnConditionChanged { get; set; }
+
+    [Parameter]
+    public bool ShowPersonalFilters { get; set; }
 
     private bool _advancedSearchExpanded;
 
+    private string ActiveFilterText => ActiveFilterCount == 0
+        ? "No active filters"
+        : $"{ActiveFilterCount} active filter{(ActiveFilterCount == 1 ? "" : "s")}";
+
+    private int ActiveFilterCount =>
+        Count(Model.SearchString) +
+        Count(Model.From) +
+        Count(Model.To) +
+        Count(Model.Platform) +
+        Count(Model.Status) +
+        Count(Model.Genre) +
+        Count(Model.Source) +
+        Count(Model.MinPlaytime) +
+        Count(Model.MaxPlaytime) +
+        Count(Model.Priority) +
+        Count(Model.MinRating) +
+        Count(Model.MinPlayedHours) +
+        (Model.OnlyWithRemainingHours ? 1 : 0);
+
     private async Task Search()
     {
-        if (_advancedSearchExpanded)
-        {
-            await OnConditionChanged.InvokeAsync();
-        }
+        await OnConditionChanged.InvokeAsync();
     }
 
+    private async Task Clear()
+    {
+        Model.SearchString = null;
+        Model.From = null;
+        Model.To = null;
+        Model.Platform = null;
+        Model.Status = null;
+        Model.Genre = null;
+        Model.Source = null;
+        Model.MinPlaytime = null;
+        Model.MaxPlaytime = null;
+        Model.Priority = null;
+        Model.MinRating = null;
+        Model.MinPlayedHours = null;
+        Model.OnlyWithRemainingHours = false;
+        await Search();
+    }
+
+    private static int Count<T>(T? value)
+    {
+        return value is null ? 0 : 1;
+    }
+
+    private static int Count(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? 0 : 1;
+    }
 }

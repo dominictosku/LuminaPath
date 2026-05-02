@@ -317,7 +317,60 @@ else
 	{
 		var result = await GameService.GetAll();
 		var games = mapper.Map<List<GameViewModel>>(result);
+		games = ApplyFilters(games).ToList();
 		Games = games;
+		return games;
+	}
+
+	private IEnumerable<GameViewModel> ApplyFilters(IEnumerable<GameViewModel> games)
+	{
+		if (!string.IsNullOrWhiteSpace(_filter.SearchString))
+		{
+			var search = _filter.SearchString.Trim();
+			games = games.Where(game =>
+				Contains(game.Name, search) ||
+				Contains(game.Description, search) ||
+				Contains(game.Source, search) ||
+				game.Genres.Any(genre => Contains(genre, search)));
+		}
+
+		if (_filter.From is not null)
+		{
+			games = games.Where(game => game.ReleaseDate >= _filter.From);
+		}
+
+		if (_filter.To is not null)
+		{
+			games = games.Where(game => game.ReleaseDate <= _filter.To);
+		}
+
+		if (_filter.Platform is not null)
+		{
+			games = games.Where(game => game.Platforms.HasFlag(_filter.Platform.Value));
+		}
+
+		if (!string.IsNullOrWhiteSpace(_filter.Genre))
+		{
+			var genreFilter = _filter.Genre.Trim();
+			games = games.Where(game => game.Genres.Any(genre => Contains(genre, genreFilter)));
+		}
+
+		if (!string.IsNullOrWhiteSpace(_filter.Source))
+		{
+			var sourceFilter = _filter.Source.Trim();
+			games = games.Where(game => Contains(game.Source, sourceFilter));
+		}
+
+		if (_filter.MinPlaytime is not null)
+		{
+			games = games.Where(game => game.Playtime >= _filter.MinPlaytime);
+		}
+
+		if (_filter.MaxPlaytime is not null)
+		{
+			games = games.Where(game => game.Playtime <= _filter.MaxPlaytime);
+		}
+
 		return games;
 	}
 
@@ -353,6 +406,11 @@ else
 	private static string ReleaseDate(Game game)
 	{
 		return game.ReleaseDate?.ToString("dd.MM.yyyy") ?? "No date";
+	}
+
+	private static bool Contains(string? value, string search)
+	{
+		return value?.Contains(search, StringComparison.OrdinalIgnoreCase) == true;
 	}
 
 	protected override DialogParameters<GameFormDialog> CreateDialogParameters(GameViewModel command, Func<GameViewModel, Task> OnSubmit)
