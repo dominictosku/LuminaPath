@@ -90,20 +90,25 @@ namespace LuminaPath.Pages.Media
                 Snackbar.Add("No permission to edit", Severity.Info);
                 return;
             }
+
             loading = true;
+            await InvokeAsync(StateHasChanged);
+
             try
             {
                 await Save(game);
                 Snackbar.Add($"Created {EntityLabel}", Severity.Success);
+                await ReloadData();
             }
             catch (Exception)
             {
                 Snackbar.Add($"Failed to create {EntityLabel}", Severity.Error);
-                loading = false;
             }
-
-            await ReloadData();
-            loading = false;
+            finally
+            {
+                loading = false;
+                await InvokeAsync(StateHasChanged);
+            }
         }
 
         public async Task UpdateGame(TEntity game)
@@ -113,20 +118,25 @@ namespace LuminaPath.Pages.Media
                 Snackbar.Add("No permission to edit", Severity.Info);
                 return;
             }
+
             loading = true;
+            await InvokeAsync(StateHasChanged);
+
             try
             {
                 await Update(game);
                 Snackbar.Add($"Updated {EntityLabel}", Severity.Success);
+                await ReloadData();
             }
             catch (Exception)
             {
                 Snackbar.Add($"Failed to update {EntityLabel}", Severity.Error);
-                loading = false;
             }
-
-            await ReloadData();
-            loading = false;
+            finally
+            {
+                loading = false;
+                await InvokeAsync(StateHasChanged);
+            }
         }
 
         public async Task Delete(TEntity g)
