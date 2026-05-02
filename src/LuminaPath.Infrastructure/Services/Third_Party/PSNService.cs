@@ -3,6 +3,7 @@ using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Third_Party;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -14,9 +15,10 @@ using static LuminaPath.Core.Entities.PSN.PSNTrophy;
 
 namespace LuminaPath.Infrastructure.Services.Third_Party
 {
-    public class PSNService(IDbContextFactory<LuminaPathDbContext> dbContextFactory)
+    public class PSNService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, ILogger<PSNService> logger)
     {
         private IDbContextFactory<LuminaPathDbContext> _dbContextFactory = dbContextFactory;
+        private readonly ILogger<PSNService> _logger = logger;
         string bearerToken = string.Empty;
 
         public void SetBearer(string token) => bearerToken = token;
@@ -26,7 +28,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
             // login and get token from https://ca.account.sony.com/api/v1/ssocookie
             if (string.IsNullOrWhiteSpace(npsso))
             {
-                Console.WriteLine("Error: NPSSO token is required.");
+                _logger.LogWarning("NPSSO token is required.");
                 return string.Empty;
             }
 
@@ -55,7 +57,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
                 var location = response.Headers.Location;
                 if (location?.Query.StartsWith("?code=v3") != true)
                 {
-                    Console.WriteLine("Error: Check NPSSO token.");
+                    _logger.LogWarning("Could not authenticate with the provided NPSSO token.");
                     return string.Empty;
                 }
 
@@ -63,7 +65,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
                 string code = queryParamsFromResponse["code"] ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(code))
                 {
-                    Console.WriteLine("Error: Authentication code was missing.");
+                    _logger.LogWarning("PlayStation authentication response did not contain an authorization code.");
                     return string.Empty;
                 }
 
@@ -86,7 +88,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
 
                 if (!tokenResponse.IsSuccessStatusCode)
                 {
-                    Console.WriteLine("Error: Unable to obtain Authentication Token.");
+                    _logger.LogWarning("Unable to obtain PlayStation authentication token. Status code: {StatusCode}", tokenResponse.StatusCode);
                     return string.Empty;
                 }
 
@@ -95,18 +97,18 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
 
                 if (!string.IsNullOrWhiteSpace(tokenObject?.AccessToken))
                 {
-                    Console.WriteLine("Authentication Token successfully granted.");
+                    _logger.LogInformation("PlayStation authentication token granted.");
                     return tokenObject.AccessToken;
                 }
                 else
                 {
-                    Console.WriteLine("Error: Unable to obtain Authentication Token.");
+                    _logger.LogWarning("PlayStation token response did not contain an access token.");
                     return string.Empty;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
+                _logger.LogError(ex, "PlayStation authentication failed.");
                 return string.Empty;
             }
         }
@@ -205,18 +207,15 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
                     }
                     else
                     {
-                        Console.WriteLine($"Error: {response.StatusCode}");
                         string errorData = await response.Content.ReadAsStringAsync();
-                        Console.WriteLine("Error Details:");
-                        Console.WriteLine(errorData);
+                        _logger.LogWarning("PlayStation request failed. Status code: {StatusCode}. Details: {Details}", response.StatusCode, errorData);
                         return "";
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An error occurred:");
-                Console.WriteLine(ex.Message);
+                _logger.LogError(ex, "PlayStation request failed.");
                 return "";
             }
         }

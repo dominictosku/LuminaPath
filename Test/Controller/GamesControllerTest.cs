@@ -34,7 +34,6 @@ namespace Test.Controller
 				dbContextFactory.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
 					.ReturnsAsync(() => new LuminaPathDbContext(dbOptions));
 				var azure = new Mock<IStorageService>().Object;
-				var logger = new Mock<ILogger<GamesController>>();
 				var mapper = db.GetService<IObjectMapper>();
 				var documentService = new DocumentService(dbContextFactory.Object, azure, new Mock<ILogger<DocumentService>>().Object);
 				var gameService = new GameService(dbContextFactory.Object, documentService, mapper);
@@ -42,7 +41,7 @@ namespace Test.Controller
 				db.Games.AddRange(games);
 				await db.SaveChangesAsync();
 
-				GamesController controller = new GamesController(gameService, logger.Object, mapper);
+				GamesController controller = new GamesController(gameService, mapper);
 				var expectedGames = await db.Games.ToListAsync();
 
 				// Act

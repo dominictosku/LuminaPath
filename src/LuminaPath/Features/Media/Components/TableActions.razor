@@ -10,7 +10,7 @@
                 <MudButton DropShadow="false" Variant="Variant.Outlined"
                             Size="Size.Small"
                             Disabled="@loading"
-                            OnClick="@(() => Page.Dummy())"
+                            OnClick="Page.ReloadData"
                             StartIcon="@Icons.Material.Filled.Refresh" IconColor="Color.Surface" Color="Color.Primary"
                             Style="margin-right: 4px; margin-bottom:4px">
                      Refresh
@@ -25,16 +25,6 @@
                             IconColor="Color.Surface">
                      Create
                  </MudButton>
-                 <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Primary"
-                            StartIcon="@Icons.Material.Filled.ContentCopy"
-                            Size="Size.Small"
-                            Disabled="@(selectedItems.Count != 1)"
-                            OnClick="Page.Dummy"
-                            Style="margin-right: 4px; margin-bottom:4px"
-                            IconColor="Color.Surface">
-                     Copy
-                 </MudButton>
-
                  <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Error"
                             StartIcon="@Icons.Material.Filled.Delete"
                             Disabled="@(!(selectedItems.Count > 0))"

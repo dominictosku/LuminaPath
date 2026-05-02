@@ -2,18 +2,14 @@
 @using LuminaPath.Core.Entities
 @using LuminaPath.Features.Media.Components
 @using LuminaPath.Features.Media.MyGames.Components
-@using LuminaPath.Infrastructure.Services
 @using LuminaPath.Infrastructure.Services.ModelServices
-@using LuminaPath.Infrastructure.Services.ModelServices.Base
 @using LuminaPath.Pages.Media
 @using LuminaPath.Pages.Media.Components
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.EntityFrameworkCore
 @inherits BaseGridActions<MyGame, MyGameFormDialog>
 @attribute [Authorize]
 @inject GameService gameService
 @inject MyGameService ModelService
-@inject NavigationManager Navigation
 
 <PageTitle>Games</PageTitle>
 
@@ -116,6 +112,7 @@ else
 	private List<MyGame> Games = new();
 	private List<Game> DropdownGames = new();
 	private MudDataGrid<MyGame> _table = default!;
+	protected override string EntityLabel => "My Game";
 
 	protected override async Task OnInitializedAsync()
 	{

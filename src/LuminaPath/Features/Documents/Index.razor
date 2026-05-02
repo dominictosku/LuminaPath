@@ -4,16 +4,10 @@
 @using LuminaPath.Features.Documents.Components
 @using LuminaPath.Features.Media
 @using LuminaPath.Features.Media.Components
-@using LuminaPath.Infrastructure.Services
-@using LuminaPath.Infrastructure.Services.ModelServices
 @using LuminaPath.Pages.Media.Components
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.EntityFrameworkCore
 @attribute [Authorize(Roles = "Administrator, Editor")]
 @inject DocumentPageService DocumentPageService
-@inject GameService gameService
-@inject NavigationManager navigation
-@inject ILogger<Index> logger
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @implements ITableActions<MediaDocument>
@@ -84,12 +78,6 @@
     private MediaDocument _currentDto = new();
     private MediaFilter _filter = new();
 
-    [Inject]
-    public IStorageService Storage { get; set; } = default!;
-
-    [Inject]
-    public ILogger<Index> Logger { get; set; } = default!;
-
     public bool IsGrid = true;
     public bool loading;
     public HashSet<MediaDocument> selectedItems = new();
@@ -125,11 +113,6 @@
     private async Task<PaginatedList<MediaDocument>> GetData(int pageIndex)
     {
         return await DocumentPageService.GetPage(pageIndex, 15);
-    }
-
-    public void Dummy()
-    {
-
     }
 
     #region Events

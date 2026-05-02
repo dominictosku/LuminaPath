@@ -3,13 +3,10 @@
 @using LuminaPath.Features.Media.Components
 @using LuminaPath.Features.Media.Games.Components
 @using LuminaPath.Features.Media.Games.ViewModel
-@using LuminaPath.Infrastructure.Services
 @using LuminaPath.Infrastructure.Services.ModelServices
 @using LuminaPath.Pages.Media
 @using LuminaPath.Pages.Media.Components
-@using Microsoft.EntityFrameworkCore
 @inject GameService GameService
-@inject NavigationManager Navigation
 @inherits MediaGridActions<Game, GameViewModel, GameFormDialog>
 
 <PageTitle>Games</PageTitle>
@@ -112,6 +109,7 @@ else
 @code{
 	private List<GameViewModel> Games = new();
 	private MudDataGrid<GameViewModel> _table = default!;
+	protected override string EntityLabel => "Game";
 
 	protected override void OnInitialized()
 	{

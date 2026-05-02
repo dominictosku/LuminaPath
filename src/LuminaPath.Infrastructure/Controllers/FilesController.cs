@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace LuminaPath.Infrastructure.Controllers
 {
@@ -11,12 +10,10 @@ namespace LuminaPath.Infrastructure.Controllers
     [Route("api/[controller]")]
     public class FilesController : ControllerBase
     {
-        private readonly ILogger<FilesController> _logger;
         private readonly IStorageService Storage;
 
-        public FilesController(ILogger<FilesController> logger, IStorageService azureStorage)
+        public FilesController(IStorageService azureStorage)
         {
-            _logger = logger; ;
             Storage = azureStorage;
         }
 
@@ -25,6 +22,11 @@ namespace LuminaPath.Infrastructure.Controllers
         public async Task<IActionResult> PostImage(IFormFile file)
         {
             var result = await Storage.UploadAsync(file);
+            if (result.Error)
+            {
+                return BadRequest(result.Status);
+            }
+
             return Ok(new { Message = "File uploaded successfully." });
         }
 

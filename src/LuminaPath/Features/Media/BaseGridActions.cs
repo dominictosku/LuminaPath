@@ -7,8 +7,6 @@ using LuminaPath.Features.Media;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using MudBlazor;
-using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics.Arm;
 
 namespace LuminaPath.Pages.Media
 {
@@ -30,13 +28,9 @@ namespace LuminaPath.Pages.Media
         public bool loading;
         public HashSet<TEntity> selectedItems = new();
         public string ToggleText => IsGrid ? "Grid View" : "Table View";
+        protected virtual string EntityLabel => "Media";
 
         public virtual async Task ReloadData() => await Task.Yield();
-
-        public void Dummy()
-        {
-
-        }
 
         #region Events
         public async Task OnCreate()
@@ -100,11 +94,11 @@ namespace LuminaPath.Pages.Media
             try
             {
                 await Save(game);
-                Snackbar.Add("Created Game", Severity.Success);
+                Snackbar.Add($"Created {EntityLabel}", Severity.Success);
             }
             catch (Exception)
             {
-                Snackbar.Add("Failed to create Game", Severity.Error);
+                Snackbar.Add($"Failed to create {EntityLabel}", Severity.Error);
                 loading = false;
             }
 
@@ -123,11 +117,11 @@ namespace LuminaPath.Pages.Media
             try
             {
                 await Update(game);
-                Snackbar.Add("Updated Game", Severity.Success);
+                Snackbar.Add($"Updated {EntityLabel}", Severity.Success);
             }
             catch (Exception)
             {
-                Snackbar.Add("Failed to update Game", Severity.Error);
+                Snackbar.Add($"Failed to update {EntityLabel}", Severity.Error);
                 loading = false;
             }
 
@@ -149,7 +143,7 @@ namespace LuminaPath.Pages.Media
                 return;
 
             await DeleteMedia(g);
-            Snackbar.Add("Deleted Game", Severity.Info);
+            Snackbar.Add($"Deleted {EntityLabel}", Severity.Info);
             await ReloadData();
         }
 

@@ -5,7 +5,6 @@ using LuminaPath.Infrastructure.Controllers.Base;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
 namespace LuminaPath.Infrastructure.Controllers
@@ -13,12 +12,9 @@ namespace LuminaPath.Infrastructure.Controllers
     public class QuestsController : GenericController<GamesQuest, GamesQuestDto>
     {
         private readonly UserManager<LuminaUser> _userManager;
-        private readonly ILogger<GamesController> _logger;
 
-        public QuestsController(QuestService service, ILogger<GamesController> logger,
-            IObjectMapper mapper, UserManager<LuminaUser> userManager) : base(service, mapper)
+        public QuestsController(QuestService service, IObjectMapper mapper, UserManager<LuminaUser> userManager) : base(service, mapper)
         {
-            _logger = logger;
             _userManager = userManager;
         }
 
