@@ -1,13 +1,177 @@
-<ion-header [translucent]="true">
+<ion-header class="planning-header">
   <ion-toolbar>
-    <ion-title>Planing</ion-title>
+    <ion-title>Plan</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" aria-label="Refresh plan" (click)="loadPlan()">
+        <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Planing</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content [fullscreen]="true" class="planning-shell">
+  <ion-refresher slot="fixed" (ionRefresh)="loadPlan($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <main class="planning-page">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">
+          <ion-icon name="sparkles-outline"></ion-icon>
+          Play plan
+        </span>
+        <h1>Shape the next few weeks.</h1>
+        <p>Balance what you are playing now, what is waiting, and what releases soon.</p>
+      </div>
+
+      <div class="capacity-card">
+        <span>Weekly capacity</span>
+        <strong>{{ weeklyHours }}h</strong>
+        <ion-range
+          min="1"
+          max="40"
+          step="1"
+          [(ngModel)]="weeklyHours"
+          (ionChange)="updateWeeklyHours()">
+        </ion-range>
+      </div>
+    </section>
+
+    <section class="notice" *ngIf="errorMessage">
+      <ion-icon name="flame-outline"></ion-icon>
+      <span>{{ errorMessage }}</span>
+    </section>
+
+    <section class="metric-grid" *ngIf="!isLoading; else metricsLoading">
+      <article class="metric" *ngFor="let metric of metrics">
+        <div class="metric__icon">
+          <ion-icon [name]="metric.icon"></ion-icon>
+        </div>
+        <span>{{ metric.label }}</span>
+        <strong>{{ metric.value }}</strong>
+        <small>{{ metric.detail }}</small>
+      </article>
+    </section>
+
+    <ng-template #metricsLoading>
+      <section class="metric-grid">
+        <article class="metric metric--loading" *ngFor="let item of [1, 2, 3, 4]">
+          <ion-skeleton-text animated></ion-skeleton-text>
+        </article>
+      </section>
+    </ng-template>
+
+    <section class="mode-panel">
+      <ion-segment [(ngModel)]="mode">
+        <ion-segment-button value="week">Week</ion-segment-button>
+        <ion-segment-button value="release">Releases</ion-segment-button>
+        <ion-segment-button value="backlog">Backlog</ion-segment-button>
+      </ion-segment>
+    </section>
+
+    <section class="section-block" *ngIf="mode === 'week'">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="game-controller-outline"></ion-icon>
+            This week
+          </span>
+          <h2>Active Queue</h2>
+        </div>
+        <ion-badge>{{ playingGames.length }}</ion-badge>
+      </div>
+
+      <div class="timeline" *ngIf="playingGames.length; else noActive">
+        <article class="timeline-item" *ngFor="let game of playingGames; trackBy: trackByGameId">
+          <img [src]="imageFor(game)" alt="" />
+          <div class="timeline-item__body">
+            <div class="badge-row">
+              <ion-badge>{{ statusLabel(game) }}</ion-badge>
+              <span>{{ platformLabel(game.platforms) }}</span>
+            </div>
+            <h3>{{ game.name }}</h3>
+            <p>{{ remainingLabel(game) }} · about {{ weeksFor(game) }} week{{ weeksFor(game) === 1 ? '' : 's' }}</p>
+            <ion-progress-bar [value]="progressOf(game)"></ion-progress-bar>
+          </div>
+        </article>
+      </div>
+
+      <ng-template #noActive>
+        <div class="empty-state">
+          <ion-icon name="game-controller-outline"></ion-icon>
+          <h3>No active game</h3>
+          <p>Mark something as Playing to build a weekly queue.</p>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="section-block" *ngIf="mode === 'release'">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="calendar-clear-outline"></ion-icon>
+            {{ monthLabel }}
+          </span>
+          <h2>Release Calendar</h2>
+        </div>
+      </div>
+
+      <div class="calendar">
+        <span class="weekday" *ngFor="let day of ['S', 'M', 'T', 'W', 'T', 'F', 'S']">{{ day }}</span>
+        <article
+          class="calendar-day"
+          *ngFor="let day of calendarDays; trackBy: trackByDay"
+          [class.calendar-day--muted]="!day.isCurrentMonth"
+          [class.calendar-day--today]="day.isToday"
+          [class.calendar-day--release]="day.releases.length">
+          <strong>{{ day.label }}</strong>
+          <span *ngFor="let release of day.releases">{{ release.name }}</span>
+        </article>
+      </div>
+
+      <div class="release-list" *ngIf="upcomingReleases.length">
+        <article class="release-item" *ngFor="let game of upcomingReleases; trackBy: trackByGameId">
+          <div>
+            <h3>{{ game.name }}</h3>
+            <p>{{ platformLabel(game.platforms) }} · {{ game.genre || 'No genre' }}</p>
+          </div>
+          <strong>{{ releaseLabel(game) }}</strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-block" *ngIf="mode === 'backlog'">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="layers-outline"></ion-icon>
+            Backlog
+          </span>
+          <h2>Longest Commitments</h2>
+        </div>
+        <ion-badge>{{ backlogGames.length }}</ion-badge>
+      </div>
+
+      <div class="backlog-list" *ngIf="backlogGames.length; else noBacklog">
+        <article class="backlog-item" *ngFor="let game of backlogGames; trackBy: trackByGameId">
+          <img [src]="imageFor(game)" alt="" />
+          <div>
+            <ion-badge>{{ statusLabel(game) }}</ion-badge>
+            <h3>{{ game.name }}</h3>
+            <p>{{ remainingLabel(game) }} · {{ weeksFor(game) }} week{{ weeksFor(game) === 1 ? '' : 's' }} at {{ weeklyHours }}h/week</p>
+          </div>
+          <strong>{{ game.playtime || 0 }}h</strong>
+        </article>
+      </div>
+
+      <ng-template #noBacklog>
+        <div class="empty-state">
+          <ion-icon name="checkmark-circle-outline"></ion-icon>
+          <h3>No planned backlog</h3>
+          <p>Your planned/on-hold list is clear.</p>
+        </div>
+      </ng-template>
+    </section>
+  </main>
 </ion-content>
