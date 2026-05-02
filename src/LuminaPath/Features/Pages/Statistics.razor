@@ -1,0 +1,654 @@
+@page "/statistics"
+@using LuminaPath.Core.Enums
+@using LuminaPath.Features.Auth
+@using LuminaPath.Infrastructure.Services.ModelServices
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inherits BaseAuth
+@inject MyGameService MyGameService
+@inject GameService GameService
+
+<PageTitle>Statistics</PageTitle>
+
+<div class="stats-page">
+    @if (_loading)
+    {
+        <div class="stats-loading">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </div>
+    }
+    else
+    {
+        <section class="stats-hero">
+            <div>
+                <p class="eyebrow">Progress</p>
+                <h1>Statistics</h1>
+                <MudText Typo="Typo.body1" Class="mud-text-secondary">
+                    Your played time, remaining backlog, completion rhythm, and release calendar.
+                </MudText>
+            </div>
+            <div class="hero-metric">
+                <span>@FormatHours(TotalPlayedHours)</span>
+                <small>hours played</small>
+            </div>
+        </section>
+
+        <section class="stat-grid">
+            <article class="stat-tile">
+                <MudIcon Icon="@Icons.Material.Filled.Schedule" />
+                <span class="stat-value">@FormatHours(TotalPlayedHours)</span>
+                <span class="stat-label">Total played hours</span>
+            </article>
+            <article class="stat-tile accent-green">
+                <MudIcon Icon="@Icons.Material.Filled.EditNote" />
+                <span class="stat-value">@FormatHours(ManualPlayedHours)</span>
+                <span class="stat-label">Manual hours</span>
+            </article>
+            <article class="stat-tile accent-blue">
+                <MudIcon Icon="@Icons.Material.Filled.CloudSync" />
+                <span class="stat-value">@FormatHours(ThirdPartyPlayedHours)</span>
+                <span class="stat-label">Third-party hours</span>
+            </article>
+            <article class="stat-tile accent-gold">
+                <MudIcon Icon="@Icons.Material.Filled.PendingActions" />
+                <span class="stat-value">@FormatHours(RemainingHours)</span>
+                <span class="stat-label">Estimated hours ahead</span>
+            </article>
+            <article class="stat-tile accent-coral">
+                <MudIcon Icon="@Icons.Material.Filled.DoneAll" />
+                <span class="stat-value">@CompletedGames.Count</span>
+                <span class="stat-label">Completed games</span>
+            </article>
+        </section>
+
+        <section class="stats-layout">
+            <div class="stats-section">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Pace</p>
+                        <h2>Games Completed Per Week</h2>
+                    </div>
+                    <span class="section-note">@AverageCompletedPerWeek.ToString("0.##") per week average</span>
+                </div>
+
+                @if (CompletionWeeks.Count == 0)
+                {
+                    <div class="empty-state">
+                        <MudIcon Icon="@Icons.Material.Filled.Flag" />
+                        <p>No completed games with an end date yet.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="weekly-chart">
+                        @foreach (var week in CompletionWeeks)
+                        {
+                            <div class="week-row">
+                                <span class="week-label">@week.Start.ToString("dd MMM")</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" style="width: @WeekWidth(week.Count)%"></div>
+                                </div>
+                                <span class="week-count">@week.Count</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <aside class="stats-section backlog-section">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Backlog</p>
+                        <h2>Most Time Ahead</h2>
+                    </div>
+                </div>
+
+                @if (BacklogGames.Count == 0)
+                {
+                    <div class="empty-state compact">
+                        <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" />
+                        <p>No estimated remaining playtime yet.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="backlog-list">
+                        @foreach (var game in BacklogGames.Take(6))
+                        {
+                            <article class="backlog-row">
+                                <div class="cover" style="background-image: url('@Cover(game.Game)');"></div>
+                                <div>
+                                    <h3>@game.Game?.Name</h3>
+                                    <p>@FormatHours(RemainingFor(game))h ahead · @FormatHours(TotalHours(game))h played</p>
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+            </aside>
+        </section>
+
+        <section class="stats-section calendar-section">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Calendar</p>
+                    <h2>@CalendarMonth.ToString("MMMM yyyy") Releases</h2>
+                </div>
+                <div class="calendar-actions">
+                    <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Color="Color.Primary" OnClick="PreviousMonth" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Today" Color="Color.Primary" OnClick="CurrentMonth" />
+                    <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Primary" OnClick="NextMonth" />
+                </div>
+            </div>
+
+            <div class="calendar-grid">
+                @foreach (var dayName in DayNames)
+                {
+                    <div class="calendar-weekday">@dayName</div>
+                }
+                @foreach (var day in CalendarDays)
+                {
+                    if (day is null)
+                    {
+                        <div class="calendar-day muted"></div>
+                    }
+                    else
+                    {
+                        var releases = ReleasesFor(day.Value);
+                        <div class="calendar-day @(releases.Count > 0 ? "has-release" : "")">
+                            <span class="day-number">@day.Value.Day</span>
+                            @foreach (var game in releases.Take(3))
+                            {
+                                <span class="release-pill">@game.Name</span>
+                            }
+                            @if (releases.Count > 3)
+                            {
+                                <span class="release-more">+@(releases.Count - 3) more</span>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </section>
+    }
+</div>
+
+<style>
+    .stats-page {
+        display: grid;
+        gap: 18px;
+        padding-bottom: 36px;
+    }
+
+    .stats-loading {
+        min-height: 420px;
+        display: grid;
+        place-items: center;
+    }
+
+    .stats-hero {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 20px;
+        min-height: 220px;
+        padding: clamp(24px, 4vw, 42px);
+        border-radius: 8px;
+        background: linear-gradient(115deg, rgba(13, 20, 32, .98), rgba(25, 52, 61, .94));
+        box-shadow: 0 18px 54px rgba(0, 0, 0, .2);
+    }
+
+    .stats-hero h1 {
+        margin: 0;
+        color: #fff;
+        font-size: clamp(2.4rem, 5vw, 4.8rem);
+        line-height: 1;
+        letter-spacing: 0;
+    }
+
+    .eyebrow {
+        margin: 0 0 6px;
+        color: #76e4c4;
+        font-size: .76rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+    }
+
+    .hero-metric {
+        display: grid;
+        justify-items: end;
+        min-width: 180px;
+    }
+
+    .hero-metric span {
+        color: #fff;
+        font-size: 3.4rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .hero-metric small {
+        color: #cbd5df;
+        font-weight: 700;
+    }
+
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .stat-tile {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        grid-template-areas: "icon value" "icon label";
+        align-items: center;
+        gap: 0 12px;
+        min-height: 96px;
+        padding: 18px;
+        border-left: 4px solid #76e4c4;
+        border-radius: 8px;
+        background: var(--mud-palette-surface);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, .12);
+    }
+
+    .stat-tile .mud-icon-root {
+        grid-area: icon;
+        color: #76e4c4;
+    }
+
+    .stat-value {
+        grid-area: value;
+        font-size: 1.55rem;
+        font-weight: 900;
+    }
+
+    .stat-label {
+        grid-area: label;
+        color: var(--mud-palette-text-secondary);
+        font-size: .84rem;
+        font-weight: 700;
+    }
+
+    .accent-green { border-color: #5edc8f; }
+    .accent-green .mud-icon-root { color: #5edc8f; }
+    .accent-blue { border-color: #75a7ff; }
+    .accent-blue .mud-icon-root { color: #75a7ff; }
+    .accent-gold { border-color: #f4c95d; }
+    .accent-gold .mud-icon-root { color: #f4c95d; }
+    .accent-coral { border-color: #ff7d6e; }
+    .accent-coral .mud-icon-root { color: #ff7d6e; }
+
+    .stats-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+        gap: 18px;
+        align-items: start;
+    }
+
+    .stats-section {
+        padding: 22px;
+        border-radius: 8px;
+        background: var(--mud-palette-surface);
+        box-shadow: 0 14px 34px rgba(0, 0, 0, .12);
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+
+    .section-heading h2 {
+        margin: 0;
+        font-size: 1.4rem;
+        letter-spacing: 0;
+    }
+
+    .section-note {
+        color: var(--mud-palette-text-secondary);
+        font-weight: 700;
+    }
+
+    .weekly-chart {
+        display: grid;
+        gap: 10px;
+    }
+
+    .week-row {
+        display: grid;
+        grid-template-columns: 76px 1fr 34px;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .week-label,
+    .week-count {
+        color: var(--mud-palette-text-secondary);
+        font-size: .84rem;
+        font-weight: 700;
+    }
+
+    .week-count {
+        text-align: right;
+    }
+
+    .bar-track {
+        height: 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .08);
+        overflow: hidden;
+    }
+
+    .bar-fill {
+        height: 100%;
+        min-width: 6px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #76e4c4, #75a7ff);
+    }
+
+    .backlog-list {
+        display: grid;
+        gap: 10px;
+    }
+
+    .backlog-row {
+        display: grid;
+        grid-template-columns: 58px 1fr;
+        gap: 12px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .025);
+    }
+
+    .cover {
+        width: 58px;
+        height: 58px;
+        border-radius: 6px;
+        background-color: #263346;
+        background-position: center;
+        background-size: cover;
+    }
+
+    .backlog-row h3 {
+        margin: 0;
+        font-size: 1rem;
+        letter-spacing: 0;
+    }
+
+    .backlog-row p,
+    .empty-state p {
+        margin: 2px 0 0;
+        color: var(--mud-palette-text-secondary);
+    }
+
+    .empty-state {
+        display: grid;
+        justify-items: center;
+        gap: 8px;
+        padding: 36px 16px;
+        text-align: center;
+    }
+
+    .empty-state.compact {
+        padding: 24px 12px;
+    }
+
+    .empty-state .mud-icon-root {
+        color: #f4c95d;
+        font-size: 2.6rem;
+    }
+
+    .calendar-actions {
+        display: flex;
+        gap: 4px;
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .calendar-weekday {
+        color: var(--mud-palette-text-secondary);
+        font-size: .78rem;
+        font-weight: 800;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    .calendar-day {
+        min-height: 112px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 8px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .02);
+    }
+
+    .calendar-day.muted {
+        opacity: .35;
+        background: transparent;
+    }
+
+    .calendar-day.has-release {
+        border-color: rgba(118, 228, 196, .38);
+        background: rgba(118, 228, 196, .06);
+    }
+
+    .day-number {
+        font-weight: 900;
+    }
+
+    .release-pill,
+    .release-more {
+        display: block;
+        padding: 3px 6px;
+        border-radius: 6px;
+        background: rgba(117, 167, 255, .14);
+        font-size: .76rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .release-more {
+        color: var(--mud-palette-text-secondary);
+        background: transparent;
+    }
+
+    @@media (max-width: 1100px) {
+        .stat-grid,
+        .stats-layout {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .calendar-grid {
+            gap: 6px;
+        }
+    }
+
+    @@media (max-width: 760px) {
+        .stats-hero,
+        .section-heading {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .hero-metric {
+            justify-items: start;
+        }
+
+        .stat-grid,
+        .stats-layout,
+        .calendar-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .calendar-weekday {
+            display: none;
+        }
+
+        .calendar-day.muted {
+            display: none;
+        }
+    }
+</style>
+
+@code {
+    private readonly string _placeholderCover = "/Images/Placeholder.png";
+    private readonly string[] DayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    private List<MyGame> _myGames = [];
+    private List<Game> _games = [];
+    private DateTime CalendarMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private bool _loading = true;
+
+    private double ManualPlayedHours => _myGames.Sum(ManualHours);
+    private double ThirdPartyPlayedHours => _myGames.Sum(ThirdPartyHours);
+    private double TotalPlayedHours => _myGames.Sum(TotalHours);
+    private double RemainingHours => _myGames
+        .Where(game => !IsCompleted(game))
+        .Sum(RemainingFor);
+
+    private List<MyGame> CompletedGames => _myGames
+        .Where(game => IsCompleted(game) && game.EndDate.HasValue)
+        .OrderByDescending(game => game.EndDate)
+        .ToList();
+
+    private List<CompletionWeek> CompletionWeeks => CompletedGames
+        .GroupBy(game => StartOfWeek(game.EndDate!.Value))
+        .Select(group => new CompletionWeek(group.Key, group.Count()))
+        .OrderBy(week => week.Start)
+        .TakeLast(12)
+        .ToList();
+
+    private double AverageCompletedPerWeek => CompletionWeeks.Count == 0
+        ? 0
+        : CompletionWeeks.Average(week => week.Count);
+
+    private List<MyGame> BacklogGames => _myGames
+        .Where(game => !IsCompleted(game) && RemainingFor(game) > 0)
+        .OrderByDescending(RemainingFor)
+        .ToList();
+
+    private List<DateTime?> CalendarDays
+    {
+        get
+        {
+            var days = new List<DateTime?>();
+            var offset = ((int)CalendarMonth.DayOfWeek + 6) % 7;
+            days.AddRange(Enumerable.Repeat<DateTime?>(null, offset));
+            days.AddRange(Enumerable.Range(1, DateTime.DaysInMonth(CalendarMonth.Year, CalendarMonth.Month))
+                .Select(day => (DateTime?)new DateTime(CalendarMonth.Year, CalendarMonth.Month, day)));
+
+            while (days.Count % 7 != 0)
+            {
+                days.Add(null);
+            }
+
+            return days;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        _games = await GameService.GetAll();
+        if (!string.IsNullOrWhiteSpace(UserId))
+        {
+            _myGames = await MyGameService.GetMyMedia(UserId);
+        }
+
+        _loading = false;
+    }
+
+    private void PreviousMonth()
+    {
+        CalendarMonth = CalendarMonth.AddMonths(-1);
+    }
+
+    private void CurrentMonth()
+    {
+        CalendarMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    }
+
+    private void NextMonth()
+    {
+        CalendarMonth = CalendarMonth.AddMonths(1);
+    }
+
+    private List<Game> ReleasesFor(DateTime day)
+    {
+        return _games
+            .Where(game => game.ReleaseDate?.Date == day.Date)
+            .OrderBy(game => game.Name)
+            .ToList();
+    }
+
+    private double WeekWidth(int count)
+    {
+        var max = CompletionWeeks.Count == 0 ? 1 : CompletionWeeks.Max(week => week.Count);
+        return Math.Max(8, (double)count / max * 100);
+    }
+
+    private string Cover(Game? game)
+    {
+        return string.IsNullOrWhiteSpace(game?.Image?.Url)
+            ? _placeholderCover
+            : NormalizeUrl(game.Image.Url);
+    }
+
+    private static string NormalizeUrl(string url)
+    {
+        return url.StartsWith("http", StringComparison.OrdinalIgnoreCase) || url.StartsWith("/")
+            ? url
+            : $"/{url}";
+    }
+
+    private static double ManualHours(MyGame game)
+    {
+        return game.TimeSpend ?? 0;
+    }
+
+    private static double ThirdPartyHours(MyGame game)
+    {
+        return game.MyGameInfo?.TrackedHours ?? 0;
+    }
+
+    private static double TotalHours(MyGame game)
+    {
+        return ManualHours(game) + ThirdPartyHours(game);
+    }
+
+    private static double RemainingFor(MyGame game)
+    {
+        var estimate = game.Game?.Playtime ?? 0;
+        return Math.Max(0, estimate - TotalHours(game));
+    }
+
+    private static bool IsCompleted(MyGame game)
+    {
+        return game.Status is GameStatus.Completed or GameStatus.StoryComplete;
+    }
+
+    private static DateTime StartOfWeek(DateTime date)
+    {
+        var diff = ((int)date.DayOfWeek + 6) % 7;
+        return date.Date.AddDays(-diff);
+    }
+
+    private static string FormatHours(double hours)
+    {
+        return hours <= 0 ? "0" : hours.ToString("0.##");
+    }
+
+    private sealed record CompletionWeek(DateTime Start, int Count);
+}
