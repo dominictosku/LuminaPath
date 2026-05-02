@@ -18,7 +18,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
         }
 
-        public override string[] Includes { get; set; } = ["Game"];
+        public override string[] Includes { get; set; } = ["Game", "Game.Image", "MyGameInfo"];
         protected override Func<IQueryable<MyGame>, IOrderedQueryable<MyGame>> DefaultOrderBy => e => e.OrderByDescending(g => g.Game!.ReleaseDate);
 
         public async Task<byte[]> ExportAsCSV(LuminaUser user)

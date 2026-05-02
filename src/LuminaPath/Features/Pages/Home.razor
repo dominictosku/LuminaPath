@@ -1,81 +1,678 @@
-﻿@page "/"
+@page "/"
 @using LuminaPath.Core.Enums
 @using LuminaPath.Features.Auth
-@using LuminaPath.Infrastructure.Services;
 @using LuminaPath.Infrastructure.Services.ModelServices
 @inherits BaseAuth
-@inject MyGameService myGameService
+@inject MyGameService MyGameService
 
-<PageTitle>Home</PageTitle>
+<PageTitle>LuminaPath</PageTitle>
 
-<h1>LuminaPath</h1>
+<div class="home-shell">
+    @if (_loading)
+    {
+        <div class="home-loading">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </div>
+    }
+    else if (string.IsNullOrWhiteSpace(UserId))
+    {
+        <section class="guest-hero">
+            <div>
+                <p class="eyebrow">LuminaPath</p>
+                <h1>Track your games with a little more intention.</h1>
+                <p class="hero-copy">Build a library, keep your current playthroughs close, and see what deserves the next evening on the couch.</p>
+                <div class="hero-actions">
+                    <MudButton Href="Account/Login" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Login">Log in</MudButton>
+                    <MudButton Href="Account/Register" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd">Register</MudButton>
+                </div>
+            </div>
+        </section>
+    }
+    else
+    {
+        <section class="dashboard-hero" style="background-image: linear-gradient(90deg, rgba(10, 15, 24, .95), rgba(10, 15, 24, .62), rgba(10, 15, 24, .94)), url('@Cover(HeroGame)');">
+            <div class="hero-main">
+                <p class="eyebrow">@Greeting</p>
+                <h1>@(HeroGame?.Game?.Name ?? "Your library is ready")</h1>
+                <div class="hero-meta">
+                    <span>@(HeroGame?.Status.ToString() ?? "No active game")</span>
+                    @if (HeroGame?.Game?.ReleaseDate is not null)
+                    {
+                        <span>@HeroGame.Game.ReleaseDate.Value.ToString("yyyy")</span>
+                    }
+                    @if (HeroGame?.Game?.Genres?.Count > 0)
+                    {
+                        <span>@string.Join(" / ", HeroGame.Game.Genres.Take(2))</span>
+                    }
+                </div>
+            </div>
+            <div class="hero-panel">
+                <div>
+                    <span class="panel-number">@PlayingGames.Count</span>
+                    <span class="panel-label">playing now</span>
+                </div>
+                <MudProgressLinear Color="Color.Success" Value="@CompletionPercent" Rounded="true" />
+                <span class="panel-note">@CompletedGames of @TotalGames completed</span>
+            </div>
+        </section>
 
-<h4>Track your Journey</h4>
+        <section class="stat-strip" aria-label="Library summary">
+            <div class="stat-tile">
+                <MudIcon Icon="@Icons.Material.Filled.SportsEsports" />
+                <span class="stat-value">@TotalGames</span>
+                <span class="stat-label">Library</span>
+            </div>
+            <div class="stat-tile accent-green">
+                <MudIcon Icon="@Icons.Material.Filled.PlayCircle" />
+                <span class="stat-value">@PlayingGames.Count</span>
+                <span class="stat-label">Playing</span>
+            </div>
+            <div class="stat-tile accent-gold">
+                <MudIcon Icon="@Icons.Material.Filled.Flag" />
+                <span class="stat-value">@MainGames.Count</span>
+                <span class="stat-label">Main games</span>
+            </div>
+            <div class="stat-tile accent-coral">
+                <MudIcon Icon="@Icons.Material.Filled.DoneAll" />
+                <span class="stat-value">@CompletedGames</span>
+                <span class="stat-label">Finished</span>
+            </div>
+            <div class="stat-tile accent-blue">
+                <MudIcon Icon="@Icons.Material.Filled.Schedule" />
+                <span class="stat-value">@TrackedHoursText</span>
+                <span class="stat-label">Tracked</span>
+            </div>
+        </section>
 
-<MudDivider Class="m-3" Light="true" />
+        @if (MainGames.Count == 0 && PlayingGames.Count == 0)
+        {
+            <section class="empty-state">
+                <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" />
+                <h2>Start shaping your path.</h2>
+                <p>Add a few games to your list and this page will turn into your personal command center.</p>
+                <MudButton Href="/Media/Games" Variant="Variant.Filled" Color="Color.Primary">Browse games</MudButton>
+            </section>
+        }
+        else
+        {
+            <section class="dashboard-grid">
+                <div class="dashboard-section main-section">
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">Focus</p>
+                            <h2>Main Games</h2>
+                        </div>
+                        <MudButton Href="/Media/MyGames" Variant="Variant.Text" Color="Color.Primary" EndIcon="@Icons.Material.Filled.ArrowForward">View all</MudButton>
+                    </div>
 
-<h3>Your Main Games</h3>
-@foreach(var game in CurrentMainGames)
-{   
-    <MudCard>
-        <MudCardContent>
-            <MudText>@game.Game?.Name</MudText>
-            <MudText Typo="Typo.body2">@game.Status</MudText>
-        </MudCardContent>
-        <MudCardActions>
-            <MudButton Variant="Variant.Text" Color="Color.Primary">Learn More</MudButton>
-        </MudCardActions>
-    </MudCard>
-}
+                    <div class="main-games-grid">
+                        @foreach (var game in MainGames.Take(4))
+                        {
+                            <article class="game-card large">
+                                <div class="cover" style="background-image: url('@Cover(game)');"></div>
+                                <div class="game-card-body">
+                                    <span class="status-badge @StatusClass(game.Status)">@game.Status</span>
+                                    <h3>@game.Game?.Name</h3>
+                                    <p>@Summary(game)</p>
+                                    <div class="game-card-footer">
+                                        <span>@DateText(game)</span>
+                                        <span>@RatingText(game)</span>
+                                    </div>
+                                </div>
+                            </article>
+                        }
+                    </div>
+                </div>
 
-<MudDivider Class="m-3" Light="true" />
+                <aside class="dashboard-section playing-section">
+                    <div class="section-heading compact">
+                        <div>
+                            <p class="eyebrow">Active</p>
+                            <h2>Playing</h2>
+                        </div>
+                    </div>
 
-@if(User is not null && User.LuminaUserInfo is not null)
-{
-    <h3> PSN Statistic </h3>
-    <MudGrid Class="pb-4">
-        <MudItem xs="12">
-            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">
-                <MudIcon Icon=@Icons.Material.Filled.CheckCircle Color="Color.Success" /> Trophy level @User.LuminaUserInfo.PSNTrophyLevel
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="6">
-            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">
-                <MudIcon Icon=@Icons.Material.Filled.CheckCircle Color="Color.Primary" />Platin @User.LuminaUserInfo.PSNPlatinum
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="6">
-            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">
-                <MudIcon Icon=@Icons.Material.Filled.CheckCircle Color="Color.Warning" /> Gold @User.LuminaUserInfo.PSNGold
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="3">
-            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">
-                <MudIcon Icon=@Icons.Material.Filled.CheckCircle Color="Color.Default" /> Silver @User.LuminaUserInfo.PSNSilver
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="3">
-            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">
-                <MudIcon Icon=@Icons.Material.Filled.CheckCircle Color="Color.Secondary" />Bronze @User.LuminaUserInfo.PSNBronze
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="3">
-            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">Hours</MudPaper>
-        </MudItem>
-        <MudItem xs="3">
-            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">Other</MudPaper>
-        </MudItem>
-    </MudGrid>
-}
+                    <div class="playing-list">
+                        @foreach (var game in PlayingGames.Take(6))
+                        {
+                            <article class="playing-row">
+                                <div class="playing-cover" style="background-image: url('@Cover(game)');"></div>
+                                <div>
+                                    <h3>@game.Game?.Name</h3>
+                                    <p>@PlayingDetail(game)</p>
+                                </div>
+                                <span class="priority-dot priority-@game.Priority"></span>
+                            </article>
+                        }
+                    </div>
+                </aside>
+            </section>
 
-@code{
-    List<MyGame> CurrentMainGames = new();
+            <section class="dashboard-section timeline-section">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Momentum</p>
+                        <h2>Recent Journey</h2>
+                    </div>
+                </div>
+                <div class="timeline">
+                    @foreach (var game in TimelineGames.Take(5))
+                    {
+                        <article class="timeline-item">
+                            <span class="timeline-marker @StatusClass(game.Status)"></span>
+                            <div>
+                                <h3>@game.Game?.Name</h3>
+                                <p>@game.Status · @DateText(game)</p>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+        }
+    }
+</div>
+
+<style>
+    .home-shell {
+        min-height: calc(100vh - 96px);
+        padding: 8px 0 40px;
+        color: #f7fafc;
+    }
+
+    .home-loading {
+        min-height: 420px;
+        display: grid;
+        place-items: center;
+    }
+
+    .dashboard-hero,
+    .guest-hero {
+        min-height: 360px;
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        padding: clamp(24px, 5vw, 56px);
+        border-radius: 8px;
+        background-color: #0a0f18;
+        background-size: cover;
+        background-position: center;
+        box-shadow: 0 18px 60px rgba(0, 0, 0, .28);
+    }
+
+    .guest-hero {
+        align-items: center;
+        background-image: linear-gradient(115deg, rgba(9, 15, 26, .98), rgba(22, 54, 70, .88)), url('/Images/Placeholder.png');
+    }
+
+    .hero-main {
+        max-width: 780px;
+    }
+
+    .eyebrow {
+        margin: 0 0 8px;
+        color: #76e4c4;
+        font-size: .76rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+    }
+
+    .dashboard-hero h1,
+    .guest-hero h1 {
+        margin: 0;
+        max-width: 12ch;
+        color: #ffffff;
+        font-size: clamp(2.45rem, 5vw, 5.5rem);
+        line-height: .95;
+        letter-spacing: 0;
+    }
+
+    .hero-copy {
+        max-width: 620px;
+        margin: 18px 0 0;
+        color: #d8e1e8;
+        font-size: 1.1rem;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 28px;
+    }
+
+    .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+    }
+
+    .hero-meta span,
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .12);
+        color: #f7fafc;
+        font-size: .82rem;
+        font-weight: 700;
+    }
+
+    .hero-panel {
+        width: min(280px, 100%);
+        padding: 18px;
+        border: 1px solid rgba(255, 255, 255, .16);
+        border-radius: 8px;
+        background: rgba(9, 15, 26, .68);
+        backdrop-filter: blur(14px);
+    }
+
+    .panel-number {
+        display: block;
+        color: #ffffff;
+        font-size: 3rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .panel-label,
+    .panel-note {
+        display: block;
+        color: #cbd5df;
+        font-weight: 700;
+    }
+
+    .panel-note {
+        margin-top: 10px;
+        font-size: .86rem;
+    }
+
+    .stat-strip {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+        margin: 18px 0;
+    }
+
+    .stat-tile {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        grid-template-areas: "icon value" "icon label";
+        align-items: center;
+        gap: 0 12px;
+        min-height: 96px;
+        padding: 18px;
+        border-left: 4px solid #76e4c4;
+        border-radius: 8px;
+        background: #121a26;
+        box-shadow: 0 12px 34px rgba(0, 0, 0, .18);
+    }
+
+    .stat-tile .mud-icon-root {
+        grid-area: icon;
+        color: #76e4c4;
+    }
+
+    .stat-value {
+        grid-area: value;
+        color: #ffffff;
+        font-size: 1.7rem;
+        font-weight: 900;
+    }
+
+    .stat-label {
+        grid-area: label;
+        color: #aebdcc;
+        font-size: .85rem;
+        font-weight: 700;
+    }
+
+    .accent-green { border-color: #5edc8f; }
+    .accent-green .mud-icon-root { color: #5edc8f; }
+    .accent-gold { border-color: #f4c95d; }
+    .accent-gold .mud-icon-root { color: #f4c95d; }
+    .accent-coral { border-color: #ff7d6e; }
+    .accent-coral .mud-icon-root { color: #ff7d6e; }
+    .accent-blue { border-color: #75a7ff; }
+    .accent-blue .mud-icon-root { color: #75a7ff; }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+        gap: 18px;
+        align-items: start;
+    }
+
+    .dashboard-section {
+        padding: 22px;
+        border-radius: 8px;
+        background: #101722;
+        box-shadow: 0 14px 44px rgba(0, 0, 0, .16);
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+
+    .section-heading h2 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 1.55rem;
+        letter-spacing: 0;
+    }
+
+    .compact {
+        margin-bottom: 12px;
+    }
+
+    .main-games-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .game-card,
+    .playing-row,
+    .timeline-item {
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: #172130;
+        overflow: hidden;
+    }
+
+    .game-card.large {
+        min-height: 360px;
+        display: grid;
+        grid-template-rows: 190px 1fr;
+    }
+
+    .cover,
+    .playing-cover {
+        background-color: #263346;
+        background-size: cover;
+        background-position: center;
+    }
+
+    .game-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 16px;
+    }
+
+    .game-card h3,
+    .playing-row h3,
+    .timeline-item h3 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 1.05rem;
+        line-height: 1.25;
+        letter-spacing: 0;
+    }
+
+    .game-card p,
+    .playing-row p,
+    .timeline-item p {
+        margin: 0;
+        color: #aebdcc;
+        line-height: 1.45;
+    }
+
+    .game-card-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: auto;
+        color: #d7e0ea;
+        font-size: .85rem;
+        font-weight: 700;
+    }
+
+    .playing-list {
+        display: grid;
+        gap: 10px;
+    }
+
+    .playing-row {
+        display: grid;
+        grid-template-columns: 64px 1fr auto;
+        gap: 12px;
+        align-items: center;
+        min-height: 86px;
+        padding: 10px;
+    }
+
+    .playing-cover {
+        width: 64px;
+        height: 64px;
+        border-radius: 6px;
+    }
+
+    .priority-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #76e4c4;
+    }
+
+    .priority-1 { background: #ff7d6e; }
+    .priority-2 { background: #f4c95d; }
+    .priority-3 { background: #75a7ff; }
+    .priority-4 { background: #5edc8f; }
+
+    .timeline-section {
+        margin-top: 18px;
+    }
+
+    .timeline {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .timeline-item {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 12px;
+        padding: 14px;
+    }
+
+    .timeline-marker {
+        width: 10px;
+        height: 42px;
+        border-radius: 999px;
+        background: #76e4c4;
+    }
+
+    .status-badge.status-playing,
+    .timeline-marker.status-playing {
+        background: #5edc8f;
+        color: #06130c;
+    }
+
+    .status-badge.status-main,
+    .timeline-marker.status-main {
+        background: #f4c95d;
+        color: #1a1300;
+    }
+
+    .status-badge.status-complete,
+    .timeline-marker.status-complete {
+        background: #75a7ff;
+        color: #061024;
+    }
+
+    .empty-state {
+        display: grid;
+        justify-items: center;
+        gap: 12px;
+        padding: 64px 24px;
+        border-radius: 8px;
+        background: #101722;
+        text-align: center;
+    }
+
+    .empty-state .mud-icon-root {
+        color: #f4c95d;
+        font-size: 3rem;
+    }
+
+    .empty-state h2 {
+        margin: 0;
+        color: #ffffff;
+        letter-spacing: 0;
+    }
+
+    .empty-state p {
+        max-width: 560px;
+        margin: 0;
+        color: #aebdcc;
+    }
+
+    @@media (max-width: 1100px) {
+        .stat-strip,
+        .timeline {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 760px) {
+        .dashboard-hero,
+        .guest-hero {
+            min-height: 520px;
+            align-items: end;
+            flex-direction: column;
+            justify-content: end;
+        }
+
+        .dashboard-hero h1,
+        .guest-hero h1 {
+            font-size: 3rem;
+        }
+
+        .stat-strip,
+        .main-games-grid,
+        .timeline {
+            grid-template-columns: 1fr;
+        }
+
+        .dashboard-section {
+            padding: 16px;
+        }
+    }
+</style>
+
+@code {
+    private readonly string _placeholderCover = "/Images/Placeholder.png";
+    private List<MyGame> _games = [];
+    private bool _loading = true;
+
+    private List<MyGame> MainGames => _games
+        .Where(game => game.Status == GameStatus.MainGame)
+        .OrderByDescending(game => game.Rating ?? 0)
+        .ThenByDescending(game => game.Game?.ReleaseDate ?? DateTime.MinValue)
+        .ToList();
+
+    private List<MyGame> PlayingGames => _games
+        .Where(game => game.Status == GameStatus.Playing)
+        .OrderBy(game => game.Priority)
+        .ThenBy(game => game.StartDate ?? DateTime.MaxValue)
+        .ToList();
+
+    private List<MyGame> TimelineGames => _games
+        .OrderByDescending(game => game.EndDate ?? game.StartDate ?? game.Game?.ReleaseDate ?? DateTime.MinValue)
+        .ToList();
+
+    private MyGame? HeroGame => MainGames.FirstOrDefault() ?? PlayingGames.FirstOrDefault() ?? TimelineGames.FirstOrDefault();
+    private int TotalGames => _games.Count;
+    private int CompletedGames => _games.Count(game => game.Status is GameStatus.Completed or GameStatus.StoryComplete);
+    private double CompletionPercent => TotalGames == 0 ? 0 : Math.Round((double)CompletedGames / TotalGames * 100, 1);
+    private string TrackedHoursText => _games.Sum(game => game.TimeSpend ?? game.MyGameInfo?.TrackedHours ?? 0) switch
+    {
+        >= 1000 => "999+",
+        var hours => Math.Round(hours).ToString("0")
+    };
+
+    private string Greeting => string.IsNullOrWhiteSpace(UserName)
+        ? "Welcome back"
+        : $"Welcome back, {UserName}";
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        if (string.IsNullOrWhiteSpace(UserId)) return;
-        var result = await myGameService.GetMyMedia(UserId);
-        CurrentMainGames = result.Where(x => x.Status == GameStatus.MainGame).ToList();
+
+        if (!string.IsNullOrWhiteSpace(UserId))
+        {
+            _games = await MyGameService.GetMyMedia(UserId);
+        }
+
+        _loading = false;
+    }
+
+    private string Cover(MyGame? game)
+    {
+        return string.IsNullOrWhiteSpace(game?.Game?.Image?.Url)
+            ? _placeholderCover
+            : $"/{game.Game.Image.Url}";
+    }
+
+    private static string Summary(MyGame game)
+    {
+        if (!string.IsNullOrWhiteSpace(game.Game?.Description))
+        {
+            return game.Game.Description.Length > 130
+                ? $"{game.Game.Description[..130]}..."
+                : game.Game.Description;
+        }
+
+        return game.Game?.Genres?.Count > 0
+            ? string.Join(" / ", game.Game.Genres.Take(3))
+            : "No description yet";
+    }
+
+    private static string DateText(MyGame game)
+    {
+        var date = game.EndDate ?? game.StartDate ?? game.Game?.ReleaseDate;
+        return date?.ToString("dd MMM yyyy") ?? "No date";
+    }
+
+    private static string RatingText(MyGame game)
+    {
+        return game.Rating is null ? "Unrated" : $"{game.Rating}/10";
+    }
+
+    private static string PlayingDetail(MyGame game)
+    {
+        if (game.StartDate is not null)
+        {
+            return $"Started {game.StartDate.Value:dd MMM yyyy}";
+        }
+
+        return game.Game?.Genres?.Count > 0
+            ? string.Join(" / ", game.Game.Genres.Take(2))
+            : "In progress";
+    }
+
+    private static string StatusClass(GameStatus status)
+    {
+        return status switch
+        {
+            GameStatus.Playing => "status-playing",
+            GameStatus.MainGame => "status-main",
+            GameStatus.Completed or GameStatus.StoryComplete => "status-complete",
+            _ => "status-default"
+        };
     }
 }
