@@ -172,7 +172,8 @@
 
         foreach (var id in ids)
         {
-            await gameService.DeleteAsync(id);
+            var document = selectedItems.FirstOrDefault(x => x.Id == id);
+            await DocumentService.DeleteDocument(document);
         }
 
         await ReloadData();

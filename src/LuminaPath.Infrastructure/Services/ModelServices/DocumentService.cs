@@ -132,15 +132,18 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     return;
                 }
 
-                if (existingDocument.MediaId != null || existingDocument.MediaId < 0)
+                if (existingDocument.MediaId != null)
                 {
                     var media = await context.Games.FindAsync(existingDocument.MediaId);
-                    await DeleteMediaDocument(media, context);
-                    return;
+                    if (media != null)
+                    {
+                        media.Image = null;
+                        context.Update(media);
+                    }
                 }
 
                 context.Documents.Remove(existingDocument);
-                context.SaveChanges();
+                await context.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -155,14 +158,25 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 return;
             }
 
-            using var context = _context ?? await GetDbContextAsync();
-            if (entity.Image is null)
-                return;
-            var image = entity.Image;
-            entity.Image = null;
-            context.Update(entity);
-            context.SaveChanges();
-            await DeleteDocument(image);
+            var ownsContext = _context == null;
+            var context = _context ?? await GetDbContextAsync();
+            try
+            {
+                if (entity.Image is null)
+                    return;
+                var image = entity.Image;
+                entity.Image = null;
+                context.Update(entity);
+                await context.SaveChangesAsync();
+                await DeleteDocument(image);
+            }
+            finally
+            {
+                if (ownsContext)
+                {
+                    await context.DisposeAsync();
+                }
+            }
         }
 
         private string SanitizeFileName(string fileName)
