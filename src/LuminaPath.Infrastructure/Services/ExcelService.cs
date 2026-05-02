@@ -3,6 +3,7 @@ using LuminaPath.Core.Entities;
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Third_Party;
+using LuminaPath.Infrastructure.Helper;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -304,11 +305,11 @@ namespace LuminaPath.Infrastructure.Services
             {
                 myGame.MyGameInfo ??= new MyGameInfo
                 {
-                    FirstPlayed = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc),
-                    LastPlayed = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc)
+                    FirstPlayed = UtcDateTime.Normalize(DateTime.MinValue),
+                    LastPlayed = UtcDateTime.Normalize(DateTime.MinValue)
                 };
-                myGame.MyGameInfo.FirstPlayed = firstPlayed ?? ToUtcDate(myGame.MyGameInfo.FirstPlayed) ?? DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc);
-                myGame.MyGameInfo.LastPlayed = lastPlayed ?? ToUtcDate(myGame.MyGameInfo.LastPlayed) ?? DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc);
+                myGame.MyGameInfo.FirstPlayed = firstPlayed ?? ToUtcDate(myGame.MyGameInfo.FirstPlayed) ?? UtcDateTime.Normalize(DateTime.MinValue);
+                myGame.MyGameInfo.LastPlayed = lastPlayed ?? ToUtcDate(myGame.MyGameInfo.LastPlayed) ?? UtcDateTime.Normalize(DateTime.MinValue);
                 myGame.MyGameInfo.TrackedHours = trackedHours ?? myGame.MyGameInfo.TrackedHours;
             }
         }
@@ -397,12 +398,7 @@ namespace LuminaPath.Infrastructure.Services
                 return null;
             }
 
-            return date.Value.Kind switch
-            {
-                DateTimeKind.Utc => date.Value,
-                DateTimeKind.Local => date.Value.ToUniversalTime(),
-                _ => DateTime.SpecifyKind(date.Value, DateTimeKind.Utc)
-            };
+            return UtcDateTime.Normalize(date);
         }
 
         private static IXLCell? GetCell(IXLWorksheet worksheet, int row, Dictionary<string, int> headerMap, params string[] headers)

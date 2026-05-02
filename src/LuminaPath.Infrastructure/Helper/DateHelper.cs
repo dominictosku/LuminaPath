@@ -16,11 +16,11 @@ namespace LuminaPath.Infrastructure.Helper
             {
                 // Parse ISO 8601 date string
                 DateTime dt = DateTime.Parse(dateStr, null, DateTimeStyles.RoundtripKind);
-                return dt;
+                return UtcDateTime.Normalize(dt);
             }
             catch (FormatException)
             {
-                return new DateTime(); // Return the original string if parsing fails
+                return DateTime.SpecifyKind(default, DateTimeKind.Utc);
             }
         }
     }

@@ -53,7 +53,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 Email = model.Email,
                 PhoneNumber = model.PhoneNumber,
                 LockoutEnabled = lockedOut,
-                LockoutEnd = lockedOut ? DateTime.Now.AddDays(60) : null,
+                LockoutEnd = lockedOut ? DateTimeOffset.UtcNow.AddDays(60) : null,
                 EmailConfirmed = true
             };
             var password = model.Password;
@@ -78,7 +78,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             user.PhoneNumber = model.PhoneNumber;
             user.UserName = model.Email;
             user.LockoutEnabled = lockedOut;
-            user.LockoutEnd = lockedOut ? DateTime.Now.AddDays(60) : null;
+            user.LockoutEnd = lockedOut ? DateTimeOffset.UtcNow.AddDays(60) : null;
             if (model.Role != string.Empty)
             {
                 await AddUserToRole(user, model.Role);
@@ -108,7 +108,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             bool lockedOut = !active;
             var user = await _userManager.FindByIdAsync(userId!) ?? throw new Exception($"Application user not found {userId}.");
-            user.LockoutEnd = lockedOut ? DateTime.Now.AddDays(60) : null;
+            user.LockoutEnd = lockedOut ? DateTimeOffset.UtcNow.AddDays(60) : null;
             user.LockoutEnabled = lockedOut;
             return await _userManager.UpdateAsync(user);
         }

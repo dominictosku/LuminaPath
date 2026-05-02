@@ -191,7 +191,7 @@ ServerData="@(ServerReload)">
     private List<string?> _roles = new();
     private string? SearchStatus { get; set; }
 
-    bool IsLocked(LuminaUser user) => user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd >= DateTime.Now;
+    bool IsLocked(LuminaUser user) => user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd >= DateTimeOffset.UtcNow;
 
     private async Task<GridData<LuminaUser>> ServerReload(GridState<LuminaUser> state, CancellationToken token)
     {

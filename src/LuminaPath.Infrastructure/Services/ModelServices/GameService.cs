@@ -4,6 +4,7 @@ using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Extensions;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Helper;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -72,12 +73,14 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
             if (mediaFilter.From != null)
             {
-                filter = filter.And(g => g.ReleaseDate > mediaFilter.From);
+                var from = UtcDateTime.Normalize(mediaFilter.From);
+                filter = filter.And(g => g.ReleaseDate > from);
             }
 
             if (mediaFilter.To != null)
             {
-                filter = filter.And(g => g.ReleaseDate < mediaFilter.To);
+                var to = UtcDateTime.Normalize(mediaFilter.To);
+                filter = filter.And(g => g.ReleaseDate < to);
             }
 
             if (mediaFilter.MyMedia && userId != null)
