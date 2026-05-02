@@ -8,7 +8,7 @@ export class Game implements IGame, IBasicInfo {
   description: string;
   releaseDate: Date;
   genre: string;
-  plattforms: number;
+  platforms: number;
   playtime: number;
   myGames: MyGame | null;
   image: MediaFile | null;
@@ -18,7 +18,7 @@ export class Game implements IGame, IBasicInfo {
     description?: string | null,
     releaseDate?: Date | null,
     genre?: string | null,
-    plattforms?: number | null,
+    platforms?: number | null,
     playtime?: number | null,
     myGame?: MyGame | null) {
     this.id = 0;
@@ -26,7 +26,7 @@ export class Game implements IGame, IBasicInfo {
     this.description = description ?? "";
     this.releaseDate = releaseDate ?? new Date;
     this.genre = genre ?? "";
-    this.plattforms = plattforms ?? 0;
+    this.platforms = platforms ?? 0;
     this.playtime = playtime ?? 0;
     this.myGames = myGame ?? new MyGame(0);
     this.image = null;
@@ -55,7 +55,7 @@ export class MyGame implements IBasicInfo {
   }
 }
 
-export const Plattforms = [
+export const Platforms = [
   { label: "Playstation", value: 0 },
   { label: "Switch", value: 1 },
   { label: "PC", value: 2 },

@@ -1,4 +1,4 @@
-﻿using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Third_Party;
@@ -119,8 +119,8 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
             var titles = gameData.Titles;
             foreach (var title in titles)
             {
-                var plattform = title.Category.ToLower().Contains("ps4") ? Plattforms.Playstation4 : Plattforms.Playstation5;
-                var gameName = plattform == Plattforms.Playstation4 ? title.Name + " PS4" : title.Name;
+                var platform = title.Category.ToLower().Contains("ps4") ? Platforms.Playstation4 : Platforms.Playstation5;
+                var gameName = platform == Platforms.Playstation4 ? title.Name + " PS4" : title.Name;
                 var game = new MyGameDto()
                 {
                     MyGameInfo = new()
@@ -133,7 +133,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
                     {
                         Name = gameName,
                         Source = "PSN",
-                        Plattforms = plattform,
+                        Platforms = platform,
                         GameInfo = new()
                         {
                             PsnId = title.TitleId,
@@ -325,7 +325,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
             var newGame = new Game
             {
                 Name = gameToImport.Game.Name,
-                Plattforms = gameToImport.Game.Plattforms,
+                Platforms = gameToImport.Game.Platforms,
                 Source = "PSN",
                 GameInfo = new GameInfo
                 {

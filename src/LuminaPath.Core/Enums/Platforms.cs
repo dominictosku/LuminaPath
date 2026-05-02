@@ -1,9 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace LuminaPath.Core.Enums
 {
     [Flags]
-    public enum Plattforms
+    public enum Platforms
     {
         [Display(Name = "Playstation 4")]
         Playstation4 = 1,

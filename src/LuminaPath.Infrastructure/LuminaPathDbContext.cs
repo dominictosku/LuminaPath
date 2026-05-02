@@ -1,7 +1,7 @@
-﻿using LuminaPath.Core.Interfaces;
+using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Base;
-using LuminaPath.Infrastructure.ModelConfiugration;
+using LuminaPath.Infrastructure.ModelConfiguration;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 

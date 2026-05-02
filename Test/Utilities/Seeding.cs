@@ -1,4 +1,4 @@
-﻿using LuminaPath.Core.Enums;
+using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 
 namespace Test.Utilities
@@ -17,7 +17,7 @@ namespace Test.Utilities
 						Description = "Battle Royale",
 						Genres = { "Shooter" },
 						ReleaseDate = new DateTime(2017, 07, 28),
-						Plattforms = Plattforms.Playstation5,
+						Platforms = Platforms.Playstation5,
 						Playtime = 100
 					}
 				);

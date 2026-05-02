@@ -190,7 +190,7 @@ namespace LuminaPath.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Priortiy")
+                    b.Property<int>("Priority")
                         .HasColumnType("integer");
 
                     b.Property<short?>("Rating")
@@ -517,7 +517,7 @@ namespace LuminaPath.Infrastructure.Migrations
                 {
                     b.HasBaseType("LuminaPath.Core.Models.Base.Media");
 
-                    b.Property<int>("Plattforms")
+                    b.Property<int>("Platforms")
                         .HasColumnType("integer");
 
                     b.Property<int?>("Playtime")
@@ -688,8 +688,7 @@ namespace LuminaPath.Infrastructure.Migrations
                 {
                     b.Navigation("Documents");
 
-                    b.Navigation("LuminaUserInfo")
-                        .IsRequired();
+                    b.Navigation("LuminaUserInfo");
 
                     b.Navigation("MyGames");
                 });

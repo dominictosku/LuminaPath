@@ -1,4 +1,4 @@
-﻿using LuminaPath.Core.Enums;
+using LuminaPath.Core.Enums;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Base;
@@ -24,7 +24,7 @@ namespace LuminaPath.Core.Dtos
         [DataType(DataType.Date)]
         [Display(Name = "Release Date")] public DateTime? ReleaseDate { get; set; }
 
-        [Display(Name = "Plattform")] public Plattforms Plattforms { get; set; }
+        [Display(Name = "Platform")] public Platforms Platforms { get; set; }
 
         [Display(Name = "Estimated playtime")] public int? Playtime { get; set; }
 
@@ -49,7 +49,7 @@ namespace LuminaPath.Core.Dtos
         [DataType(DataType.Date)]
         [Display(Name = "Release Date")] public DateTime? ReleaseDate { get; set; }
 
-        [Display(Name = "Plattform")] public Plattforms Plattforms { get; set; }
+        [Display(Name = "Platform")] public Platforms Platforms { get; set; }
 
         [Display(Name = "Estimated playtime")] public int? Playtime { get; set; }
 

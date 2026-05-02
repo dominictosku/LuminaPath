@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -65,7 +65,7 @@ namespace LuminaPath.Infrastructure.Migrations
                     ReleaseDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Source = table.Column<string>(type: "text", nullable: false),
                     Discriminator = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
-                    Plattforms = table.Column<int>(type: "integer", nullable: true),
+                    Platforms = table.Column<int>(type: "integer", nullable: true),
                     Playtime = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
@@ -266,7 +266,7 @@ namespace LuminaPath.Infrastructure.Migrations
                     Status = table.Column<int>(type: "integer", nullable: false),
                     GameId = table.Column<int>(type: "integer", nullable: false),
                     Rating = table.Column<short>(type: "smallint", nullable: true),
-                    Priortiy = table.Column<int>(type: "integer", nullable: false),
+                    Priority = table.Column<int>(type: "integer", nullable: false),
                     StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     EndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     TimeSpend = table.Column<double>(type: "double precision", nullable: true),

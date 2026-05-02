@@ -4,7 +4,7 @@ export interface IGame {
   name: string;
   description: string;
   genre: string;
-  plattforms: number;
+  platforms: number;
   playtime: number;
   myGames: MyGame | null
 }

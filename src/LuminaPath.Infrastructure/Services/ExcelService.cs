@@ -18,7 +18,7 @@ namespace LuminaPath.Infrastructure.Services
             "Status",
             "Priority",
             "Release Date",
-            "Plattform",
+            "Platform",
             "Genre",
             "Source",
             "Description",
@@ -75,12 +75,12 @@ namespace LuminaPath.Infrastructure.Services
                 worksheet.Cell(row, 1).Value = game.Id;
                 worksheet.Cell(row, 2).Value = game.Name;
                 worksheet.Cell(row, 3).Value = FormatStatus(myGame.Status);
-                if (myGame.Priortiy != 0)
+                if (myGame.Priority != 0)
                 {
-                    worksheet.Cell(row, 4).Value = myGame.Priortiy;
+                    worksheet.Cell(row, 4).Value = myGame.Priority;
                 }
                 SetDate(worksheet.Cell(row, 5), game.ReleaseDate);
-                worksheet.Cell(row, 6).Value = FormatPlatforms(game.Plattforms);
+                worksheet.Cell(row, 6).Value = FormatPlatforms(game.Platforms);
                 worksheet.Cell(row, 7).Value = string.Join(", ", game.Genres);
                 worksheet.Cell(row, 8).Value = game.Source;
                 worksheet.Cell(row, 9).Value = game.Description;
@@ -263,10 +263,10 @@ namespace LuminaPath.Infrastructure.Services
             game.ReleaseDate = ToUtcDate(GetDate(worksheet, row, headerMap, "releasedate")) ?? game.ReleaseDate;
             game.Playtime = GetInt(worksheet, row, headerMap, "playtime", "estimatedplaytime") ?? game.Playtime;
 
-            var platform = GetText(worksheet, row, headerMap, "plattform", "platform");
+            var platform = GetText(worksheet, row, headerMap, "Platform", "platform");
             if (!string.IsNullOrWhiteSpace(platform))
             {
-                game.Plattforms = ParsePlatforms(platform);
+                game.Platforms = ParsePlatforms(platform);
             }
 
             var genres = GetText(worksheet, row, headerMap, "genre", "genres");
@@ -290,7 +290,7 @@ namespace LuminaPath.Infrastructure.Services
                 myGame.Status = ParseStatus(status);
             }
 
-            myGame.Priortiy = GetInt(worksheet, row, headerMap, "priority", "priortiy") ?? myGame.Priortiy;
+            myGame.Priority = GetInt(worksheet, row, headerMap, "priority", "Priority") ?? myGame.Priority;
             myGame.Rating = GetShort(worksheet, row, headerMap, "rating") ?? myGame.Rating;
             myGame.StartDate = ToUtcDate(GetDate(worksheet, row, headerMap, "startdate", "startedon")) ?? myGame.StartDate;
             myGame.EndDate = ToUtcDate(GetDate(worksheet, row, headerMap, "enddate", "finishedon")) ?? myGame.EndDate;
@@ -450,28 +450,28 @@ namespace LuminaPath.Infrastructure.Services
             };
         }
 
-        private static string FormatPlatforms(Plattforms platforms)
+        private static string FormatPlatforms(Platforms platforms)
         {
             return platforms == 0
                 ? string.Empty
-                : string.Join(", ", Enum.GetValues<Plattforms>().Where(platform => platforms.HasFlag(platform)));
+                : string.Join(", ", Enum.GetValues<Platforms>().Where(platform => platforms.HasFlag(platform)));
         }
 
-        private static Plattforms ParsePlatforms(string value)
+        private static Platforms ParsePlatforms(string value)
         {
-            Plattforms result = 0;
+            Platforms result = 0;
 
             foreach (var platform in SplitList(value))
             {
                 var normalized = NormalizeToken(platform);
                 result |= normalized switch
                 {
-                    "playstation4" or "ps4" => Plattforms.Playstation4,
-                    "playstation5" or "ps5" => Plattforms.Playstation5,
-                    "switch" or "nintendoswitch" => Plattforms.Switch,
-                    "pc" => Plattforms.PC,
-                    "xbox" => Plattforms.XBOX,
-                    _ => Enum.TryParse<Plattforms>(platform, true, out var parsed) ? parsed : 0
+                    "playstation4" or "ps4" => Platforms.Playstation4,
+                    "playstation5" or "ps5" => Platforms.Playstation5,
+                    "switch" or "nintendoswitch" => Platforms.Switch,
+                    "pc" => Platforms.PC,
+                    "xbox" => Platforms.XBOX,
+                    _ => Enum.TryParse<Platforms>(platform, true, out var parsed) ? parsed : 0
                 };
             }
 

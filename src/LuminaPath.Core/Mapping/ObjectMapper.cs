@@ -1,6 +1,7 @@
 using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Base;
+using LuminaPath.Core.Models.Third_Party;
 using System.Collections;
 using System.Reflection;
 
@@ -33,6 +34,7 @@ namespace LuminaPath.Core.Mapping
             return source switch
             {
                 MyGameDto dto when destinationType == typeof(MyGame) => MapMyGame(dto),
+                MyGame entity when destinationType == typeof(MyGame) => MapMyGame(entity),
                 MyGame entity when destinationType == typeof(MyGameDto) => MapMyGameDto(entity),
                 GamesNoIncludeDto dto when destinationType == typeof(Game) => MapGame(dto),
                 GamesDto dto when destinationType == typeof(Game) => MapGame(dto),
@@ -94,6 +96,12 @@ namespace LuminaPath.Core.Mapping
         {
             var destination = CreateInstance(destinationType);
             CopyGameProperties(source, destination);
+
+            if (destination is Game game)
+            {
+                NormalizeGameRelationships(source, game);
+            }
+
             return destination;
         }
 
@@ -106,7 +114,7 @@ namespace LuminaPath.Core.Mapping
                 Description = source.Description,
                 Genres = SplitGenres(source.Genre),
                 ReleaseDate = source.ReleaseDate,
-                Plattforms = source.Plattforms,
+                Platforms = source.Platforms,
                 Playtime = source.Playtime,
                 Source = source.Source,
                 Image = source.Image,
@@ -123,7 +131,7 @@ namespace LuminaPath.Core.Mapping
                 Description = source.Description,
                 Genres = SplitGenres(source.Genre),
                 ReleaseDate = source.ReleaseDate,
-                Plattforms = source.Plattforms,
+                Platforms = source.Platforms,
                 Playtime = source.Playtime,
                 Image = MapDocument<MediaDocument>(source.Image),
                 MyGames = source.MyGames == null ? null : [Map<MyGame>(source.MyGames)]
@@ -139,7 +147,7 @@ namespace LuminaPath.Core.Mapping
                 Description = source.Description,
                 Genre = JoinGenres(source.Genres),
                 ReleaseDate = source.ReleaseDate,
-                Plattforms = source.Plattforms,
+                Platforms = source.Platforms,
                 Playtime = source.Playtime,
                 Source = source.Source,
                 Image = source.Image,
@@ -156,7 +164,7 @@ namespace LuminaPath.Core.Mapping
                 Description = source.Description,
                 Genre = JoinGenres(source.Genres),
                 ReleaseDate = source.ReleaseDate,
-                Plattforms = source.Plattforms,
+                Platforms = source.Platforms,
                 Playtime = source.Playtime,
                 Image = source.Image,
                 MyGames = source.MyGames == null ? null : Map<MyGameDto>(source.MyGames.FirstOrDefault())
@@ -175,8 +183,34 @@ namespace LuminaPath.Core.Mapping
                 TimeSpend = source.TimeSpend,
                 GameId = source.GameId,
                 Game = source.Game == null ? null : Map<Game>(source.Game),
-                MyGameInfo = source.MyGameInfo
+                MyGameInfo = MapMyGameInfo(source.MyGameInfo)
             };
+        }
+
+        private static MyGame MapMyGame(MyGame source)
+        {
+            var destination = new MyGame
+            {
+                Id = source.Id,
+                Rating = source.Rating,
+                Priority = source.Priority,
+                StartDate = source.StartDate,
+                EndDate = source.EndDate,
+                Status = source.Status,
+                TimeSpend = source.TimeSpend,
+                LuminaUserId = source.LuminaUserId,
+                LuminaUser = source.LuminaUser,
+                GameId = source.GameId,
+                MyGameInfo = MapMyGameInfo(source.MyGameInfo)
+            };
+
+            if (destination.MyGameInfo != null)
+            {
+                destination.MyGameInfo.Game = destination;
+                destination.MyGameInfo.MyGameId = destination.Id > 0 ? destination.Id : 0;
+            }
+
+            return destination;
         }
 
         private MyGameDto MapMyGameDto(MyGame source)
@@ -247,6 +281,63 @@ namespace LuminaPath.Core.Mapping
         private static void CopyGameProperties(Game source, object destination)
         {
             CopyMatchingProperties(source, destination);
+        }
+
+        private void NormalizeGameRelationships(Game source, Game destination)
+        {
+            if (source.GameInfo == null)
+            {
+                destination.GameInfo = null;
+            }
+            else
+            {
+                destination.GameInfo = MapGameInfo(source.GameInfo);
+                destination.GameInfo.Game = destination;
+                destination.GameInfo.GameId = destination.Id > 0 ? destination.Id : 0;
+            }
+
+            if (source.MyGames == null)
+            {
+                destination.MyGames = null;
+                return;
+            }
+
+            destination.MyGames = source.MyGames
+                .Select(myGame =>
+                {
+                    var mappedMyGame = Map<MyGame>(myGame);
+                    mappedMyGame.Game = destination;
+                    mappedMyGame.GameId = destination.Id > 0 ? destination.Id : 0;
+                    return mappedMyGame;
+                })
+                .ToList();
+        }
+
+        private static GameInfo MapGameInfo(GameInfo source)
+        {
+            return new GameInfo
+            {
+                Id = source.Id,
+                GameId = source.GameId,
+                PsnId = source.PsnId
+            };
+        }
+
+        private static MyGameInfo? MapMyGameInfo(MyGameInfo? source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            return new MyGameInfo
+            {
+                Id = source.Id,
+                MyGameId = source.MyGameId,
+                TrackedHours = source.TrackedHours,
+                FirstPlayed = source.FirstPlayed,
+                LastPlayed = source.LastPlayed
+            };
         }
 
         private static object CopyMatchingProperties(object source, object destination)

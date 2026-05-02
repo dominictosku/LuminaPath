@@ -55,7 +55,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 Map(m => m.Game!.Name);
                 Map(m => m.Status);
                 Map(m => m.Game!.ReleaseDate);
-                Map(m => m.Game!.Plattforms);
+                Map(m => m.Game!.Platforms);
                 Map(m => m.Game!.Source);
                 Map(m => m.MyGameInfo!.FirstPlayed);
                 Map(m => m.MyGameInfo!.LastPlayed);

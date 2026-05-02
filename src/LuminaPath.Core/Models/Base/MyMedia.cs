@@ -1,4 +1,4 @@
-﻿using LuminaPath.Core.Interfaces;
+using LuminaPath.Core.Interfaces;
 using System.ComponentModel.DataAnnotations;
 
 namespace LuminaPath.Core.Models.Base
@@ -11,7 +11,7 @@ namespace LuminaPath.Core.Models.Base
         public short? Rating { get; set; }
 
         [Range(1, 4)]
-        public int Priortiy { get; set; }
+        public int Priority { get; set; }
 
         public DateTime? StartDate { get; set; }
 
