@@ -17,7 +17,7 @@ import {
 } from '@angular/common/http';
 import { InMemoryDataService } from './shared/services/in-memory-data.service';
 import { providePrimeNG } from 'primeng/config';
-import Aura from '@primeng/themes/aura';
+import Aura from '@primeuix/themes/aura';
 import { routes } from '../app/app.routes';
 import { importProvidersFrom } from '@angular/core';
 import { IonicModule } from '@ionic/angular';

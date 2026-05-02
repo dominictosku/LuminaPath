@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { IonContent, IonHeader, IonTitle, IonToolbar, IonButton, IonRefresher, IonRefresherContent } from '@ionic/angular/standalone';
 import { TableComponent } from "../../../shared/components/media/table/table.component";
 import { GridComponent } from "../../../shared/components/media/grid/grid.component";
-import { PaginationComponent } from "../../../shared/components/pagination/pagination.component";
 import { ErrorComponent } from "../../../shared/components/error/error.component";
 import { LoadingComponent } from "../../../shared/components/loading/loading.component";
 import { SelectorComponent } from "../../../shared/components/selector/selector.component";
@@ -14,7 +13,7 @@ import { FilterComponent } from "../../../shared/components/media/filter/filter.
     selector: 'app-media',
     templateUrl: './media.page.html',
     styleUrls: ['./media.page.scss'],
-    imports: [IonRefresherContent, IonContent, IonHeader, IonTitle, IonToolbar, IonButton, IonRefresher, CommonModule, FormsModule, TableComponent, GridComponent, PaginationComponent, ErrorComponent, LoadingComponent, SelectorComponent, FilterComponent]
+    imports: [IonRefresherContent, IonContent, IonHeader, IonTitle, IonToolbar, IonButton, IonRefresher, CommonModule, FormsModule, TableComponent, GridComponent, ErrorComponent, LoadingComponent, SelectorComponent, FilterComponent]
 })
 export class MediaPage implements OnInit {
 
