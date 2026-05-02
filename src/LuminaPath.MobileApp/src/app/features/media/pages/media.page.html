@@ -1,38 +1,178 @@
-<ion-header [translucent]="true">
+<ion-header class="media-header">
   <ion-toolbar>
-    <ion-title>Media</ion-title>
+    <ion-title>Library</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" aria-label="Refresh games" (click)="loadGames()">
+        <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content :fullscreen="true">
-  <app-selector />
-  @if(pending){
-  <app-loading />
-  }@else if (error)
-  {
-  <app-error />
-  }@else {
-  <div class="mt-4">
-    <ion-button class="m-2" (click)="toggleMediaType()">Games</ion-button>
-    <div>
-      <div class="mx-4">
-        <app-filter (toggleGrid)="changeIsGrid()" />
-        <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
-          <ion-refresher-content></ion-refresher-content>
-        </ion-refresher>
+<ion-content [fullscreen]="true" class="media-shell">
+  <ion-refresher slot="fixed" (ionRefresh)="loadGames($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <main class="media-page">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">
+          <ion-icon name="albums-outline"></ion-icon>
+          Game library
+        </span>
+        <h1>Find what to play next.</h1>
+        <p>Browse the catalog, track your owned games, and keep your backlog readable.</p>
       </div>
-      @if(!isGrid){
-      <!-- Table view -->
-      <div id="Table" class="tabcontent m-4">
-        <app-table />
+
+      <div class="summary-grid">
+        <article>
+          <span>Total</span>
+          <strong>{{ totalGames }}</strong>
+        </article>
+        <article>
+          <span>Mine</span>
+          <strong>{{ ownedGames }}</strong>
+        </article>
+        <article>
+          <span>Playing</span>
+          <strong>{{ playingGames }}</strong>
+        </article>
+        <article>
+          <span>Left</span>
+          <strong>{{ remainingHours }}h</strong>
+        </article>
       </div>
-      }@else {
-      <!-- Gallery view -->
-      <div id="Grid" class="tabcontent">
-        <app-grid />
+    </section>
+
+    <section class="toolbar-panel">
+      <ion-searchbar
+        class="library-search"
+        [(ngModel)]="searchTerm"
+        (ionInput)="applyFilters()"
+        debounce="120"
+        placeholder="Search title, genre, platform, status">
+      </ion-searchbar>
+
+      <div class="filter-grid">
+        <ion-segment [(ngModel)]="ownershipFilter" (ionChange)="applyFilters()">
+          <ion-segment-button value="all">All</ion-segment-button>
+          <ion-segment-button value="mine">Mine</ion-segment-button>
+          <ion-segment-button value="catalog">Catalog</ion-segment-button>
+        </ion-segment>
+
+        <ion-select
+          interface="popover"
+          label="Status"
+          label-placement="stacked"
+          [(ngModel)]="statusFilter"
+          (ionChange)="applyFilters()">
+          <ion-select-option value="all">Any status</ion-select-option>
+          <ion-select-option *ngFor="let status of statusOptions" [value]="status.value">
+            {{ status.label }}
+          </ion-select-option>
+        </ion-select>
+
+        <ion-select
+          interface="popover"
+          label="Platform"
+          label-placement="stacked"
+          [(ngModel)]="platformFilter"
+          (ionChange)="applyFilters()">
+          <ion-select-option value="all">Any platform</ion-select-option>
+          <ion-select-option *ngFor="let platform of platforms" [value]="platform.value">
+            {{ platform.label }}
+          </ion-select-option>
+        </ion-select>
+
+        <ion-segment class="view-toggle" [(ngModel)]="viewMode">
+          <ion-segment-button value="grid">
+            <ion-icon name="grid-outline"></ion-icon>
+          </ion-segment-button>
+          <ion-segment-button value="list">
+            <ion-icon name="list-outline"></ion-icon>
+          </ion-segment-button>
+        </ion-segment>
       </div>
-      }
-    </div>
-  </div>
-  }
+    </section>
+
+    <section class="notice" *ngIf="errorMessage">
+      <ion-icon name="search-outline"></ion-icon>
+      <span>{{ errorMessage }}</span>
+    </section>
+
+    <section class="loading-grid" *ngIf="isLoading">
+      <article *ngFor="let item of [1, 2, 3, 4, 5, 6]">
+        <ion-skeleton-text animated></ion-skeleton-text>
+      </article>
+    </section>
+
+    <section class="results-heading" *ngIf="!isLoading">
+      <div>
+        <span class="eyebrow">Results</span>
+        <h2>{{ filteredGames.length }} games</h2>
+      </div>
+      <ion-button fill="clear" size="small" (click)="clearFilters()">Reset</ion-button>
+    </section>
+
+    <section class="game-grid" *ngIf="!isLoading && viewMode === 'grid' && filteredGames.length">
+      <article class="game-card" *ngFor="let game of filteredGames; trackBy: trackByGameId">
+        <img [src]="imageFor(game)" alt="" />
+        <div class="game-card__content">
+          <div class="badge-row">
+            <ion-badge>{{ statusLabel(game) }}</ion-badge>
+            <span>{{ platformLabel(game.platforms) }}</span>
+          </div>
+          <h3>{{ game.name }}</h3>
+          <p>{{ game.description || game.genre || 'No description yet.' }}</p>
+
+          <div class="meta-grid">
+            <span>
+              <ion-icon name="calendar-clear-outline"></ion-icon>
+              {{ releaseLabel(game) }}
+            </span>
+            <span>
+              <ion-icon name="time-outline"></ion-icon>
+              {{ game.playtime || 0 }}h
+            </span>
+          </div>
+
+          <div class="progress-block" *ngIf="game.myGames">
+            <div>
+              <span>{{ playedLabel(game) }}</span>
+              <strong>{{ progressOf(game) }}%</strong>
+            </div>
+            <div class="progress-track">
+              <span [style.width.%]="progressOf(game)"></span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="game-list" *ngIf="!isLoading && viewMode === 'list' && filteredGames.length">
+      <article class="list-row" *ngFor="let game of filteredGames; trackBy: trackByGameId">
+        <img [src]="imageFor(game)" alt="" />
+        <div class="list-row__main">
+          <div class="badge-row">
+            <ion-badge>{{ statusLabel(game) }}</ion-badge>
+            <span>{{ platformLabel(game.platforms) }}</span>
+          </div>
+          <h3>{{ game.name }}</h3>
+          <p>{{ game.genre || 'No genre' }} · {{ releaseLabel(game) }}</p>
+        </div>
+        <div class="list-row__stats">
+          <strong>{{ game.playtime || 0 }}h</strong>
+          <span>{{ game.myGames ? remainingLabel(game) : 'Catalog' }}</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="empty-state" *ngIf="!isLoading && !filteredGames.length">
+      <ion-icon name="game-controller-outline"></ion-icon>
+      <h2>No games match</h2>
+      <p>Try loosening the search or filters.</p>
+      <ion-button fill="outline" (click)="clearFilters()">Clear filters</ion-button>
+    </section>
+  </main>
 </ion-content>
