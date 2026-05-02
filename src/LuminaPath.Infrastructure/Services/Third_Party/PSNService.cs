@@ -27,7 +27,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
             if (string.IsNullOrWhiteSpace(npsso))
             {
                 Console.WriteLine("Error: NPSSO token is required.");
-                return null;
+                return string.Empty;
             }
 
             string authorizationUrl = "https://ca.account.sony.com/api/authz/v3/oauth/authorize";
@@ -52,14 +52,20 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
 
                 var response = await httpClient.SendAsync(request);
 
-                if (!response.Headers.Location.Query.StartsWith("?code=v3"))
+                var location = response.Headers.Location;
+                if (location?.Query.StartsWith("?code=v3") != true)
                 {
                     Console.WriteLine("Error: Check NPSSO token.");
-                    return null;
+                    return string.Empty;
                 }
 
-                var queryParamsFromResponse = HttpUtility.ParseQueryString(response.Headers.Location.Query);
-                string code = queryParamsFromResponse["code"];
+                var queryParamsFromResponse = HttpUtility.ParseQueryString(location.Query);
+                string code = queryParamsFromResponse["code"] ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(code))
+                {
+                    Console.WriteLine("Error: Authentication code was missing.");
+                    return string.Empty;
+                }
 
                 var formContent = new FormUrlEncodedContent(new[]
                 {
@@ -81,7 +87,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
                 if (!tokenResponse.IsSuccessStatusCode)
                 {
                     Console.WriteLine("Error: Unable to obtain Authentication Token.");
-                    return null;
+                    return string.Empty;
                 }
 
                 var jsonResponse = await tokenResponse.Content.ReadAsStringAsync();
@@ -95,13 +101,13 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
                 else
                 {
                     Console.WriteLine("Error: Unable to obtain Authentication Token.");
-                    return null;
+                    return string.Empty;
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error: {ex.Message}");
-                return null;
+                return string.Empty;
             }
         }
 
@@ -141,7 +147,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
         {
             string apiUrl = $"https://us-prof.np.community.playstation.net/userProfile/v1/users/{userName}/profile2?fields=accountId,onlineId,currentOnlineId";
             var responseData = await MakeRequest(apiUrl);
-            ProfileData profile = JsonSerializer.Deserialize<ProfileData>(responseData);
+            ProfileData profile = JsonSerializer.Deserialize<ProfileData>(responseData) ?? new();
             return profile;
         }
 
@@ -149,7 +155,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
         {
             string apiUrl = $"https://us-prof.np.community.playstation.net/userProfile/v1/users/me/profile2?fields=accountId,onlineId,currentOnlineId";
             var responseData = await MakeRequest(apiUrl);
-            ProfileData profile = JsonSerializer.Deserialize<ProfileData>(responseData);
+            ProfileData profile = JsonSerializer.Deserialize<ProfileData>(responseData) ?? new();
             return profile;
         }
 
@@ -158,7 +164,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
             var input = $"?limit=200&offset={offset}";
             string apiUrl = $"https://m.np.playstation.com/api/gamelist/v2/users/{accountId}/titles{input}";
             var responseData = await MakeRequest(apiUrl);
-            GameData gameData = JsonSerializer.Deserialize<GameData>(responseData);
+            GameData gameData = JsonSerializer.Deserialize<GameData>(responseData) ?? new();
             return gameData;
 
         }
@@ -167,7 +173,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
         {
             string apiUrl = $"https://m.np.playstation.com/api/trophy/v1/users/{accountId}/trophySummary";
             var responseData = await MakeRequest(apiUrl);
-            TrophyProfileData trophyData = JsonSerializer.Deserialize<TrophyProfileData>(responseData);
+            TrophyProfileData trophyData = JsonSerializer.Deserialize<TrophyProfileData>(responseData) ?? new();
             return trophyData;
         }
 
@@ -176,7 +182,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
         {
             string apiUrl = $"https://m.np.playstation.com/api/trophy/v1/users/{accountId}/trophyTitles";
             var responseData = await MakeRequest(apiUrl);
-            TrophyData trophyData = JsonSerializer.Deserialize<TrophyData>(responseData);
+            TrophyData trophyData = JsonSerializer.Deserialize<TrophyData>(responseData) ?? new();
             return trophyData;
         }
 
@@ -248,6 +254,11 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
 
             foreach (var gameToImport in gamesToImport)
             {
+                if (gameToImport.Game?.GameInfo == null)
+                {
+                    continue;
+                }
+
                 var importGameInfo = gameToImport.Game.GameInfo;
                 var existingGame = existingGames
                     .FirstOrDefault(g => g.GameInfo != null && g.GameInfo.PsnId == importGameInfo.PsnId);
@@ -307,6 +318,11 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
 
         private static void AddNewGame(List<Game> gamesToAdd, MyGameDto gameToImport, LuminaUser user)
         {
+            if (gameToImport.Game?.GameInfo == null)
+            {
+                return;
+            }
+
             var newGame = new Game
             {
                 Name = gameToImport.Game.Name,
@@ -346,7 +362,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
         public class TokenResponse
         {
             [JsonPropertyName("access_token")]
-            public string AccessToken { get; set; }
+            public string AccessToken { get; set; } = string.Empty;
         }
     }
 }

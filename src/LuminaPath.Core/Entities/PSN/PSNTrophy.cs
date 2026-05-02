@@ -7,7 +7,7 @@ namespace LuminaPath.Core.Entities.PSN
         public class TrophyData
         {
             [JsonPropertyName("trophyTitles")]
-            public List<TrophyTitle> TrophyTitles { get; set; }
+            public List<TrophyTitle> TrophyTitles { get; set; } = [];
 
             [JsonPropertyName("totalItemCount")]
             public int TotalItemCount { get; set; }
@@ -16,7 +16,7 @@ namespace LuminaPath.Core.Entities.PSN
         public class TrophyProfileData
         {
             [JsonPropertyName("accountId")]
-            public string AccountId { get; set; }
+            public string AccountId { get; set; } = string.Empty;
 
             [JsonPropertyName("trophyLevel")]
             public int TrophyLevel { get; set; }
@@ -37,41 +37,41 @@ namespace LuminaPath.Core.Entities.PSN
             public int Tier { get; set; }
 
             [JsonPropertyName("earnedTrophies")]
-            public EarnedTrophies EarnedTrophies { get; set; }
+            public EarnedTrophies EarnedTrophies { get; set; } = new();
         }
 
 
         public class TrophyTitle
         {
             [JsonPropertyName("npServiceName")]
-            public string NpServiceName { get; set; }
+            public string NpServiceName { get; set; } = string.Empty;
 
             [JsonPropertyName("npCommunicationId")]
-            public string NpCommunicationId { get; set; }
+            public string NpCommunicationId { get; set; } = string.Empty;
 
             [JsonPropertyName("trophySetVersion")]
-            public string TrophySetVersion { get; set; }
+            public string TrophySetVersion { get; set; } = string.Empty;
 
             [JsonPropertyName("trophyTitleName")]
-            public string TrophyTitleName { get; set; }
+            public string TrophyTitleName { get; set; } = string.Empty;
 
             [JsonPropertyName("trophyTitleIconUrl")]
-            public string TrophyTitleIconUrl { get; set; }
+            public string TrophyTitleIconUrl { get; set; } = string.Empty;
 
             [JsonPropertyName("trophyTitlePlatform")]
-            public string TrophyTitlePlatform { get; set; }
+            public string TrophyTitlePlatform { get; set; } = string.Empty;
 
             [JsonPropertyName("hasTrophyGroups")]
             public bool HasTrophyGroups { get; set; }
 
             [JsonPropertyName("definedTrophies")]
-            public DefinedTrophies DefinedTrophies { get; set; }
+            public DefinedTrophies DefinedTrophies { get; set; } = new();
 
             [JsonPropertyName("progress")]
             public int Progress { get; set; }
 
             [JsonPropertyName("earnedTrophies")]
-            public EarnedTrophies EarnedTrophies { get; set; }
+            public EarnedTrophies EarnedTrophies { get; set; } = new();
 
             [JsonPropertyName("hiddenFlag")]
             public bool HiddenFlag { get; set; }

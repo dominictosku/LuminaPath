@@ -22,25 +22,25 @@ namespace LuminaPath.Core.Entities.PSN
         public class Title
         {
             [JsonPropertyName("titleId")]
-            public string TitleId { get; set; }
+            public string TitleId { get; set; } = string.Empty;
 
             [JsonPropertyName("name")]
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
 
             [JsonPropertyName("localizedName")]
-            public string LocalizedName { get; set; }
+            public string LocalizedName { get; set; } = string.Empty;
 
             [JsonPropertyName("imageUrl")]
-            public string ImageUrl { get; set; }
+            public string ImageUrl { get; set; } = string.Empty;
 
             [JsonPropertyName("localizedImageUrl")]
-            public string LocalizedImageUrl { get; set; }
+            public string LocalizedImageUrl { get; set; } = string.Empty;
 
             [JsonPropertyName("category")]
-            public string Category { get; set; }
+            public string Category { get; set; } = string.Empty;
 
             [JsonPropertyName("service")]
-            public string Service { get; set; }
+            public string Service { get; set; } = string.Empty;
 
             [JsonPropertyName("playCount")]
             public int PlayCount { get; set; }
@@ -52,7 +52,7 @@ namespace LuminaPath.Core.Entities.PSN
             public DateTime LastPlayedDateTime { get; set; }
 
             [JsonPropertyName("playDuration")]
-            public string PlayDuration { get; set; }
+            public string PlayDuration { get; set; } = string.Empty;
         }
 
         public class Concept
@@ -61,34 +61,34 @@ namespace LuminaPath.Core.Entities.PSN
             public int Id { get; set; }
 
             [JsonPropertyName("name")]
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
 
             [JsonPropertyName("media")]
-            public string Media { get; set; }
+            public string Media { get; set; } = string.Empty;
 
             [JsonPropertyName("genres")]
-            public string Genres { get; set; }
+            public string Genres { get; set; } = string.Empty;
 
             [JsonPropertyName("localizedName")]
-            public string LocalizedName { get; set; }
+            public string LocalizedName { get; set; } = string.Empty;
 
             [JsonPropertyName("country")]
-            public string Country { get; set; }
+            public string Country { get; set; } = string.Empty;
 
             [JsonPropertyName("language")]
-            public string Language { get; set; }
+            public string Language { get; set; } = string.Empty;
         }
 
         public class Media
         {
             [JsonPropertyName("audios")]
-            public string Audios { get; set; }
+            public string Audios { get; set; } = string.Empty;
 
             [JsonPropertyName("videos")]
-            public string Videos { get; set; }
+            public string Videos { get; set; } = string.Empty;
 
             [JsonPropertyName("images")]
-            public string Images { get; set; }
+            public string Images { get; set; } = string.Empty;
         }
     }
 }

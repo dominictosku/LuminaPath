@@ -3,7 +3,7 @@
     public class GameInfo
     {
         public int Id { get; set; }
-        public Game Game { get; set; }
+        public Game? Game { get; set; }
         public int GameId { get; set; }
         public string? PsnId { get; set; }
     }

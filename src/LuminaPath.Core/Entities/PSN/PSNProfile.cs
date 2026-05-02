@@ -7,16 +7,16 @@ namespace LuminaPath.Core.Entities.PSN
         public class ProfileData
         {
             [JsonPropertyName("profile")]
-            public Profile Profile { get; set; }
+            public Profile Profile { get; set; } = new();
         }
 
         public class Profile
         {
             [JsonPropertyName("onlineId")]
-            public string OnlineId { get; set; }
+            public string OnlineId { get; set; } = string.Empty;
 
             [JsonPropertyName("accountId")]
-            public string AccountId { get; set; }
+            public string AccountId { get; set; } = string.Empty;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using LuminaPath.Components;
 using LuminaPath.Core.Models;
 using LuminaPath.Features.Auth.Account;
+using LuminaPath.Features.Documents;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 
@@ -22,6 +23,7 @@ namespace LuminaPath
             services.AddScoped<IdentityRedirectManager>();
             services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
             services.AddSingleton<IEmailSender<LuminaUser>, IdentityNoOpEmailSender>();
+            services.AddScoped<DocumentPageService>();
 
             return services;
         }

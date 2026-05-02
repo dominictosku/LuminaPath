@@ -245,7 +245,6 @@ namespace LuminaPath.Infrastructure
                 }
                 return Results.Unauthorized();
             })
-            .WithOpenApi()
             .RequireAuthorization();
         }
     }

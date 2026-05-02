@@ -3,7 +3,7 @@
     public class MyGameInfo
     {
         public int Id { get; set; }
-        public MyGame Game { get; set; }
+        public MyGame? Game { get; set; }
         public int MyGameId { get; set; }
         public double TrackedHours { get; set; }
         public DateTime FirstPlayed { get; set; }

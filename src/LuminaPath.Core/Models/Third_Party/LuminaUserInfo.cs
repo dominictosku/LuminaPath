@@ -3,13 +3,13 @@
     public class LuminaUserInfo
     {
         public int Id { get; set; }
-        public LuminaUser User { get; set; }
-        public string UserId { get; set; }
+        public LuminaUser? User { get; set; }
+        public string UserId { get; set; } = string.Empty;
 
         #region PSN
-        public string PSNOnlineId { get; set; }
+        public string PSNOnlineId { get; set; } = string.Empty;
 
-        public string PSNAccountId { get; set; }
+        public string PSNAccountId { get; set; } = string.Empty;
 
         public int PSNTrophyLevel { get; set; }
 
