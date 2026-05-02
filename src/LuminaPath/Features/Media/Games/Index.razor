@@ -11,9 +11,17 @@
 
 <PageTitle>Games</PageTitle>
 
-<h1>Games</h1>
-<MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary">@ToggleText</MudButton>
+<div class="media-page-header">
+	<div>
+		<p class="eyebrow">Library</p>
+		<h1>Games</h1>
+		<MudText Typo="Typo.body2" Class="mud-text-secondary">Browse, compare, and maintain the game catalog.</MudText>
+	</div>
+	<MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@ViewIcon">@ToggleText</MudButton>
+</div>
+
 <AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" />
+
 @if (IsGrid)
 {
 	<LuminaGrid GetData="@(GetData)"
@@ -27,39 +35,54 @@
 		</ToolBarContent>
 		<Columns>
 			<SelectColumn ShowInFooter="false"></SelectColumn>
-			<TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
+			<TemplateColumn CellStyle="width:72px" Title="" Sortable="false">
 				<CellTemplate>
-					<MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DropShadow="false" Size="Size.Small"
-						Dense="true"
-					EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+					<div class="table-cover" style="background-image: url('@Cover(context.Item)');"></div>
+				</CellTemplate>
+			</TemplateColumn>
+			<TemplateColumn Title="Game">
+				<CellTemplate>
+					<div class="title-cell">
+						<MudText Typo="Typo.body1">@context.Item.Name</MudText>
+						<MudText Typo="Typo.body2" Class="mud-text-secondary">@Summary(context.Item)</MudText>
+						<div class="chip-row">
+							@foreach (var genre in context.Item.Genres.Take(3))
+							{
+								<span class="soft-chip">@genre</span>
+							}
+						</div>
+					</div>
+				</CellTemplate>
+			</TemplateColumn>
+			<TemplateColumn Title="Details">
+				<CellTemplate>
+					<div class="detail-stack">
+						<span><MudIcon Icon="@Icons.Material.Filled.VideogameAsset" Size="Size.Small" /> @context.Item.Platforms</span>
+						<span><MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" /> @Playtime(context.Item)</span>
+						<span><MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" /> @ReleaseDate(context.Item)</span>
+					</div>
+				</CellTemplate>
+			</TemplateColumn>
+			<TemplateColumn Title="Source">
+				<CellTemplate>
+					<span class="source-pill">@context.Item.Source</span>
+				</CellTemplate>
+			</TemplateColumn>
+			<TemplateColumn CellStyle="width:76px" Title="Actions" Sortable="false">
+				<CellTemplate>
+					<MudMenu Icon="@Icons.Material.Filled.MoreVert" Variant="Variant.Filled" DropShadow="false" Size="Size.Small"
+							 Dense="true" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
 						<MudMenuItem OnClick="@(async () => await OnUpdate(context.Item))">Edit</MudMenuItem>
-
 						<MudMenuItem OnClick="@(async () => await Delete(context.Item))">Delete</MudMenuItem>
 					</MudMenu>
 				</CellTemplate>
 			</TemplateColumn>
-
-			<PropertyColumn Property="x => x.Name" Title="Title">
-				<CellTemplate>
-					<div class="d-flex flex-column">
-						<MudText Typo="Typo.body2">@context.Item.Name</MudText>
-						<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
-					</div>
-				</CellTemplate>
-			</PropertyColumn>
-			<PropertyColumn Property="x => x.Genres" Title="Genre" >
-				<CellTemplate>
-					<div class="d-flex flex-column">
-						<MudText Typo="Typo.body2" Class="mud-text-secondary">@string.Join(",", context.Item.Genres)</MudText>
-					</div>
-				</CellTemplate>
-			</PropertyColumn>
 		</Columns>
 		<NoRecordsContent>
-			<MudText>No items found</MudText>
+			<MudText>No games found</MudText>
 		</NoRecordsContent>
 		<LoadingContent>
-			<MudText>Loading</MudText>
+			<MudText>Loading games</MudText>
 		</LoadingContent>
 		<PagerContent>
 			<MudDataGridPager />
@@ -68,52 +91,205 @@
 }
 else
 {
-	<MudContainer MaxWidth="MaxWidth.ExtraLarge" Style="background-color:#121e2d;">
-		<MudToolBar class="mud-table-toolbar">
-			<TableActions Page="this" loading="loading" selectedItems="selectedItems" />
-		</MudToolBar>
-		<MudGrid Spacing="2">
-			@foreach (var game in Games)
-			{
-				<MudItem>
-					<MudCard Outlined="true">
-						<MudCardMedia Image="@game.Image?.Url" Height="200" />
-						<MudCardContent Style="height:80px;">
-							<MudText Typo="Typo.h5">@game.Name</MudText>
-							<MudText Typo="Typo.body2">@game.Description</MudText>
-						</MudCardContent>
-						<MudCardActions Style="height:50px;">
-							<MudButton OnClick="@(() => OnUpdate(game))" Variant="Variant.Text" Color="Color.Primary">Edit</MudButton>
-							<MudButton Variant="Variant.Text" Color="Color.Primary">Add To List</MudButton>
-						</MudCardActions>
-					</MudCard>
-				</MudItem>
-			}
-		</MudGrid>
-	</MudContainer>
+	<div class="card-toolbar">
+		<TableActions Page="this" loading="loading" selectedItems="selectedItems" />
+	</div>
+	<div class="game-card-grid">
+		@foreach (var game in Games)
+		{
+			<article class="game-card">
+				<div class="card-cover" style="background-image: url('@Cover(game)');">
+					<span class="source-pill overlay">@game.Source</span>
+				</div>
+				<div class="game-card-body">
+					<div>
+						<h2>@game.Name</h2>
+						<p>@Summary(game)</p>
+					</div>
+					<div class="chip-row">
+						@foreach (var genre in game.Genres.Take(3))
+						{
+							<span class="soft-chip">@genre</span>
+						}
+					</div>
+					<div class="card-metrics">
+						<span><MudIcon Icon="@Icons.Material.Filled.VideogameAsset" Size="Size.Small" /> @game.Platforms</span>
+						<span><MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" /> @Playtime(game)</span>
+						<span><MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" /> @ReleaseDate(game)</span>
+					</div>
+				</div>
+				<div class="game-card-actions">
+					<MudButton OnClick="@(() => OnUpdate(game))" Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit">Edit</MudButton>
+					<MudButton OnClick="@(async () => await Delete(game))" Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete">Delete</MudButton>
+				</div>
+			</article>
+		}
+	</div>
 }
 
 <style>
-	@@import url("https://cdn.jsdelivr.net/npm/@@fancyapps/ui@5.0/dist/fancybox/fancybox.css");
-
-	.fancybox__container {
-	--fancybox-bg: rgba(24, 24, 27, 0.85);
-	z-index: 9999;
+	.media-page-header {
+		display: flex;
+		align-items: end;
+		justify-content: space-between;
+		gap: 16px;
+		margin-bottom: 18px;
 	}
 
-	.mud-table-toolbar {
-	height: 120px !important;
+	.media-page-header h1 {
+		margin: 0;
+		letter-spacing: 0;
+	}
+
+	.eyebrow {
+		margin: 0 0 4px;
+		color: var(--mud-palette-primary);
+		font-size: .76rem;
+		font-weight: 800;
+		letter-spacing: 0;
+		text-transform: uppercase;
+	}
+
+	.table-cover {
+		width: 52px;
+		height: 64px;
+		border-radius: 6px;
+		background-color: #263346;
+		background-position: center;
+		background-size: cover;
+		box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
+	}
+
+	.title-cell {
+		display: grid;
+		gap: 4px;
+		min-width: 240px;
+	}
+
+	.chip-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.soft-chip,
+	.source-pill {
+		display: inline-flex;
+		align-items: center;
+		min-height: 24px;
+		padding: 3px 9px;
+		border-radius: 999px;
+		background: rgba(118, 228, 196, .12);
+		color: var(--mud-palette-text-primary);
+		font-size: .78rem;
+		font-weight: 700;
+	}
+
+	.source-pill {
+		background: rgba(117, 167, 255, .14);
+	}
+
+	.source-pill.overlay {
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		background: rgba(9, 15, 26, .82);
+		color: #fff;
+	}
+
+	.detail-stack,
+	.card-metrics {
+		display: grid;
+		gap: 6px;
+		color: var(--mud-palette-text-secondary);
+		font-size: .88rem;
+	}
+
+	.detail-stack span,
+	.card-metrics span {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.card-toolbar {
+		margin: 8px 0 14px;
+		padding: 10px 0;
+	}
+
+	.game-card-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+		gap: 16px;
+	}
+
+	.game-card {
+		display: grid;
+		grid-template-rows: 190px 1fr auto;
+		min-height: 420px;
+		border: 1px solid rgba(255, 255, 255, .08);
+		border-radius: 8px;
+		background: var(--mud-palette-surface);
+		overflow: hidden;
+		box-shadow: 0 14px 34px rgba(0, 0, 0, .14);
+	}
+
+	.card-cover {
+		position: relative;
+		background-color: #263346;
+		background-position: center;
+		background-size: cover;
+	}
+
+	.game-card-body {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 16px;
+	}
+
+	.game-card h2 {
+		margin: 0;
+		font-size: 1.15rem;
+		line-height: 1.2;
+		letter-spacing: 0;
+	}
+
+	.game-card p {
+		margin: 6px 0 0;
+		color: var(--mud-palette-text-secondary);
+		line-height: 1.45;
+	}
+
+	.card-metrics {
+		margin-top: auto;
+		grid-template-columns: 1fr;
+	}
+
+	.game-card-actions {
+		display: flex;
+		justify-content: space-between;
+		padding: 8px 10px 10px;
+		border-top: 1px solid rgba(255, 255, 255, .08);
+	}
+
+	@@media (max-width: 720px) {
+		.media-page-header {
+			align-items: stretch;
+			flex-direction: column;
+		}
 	}
 </style>
 
-@code{
+@code {
+	private readonly string _placeholderCover = "/Images/Placeholder.png";
 	private List<GameViewModel> Games = new();
 	private MudDataGrid<GameViewModel> _table = default!;
 	protected override string EntityLabel => "Game";
+	private string ViewIcon => IsGrid ? Icons.Material.Filled.ViewModule : Icons.Material.Filled.TableRows;
 
 	protected override void OnInitialized()
 	{
-		// Assign the injected service to the base class property
 		ModelService = GameService;
 		base.OnInitialized();
 	}
@@ -145,6 +321,40 @@ else
 		return games;
 	}
 
+	private string Cover(Game? game)
+	{
+		return string.IsNullOrWhiteSpace(game?.Image?.Url)
+			? _placeholderCover
+			: NormalizeUrl(game.Image.Url);
+	}
+
+	private static string NormalizeUrl(string url)
+	{
+		return url.StartsWith("http", StringComparison.OrdinalIgnoreCase) || url.StartsWith("/")
+			? url
+			: $"/{url}";
+	}
+
+	private static string Summary(Game game)
+	{
+		if (string.IsNullOrWhiteSpace(game.Description))
+		{
+			return game.Genres.Count > 0 ? string.Join(" / ", game.Genres.Take(3)) : "No description yet";
+		}
+
+		return game.Description.Length > 120 ? $"{game.Description[..120]}..." : game.Description;
+	}
+
+	private static string Playtime(Game game)
+	{
+		return game.Playtime is null ? "No estimate" : $"{game.Playtime}h";
+	}
+
+	private static string ReleaseDate(Game game)
+	{
+		return game.ReleaseDate?.ToString("dd.MM.yyyy") ?? "No date";
+	}
+
 	protected override DialogParameters<GameFormDialog> CreateDialogParameters(GameViewModel command, Func<GameViewModel, Task> OnSubmit)
 	{
 		return new DialogParameters<GameFormDialog>
@@ -158,4 +368,3 @@ else
 			};
 	}
 }
-
