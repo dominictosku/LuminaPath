@@ -20,6 +20,9 @@
     <a href="https://github.com/dominictosku/LuminaPath/actions/workflows/ci.yml">
       <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/dominictosku/LuminaPath/ci.yml?branch=main&style=for-the-badge&logo=githubactions&label=CI">
     </a>
+    <a href="https://github.com/dominictosku/LuminaPath/actions/workflows/publish.yml">
+      <img alt="Release" src="https://img.shields.io/github/actions/workflow/status/dominictosku/LuminaPath/publish.yml?style=for-the-badge&logo=githubactions&label=Release">
+    </a>
   </p>
 
   <p>
@@ -193,21 +196,127 @@ npm start
 
 For local Angular development, edit `src/LuminaPath.MobileApp/src/assets/env.js` if you need a different API endpoint.
 
+## Manual Android APK Build
+
+Use this when you want to build the Ionic/Angular mobile app yourself and install it on a phone for homelab testing.
+
+Install these tools first:
+
+- Android Studio with the Android SDK.
+- Java 21.
+- Android platform tools if you want to install through `adb`.
+- Node.js 22.
+
+Build the web app and sync Capacitor:
+
+```powershell
+cd src/LuminaPath.MobileApp
+npm install
+npm run build -- --configuration production
+npx cap add android
+npx cap sync android
+```
+
+`npx cap add android` only needs to be run once, or whenever the generated `android` folder does not exist.
+
+Build a debug APK:
+
+```powershell
+cd android
+.\gradlew.bat assembleDebug
+```
+
+The APK is created here:
+
+```text
+src/LuminaPath.MobileApp/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Install it on a connected Android device:
+
+```powershell
+adb install -r app\build\outputs\apk\debug\app-debug.apk
+```
+
+For homelab testing, point the app login screen to your hosted backend API:
+
+```text
+https://luminapath.yourdomain.com/api
+```
+
+or:
+
+```text
+http://192.168.178.50:8080/api
+```
+
+HTTPS with a trusted certificate is recommended. Plain HTTP and self-signed certificates can work for some setups, but Android WebView is much stricter than a normal desktop browser.
+
+Allow the Capacitor app origin in the backend CORS configuration:
+
+```text
+Cors__AllowedOrigins__0=capacitor://localhost
+Cors__AllowedOrigins__1=http://localhost
+Cors__AllowedOrigins__2=https://luminapath.yourdomain.com
+```
+
+Restart the backend after changing CORS settings.
+
+For quick rebuilds after frontend changes:
+
+```powershell
+cd src/LuminaPath.MobileApp
+npm run build -- --configuration production
+npx cap sync android
+cd android
+.\gradlew.bat assembleDebug
+adb install -r app\build\outputs\apk\debug\app-debug.apk
+```
+
 ## CI/CD
 
 GitHub Actions are split into two workflows:
 
 - `CI`: restores, builds and tests the .NET solution, builds Angular, validates Compose and builds both Docker images.
-- `Publish Containers`: publishes backend and frontend images to GitHub Container Registry on version tags like `v1.2.3` or manual dispatch.
+- `Release`: publishes backend and frontend images to Docker Hub, builds the Ionic/Angular app as an Android APK, and attaches the APK to a GitHub Release.
 
-Optional Azure App Service deployment is supported by setting these repository secrets:
+Create a release by pushing a version tag:
 
-```text
-AZURE_CREDENTIALS
-AZURE_WEBAPP_NAME
+```powershell
+git tag v1.2.3
+git push origin v1.2.3
 ```
 
-When `AZURE_WEBAPP_NAME` is present, the publish workflow deploys the API image to that Azure Web App.
+Docker Hub publishing needs these repository secrets:
+
+```text
+DOCKERHUB_USERNAME
+DOCKERHUB_TOKEN
+```
+
+The release workflow publishes:
+
+```text
+docker.io/<DOCKERHUB_USERNAME>/luminapath-api:<version>
+docker.io/<DOCKERHUB_USERNAME>/luminapath-api:<major>.<minor>
+docker.io/<DOCKERHUB_USERNAME>/luminapath-api:latest
+docker.io/<DOCKERHUB_USERNAME>/luminapath-frontend:<version>
+docker.io/<DOCKERHUB_USERNAME>/luminapath-frontend:<major>.<minor>
+docker.io/<DOCKERHUB_USERNAME>/luminapath-frontend:latest
+```
+
+Every build also gets a `sha-...` tag for exact rollbacks.
+
+Android APK publishing works without signing secrets and uploads a debug-signed APK. For a user-facing release APK, add these optional secrets:
+
+```text
+ANDROID_KEYSTORE_BASE64
+ANDROID_KEYSTORE_PASSWORD
+ANDROID_KEY_ALIAS
+ANDROID_KEY_PASSWORD
+```
+
+`ANDROID_KEYSTORE_BASE64` is your Android keystore encoded as base64. When all four secrets are present, the workflow signs, verifies and uploads `LuminaPath-<version>.apk` to the GitHub Release.
 
 ## Seeded Login
 

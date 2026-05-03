@@ -1,24 +1,28 @@
-name: Publish Containers
+name: Release
 
 on:
   push:
     tags:
       - "v*.*.*"
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "GitHub release tag to create or update"
+        required: true
+        default: "v0.0.0-dev"
 
 permissions:
-  contents: read
-  packages: write
+  contents: write
 
 env:
-  REGISTRY: ghcr.io
-  API_IMAGE: ${{ github.repository_owner }}/luminapath-api
-  FRONTEND_IMAGE: ${{ github.repository_owner }}/luminapath-frontend
-  AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || github.ref_name }}
+  DOCKERHUB_NAMESPACE: ${{ secrets.DOCKERHUB_USERNAME }}
+  API_IMAGE: luminapath-api
+  FRONTEND_IMAGE: luminapath-frontend
 
 jobs:
-  publish:
-    name: Build and Push Images
+  dockerhub:
+    name: Docker Hub Images
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,29 +31,32 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to GitHub Container Registry
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: API Metadata
         id: api_meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.API_IMAGE }}
+          images: docker.io/${{ env.DOCKERHUB_NAMESPACE }}/${{ env.API_IMAGE }}
           tags: |
-            type=ref,event=tag
+            type=semver,pattern={{version}},value=${{ env.RELEASE_TAG }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.RELEASE_TAG }}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
             type=sha,prefix=sha-
 
       - name: Frontend Metadata
         id: frontend_meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}
+          images: docker.io/${{ env.DOCKERHUB_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}
           tags: |
-            type=ref,event=tag
+            type=semver,pattern={{version}},value=${{ env.RELEASE_TAG }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.RELEASE_TAG }}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
             type=sha,prefix=sha-
 
       - name: Build and Push API
@@ -58,9 +65,7 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: |
-            ${{ steps.api_meta.outputs.tags }}
-            ${{ env.REGISTRY }}/${{ env.API_IMAGE }}:sha-${{ github.sha }}
+          tags: ${{ steps.api_meta.outputs.tags }}
           labels: ${{ steps.api_meta.outputs.labels }}
 
       - name: Build and Push Frontend
@@ -69,20 +74,93 @@ jobs:
           context: src/LuminaPath.MobileApp
           file: src/LuminaPath.MobileApp/Dockerfile
           push: true
-          tags: |
-            ${{ steps.frontend_meta.outputs.tags }}
-            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:sha-${{ github.sha }}
+          tags: ${{ steps.frontend_meta.outputs.tags }}
           labels: ${{ steps.frontend_meta.outputs.labels }}
 
-      - name: Azure Login
-        if: env.AZURE_WEBAPP_NAME != ''
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Deploy API to Azure Web App
-        if: env.AZURE_WEBAPP_NAME != ''
-        uses: azure/webapps-deploy@v3
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          images: ${{ env.REGISTRY }}/${{ env.API_IMAGE }}:sha-${{ github.sha }}
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/LuminaPath.MobileApp/package-lock.json
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        working-directory: src/LuminaPath.MobileApp
+        run: npm ci
+
+      - name: Build web app
+        working-directory: src/LuminaPath.MobileApp
+        run: npm run build -- --configuration production
+
+      - name: Generate Capacitor Android project
+        working-directory: src/LuminaPath.MobileApp
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+          npx cap sync android
+          chmod +x android/gradlew
+
+      - name: Build debug APK
+        if: env.ANDROID_KEYSTORE_BASE64 == '' || env.ANDROID_KEYSTORE_PASSWORD == '' || env.ANDROID_KEY_ALIAS == '' || env.ANDROID_KEY_PASSWORD == ''
+        working-directory: src/LuminaPath.MobileApp/android
+        run: |
+          ./gradlew assembleDebug
+          mkdir -p ../artifacts
+          cp app/build/outputs/apk/debug/app-debug.apk "../artifacts/LuminaPath-${RELEASE_TAG}-debug.apk"
+
+      - name: Build signed release APK
+        if: env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != ''
+        working-directory: src/LuminaPath.MobileApp/android
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > release.keystore
+          ./gradlew assembleRelease
+          mkdir -p ../artifacts
+          SDK_BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          "$SDK_BUILD_TOOLS/zipalign" -p -f 4 app/build/outputs/apk/release/app-release-unsigned.apk "../artifacts/LuminaPath-${RELEASE_TAG}-aligned.apk"
+          "$SDK_BUILD_TOOLS/apksigner" sign \
+            --ks release.keystore \
+            --ks-pass pass:"$ANDROID_KEYSTORE_PASSWORD" \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --key-pass pass:"$ANDROID_KEY_PASSWORD" \
+            --out "../artifacts/LuminaPath-${RELEASE_TAG}.apk" \
+            "../artifacts/LuminaPath-${RELEASE_TAG}-aligned.apk"
+          "$SDK_BUILD_TOOLS/apksigner" verify "../artifacts/LuminaPath-${RELEASE_TAG}.apk"
+          rm "../artifacts/LuminaPath-${RELEASE_TAG}-aligned.apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: luminapath-android-apk
+          path: src/LuminaPath.MobileApp/artifacts/*.apk
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: LuminaPath ${{ env.RELEASE_TAG }}
+          files: src/LuminaPath.MobileApp/artifacts/*.apk
+          generate_release_notes: true
