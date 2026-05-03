@@ -1,27 +1,87 @@
-# LuminaPath
+<div align="center">
+  <img src="docs/images/app-screenshot-placeholder.svg" alt="LuminaPath app screenshot placeholder" width="100%" />
 
-LuminaPath is a personal game library, backlog planner, playtime tracker and quest-style productivity app. The main app is an ASP.NET Core Blazor experience with a PostgreSQL backend. An optional Ionic/Angular frontend is included for a mobile-style interface and can run against the same API.
+  <h1>LuminaPath</h1>
 
-## What It Does
+  <p>
+    <strong>Your game library, backlog, playtime tracker and quest board in one self-hosted command center.</strong>
+  </p>
 
-- Catalog games with platforms, genres, release dates, covers and estimated playtime.
-- Track your personal library with status, priority, rating, start/end dates and manual played hours.
-- Keep manually entered playtime separate from third-party playtime such as PSN, while showing a combined total.
-- Import/export game data through Excel.
-- Import PlayStation Network play history.
-- Manage media documents and uploaded cover files.
-- Track RPG-style quests, faction quests and real-life skills through the quest board.
-- View dashboards and statistics for current games, completed games, played hours and planned releases.
+  <p>
+    <a href="https://github.com/dominictosku/LuminaPath/stargazers">
+      <img alt="GitHub stars" src="https://img.shields.io/github/stars/dominictosku/LuminaPath?style=for-the-badge&logo=github&color=38bdf8">
+    </a>
+    <a href="https://github.com/dominictosku/LuminaPath/network/members">
+      <img alt="GitHub forks" src="https://img.shields.io/github/forks/dominictosku/LuminaPath?style=for-the-badge&logo=github&color=60a5fa">
+    </a>
+    <a href="https://github.com/dominictosku/LuminaPath/issues">
+      <img alt="GitHub issues" src="https://img.shields.io/github/issues/dominictosku/LuminaPath?style=for-the-badge&logo=github&color=f59e0b">
+    </a>
+    <a href="https://github.com/dominictosku/LuminaPath/actions/workflows/ci.yml">
+      <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/dominictosku/LuminaPath/ci.yml?branch=main&style=for-the-badge&logo=githubactions&label=CI">
+    </a>
+  </p>
 
-## Stack
+  <p>
+    <img alt=".NET 10" src="https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=dotnet">
+    <img alt="Blazor" src="https://img.shields.io/badge/Blazor-Server-512BD4?style=flat-square&logo=blazor">
+    <img alt="Angular" src="https://img.shields.io/badge/Angular-21-DD0031?style=flat-square&logo=angular">
+    <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-17-4169E1?style=flat-square&logo=postgresql&logoColor=white">
+    <img alt="Docker" src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white">
+  </p>
 
-- .NET 10 / ASP.NET Core / Blazor Server
-- Entity Framework Core and ASP.NET Core Identity
-- PostgreSQL
-- MudBlazor and Radzen
-- Optional Ionic/Angular frontend, built with Node.js 22 LTS
-- Docker Compose for local or self-hosted deployment
-- GitHub Actions for CI and container publishing
+  <p>
+    <a href="#quick-docker-setup">Quick Start</a>
+    <span> | </span>
+    <a href="#features">Features</a>
+    <span> | </span>
+    <a href="#environment-variables">Configuration</a>
+    <span> | </span>
+    <a href="#cicd">CI/CD</a>
+  </p>
+</div>
+
+> Screenshot note: replace `docs/images/app-screenshot-placeholder.svg` with your real app screenshot, or add `docs/images/app-screenshot.png` and update the image path above.
+
+## Overview
+
+LuminaPath is a personal game library, backlog planner, playtime tracker and quest-style productivity app. The main experience is an ASP.NET Core Blazor app with a PostgreSQL backend. An optional Ionic/Angular frontend is included for a mobile-style interface and can run against the same API.
+
+<table>
+  <tr>
+    <td><strong>Library</strong><br />Catalog games, covers, platforms, genres and release dates.</td>
+    <td><strong>Playtime</strong><br />Track manual hours next to third-party playtime such as PSN.</td>
+    <td><strong>Quest Board</strong><br />Plan main quests, side quests, factions and real-life skill trees.</td>
+  </tr>
+  <tr>
+    <td><strong>Dashboards</strong><br />See what you are playing, what is finished and what is ahead.</td>
+    <td><strong>Imports</strong><br />Bring in data from Excel and PlayStation Network flows.</td>
+    <td><strong>Self-hosting</strong><br />Run the backend, database and optional Angular app through Docker.</td>
+  </tr>
+</table>
+
+## Features
+
+- Game catalog with platforms, genres, release dates, cover images and estimated playtime.
+- Personal game tracking with status, priority, rating, start/end dates and manual played hours.
+- Manual playtime and third-party playtime stay separate, while the UI shows a combined total.
+- Excel import/export for library and play history data.
+- PlayStation Network import flow.
+- Media document management for uploaded covers and files.
+- RPG-style quest board with main quests, sub quests, faction quests and skill trees.
+- Dashboard and statistics pages for played hours, completions and upcoming releases.
+- ASP.NET Core Identity authentication with seeded administrator/editor roles.
+- File-system storage by default, with Azure Blob support available through env vars.
+
+## Tech Stack
+
+| Layer | Tools |
+| --- | --- |
+| Backend | .NET 10, ASP.NET Core, Blazor Server, EF Core, Identity |
+| Frontend | MudBlazor, Radzen, optional Ionic/Angular 21 |
+| Data | PostgreSQL 17 |
+| Deployment | Docker, Docker Compose, GitHub Actions, optional Azure Web App |
+| Testing | xUnit |
 
 ## Quick Docker Setup
 

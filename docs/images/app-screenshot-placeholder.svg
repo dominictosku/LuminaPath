@@ -1,0 +1,39 @@
+<svg width="1400" height="820" viewBox="0 0 1400 820" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1400" height="820" rx="42" fill="#071426"/>
+  <rect x="2" y="2" width="1396" height="816" rx="40" stroke="#3B82F6" stroke-opacity=".35" stroke-width="4"/>
+  <path d="M0 246C166 180 313 170 441 216C625 282 758 267 912 198C1081 122 1232 143 1400 217V820H0V246Z" fill="url(#a)" opacity=".42"/>
+  <path d="M101 120C221 64 342 57 464 98C654 161 777 149 957 72C1086 17 1215 30 1303 87" stroke="#60A5FA" stroke-width="4" stroke-linecap="round" opacity=".28"/>
+  <rect x="98" y="92" width="1204" height="636" rx="30" fill="#0F213A" stroke="#2F5FAD" stroke-opacity=".7" stroke-width="2"/>
+  <rect x="130" y="130" width="244" height="560" rx="24" fill="#102944"/>
+  <rect x="408" y="130" width="864" height="154" rx="24" fill="#132D4A"/>
+  <rect x="408" y="318" width="264" height="172" rx="22" fill="#17395F"/>
+  <rect x="704" y="318" width="264" height="172" rx="22" fill="#17395F"/>
+  <rect x="1000" y="318" width="272" height="172" rx="22" fill="#17395F"/>
+  <rect x="408" y="524" width="864" height="166" rx="22" fill="#112B48"/>
+  <circle cx="192" cy="186" r="35" fill="#38BDF8"/>
+  <path d="M190 164L199 184L221 187L205 202L209 224L190 213L171 224L175 202L159 187L181 184L190 164Z" fill="#E0F2FE"/>
+  <rect x="153" y="260" width="175" height="18" rx="9" fill="#5BA7FF" opacity=".9"/>
+  <rect x="153" y="310" width="143" height="16" rx="8" fill="#B6D7FF" opacity=".55"/>
+  <rect x="153" y="354" width="160" height="16" rx="8" fill="#B6D7FF" opacity=".55"/>
+  <rect x="153" y="398" width="122" height="16" rx="8" fill="#B6D7FF" opacity=".55"/>
+  <rect x="153" y="442" width="150" height="16" rx="8" fill="#B6D7FF" opacity=".55"/>
+  <rect x="453" y="177" width="285" height="25" rx="12.5" fill="#EAF4FF"/>
+  <rect x="453" y="224" width="532" height="18" rx="9" fill="#8FC5FF" opacity=".62"/>
+  <rect x="450" y="353" width="128" height="18" rx="9" fill="#EAF4FF"/>
+  <rect x="450" y="395" width="170" height="14" rx="7" fill="#9DCEFF" opacity=".64"/>
+  <rect x="746" y="353" width="128" height="18" rx="9" fill="#EAF4FF"/>
+  <rect x="746" y="395" width="170" height="14" rx="7" fill="#9DCEFF" opacity=".64"/>
+  <rect x="1042" y="353" width="128" height="18" rx="9" fill="#EAF4FF"/>
+  <rect x="1042" y="395" width="170" height="14" rx="7" fill="#9DCEFF" opacity=".64"/>
+  <rect x="452" y="564" width="278" height="18" rx="9" fill="#EAF4FF"/>
+  <rect x="452" y="608" width="706" height="14" rx="7" fill="#9DCEFF" opacity=".55"/>
+  <rect x="452" y="644" width="618" height="14" rx="7" fill="#9DCEFF" opacity=".38"/>
+  <text x="700" y="774" text-anchor="middle" fill="#C7E2FF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="28" font-weight="700">Replace this placeholder with a real LuminaPath screenshot</text>
+  <defs>
+    <linearGradient id="a" x1="59" y1="194" x2="1288" y2="802" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset=".54" stop-color="#0EA5E9"/>
+      <stop offset="1" stop-color="#22C55E"/>
+    </linearGradient>
+  </defs>
+</svg>
