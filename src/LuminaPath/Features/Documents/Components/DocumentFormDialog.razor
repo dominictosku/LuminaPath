@@ -1,89 +1,128 @@
-@using LuminaPath.Components.Dialogs
 @using LuminaPath.Core.Entities.Results
-@using LuminaPath.Core.Interfaces
+@using LuminaPath.Core.Enums
 @using LuminaPath.Core.Models
-@using LuminaPath.Infrastructure.Services
 @using LuminaPath.Infrastructure.Services.ModelServices
 @using Microsoft.AspNetCore.Components.Forms
-@using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Logging
-@using Microsoft.JSInterop
-@using Severity = MudBlazor.Severity
 @using Color = MudBlazor.Color
-@inject IDialogService DialogService
+@using Severity = MudBlazor.Severity
 @inject ISnackbar Snackbar
+@inject ILogger<DocumentFormDialog> FormLogger
+@inject DocumentService DocumentService
 @inherits MudComponentBase
-
-@inject IJSRuntime JS
-@inject IStorageService Storage
-@inject ILogger<DocumentFormDialog> logger
-@inject NavigationManager Navigation
-@inject DocumentService documentService
 
 <MudDialog>
     <DialogContent>
-        <MudForm Model="@Model" @ref="@_form">
-            <div class="d-fex">
-                <MudText Typo="Typo.body2">Image</MudText>
-                @if (Model.Url is not null)
-                {
-                    <div style="float:left; position: relative; width: 160px; height: 80px; margin: 10px;">
-                        <MudTooltip Delay="500" Text="@Model.Name">
-                            <MudImage ObjectFit="ObjectFit.Cover" Height="80" Width="160"
-                                      Src="@Model.Path"
-                                      Alt="@Model.Name"
-                                      Elevation="25"
-                                      Class="mr-2 rounded-lg" />
-                        </MudTooltip>
-                        <div style="position: absolute;top: 0px;left: 0px; z-index: 2990;">
-                            <MudIconButton OnClick="@(() => PreviewImage())" Icon="@Icons.Material.Filled.Image" aria-label="preview" Color="Color.Info" Size="MudBlazor.Size.Small"></MudIconButton>
+        <MudForm Model="@Model" @ref="_form" Class="document-form">
+            <section class="document-form__hero">
+                <div class="document-preview">
+                    @if (IsImageDocument && HasDocumentSource)
+                    {
+                        <img src="@DocumentSource" alt="@DisplayName" />
+                    }
+                    else
+                    {
+                        <div class="document-preview__file">
+                            <MudIcon Icon="@DocumentIcon" />
+                            <span>@ExtensionLabel</span>
                         </div>
-                        <div style="position: absolute;top: 0px;right: 0px; z-index: 2990;">
-                            <MudIconButton OnClick="@(() => DeleteImage())" Icon="@Icons.Material.Filled.Delete" aria-label="delete" Color="Color.Error" Size="MudBlazor.Size.Small"></MudIconButton>
-                        </div>
+                    }
+                </div>
+
+                <div class="document-form__summary">
+                    <MudText Typo="Typo.overline">Document</MudText>
+                    <MudText Typo="Typo.h5">@DialogHeading</MudText>
+                    <div class="document-form__chips">
+                        <MudChip T="string" Size="Size.Small" Color="@DocumentColor" Variant="Variant.Filled">@Model.DocumentType</MudChip>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">@ContentTypeLabel</MudChip>
                     </div>
-                }
-            </div>
-            <MudGrid>
-                <MudItem xs="12">
-                    <MudTextField Label="Title" @bind-Value="Model.Name"
-                                  For="@(() => Model.Name)"
-                                  Required="true"
-                                  RequiredError="Title is Required">
-                    </MudTextField>
-                </MudItem>
-                <MudItem xs="12">
-                    <MudTextField Label="Description"
-                                  Lines="3"
-                                  For="@(() => Model.Description)"
-                                  @bind-Value="Model.Description">
-                    </MudTextField>
-                </MudItem>
-                <MudItem>
-                    <div class="d-flex flex-row gap-4 mb-2">
-                        <MudFileUpload T="IBrowserFile" SuppressOnChangeWhenInvalid="true"
+                    <div class="document-form__actions">
+                        <MudFileUpload T="IBrowserFile"
+                                       Accept=".bmp,.csv,.doc,.docx,.gif,.jpeg,.jpg,.md,.odt,.pdf,.png,.svg,.txt,.webp,.xls,.xlsx"
+                                       SuppressOnChangeWhenInvalid="true"
                                        OnFilesChanged="SubmitFile">
                             <CustomContent Context="fileUpload">
-                                <MudButton HtmlTag="label" Disabled="_uploading"
+                                <MudButton OnClick="@fileUpload.OpenFilePickerAsync"
+                                           Disabled="_uploading"
                                            Variant="Variant.Filled"
                                            Color="Color.Primary"
-                                           OnClick="@fileUpload.OpenFilePickerAsync">
-                                    Upload
+                                           StartIcon="@Icons.Material.Filled.UploadFile">
+                                    @(_uploading ? "Uploading" : UploadButtonText)
                                 </MudButton>
                             </CustomContent>
                         </MudFileUpload>
+
+                        <MudButton Href="@DocumentSource"
+                                   Target="_blank"
+                                   Disabled="@(!HasDocumentSource)"
+                                   Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.OpenInNew">
+                            Open
+                        </MudButton>
                     </div>
+                </div>
+            </section>
+
+            @if (_uploading)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            }
+
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="7">
+                    <MudTextField Label="File name"
+                                  @bind-Value="Model.Name"
+                                  For="@(() => Model.Name)"
+                                  Required="@(!HasPath)"
+                                  RequiredError="File name is required unless a path is provided."
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+
+                <MudItem xs="12" sm="5">
+                    <MudSelect T="DocumentType"
+                               Label="Type"
+                               @bind-Value="Model.DocumentType"
+                               Variant="Variant.Outlined">
+                        @foreach (var documentType in Enum.GetValues<DocumentType>())
+                        {
+                            <MudSelectItem T="DocumentType" Value="@documentType">@documentType</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Content type"
+                                  @bind-Value="Model.ContentType"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Path"
+                                  @bind-Value="Model.Path"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Link" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField Label="Description"
+                                  Lines="4"
+                                  For="@(() => Model.Description)"
+                                  @bind-Value="Model.Description"
+                                  Variant="Variant.Outlined" />
                 </MudItem>
             </MudGrid>
         </MudForm>
     </DialogContent>
+
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton OnClick="Submit" disabled="@loading">
-            @if (loading)
-            {
-                <span class="spinner-border spinner-border-sm mr-1"></span>
-            }
+        <MudButton OnClick="Cancel" StartIcon="@Icons.Material.Filled.Close">Cancel</MudButton>
+        <MudButton OnClick="Submit"
+                   Disabled="@(loading || _uploading)"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save">
             Save
         </MudButton>
     </DialogActions>
@@ -107,68 +146,133 @@
     [Parameter]
     public bool loading { get; set; }
 
-    public string ErrorMessage = "";
-
     private MudForm? _form;
     private bool _uploading;
 
+    private bool IsCreate => Model.Id == 0;
+    private bool HasPath => !string.IsNullOrWhiteSpace(Model.Path);
+    private bool HasName => !string.IsNullOrWhiteSpace(Model.Name);
+    private bool HasDocumentSource => !string.IsNullOrWhiteSpace(DocumentSource);
+    private bool IsImageDocument => Model.DocumentType == DocumentType.Image || ContentTypeLabel.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+    private string DialogHeading => IsCreate ? "Create document" : "Edit document";
+    private string UploadButtonText => HasName ? "Replace file" : "Upload file";
+    private string DisplayName => HasName ? Model.Name! : "Document preview";
+    private string ContentTypeLabel => string.IsNullOrWhiteSpace(Model.ContentType) ? "Unknown type" : Model.ContentType!;
+    private string ExtensionLabel
+    {
+        get
+        {
+            var extension = Path.GetExtension(Model.Name);
+            return string.IsNullOrWhiteSpace(extension)
+                ? Model.DocumentType.ToString()
+                : extension.TrimStart('.').ToUpperInvariant();
+        }
+    }
+    private string DocumentSource => GetDocumentSource();
 
-    private const long MaxAllowedSize = 3145728;
-    public IBrowserFile? File { get; set; }
+    private string DocumentIcon => Model.DocumentType switch
+    {
+        DocumentType.Image => Icons.Material.Filled.Image,
+        DocumentType.PDF => Icons.Material.Filled.PictureAsPdf,
+        DocumentType.Excel => Icons.Material.Filled.TableChart,
+        DocumentType.Document => Icons.Material.Filled.Description,
+        _ => Icons.Material.Filled.InsertDriveFile
+    };
+
+    private Color DocumentColor => Model.DocumentType switch
+    {
+        DocumentType.Image => Color.Info,
+        DocumentType.PDF => Color.Error,
+        DocumentType.Excel => Color.Success,
+        DocumentType.Document => Color.Primary,
+        _ => Color.Default
+    };
 
     public async Task Submit()
     {
-        await EventCallBack(Model);
-        MudDialog.Close(DialogResult.Ok(true));
-    }
-
-    private async Task DeleteImage()
-    {
-
-        var parameters = new DialogParameters<ConfirmationDialog>
-            {
-                { x=>x.ContentText, $"Delete Image?" }
-            };
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Delete Image", parameters, options);
-
-        if (!dialog.Result.IsCanceled)
+        if (_form is null)
         {
-            if (!string.IsNullOrWhiteSpace(Model.Name))
-            {
-                await Storage.DeleteAsync(Model.Name);
-            }
+            return;
         }
 
-    }
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+        {
+            return;
+        }
 
-    private async Task PreviewImage()
-    {
+        if (!HasName && !HasPath)
+        {
+            Snackbar.Add("Add a file name or path before saving.", Severity.Warning);
+            return;
+        }
 
+        await EventCallBack(Model);
+        MudDialog.Close(DialogResult.Ok(true));
     }
 
     private async Task SubmitFile(InputFileChangeEventArgs e)
     {
         _uploading = true;
-        var file = e.File;
-        File = file;
-        var result = await UploadFile(file);
-        _uploading = false;
+        try
+        {
+            var result = await UploadFile(e.File);
+            result.Match(
+                document =>
+                {
+                    ApplyUploadedDocument(document);
+                    Snackbar.Add("File uploaded", Severity.Success);
+                    return true;
+                },
+                failed =>
+                {
+                    Snackbar.Add(string.Join(", ", failed.errorMessage), Severity.Error);
+                    return false;
+                });
+        }
+        finally
+        {
+            _uploading = false;
+        }
     }
 
     private async Task<Result<MediaDocument, FailedResult>> UploadFile(IBrowserFile file)
     {
-        using Stream fs = file.OpenReadStream(MaxAllowedSize);
         try
         {
-            var result = await documentService.CreateDocument(file);
-            return result;
+            return await DocumentService.CreateDocument(file);
         }
         catch (Exception ex)
         {
-            logger.LogError("Could not Upload File. error: {ex}", ex);
+            FormLogger.LogError(ex, "Could not upload document file.");
             return new FailedResult("Could not upload file");
         }
+    }
+
+    private void ApplyUploadedDocument(MediaDocument document)
+    {
+        Model.Name = document.Name;
+        Model.ContentType = document.ContentType;
+        Model.DocumentType = document.DocumentType;
+        Model.Path = document.Path;
+
+        if (string.IsNullOrWhiteSpace(Model.Description))
+        {
+            Model.Description = string.Empty;
+        }
+    }
+
+    private string GetDocumentSource()
+    {
+        if (!string.IsNullOrWhiteSpace(Model.Path))
+        {
+            return Model.Path.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                || Model.Path.StartsWith("/", StringComparison.Ordinal)
+                ? Model.Path
+                : $"/{Model.Path}";
+        }
+
+        return !string.IsNullOrWhiteSpace(Model.Name) ? $"/api/files/{Model.Name}" : string.Empty;
     }
 
     private void Cancel()

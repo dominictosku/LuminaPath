@@ -399,7 +399,10 @@
     #region Events
     public async Task OnCreate()
     {
-        var command = new MediaDocument();
+        var command = new MediaDocument
+        {
+            DocumentType = DocumentType.Others
+        };
         var parameters = new DialogParameters<DocumentFormDialog>
         {
             { x=>x.Refresh , new Action(async () => await ReloadData()) },
@@ -408,14 +411,17 @@
             { x=>x.EventCallBack, Create }
         };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<DocumentFormDialog>("Create MediaDocument", parameters, options);
-        if (!dialog.Result.IsCanceled)
+        var dialog = await DialogService.ShowAsync<DocumentFormDialog>("Create document", parameters, options);
+        var result = await dialog.Result;
+        if (result?.Canceled != true)
+        {
             await ReloadData();
+        }
     }
 
     public async Task OnUpdate(MediaDocument entity)
     {
-        var command = entity;
+        var command = CloneDocument(entity);
         var parameters = new DialogParameters<DocumentFormDialog>
         {
             { x=>x.Refresh , new Action(async () => await ReloadData()) },
@@ -424,9 +430,12 @@
             { x=>x.EventCallBack, Update }
         };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<DocumentFormDialog>("Update MediaDocument", parameters, options);
-        if (!dialog.Result.IsCanceled)
+        var dialog = await DialogService.ShowAsync<DocumentFormDialog>("Edit document", parameters, options);
+        var result = await dialog.Result;
+        if (result?.Canceled != true)
+        {
             await ReloadData();
+        }
     }
 
     public async Task OnDeleteChecked()
@@ -444,11 +453,12 @@
         loading = true;
         try
         {
-            Snackbar.Add("Created MediaDocument", Severity.Success);
+            await DocumentPageService.Create(entity);
+            Snackbar.Add("Created document", Severity.Success);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            Snackbar.Add("Failed to create MediaDocument", Severity.Error);
+            Snackbar.Add($"Failed to create document: {ex.Message}", Severity.Error);
             loading = false;
         }
 
@@ -461,11 +471,12 @@
         loading = true;
         try
         {
-            Snackbar.Add("Updated Game", Severity.Success);
+            await DocumentPageService.Update(entity);
+            Snackbar.Add("Updated document", Severity.Success);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            Snackbar.Add("Failed to update Game", Severity.Error);
+            Snackbar.Add($"Failed to update document: {ex.Message}", Severity.Error);
             loading = false;
         }
 
@@ -480,6 +491,19 @@
         Snackbar.Add("Deleted MediaDocument", Severity.Info);
         await ReloadData();
     }
+
+    private static MediaDocument CloneDocument(MediaDocument document)
+    {
+        return new MediaDocument
+        {
+            Id = document.Id,
+            Name = document.Name,
+            Description = document.Description,
+            Path = document.Path,
+            ContentType = document.ContentType,
+            DocumentType = document.DocumentType,
+            MediaId = document.MediaId
+        };
+    }
     #endregion
 }
-

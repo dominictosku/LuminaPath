@@ -23,6 +23,16 @@ namespace LuminaPath.Features.Documents
             return _documentService.DeleteDocument(document);
         }
 
+        public Task<MediaDocument> Create(MediaDocument document)
+        {
+            return _documentService.CreateMediaDocument(document);
+        }
+
+        public Task<MediaDocument> Update(MediaDocument document)
+        {
+            return _documentService.UpdateMediaDocument(document);
+        }
+
         public async Task DeleteSelected(IEnumerable<MediaDocument> documents)
         {
             foreach (var document in documents.ToList())

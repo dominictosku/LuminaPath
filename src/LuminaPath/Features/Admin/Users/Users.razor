@@ -1,205 +1,263 @@
 ﻿@page "/Admin/Users"
+@using LuminaPath.Components.Dialogs
 @using LuminaPath.Core.Dtos
 @using LuminaPath.Features.Admin.Users.Components
-@using LuminaPath.Infrastructure.Services
 @using LuminaPath.Infrastructure.Services.ModelServices
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
-@using System.Linq.Expressions
 @using Microsoft.AspNetCore.Identity
-@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 @attribute [Authorize(Roles = "Administrator")]
 @inherits OwningComponentBase
-@implements IDisposable
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject LuminaUserService UserService
 
-<PageTitle>@Title</PageTitle>
+<PageTitle>Users</PageTitle>
 
-<MudDataGrid @ref="_table"
-FixedHeader="true"
-FixedFooter="false"
-Height="calc(100vh - 300px)"
-@bind-RowsPerPage="_defaultPageSize"
-Hover="true"
-MultiSelection="true"
-@bind-SelectedItems="_selectedItems"
-Loading="@_loading"
-ServerData="@(ServerReload)">
-    <ToolBarContent>
-        <div class="d-flex align-start flex-grow-1">
-            <div class="d-flex gap-4">
-                <MudIcon Icon="@Icons.Material.Filled.SwitchAccount" Size="Size.Large"/>
-                <div class="d-flex flex-column">
-                    <MudText Typo="Typo.caption">Users</MudText>
-                </div>
+<section class="users-shell">
+    <div class="users-hero">
+        <div class="users-hero__copy">
+            <MudText Typo="Typo.overline" Class="users-eyebrow">Administration</MudText>
+            <MudText Typo="Typo.h3" Class="users-title">Users</MudText>
+            <MudText Typo="Typo.body1" Class="users-subtitle">
+                Manage access, roles, and account status for the people who can work inside LuminaPath.
+            </MudText>
+        </div>
+
+        <div class="users-hero__status">
+            <div class="users-status-card">
+                <MudIcon Icon="@Icons.Material.Filled.Group" />
+                <span>Filtered users</span>
+                <strong>@_totalFilteredUsers</strong>
             </div>
-            <div class="flex-grow-1"/>
-            <div class="d-flex flex-column justify-end">
-                <div class="d-flex">
-                    <MudHidden Breakpoint="Breakpoint.SmAndDown">
-                        <MudButton DropShadow="false" Variant="Variant.Outlined"
-                        Size="Size.Small"
-                        Disabled="@_loading"
-                        OnClick="@(OnRefresh)"
-                        StartIcon="@Icons.Material.Filled.Refresh" IconColor="Color.Surface" Color="Color.Primary"
-                        Style="margin-right: 4px; margin-bottom:4px">
-                            Refresh
-                        </MudButton>
-                        <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Primary"
-                        StartIcon="@Icons.Material.Filled.Add"
-                        Size="Size.Small"
-                        Style="margin-right: 4px; margin-bottom:4px"
-                        OnClick="OnCreate"
-                        IconColor="Color.Surface">
-                            New
-                        </MudButton>
-                        <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Error"
-                        StartIcon="@Icons.Material.Filled.Delete"
-                        Disabled="@(!(_selectedItems.Count > 0))"
-                        Size="Size.Small"
-                        Style="margin-right: 4px; margin-bottom:4px"
-                        OnClick="OnDeleteChecked"
-                        IconColor="Color.Surface">
-                            Delete
-                        </MudButton>
-                    </MudHidden>
-                    <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="true">
-
-                        <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Primary"
-                        StartIcon="@Icons.Material.Filled.Add"
-                        Size="Size.Small"
-                        Style="margin-right: 4px; margin-bottom:4px"
-                        OnClick="OnCreate"
-                        IconColor="Color.Surface">
-                            New
-                        </MudButton>
-                        <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Error"
-                        StartIcon="@Icons.Material.Filled.Delete"
-                        Disabled="@(!(_selectedItems.Count > 0))"
-                        Size="Size.Small"
-                        Style="margin-right: 4px; margin-bottom:4px"
-                        OnClick="OnDeleteChecked"
-                        IconColor="Color.Surface">
-                            Delete
-                        </MudButton>
-                    </MudHidden>
-                </div>
-                <MudStack Row="true" AlignItems="AlignItems.Stretch">
-                    <MudSelect T="string" Placeholder="Status" @bind-Value="SearchStatus" Clearable="true" Style="width:150px">
-                        @foreach (var str in _roles)
-                        {
-                            <MudSelectItem Value="@str">@str</MudSelectItem>
-                        }
-                    </MudSelect>
-                    <MudTextField T="string" Immediate="false" ValueChanged="@(OnSearch)" Value="@_searchString" Placeholder="Search" Adornment="Adornment.End"
-                    AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
-                    </MudTextField>
-                </MudStack>
+            <div class="users-status-card">
+                <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" />
+                <span>Active</span>
+                <strong>@_activeUsers</strong>
+            </div>
+            <div class="users-status-card">
+                <MudIcon Icon="@Icons.Material.Filled.Lock" />
+                <span>Locked</span>
+                <strong>@_lockedUsers</strong>
             </div>
         </div>
-    </ToolBarContent>
-    <Columns>
-        <SelectColumn ShowInFooter="false"></SelectColumn>
-        <TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
-            <CellTemplate>
-                <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DropShadow="false" Size="Size.Small"
-                Dense="true"
-                EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-                    <MudMenuItem OnClick="@(() => OnEdit(context.Item))">Edit</MudMenuItem>
-                    <MudMenuItem OnClick="@(() => OnDelete(context.Item))">Delete</MudMenuItem>
-                    @if (!IsLocked(context.Item))
-                    {
-                        <MudMenuItem OnClick=@(() => OnSetActive(context.Item, false))>Deactive user</MudMenuItem>
-                    }
-                    else
-                    {
-                        <MudMenuItem OnClick=@(() => OnSetActive(context.Item, true))>Activate user</MudMenuItem>
-                    }
-                    <MudMenuItem OnClick=@(() => OnResetPassword(context.Item))>Reset password</MudMenuItem>
-                </MudMenu>
-            </CellTemplate>
-        </TemplateColumn>
-        <PropertyColumn Property="x => x.UserName" Title="Name">
-            <CellTemplate>
-                <div class="d-flex align-items-center">
-                    <MudBadge Color="true ? Color.Success : Color.Error" Overlap="false" Dot="true" Bordered="true">
-                        <MudAvatar>
-                            @if (!string.IsNullOrWhiteSpace(context.Item.UserName))
-                            {
-                                @context.Item.UserName.First()
-                            }
-                            else
-                            {
-                                <MudImage Src="url"></MudImage>
-                            }
-                        </MudAvatar>
-                    </MudBadge>
-                    <div class="pl-3">
-                        <MudText Class="ml-2 align-self-center">@context.Item.UserName</MudText>
-                        <MudText Typo="Typo.body2" Class="ml-2 align-self-center mud-text-secondary">@context.Item.Email</MudText>
+    </div>
+
+    <MudDataGrid T="UserGridItemDto"
+                 @ref="_table"
+                 Class="users-grid"
+                 FixedHeader="true"
+                 FixedFooter="true"
+                 Height="calc(100vh - 430px)"
+                 Dense="false"
+                 Hover="true"
+                 MultiSelection="true"
+                 @bind-RowsPerPage="_defaultPageSize"
+                 @bind-SelectedItems="_selectedItems"
+                 Loading="@_loading"
+                 ServerData="ServerReload">
+        <ToolBarContent>
+            <div class="users-toolbar">
+                <div class="users-toolbar__title">
+                    <MudIcon Icon="@Icons.Material.Filled.SwitchAccount" />
+                    <div>
+                        <MudText Typo="Typo.subtitle1">User directory</MudText>
+                        <MudText Typo="Typo.body2">@SelectionSummary</MudText>
                     </div>
                 </div>
-            </CellTemplate>
-        </PropertyColumn>
-        <PropertyColumn Property="x => x.Email" Title="Email">
-            <CellTemplate>
-                <div class="d-flex flex-column">
-                    <MudText Typo="Typo.body2">@context.Item.Email</MudText>
+
+                <div class="users-toolbar__filters">
+                    <MudSelect T="string"
+                               Value="_roleFilter"
+                               ValueChanged="OnRoleFilterChanged"
+                               Placeholder="Role"
+                               Clearable="true"
+                               Dense="true"
+                               Variant="Variant.Outlined"
+                               Class="users-filter">
+                        @foreach (var role in LuminaUserService.Roles)
+                        {
+                            <MudSelectItem T="string" Value="@role">@role</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="UserStatusFilter?"
+                               Value="_statusFilter"
+                               ValueChanged="OnStatusFilterChanged"
+                               Placeholder="Status"
+                               Clearable="true"
+                               Dense="true"
+                               Variant="Variant.Outlined"
+                               Class="users-filter">
+                        <MudSelectItem T="UserStatusFilter?" Value="@((UserStatusFilter?)UserStatusFilter.Active)">Active</MudSelectItem>
+                        <MudSelectItem T="UserStatusFilter?" Value="@((UserStatusFilter?)UserStatusFilter.Locked)">Locked</MudSelectItem>
+                    </MudSelect>
+
+                    <MudTextField T="string"
+                                  Value="_searchString"
+                                  ValueChanged="OnSearch"
+                                  Placeholder="Search users"
+                                  Clearable="true"
+                                  Margin="Margin.Dense"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Class="users-search" />
                 </div>
-            </CellTemplate>
-        </PropertyColumn>
-        <PropertyColumn Property="x => x.LockoutEnabled" Title="Active">
-            <CellTemplate>
-                <div>
-                    @if (IsLocked(context.Item))
-                    {
-                        <MudChip Class="flex-grow-0" Color="Color.Surface" Size="Size.Small" Icon="@Icons.Material.Filled.HighlightOff">Locked</MudChip>
-                    }
-                    else
-                    {
-                        <MudChip Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.CheckCircleOutline">Active</MudChip>
-                    }
+
+                <div class="users-toolbar__actions">
+                    <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                   Color="Color.Primary"
+                                   Disabled="@_loading"
+                                   OnClick="OnRefresh"
+                                   aria-label="Refresh users" />
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="OnCreate">
+                        New
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Error"
+                               StartIcon="@Icons.Material.Filled.Delete"
+                               Disabled="@(!_selectedItems.Any())"
+                               OnClick="OnDeleteChecked">
+                        Delete
+                    </MudButton>
                 </div>
-            </CellTemplate>
-        </PropertyColumn>
+            </div>
+        </ToolBarContent>
 
-    </Columns>
+        <Columns>
+            <SelectColumn ShowInFooter="false" />
+            <PropertyColumn Property="x => x.DisplayName" Title="User">
+                <CellTemplate>
+                    <div class="user-cell">
+                        <MudBadge Color="@GetStatusColor(context.Item)" Overlap="false" Dot="true" Bordered="true">
+                            <MudAvatar Class="user-avatar">@context.Item.Initial</MudAvatar>
+                        </MudBadge>
+                        <div>
+                            <MudText Typo="Typo.subtitle2" Class="user-name">@context.Item.DisplayName</MudText>
+                            <MudText Typo="Typo.body2" Class="user-email">@context.Item.Email</MudText>
+                        </div>
+                    </div>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Role" Title="Role">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Color="@GetRoleColor(context.Item)" Variant="Variant.Filled">
+                        @context.Item.RoleLabel
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="Status">
+                <CellTemplate>
+                    <MudChip T="string"
+                             Class="user-status-chip"
+                             Size="Size.Small"
+                             Color="@GetStatusColor(context.Item)"
+                             Icon="@GetStatusIcon(context.Item)">
+                        @context.Item.StatusLabel
+                    </MudChip>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Email">
+                <CellTemplate>
+                    <div class="user-email-state">
+                        <MudIcon Icon="@(context.Item.EmailConfirmed ? Icons.Material.Filled.MarkEmailRead : Icons.Material.Filled.MarkEmailUnread)"
+                                 Color="@(context.Item.EmailConfirmed ? Color.Success : Color.Warning)" />
+                        <span>@(context.Item.EmailConfirmed ? "Confirmed" : "Unconfirmed")</span>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Phone">
+                <CellTemplate>
+                    <MudText Typo="Typo.body2" Class="user-muted">@PhoneLabel(context.Item)</MudText>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn CellStyle="width:92px" Title="Actions" Sortable="false">
+                <CellTemplate>
+                    <div class="user-row-actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Info"
+                                       Size="Size.Small"
+                                       OnClick="@(() => OnEdit(context.Item))"
+                                       aria-label="Edit user" />
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                                 Dense="true"
+                                 Size="Size.Small"
+                                 AnchorOrigin="Origin.BottomRight"
+                                 TransformOrigin="Origin.TopRight">
+                            <MudMenuItem Icon="@GetStatusMenuIcon(context.Item)" OnClick="@(() => OnSetActive(context.Item, context.Item.IsLockedOut))">
+                                @(context.Item.IsLockedOut ? "Activate" : "Lock")
+                            </MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.DeleteOutline" OnClick="@(() => OnDelete(context.Item))">
+                                Delete
+                            </MudMenuItem>
+                        </MudMenu>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
 
-    <PagerContent>
-        <MudDataGridPager PageSizeOptions="@(new[] { 10, 15, 30, 50, 100, 500, 1000 })"/>
-    </PagerContent>
-</MudDataGrid>
+        <NoRecordsContent>
+            <div class="users-empty">
+                <MudIcon Icon="@Icons.Material.Filled.PersonSearch" />
+                <MudText Typo="Typo.h6">No users found</MudText>
+                <MudText Typo="Typo.body2">Adjust the filters or create a new account.</MudText>
+            </div>
+        </NoRecordsContent>
 
-<style>
-    .mud-table-toolbar {
-    height: 120px !important;
-    }
-</style>
+        <PagerContent>
+            <MudDataGridPager PageSizeOptions="@(new[] { 10, 15, 30, 50, 100 })" />
+        </PagerContent>
+    </MudDataGrid>
+</section>
 
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
+    private MudDataGrid<UserGridItemDto> _table = default!;
+    private HashSet<UserGridItemDto> _selectedItems = [];
     private int _defaultPageSize = 15;
-    private HashSet<LuminaUser> _selectedItems = new();
-    private string _searchString = string.Empty;
-    private string Title { get; set; } = "Users";
-
-    private MudDataGrid<LuminaUser> _table = null!;
+    private int _totalFilteredUsers;
+    private int _activeUsers;
+    private int _lockedUsers;
     private bool _loading;
-    private List<string?> _roles = new();
-    private string? SearchStatus { get; set; }
+    private string _searchString = string.Empty;
+    private string _roleFilter = string.Empty;
+    private UserStatusFilter? _statusFilter;
 
-    bool IsLocked(LuminaUser user) => user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd >= DateTimeOffset.UtcNow;
+    private string SelectionSummary => _selectedItems.Count == 0
+        ? "No selected users"
+        : $"{_selectedItems.Count} selected";
 
-    private async Task<GridData<LuminaUser>> ServerReload(GridState<LuminaUser> state, CancellationToken token)
+    private async Task<GridData<UserGridItemDto>> ServerReload(GridState<UserGridItemDto> state, CancellationToken token)
     {
         try
         {
             _loading = true;
-            var result = await UserService.GetPaginatedUsers(_searchString, state.Page * state.PageSize, state.PageSize);
-            return new GridData<LuminaUser> { TotalItems = result.total, Items = result.items };
+            var activeFilter = _statusFilter switch
+            {
+                UserStatusFilter.Active => true,
+                UserStatusFilter.Locked => false,
+                _ => (bool?)null
+            };
+
+            var result = await UserService.GetPaginatedUsers(
+                _searchString,
+                string.IsNullOrWhiteSpace(_roleFilter) ? null : _roleFilter,
+                activeFilter,
+                state.Page * state.PageSize,
+                state.PageSize,
+                token);
+
+            _totalFilteredUsers = result.Total;
+            _activeUsers = result.Active;
+            _lockedUsers = result.Locked;
+
+            return new GridData<UserGridItemDto> { TotalItems = result.Total, Items = result.Items };
         }
         finally
         {
@@ -209,114 +267,245 @@ ServerData="@(ServerReload)">
 
     private async Task OnSearch(string text)
     {
-        if (_loading)
-            return;
-        _searchString = text.ToLower();
-        await _table.ReloadServerData();
+        _searchString = text?.Trim() ?? string.Empty;
+        await ReloadAndClearSelection();
     }
 
-    private async Task OnSearchStatus()
+    private async Task OnRoleFilterChanged(string role)
     {
+        _roleFilter = role ?? string.Empty;
+        await ReloadAndClearSelection();
+    }
 
+    private async Task OnStatusFilterChanged(UserStatusFilter? status)
+    {
+        _statusFilter = status;
+        await ReloadAndClearSelection();
     }
 
     private async Task OnRefresh()
     {
+        await ReloadAndClearSelection();
+    }
+
+    private async Task ReloadAndClearSelection()
+    {
+        _selectedItems.Clear();
         await _table.ReloadServerData();
     }
 
     private async Task OnCreate()
     {
-        var model = new UserDto { Email = "", UserName = "", Active = true };
+        var model = new UserDto { Active = true, Role = LuminaUserService.Roles.Last() };
         var parameters = new DialogParameters<UserFormDialog>
         {
             { x => x.Model, model }
         };
         var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<UserFormDialog>("Create User", parameters, options);
+        var dialog = await DialogService.ShowAsync<UserFormDialog>("Create user", parameters, options);
         var result = await dialog.Result;
 
-        if (result?.Canceled != true)
+        if (result?.Canceled == true)
         {
-            var state = await UserService.CreateUser(model);
+            return;
+        }
 
-            if (state.Succeeded)
-            {
-                Snackbar.Add("User created", Severity.Info);
-                await OnRefresh();
-            }
-            else
-            {
-                Snackbar.Add($"{string.Join(",", state.Errors.Select(x => x.Description).ToArray())}", Severity.Error);
-            }
+        var state = await UserService.CreateUser(model);
+        if (state.Succeeded)
+        {
+            Snackbar.Add("User created", Severity.Success);
+            await ReloadAndClearSelection();
+        }
+        else
+        {
+            Snackbar.Add(FormatErrors(state), Severity.Error);
         }
     }
 
-    private async Task OnEdit(LuminaUser item)
+    private async Task OnEdit(UserGridItemDto item)
     {
-        var model = new UserDto()
-            {
-                Id = item.Id,
-                Email = item.Email ?? string.Empty,
-                UserName = item.UserName ?? string.Empty,
-                Active = !item.LockoutEnabled,
-                PhoneNumber = item.PhoneNumber ?? string.Empty
-            };
+        var model = new UserDto
+        {
+            Id = item.Id,
+            Email = item.Email,
+            UserName = item.DisplayName,
+            Active = !item.IsLockedOut,
+            PhoneNumber = item.PhoneNumber,
+            Role = item.Role
+        };
         var parameters = new DialogParameters<UserFormDialog>
         {
             { x => x.Model, model }
         };
         var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<UserFormDialog>("Edit User", parameters, options);
+        var dialog = await DialogService.ShowAsync<UserFormDialog>("Edit user", parameters, options);
         var result = await dialog.Result;
-        if (result?.Canceled != true)
+
+        if (result?.Canceled == true)
         {
-            var identityResult = await UserService.UpdateUser(model);
-            if (identityResult.Succeeded)
-            {
-                Snackbar.Add($"Updated user", Severity.Info);
-                await OnRefresh();
-            }
-            else
-            {
-                Snackbar.Add($"{string.Join(",", identityResult.Errors.Select(x => x.Description).ToArray())}", Severity.Error);
-            }
+            return;
+        }
+
+        var identityResult = await UserService.UpdateUser(model);
+        if (identityResult.Succeeded)
+        {
+            Snackbar.Add("User updated", Severity.Success);
+            await ReloadAndClearSelection();
+        }
+        else
+        {
+            Snackbar.Add(FormatErrors(identityResult), Severity.Error);
         }
     }
 
-    private async Task OnDelete(LuminaUser dto)
+    private async Task OnDelete(UserGridItemDto user)
     {
-        await UserService.DeleteUser(dto.Id);
-        await OnRefresh();
+        if (await IsCurrentUser(user.Id))
+        {
+            Snackbar.Add("You cannot delete the account you are currently using.", Severity.Warning);
+            return;
+        }
+
+        if (!await ConfirmDelete($"Delete {user.DisplayName}? This cannot be undone."))
+        {
+            return;
+        }
+
+        var result = await UserService.DeleteUser(user.Id);
+        if (result.Succeeded)
+        {
+            Snackbar.Add("User deleted", Severity.Info);
+            await ReloadAndClearSelection();
+        }
+        else
+        {
+            Snackbar.Add(FormatErrors(result), Severity.Error);
+        }
     }
 
     private async Task OnDeleteChecked()
     {
-        var state = await AuthState;
-        var currentUserId = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var isSelectedItemContainCurrentUser = _selectedItems.Any(x => x.Id == currentUserId);
-        if (isSelectedItemContainCurrentUser) return;
-        foreach(var item in _selectedItems)
-            await UserService.DeleteUser(item.Id);
+        var currentUserId = await GetCurrentUserId();
+        var usersToDelete = _selectedItems.Where(user => user.Id != currentUserId).ToList();
 
-        await OnRefresh();
-    }
-
-    private async Task OnSetActive(LuminaUser item, bool active)
-    {
-        var state = await UserService.SetUserActive(item.Id, active);
-        if (state.Succeeded)
+        if (usersToDelete.Count != _selectedItems.Count)
         {
-            Snackbar.Add($"Updated status", Severity.Info);
+            Snackbar.Add("Your current account was skipped.", Severity.Warning);
+        }
+
+        if (!usersToDelete.Any())
+        {
+            return;
+        }
+
+        if (!await ConfirmDelete($"Delete {usersToDelete.Count} selected user{(usersToDelete.Count == 1 ? string.Empty : "s")}? This cannot be undone."))
+        {
+            return;
+        }
+
+        var failures = new List<string>();
+        foreach (var user in usersToDelete)
+        {
+            var result = await UserService.DeleteUser(user.Id);
+            if (!result.Succeeded)
+            {
+                failures.Add($"{user.DisplayName}: {FormatErrors(result)}");
+            }
+        }
+
+        if (failures.Any())
+        {
+            Snackbar.Add(string.Join(" ", failures), Severity.Error);
         }
         else
         {
-            Snackbar.Add($"{string.Join(",", state.Errors.Select(x => x.Description).ToArray())}", Severity.Error);
+            Snackbar.Add("Selected users deleted", Severity.Info);
         }
-        await OnRefresh();
+
+        await ReloadAndClearSelection();
     }
 
-    private async Task OnResetPassword(LuminaUser item)
+    private async Task OnSetActive(UserGridItemDto item, bool active)
     {
+        if (!active && await IsCurrentUser(item.Id))
+        {
+            Snackbar.Add("You cannot lock the account you are currently using.", Severity.Warning);
+            return;
+        }
+
+        var state = await UserService.SetUserActive(item.Id, active);
+        if (state.Succeeded)
+        {
+            Snackbar.Add(active ? "User activated" : "User locked", Severity.Success);
+            await ReloadAndClearSelection();
+        }
+        else
+        {
+            Snackbar.Add(FormatErrors(state), Severity.Error);
+        }
+    }
+
+    private async Task<bool> ConfirmDelete(string message)
+    {
+        var parameters = new DialogParameters<ConfirmationDialog>
+        {
+            { x => x.ContentText, message }
+        };
+        var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm delete", parameters, options);
+        var result = await dialog.Result;
+        return result?.Canceled != true;
+    }
+
+    private async Task<bool> IsCurrentUser(string userId)
+    {
+        return string.Equals(await GetCurrentUserId(), userId, StringComparison.Ordinal);
+    }
+
+    private async Task<string> GetCurrentUserId()
+    {
+        var state = await AuthState;
+        return state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+    }
+
+    private static Color GetStatusColor(UserGridItemDto user)
+    {
+        return user.IsLockedOut ? Color.Error : Color.Success;
+    }
+
+    private static Color GetRoleColor(UserGridItemDto user)
+    {
+        return user.Role switch
+        {
+            "Administrator" => Color.Primary,
+            "Editor" => Color.Info,
+            _ => Color.Default
+        };
+    }
+
+    private static string GetStatusIcon(UserGridItemDto user)
+    {
+        return user.IsLockedOut ? Icons.Material.Filled.Lock : Icons.Material.Filled.CheckCircleOutline;
+    }
+
+    private static string GetStatusMenuIcon(UserGridItemDto user)
+    {
+        return user.IsLockedOut ? Icons.Material.Filled.LockOpen : Icons.Material.Filled.Lock;
+    }
+
+    private static string PhoneLabel(UserGridItemDto user)
+    {
+        return string.IsNullOrWhiteSpace(user.PhoneNumber) ? "No phone" : user.PhoneNumber;
+    }
+
+    private static string FormatErrors(IdentityResult result)
+    {
+        return string.Join(", ", result.Errors.Select(error => error.Description));
+    }
+
+    private enum UserStatusFilter
+    {
+        Active,
+        Locked
     }
 }

@@ -23,18 +23,73 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return await _dbContextFactory.CreateDbContextAsync();
         }
 
-        public async Task<(List<LuminaUser> items, int total)> GetPaginatedUsers(string searchString = "", int skip = 0, int take = 10)
+        public async Task<UserGridPageDto> GetPaginatedUsers(
+            string? searchString = "",
+            string? role = null,
+            bool? active = null,
+            int skip = 0,
+            int take = 10,
+            CancellationToken cancellationToken = default)
         {
-            Expression<Func<LuminaUser, bool>> searchPredicate = x =>
-                x.UserName!.ToLower().Contains(searchString) ||
-                x.Email!.ToLower().Contains(searchString);
-            var query = _userManager.Users.Where(searchPredicate);
+            await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+            var now = DateTimeOffset.UtcNow;
 
+            var query =
+                from user in context.Users.AsNoTracking()
+                join userRole in context.UserRoles.AsNoTracking() on user.Id equals userRole.UserId into userRoles
+                from userRole in userRoles.DefaultIfEmpty()
+                join identityRole in context.Roles.AsNoTracking() on userRole.RoleId equals identityRole.Id into identityRoles
+                from identityRole in identityRoles.DefaultIfEmpty()
+                select new UserGridItemDto
+                {
+                    Id = user.Id,
+                    UserName = user.UserName ?? string.Empty,
+                    FullName = user.FullName ?? string.Empty,
+                    Email = user.Email ?? string.Empty,
+                    PhoneNumber = user.PhoneNumber ?? string.Empty,
+                    Role = identityRole == null ? string.Empty : identityRole.Name ?? string.Empty,
+                    EmailConfirmed = user.EmailConfirmed,
+                    IsLockedOut = user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd >= now,
+                    LockoutEnd = user.LockoutEnd
+                };
+
+            var normalizedSearch = searchString?.Trim().ToLowerInvariant();
+            if (!string.IsNullOrWhiteSpace(normalizedSearch))
+            {
+                query = query.Where(user =>
+                    user.UserName.ToLower().Contains(normalizedSearch) ||
+                    user.FullName.ToLower().Contains(normalizedSearch) ||
+                    user.Email.ToLower().Contains(normalizedSearch));
+            }
+
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                query = query.Where(user => user.Role == role);
+            }
+
+            var activeCount = await query.CountAsync(user => !user.IsLockedOut, cancellationToken);
+            var lockedCount = await query.CountAsync(user => user.IsLockedOut, cancellationToken);
+
+            if (active.HasValue)
+            {
+                query = query.Where(user => user.IsLockedOut != active.Value);
+            }
+
+            var total = await query.CountAsync(cancellationToken);
             var items = await query
-                .OrderBy(u => u.UserName)
-                .Skip(skip).Take(take).ToListAsync();
-            var total = _userManager.Users.Count(searchPredicate);
-            return (items, total);
+                .OrderByDescending(user => user.Role == Roles[0])
+                .ThenBy(user => user.FullName == string.Empty ? user.UserName : user.FullName)
+                .Skip(skip)
+                .Take(take)
+                .ToListAsync(cancellationToken);
+
+            return new UserGridPageDto
+            {
+                Items = items,
+                Total = total,
+                Active = activeCount,
+                Locked = lockedCount
+            };
         }
 
         public async Task<LuminaUser?> GetUser(string id)
@@ -45,6 +100,11 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         public async Task<IdentityResult> CreateUser(UserDto model)
         {
+            if (string.IsNullOrWhiteSpace(model.Password))
+            {
+                return IdentityResult.Failed(new IdentityError { Description = "Password is required." });
+            }
+
             var lockedOut = !model.Active;
             var applicationUser = new LuminaUser
             {
@@ -58,12 +118,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             };
             var password = model.Password;
             var state = await _userManager.CreateAsync(applicationUser, password!);
-            if (state.Succeeded && model.Role != string.Empty)
+            if (state.Succeeded)
             {
                 var user = await _userManager.FindByEmailAsync(model.Email);
                 if (user is not null)
                 {
-                    await AddUserToRole(user, model.Role);
+                    await SetUserRole(user, model.Role);
                 }
             }
             return state;
@@ -79,10 +139,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             user.UserName = model.Email;
             user.LockoutEnabled = lockedOut;
             user.LockoutEnd = lockedOut ? DateTimeOffset.UtcNow.AddDays(60) : null;
-            if (model.Role != string.Empty)
-            {
-                await AddUserToRole(user, model.Role);
-            }
+            await SetUserRole(user, model.Role);
             return await _userManager.UpdateAsync(user);
         }
 
@@ -95,13 +152,21 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         public async Task AddUserToRole(LuminaUser user, string role)
         {
-            if (!Roles.Contains(role)) return;
+            await SetUserRole(user, role);
+        }
+
+        public async Task SetUserRole(LuminaUser user, string? role)
+        {
             foreach (var existingRole in Roles)
             {
                 if (await _userManager.IsInRoleAsync(user, existingRole))
                     await _userManager.RemoveFromRoleAsync(user, existingRole);
             }
-            await _userManager.AddToRoleAsync(user, role);
+
+            if (Roles.Contains(role))
+            {
+                await _userManager.AddToRoleAsync(user, role!);
+            }
         }
 
         public async Task<IdentityResult> SetUserActive(string userId, bool active)
@@ -113,10 +178,10 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return await _userManager.UpdateAsync(user);
         }
 
-        public async Task DeleteUser(string userId)
+        public async Task<IdentityResult> DeleteUser(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId) ?? throw new Exception("User not found");
-            await _userManager.DeleteAsync(user);
+            return await _userManager.DeleteAsync(user);
         }
     }
 }

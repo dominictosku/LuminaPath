@@ -31,35 +31,55 @@
             </div>
         </MudItem>
         <MudItem xs="12" sm="6">
-            <MudTextField For="@(() => Model.UserName)" @bind-Value="Model.UserName" Label="User Name" Variant="Variant.Text"></MudTextField>
+            <MudTextField For="@(() => Model.UserName)"
+                          @bind-Value="Model.UserName"
+                          Label="Display name"
+                          Variant="Variant.Outlined" />
         </MudItem>
         <MudItem xs="12" sm="6">
-            <MudTextField For="@(() => Model.Email)" @bind-Value="Model.Email" Label="E-mail" Variant="Variant.Text"></MudTextField>
+            <MudTextField For="@(() => Model.Email)"
+                          @bind-Value="Model.Email"
+                          Label="Email"
+                          InputType="InputType.Email"
+                          Variant="Variant.Outlined" />
         </MudItem>
         @if (string.IsNullOrEmpty(Model.Id))
         {
             <MudItem xs="12" sm="6">
-                <MudTextField Label="Password" @bind-Value="Model.Password" Class="mt-4" Variant="Variant.Text" />
+                <MudTextField Label="Password"
+                              @bind-Value="Model.Password"
+                              InputType="InputType.Password"
+                              Required="true"
+                              RequiredError="Password is required."
+                              Variant="Variant.Outlined" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudTextField Label="Confirm Password" @bind-Value="passwordConfirmed" Class="mt-4" Variant="Variant.Text" />
+                <MudTextField Label="Confirm password"
+                              @bind-Value="passwordConfirmed"
+                              InputType="InputType.Password"
+                              Required="true"
+                              RequiredError="Confirm the password."
+                              Variant="Variant.Outlined" />
             </MudItem>
         }
         <MudItem xs="12" sm="6">
-            <MudSelect @bind-Value="Model.Role" Label="Role">
+            <MudSelect T="string" @bind-Value="Model.Role" Label="Role" Variant="Variant.Outlined" Clearable="true">
                 @foreach (var role in LuminaUserService.Roles)
                 {
-                    <MudSelectItem Value="role">@role</MudSelectItem>
+                    <MudSelectItem T="string" Value="@role">@role</MudSelectItem>
                 }
             </MudSelect>
         </MudItem>
         <MudItem xs="12" sm="6">
-            <MudTextField For="@(() => Model.PhoneNumber)" @bind-Value="Model.PhoneNumber" Label="Phone Number" Variant="Variant.Text"></MudTextField>
+            <MudTextField For="@(() => Model.PhoneNumber)"
+                          @bind-Value="Model.PhoneNumber"
+                          Label="Phone number"
+                          Variant="Variant.Outlined" />
         </MudItem>
         <MudItem xs="12" sm="6">
             <MudText Typo="Typo.caption">Status</MudText>
-            <div class="d-fex">
-                <MudCheckBox For="@(() => Model.Active)" T="bool" @bind-value="Model.Active" Label="Active"></MudCheckBox>
+            <div class="d-flex">
+                <MudCheckBox For="@(() => Model.Active)" T="bool" @bind-Value="Model.Active" Label="Active" Color="Color.Success" />
             </div>
         </MudItem>
     </MudGrid>
@@ -92,10 +112,18 @@
         if (_form is not null)
         {
             await _form.ValidateAsync();
-            if (_form.IsValid)
+            if (!_form.IsValid)
             {
-                await OnFormSubmit.InvokeAsync(Model);
+                return;
             }
+
+            if (string.IsNullOrEmpty(Model.Id) && Model.Password != passwordConfirmed)
+            {
+                Snackbar.Add("Passwords do not match.", Severity.Warning);
+                return;
+            }
+
+            await OnFormSubmit.InvokeAsync(Model);
         }
     }
 }

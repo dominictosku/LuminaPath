@@ -68,10 +68,10 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 return new MediaDocument()
                 {
                     Name = result.Blob.Name,
-                    Description = "Image for media",
+                    Description = string.Empty,
                     Path = string.Empty,
                     ContentType = result.Blob.ContentType,
-                    DocumentType = DocumentType.Image
+                    DocumentType = InferDocumentType(file.Name, result.Blob.ContentType)
                 };
 
             }
@@ -101,6 +101,44 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         public async Task RenameDocument(string oldName, string newName)
         {
             await _storage.RenameAsync(oldName, newName);
+        }
+
+        public async Task<MediaDocument> CreateMediaDocument(MediaDocument document)
+        {
+            ValidateDocument(document);
+
+            await using var context = await GetDbContextAsync();
+            context.MediaDocuments.Add(document);
+            await context.SaveChangesAsync();
+            return document;
+        }
+
+        public async Task<MediaDocument> UpdateMediaDocument(MediaDocument document)
+        {
+            ValidateDocument(document);
+
+            await using var context = await GetDbContextAsync();
+            var existingDocument = await context.MediaDocuments.FirstOrDefaultAsync(d => d.Id == document.Id)
+                ?? throw new Exception("Document not found");
+
+            var oldName = existingDocument.Name;
+            existingDocument.Name = document.Name;
+            existingDocument.Description = document.Description;
+            existingDocument.Path = document.Path;
+            existingDocument.ContentType = document.ContentType;
+            existingDocument.DocumentType = document.DocumentType;
+            existingDocument.MediaId = document.MediaId;
+
+            if (!string.IsNullOrWhiteSpace(oldName)
+                && !string.IsNullOrWhiteSpace(document.Name)
+                && !string.Equals(oldName, document.Name, StringComparison.Ordinal)
+                && string.IsNullOrWhiteSpace(document.Path))
+            {
+                await RenameDocument(oldName, document.Name);
+            }
+
+            await context.SaveChangesAsync();
+            return existingDocument;
         }
 
         public async Task DeleteDocument(MediaDocument? document)
@@ -183,6 +221,37 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             // Remove any invalid characters from the file name
             return Regex.Replace(fileName, @"[^a-zA-Z0-9_\.-]", "_");
+        }
+
+        private static void ValidateDocument(MediaDocument document)
+        {
+            if (string.IsNullOrWhiteSpace(document.Name) && string.IsNullOrWhiteSpace(document.Path))
+            {
+                throw new InvalidOperationException("Document needs a file name or path.");
+            }
+        }
+
+        private static DocumentType InferDocumentType(string fileName, string? contentType)
+        {
+            if (contentType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return DocumentType.Image;
+            }
+
+            if (contentType?.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return DocumentType.PDF;
+            }
+
+            var extension = Path.GetExtension(fileName).TrimStart('.').ToUpperInvariant();
+            return extension switch
+            {
+                "PNG" or "JPG" or "JPEG" or "WEBP" or "GIF" or "BMP" or "SVG" => DocumentType.Image,
+                "PDF" => DocumentType.PDF,
+                "XLS" or "XLSX" or "CSV" => DocumentType.Excel,
+                "DOC" or "DOCX" or "ODT" or "TXT" or "MD" => DocumentType.Document,
+                _ => DocumentType.Others
+            };
         }
 
         protected virtual async Task<PaginatedList<MediaDocument>> CreatePaginatedList(IQueryable<MediaDocument> entities, Paging paging)

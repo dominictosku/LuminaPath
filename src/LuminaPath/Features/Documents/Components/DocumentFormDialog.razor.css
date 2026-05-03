@@ -1,0 +1,109 @@
+.document-form {
+    --document-dialog-bg: linear-gradient(180deg, rgba(15, 30, 52, .96), rgba(8, 18, 32, .98));
+    --document-dialog-soft: rgba(20, 36, 61, .82);
+    --document-dialog-border: rgba(125, 211, 252, .16);
+    --document-dialog-text: #eef6ff;
+    --document-dialog-muted: #a9bfdc;
+    display: grid;
+    gap: 18px;
+    min-width: min(760px, calc(100vw - 48px));
+    color: var(--document-dialog-text);
+}
+
+.document-form__hero {
+    display: grid;
+    grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: stretch;
+    padding: 18px;
+    border: 1px solid var(--document-dialog-border);
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at 16% 12%, rgba(56, 189, 248, .2), transparent 32%),
+        var(--document-dialog-bg);
+}
+
+.document-preview {
+    display: grid;
+    min-height: 170px;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid rgba(147, 197, 253, .14);
+    border-radius: 14px;
+    background: rgba(8, 18, 32, .74);
+}
+
+.document-preview img {
+    width: 100%;
+    height: 100%;
+    min-height: 170px;
+    object-fit: cover;
+}
+
+.document-preview__file {
+    display: grid;
+    gap: 8px;
+    place-items: center;
+    color: #7dd3fc;
+    font-weight: 900;
+}
+
+.document-preview__file .mud-icon-root {
+    font-size: 54px;
+}
+
+.document-form__summary {
+    display: grid;
+    align-content: center;
+    gap: 12px;
+}
+
+.document-form__summary .mud-typography-overline {
+    color: #7dd3fc;
+    font-weight: 900;
+}
+
+.document-form__summary .mud-typography-h5 {
+    color: #f8fbff;
+    font-weight: 900;
+}
+
+.document-form__chips,
+.document-form__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.document-form__actions {
+    margin-top: 4px;
+}
+
+::deep .document-form .mud-input,
+::deep .document-form .mud-input-slot,
+::deep .document-form input,
+::deep .document-form textarea {
+    color: var(--document-dialog-text);
+}
+
+::deep .document-form .mud-input-label,
+::deep .document-form .mud-input-helper-text,
+::deep .document-form .mud-select,
+::deep .document-form .mud-typography-body2 {
+    color: var(--document-dialog-muted) !important;
+}
+
+::deep .document-form .mud-input-outlined-border {
+    border-color: rgba(147, 197, 253, .22);
+}
+
+@media (max-width: 720px) {
+    .document-form {
+        min-width: 0;
+    }
+
+    .document-form__hero {
+        grid-template-columns: 1fr;
+        padding: 14px;
+    }
+}

@@ -1,0 +1,285 @@
+.users-shell {
+    --users-panel-bg: linear-gradient(180deg, rgba(15, 30, 52, .94), rgba(8, 18, 32, .96));
+    --users-panel-soft: rgba(20, 36, 61, .82);
+    --users-panel-border: rgba(125, 211, 252, .16);
+    --users-text: #eef6ff;
+    --users-muted: #a9bfdc;
+    --users-faint: #7f95b3;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-height: calc(100vh - 120px);
+    color: var(--users-text);
+}
+
+.users-hero {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 26px;
+    overflow: hidden;
+    border: 1px solid var(--users-panel-border);
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at 12% 16%, rgba(56, 189, 248, .22), transparent 34%),
+        radial-gradient(circle at 86% 12%, rgba(34, 197, 94, .12), transparent 27%),
+        linear-gradient(135deg, rgba(7, 20, 38, .98), rgba(16, 42, 69, .96));
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .22);
+}
+
+.users-hero__copy {
+    max-width: 760px;
+}
+
+.users-eyebrow {
+    color: #7dd3fc;
+    font-weight: 900;
+}
+
+.users-title {
+    color: #f8fbff;
+    font-weight: 900;
+}
+
+.users-subtitle {
+    max-width: 650px;
+    margin-top: 10px;
+    color: var(--users-muted);
+}
+
+.users-hero__status {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(112px, 1fr));
+    gap: 12px;
+    min-width: 390px;
+}
+
+.users-status-card {
+    display: grid;
+    align-content: center;
+    gap: 8px;
+    min-height: 132px;
+    padding: 18px;
+    border: 1px solid rgba(147, 197, 253, .18);
+    border-radius: 18px;
+    color: #dbeafe;
+    background: rgba(255, 255, 255, .065);
+}
+
+.users-status-card .mud-icon-root {
+    color: #38bdf8;
+    font-size: 30px;
+}
+
+.users-status-card span {
+    color: var(--users-muted);
+    font-size: .76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.users-status-card strong {
+    color: #f8fbff;
+    font-size: 1.9rem;
+    line-height: 1;
+}
+
+::deep .users-grid {
+    overflow: hidden;
+    border: 1px solid var(--users-panel-border);
+    border-radius: 18px;
+    background: rgba(8, 18, 32, .92);
+    box-shadow: 0 18px 46px rgba(0, 0, 0, .22);
+}
+
+::deep .users-grid .mud-table-toolbar {
+    height: auto !important;
+    min-height: 112px;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(147, 197, 253, .12);
+    background: linear-gradient(135deg, rgba(15, 31, 53, .98), rgba(8, 18, 32, .94));
+}
+
+::deep .users-grid .mud-table,
+::deep .users-grid .mud-table-container,
+::deep .users-grid .mud-table-root,
+::deep .users-grid .mud-table-body,
+::deep .users-grid .mud-data-grid {
+    background: transparent;
+    color: var(--users-text);
+}
+
+::deep .users-grid .mud-table-head .mud-table-cell,
+::deep .users-grid .mud-data-grid-header .mud-table-cell {
+    border-color: rgba(147, 197, 253, .12);
+    background: rgba(15, 31, 53, .98);
+    color: #dbeafe;
+}
+
+::deep .users-grid .mud-table-row,
+::deep .users-grid .mud-table-cell {
+    border-color: rgba(147, 197, 253, .08);
+    background: rgba(8, 18, 32, .72);
+    color: var(--users-text);
+}
+
+::deep .users-grid .mud-table-row:hover .mud-table-cell {
+    background: rgba(37, 99, 235, .14);
+}
+
+::deep .users-grid .mud-table-pagination,
+::deep .users-grid .mud-data-grid-pager {
+    border-color: rgba(147, 197, 253, .12);
+    background: rgba(15, 31, 53, .92);
+    color: var(--users-muted);
+}
+
+.users-toolbar {
+    display: grid;
+    width: 100%;
+    grid-template-columns: minmax(220px, .8fr) minmax(320px, 1.4fr) auto;
+    gap: 16px;
+    align-items: center;
+}
+
+.users-toolbar__title,
+.user-cell,
+.user-email-state,
+.user-row-actions {
+    display: flex;
+    align-items: center;
+}
+
+.users-toolbar__title {
+    gap: 12px;
+}
+
+.users-toolbar__title .mud-icon-root {
+    color: #38bdf8;
+    font-size: 34px;
+}
+
+.users-toolbar__title .mud-typography-subtitle1,
+.user-name {
+    color: #f8fbff;
+    font-weight: 900;
+}
+
+.users-toolbar__title .mud-typography-body2,
+.user-email,
+.user-muted,
+.user-email-state {
+    color: var(--users-muted);
+}
+
+.users-toolbar__filters {
+    display: grid;
+    grid-template-columns: minmax(130px, .55fr) minmax(130px, .55fr) minmax(220px, 1fr);
+    gap: 10px;
+}
+
+.users-toolbar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+::deep .users-filter .mud-input,
+::deep .users-search .mud-input,
+::deep .users-filter .mud-input-slot,
+::deep .users-search .mud-input-slot,
+::deep .users-filter input,
+::deep .users-search input {
+    color: var(--users-text);
+}
+
+::deep .users-filter .mud-input-outlined-border,
+::deep .users-search .mud-input-outlined-border {
+    border-color: rgba(147, 197, 253, .22);
+}
+
+::deep .users-filter .mud-input-label,
+::deep .users-search .mud-input-label {
+    color: var(--users-muted) !important;
+}
+
+.user-cell {
+    gap: 12px;
+    min-width: 240px;
+}
+
+.user-avatar {
+    color: #f8fbff;
+    background: linear-gradient(135deg, #2563eb, #06b6d4);
+    font-weight: 900;
+}
+
+.user-email-state {
+    gap: 8px;
+}
+
+.user-status-chip {
+    min-width: 82px;
+    justify-content: center;
+}
+
+.user-row-actions {
+    justify-content: flex-end;
+    gap: 2px;
+}
+
+.users-empty {
+    display: grid;
+    min-height: 260px;
+    place-items: center;
+    gap: 10px;
+    padding: 28px;
+    color: var(--users-muted);
+    text-align: center;
+}
+
+.users-empty .mud-icon-root {
+    color: #38bdf8;
+    font-size: 46px;
+}
+
+.users-empty .mud-typography-h6 {
+    color: #f8fbff;
+}
+
+@media (max-width: 1120px) {
+    .users-hero,
+    .users-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .users-hero {
+        display: grid;
+    }
+
+    .users-hero__status {
+        min-width: 0;
+    }
+
+    .users-toolbar__actions {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 720px) {
+    .users-hero {
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    .users-hero__status,
+    .users-toolbar__filters {
+        grid-template-columns: 1fr;
+    }
+
+    ::deep .users-grid .mud-table-toolbar {
+        padding: 12px;
+    }
+}
