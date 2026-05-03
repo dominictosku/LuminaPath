@@ -28,6 +28,7 @@ import {
 } from 'ionicons/icons';
 import { Game, Platforms } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
+import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 
 enum GameStatus {
   OnHold = 0,
@@ -204,7 +205,7 @@ export class HomePage implements OnInit {
   }
 
   imageFor(game: Game | null): string {
-    return game?.image?.uri ?? game?.image?.url ?? 'assets/png/Placeholder.png';
+    return mediaImageUrl(game?.image);
   }
 
   platformLabel(value: number | null | undefined): string {

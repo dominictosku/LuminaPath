@@ -6,6 +6,7 @@ import { MyGameFormComponent } from 'src/app/features/my-games/components/my-gam
 import { IonFab, IonFabButton, IonIcon, IonInfiniteScrollContent, IonInfiniteScroll } from '@ionic/angular/standalone';
 import { addIcons } from "ionicons";
 import { create } from 'ionicons/icons';
+import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 
 @Component({
     selector: 'app-grid-game-data',
@@ -86,9 +87,6 @@ export class GridGameDataComponent implements OnInit {
   }
 
   getImage(game: Game) {
-    if (game == undefined || game.image == null) {
-      return "assets/png/Placeholder.png";
-    }
-    return game.image.uri ?? game.image.url ?? "assets/png/Placeholder.png";
+    return mediaImageUrl(game?.image);
   }
 }
