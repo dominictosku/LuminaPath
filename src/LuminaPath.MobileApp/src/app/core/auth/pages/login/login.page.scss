@@ -1,0 +1,336 @@
+  /* ── Fonts ─────────────────────────────── */
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  /* ── Tokens ────────────────────────────── */
+  :host {
+    --c-bg:        #09090f;
+    --c-surface:   #0f0f1a;
+    --c-border:    rgba(255,255,255,0.07);
+    --c-border-h:  rgba(167,139,250,0.4);
+    --c-text:      #e8e8f0;
+    --c-muted:     #6b6b85;
+    --c-accent-1:  #a78bfa;
+    --c-accent-2:  #38bdf8;
+    --c-error-bg:  rgba(239,68,68,0.08);
+    --c-error:     #f87171;
+    --radius:      14px;
+  }
+
+  /* ── Reset ion-content ─────────────────── */
+  ion-content.login-content {
+    --background: var(--c-bg);
+    --color: var(--c-text);
+  }
+
+  /* ── Background effects ────────────────── */
+  .login-bg {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.18;
+  }
+
+  .orb-1 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, #a78bfa, transparent 70%);
+    top: -120px; left: -120px;
+    animation: drift1 12s ease-in-out infinite alternate;
+  }
+
+  .orb-2 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, #38bdf8, transparent 70%);
+    bottom: -100px; right: -100px;
+    animation: drift2 15s ease-in-out infinite alternate;
+  }
+
+  .grid-lines {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
+  }
+
+  @keyframes drift1 {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(40px, 30px) scale(1.1); }
+  }
+  @keyframes drift2 {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(-30px, -40px) scale(1.08); }
+  }
+
+  /* ── Layout ────────────────────────────── */
+  .login-wrapper {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+
+  /* ── Card ──────────────────────────────── */
+  .login-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 20px;
+    padding: 40px 36px;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.04) inset,
+      0 32px 80px rgba(0,0,0,0.6),
+      0 0 60px rgba(167,139,250,0.04);
+    animation: slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Brand ─────────────────────────────── */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .brand-mark svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .brand-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.25rem;
+    color: var(--c-text);
+    letter-spacing: 0.01em;
+  }
+
+  /* ── Header ────────────────────────────── */
+  .card-header {
+    margin-bottom: 28px;
+  }
+
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.9rem;
+    font-weight: 400;
+    color: var(--c-text);
+    margin: 0 0 6px;
+    line-height: 1.2;
+  }
+
+  .card-subtitle {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    color: var(--c-muted);
+    margin: 0;
+  }
+
+  /* ── Fields ────────────────────────────── */
+  .form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .field-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--c-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .field-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .forgot-link {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    color: var(--c-accent-1);
+    text-decoration: none;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+  }
+
+  .forgot-link:hover { opacity: 1; }
+
+  .field-wrap {
+    position: relative;
+  }
+
+  .field-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--c-muted);
+    pointer-events: none;
+    transition: color 0.2s;
+  }
+
+  .field-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius);
+    padding: 12px 14px 12px 40px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    color: var(--c-text);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  }
+
+  .field-input::placeholder { color: var(--c-muted); opacity: 0.6; }
+
+  .field-input:focus {
+    border-color: var(--c-border-h);
+    background: rgba(167,139,250,0.05);
+    box-shadow: 0 0 0 3px rgba(167,139,250,0.08);
+  }
+
+  .field-input:focus + .field-icon,
+  .field-wrap:focus-within .field-icon {
+    color: var(--c-accent-1);
+  }
+
+  /* ── Error ─────────────────────────────── */
+  .error-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--c-error-bg);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    color: var(--c-error);
+  }
+
+  .error-box svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── Primary button ────────────────────── */
+  .sign-in-btn {
+    position: relative;
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--c-accent-1), var(--c-accent-2));
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    overflow: hidden;
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 24px rgba(167,139,250,0.25);
+    margin-top: 6px;
+  }
+
+  .sign-in-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(167,139,250,0.35);
+  }
+
+  .sign-in-btn:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .sign-in-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .btn-shimmer {
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    animation: shimmer 2.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0%   { left: -100%; }
+    60%  { left: 100%; }
+    100% { left: 100%; }
+  }
+
+  .sign-in-btn.loading .btn-shimmer { animation: shimmer 1s infinite; }
+
+  .btn-text { position: relative; z-index: 1; }
+
+  /* ── Divider ───────────────────────────── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--c-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--c-border);
+  }
+
+  /* ── Register button ───────────────────── */
+  .register-btn {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--c-text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+  }
+
+  .register-btn:hover {
+    border-color: var(--c-border-h);
+    background: rgba(167,139,250,0.06);
+    color: var(--c-accent-1);
+  }

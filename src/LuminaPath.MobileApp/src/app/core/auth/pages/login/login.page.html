@@ -1,50 +1,101 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>Login</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true" class="login-content">
 
-<ion-content [fullscreen]="true">
-  <div class="flex flex-col justify-center py-12 px-6 lg:px-8">
-    <div class="sm:mx-auto sm:w-full sm:max-w-sm">
-      <img class="mx-auto h-10 w-auto" src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
-        alt="Your Company">
-      <h2 class="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-white">Sign in to your
-        account</h2>
-    </div>
+  <div class="login-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="grid-lines"></div>
+  </div>
 
-    <div class="mt-4 sm:mx-auto sm:w-full sm:max-w-sm">
-      <div>
-        <label for="email" class="block text-sm font-medium leading-6 text-white">Username</label>
-        <div class="mt-2">
-          <input id="email" [(ngModel)]="credentials.email" name="email" required
-            class="block w-full rounded-md border-0 py-1.5 text-white shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+  <div class="login-wrapper">
+
+    <div class="login-card">
+
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 4L36 13V27L20 36L4 27V13L20 4Z" stroke="url(#grad)" stroke-width="1.5" fill="none"/>
+            <path d="M20 10L30 16V24L20 30L10 24V16L20 10Z" fill="url(#grad)" opacity="0.15"/>
+            <circle cx="20" cy="20" r="4" fill="url(#grad)"/>
+            <defs>
+              <linearGradient id="grad" x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#a78bfa"/>
+                <stop offset="100%" stop-color="#38bdf8"/>
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
+        <span class="brand-name">LuminaPath</span>
       </div>
-      <div>
-        <div class="flex items-center justify-between">
-          <label for="password" class="block text-sm font-medium leading-6 white">Password</label>
-          <div class="text-sm">
-            <a href="#" class="font-semibold text-indigo-600 hover:text-indigo-500">Forgot password?</a>
+
+      <div class="card-header">
+        <h1 class="card-title">Welcome back</h1>
+        <p class="card-subtitle">Sign in to continue your journey</p>
+      </div>
+
+      <div class="form-fields">
+
+        <div class="field-group">
+          <label class="field-label" for="email">Username</label>
+          <div class="field-wrap">
+            <svg class="field-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z"/>
+            </svg>
+            <input
+              id="email"
+              [(ngModel)]="credentials.email"
+              name="email"
+              required
+              autocomplete="username"
+              placeholder="your@email.com"
+              class="field-input"
+            />
           </div>
         </div>
-        <div class="mt-2">
-          <input id="password" [(ngModel)]="credentials.password" name="password" type="password"
-            autocomplete="current-password" required
-            class="block w-full rounded-md border-0 py-1.5 text-white shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+
+        <div class="field-group">
+          <div class="field-label-row">
+            <label class="field-label" for="password">Password</label>
+            <a href="#" class="forgot-link">Forgot password?</a>
+          </div>
+          <div class="field-wrap">
+            <svg class="field-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M8 7a4 4 0 118 0v1h1a2 2 0 012 2v5a2 2 0 01-2 2H3a2 2 0 01-2-2v-5a2 2 0 012-2h1V7a4 4 0 014-4zm0 2a2 2 0 012-2 2 2 0 012 2v1H8V7zm1 5a1 1 0 112 0v2a1 1 0 11-2 0v-2z" clip-rule="evenodd"/>
+            </svg>
+            <input
+              id="password"
+              [(ngModel)]="credentials.password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              placeholder="••••••••"
+              required
+              class="field-input"
+            />
+          </div>
         </div>
-      </div>
 
-      <p *ngIf="errorMessage" class="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-        {{ errorMessage }}
-      </p>
+        <div class="error-box" *ngIf="errorMessage">
+          <svg viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+          </svg>
+          <span>{{ errorMessage }}</span>
+        </div>
 
-      <div>
-        <ion-button (click)="login()" type="submit" label="Sign in" [disabled]="isSubmitting">
-          {{ isSubmitting ? 'Signing in...' : 'Login' }}
-        </ion-button>
+        <button class="sign-in-btn" (click)="login()" [disabled]="isSubmitting" [class.loading]="isSubmitting">
+          <span class="btn-text">{{ isSubmitting ? 'Signing in...' : 'Sign in' }}</span>
+          <span class="btn-shimmer"></span>
+        </button>
+
+        <div class="divider">
+          <span>New here?</span>
+        </div>
+
+        <button class="register-btn" routerLink="/auth/create">
+          Create an account
+        </button>
+
       </div>
-      <ion-button size="small" router-link="/auth/create" class="float-right">Create new account</ion-button>
     </div>
   </div>
+
 </ion-content>
