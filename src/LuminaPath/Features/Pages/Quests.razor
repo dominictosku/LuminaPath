@@ -1,0 +1,719 @@
+@page "/quests"
+@using LuminaPath.Core.Dtos
+@using LuminaPath.Core.Enums
+@using LuminaPath.Features.Auth
+@using LuminaPath.Infrastructure.Services.ModelServices
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inherits BaseAuth
+@inject QuestService QuestService
+@inject ISnackbar Snackbar
+
+<PageTitle>Quest Board</PageTitle>
+
+<div class="quest-page">
+    @if (_loading)
+    {
+        <div class="loading-panel">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </div>
+    }
+    else
+    {
+        <section class="quest-hero">
+            <div>
+                <p class="eyebrow">Life RPG</p>
+                <h1>@Title Level @Level</h1>
+                <p class="hero-copy">Turn tasks into quests and real-life practice into a skill tree.</p>
+            </div>
+            <div class="rank-panel">
+                <div class="rank-row">
+                    <div>
+                        <span>Total XP</span>
+                        <strong>@_board.Xp</strong>
+                    </div>
+                    <span class="xp-pill">@XpIntoLevel / 200 XP</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: @(XpProgress)%"></div>
+                </div>
+                <div class="stat-row">
+                    <span>@ActiveQuestCount active</span>
+                    <span>@CompletedQuestCount complete</span>
+                    <span>@UnlockedNodeCount nodes</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="mode-panel">
+            <MudButtonGroup Variant="Variant.Filled" Color="Color.Primary">
+                <MudButton OnClick="@(() => _mode = PageMode.Quests)" Variant="@(_mode == PageMode.Quests ? Variant.Filled : Variant.Outlined)">Quests</MudButton>
+                <MudButton OnClick="@(() => _mode = PageMode.Skills)" Variant="@(_mode == PageMode.Skills ? Variant.Filled : Variant.Outlined)">Skills</MudButton>
+            </MudButtonGroup>
+        </div>
+
+        @if (_mode == PageMode.Quests)
+        {
+            <section class="quest-grid">
+                @foreach (var column in Columns)
+                {
+                    <article class="quest-column">
+                        <header class="column-header">
+                            <MudIcon Icon="@column.Icon" />
+                            <div>
+                                <span>@column.Label</span>
+                                <h2>@column.Title</h2>
+                                <p>@column.Description</p>
+                            </div>
+                        </header>
+
+                        <div class="quest-input">
+                            <input placeholder="Add @column.Title.ToLowerInvariant()" @bind="column.Input" @bind:event="oninput" @onkeydown="@(e => OnQuestKeyDown(e, column))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="@(() => AddQuest(column))" />
+                        </div>
+
+                        <div class="column-progress">
+                            <div class="progress-track small">
+                                <div class="progress-fill" style="width: @(QuestProgress(column.Type))%"></div>
+                            </div>
+                            <span>+@RewardFor(column.Type) XP</span>
+                        </div>
+
+                        <div class="quest-list">
+                            @foreach (var quest in QuestsFor(column.Type))
+                            {
+                                <article class="quest-card @(quest.Completed ? "done" : "")">
+                                    <button type="button" class="icon-button" @onclick="@(() => ToggleQuest(quest))">
+                                        <MudIcon Icon="@(quest.Completed ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.CheckCircle)" />
+                                    </button>
+                                    <div>
+                                        <h3>@quest.Title</h3>
+                                        <p>@(quest.Completed ? "Reward claimed" : "Ready to complete")</p>
+                                    </div>
+                                    <button type="button" class="delete-button" @onclick="@(() => DeleteQuest(quest))">
+                                        <MudIcon Icon="@Icons.Material.Filled.DeleteOutline" />
+                                    </button>
+                                </article>
+                            }
+
+                            @if (!QuestsFor(column.Type).Any())
+                            {
+                                <div class="empty-state">
+                                    <MudIcon Icon="@Icons.Material.Filled.LibraryBooks" />
+                                    <span>No quests here yet.</span>
+                                </div>
+                            }
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+        else
+        {
+            <section class="skills-layout">
+                <div class="skills-heading">
+                    <div>
+                        <p class="eyebrow">Skill tree</p>
+                        <h2>Real Life Mastery</h2>
+                    </div>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.AutoAwesome" OnClick="AddSkill">Add Skill</MudButton>
+                </div>
+
+                <div class="skill-create">
+                    <input placeholder="New skill name" @bind="_newSkillName" @bind:event="oninput" />
+                    <select @bind="_newSkillIcon">
+                        <option value="@Icons.Material.Filled.Code">Code</option>
+                        <option value="@Icons.Material.Filled.Brush">Art</option>
+                        <option value="@Icons.Material.Filled.Restaurant">Cook</option>
+                        <option value="@Icons.Material.Filled.MenuBook">Study</option>
+                    </select>
+                    <input type="color" @bind="_newSkillColor" />
+                </div>
+
+                <div class="skill-grid">
+                    @foreach (var skill in _board.Skills)
+                    {
+                        <article class="skill-card" style="--skill-color:@skill.Color">
+                            <header>
+                                <div class="skill-icon">
+                                    <MudIcon Icon="@ToMudIcon(skill.Icon)" />
+                                </div>
+                                <div>
+                                    <h3>@skill.Name</h3>
+                                    <p>Level @SkillLevel(skill) · @skill.Xp XP</p>
+                                </div>
+                            </header>
+
+                            <div class="progress-track small">
+                                <div class="progress-fill skill" style="width: @(SkillProgress(skill))%"></div>
+                            </div>
+
+                            <div class="skill-actions">
+                                <MudButton Size="Size.Small" Variant="Variant.Filled" Style="@($"background:{skill.Color}; color:white;")" StartIcon="@Icons.Material.Filled.Bolt" OnClick="@(() => TrainSkill(skill))">Train</MudButton>
+                                <div class="node-input">
+                                    <input placeholder="New node" @bind="_newNodeName" @bind:event="oninput" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="@(() => AddNode(skill))" />
+                                </div>
+                            </div>
+
+                            <div class="node-list">
+                                @foreach (var node in skill.Nodes.OrderBy(node => node.SortOrder))
+                                {
+                                    <button type="button" class="node @(node.Unlocked ? "unlocked" : "")" @onclick="@(() => UnlockNode(skill, node))">
+                                        <MudIcon Icon="@(node.Unlocked ? Icons.Material.Filled.Star : Icons.Material.Filled.Lock)" />
+                                        <span>@node.Name</span>
+                                    </button>
+                                }
+                            </div>
+
+                            <small>@skill.Nodes.Count(node => node.Unlocked) of @skill.Nodes.Count nodes unlocked</small>
+                        </article>
+                    }
+                </div>
+            </section>
+        }
+    }
+</div>
+
+<style>
+    .quest-page {
+        display: grid;
+        gap: 18px;
+        padding-bottom: 40px;
+    }
+
+    .loading-panel {
+        min-height: 420px;
+        display: grid;
+        place-items: center;
+    }
+
+    .quest-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
+        gap: 22px;
+        align-items: end;
+        min-height: 300px;
+        padding: clamp(24px, 4vw, 42px);
+        border-radius: 8px;
+        color: #fff;
+        background: linear-gradient(135deg, rgba(12, 20, 34, .98), rgba(37, 99, 235, .82), rgba(8, 145, 178, .72));
+        box-shadow: 0 18px 54px rgba(0, 0, 0, .2);
+    }
+
+    .eyebrow {
+        margin: 0 0 6px;
+        color: #76e4c4;
+        font-size: .76rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+    }
+
+    .quest-hero h1 {
+        margin: 0;
+        font-size: clamp(2.5rem, 5vw, 4.8rem);
+        line-height: .95;
+        letter-spacing: 0;
+    }
+
+    .hero-copy {
+        max-width: 520px;
+        margin: 12px 0 0;
+        color: #dbeafe;
+    }
+
+    .rank-panel {
+        display: grid;
+        gap: 13px;
+        padding: 18px;
+        border: 1px solid rgba(255, 255, 255, .16);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .12);
+    }
+
+    .rank-row,
+    .stat-row,
+    .column-progress,
+    .skills-heading,
+    .skill-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .rank-row span,
+    .stat-row {
+        color: #dbeafe;
+        font-size: .86rem;
+    }
+
+    .rank-row strong {
+        display: block;
+        font-size: 2.4rem;
+        line-height: 1;
+    }
+
+    .xp-pill {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .15);
+        font-weight: 800;
+    }
+
+    .progress-track {
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .18);
+        overflow: hidden;
+    }
+
+    .progress-track.small {
+        height: 8px;
+        flex: 1;
+        background: rgba(117, 167, 255, .16);
+    }
+
+    .progress-fill {
+        height: 100%;
+        min-width: 4px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #fff, #76e4c4);
+    }
+
+    .progress-fill.skill,
+    .column-progress .progress-fill {
+        background: linear-gradient(90deg, #75a7ff, #76e4c4);
+    }
+
+    .mode-panel,
+    .quest-column,
+    .skill-card {
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: var(--mud-palette-surface);
+        box-shadow: 0 14px 34px rgba(0, 0, 0, .12);
+    }
+
+    .mode-panel {
+        display: flex;
+        justify-content: center;
+    }
+
+    .quest-grid,
+    .skill-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        align-items: start;
+    }
+
+    .column-header,
+    .skill-card header,
+    .quest-card {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .column-header .mud-icon-root,
+    .skill-icon {
+        display: grid;
+        width: 46px;
+        height: 46px;
+        place-items: center;
+        border-radius: 8px;
+        color: #fff;
+        background: linear-gradient(135deg, #2563eb, #0891b2);
+    }
+
+    .column-header h2,
+    .skills-heading h2 {
+        margin: 3px 0 0;
+        letter-spacing: 0;
+    }
+
+    .column-header span,
+    .column-header p,
+    .quest-card p,
+    .skill-card p,
+    .skill-card small,
+    .empty-state span {
+        color: var(--mud-palette-text-secondary);
+        font-size: .84rem;
+    }
+
+    .quest-input,
+    .skill-create,
+    .node-input {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .skill-create {
+        grid-template-columns: 1fr 150px 58px;
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: var(--mud-palette-surface);
+    }
+
+    input,
+    select {
+        min-width: 0;
+        height: 42px;
+        padding: 0 12px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        outline: 0;
+        color: var(--mud-palette-text-primary);
+        background: rgba(255, 255, 255, .04);
+    }
+
+    .quest-list,
+    .skills-layout,
+    .node-list {
+        display: grid;
+        gap: 10px;
+    }
+
+    .quest-card {
+        grid-template-columns: auto 1fr auto;
+        padding: 11px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .025);
+    }
+
+    .quest-card h3,
+    .skill-card h3 {
+        margin: 0;
+        font-size: 1rem;
+        letter-spacing: 0;
+    }
+
+    .quest-card.done h3 {
+        color: var(--mud-palette-text-secondary);
+        text-decoration: line-through;
+    }
+
+    .icon-button,
+    .delete-button,
+    .node {
+        border: 0;
+        cursor: pointer;
+        font: inherit;
+    }
+
+    .icon-button,
+    .delete-button {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border-radius: 8px;
+        color: #75a7ff;
+        background: rgba(117, 167, 255, .12);
+    }
+
+    .delete-button {
+        color: var(--mud-palette-text-secondary);
+        background: transparent;
+    }
+
+    .empty-state {
+        display: grid;
+        justify-items: center;
+        gap: 8px;
+        padding: 28px 16px;
+        text-align: center;
+    }
+
+    .skill-card {
+        --skill-color: #2563eb;
+        display: grid;
+        gap: 14px;
+    }
+
+    .skill-icon {
+        background: var(--skill-color);
+    }
+
+    .node {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 42px;
+        padding: 9px 11px;
+        border: 1px dashed rgba(117, 167, 255, .24);
+        border-radius: 8px;
+        color: var(--mud-palette-text-secondary);
+        background: rgba(117, 167, 255, .06);
+        text-align: left;
+    }
+
+    .node.unlocked {
+        border-style: solid;
+        color: var(--mud-palette-text-primary);
+        background: color-mix(in srgb, var(--skill-color) 16%, transparent);
+    }
+
+    @@media (max-width: 1100px) {
+        .quest-hero,
+        .quest-grid,
+        .skill-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 720px) {
+        .skill-create,
+        .skill-actions {
+            align-items: stretch;
+            flex-direction: column;
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+@code {
+    private enum PageMode
+    {
+        Quests,
+        Skills
+    }
+
+    private readonly List<QuestColumn> Columns =
+    [
+        new(QuestType.Main, "Main Quests", "Big arcs", "Important life missions that deserve focus.", Icons.Material.Filled.Map),
+        new(QuestType.Sub, "Sub Quests", "Small wins", "Useful tasks that keep the day moving.", Icons.Material.Filled.Flag),
+        new(QuestType.Faction, "Faction Quests", "People and teams", "Social, family, work, or community commitments.", Icons.Material.Filled.Groups)
+    ];
+
+    private QuestBoardDto _board = new();
+    private PageMode _mode = PageMode.Quests;
+    private bool _loading = true;
+    private string _newSkillName = string.Empty;
+    private string _newSkillIcon = Icons.Material.Filled.Code;
+    private string _newSkillColor = "#2563eb";
+    private string _newNodeName = string.Empty;
+    private int _temporaryId = -1;
+
+    private int Level => Math.Max(1, (_board.Xp / 200) + 1);
+    private int XpIntoLevel => _board.Xp % 200;
+    private int XpProgress => XpIntoLevel * 100 / 200;
+    private string Title => Level >= 15 ? "Legend" : Level >= 10 ? "Master" : Level >= 6 ? "Adept" : Level >= 3 ? "Apprentice" : "Initiate";
+    private int ActiveQuestCount => _board.Quests.Count(quest => !quest.Completed);
+    private int CompletedQuestCount => _board.Quests.Count(quest => quest.Completed);
+    private int UnlockedNodeCount => _board.Skills.Sum(skill => skill.Nodes.Count(node => node.Unlocked));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (!string.IsNullOrWhiteSpace(UserId))
+        {
+            _board = await QuestService.GetBoardAsync(UserId);
+        }
+
+        _loading = false;
+    }
+
+    private async Task OnQuestKeyDown(KeyboardEventArgs args, QuestColumn column)
+    {
+        if (args.Key == "Enter")
+        {
+            await AddQuest(column);
+        }
+    }
+
+    private async Task AddQuest(QuestColumn column)
+    {
+        var title = column.Input.Trim();
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            return;
+        }
+
+        _board.Quests.Insert(0, new QuestDto
+        {
+            Id = _temporaryId--,
+            Title = title,
+            Type = column.Type,
+            RewardXp = RewardFor(column.Type),
+            CreatedAt = DateTime.UtcNow
+        });
+        column.Input = string.Empty;
+        await Save("Quest added");
+    }
+
+    private async Task ToggleQuest(QuestDto quest)
+    {
+        quest.Completed = !quest.Completed;
+        if (quest.Completed && quest.CompletedAt == null)
+        {
+            quest.CompletedAt = DateTime.UtcNow;
+            _board.Xp += quest.RewardXp <= 0 ? RewardFor(quest.Type) : quest.RewardXp;
+        }
+
+        if (!quest.Completed)
+        {
+            quest.CompletedAt = null;
+        }
+
+        await Save(quest.Completed ? $"+{quest.RewardXp} XP earned" : "Quest reopened");
+    }
+
+    private async Task DeleteQuest(QuestDto quest)
+    {
+        _board.Quests.Remove(quest);
+        await Save("Quest deleted");
+    }
+
+    private async Task AddSkill()
+    {
+        var name = _newSkillName.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return;
+        }
+
+        _board.Skills.Add(new QuestSkillDto
+        {
+            Id = _temporaryId--,
+            Name = name,
+            Icon = _newSkillIcon,
+            Color = _newSkillColor,
+            Nodes =
+            [
+                new() { Id = _temporaryId--, Name = "First practice", SortOrder = 0 },
+                new() { Id = _temporaryId--, Name = "Weekly streak", SortOrder = 1 },
+                new() { Id = _temporaryId--, Name = "Personal project", SortOrder = 2 }
+            ]
+        });
+
+        _newSkillName = string.Empty;
+        await Save("Skill added");
+    }
+
+    private async Task TrainSkill(QuestSkillDto skill)
+    {
+        skill.Xp += 40;
+        _board.Xp += 15;
+        await Save($"{skill.Name} training complete");
+    }
+
+    private async Task AddNode(QuestSkillDto skill)
+    {
+        var name = _newNodeName.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return;
+        }
+
+        skill.Nodes.Add(new QuestSkillNodeDto
+        {
+            Id = _temporaryId--,
+            Name = name,
+            SortOrder = skill.Nodes.Count
+        });
+        _newNodeName = string.Empty;
+        await Save("Node added");
+    }
+
+    private async Task UnlockNode(QuestSkillDto skill, QuestSkillNodeDto node)
+    {
+        if (node.Unlocked)
+        {
+            return;
+        }
+
+        node.Unlocked = true;
+        node.UnlockedAt = DateTime.UtcNow;
+        skill.Xp += 25;
+        _board.Xp += 25;
+        await Save($"{node.Name} unlocked");
+    }
+
+    private async Task Save(string message)
+    {
+        if (string.IsNullOrWhiteSpace(UserId))
+        {
+            return;
+        }
+
+        _board = await QuestService.SaveBoardAsync(UserId, _board);
+        Snackbar.Add(message, Severity.Success);
+    }
+
+    private List<QuestDto> QuestsFor(QuestType type)
+    {
+        return _board.Quests
+            .Where(quest => quest.Type == type)
+            .OrderBy(quest => quest.Completed)
+            .ThenBy(quest => quest.SortOrder)
+            .ThenBy(quest => quest.Id)
+            .ToList();
+    }
+
+    private int QuestProgress(QuestType type)
+    {
+        var quests = QuestsFor(type);
+        return quests.Count == 0 ? 0 : quests.Count(quest => quest.Completed) * 100 / quests.Count;
+    }
+
+    private static int RewardFor(QuestType type)
+    {
+        return type switch
+        {
+            QuestType.Main => 150,
+            QuestType.Faction => 100,
+            _ => 75
+        };
+    }
+
+    private static int SkillLevel(QuestSkillDto skill)
+    {
+        return (skill.Xp / 100) + 1;
+    }
+
+    private static int SkillProgress(QuestSkillDto skill)
+    {
+        return skill.Xp % 100;
+    }
+
+    private static string ToMudIcon(string icon)
+    {
+        return icon switch
+        {
+            "brush-outline" => Icons.Material.Filled.Brush,
+            "restaurant-outline" => Icons.Material.Filled.Restaurant,
+            "book-outline" => Icons.Material.Filled.MenuBook,
+            _ => Icons.Material.Filled.Code
+        };
+    }
+
+    private sealed class QuestColumn
+    {
+        public QuestColumn(QuestType type, string title, string label, string description, string icon)
+        {
+            Type = type;
+            Title = title;
+            Label = label;
+            Description = description;
+            Icon = icon;
+        }
+
+        public QuestType Type { get; }
+        public string Title { get; }
+        public string Label { get; }
+        public string Description { get; }
+        public string Icon { get; }
+        public string Input { get; set; } = string.Empty;
+    }
+}

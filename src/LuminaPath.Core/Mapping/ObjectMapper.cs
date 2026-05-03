@@ -40,8 +40,6 @@ namespace LuminaPath.Core.Mapping
                 GamesDto dto when destinationType == typeof(Game) => MapGame(dto),
                 Game entity when destinationType == typeof(GamesNoIncludeDto) => MapGamesNoIncludeDto(entity),
                 Game entity when destinationType == typeof(GamesDto) => MapGamesDto(entity),
-                GamesQuestDto dto when destinationType == typeof(GamesQuest) => MapGamesQuest(dto),
-                GamesQuest entity when destinationType == typeof(GamesQuestDto) => MapGamesQuestDto(entity),
                 Game entity when typeof(Game).IsAssignableFrom(destinationType) => MapGameToDestination(entity, destinationType),
                 _ when destinationType.IsAssignableFrom(source.GetType()) => source,
                 _ => CopyMatchingProperties(source, CreateInstance(destinationType))
@@ -226,32 +224,6 @@ namespace LuminaPath.Core.Mapping
                 GameId = source.GameId,
                 Game = source.Game == null ? null : Map<GamesNoIncludeDto>(source.Game),
                 MyGameInfo = MapMyGameInfo(source.MyGameInfo) ?? new()
-            };
-        }
-
-        private static GamesQuest MapGamesQuest(GamesQuestDto source)
-        {
-            return new GamesQuest
-            {
-                Id = source.Id,
-                Description = source.Description,
-                HasStartDate = source.HasStartDate,
-                StartDate = source.StartDate,
-                Location = source.Location,
-                Owner = source.Owner
-            };
-        }
-
-        private static GamesQuestDto MapGamesQuestDto(GamesQuest source)
-        {
-            return new GamesQuestDto
-            {
-                Id = source.Id,
-                Description = source.Description,
-                HasStartDate = source.HasStartDate,
-                StartDate = source.StartDate,
-                Location = source.Location,
-                Owner = source.Owner
             };
         }
 

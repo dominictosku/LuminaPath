@@ -37,17 +37,10 @@ import {
   trashOutline,
   trophyOutline,
 } from 'ionicons/icons';
+import { Quest, QuestBoardService, QuestBoardState, QuestSkill, QuestType } from '../services/quest-board.service';
 
-type QuestType = 'main' | 'sub' | 'faction';
 type PageMode = 'quests' | 'skills';
 type ModalMode = 'skill' | 'node' | null;
-
-type Quest = {
-  id: number;
-  title: string;
-  completed: boolean;
-  completedAt?: string;
-};
 
 type QuestColumn = {
   type: QuestType;
@@ -55,22 +48,6 @@ type QuestColumn = {
   label: string;
   description: string;
   icon: string;
-};
-
-type Skill = {
-  id: number;
-  name: string;
-  icon: string;
-  color: string;
-  xp: number;
-  nodes: string[];
-  unlockedNodes: number[];
-};
-
-type QuestState = {
-  xp: number;
-  quests: Record<QuestType, Quest[]>;
-  skills: Skill[];
 };
 
 @Component({
@@ -139,6 +116,8 @@ export class QuestBoardPage implements OnInit {
   activeQuestCount = 0;
   unlockedNodeCount = 0;
   toastMessage = '';
+  isLoading = true;
+  errorMessage = '';
 
   quests: Record<QuestType, Quest[]> = {
     main: [],
@@ -152,12 +131,11 @@ export class QuestBoardPage implements OnInit {
     faction: '',
   };
 
-  skills: Skill[] = [];
+  skills: QuestSkill[] = [];
   newSkill = this.emptySkillForm();
   newNodeName = '';
   selectedSkillId: number | null = null;
 
-  private readonly storageKey = 'luminapath-rpg-quest-board-v1';
   private readonly xpPerLevel = 200;
   private readonly questRewards: Record<QuestType, number> = {
     main: 150,
@@ -166,7 +144,7 @@ export class QuestBoardPage implements OnInit {
   };
   private toastTimer: number | undefined;
 
-  constructor() {
+  constructor(private questBoardService: QuestBoardService) {
     addIcons({
       addOutline,
       bookOutline,
@@ -191,12 +169,11 @@ export class QuestBoardPage implements OnInit {
     });
   }
 
-  ngOnInit() {
-    this.restoreState();
-    this.rebuildStats();
+  async ngOnInit() {
+    await this.loadBoard();
   }
 
-  addQuest(type: QuestType) {
+  async addQuest(type: QuestType) {
     const title = this.newQuest[type].trim();
 
     if (!title) {
@@ -205,17 +182,19 @@ export class QuestBoardPage implements OnInit {
 
     this.quests[type] = [
       {
-        id: Date.now(),
+        id: this.nextTemporaryId(),
         title,
         completed: false,
+        createdAt: new Date().toISOString(),
+        rewardXp: this.questRewards[type],
       },
       ...this.quests[type],
     ];
     this.newQuest[type] = '';
-    this.persist();
+    await this.persist();
   }
 
-  toggleQuest(type: QuestType, quest: Quest) {
+  async toggleQuest(type: QuestType, quest: Quest) {
     quest.completed = !quest.completed;
 
     if (quest.completed && !quest.completedAt) {
@@ -228,22 +207,22 @@ export class QuestBoardPage implements OnInit {
       quest.completedAt = undefined;
     }
 
-    this.persist();
+    await this.persist();
   }
 
-  deleteQuest(type: QuestType, questId: number) {
+  async deleteQuest(type: QuestType, questId: number) {
     this.quests[type] = this.quests[type].filter((quest) => quest.id !== questId);
-    this.persist();
+    await this.persist();
   }
 
-  trainSkill(skill: Skill) {
+  async trainSkill(skill: QuestSkill) {
     skill.xp += 40;
     this.xp += 15;
     this.showToast(`${skill.name} training complete`);
-    this.persist();
+    await this.persist();
   }
 
-  unlockNode(skill: Skill, nodeIndex: number) {
+  async unlockNode(skill: QuestSkill, nodeIndex: number) {
     if (skill.unlockedNodes.includes(nodeIndex)) {
       return;
     }
@@ -252,7 +231,7 @@ export class QuestBoardPage implements OnInit {
     skill.xp += 25;
     this.xp += 25;
     this.showToast(`${skill.nodes[nodeIndex]} unlocked`);
-    this.persist();
+    await this.persist();
   }
 
   openSkillModal() {
@@ -260,7 +239,7 @@ export class QuestBoardPage implements OnInit {
     this.modalMode = 'skill';
   }
 
-  openNodeModal(skill: Skill) {
+  openNodeModal(skill: QuestSkill) {
     this.selectedSkillId = skill.id;
     this.newNodeName = '';
     this.modalMode = 'node';
@@ -272,7 +251,7 @@ export class QuestBoardPage implements OnInit {
     this.newNodeName = '';
   }
 
-  addSkill() {
+  async addSkill() {
     const name = this.newSkill.name.trim();
 
     if (!name) {
@@ -282,7 +261,7 @@ export class QuestBoardPage implements OnInit {
     this.skills = [
       ...this.skills,
       {
-        id: Date.now(),
+        id: this.nextTemporaryId(),
         name,
         icon: this.newSkill.icon,
         color: this.newSkill.color,
@@ -293,10 +272,10 @@ export class QuestBoardPage implements OnInit {
     ];
     this.closeModal();
     this.showToast(`${name} added to your skill tree`);
-    this.persist();
+    await this.persist();
   }
 
-  addNode() {
+  async addNode() {
     const skill = this.skills.find((item) => item.id === this.selectedSkillId);
     const nodeName = this.newNodeName.trim();
 
@@ -307,7 +286,7 @@ export class QuestBoardPage implements OnInit {
     skill.nodes = [...skill.nodes, nodeName];
     this.closeModal();
     this.showToast(`${nodeName} added`);
-    this.persist();
+    await this.persist();
   }
 
   questProgress(column: QuestColumn): number {
@@ -324,15 +303,15 @@ export class QuestBoardPage implements OnInit {
     return this.questRewards[type];
   }
 
-  skillLevel(skill: Skill): number {
+  skillLevel(skill: QuestSkill): number {
     return Math.floor(skill.xp / 100) + 1;
   }
 
-  skillProgress(skill: Skill): number {
+  skillProgress(skill: QuestSkill): number {
     return (skill.xp % 100) / 100;
   }
 
-  unlockedCount(skill: Skill): number {
+  unlockedCount(skill: QuestSkill): number {
     return skill.unlockedNodes.length;
   }
 
@@ -340,7 +319,7 @@ export class QuestBoardPage implements OnInit {
     return quest.id;
   }
 
-  trackBySkill(_: number, skill: Skill): number {
+  trackBySkill(_: number, skill: QuestSkill): number {
     return skill.id;
   }
 
@@ -352,84 +331,44 @@ export class QuestBoardPage implements OnInit {
     return item;
   }
 
-  private restoreState() {
-    const saved = this.readStorage();
+  private async loadBoard() {
+    this.isLoading = true;
+    this.errorMessage = '';
 
-    if (saved) {
-      this.xp = saved.xp;
-      this.quests = saved.quests;
-      this.skills = saved.skills;
-      return;
-    }
-
-    this.quests = {
-      main: [
-        { id: 1, title: 'Define the next personal milestone', completed: false },
-        { id: 2, title: 'Finish one meaningful project sprint', completed: false },
-      ],
-      sub: [
-        { id: 3, title: 'Clear the desk before starting', completed: false },
-        { id: 4, title: 'Plan tomorrow in three bullets', completed: true, completedAt: new Date().toISOString() },
-      ],
-      faction: [
-        { id: 5, title: 'Check in with someone you care about', completed: false },
-      ],
-    };
-    this.skills = [
-      {
-        id: 11,
-        name: 'Programming',
-        icon: 'code-slash-outline',
-        color: '#2563eb',
-        xp: 120,
-        nodes: ['Debugging', 'Architecture', 'Shipping'],
-        unlockedNodes: [0],
-      },
-      {
-        id: 12,
-        name: 'Drawing',
-        icon: 'brush-outline',
-        color: '#0891b2',
-        xp: 60,
-        nodes: ['Sketching', 'Color study', 'Finished piece'],
-        unlockedNodes: [],
-      },
-      {
-        id: 13,
-        name: 'Cooking',
-        icon: 'restaurant-outline',
-        color: '#0f766e',
-        xp: 90,
-        nodes: ['Knife basics', 'Meal prep', 'Signature dish'],
-        unlockedNodes: [0],
-      },
-    ];
-  }
-
-  private readStorage(): QuestState | null {
     try {
-      const raw = localStorage.getItem(this.storageKey);
-      return raw ? (JSON.parse(raw) as QuestState) : null;
+      this.applyBoard(await this.questBoardService.getBoard());
     } catch {
-      return null;
+      this.errorMessage = 'Quest board could not be loaded.';
+      this.showToast(this.errorMessage);
+      this.rebuildStats();
+    } finally {
+      this.isLoading = false;
     }
   }
 
-  private persist() {
+  private async persist() {
     this.rebuildStats();
 
     try {
-      localStorage.setItem(
-        this.storageKey,
-        JSON.stringify({
-          xp: this.xp,
-          quests: this.quests,
-          skills: this.skills,
-        } satisfies QuestState)
-      );
+      this.applyBoard(await this.questBoardService.saveBoard(this.currentBoard()));
     } catch {
-      this.showToast('Progress could not be saved on this device');
+      this.showToast('Progress could not be saved');
     }
+  }
+
+  private applyBoard(board: QuestBoardState) {
+    this.xp = board.xp;
+    this.quests = board.quests;
+    this.skills = board.skills;
+    this.rebuildStats();
+  }
+
+  private currentBoard(): QuestBoardState {
+    return {
+      xp: this.xp,
+      quests: this.quests,
+      skills: this.skills,
+    };
   }
 
   private rebuildStats() {
@@ -469,6 +408,10 @@ export class QuestBoardPage implements OnInit {
       icon: 'code-slash-outline',
       color: '#2563eb',
     };
+  }
+
+  private nextTemporaryId(): number {
+    return -Math.floor(Math.random() * 1_000_000_000);
   }
 
   private showToast(message: string) {

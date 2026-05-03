@@ -20,6 +20,29 @@ namespace LuminaPath.Infrastructure
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfiguration(new GameConfiguration());
+            modelBuilder.Entity<Quest>()
+                .HasOne(quest => quest.LuminaUser)
+                .WithMany()
+                .HasForeignKey(quest => quest.LuminaUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<QuestProfile>()
+                .HasIndex(profile => profile.LuminaUserId)
+                .IsUnique();
+            modelBuilder.Entity<QuestProfile>()
+                .HasOne(profile => profile.LuminaUser)
+                .WithMany()
+                .HasForeignKey(profile => profile.LuminaUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<QuestSkill>()
+                .HasOne(skill => skill.LuminaUser)
+                .WithMany()
+                .HasForeignKey(skill => skill.LuminaUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<QuestSkillNode>()
+                .HasOne(node => node.QuestSkill)
+                .WithMany(skill => skill.Nodes)
+                .HasForeignKey(node => node.QuestSkillId)
+                .OnDelete(DeleteBehavior.Cascade);
             ConfigureUtcDateTimes(modelBuilder);
         }
 
@@ -128,6 +151,8 @@ namespace LuminaPath.Infrastructure
         public DbSet<Game> Games { get; set; }
         public DbSet<MyGame> MyGames { get; set; }
         public DbSet<Quest> Quests { get; set; }
-        public DbSet<GamesQuest> GamesQuests { get; set; }
+        public DbSet<QuestProfile> QuestProfiles { get; set; }
+        public DbSet<QuestSkill> QuestSkills { get; set; }
+        public DbSet<QuestSkillNode> QuestSkillNodes { get; set; }
     }
 }
