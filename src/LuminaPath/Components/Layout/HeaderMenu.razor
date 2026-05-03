@@ -1,3 +1,175 @@
-﻿<MudText Color="@Color.Primary"  Typo="Typo.h6">
-    <b>LuminaPath</b>
-</MudText>
+@implements IDisposable
+
+@inject NavigationManager NavigationManager
+
+<AuthorizeView>
+    <Authorized Context="authContext">
+        <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true" Class="account-menu">
+            <ActivatorContent Context="menuContext">
+                <button type="button" class="header-user-pill" @onclick="menuContext.ToggleAsync">
+                    <span class="user-avatar">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" />
+                    </span>
+                    <span class="user-meta">
+                        <strong>@authContext.User.Identity?.Name</strong>
+                        <small>Account</small>
+                    </span>
+                    <MudIcon Class="menu-chevron" Icon="@Icons.Material.Filled.KeyboardArrowDown" />
+                </button>
+            </ActivatorContent>
+            <ChildContent>
+                <MudMenuItem Href="Account/Manage" Icon="@Icons.Material.Filled.Person">Profile</MudMenuItem>
+                <MudMenuItem Href="mysettings" Icon="@Icons.Material.Filled.Settings">My Settings</MudMenuItem>
+                <MudDivider />
+                <div class="account-menu-form">
+                    <form action="Account/Logout" method="post">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                        <button type="submit">
+                            <MudIcon Icon="@Icons.Material.Filled.Logout" />
+                            <span>Logout</span>
+                        </button>
+                    </form>
+                </div>
+            </ChildContent>
+        </MudMenu>
+    </Authorized>
+    <NotAuthorized>
+        <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true" Class="account-menu">
+            <ActivatorContent Context="menuContext">
+                <button type="button" class="header-user-pill" @onclick="menuContext.ToggleAsync">
+                    <span class="user-avatar">
+                        <MudIcon Icon="@Icons.Material.Filled.Login" />
+                    </span>
+                    <span class="user-meta">
+                        <strong>Guest</strong>
+                        <small>Account</small>
+                    </span>
+                    <MudIcon Class="menu-chevron" Icon="@Icons.Material.Filled.KeyboardArrowDown" />
+                </button>
+            </ActivatorContent>
+            <ChildContent>
+                <MudMenuItem Href="Account/Login" Icon="@Icons.Material.Filled.Login">Login</MudMenuItem>
+            </ChildContent>
+        </MudMenu>
+    </NotAuthorized>
+</AuthorizeView>
+
+<style>
+    .header-user-pill {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        padding: 7px 11px 7px 7px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 999px;
+        color: inherit;
+        background: rgba(255, 255, 255, .055);
+        font: inherit;
+        cursor: pointer;
+    }
+
+    .header-user-pill:hover,
+    .header-user-pill:focus-visible {
+        background: rgba(255, 255, 255, .09);
+    }
+
+    .user-avatar {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 999px;
+        color: #fff;
+        background: linear-gradient(135deg, #2563eb, #06b6d4);
+    }
+
+    .user-meta {
+        display: grid;
+        gap: 1px;
+        min-width: 0;
+        text-align: left;
+    }
+
+    .user-meta strong {
+        overflow: hidden;
+        max-width: 180px;
+        color: #f8fbff;
+        font-size: .88rem;
+        line-height: 1;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .user-meta small {
+        color: #8da2c0;
+        font-size: .72rem;
+        font-weight: 700;
+    }
+
+    .menu-chevron {
+        color: #8da2c0;
+        font-size: 1.15rem;
+    }
+
+    .account-menu-form {
+        padding: 4px;
+    }
+
+    .account-menu-form form {
+        margin: 0;
+    }
+
+    .account-menu-form button {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        min-height: 38px;
+        padding: 6px 16px;
+        border: 0;
+        border-radius: 8px;
+        color: var(--mud-palette-error);
+        background: transparent;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .account-menu-form button:hover {
+        background: rgba(239, 68, 68, .1);
+    }
+
+    @@media (max-width: 760px) {
+        .user-meta,
+        .menu-chevron {
+            display: none;
+        }
+
+        .header-user-pill {
+            padding: 6px;
+        }
+    }
+</style>
+
+@code {
+    private string? currentUrl;
+
+    protected override void OnInitialized()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}
