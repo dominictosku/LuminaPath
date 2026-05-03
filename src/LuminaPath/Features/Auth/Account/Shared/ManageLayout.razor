@@ -1,17 +1,93 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @layout AccountLayout
 
-<h1>Manage your account</h1>
+<div class="manage-account">
+    <header class="manage-account__header">
+        <div>
+            <h1>Account</h1>
+            <p>Manage your profile, email, password and security settings.</p>
+        </div>
+        <a class="manage-account__back" href="/">Back to app</a>
+    </header>
 
-<div>
-    <h2>Change your account settings</h2>
-    <hr />
-    <div class="row">
-        <div class="col-md-3">
+    <div class="manage-account__content">
+        <aside class="manage-account__nav">
             <ManageNavMenu />
-        </div>
-        <div class="col-md-9">
+        </aside>
+        <section class="manage-account__body">
             @Body
-        </div>
+        </section>
     </div>
 </div>
+
+<style>
+    .manage-account {
+        display: grid;
+        gap: 24px;
+    }
+
+    .manage-account__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+    }
+
+    .manage-account__header h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 900;
+    }
+
+    .manage-account__header p {
+        max-width: 620px;
+        margin: 8px 0 0;
+        color: #a9bfdc;
+    }
+
+    .manage-account__back {
+        flex: 0 0 auto;
+        padding: 10px 14px;
+        border: 1px solid rgba(147, 197, 253, .22);
+        border-radius: 999px;
+        color: #dbeafe;
+        text-decoration: none;
+        background: rgba(255, 255, 255, .055);
+    }
+
+    .manage-account__back:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, .09);
+    }
+
+    .manage-account__content {
+        display: grid;
+        grid-template-columns: minmax(190px, 250px) minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+    }
+
+    .manage-account__nav,
+    .manage-account__body {
+        min-width: 0;
+        padding: 18px;
+        border: 1px solid rgba(147, 197, 253, .16);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, .04);
+    }
+
+    .manage-account__body h3 {
+        margin-top: 0;
+    }
+
+    @@media (max-width: 820px) {
+        .manage-account__header,
+        .manage-account__content {
+            grid-template-columns: 1fr;
+        }
+
+        .manage-account__header {
+            display: grid;
+        }
+    }
+</style>

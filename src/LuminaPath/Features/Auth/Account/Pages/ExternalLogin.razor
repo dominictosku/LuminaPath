@@ -54,8 +54,14 @@
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
+    private InputModel input = new();
+
     [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = default!;
+    private InputModel Input
+    {
+        get => input;
+        set => input = value ?? new();
+    }
 
     [SupplyParameterFromQuery]
     private string? RemoteError { get; set; }

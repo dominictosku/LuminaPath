@@ -18,8 +18,7 @@
                 </button>
             </ActivatorContent>
             <ChildContent>
-                <MudMenuItem Href="Account/Manage" Icon="@Icons.Material.Filled.Person">Profile</MudMenuItem>
-                <MudMenuItem Href="mysettings" Icon="@Icons.Material.Filled.Settings">My Settings</MudMenuItem>
+                <MudMenuItem OnClick="NavigateToAccountManage" Icon="@Icons.Material.Filled.Person">Account</MudMenuItem>
                 <MudDivider />
                 <div class="account-menu-form">
                     <form action="Account/Logout" method="post">
@@ -49,7 +48,7 @@
                 </button>
             </ActivatorContent>
             <ChildContent>
-                <MudMenuItem Href="Account/Login" Icon="@Icons.Material.Filled.Login">Login</MudMenuItem>
+                <MudMenuItem OnClick="NavigateToLogin" Icon="@Icons.Material.Filled.Login">Login</MudMenuItem>
             </ChildContent>
         </MudMenu>
     </NotAuthorized>
@@ -171,5 +170,20 @@
     public void Dispose()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    private void NavigateAccountPage(string uri)
+    {
+        NavigationManager.NavigateTo(uri, forceLoad: true);
+    }
+
+    private void NavigateToAccountManage()
+    {
+        NavigateAccountPage("Account/Manage");
+    }
+
+    private void NavigateToLogin()
+    {
+        NavigateAccountPage("Account/Login");
     }
 }

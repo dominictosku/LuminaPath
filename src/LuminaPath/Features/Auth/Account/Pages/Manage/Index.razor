@@ -38,12 +38,17 @@
     private LuminaUser user = default!;
     private string? username;
     private string? phoneNumber;
+    private InputModel input = new();
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = new();
+    private InputModel Input
+    {
+        get => input;
+        set => input = value ?? new();
+    }
 
     protected override async Task OnInitializedAsync()
     {
