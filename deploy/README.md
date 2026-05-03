@@ -41,12 +41,14 @@ If you put LuminaPath behind a reverse proxy, set the public frontend URL:
 ```text
 FRONTEND_PUBLIC_URL=https://luminapath.yourdomain.com
 IONIC_PUBLIC_URL=capacitor://localhost
+CAPACITOR_ANDROID_PUBLIC_URL=http://localhost
 ```
 
 Keep this value when using the included frontend container:
 
 ```text
 LUMINAPATH_API_ENDPOINT=/api
+LUMINAPATH_API_PROXY_TARGET=http://luminapath-api:8080
 ```
 
 The frontend container proxies `/api` to the backend container internally.

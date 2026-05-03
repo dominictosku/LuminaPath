@@ -8,7 +8,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Default: Host=db;Port=5432;Database=${POSTGRES_DB:-luminapath};Username=${POSTGRES_USER:-luminapath};Password=${POSTGRES_PASSWORD:-change-me};
+      ConnectionStrings__Default: Host=luminapath-db;Port=5432;Database=${POSTGRES_DB:-luminapath};Username=${POSTGRES_USER:-luminapath};Password=${POSTGRES_PASSWORD:-change-me};
       Database__RunMigrationsOnStartup: ${RUN_MIGRATIONS_ON_STARTUP:-true}
       Https__Redirect: ${HTTPS_REDIRECT:-false}
       Storage__Provider: ${STORAGE_PROVIDER:-FileSystem}
@@ -17,6 +17,7 @@ services:
       Azure__BlobContainerName: ${AZURE_BLOB_CONTAINER_NAME:-media}
       Cors__AllowedOrigins__0: ${FRONTEND_PUBLIC_URL:-http://localhost:4200}
       Cors__AllowedOrigins__1: ${IONIC_PUBLIC_URL:-capacitor://localhost}
+      Cors__AllowedOrigins__2: ${CAPACITOR_ANDROID_PUBLIC_URL:-http://localhost}
     ports:
       - "${BACKEND_HTTP_PORT:-8080}:8080"
     volumes:
@@ -37,7 +38,7 @@ services:
     restart: unless-stopped
     environment:
       LUMINAPATH_API_ENDPOINT: ${LUMINAPATH_API_ENDPOINT:-/api}
-      LUMINAPATH_API_PROXY_TARGET: http://api:8080
+      LUMINAPATH_API_PROXY_TARGET: ${LUMINAPATH_API_PROXY_TARGET:-http://luminapath-api:8080}
     ports:
       - "${FRONTEND_HTTP_PORT:-4200}:80"
     depends_on:

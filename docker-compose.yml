@@ -20,6 +20,7 @@ services:
       Azure__BlobContainerName: ${AZURE_BLOB_CONTAINER_NAME:-media}
       Cors__AllowedOrigins__0: ${FRONTEND_PUBLIC_URL:-http://localhost:4200}
       Cors__AllowedOrigins__1: ${IONIC_PUBLIC_URL:-http://localhost:8100}
+      Cors__AllowedOrigins__2: ${CAPACITOR_ANDROID_PUBLIC_URL:-http://localhost}
     ports:
       - "${BACKEND_HTTP_PORT:-8080}:8080"
     volumes:
