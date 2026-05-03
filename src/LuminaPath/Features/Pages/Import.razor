@@ -20,7 +20,6 @@
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 @attribute [Authorize]
-<h3>Import</h3>
 
 @{
 	var baseInclude = nameof(MyGameDto.Game) + ".";
@@ -32,40 +31,155 @@
 	var include3 = infoInclude + nameof(MyGameInfo.TrackedHours);
 
 }
-<RadzenTabs>
+<PageTitle>Import</PageTitle>
+
+<section class="import-page">
+	<div class="import-hero">
+		<div class="import-hero__copy">
+			<MudText Typo="Typo.overline" Class="import-eyebrow">Import center</MudText>
+			<MudText Typo="Typo.h3" Class="import-title">Bring your play history into LuminaPath</MudText>
+			<MudText Typo="Typo.body1" Class="import-subtitle">
+				Connect your PlayStation profile, preview tracked games, and keep Excel backups flowing without leaving your library.
+			</MudText>
+		</div>
+		<div class="import-hero__status">
+			<div class="import-status-card">
+				<MudIcon Icon="@Icons.Material.Filled.SportsEsports" />
+				<span>PSN games ready</span>
+				<strong>@ImportedGameCount</strong>
+			</div>
+			<div class="import-status-card">
+				<MudIcon Icon="@Icons.Material.Filled.EmojiEvents" />
+				<span>Trophy level</span>
+				<strong>@TrophyLevelLabel</strong>
+			</div>
+		</div>
+	</div>
+
+<RadzenTabs Class="import-tabs">
 	<Tabs>
 		<RadzenTabsItem Text="PSN">
-			<RadzenStack>
-				<RadzenLabel Text="Enter you PSN UserName" />
-				<RadzenTextBox @bind-Value="model.PSNOnlineId" />
-				<RadzenButton Click="ImportProfile" Text="Check Profile" />
-			</RadzenStack>
+			<div class="psn-workspace">
+				<section class="psn-panel psn-profile-panel">
+					<div class="psn-panel__header">
+						<div>
+							<MudText Typo="Typo.overline">Step 1</MudText>
+							<MudText Typo="Typo.h5">Find PlayStation profile</MudText>
+							<MudText Typo="Typo.body2">Enter your PSN online ID and let LuminaPath resolve your account and trophy summary.</MudText>
+						</div>
+						<div class="psn-emblem">
+							<MudIcon Icon="@Icons.Material.Filled.SportsEsports" />
+						</div>
+					</div>
 
-			<MudDivider DividerType="DividerType.FullWidth" Light="true" Class="m-3" />
+					<div class="psn-search">
+						<RadzenTextBox @bind-Value="model.PSNOnlineId"
+									   Placeholder="PSN online ID"
+									   Class="psn-search__input" />
+						<MudButton OnClick="ImportProfile"
+								   Variant="MudBlazor.Variant.Filled"
+								   Color="Color.Primary"
+								   StartIcon="@Icons.Material.Filled.ManageSearch">
+							Check Profile
+						</MudButton>
+					</div>
 
-			<RadzenStack>
-				@if(games?.Any() ?? false){
-					<RadzenButton Text="Import Games" Click="AddGamesToLibrary" />
-				}
-				<RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="false" AllowSorting="true" PageSize="5" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
-				Data="@games">
-					<Columns>
-						<RadzenDataGridColumn Width="20px" Property="@nameof(MyGameDto.Id)" Title="ID" />
-						<RadzenDataGridColumn Width="20px" Property="@nameInclude" Title="Title" />
-						<RadzenDataGridColumn Width="20px" Property="@include1" Title="First played at" />
-						<RadzenDataGridColumn Width="20px" Property="@include2" Title="Last played at" />
-						<RadzenDataGridColumn Width="20px" Property="@include3" Title="Playtime in Hours" />
-						<RadzenDataGridColumn Width="20px" Property="@psnIdInclude" Title="PSNId" />
-					</Columns>
-				</RadzenDataGrid>
-				<RadzenButton Text="Check Games" Click="ImportGames" />
-			</RadzenStack>
+					<div class="psn-profile-grid">
+						<div class="psn-profile-stat psn-profile-stat--wide">
+							<span>Account ID</span>
+							<strong>@ProfileAccountLabel</strong>
+						</div>
+						<div class="psn-profile-stat">
+							<span>Level</span>
+							<strong>@TrophyLevelLabel</strong>
+						</div>
+						<div class="psn-profile-stat trophy-platinum">
+							<span>Platinum</span>
+							<strong>@model.PSNPlatinum</strong>
+						</div>
+						<div class="psn-profile-stat trophy-gold">
+							<span>Gold</span>
+							<strong>@model.PSNGold</strong>
+						</div>
+						<div class="psn-profile-stat trophy-silver">
+							<span>Silver</span>
+							<strong>@model.PSNSilver</strong>
+						</div>
+						<div class="psn-profile-stat trophy-bronze">
+							<span>Bronze</span>
+							<strong>@model.PSNBronze</strong>
+						</div>
+					</div>
+				</section>
+
+				<section class="psn-panel psn-games-panel">
+					<div class="psn-panel__header">
+						<div>
+							<MudText Typo="Typo.overline">Step 2</MudText>
+							<MudText Typo="Typo.h5">Preview tracked games</MudText>
+							<MudText Typo="Typo.body2">Check your PSN play history before adding the shown games to your LuminaPath library.</MudText>
+						</div>
+						<div class="psn-panel__actions">
+							<MudButton OnClick="ImportGames"
+									   Variant="MudBlazor.Variant.Outlined"
+									   Color="Color.Primary"
+									   StartIcon="@Icons.Material.Filled.Sync">
+								Check Games
+							</MudButton>
+							<MudButton OnClick="AddGamesToLibrary"
+									   Variant="MudBlazor.Variant.Filled"
+									   Color="Color.Secondary"
+									   StartIcon="@Icons.Material.Filled.LibraryAdd"
+									   Disabled="@(!(games?.Any() ?? false))">
+								Import Games
+							</MudButton>
+						</div>
+					</div>
+
+					<div class="psn-grid-shell">
+						@if (games?.Any() ?? false)
+						{
+							<RadzenDataGrid AllowFiltering="true"
+											AllowColumnResize="true"
+											AllowAlternatingRows="false"
+											AllowSorting="true"
+											PageSize="8"
+											AllowPaging="true"
+											PagerHorizontalAlign="HorizontalAlign.Left"
+											ShowPagingSummary="true"
+											Data="@games"
+											Class="psn-games-grid">
+								<Columns>
+									<RadzenDataGridColumn Width="80px" Property="@nameof(MyGameDto.Id)" Title="ID" />
+									<RadzenDataGridColumn Width="260px" Property="@nameInclude" Title="Title" />
+									<RadzenDataGridColumn Width="160px" Property="@include1" Title="First played" />
+									<RadzenDataGridColumn Width="160px" Property="@include2" Title="Last played" />
+									<RadzenDataGridColumn Width="150px" Property="@include3" Title="Tracked hours" />
+									<RadzenDataGridColumn Width="180px" Property="@psnIdInclude" Title="PSN ID" />
+								</Columns>
+							</RadzenDataGrid>
+						}
+						else
+						{
+							<div class="psn-empty-state">
+								<MudIcon Icon="@Icons.Material.Filled.TravelExplore" />
+								<MudText Typo="Typo.h6">No PSN games loaded yet</MudText>
+								<MudText Typo="Typo.body2">Check your profile first, then load your tracked games for review.</MudText>
+							</div>
+						}
+					</div>
+				</section>
+			</div>
 		</RadzenTabsItem>
 		<RadzenTabsItem Text="Steam">
-			<div> Coming soon </div>
+			<div class="import-coming-soon">
+				<MudIcon Icon="@Icons.Material.Filled.Construction" />
+				<MudText Typo="Typo.h6">Steam import is coming soon</MudText>
+				<MudText Typo="Typo.body2">This importer will live here once the integration is ready.</MudText>
+			</div>
 		</RadzenTabsItem>
 		<RadzenTabsItem Text="Excel">
-			<MudStack Spacing="3">
+			<MudStack Spacing="3" Class="excel-panel">
 				<MudStack Row="true" Spacing="2">
 					<MudButton OnClick="DownloadExcel"
 							   Variant="MudBlazor.Variant.Filled"
@@ -116,6 +230,7 @@
 		</RadzenTabsItem>
 	</Tabs>
 </RadzenTabs>
+</section>
 
 <script>
 	window.downloadFileFromStream = async (fileName, contentStreamReference) => {
@@ -137,6 +252,9 @@
 	LuminaUserInfo model = new();
 	ExcelService.GameExcelImportResult? _excelResult;
 	bool _excelImporting;
+	int ImportedGameCount => games?.Count() ?? 0;
+	string TrophyLevelLabel => model.PSNTrophyLevel > 0 ? model.PSNTrophyLevel.ToString() : "-";
+	string ProfileAccountLabel => string.IsNullOrWhiteSpace(model.PSNAccountId) ? "Not connected" : model.PSNAccountId;
 
 	protected override async Task OnInitializedAsync()
 	{
