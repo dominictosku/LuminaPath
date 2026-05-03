@@ -246,8 +246,11 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
         {
             await using var context = await GetDbContextAsync();
             var entities = GetEntities(context);
-            return await entities.AsNoTracking()
-                .AnyAsync(e => e.MediaId == id && e.Id != myId && e.LuminaUserId == userId);
+            var userEntities = await entities.AsNoTracking()
+                .Where(e => e.Id != myId && e.LuminaUserId == userId)
+                .ToListAsync();
+
+            return userEntities.Any(e => e.MediaId == id);
         }
 
         protected bool EntityExists(int id, LuminaPathDbContext dbContext)
