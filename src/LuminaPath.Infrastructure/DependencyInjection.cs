@@ -134,9 +134,23 @@ namespace LuminaPath.Infrastructure
 
             services.ConfigureApplicationCookie(options =>
             {
-                options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.Cookie.SameSite = ParseSameSiteMode(config["Auth:CookieSameSite"], SameSiteMode.None);
+                options.Cookie.SecurePolicy = ParseCookieSecurePolicy(config["Auth:CookieSecurePolicy"], CookieSecurePolicy.Always);
             });
+        }
+
+        private static SameSiteMode ParseSameSiteMode(string? value, SameSiteMode fallback)
+        {
+            return Enum.TryParse<SameSiteMode>(value, ignoreCase: true, out var parsed)
+                ? parsed
+                : fallback;
+        }
+
+        private static CookieSecurePolicy ParseCookieSecurePolicy(string? value, CookieSecurePolicy fallback)
+        {
+            return Enum.TryParse<CookieSecurePolicy>(value, ignoreCase: true, out var parsed)
+                ? parsed
+                : fallback;
         }
 
         private static void AddServices(IServiceCollection services, IConfiguration config)

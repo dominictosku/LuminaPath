@@ -18,6 +18,9 @@ services:
       Cors__AllowedOrigins__0: ${FRONTEND_PUBLIC_URL:-http://localhost:4200}
       Cors__AllowedOrigins__1: ${IONIC_PUBLIC_URL:-capacitor://localhost}
       Cors__AllowedOrigins__2: ${CAPACITOR_ANDROID_PUBLIC_URL:-http://localhost}
+      Cors__AllowedOrigins__3: ${CAPACITOR_ANDROID_HTTPS_PUBLIC_URL:-https://localhost}
+      Auth__CookieSameSite: ${AUTH_COOKIE_SAMESITE:-None}
+      Auth__CookieSecurePolicy: ${AUTH_COOKIE_SECURE_POLICY:-Always}
     ports:
       - "${BACKEND_HTTP_PORT:-8080}:8080"
     volumes:

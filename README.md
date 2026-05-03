@@ -271,6 +271,8 @@ Allow the Capacitor app origin in the backend CORS configuration:
 Cors__AllowedOrigins__0=capacitor://localhost
 Cors__AllowedOrigins__1=http://localhost
 Cors__AllowedOrigins__2=https://luminapath.yourdomain.com
+Auth__CookieSameSite=None
+Auth__CookieSecurePolicy=Always
 ```
 
 Restart the backend after changing CORS settings.
