@@ -1,1 +1,297 @@
 ﻿
+.documents-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-height: calc(100vh - 120px);
+}
+
+.documents-hero {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 24px;
+    border: 1px solid rgba(31, 111, 235, 0.16);
+    border-radius: 18px;
+    background:
+        linear-gradient(135deg, rgba(18, 83, 182, 0.16), rgba(31, 111, 235, 0.04) 42%, rgba(20, 184, 166, 0.08)),
+        var(--mud-palette-surface);
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+}
+
+.documents-hero__copy {
+    max-width: 760px;
+}
+
+.documents-eyebrow {
+    color: var(--mud-palette-primary);
+    font-weight: 800;
+}
+
+.documents-title {
+    margin-top: 4px;
+    font-weight: 900;
+}
+
+.documents-subtitle {
+    max-width: 620px;
+    margin-top: 8px;
+    color: var(--mud-palette-text-secondary);
+}
+
+.documents-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 10px;
+    min-width: 300px;
+}
+
+.documents-search {
+    padding: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.74);
+}
+
+.documents-gallery-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+    color: var(--mud-palette-text-secondary);
+}
+
+.documents-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+    gap: 16px;
+}
+
+.document-card {
+    display: flex;
+    min-width: 0;
+    overflow: hidden;
+    flex-direction: column;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 16px;
+    background: var(--mud-palette-surface);
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.document-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(31, 111, 235, 0.34);
+    box-shadow: 0 22px 54px rgba(15, 23, 42, 0.13);
+}
+
+.document-card__preview {
+    position: relative;
+    display: grid;
+    min-height: 178px;
+    place-items: center;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(226, 232, 240, 0.72), rgba(219, 234, 254, 0.72));
+}
+
+.document-card__preview img {
+    width: 100%;
+    height: 100%;
+    min-height: 178px;
+    object-fit: cover;
+}
+
+.document-card__file {
+    display: grid;
+    gap: 8px;
+    place-items: center;
+    color: var(--mud-palette-primary);
+    font-weight: 800;
+}
+
+.document-card__file .mud-icon-root {
+    font-size: 54px;
+}
+
+.document-card__type {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+}
+
+.document-card__body {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 14px 8px;
+}
+
+.document-card__title,
+.document-card__description,
+.document-table-path {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.document-card__title {
+    display: -webkit-box;
+    min-height: 44px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-weight: 800;
+}
+
+.document-card__description {
+    display: -webkit-box;
+    min-height: 42px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: var(--mud-palette-text-secondary);
+}
+
+.document-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.78rem;
+}
+
+.document-card__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px 12px;
+    border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.documents-state,
+.documents-empty {
+    display: grid;
+    min-height: 260px;
+    place-items: center;
+    gap: 10px;
+    padding: 28px;
+    border: 1px dashed rgba(31, 111, 235, 0.24);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.64);
+    text-align: center;
+    color: var(--mud-palette-text-secondary);
+}
+
+.documents-empty .mud-icon-root,
+.documents-state .mud-icon-root {
+    color: var(--mud-palette-primary);
+    font-size: 46px;
+}
+
+.documents-table {
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 16px;
+    background: var(--mud-palette-surface);
+    box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
+}
+
+::deep .documents-table .mud-table-toolbar {
+    height: auto !important;
+    min-height: 92px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.98), rgba(239, 246, 255, 0.86));
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.document-table-preview {
+    display: grid;
+    width: 64px;
+    height: 64px;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 14px;
+    background: rgba(219, 234, 254, 0.76);
+    color: var(--mud-palette-primary);
+}
+
+.document-table-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.document-table-preview .mud-icon-root {
+    font-size: 32px;
+}
+
+.document-table-title {
+    display: flex;
+    min-width: 220px;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.document-table-title .mud-typography-body2 {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--mud-palette-text-secondary);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.document-table-details {
+    display: flex;
+    min-width: 180px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    color: var(--mud-palette-text-secondary);
+}
+
+.document-table-path {
+    display: block;
+    max-width: 280px;
+    color: var(--mud-palette-text-secondary);
+}
+
+.document-table-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 3px;
+}
+
+@media (max-width: 900px) {
+    .documents-hero {
+        flex-direction: column;
+    }
+
+    .documents-hero__actions {
+        justify-content: flex-start;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 640px) {
+    .documents-hero {
+        padding: 18px;
+        border-radius: 14px;
+    }
+
+    .documents-hero__actions {
+        width: 100%;
+    }
+
+    .documents-hero__actions .mud-button-root {
+        flex: 1 1 140px;
+    }
+
+    .documents-gallery {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,6 +1,8 @@
 @page "/Documents"
 @using LuminaPath.Core.Entities
+@using LuminaPath.Core.Enums
 @using LuminaPath.Core.Interfaces
+@using LuminaPath.Core.Models
 @using LuminaPath.Features.Documents.Components
 @using LuminaPath.Features.Media
 @using LuminaPath.Features.Media.Components
@@ -12,76 +14,242 @@
 @inject ISnackbar Snackbar
 @implements ITableActions<MediaDocument>
 
-<PageTitle>MediaDocuments</PageTitle>
+<PageTitle>Documents</PageTitle>
 
-<h1>MediaDocuments</h1>
-<MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary">@ToggleText</MudButton>
-<AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" />
-<LuminaPath.Pages.Media.Components.LuminaGrid ServerData="@(ServerReload)"
-             Loading="@loading"
-             MultiSelection="true"
-             @bind-SelectedItems="selectedItems"
-             @bind-SelectedItem="_currentDto"
-             @ref="_table">
-    <ToolBarContent>
-        <TableActions TItem="MediaDocument" Page="this" loading="loading" selectedItems="selectedItems" />
-    </ToolBarContent>
-    <Columns>
-        <SelectColumn ShowInFooter="false"></SelectColumn>
-        <TemplateColumn CellStyle="width:60px" Title="Actions" Sortable="false">
-            <CellTemplate>
-                <MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" DropShadow="false" Size="Size.Small"
-                         Dense="true"
-                         EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-                    <MudMenuItem OnClick="@(() => OnUpdate(context.Item))">Edit</MudMenuItem>
+<section class="documents-shell">
+    <div class="documents-hero">
+        <div class="documents-hero__copy">
+            <MudText Typo="Typo.overline" Class="documents-eyebrow">Media vault</MudText>
+            <MudText Typo="Typo.h3" Class="documents-title">Documents</MudText>
+            <MudText Typo="Typo.body1" Class="documents-subtitle">
+                Browse uploaded covers, files, references and linked media in one polished library view.
+            </MudText>
+        </div>
 
-                    <MudMenuItem OnClick="@(() => Delete(context.Item))">Delete</MudMenuItem>
-                </MudMenu>
-            </CellTemplate>
-        </TemplateColumn>
+        <div class="documents-hero__actions">
+            <MudButton OnClick="ReloadData"
+                       Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       Disabled="@loading">
+                Refresh
+            </MudButton>
+            <MudButton OnClick="SwitchView"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@(IsGrid ? Icons.Material.Filled.TableRows : Icons.Material.Filled.Dashboard)">
+                @ToggleText
+            </MudButton>
+            <MudButton OnClick="OnCreate"
+                       Variant="Variant.Filled"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.Add">
+                Upload
+            </MudButton>
+        </div>
+    </div>
 
-        <PropertyColumn Property="x => x.Name" Title="Title">
-            <CellTemplate>
-                <div class="d-flex flex-column">
-                    <MudText Typo="Typo.body2">@context.Item.Name</MudText>
-                    <MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
+    <div class="documents-search">
+        <AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" />
+    </div>
+
+    @if (IsGrid)
+    {
+        <div class="documents-gallery-toolbar">
+            <div>
+                <MudText Typo="Typo.subtitle2">Gallery view</MudText>
+                <MudText Typo="Typo.caption">@CardSummary</MudText>
+            </div>
+        </div>
+
+        @if (loading)
+        {
+            <div class="documents-state">
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                <MudText Typo="Typo.body2">Loading documents</MudText>
+            </div>
+        }
+        else if (!cardDocuments.Any())
+        {
+            <div class="documents-empty">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory2" />
+                <MudText Typo="Typo.h6">No documents yet</MudText>
+                <MudText Typo="Typo.body2">Upload your first image or file to start building the media vault.</MudText>
+                <MudButton OnClick="OnCreate" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add">
+                    Upload document
+                </MudButton>
+            </div>
+        }
+        else
+        {
+            <div class="documents-gallery">
+                @foreach (var document in cardDocuments)
+                {
+                    <article class="document-card">
+                        <div class="document-card__preview">
+                            @if (IsImage(document))
+                            {
+                                <img src="@GetDocumentUrl(document)" alt="@GetDisplayName(document)" loading="lazy" />
+                            }
+                            else
+                            {
+                                <div class="document-card__file">
+                                    <MudIcon Icon="@GetDocumentIcon(document)" />
+                                    <span>@GetExtension(document)</span>
+                                </div>
+                            }
+                            <MudChip T="string" Size="Size.Small" Color="@GetDocumentColor(document)" Class="document-card__type">
+                                @GetDocumentKind(document)
+                            </MudChip>
+                        </div>
+
+                        <div class="document-card__body">
+                            <MudText Typo="Typo.subtitle1" Class="document-card__title">@GetDisplayName(document)</MudText>
+                            <MudText Typo="Typo.body2" Class="document-card__description">@GetDescription(document)</MudText>
+                            <div class="document-card__meta">
+                                <span>@GetContentType(document)</span>
+                                <span>@GetLinkedMediaLabel(document)</span>
+                            </div>
+                        </div>
+
+                        <div class="document-card__actions">
+                            <MudButton Href="@GetDocumentUrl(document)"
+                                       Target="_blank"
+                                       Variant="Variant.Text"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.OpenInNew">
+                                Open
+                            </MudButton>
+                            <div>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Color="Color.Primary"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OnUpdate(document))"
+                                               aria-label="Edit document" />
+                                <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               OnClick="@(() => Delete(document))"
+                                               aria-label="Delete document" />
+                            </div>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <LuminaPath.Pages.Media.Components.LuminaGrid ServerData="@(ServerReload)"
+                     Loading="@loading"
+                     MultiSelection="true"
+                     @bind-SelectedItems="selectedItems"
+                     @bind-SelectedItem="_currentDto"
+                     @ref="_table"
+                     Class="documents-table">
+            <ToolBarContent>
+                <TableActions TItem="MediaDocument" Page="this" loading="loading" selectedItems="selectedItems" />
+            </ToolBarContent>
+            <Columns>
+                <SelectColumn ShowInFooter="false"></SelectColumn>
+                <TemplateColumn Title="Preview" Sortable="false" CellClass="documents-preview-cell">
+                    <CellTemplate>
+                        <div class="document-table-preview">
+                            @if (IsImage(context.Item))
+                            {
+                                <img src="@GetDocumentUrl(context.Item)" alt="@GetDisplayName(context.Item)" loading="lazy" />
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@GetDocumentIcon(context.Item)" />
+                            }
+                        </div>
+                    </CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn Property="x => x.Name" Title="Document">
+                    <CellTemplate>
+                        <div class="document-table-title">
+                            <MudText Typo="Typo.subtitle2">@GetDisplayName(context.Item)</MudText>
+                            <MudText Typo="Typo.body2">@GetDescription(context.Item)</MudText>
+                        </div>
+                    </CellTemplate>
+                </PropertyColumn>
+                <TemplateColumn Title="Details">
+                    <CellTemplate>
+                        <div class="document-table-details">
+                            <MudChip T="string" Size="Size.Small" Color="@GetDocumentColor(context.Item)" Variant="Variant.Filled">
+                                @GetDocumentKind(context.Item)
+                            </MudChip>
+                            <span>@GetContentType(context.Item)</span>
+                            <span>@GetLinkedMediaLabel(context.Item)</span>
+                        </div>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Storage">
+                    <CellTemplate>
+                        <MudText Typo="Typo.body2" Class="document-table-path">@GetStorageLabel(context.Item)</MudText>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn CellStyle="width:132px" Title="Actions" Sortable="false">
+                    <CellTemplate>
+                        <div class="document-table-actions">
+                            <MudIconButton Href="@GetDocumentUrl(context.Item)"
+                                           Target="_blank"
+                                           Icon="@Icons.Material.Filled.OpenInNew"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           aria-label="Open document" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Color="Color.Info"
+                                           Size="Size.Small"
+                                           OnClick="@(() => OnUpdate(context.Item))"
+                                           aria-label="Edit document" />
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           OnClick="@(() => Delete(context.Item))"
+                                           aria-label="Delete document" />
+                        </div>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <NoRecordsContent>
+                <div class="documents-state">
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory2" />
+                    <MudText>No documents found</MudText>
                 </div>
-            </CellTemplate>
-        </PropertyColumn>
-    </Columns>
-    <NoRecordsContent>
-        <MudText>No items found</MudText>
-    </NoRecordsContent>
-    <LoadingContent>
-        <MudText>Loading</MudText>
-    </LoadingContent>
-    <PagerContent>
-        <MudDataGridPager />
-    </PagerContent>
-</LuminaPath.Pages.Media.Components.LuminaGrid>
-
-<style>
-    @@import url("https://cdn.jsdelivr.net/npm/@@fancyapps/ui@5.0/dist/fancybox/fancybox.css");
-
-    .fancybox__container {
-        --fancybox-bg: rgba(24, 24, 27, 0.85);
-        z-index: 9999;
+            </NoRecordsContent>
+            <LoadingContent>
+                <div class="documents-state">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    <MudText>Loading documents</MudText>
+                </div>
+            </LoadingContent>
+            <PagerContent>
+                <MudDataGridPager />
+            </PagerContent>
+        </LuminaPath.Pages.Media.Components.LuminaGrid>
     }
-
-    .mud-table-toolbar {
-        height: 120px !important;
-    }
-</style>
+</section>
 
 @code{
     private MudDataGrid<MediaDocument> _table = default!;
     private MediaDocument _currentDto = new();
     private MediaFilter _filter = new();
+    private IReadOnlyList<MediaDocument> cardDocuments = [];
 
     public bool IsGrid = true;
     public bool loading;
     public HashSet<MediaDocument> selectedItems = new();
-    public string ToggleText => IsGrid ? "Grid View" : "Table View";
+    public string ToggleText => IsGrid ? "Table View" : "Gallery View";
+    private string CardSummary => cardDocuments.Count == 1
+        ? "1 document ready"
+        : $"{cardDocuments.Count} documents ready";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCards();
+    }
 
     private async Task<GridData<MediaDocument>> ServerReload(GridState<MediaDocument> state, CancellationToken token)
     {
@@ -101,7 +269,16 @@
 
     public async Task ReloadData()
     {
-        await _table.ReloadServerData();
+        if (IsGrid)
+        {
+            await LoadCards();
+            return;
+        }
+
+        if (_table is not null)
+        {
+            await _table.ReloadServerData();
+        }
     }
 
     private async Task SwitchView()
@@ -114,6 +291,110 @@
     {
         return await DocumentPageService.GetPage(pageIndex, 15);
     }
+
+    private async Task LoadCards()
+    {
+        loading = true;
+        try
+        {
+            var result = await DocumentPageService.GetPage(1, 60);
+            cardDocuments = result.ToList();
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private static string GetDisplayName(MediaDocument document)
+    {
+        return string.IsNullOrWhiteSpace(document.Name) ? "Untitled document" : document.Name;
+    }
+
+    private static string GetDescription(MediaDocument document)
+    {
+        return string.IsNullOrWhiteSpace(document.Description)
+            ? "No description added yet."
+            : document.Description;
+    }
+
+    private static string GetContentType(MediaDocument document)
+    {
+        return string.IsNullOrWhiteSpace(document.ContentType) ? "Unknown type" : document.ContentType;
+    }
+
+    private static string GetLinkedMediaLabel(MediaDocument document)
+    {
+        return document.MediaId is null ? "Standalone" : $"Linked to media #{document.MediaId}";
+    }
+
+    private static string GetStorageLabel(MediaDocument document)
+    {
+        if (!string.IsNullOrWhiteSpace(document.Path))
+        {
+            return document.Path;
+        }
+
+        return document.Url;
+    }
+
+    private static string GetDocumentUrl(MediaDocument document)
+    {
+        if (!string.IsNullOrWhiteSpace(document.Path))
+        {
+            return document.Path.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                || document.Path.StartsWith("/", StringComparison.Ordinal)
+                ? document.Path
+                : $"/{document.Path}";
+        }
+
+        return $"/{document.Url}";
+    }
+
+    private static bool IsImage(MediaDocument document)
+    {
+        return document.DocumentType == DocumentType.Image
+            || GetContentType(document).StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+            || ImageExtensions.Contains(GetExtension(document), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string GetExtension(MediaDocument document)
+    {
+        var source = !string.IsNullOrWhiteSpace(document.Name) ? document.Name : document.Path;
+        var extension = Path.GetExtension(source);
+        return string.IsNullOrWhiteSpace(extension) ? "file" : extension.TrimStart('.').ToUpperInvariant();
+    }
+
+    private static string GetDocumentKind(MediaDocument document)
+    {
+        return document.DocumentType == DocumentType.Others ? "File" : document.DocumentType.ToString();
+    }
+
+    private static string GetDocumentIcon(MediaDocument document)
+    {
+        return document.DocumentType switch
+        {
+            DocumentType.PDF => Icons.Material.Filled.PictureAsPdf,
+            DocumentType.Excel => Icons.Material.Filled.TableChart,
+            DocumentType.Image => Icons.Material.Filled.Image,
+            DocumentType.Document => Icons.Material.Filled.Description,
+            _ => Icons.Material.Filled.InsertDriveFile
+        };
+    }
+
+    private static Color GetDocumentColor(MediaDocument document)
+    {
+        return document.DocumentType switch
+        {
+            DocumentType.Image => Color.Info,
+            DocumentType.PDF => Color.Error,
+            DocumentType.Excel => Color.Success,
+            DocumentType.Document => Color.Primary,
+            _ => Color.Default
+        };
+    }
+
+    private static readonly string[] ImageExtensions = ["PNG", "JPG", "JPEG", "WEBP", "GIF", "BMP", "SVG"];
 
     #region Events
     public async Task OnCreate()

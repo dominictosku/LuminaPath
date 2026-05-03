@@ -190,7 +190,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             int pageIndex = paging.PageIndex;
             if (paging.Count > 0)
             {
-                return await PaginatedList<MediaDocument>.CreateAsync(entities, 1, paging.Count);
+                return await PaginatedList<MediaDocument>.CreateAsync(entities, pageIndex, paging.Count);
             }
             return await PaginatedList<MediaDocument>.CreateAsync(entities, pageIndex, 10);
         }
