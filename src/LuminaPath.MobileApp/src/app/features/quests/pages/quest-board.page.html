@@ -1,0 +1,224 @@
+<ion-header class="quest-header">
+  <ion-toolbar>
+    <ion-title>Quest Board</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" aria-label="Add skill" (click)="openSkillModal()">
+        <ion-icon slot="icon-only" name="sparkles-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="quest-shell">
+  <main class="quest-page">
+    <section class="hero">
+      <div class="hero__copy">
+        <span class="eyebrow">
+          <ion-icon name="sparkles-outline"></ion-icon>
+          Life RPG
+        </span>
+        <h1>{{ title }} Level {{ level }}</h1>
+        <p>Turn tasks into quests and real-life practice into a skill tree.</p>
+      </div>
+
+      <div class="hero__panel">
+        <div class="rank-row">
+          <div>
+            <span>Total XP</span>
+            <strong>{{ xp }}</strong>
+          </div>
+          <ion-badge>{{ xpIntoLevel }}/200 XP</ion-badge>
+        </div>
+        <ion-progress-bar [value]="xpProgress"></ion-progress-bar>
+        <div class="stat-row">
+          <span>{{ activeQuestCount }} active</span>
+          <span>{{ completedQuestCount }} complete</span>
+          <span>{{ unlockedNodeCount }} nodes</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="mode-panel">
+      <ion-segment [(ngModel)]="mode">
+        <ion-segment-button value="quests">Quests</ion-segment-button>
+        <ion-segment-button value="skills">Skills</ion-segment-button>
+      </ion-segment>
+    </section>
+
+    <section class="quest-grid" *ngIf="mode === 'quests'">
+      <article class="quest-column" *ngFor="let column of questColumns; trackBy: trackByColumn">
+        <header class="column-header">
+          <div class="column-icon">
+            <ion-icon [name]="column.icon"></ion-icon>
+          </div>
+          <div>
+            <span>{{ column.label }}</span>
+            <h2>{{ column.title }}</h2>
+            <p>{{ column.description }}</p>
+          </div>
+        </header>
+
+        <div class="quest-input">
+          <input
+            type="text"
+            [placeholder]="'Add ' + column.title.toLowerCase()"
+            [(ngModel)]="newQuest[column.type]"
+            (keydown.enter)="addQuest(column.type)" />
+          <ion-button fill="clear" aria-label="Add quest" (click)="addQuest(column.type)">
+            <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+          </ion-button>
+        </div>
+
+        <div class="column-progress">
+          <ion-progress-bar [value]="questProgress(column)"></ion-progress-bar>
+          <span>+{{ questReward(column.type) }} XP</span>
+        </div>
+
+        <div class="quest-list" *ngIf="quests[column.type].length; else emptyColumn">
+          <article
+            class="quest-card"
+            *ngFor="let quest of quests[column.type]; trackBy: trackByQuest"
+            [class.quest-card--done]="quest.completed">
+            <button type="button" class="complete-button" (click)="toggleQuest(column.type, quest)">
+              <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
+            </button>
+            <div>
+              <h3>{{ quest.title }}</h3>
+              <p>{{ quest.completed ? 'Reward claimed' : 'Ready to complete' }}</p>
+            </div>
+            <button type="button" class="delete-button" aria-label="Delete quest" (click)="deleteQuest(column.type, quest.id)">
+              <ion-icon name="trash-outline"></ion-icon>
+            </button>
+          </article>
+        </div>
+
+        <ng-template #emptyColumn>
+          <div class="empty-state">
+            <ion-icon name="library-outline"></ion-icon>
+            <span>No quests here yet.</span>
+          </div>
+        </ng-template>
+      </article>
+    </section>
+
+    <section class="skills-layout" *ngIf="mode === 'skills'">
+      <div class="skills-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="trophy-outline"></ion-icon>
+            Skill tree
+          </span>
+          <h2>Real Life Mastery</h2>
+        </div>
+        <ion-button fill="clear" (click)="openSkillModal()">
+          <ion-icon slot="start" name="add-outline"></ion-icon>
+          Skill
+        </ion-button>
+      </div>
+
+      <div class="skill-grid">
+        <article class="skill-card" *ngFor="let skill of skills; trackBy: trackBySkill" [style.--skill-color]="skill.color">
+          <header>
+            <div class="skill-icon">
+              <ion-icon [name]="skill.icon"></ion-icon>
+            </div>
+            <div>
+              <h3>{{ skill.name }}</h3>
+              <p>Level {{ skillLevel(skill) }} · {{ skill.xp }} XP</p>
+            </div>
+          </header>
+
+          <ion-progress-bar [value]="skillProgress(skill)"></ion-progress-bar>
+
+          <div class="skill-actions">
+            <ion-button size="small" (click)="trainSkill(skill)">
+              <ion-icon slot="start" name="flash-outline"></ion-icon>
+              Train
+            </ion-button>
+            <ion-button size="small" fill="clear" (click)="openNodeModal(skill)">
+              <ion-icon slot="start" name="add-outline"></ion-icon>
+              Node
+            </ion-button>
+          </div>
+
+          <div class="node-list">
+            <button
+              type="button"
+              class="node"
+              *ngFor="let node of skill.nodes; let nodeIndex = index; trackBy: trackByText"
+              [class.node--unlocked]="skill.unlockedNodes.includes(nodeIndex)"
+              (click)="unlockNode(skill, nodeIndex)">
+              <ion-icon [name]="skill.unlockedNodes.includes(nodeIndex) ? 'star-outline' : 'lock-closed-outline'"></ion-icon>
+              <span>{{ node }}</span>
+            </button>
+          </div>
+
+          <small>{{ unlockedCount(skill) }} of {{ skill.nodes.length }} nodes unlocked</small>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" *ngIf="modalMode" (click)="closeModal()">
+    <section class="quest-modal" (click)="$event.stopPropagation()">
+      <button type="button" class="modal-close" aria-label="Close" (click)="closeModal()">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+
+      <ng-container *ngIf="modalMode === 'skill'; else nodeModal">
+        <span class="eyebrow">
+          <ion-icon name="sparkles-outline"></ion-icon>
+          New skill
+        </span>
+        <h2>Add a real-life skill</h2>
+
+        <label>
+          <span>Name</span>
+          <input type="text" placeholder="Drawing, cooking, writing..." [(ngModel)]="newSkill.name" />
+        </label>
+
+        <div class="choice-row">
+          <button
+            type="button"
+            *ngFor="let option of skillIconOptions"
+            [class.choice--selected]="newSkill.icon === option.icon"
+            (click)="newSkill.icon = option.icon">
+            <ion-icon [name]="option.icon"></ion-icon>
+            <span>{{ option.label }}</span>
+          </button>
+        </div>
+
+        <div class="color-row">
+          <button
+            type="button"
+            *ngFor="let color of skillColorOptions"
+            [style.background]="color"
+            [class.color--selected]="newSkill.color === color"
+            [attr.aria-label]="'Use color ' + color"
+            (click)="newSkill.color = color">
+          </button>
+        </div>
+
+        <ion-button expand="block" (click)="addSkill()">Add Skill</ion-button>
+      </ng-container>
+
+      <ng-template #nodeModal>
+        <span class="eyebrow">
+          <ion-icon name="star-outline"></ion-icon>
+          New node
+        </span>
+        <h2>Add a milestone</h2>
+        <label>
+          <span>Node name</span>
+          <input type="text" placeholder="30 day streak, first portrait..." [(ngModel)]="newNodeName" />
+        </label>
+        <ion-button expand="block" (click)="addNode()">Add Node</ion-button>
+      </ng-template>
+    </section>
+  </div>
+
+  <div class="toast" *ngIf="toastMessage">
+    <ion-icon name="sparkles"></ion-icon>
+    <span>{{ toastMessage }}</span>
+  </div>
+</ion-content>

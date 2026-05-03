@@ -8,6 +8,8 @@ import {
   gameControllerOutline,
   library,
   libraryOutline,
+  sparkles,
+  sparklesOutline,
 } from 'ionicons/icons';
 
 @Component({
@@ -27,6 +29,8 @@ export class TabsPage {
       gameControllerOutline,
       library,
       libraryOutline,
+      sparkles,
+      sparklesOutline,
     });
   }
 }

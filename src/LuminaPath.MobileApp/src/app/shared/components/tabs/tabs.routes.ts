@@ -27,6 +27,12 @@ export const routes: Routes = [
         canActivate: [AuthGuard],
       },
       {
+        path: 'quests',
+        loadComponent: () =>
+          import('../../../features/quests/pages/quest-board.page').then((m) => m.QuestBoardPage),
+        canActivate: [AuthGuard],
+      },
+      {
         path: '',
         redirectTo: '/home',
         pathMatch: 'full',

@@ -24,6 +24,11 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    path: 'quests',
+    loadComponent: () => import('./features/quests/pages/quest-board.page').then(m => m.QuestBoardPage),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'auth/login',
     loadComponent: () => import('./core/auth/pages/login/login.page').then(m => m.LoginPage)
   },
