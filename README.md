@@ -218,6 +218,7 @@ npx cap sync android
 ```
 
 `npx cap add android` only needs to be run once, or whenever the generated `android` folder does not exist.
+The Angular production build writes the web app to `www/browser`, which is the directory Capacitor packages into the APK.
 
 Build a debug APK:
 
