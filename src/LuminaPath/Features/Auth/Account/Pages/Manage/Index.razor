@@ -4,7 +4,7 @@
 @using Microsoft.AspNetCore.Identity
 @using LuminaPath.Core.Models
 
-
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<LuminaUser> UserManager
 @inject SignInManager<LuminaUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
@@ -43,16 +43,22 @@
     private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = default!;
-
-    protected override void OnParametersSet()
-    {
-        Input ??= new();
-    }
+    private InputModel Input { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
-        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var principal = authState.User;
+
+        if (!principal.Identity?.IsAuthenticated ?? true)
+        {
+            RedirectManager.RedirectTo("Account/Login");
+            return;
+        }
+
+        user = await UserManager.GetUserAsync(principal)
+               ?? throw new InvalidOperationException("User not found.");
+
         username = await UserManager.GetUserNameAsync(user);
         phoneNumber = await UserManager.GetPhoneNumberAsync(user);
 
