@@ -23,13 +23,14 @@ namespace LuminaPath.Pages.Media.Components
             if (Model.Image != null)
             {
                 var parameters = new DialogParameters<ConfirmationDialog>
-            {
-                { x=>x.ContentText, $"Delete Image?" }
-            };
-                var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
-                var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Delete Image", parameters, options);
+                {
+                    { x=>x.ContentText, "Delete this image? This cannot be undone." }
+                };
+                var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+                var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm delete", parameters, options);
+                var result = await dialog.Result;
 
-                if (!dialog.Result.IsCanceled)
+                if (result is { Canceled: false })
                 {
                     await OnDeleteImage(Model);
                 }

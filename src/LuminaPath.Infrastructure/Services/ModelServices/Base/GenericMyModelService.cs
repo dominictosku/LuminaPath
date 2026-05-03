@@ -3,12 +3,7 @@ using LuminaPath.Core.Entities;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 using LuminaPath.Core.Models;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices.Base
@@ -39,17 +34,14 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 
         public virtual async Task<List<TEntity>> GetAll()
         {
-            using (var dbContext = await GetDbContextAsync())
-            {
-                IQueryable<TEntity> query = GetEntities(dbContext);
-                query = QueryDefaultIncludes(query);
-                return await query.ToListAsync();
-            }
+            await using var dbContext = await GetDbContextAsync();
+            IQueryable<TEntity> query = GetEntities(dbContext);
+            return await QueryDefaultIncludes(query).ToListAsync();
         }
 
         public async Task<List<TEntity>> GetMyMedia(string UserId, Expression<Func<TEntity, bool>>? filter = null)
         {
-            using var context = await GetDbContextAsync();
+            await using var context = await GetDbContextAsync();
             IQueryable<TEntity> entities = GetEntities(context);
             entities = entities.Where(g => g.LuminaUserId == UserId);
             entities = QueryDefaultIncludes(entities);
@@ -75,22 +67,19 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             Expression<Func<TEntity, bool>>? filter = null,
             Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null)
         {
-            using (var dbContext = await GetDbContextAsync())
+            await using var dbContext = await GetDbContextAsync();
+            IQueryable<TEntity> entities = GetEntities(dbContext);
+            entities = PrepareEntity(entities, filter, orderBy, includes);
+
+            var paginatedEntities = await CreatePaginatedList(entities, mediaFilter.Paging);
+
+            if (typeof(Dto) == typeof(TEntity))
             {
-                IQueryable<TEntity> entities = GetEntities(dbContext);
-                entities = PrepareEntity(entities, filter, orderBy, includes);
-
-                var paginatedEntities = await CreatePaginatedList(entities, mediaFilter.Paging);
-
-                if (typeof(Dto) == typeof(TEntity))
-                {
-                    return (PaginatedList<Dto>)(object)paginatedEntities;
-                }
-
-                var mappedEntities = _mapper.Map<IEnumerable<TEntity>, IEnumerable<Dto>>(paginatedEntities);
-
-                return CreatePaginatedList(mappedEntities, mediaFilter.Paging);
+                return (PaginatedList<Dto>)(object)paginatedEntities;
             }
+
+            var mappedEntities = _mapper.Map<IEnumerable<TEntity>, IEnumerable<Dto>>(paginatedEntities);
+            return CreatePaginatedList(mappedEntities, mediaFilter.Paging);
         }
 
         public virtual async Task<TEntity> GetById(int? id, IEnumerable<string>? includes = null)
@@ -98,7 +87,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             if (id == null)
                 throw new Exception("No id given");
 
-            using (var dbContext = await GetDbContextAsync())
+            await using (var dbContext = await GetDbContextAsync())
             {
                 IQueryable<TEntity> entities = GetEntities(dbContext);
                 if (includes != null)
@@ -106,7 +95,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
                     entities = includes.Aggregate(entities, (current, include) => current.Include(include));
                 }
 
-                return await entities.FirstOrDefaultAsync(e => e.Id == id) ?? throw new Exception("Entity not found");
+                return await entities.FirstOrDefaultAsync(e => e.Id == id) ?? throw new KeyNotFoundException("Entity not found");
             }
         }
 
@@ -145,23 +134,24 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 
         private async Task<Result<TEntity, FailedResult>> PostAsync(TEntity entity)
         {
-            using (var dbContext = await GetDbContextAsync())
-            {
-                var entities = GetEntities(dbContext);
-                await entities.AddAsync(entity);
-                await dbContext.SaveChangesAsync();
-                return entity;
-            }
+            await using var dbContext = await GetDbContextAsync();
+            var entities = GetEntities(dbContext);
+            await entities.AddAsync(entity);
+            await dbContext.SaveChangesAsync();
+            return entity;
         }
 
         private async Task<Result<TEntity, FailedResult>> PutAsync(TEntity entity)
         {
             var id = entity.Id;
 
-            using (var dbContext = await GetDbContextAsync())
+            await using (var dbContext = await GetDbContextAsync())
             {
                 var entities = GetEntities(dbContext);
-                var existingEntity = await entities.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id) ?? throw new Exception("Entity not found");
+                if (!await entities.AsNoTracking().AnyAsync(e => e.Id == id))
+                {
+                    return new FailedResult("Entity not found");
+                }
 
                 dbContext.Update(entity);
 
@@ -190,10 +180,14 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             if (id == null)
                 return new FailedResult("Entry not found");
 
-            using (var dbContext = await GetDbContextAsync())
+            await using (var dbContext = await GetDbContextAsync())
             {
-                var entity = await GetById(id);
                 var entities = GetEntities(dbContext);
+                var entity = await entities.FirstOrDefaultAsync(entity => entity.Id == id.Value);
+                if (entity == null)
+                {
+                    return new FailedResult("Entry not found");
+                }
 
                 entities.Remove(entity);
                 await dbContext.SaveChangesAsync();
@@ -207,7 +201,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             int pageIndex = paging.PageIndex;
             if (paging.Count > 0)
             {
-                return await PaginatedList<TEntity>.CreateAsync(entities, 1, paging.Count);
+                return await PaginatedList<TEntity>.CreateAsync(entities, pageIndex, paging.Count);
             }
             return await PaginatedList<TEntity>.CreateAsync(entities, pageIndex, 10);
         }
@@ -217,7 +211,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             int pageIndex = paging.PageIndex;
             if (paging.Count > 0)
             {
-                return PaginatedList<TDto>.Create(entities, 1, paging.Count);
+                return PaginatedList<TDto>.Create(entities, pageIndex, paging.Count);
             }
             return PaginatedList<TDto>.Create(entities, pageIndex, 10);
         }
@@ -250,10 +244,10 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 
         protected async Task<bool> IsMediaAlreadyAdded(int id, int myId, string userId)
         {
-            using var context = await GetDbContextAsync();
+            await using var context = await GetDbContextAsync();
             var entities = GetEntities(context);
-            var result = entities.AsNoTracking().ToList();
-            return result.Any(e => e.MediaId == id && e.Id != myId && e.LuminaUserId == userId);
+            return await entities.AsNoTracking()
+                .AnyAsync(e => e.MediaId == id && e.Id != myId && e.LuminaUserId == userId);
         }
 
         protected bool EntityExists(int id, LuminaPathDbContext dbContext)

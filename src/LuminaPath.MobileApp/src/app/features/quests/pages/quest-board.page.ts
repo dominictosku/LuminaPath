@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  AlertController,
   IonBadge,
   IonButton,
   IonButtons,
@@ -146,7 +147,10 @@ export class QuestBoardPage implements OnInit {
   };
   private toastTimer: number | undefined;
 
-  constructor(private questBoardService: QuestBoardService) {
+  constructor(
+    private questBoardService: QuestBoardService,
+    private alertController: AlertController
+  ) {
     addIcons({
       addOutline,
       bookOutline,
@@ -214,8 +218,23 @@ export class QuestBoardPage implements OnInit {
   }
 
   async deleteQuest(type: QuestType, questId: number) {
+    const quest = this.quests[type].find((item) => item.id === questId);
+    const confirmed = await this.confirmDelete(
+      'Delete quest',
+      quest ? `Delete "${quest.title}"? This cannot be undone.` : 'Delete this quest? This cannot be undone.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const previousBoard = this.currentBoardSnapshot();
     this.quests[type] = this.quests[type].filter((quest) => quest.id !== questId);
-    await this.persist();
+    const saved = await this.persist();
+
+    if (!saved) {
+      this.applyBoard(previousBoard);
+    }
   }
 
   async trainSkill(skill: QuestSkill) {
@@ -308,9 +327,23 @@ export class QuestBoardPage implements OnInit {
 
   async deleteSkill(skillId: number) {
     const skill = this.skills.find((item) => item.id === skillId);
+    const confirmed = await this.confirmDelete(
+      'Delete skill',
+      skill ? `Delete "${skill.name}" and all of its nodes? This cannot be undone.` : 'Delete this skill? This cannot be undone.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const previousBoard = this.currentBoardSnapshot();
     this.skills = this.skills.filter((item) => item.id !== skillId);
     this.showToast(skill ? `${skill.name} deleted` : 'Skill deleted');
-    await this.persist();
+    const saved = await this.persist();
+
+    if (!saved) {
+      this.applyBoard(previousBoard);
+    }
   }
 
   async addNode() {
@@ -384,13 +417,15 @@ export class QuestBoardPage implements OnInit {
     }
   }
 
-  private async persist() {
+  private async persist(): Promise<boolean> {
     this.rebuildStats();
 
     try {
       this.applyBoard(await this.questBoardService.saveBoard(this.currentBoard()));
+      return true;
     } catch {
       this.showToast('Progress could not be saved');
+      return false;
     }
   }
 
@@ -407,6 +442,43 @@ export class QuestBoardPage implements OnInit {
       quests: this.quests,
       skills: this.skills,
     };
+  }
+
+  private currentBoardSnapshot(): QuestBoardState {
+    return {
+      xp: this.xp,
+      quests: {
+        main: this.quests.main.map((quest) => ({ ...quest })),
+        sub: this.quests.sub.map((quest) => ({ ...quest })),
+        faction: this.quests.faction.map((quest) => ({ ...quest })),
+      },
+      skills: this.skills.map((skill) => ({
+        ...skill,
+        nodes: [...skill.nodes],
+        unlockedNodes: [...skill.unlockedNodes],
+      })),
+    };
+  }
+
+  private async confirmDelete(header: string, message: string): Promise<boolean> {
+    const alert = await this.alertController.create({
+      header,
+      message,
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+        },
+        {
+          text: 'Delete',
+          role: 'destructive',
+        },
+      ],
+    });
+
+    await alert.present();
+    const result = await alert.onDidDismiss();
+    return result.role === 'destructive';
   }
 
   private rebuildStats() {

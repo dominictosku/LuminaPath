@@ -2,16 +2,10 @@ using LuminaPath.Core.Entities;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
-using LuminaPath.Infrastructure.Services.ModelServices;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LuminaPath.Infrastructure.Controllers.Base
 {
@@ -24,7 +18,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
         protected readonly GenericMyModelService<TEntity> _service = service;
         protected readonly UserManager<LuminaUser> _userManager = userManager;
         protected IEnumerable<string> Includes { get; set; } = new List<string>();
-        public IObjectMapper Mapper = mapper;
+        public IObjectMapper Mapper { get; } = mapper;
 
         [HttpGet]
         public virtual async Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)
@@ -48,7 +42,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
                 return BadRequest(ModelState);
             }
 
-            var (user, userId) = await GetUserAndUserIdAsync(_userManager);
+            var (user, _) = await GetUserAndUserIdAsync(_userManager);
             var entity = Mapper.Map<TEntity>(viewModel);
             var result = await _service.PostAsync(entity, user);
             return result.Match<ActionResult>(
@@ -65,7 +59,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
                 return BadRequest("Id does not match entity");
             }
 
-            var (user, userId) = await GetUserAndUserIdAsync(_userManager);
+            var (user, _) = await GetUserAndUserIdAsync(_userManager);
 
             var entity = Mapper.Map<TEntity>(viewModel);
             var result = await _service.PutAsync(entity, user);

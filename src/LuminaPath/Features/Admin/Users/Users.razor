@@ -259,6 +259,14 @@
 
             return new GridData<UserGridItemDto> { TotalItems = result.Total, Items = result.Items };
         }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load users: {ex.Message}", Severity.Error);
+            _totalFilteredUsers = 0;
+            _activeUsers = 0;
+            _lockedUsers = 0;
+            return new GridData<UserGridItemDto> { TotalItems = 0, Items = [] };
+        }
         finally
         {
             _loading = false;
@@ -291,7 +299,10 @@
     private async Task ReloadAndClearSelection()
     {
         _selectedItems.Clear();
-        await _table.ReloadServerData();
+        if (_table is not null)
+        {
+            await _table.ReloadServerData();
+        }
     }
 
     private async Task OnCreate()
@@ -454,7 +465,7 @@
         var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
         var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm delete", parameters, options);
         var result = await dialog.Result;
-        return result?.Canceled != true;
+        return result is { Canceled: false };
     }
 
     private async Task<bool> IsCurrentUser(string userId)

@@ -82,9 +82,20 @@ namespace LuminaPath.Pages.Media
                 Snackbar.Add("No permission to edit", Severity.Info);
                 return;
             }
-            if (model.Image != null)
+            if (model.Image == null)
+            {
+                return;
+            }
+
+            try
             {
                 await documentService.DeleteMediaDocument(model);
+                Snackbar.Add("Image deleted", Severity.Info);
+                await ReloadData();
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("Failed to delete image", Severity.Error);
             }
         }
     }

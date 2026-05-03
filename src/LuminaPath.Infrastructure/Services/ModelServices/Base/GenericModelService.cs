@@ -4,7 +4,6 @@ using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 {
@@ -33,12 +32,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 
         public virtual async Task<List<TEntity>> GetAll()
         {
-            using (var dbContext = await GetDbContextAsync())
-            {
-                IQueryable<TEntity> query = GetEntities(dbContext);
-                query = Includes.Aggregate(query, (current, include) => current.Include(include));
-                return await query.ToListAsync();
-            }
+            await using var dbContext = await GetDbContextAsync();
+            IQueryable<TEntity> query = GetEntities(dbContext);
+            return await QueryIncludes(query, Includes).ToListAsync();
         }
 
         public virtual async Task<PaginatedList<TEntity>> GetAllPaginated(
@@ -56,22 +52,19 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             Expression<Func<TEntity, bool>>? filter = null,
             Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null)
         {
-            using (var dbContext = await GetDbContextAsync())
+            await using var dbContext = await GetDbContextAsync();
+            IQueryable<TEntity> entities = GetEntities(dbContext);
+            entities = PrepareEntity(entities, filter, orderBy, includes);
+
+            var paginatedEntities = await CreatePaginatedList(entities, mediaFilter.Paging);
+
+            if (typeof(Dto) == typeof(TEntity))
             {
-                IQueryable<TEntity> entities = GetEntities(dbContext);
-                entities = PrepareEntity(entities, filter, orderBy, includes);
-
-                var paginatedEntities = await CreatePaginatedList(entities, mediaFilter.Paging);
-
-                if (typeof(Dto) == typeof(TEntity))
-                {
-                    return (PaginatedList<Dto>)(object)paginatedEntities;
-                }
-
-                var mappedEntities = _mapper.Map<IEnumerable<TEntity>, IEnumerable<Dto>>(paginatedEntities);
-
-                return CreatePaginatedList(mappedEntities, mediaFilter.Paging);
+                return (PaginatedList<Dto>)(object)paginatedEntities;
             }
+
+            var mappedEntities = _mapper.Map<IEnumerable<TEntity>, IEnumerable<Dto>>(paginatedEntities);
+            return CreatePaginatedList(mappedEntities, mediaFilter.Paging);
         }
 
         public virtual async Task<TEntity> GetById(int? id, IEnumerable<string>? includes = null)
@@ -79,37 +72,35 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             if (id == null)
                 throw new Exception("No id given");
 
-            using (var dbContext = await GetDbContextAsync())
+            await using (var dbContext = await GetDbContextAsync())
             {
                 IQueryable<TEntity> entities = GetEntities(dbContext);
-                if (includes != null)
-                {
-                    entities = includes.Aggregate(entities, (current, include) => current.Include(include));
-                }
+                entities = QueryIncludes(entities, includes);
 
-                return await entities.FirstOrDefaultAsync(e => e.Id == id) ?? throw new Exception("Entity not found");
+                return await entities.FirstOrDefaultAsync(e => e.Id == id) ?? throw new KeyNotFoundException("Entity not found");
             }
         }
 
         public virtual async Task<Result<TEntity, FailedResult>> PostAsync(TEntity entity)
         {
-            using (var dbContext = await GetDbContextAsync())
-            {
-                var entities = GetEntities(dbContext);
-                await entities.AddAsync(entity);
-                await dbContext.SaveChangesAsync();
-                return entity;
-            }
+            await using var dbContext = await GetDbContextAsync();
+            var entities = GetEntities(dbContext);
+            await entities.AddAsync(entity);
+            await dbContext.SaveChangesAsync();
+            return entity;
         }
 
         public virtual async Task<Result<TEntity, FailedResult>> PutAsync(TEntity entity)
         {
             var id = entity.Id;
 
-            using (var dbContext = await GetDbContextAsync())
+            await using (var dbContext = await GetDbContextAsync())
             {
                 var entities = GetEntities(dbContext);
-                var existingEntity = await entities.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id) ?? throw new Exception("Entity not found");
+                if (!await entities.AsNoTracking().AnyAsync(e => e.Id == id))
+                {
+                    return new FailedResult("Entity not found");
+                }
 
                 dbContext.Update(entity);
 
@@ -138,10 +129,14 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             if (id == null)
                 return new FailedResult("Entry not found");
 
-            using (var dbContext = await GetDbContextAsync())
+            await using (var dbContext = await GetDbContextAsync())
             {
-                var entity = await GetById(id);
                 var entities = GetEntities(dbContext);
+                var entity = await entities.FirstOrDefaultAsync(entity => entity.Id == id.Value);
+                if (entity == null)
+                {
+                    return new FailedResult("Entry not found");
+                }
 
                 entities.Remove(entity);
                 await dbContext.SaveChangesAsync();
@@ -155,7 +150,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             int pageIndex = paging.PageIndex;
             if (paging.Count > 0)
             {
-                return await PaginatedList<TEntity>.CreateAsync(entities, 1, paging.Count);
+                return await PaginatedList<TEntity>.CreateAsync(entities, pageIndex, paging.Count);
             }
             return await PaginatedList<TEntity>.CreateAsync(entities, pageIndex, 10);
         }
@@ -165,7 +160,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             int pageIndex = paging.PageIndex;
             if (paging.Count > 0)
             {
-                return PaginatedList<TDto>.Create(entities, 1, paging.Count);
+                return PaginatedList<TDto>.Create(entities, pageIndex, paging.Count);
             }
             return PaginatedList<TDto>.Create(entities, pageIndex, 10);
         }
@@ -189,6 +184,11 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
                 entities = orderBy(entities);
             }
             return entities;
+        }
+
+        private static IQueryable<TEntity> QueryIncludes(IQueryable<TEntity> query, IEnumerable<string>? includes)
+        {
+            return includes?.Aggregate(query, (current, include) => current.Include(include)) ?? query;
         }
 
         protected bool EntityExists(int id, LuminaPathDbContext dbContext)

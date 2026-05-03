@@ -1,13 +1,12 @@
-import { TestBed } from '@angular/core/testing';
-
-import { GameService } from '../../../core/services/game.service';
+import { HttpClient } from '@angular/common/http';
+import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
+import { GameService } from './game.service';
 
 describe('GameService', () => {
   let service: GameService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(GameService);
+    service = new GameService({} as HttpClient, new ApiEndpointService());
   });
 
   it('should be created', () => {

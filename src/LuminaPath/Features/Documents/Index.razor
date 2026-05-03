@@ -1,4 +1,5 @@
 @page "/Documents"
+@using LuminaPath.Components.Dialogs
 @using LuminaPath.Core.Entities
 @using LuminaPath.Core.Enums
 @using LuminaPath.Core.Interfaces
@@ -261,6 +262,11 @@
 
             return new GridData<MediaDocument> { TotalItems = result.Count(), Items = result };
         }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load documents: {ex.Message}", Severity.Error);
+            return new GridData<MediaDocument> { TotalItems = 0, Items = [] };
+        }
         finally
         {
             loading = false;
@@ -299,6 +305,11 @@
         {
             var result = await DocumentPageService.GetPage(1, 60);
             cardDocuments = result.ToList();
+        }
+        catch (Exception ex)
+        {
+            cardDocuments = [];
+            Snackbar.Add($"Failed to load documents: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -440,7 +451,32 @@
 
     public async Task OnDeleteChecked()
     {
-        await DocumentPageService.DeleteSelected(selectedItems);
+        var count = selectedItems.Count;
+        if (count == 0)
+        {
+            return;
+        }
+
+        if (!await ConfirmDelete($"Delete {count} selected document{(count == 1 ? string.Empty : "s")}? This cannot be undone."))
+        {
+            return;
+        }
+
+        loading = true;
+        try
+        {
+            await DocumentPageService.DeleteSelected(selectedItems);
+            selectedItems.Clear();
+            Snackbar.Add("Selected documents deleted", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to delete selected documents: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
 
         await ReloadData();
     }
@@ -486,10 +522,40 @@
 
     public async Task Delete(MediaDocument entity)
     {
-        await DocumentPageService.Delete(entity);
+        if (!await ConfirmDelete($"Delete {GetDisplayName(entity)}? This cannot be undone."))
+        {
+            return;
+        }
 
-        Snackbar.Add("Deleted MediaDocument", Severity.Info);
+        loading = true;
+        try
+        {
+            await DocumentPageService.Delete(entity);
+            selectedItems.Remove(entity);
+            Snackbar.Add("Deleted document", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to delete document: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+
         await ReloadData();
+    }
+
+    private async Task<bool> ConfirmDelete(string message)
+    {
+        var parameters = new DialogParameters<ConfirmationDialog>
+        {
+            { x => x.ContentText, message }
+        };
+        var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm delete", parameters, options);
+        var result = await dialog.Result;
+        return result is { Canceled: false };
     }
 
     private static MediaDocument CloneDocument(MediaDocument document)

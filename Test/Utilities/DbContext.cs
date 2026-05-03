@@ -20,7 +20,7 @@ namespace Test.Utilities
 			// IServiceProvider that the context should resolve all of its 
 			// services from.
 			var builder = new DbContextOptionsBuilder<LuminaPathDbContext>()
-				.UseInMemoryDatabase("InMemoryDb")
+				.UseInMemoryDatabase(Guid.NewGuid().ToString())
 				.UseInternalServiceProvider(serviceProvider);
 
 			return builder.Options;

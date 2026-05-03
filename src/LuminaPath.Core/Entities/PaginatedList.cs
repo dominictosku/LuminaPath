@@ -22,6 +22,9 @@ namespace LuminaPath.Core.Entities
         public static async Task<PaginatedList<T>> CreateAsync(
             IQueryable<T> source, int pageIndex, int pageSize)
         {
+            pageIndex = Math.Max(1, pageIndex);
+            pageSize = Math.Max(1, pageSize);
+
             var count = await source.CountAsync();
             var items = await source.Skip(
                 (pageIndex - 1) * pageSize)
@@ -32,6 +35,9 @@ namespace LuminaPath.Core.Entities
         public static PaginatedList<T> Create(
             IEnumerable<T> source, int pageIndex, int pageSize)
         {
+            pageIndex = Math.Max(1, pageIndex);
+            pageSize = Math.Max(1, pageSize);
+
             var count = source.Count();
             var items = source.Skip(
                 (pageIndex - 1) * pageSize)

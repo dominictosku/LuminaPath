@@ -18,7 +18,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
     {
         protected readonly IGenericModelService<TEntity> _service = service;
         protected IEnumerable<string> Includes { get; set; } = new List<string>();
-        public IObjectMapper Mapper = mapper;
+        public IObjectMapper Mapper { get; } = mapper;
 
         [HttpGet]
         public virtual async Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)
