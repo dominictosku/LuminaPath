@@ -143,6 +143,113 @@
     margin: 0;
   }
 
+  .api-server-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 12px;
+    border: 1px solid rgba(56,189,248,0.16);
+    border-radius: var(--radius);
+    background: rgba(56,189,248,0.055);
+  }
+
+  .api-server-strip div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .api-server-strip span {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--c-accent-2);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .api-server-strip strong {
+    overflow: hidden;
+    color: var(--c-text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .api-settings-toggle {
+    flex: 0 0 auto;
+    padding: 8px 10px;
+    border: 1px solid rgba(56,189,248,0.24);
+    border-radius: 999px;
+    color: var(--c-accent-2);
+    background: rgba(56,189,248,0.08);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .api-settings-panel {
+    display: grid;
+    gap: 10px;
+    margin: 0 0 20px;
+    padding: 14px;
+    border: 1px solid rgba(167,139,250,0.22);
+    border-radius: var(--radius);
+    background: rgba(167,139,250,0.055);
+  }
+
+  .api-field-wrap .field-input {
+    padding-right: 14px;
+  }
+
+  .api-settings-help {
+    margin: 0;
+    color: var(--c-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.76rem;
+    line-height: 1.4;
+  }
+
+  .api-settings-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .api-save-btn,
+  .api-reset-btn {
+    min-height: 38px;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .api-save-btn {
+    border: 0;
+    color: #fff;
+    background: linear-gradient(135deg, var(--c-accent-1), var(--c-accent-2));
+  }
+
+  .api-reset-btn {
+    border: 1px solid var(--c-border);
+    color: var(--c-text);
+    background: rgba(255,255,255,0.035);
+  }
+
+  .api-settings-message {
+    color: var(--c-accent-2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
   /* ── Fields ────────────────────────────── */
   .form-fields {
     display: flex;

@@ -1,4 +1,4 @@
-import { environment } from 'src/environments/environment';
+import { resolveApiEndpoint } from 'src/app/shared/services/api-endpoint.service';
 import { MediaFile } from 'src/app/features/media/models/mediaFile.model';
 
 const placeholderImage = 'assets/png/Placeholder.png';
@@ -14,7 +14,7 @@ export function mediaImageUrl(image: MediaFile | null | undefined): string {
     return source;
   }
 
-  const apiEndpoint = environment.endpoint.replace(/\/$/, '');
+  const apiEndpoint = resolveApiEndpoint().replace(/\/$/, '');
   const apiOrigin = apiEndpoint.replace(/\/api$/, '');
   const normalizedSource = source.replace(/^\//, '');
 

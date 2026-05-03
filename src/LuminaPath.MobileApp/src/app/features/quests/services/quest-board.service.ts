@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 
 export type QuestType = 'main' | 'sub' | 'faction';
 
@@ -71,18 +71,17 @@ type ApiQuestSkillNode = {
   providedIn: 'root',
 })
 export class QuestBoardService {
-  private readonly apiUrl = `${environment.endpoint}/quests/board`;
   private readonly httpConfig = { withCredentials: true };
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private apiEndpoint: ApiEndpointService) {}
 
   async getBoard(): Promise<QuestBoardState> {
-    const board = await firstValueFrom(this.http.get<ApiQuestBoard>(this.apiUrl, this.httpConfig));
+    const board = await firstValueFrom(this.http.get<ApiQuestBoard>(this.apiEndpoint.url('quests/board'), this.httpConfig));
     return this.toState(board);
   }
 
   async saveBoard(state: QuestBoardState): Promise<QuestBoardState> {
-    const board = await firstValueFrom(this.http.put<ApiQuestBoard>(this.apiUrl, this.toApi(state), this.httpConfig));
+    const board = await firstValueFrom(this.http.put<ApiQuestBoard>(this.apiEndpoint.url('quests/board'), this.toApi(state), this.httpConfig));
     return this.toState(board);
   }
 

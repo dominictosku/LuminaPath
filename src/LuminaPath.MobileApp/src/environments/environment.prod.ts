@@ -6,5 +6,5 @@ const runtimeConfig = (globalThis as {
 
 export const environment = {
   production: true,
-  endpoint: runtimeConfig?.apiEndpoint ?? '/api',
+  endpoint: runtimeConfig?.apiEndpoint ?? 'https://luminapath.luminakeep.com/api',
 };

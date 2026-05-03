@@ -1,29 +1,37 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonHeader, IonTitle, IonToolbar, IonButton } from '@ionic/angular/standalone';
+import { IonContent } from '@ionic/angular/standalone';
 import { Credentials } from 'src/app/core/auth/models/user.model';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 
 @Component({
     selector: 'app-login',
     templateUrl: './login.page.html',
     styleUrls: ['./login.page.scss'],
-    imports: [IonContent, IonHeader, IonTitle, IonButton, IonToolbar, CommonModule, FormsModule]
+    imports: [IonContent, CommonModule, FormsModule]
 })
 export class LoginPage implements OnInit {
   credentials = new Credentials()
   errorMessage = '';
   isSubmitting = false;
+  apiSettingsOpen = false;
+  apiEndpointDraft = '';
+  currentApiEndpoint = '';
+  apiSettingsMessage = '';
 
-  constructor(private authService: AuthService, private route: Router) {
+  constructor(private authService: AuthService, private route: Router, private apiEndpoint: ApiEndpointService) {
     this.credentials.email = "admin@example.com"
     this.credentials.password = "Admin123*"
   }
 
-  ngOnInit() { }
+  ngOnInit() {
+    this.currentApiEndpoint = this.apiEndpoint.endpoint;
+    this.apiEndpointDraft = this.currentApiEndpoint;
+  }
 
   async login(){
     this.errorMessage = '';
@@ -37,5 +45,27 @@ export class LoginPage implements OnInit {
     } finally {
       this.isSubmitting = false;
     }
+  }
+
+  toggleApiSettings() {
+    this.apiSettingsOpen = !this.apiSettingsOpen;
+    this.apiSettingsMessage = '';
+    this.apiEndpointDraft = this.apiEndpoint.endpoint;
+  }
+
+  saveApiEndpoint() {
+    this.currentApiEndpoint = this.apiEndpoint.setEndpoint(this.apiEndpointDraft);
+    this.apiEndpointDraft = this.currentApiEndpoint;
+    this.apiSettingsMessage = 'API server saved.';
+    this.errorMessage = '';
+    this.authService.clearSession();
+  }
+
+  resetApiEndpoint() {
+    this.currentApiEndpoint = this.apiEndpoint.resetEndpoint();
+    this.apiEndpointDraft = this.currentApiEndpoint;
+    this.apiSettingsMessage = 'Default API server restored.';
+    this.errorMessage = '';
+    this.authService.clearSession();
   }
 }

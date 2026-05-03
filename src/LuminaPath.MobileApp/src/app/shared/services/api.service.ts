@@ -1,22 +1,19 @@
-import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 import { PaginateResult } from 'src/app/core/entities/paginatedResult';
 import { Credentials } from 'src/app/core/auth/models/user.model';
 import { IBasicInfo } from 'src/app/core/interfaces/iBasicInfo';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { ApiEndpointService } from './api-endpoint.service';
 
-@Injectable({
-  providedIn: 'root'
-})
 export class ApiService<T> {
-  protected apiUrl: string;
   private httpConfig = { withCredentials: true };
 
-  constructor(private http: HttpClient, endpoint: String) {
-    this.apiUrl = `${environment.endpoint}/${endpoint}`;
-   }
+  constructor(private http: HttpClient, private apiEndpoint: ApiEndpointService, private endpoint: string) {}
+
+  protected get apiUrl(): string {
+    return this.apiEndpoint.url(this.endpoint);
+  }
   
   getAll(mediaFilter?: MediaFilter): Observable<PaginateResult<T>> {
     return this.http.get<PaginateResult<T>>(this.apiUrl, {

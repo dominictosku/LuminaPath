@@ -32,6 +32,39 @@
         <p class="card-subtitle">Sign in to continue your journey</p>
       </div>
 
+      <div class="api-server-strip">
+        <div>
+          <span>API server</span>
+          <strong>{{ currentApiEndpoint }}</strong>
+        </div>
+        <button type="button" class="api-settings-toggle" (click)="toggleApiSettings()">
+          {{ apiSettingsOpen ? 'Close' : 'Change' }}
+        </button>
+      </div>
+
+      <div class="api-settings-panel" *ngIf="apiSettingsOpen">
+        <label class="field-label" for="apiEndpoint">Backend URL</label>
+        <div class="field-wrap api-field-wrap">
+          <svg class="field-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4.25 5.5A2.75 2.75 0 017 2.75h6a2.75 2.75 0 012.75 2.75v9A2.75 2.75 0 0113 17.25H7a2.75 2.75 0 01-2.75-2.75v-9zM7 4.25A1.25 1.25 0 005.75 5.5v9A1.25 1.25 0 007 15.75h6a1.25 1.25 0 001.25-1.25v-9A1.25 1.25 0 0013 4.25H7zm1 2.5A.75.75 0 018.75 6h2.5a.75.75 0 010 1.5h-2.5A.75.75 0 018 6.75zm0 3A.75.75 0 018.75 9h2.5a.75.75 0 010 1.5h-2.5A.75.75 0 018 9.75z" clip-rule="evenodd"/>
+          </svg>
+          <input
+            id="apiEndpoint"
+            [(ngModel)]="apiEndpointDraft"
+            name="apiEndpoint"
+            autocomplete="url"
+            placeholder="https://your-domain.com/api"
+            class="field-input"
+          />
+        </div>
+        <p class="api-settings-help">Use your self-hosted backend URL. If you enter the server root, /api is added automatically.</p>
+        <div class="api-settings-actions">
+          <button type="button" class="api-save-btn" (click)="saveApiEndpoint()">Save server</button>
+          <button type="button" class="api-reset-btn" (click)="resetApiEndpoint()">Use default</button>
+        </div>
+        <div class="api-settings-message" *ngIf="apiSettingsMessage">{{ apiSettingsMessage }}</div>
+      </div>
+
       <div class="form-fields">
 
         <div class="field-group">
