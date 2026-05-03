@@ -1,36 +1,163 @@
-﻿@page "/settings"
+@page "/settings"
 @using LuminaPath.Infrastructure.Services
 @using LuminaPath.Infrastructure.Services.Third_Party
 @using Microsoft.AspNetCore.Authorization
-@using Radzen.Blazor
 @attribute [Authorize(Roles = "Administrator")]
 @inject PSNService psnService
 @inject FileSystemService fileSystemService
 @inject IJSRuntime Js
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
-<h3>Settings</h3>
-<RadzenStack>
-	<RadzenLabel Text="Npsso" />
-	<RadzenTextBox @bind-Value="npsso" />
 
-	<RadzenLabel Text="Response" />
+<PageTitle>Settings</PageTitle>
 
-	<RadzenTextBox Disabled="true" @bind-Value="result" />
-	<MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
-		<RadzenButton Text="Get" Click="GetBearer" />
-		<RadzenButton Icon="Link" Click="CopyToClipboard" />
-	</MudButtonGroup>
+<section class="settings-page">
+	<div class="settings-hero">
+		<div class="settings-hero__copy">
+			<MudText Typo="Typo.overline" Class="settings-eyebrow">Admin console</MudText>
+			<MudText Typo="Typo.h3" Class="settings-title">Settings</MudText>
+			<MudText Typo="Typo.body1" Class="settings-subtitle">
+				Manage integration secrets and operational switches that keep LuminaPath connected to external services.
+			</MudText>
+		</div>
 
+		<div class="settings-hero__status">
+			<div class="settings-status-card">
+				<MudIcon Icon="@Icons.Material.Filled.Security" />
+				<span>PSN token</span>
+				<strong>@BearerStatus</strong>
+			</div>
+			<div class="settings-status-card">
+				<MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" />
+				<span>Access</span>
+				<strong>Admin</strong>
+			</div>
+		</div>
+	</div>
 
-	<RadzenLabel Text="PSN Bearer Token" />
-	<RadzenTextBox @bind-Value="bearerToken" />
-	<RadzenButton Text="Save" Click="SaveBearer" />
-</RadzenStack>
+	<div class="settings-grid">
+		<section class="settings-panel settings-panel--primary">
+			<div class="settings-panel__header">
+				<div>
+					<MudText Typo="Typo.overline">PlayStation Network</MudText>
+					<MudText Typo="Typo.h5">Generate bearer token</MudText>
+					<MudText Typo="Typo.body2">
+						Paste an NPSSO value to request a bearer token for PSN imports. The response can be copied and then saved below.
+					</MudText>
+				</div>
+				<div class="settings-panel__icon">
+					<MudIcon Icon="@Icons.Material.Filled.SportsEsports" />
+				</div>
+			</div>
+
+			<div class="settings-form">
+				<MudTextField @bind-Value="npsso"
+							  Label="NPSSO"
+							  Variant="MudBlazor.Variant.Outlined"
+							  InputType="@npssoInputType"
+							  Adornment="Adornment.End"
+							  AdornmentIcon="@NpssoVisibilityIcon"
+							  OnAdornmentClick="ToggleNpssoVisibility"
+							  HelperText="Use this only in trusted admin sessions."
+							  Immediate="true" />
+
+				<div class="settings-action-row">
+					<MudButton OnClick="GetBearer"
+							   Variant="MudBlazor.Variant.Filled"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.Key"
+							   Disabled="@string.IsNullOrWhiteSpace(npsso)">
+						Get Token
+					</MudButton>
+					<MudButton OnClick="CopyToClipboard"
+							   Variant="MudBlazor.Variant.Outlined"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.ContentCopy"
+							   Disabled="@string.IsNullOrWhiteSpace(result)">
+						Copy Response
+					</MudButton>
+				</div>
+
+				<MudTextField @bind-Value="result"
+							  Label="Token response"
+							  Variant="MudBlazor.Variant.Outlined"
+							  Lines="4"
+							  ReadOnly="true"
+							  Placeholder="The PSN bearer response will appear here." />
+			</div>
+		</section>
+
+		<section class="settings-panel">
+			<div class="settings-panel__header">
+				<div>
+					<MudText Typo="Typo.overline">Stored credential</MudText>
+					<MudText Typo="Typo.h5">Saved PSN bearer token</MudText>
+					<MudText Typo="Typo.body2">
+						This token is used by the PSN import page. Save a fresh token when imports begin to fail.
+					</MudText>
+				</div>
+				<div class="settings-panel__icon settings-panel__icon--green">
+					<MudIcon Icon="@Icons.Material.Filled.CloudSync" />
+				</div>
+			</div>
+
+			<div class="settings-form">
+				<MudTextField @bind-Value="bearerToken"
+							  Label="PSN bearer token"
+							  Variant="MudBlazor.Variant.Outlined"
+							  InputType="@bearerInputType"
+							  Adornment="Adornment.End"
+							  AdornmentIcon="@BearerVisibilityIcon"
+							  OnAdornmentClick="ToggleBearerVisibility"
+							  HelperText="@BearerHelperText"
+							  Immediate="true" />
+
+				<div class="settings-action-row">
+					<MudButton OnClick="SaveBearer"
+							   Variant="MudBlazor.Variant.Filled"
+							   Color="Color.Secondary"
+							   StartIcon="@Icons.Material.Filled.Save"
+							   Disabled="@string.IsNullOrWhiteSpace(bearerToken)">
+						Save Token
+					</MudButton>
+					<MudButton OnClick="UseGeneratedToken"
+							   Variant="MudBlazor.Variant.Outlined"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.ArrowDownward"
+							   Disabled="@string.IsNullOrWhiteSpace(result)">
+						Use Response
+					</MudButton>
+				</div>
+			</div>
+		</section>
+
+		<section class="settings-panel settings-help-panel">
+			<MudIcon Icon="@Icons.Material.Filled.Info" />
+			<div>
+				<MudText Typo="Typo.h6">Operational note</MudText>
+				<MudText Typo="Typo.body2">
+					These values are sensitive. Prefer deployment environment variables for production secrets and use this page for local or temporary PSN import maintenance.
+				</MudText>
+			</div>
+		</section>
+	</div>
+</section>
+
 @code {
 	private string npsso = string.Empty;
 	private string bearerToken = string.Empty;
 	private string result = string.Empty;
+	private bool showNpsso;
+	private bool showBearer;
+
+	private string BearerStatus => string.IsNullOrWhiteSpace(bearerToken) ? "Missing" : "Saved";
+	private string BearerHelperText => string.IsNullOrWhiteSpace(bearerToken)
+		? "No token is currently loaded from storage."
+		: "A token is loaded. Keep it private.";
+	private InputType npssoInputType => showNpsso ? InputType.Text : InputType.Password;
+	private InputType bearerInputType => showBearer ? InputType.Text : InputType.Password;
+	private string NpssoVisibilityIcon => showNpsso ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
+	private string BearerVisibilityIcon => showBearer ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
 
 	protected override void OnInitialized()
 	{
@@ -39,18 +166,59 @@
 
 	async Task CopyToClipboard()
 	{
+		if (string.IsNullOrWhiteSpace(result))
+		{
+			Snackbar.Add("No token response to copy", Severity.Info);
+			return;
+		}
+
 		await Js.InvokeVoidAsync("navigator.clipboard.writeText", result);
-		Snackbar.Add("Copied to Clipboard", Severity.Info);
+		Snackbar.Add("Copied token response", Severity.Info);
 	}
 
 	async Task GetBearer()
 	{
+		if (string.IsNullOrWhiteSpace(npsso))
+		{
+			Snackbar.Add("Enter an NPSSO value first", Severity.Info);
+			return;
+		}
+
 		result = await psnService.GetAuthenticationToken(npsso);
+		Snackbar.Add("Generated PSN bearer response", Severity.Success);
 	}
 
 	void SaveBearer()
 	{
+		if (string.IsNullOrWhiteSpace(bearerToken))
+		{
+			Snackbar.Add("No bearer token to save", Severity.Info);
+			return;
+		}
+
 		fileSystemService.WriteBearer(bearerToken);
-		Snackbar.Add("Saved bearer", Severity.Success);
+		Snackbar.Add("Saved bearer token", Severity.Success);
+	}
+
+	void UseGeneratedToken()
+	{
+		if (string.IsNullOrWhiteSpace(result))
+		{
+			Snackbar.Add("Generate a token response first", Severity.Info);
+			return;
+		}
+
+		bearerToken = result;
+		Snackbar.Add("Copied response into saved token field", Severity.Info);
+	}
+
+	void ToggleNpssoVisibility()
+	{
+		showNpsso = !showNpsso;
+	}
+
+	void ToggleBearerVisibility()
+	{
+		showBearer = !showBearer;
 	}
 }
