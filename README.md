@@ -88,6 +88,18 @@ LuminaPath is a personal game library, backlog planner, playtime tracker and que
 
 ## Quick Docker Setup
 
+Use the lightweight deployment files if you want to run LuminaPath from prebuilt Docker Hub images:
+
+```powershell
+cd deploy
+Copy-Item .env.example .env
+docker compose --env-file .env up -d
+```
+
+Open Angular at `http://localhost:4200` or the backend at `http://localhost:8080`.
+
+Use the root Compose files below when you want to build the images yourself from source.
+
 Copy the example environment file and adjust passwords/ports if needed:
 
 ```powershell
