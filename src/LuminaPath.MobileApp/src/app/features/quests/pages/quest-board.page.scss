@@ -188,10 +188,16 @@ ion-segment {
 }
 
 .column-header,
-.skill-card header,
 .quest-card {
   display: grid;
   grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.skill-card header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
 }
@@ -347,6 +353,28 @@ input {
   color: var(--ink);
   font-size: 1.08rem;
   font-weight: 830;
+}
+
+.skill-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skill-card-actions button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.1);
+  cursor: pointer;
+}
+
+.skill-card-actions button:first-child {
+  color: var(--skill-color);
 }
 
 .skill-card ion-progress-bar {

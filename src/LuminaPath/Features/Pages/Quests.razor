@@ -116,11 +116,11 @@
                         <p class="eyebrow">Skill tree</p>
                         <h2>Real Life Mastery</h2>
                     </div>
-                    <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.AutoAwesome" OnClick="AddSkill">Add Skill</MudButton>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.AutoAwesome" OnClick="SaveSkill">@(_editingSkillId is null ? "Add Skill" : "Save Skill")</MudButton>
                 </div>
 
                 <div class="skill-create">
-                    <input placeholder="New skill name" @bind="_newSkillName" @bind:event="oninput" />
+                    <input placeholder="@(_editingSkillId is null ? "New skill name" : "Edit skill name")" @bind="_newSkillName" @bind:event="oninput" />
                     <select @bind="_newSkillIcon">
                         <option value="@Icons.Material.Filled.Code">Code</option>
                         <option value="@Icons.Material.Filled.Brush">Art</option>
@@ -128,6 +128,10 @@
                         <option value="@Icons.Material.Filled.MenuBook">Study</option>
                     </select>
                     <input type="color" @bind="_newSkillColor" />
+                    @if (_editingSkillId is not null)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" OnClick="CancelSkillEdit" />
+                    }
                 </div>
 
                 <div class="skill-grid">
@@ -141,6 +145,14 @@
                                 <div>
                                     <h3>@skill.Name</h3>
                                     <p>Level @SkillLevel(skill) · @skill.Xp XP</p>
+                                </div>
+                                <div class="skill-card-actions">
+                                    <button type="button" class="skill-action edit" @onclick="@(() => EditSkill(skill))">
+                                        <MudIcon Icon="@Icons.Material.Filled.Edit" />
+                                    </button>
+                                    <button type="button" class="skill-action" @onclick="@(() => DeleteSkill(skill))">
+                                        <MudIcon Icon="@Icons.Material.Filled.DeleteOutline" />
+                                    </button>
                                 </div>
                             </header>
 
@@ -311,10 +323,16 @@
     }
 
     .column-header,
-    .skill-card header,
     .quest-card {
         display: grid;
         grid-template-columns: auto 1fr;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .skill-card header {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
         gap: 12px;
         align-items: center;
     }
@@ -356,7 +374,7 @@
     }
 
     .skill-create {
-        grid-template-columns: 1fr 150px 58px;
+        grid-template-columns: 1fr 150px 58px auto;
         padding: 10px;
         border: 1px solid rgba(255, 255, 255, .08);
         border-radius: 8px;
@@ -404,6 +422,7 @@
 
     .icon-button,
     .delete-button,
+    .skill-action,
     .node {
         border: 0;
         cursor: pointer;
@@ -424,6 +443,26 @@
     .delete-button {
         color: var(--mud-palette-text-secondary);
         background: transparent;
+    }
+
+    .skill-card-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .skill-action {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border-radius: 8px;
+        color: var(--mud-palette-text-secondary);
+        background: rgba(117, 167, 255, .08);
+    }
+
+    .skill-action.edit {
+        color: var(--skill-color);
     }
 
     .empty-state {
@@ -502,6 +541,7 @@
     private string _newSkillIcon = Icons.Material.Filled.Code;
     private string _newSkillColor = "#2563eb";
     private string _newNodeName = string.Empty;
+    private int? _editingSkillId;
     private int _temporaryId = -1;
 
     private int Level => Math.Max(1, (_board.Xp / 200) + 1);
@@ -575,11 +615,28 @@
         await Save("Quest deleted");
     }
 
-    private async Task AddSkill()
+    private async Task SaveSkill()
     {
         var name = _newSkillName.Trim();
         if (string.IsNullOrWhiteSpace(name))
         {
+            return;
+        }
+
+        if (_editingSkillId is not null)
+        {
+            var skill = _board.Skills.FirstOrDefault(skill => skill.Id == _editingSkillId);
+            if (skill is null)
+            {
+                CancelSkillEdit();
+                return;
+            }
+
+            skill.Name = name;
+            skill.Icon = _newSkillIcon;
+            skill.Color = _newSkillColor;
+            CancelSkillEdit();
+            await Save("Skill updated");
             return;
         }
 
@@ -599,6 +656,34 @@
 
         _newSkillName = string.Empty;
         await Save("Skill added");
+    }
+
+    private void EditSkill(QuestSkillDto skill)
+    {
+        _editingSkillId = skill.Id;
+        _newSkillName = skill.Name;
+        _newSkillIcon = ToFormIcon(skill.Icon);
+        _newSkillColor = skill.Color;
+    }
+
+    private void CancelSkillEdit()
+    {
+        _editingSkillId = null;
+        _newSkillName = string.Empty;
+        _newSkillIcon = Icons.Material.Filled.Code;
+        _newSkillColor = "#2563eb";
+    }
+
+    private async Task DeleteSkill(QuestSkillDto skill)
+    {
+        _board.Skills.Remove(skill);
+
+        if (_editingSkillId == skill.Id)
+        {
+            CancelSkillEdit();
+        }
+
+        await Save("Skill deleted");
     }
 
     private async Task TrainSkill(QuestSkillDto skill)
@@ -691,11 +776,20 @@
     {
         return icon switch
         {
+            var value when value == Icons.Material.Filled.Brush => Icons.Material.Filled.Brush,
+            var value when value == Icons.Material.Filled.Restaurant => Icons.Material.Filled.Restaurant,
+            var value when value == Icons.Material.Filled.MenuBook => Icons.Material.Filled.MenuBook,
+            var value when value == Icons.Material.Filled.Code => Icons.Material.Filled.Code,
             "brush-outline" => Icons.Material.Filled.Brush,
             "restaurant-outline" => Icons.Material.Filled.Restaurant,
             "book-outline" => Icons.Material.Filled.MenuBook,
             _ => Icons.Material.Filled.Code
         };
+    }
+
+    private static string ToFormIcon(string icon)
+    {
+        return ToMudIcon(icon);
     }
 
     private sealed class QuestColumn

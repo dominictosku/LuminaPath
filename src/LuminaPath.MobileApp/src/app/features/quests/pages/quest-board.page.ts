@@ -23,6 +23,7 @@ import {
   checkmarkCircleOutline,
   closeOutline,
   codeSlashOutline,
+  createOutline,
   flagOutline,
   flashOutline,
   libraryOutline,
@@ -135,6 +136,7 @@ export class QuestBoardPage implements OnInit {
   newSkill = this.emptySkillForm();
   newNodeName = '';
   selectedSkillId: number | null = null;
+  editingSkillId: number | null = null;
 
   private readonly xpPerLevel = 200;
   private readonly questRewards: Record<QuestType, number> = {
@@ -153,6 +155,7 @@ export class QuestBoardPage implements OnInit {
       checkmarkCircleOutline,
       closeOutline,
       codeSlashOutline,
+      createOutline,
       flagOutline,
       flashOutline,
       libraryOutline,
@@ -236,6 +239,17 @@ export class QuestBoardPage implements OnInit {
 
   openSkillModal() {
     this.newSkill = this.emptySkillForm();
+    this.editingSkillId = null;
+    this.modalMode = 'skill';
+  }
+
+  openEditSkillModal(skill: QuestSkill) {
+    this.newSkill = {
+      name: skill.name,
+      icon: skill.icon,
+      color: skill.color,
+    };
+    this.editingSkillId = skill.id;
     this.modalMode = 'skill';
   }
 
@@ -248,13 +262,30 @@ export class QuestBoardPage implements OnInit {
   closeModal() {
     this.modalMode = null;
     this.selectedSkillId = null;
+    this.editingSkillId = null;
     this.newNodeName = '';
   }
 
-  async addSkill() {
+  async saveSkill() {
     const name = this.newSkill.name.trim();
 
     if (!name) {
+      return;
+    }
+
+    if (this.editingSkillId !== null) {
+      const skill = this.skills.find((item) => item.id === this.editingSkillId);
+
+      if (!skill) {
+        return;
+      }
+
+      skill.name = name;
+      skill.icon = this.newSkill.icon;
+      skill.color = this.newSkill.color;
+      this.closeModal();
+      this.showToast(`${name} updated`);
+      await this.persist();
       return;
     }
 
@@ -272,6 +303,13 @@ export class QuestBoardPage implements OnInit {
     ];
     this.closeModal();
     this.showToast(`${name} added to your skill tree`);
+    await this.persist();
+  }
+
+  async deleteSkill(skillId: number) {
+    const skill = this.skills.find((item) => item.id === skillId);
+    this.skills = this.skills.filter((item) => item.id !== skillId);
+    this.showToast(skill ? `${skill.name} deleted` : 'Skill deleted');
     await this.persist();
   }
 

@@ -126,6 +126,14 @@
               <h3>{{ skill.name }}</h3>
               <p>Level {{ skillLevel(skill) }} · {{ skill.xp }} XP</p>
             </div>
+            <div class="skill-card-actions">
+              <button type="button" aria-label="Edit skill" (click)="openEditSkillModal(skill)">
+                <ion-icon name="create-outline"></ion-icon>
+              </button>
+              <button type="button" aria-label="Delete skill" (click)="deleteSkill(skill.id)">
+                <ion-icon name="trash-outline"></ion-icon>
+              </button>
+            </div>
           </header>
 
           <ion-progress-bar [value]="skillProgress(skill)"></ion-progress-bar>
@@ -168,9 +176,9 @@
       <ng-container *ngIf="modalMode === 'skill'; else nodeModal">
         <span class="eyebrow">
           <ion-icon name="sparkles-outline"></ion-icon>
-          New skill
+          {{ editingSkillId === null ? 'New skill' : 'Edit skill' }}
         </span>
-        <h2>Add a real-life skill</h2>
+        <h2>{{ editingSkillId === null ? 'Add a real-life skill' : 'Update this skill' }}</h2>
 
         <label>
           <span>Name</span>
@@ -199,7 +207,9 @@
           </button>
         </div>
 
-        <ion-button expand="block" (click)="addSkill()">Add Skill</ion-button>
+        <ion-button expand="block" (click)="saveSkill()">
+          {{ editingSkillId === null ? 'Add Skill' : 'Save Skill' }}
+        </ion-button>
       </ng-container>
 
       <ng-template #nodeModal>
