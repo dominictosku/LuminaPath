@@ -7,20 +7,22 @@ import {
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { AuthService } from '../auth/services/auth.service';
 import { Router } from '@angular/router';
 
 @Injectable()
 export class CookieInterceptor implements HttpInterceptor {
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private router: Router) {}
 
   intercept(
     request: HttpRequest<any>,
     next: HttpHandler
   ): Observable<HttpEvent<any>> {
     const isAuthRequest = request.url.includes('/login') || request.url.includes('/logout');
+    const credentialsRequest = request.withCredentials
+      ? request
+      : request.clone({ withCredentials: true });
 
-    return next.handle(request).pipe(
+    return next.handle(credentialsRequest).pipe(
       catchError((error) => {
         if (error.status === 401 && !isAuthRequest) {
           this.router.navigate(['/auth/login']);
