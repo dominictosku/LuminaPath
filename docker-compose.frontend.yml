@@ -1,0 +1,16 @@
+services:
+  frontend:
+    image: ${LUMINAPATH_FRONTEND_IMAGE:-luminapath-frontend:local}
+    build:
+      context: ./src/LuminaPath.MobileApp
+      dockerfile: Dockerfile
+    container_name: luminapath-frontend
+    restart: unless-stopped
+    environment:
+      LUMINAPATH_API_ENDPOINT: ${LUMINAPATH_API_ENDPOINT:-/api}
+      LUMINAPATH_API_PROXY_TARGET: http://api:8080
+    ports:
+      - "${FRONTEND_HTTP_PORT:-4200}:80"
+    depends_on:
+      api:
+        condition: service_healthy

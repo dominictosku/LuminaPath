@@ -1,205 +1,129 @@
-﻿# LuminaPath
+# LuminaPath
 
-LuminaPath is a personal game library and playtime tracker built with ASP.NET Core Blazor. It helps you maintain a catalog of games, track your own progress through them, and import play history from external sources such as PlayStation Network or Excel.
+LuminaPath is a personal game library, backlog planner, playtime tracker and quest-style productivity app. The main app is an ASP.NET Core Blazor experience with a PostgreSQL backend. An optional Ionic/Angular frontend is included for a mobile-style interface and can run against the same API.
 
-The app is meant to answer simple questions quickly:
+## What It Does
 
-- What am I currently playing?
-- What are my main games?
-- How much time have I spent manually tracking a game?
-- How much time did third-party services such as PSN track?
-- What is in my backlog, completed list, or planned list?
+- Catalog games with platforms, genres, release dates, covers and estimated playtime.
+- Track your personal library with status, priority, rating, start/end dates and manual played hours.
+- Keep manually entered playtime separate from third-party playtime such as PSN, while showing a combined total.
+- Import/export game data through Excel.
+- Import PlayStation Network play history.
+- Manage media documents and uploaded cover files.
+- Track RPG-style quests, faction quests and real-life skills through the quest board.
+- View dashboards and statistics for current games, completed games, played hours and planned releases.
 
-## Features
+## Stack
 
-- Game catalog with title, description, platform, genres, source, release date, cover image, estimated playtime, and PSN ID.
-- Personal game tracking with status, priority, rating, start/end dates, and manually entered played time.
-- Third-party playtime import that stays separate from manually entered time.
-- Dashboard-style home page for main games, currently playing games, totals, and recent activity.
-- Rich table and card views for both the global game catalog and personal game list.
-- Excel export/import for game and play history data.
-- PSN profile/game import flow.
-- ASP.NET Core Identity authentication with seeded administrator/editor roles.
-- File-system or Azure Blob style media storage.
-- PostgreSQL persistence with EF Core migrations.
-
-## Tech Stack
-
-- .NET 10 / ASP.NET Core
-- Blazor Server interactive components
-- Entity Framework Core
+- .NET 10 / ASP.NET Core / Blazor Server
+- Entity Framework Core and ASP.NET Core Identity
 - PostgreSQL
-- ASP.NET Core Identity
-- MudBlazor and Radzen UI components
-- xUnit test project
-- Optional Ionic/Angular mobile app under `src/LuminaPath.MobileApp`
+- MudBlazor and Radzen
+- Optional Ionic/Angular frontend, built with Node.js 22 LTS
+- Docker Compose for local or self-hosted deployment
+- GitHub Actions for CI and container publishing
 
-## Repository Layout
+## Quick Docker Setup
 
-```text
-.
-|-- LuminaPath.sln
-|-- README.md
-|-- src
-|   |-- LuminaPath                 # Blazor web app and API host
-|   |-- LuminaPath.Core            # Models, DTOs, interfaces, mapping
-|   |-- LuminaPath.Infrastructure  # EF Core, services, controllers, imports
-|   |-- LuminaPath.MobileApp       # Optional Ionic/Angular app
-|   `-- Docker                     # Docker Compose and database init scripts
-`-- Test                           # xUnit tests
-```
-
-## Prerequisites
-
-- .NET 10 SDK
-- Docker Desktop or another Docker-compatible runtime
-- PostgreSQL, either local or via the included Docker Compose setup
-- Optional: Node.js if you want to work on the Ionic/Angular mobile app
-
-## Quick Start
-
-From the repository root:
+Copy the example environment file and adjust passwords/ports if needed:
 
 ```powershell
-docker compose -f src/Docker/docker-compose.yml -f src/Docker/docker-compose.override.yml up -d db
+Copy-Item .env.example .env
+```
+
+Start the backend and PostgreSQL:
+
+```powershell
+docker compose up -d --build
+```
+
+Open the Blazor app/API at:
+
+```text
+http://localhost:8080
+```
+
+Start the optional Angular frontend too:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d --build
+```
+
+Open Angular at:
+
+```text
+http://localhost:4200
+```
+
+The Angular container uses `/api` and proxies requests to the backend container, so browser/API communication works without local CORS pain.
+
+Optional pgAdmin:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.tools.yml up -d
+```
+
+Open pgAdmin at `http://localhost:5050`.
+
+## Environment Variables
+
+All deployment-specific values are controlled through `.env` or normal ASP.NET environment variables.
+
+Core Docker variables:
+
+```text
+BACKEND_HTTP_PORT=8080
+FRONTEND_HTTP_PORT=4200
+POSTGRES_PORT=5432
+POSTGRES_DB=luminapath
+POSTGRES_USER=luminapath
+POSTGRES_PASSWORD=change-me
+```
+
+Backend variables:
+
+```text
+ASPNETCORE_ENVIRONMENT=Production
+ConnectionStrings__Default=Host=db;Port=5432;Database=luminapath;Username=luminapath;Password=change-me;
+RUN_MIGRATIONS_ON_STARTUP=true
+HTTPS_REDIRECT=false
+Storage__Provider=FileSystem
+Storage__Path=/app/App_Data/storage
+Cors__AllowedOrigins__0=http://localhost:4200
+```
+
+Azure Blob storage, if you do not want file-system storage:
+
+```text
+Storage__Provider=Azure
+Azure__BlobConnectionString=...
+Azure__BlobContainerName=media
+```
+
+Angular runtime variable:
+
+```text
+LUMINAPATH_API_ENDPOINT=/api
+```
+
+For the Docker frontend, `/api` is recommended because nginx proxies it to the backend service. Outside Docker, set it to something like `https://your-api.example.com/api`.
+
+## Local Development Without Docker
+
+Start PostgreSQL through Docker:
+
+```powershell
+docker compose up -d db
+```
+
+Run the Blazor backend:
+
+```powershell
 dotnet restore LuminaPath.sln
 dotnet run --project src/LuminaPath/LuminaPath.csproj
 ```
 
-Open the app at:
-
-```text
-http://localhost:5227
-```
-
-The development database connection defaults to:
-
-```text
-Host=localhost;Port=5432;Database=luminapath;Username=dev;Password=dbuserpassword;
-```
-
-Migrations and seed data run automatically on app startup.
-
-## Seeded Login
-
-The development seed creates an administrator account:
-
-```text
-Email:    admin@example.com
-Password: Admin123*
-```
-
-Roles seeded by default:
-
-- `Administrator`
-- `Editor`
-
-## Configuration
-
-Development settings live in:
-
-```text
-src/LuminaPath/appsettings.Development.json
-```
-
-Important settings:
-
-```json
-{
-  "ConnectionStrings": {
-    "Default": "Host=localhost;Port=5432;Database=luminapath;Username=dev;Password=dbuserpassword;"
-  },
-  "Storage": {
-    "Provider": "FileSystem",
-    "Path": "App_Data/storage"
-  },
-  "FrontendUrl": "http://localhost:8100"
-}
-```
-
-Environment variables can override key settings:
-
-- `POSTGRESQL_DB`: database connection string used by the infrastructure layer.
-- `STORAGE_PROVIDER`: set to `FileSystem` or `Azure`.
-- `STORAGE_PATH`: file-system storage path when using the file-system provider.
-- `AZURE_CONNECTIONSTRING`: Azure/Azurite blob connection string.
-
-## Docker
-
-The Docker Compose files are in `src/Docker`.
-
-Start the database only:
-
-```powershell
-docker compose -f src/Docker/docker-compose.yml -f src/Docker/docker-compose.override.yml up -d db
-```
-
-Start database, blob emulator, pgAdmin, and the app container:
-
-```powershell
-docker compose -f src/Docker/docker-compose.yml -f src/Docker/docker-compose.override.yml up -d
-```
-
-Useful local ports:
-
-- PostgreSQL: `localhost:5432`
-- Blazor app via Docker override: `http://localhost:7012`
-- pgAdmin: `http://localhost:5050`
-
-pgAdmin defaults from the override file:
-
-```text
-Email:    admin@example.com
-Password: admin
-```
-
-The database init script enables the PostgreSQL `pg_trgm` extension.
-
-## Running Tests
-
-```powershell
-dotnet test Test/Test.csproj
-```
-
-If the web app is already running and locking build outputs on Windows, use a separate output folder:
-
-```powershell
-dotnet test Test/Test.csproj -p:OutDir=.\artifacts\test-out\
-```
-
-## Common Workflows
-
-### Add a Game
-
-Go to `Media > Games`, create a catalog entry, add genres/platform/release details, and optionally upload a cover image.
-
-### Track Your Own Game
-
-Go to `Media > My Games`, create a personal entry, choose a game, set status, priority, rating, start/end dates, and manual played hours.
-
-Manual played time is stored separately from third-party tracked time. The UI shows both values and their total.
-
-### Import From PSN
-
-Go to `Import > PSN`, enter a PSN online ID, check the profile/games, and import selected play history. PSN tracked hours are stored as third-party tracked time and are not manually editable in the MyGame form.
-
-### Import or Export Excel
-
-Go to `Import > Excel` to export your game library or import an `.xlsx` file. Imported date values are normalized to UTC in the backend.
-
-## Backend Date Handling
-
-The backend normalizes `DateTime` and `DateTimeOffset` values to UTC at the EF Core persistence boundary. This keeps saved and loaded date values consistent across app flows, imports, and third-party integrations.
-
-## Optional Mobile App
-
-The Ionic/Angular app lives in:
-
-```text
-src/LuminaPath.MobileApp
-```
-
-Install and run it only if you are working on the mobile frontend:
+Run the Angular frontend:
 
 ```powershell
 cd src/LuminaPath.MobileApp
@@ -207,5 +131,48 @@ npm install
 npm start
 ```
 
-The main maintained experience in this repository is the Blazor web app.
+For local Angular development, edit `src/LuminaPath.MobileApp/src/assets/env.js` if you need a different API endpoint.
 
+## CI/CD
+
+GitHub Actions are split into two workflows:
+
+- `CI`: restores, builds and tests the .NET solution, builds Angular, validates Compose and builds both Docker images.
+- `Publish Containers`: publishes backend and frontend images to GitHub Container Registry on version tags like `v1.2.3` or manual dispatch.
+
+Optional Azure App Service deployment is supported by setting these repository secrets:
+
+```text
+AZURE_CREDENTIALS
+AZURE_WEBAPP_NAME
+```
+
+When `AZURE_WEBAPP_NAME` is present, the publish workflow deploys the API image to that Azure Web App.
+
+## Seeded Login
+
+Development seeding creates:
+
+```text
+Email:    admin@example.com
+Password: Admin123*
+```
+
+Roles:
+
+```text
+Administrator
+Editor
+```
+
+## Tests
+
+```powershell
+dotnet test Test/Test.csproj
+```
+
+On Windows, if another process locks normal build output, use:
+
+```powershell
+dotnet test Test/Test.csproj -p:OutDir=.\artifacts\test-out\
+```

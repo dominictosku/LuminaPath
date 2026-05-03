@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.Infrastructure",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LuminaPath.Core", "src\LuminaPath.Core\LuminaPath.Core.csproj", "{76529DA0-197B-4091-91B7-D84078D733CD}"
 EndProject
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "src\Docker\docker-compose.dcproj", "{74C9C020-527B-457D-B7E4-AB6D666CE9CE}"
-EndProject
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "LuminaPath.MobileApp", "src\LuminaPath.MobileApp\LuminaPath.MobileApp.esproj", "{473B875C-6E45-45D8-BB14-6DC2E68EE22C}"
 EndProject
 Global
@@ -37,10 +35,6 @@ Global
 		{76529DA0-197B-4091-91B7-D84078D733CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{76529DA0-197B-4091-91B7-D84078D733CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{76529DA0-197B-4091-91B7-D84078D733CD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{74C9C020-527B-457D-B7E4-AB6D666CE9CE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{473B875C-6E45-45D8-BB14-6DC2E68EE22C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{473B875C-6E45-45D8-BB14-6DC2E68EE22C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{473B875C-6E45-45D8-BB14-6DC2E68EE22C}.Debug|Any CPU.Deploy.0 = Debug|Any CPU

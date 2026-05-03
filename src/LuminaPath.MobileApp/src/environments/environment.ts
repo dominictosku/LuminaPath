@@ -2,9 +2,15 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
+const runtimeConfig = (globalThis as {
+  __LUMINAPATH_CONFIG__?: {
+    apiEndpoint?: string;
+  };
+}).__LUMINAPATH_CONFIG__;
+
 export const environment = {
   production: false,
-  endpoint: 'https://localhost:7013/api'
+  endpoint: runtimeConfig?.apiEndpoint ?? 'https://localhost:7013/api'
 };
 
 /*

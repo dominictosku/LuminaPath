@@ -34,15 +34,25 @@ namespace LuminaPath.Infrastructure
 
         private static void AddCors(IServiceCollection services, IConfiguration config)
         {
-            string[] frontendUrls = config.GetSection("FrontendUrls").Get<string[]>()
-                ?? [config["FrontendUrl"] ?? throw new ArgumentException("Missing frontend url in appsettings.")];
+            var configuredOrigins = config.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                ?? config.GetSection("FrontendUrls").Get<string[]>()
+                ?? SplitConfigValue(config["LUMINAPATH_CORS_ORIGINS"])
+                ?? SplitConfigValue(config["FrontendUrl"])
+                ?? ["http://localhost:4200"];
 
 
             services.AddCors(options => options.AddPolicy(MyAllowSpecificOrigins, policy => policy
-                .WithOrigins(frontendUrls)
+                .WithOrigins(configuredOrigins)
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials()));
+        }
+
+        private static string[]? SplitConfigValue(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? null
+                : value.Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         }
 
         private static void AddMiddleware(WebApplication app)
@@ -63,7 +73,7 @@ namespace LuminaPath.Infrastructure
             });
         }
 
-        public static async Task MigrateDevelopment(this WebApplication app)
+        public static async Task MigrateDatabase(this WebApplication app)
         {
             using (var serviceScope = app.Services.CreateScope())
             {
@@ -87,8 +97,8 @@ namespace LuminaPath.Infrastructure
 
         private static void AddDatabase(IServiceCollection services, IConfiguration config)
         {
-            var connectionstring = Environment.GetEnvironmentVariable("POSTGRESQL_DB") 
-                ?? config.GetConnectionString("Default");
+            var connectionstring = FirstConfiguredValue(config.GetConnectionString("Default"), config["POSTGRESQL_DB"])
+                ?? throw new InvalidOperationException("Missing database connection string. Set ConnectionStrings__Default.");
             services.AddDbContextFactory<LuminaPathDbContext>(options =>
                 options.UseNpgsql(connectionstring));
             services.AddScoped<ILuminaPathDbContext, LuminaPathDbContext>();
@@ -143,14 +153,12 @@ namespace LuminaPath.Infrastructure
 
         private static void AddStorageService(IServiceCollection services, IConfiguration config)
         {
-            string provider = Environment.GetEnvironmentVariable("STORAGE_PROVIDER")
-                ?? config.GetSection("Storage")["Provider"]
+            string provider = config.GetSection("Storage")["Provider"]
                 ?? "Azure";
 
             if (provider.Equals("FileSystem", StringComparison.OrdinalIgnoreCase))
             {
-                string storagePath = Environment.GetEnvironmentVariable("STORAGE_PATH")
-                    ?? config.GetSection("Storage")["Path"]
+                string storagePath = config.GetSection("Storage")["Path"]
                     ?? Path.Combine("App_Data", "storage");
 
                 services.AddScoped<IStorageService, FileSystemStorage>(s =>
@@ -166,11 +174,10 @@ namespace LuminaPath.Infrastructure
                 return;
             }
 
-            string connectionString = Environment.GetEnvironmentVariable("AZURE_CONNECTIONSTRING")
-                ?? config.GetSection("Azure")["BlobConnectionString"]
+            string connectionString = FirstConfiguredValue(config.GetSection("Azure")["BlobConnectionString"], config["AZURE_CONNECTIONSTRING"])
                 ?? throw new Exception("No blob connectionfound");
 
-            string containerName = config.GetSection("Azure")["BlobContainerName"]
+            string containerName = FirstConfiguredValue(config.GetSection("Azure")["BlobContainerName"], config["AZURE_CONTAINER_NAME"])
                 ?? throw new Exception("No blob container name found");
 
             services.AddScoped<IStorageService, AzureStorage>(s =>
@@ -193,14 +200,23 @@ namespace LuminaPath.Infrastructure
                     options.SwaggerEndpoint("/openapi/v1.json", "LuminaPath Api");
                 });
                 //app.UseSwaggerUI(options => options.SwaggerEndpoint("/opeanapi/v1.json", "Luminapath")); // for upgrade to dotnet 9
-                await app.MigrateDevelopment();
+                await app.MigrateDatabase();
             }
             else
             {
                 app.UseExceptionHandler("/Error", createScopeForErrors: true);
-                await app.MigrateDevelopment(); // Temporary add migrations to Production
+                if (app.Configuration.GetValue("Database:RunMigrationsOnStartup", false))
+                {
+                    await app.MigrateDatabase();
+                }
+
                 app.UseHsts();
             }
+        }
+
+        private static string? FirstConfiguredValue(params string?[] values)
+        {
+            return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
         }
 
         public static async Task ConfigureInfrastructure(this WebApplication app)
@@ -208,7 +224,10 @@ namespace LuminaPath.Infrastructure
             AddMiddleware(app);
 
             app.UseCors(MyAllowSpecificOrigins);
-            app.UseHttpsRedirection();
+            if (app.Configuration.GetValue("Https:Redirect", app.Environment.IsDevelopment()))
+            {
+                app.UseHttpsRedirection();
+            }
 
             await ConfigureEnvironment(app);
             app.UseAuthentication();
@@ -246,6 +265,9 @@ namespace LuminaPath.Infrastructure
                 return Results.Unauthorized();
             })
             .RequireAuthorization();
+
+            app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "LuminaPath" }))
+                .AllowAnonymous();
         }
     }
 }

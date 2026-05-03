@@ -1,4 +1,10 @@
+const runtimeConfig = (globalThis as {
+  __LUMINAPATH_CONFIG__?: {
+    apiEndpoint?: string;
+  };
+}).__LUMINAPATH_CONFIG__;
+
 export const environment = {
   production: true,
-  endpoint: 'https://localhost:7013/api',
+  endpoint: runtimeConfig?.apiEndpoint ?? '/api',
 };
