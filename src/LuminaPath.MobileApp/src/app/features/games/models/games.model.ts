@@ -28,28 +28,28 @@ export class Game implements IGame, IBasicInfo {
     this.genre = genre ?? "";
     this.platforms = platforms ?? 0;
     this.playtime = playtime ?? 0;
-    this.myGames = myGame ?? new MyGame(0);
+    this.myGames = myGame ?? null;
     this.image = null;
   }
 }
 
 export class MyGame implements IBasicInfo {
   id: number;
-  rating: number;
-  startDate: Date;
-  endDate: Date;
+  rating: number | null;
+  startDate: Date | null;
+  endDate: Date | null;
   status: number;
-  timeSpend: number;
+  timeSpend: number | null;
   gameId: number;
   game: Game | null;
   myGameInfo: MyGameInfo | null;
 
   constructor(gameId: number) {
     this.id = 0;
-    this.rating = 0;
-    this.startDate = new Date;
-    this.endDate = new Date;
-    this.status = 0;
+    this.rating = null;
+    this.startDate = null;
+    this.endDate = null;
+    this.status = 1;
     this.timeSpend = 0;
     this.game = null;
     this.gameId = gameId;

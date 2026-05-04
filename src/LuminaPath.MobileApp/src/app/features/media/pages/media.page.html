@@ -90,6 +90,11 @@
       <span>{{ errorMessage }}</span>
     </section>
 
+    <section class="notice notice--success" *ngIf="successMessage">
+      <ion-icon name="checkmark-circle-outline"></ion-icon>
+      <span>{{ successMessage }}</span>
+    </section>
+
     <section class="loading-grid" *ngIf="isLoading">
       <article *ngFor="let item of [1, 2, 3, 4, 5, 6]">
         <ion-skeleton-text animated></ion-skeleton-text>
@@ -106,6 +111,15 @@
 
     <section class="game-grid" *ngIf="!isLoading && viewMode === 'grid' && filteredGames.length">
       <article class="game-card" *ngFor="let game of filteredGames; trackBy: trackByGameId">
+        <ion-button
+          *ngIf="!game.myGames"
+          fill="clear"
+          class="quick-add-button"
+          [disabled]="isAdding(game)"
+          [attr.aria-label]="'Add ' + game.name + ' to my games'"
+          (click)="addToMyGames(game)">
+          <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : 'add-outline'"></ion-icon>
+        </ion-button>
         <img [src]="imageFor(game)" alt="" />
         <div class="game-card__content">
           <div class="badge-row">
@@ -135,12 +149,22 @@
               <span [style.width.%]="progressOf(game)"></span>
             </div>
           </div>
+
         </div>
       </article>
     </section>
 
     <section class="game-list" *ngIf="!isLoading && viewMode === 'list' && filteredGames.length">
       <article class="list-row" *ngFor="let game of filteredGames; trackBy: trackByGameId">
+        <ion-button
+          *ngIf="!game.myGames"
+          fill="clear"
+          class="quick-add-button list-row__add"
+          [disabled]="isAdding(game)"
+          [attr.aria-label]="'Add ' + game.name + ' to my games'"
+          (click)="addToMyGames(game)">
+          <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : 'add-outline'"></ion-icon>
+        </ion-button>
         <img [src]="imageFor(game)" alt="" />
         <div class="list-row__main">
           <div class="badge-row">

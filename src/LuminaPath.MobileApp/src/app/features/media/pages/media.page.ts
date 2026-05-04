@@ -18,6 +18,7 @@ import {
 import { addIcons } from 'ionicons';
 import {
   albumsOutline,
+  addOutline,
   calendarClearOutline,
   checkmarkCircleOutline,
   gameControllerOutline,
@@ -31,6 +32,7 @@ import {
 import { Game, Platforms } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
+import { MyGameService } from '../../my-games/services/my-game.service';
 
 enum GameStatus {
   OnHold = 0,
@@ -75,6 +77,8 @@ export class MediaPage implements OnInit {
   viewMode: ViewMode = 'grid';
   isLoading = true;
   errorMessage = '';
+  successMessage = '';
+  addingGameIds = new Set<number>();
 
   readonly platforms = Platforms;
   readonly statusOptions = [
@@ -86,8 +90,12 @@ export class MediaPage implements OnInit {
     { label: 'Main game', value: GameStatus.MainGame },
   ];
 
-  constructor(private gameService: GameService) {
+  constructor(
+    private gameService: GameService,
+    private myGameService: MyGameService
+  ) {
     addIcons({
+      addOutline,
       albumsOutline,
       calendarClearOutline,
       checkmarkCircleOutline,
@@ -157,6 +165,33 @@ export class MediaPage implements OnInit {
     this.statusFilter = 'all';
     this.platformFilter = 'all';
     this.applyFilters();
+  }
+
+  addToMyGames(game: Game) {
+    if (game.myGames || this.addingGameIds.has(game.id)) {
+      return;
+    }
+
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.addingGameIds.add(game.id);
+
+    this.myGameService.addToLibrary(game.id).subscribe({
+      next: (myGame) => {
+        game.myGames = myGame;
+        this.applyFilters();
+        this.successMessage = `${game.name} was added to your game list.`;
+        this.addingGameIds.delete(game.id);
+      },
+      error: (error) => {
+        this.errorMessage = this.addGameErrorMessage(error);
+        this.addingGameIds.delete(game.id);
+      },
+    });
+  }
+
+  isAdding(game: Game): boolean {
+    return this.addingGameIds.has(game.id);
   }
 
   get totalGames() {
@@ -265,5 +300,30 @@ export class MediaPage implements OnInit {
   private completeRefresh(event?: CustomEvent) {
     const target = event?.target as HTMLIonRefresherElement | undefined;
     target?.complete();
+  }
+
+  private addGameErrorMessage(error: unknown): string {
+    const payload = (error as { error?: unknown })?.error;
+
+    if (typeof payload === 'string') {
+      return payload;
+    }
+
+    if (payload && typeof payload === 'object' && 'message' in payload) {
+      return String((payload as { message: unknown }).message);
+    }
+
+    if (payload && typeof payload === 'object' && 'errorMessage' in payload) {
+      const messages = (payload as { errorMessage: unknown }).errorMessage;
+      return Array.isArray(messages) ? messages.join(' ') : String(messages);
+    }
+
+    if (payload && typeof payload === 'object' && 'errors' in payload) {
+      const errors = (payload as { errors: Record<string, string[]> }).errors;
+      const messages = Object.values(errors).flat();
+      return messages.length ? messages.join(' ') : 'Game could not be added to your list.';
+    }
+
+    return 'Game could not be added to your list.';
   }
 }

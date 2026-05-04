@@ -168,6 +168,11 @@ ion-select {
   background: #fff1f2;
 }
 
+.notice--success {
+  color: #065f46;
+  background: #ecfdf5;
+}
+
 .loading-grid,
 .game-grid {
   display: grid;
@@ -205,8 +210,39 @@ ion-select {
 }
 
 .game-card {
+  position: relative;
   overflow: hidden;
   border-radius: 24px;
+}
+
+.quick-add-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  --padding-bottom: 0;
+  --padding-end: 0;
+  --padding-start: 0;
+  --padding-top: 0;
+  --border-radius: 14px;
+  --background: rgba(255, 255, 255, 0.9);
+  --background-hover: rgba(255, 255, 255, 1);
+  --background-focused: rgba(255, 255, 255, 1);
+  --box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
+  --color: var(--accent);
+  backdrop-filter: blur(16px);
+}
+
+.quick-add-button::part(native) {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+}
+
+.quick-add-button ion-icon {
+  width: 21px;
+  height: 21px;
 }
 
 .game-card img {
@@ -315,12 +351,19 @@ ion-badge {
 }
 
 .list-row {
+  position: relative;
   display: grid;
-  grid-template-columns: 74px 1fr auto;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
-  padding: 10px;
+  padding: 10px 58px 10px 10px;
   border-radius: 20px;
+}
+
+.list-row__add {
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
 }
 
 .list-row img {
@@ -424,5 +467,21 @@ ion-badge {
   .notice {
     color: #fecdd3;
     background: rgba(127, 29, 29, 0.36);
+  }
+
+  .notice--success {
+    color: #bbf7d0;
+    background: rgba(20, 83, 45, 0.38);
+  }
+
+  .quick-add-button {
+    --background: rgba(17, 24, 39, 0.86);
+    --background-hover: rgba(31, 41, 55, 0.96);
+    --background-focused: rgba(31, 41, 55, 0.96);
+    --color: #93c5fd;
+  }
+
+  .quick-add-button::part(native) {
+    border-color: rgba(255, 255, 255, 0.12);
   }
 }
