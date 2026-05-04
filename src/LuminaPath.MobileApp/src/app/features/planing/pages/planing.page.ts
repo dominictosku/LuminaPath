@@ -3,10 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonBadge,
-  IonButton,
-  IonButtons,
   IonContent,
-  IonHeader,
   IonIcon,
   IonProgressBar,
   IonRange,
@@ -15,8 +12,6 @@ import {
   IonSegment,
   IonSegmentButton,
   IonSkeletonText,
-  IonTitle,
-  IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -26,7 +21,6 @@ import {
   gameControllerOutline,
   hourglassOutline,
   layersOutline,
-  refreshOutline,
   rocketOutline,
   sparklesOutline,
   timeOutline,
@@ -69,10 +63,7 @@ type PlanMetric = {
     CommonModule,
     FormsModule,
     IonBadge,
-    IonButton,
-    IonButtons,
     IonContent,
-    IonHeader,
     IonIcon,
     IonProgressBar,
     IonRange,
@@ -81,8 +72,6 @@ type PlanMetric = {
     IonSegment,
     IonSegmentButton,
     IonSkeletonText,
-    IonTitle,
-    IonToolbar,
   ],
 })
 export class PlaningPage implements OnInit {
@@ -106,7 +95,6 @@ export class PlaningPage implements OnInit {
       gameControllerOutline,
       hourglassOutline,
       layersOutline,
-      refreshOutline,
       rocketOutline,
       sparklesOutline,
       timeOutline,

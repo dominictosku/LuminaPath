@@ -4,9 +4,7 @@ import { FormsModule } from '@angular/forms';
 import {
   IonBadge,
   IonButton,
-  IonButtons,
   IonContent,
-  IonHeader,
   IonIcon,
   IonRefresher,
   IonRefresherContent,
@@ -16,8 +14,6 @@ import {
   IonSelect,
   IonSelectOption,
   IonSkeletonText,
-  IonTitle,
-  IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -28,7 +24,6 @@ import {
   gridOutline,
   hourglassOutline,
   listOutline,
-  refreshOutline,
   searchOutline,
   starOutline,
   timeOutline,
@@ -58,9 +53,7 @@ type OwnershipFilter = 'all' | 'mine' | 'catalog';
     FormsModule,
     IonBadge,
     IonButton,
-    IonButtons,
     IonContent,
-    IonHeader,
     IonIcon,
     IonRefresher,
     IonRefresherContent,
@@ -70,8 +63,6 @@ type OwnershipFilter = 'all' | 'mine' | 'catalog';
     IonSelect,
     IonSelectOption,
     IonSkeletonText,
-    IonTitle,
-    IonToolbar,
   ],
 })
 export class MediaPage implements OnInit {
@@ -104,7 +95,6 @@ export class MediaPage implements OnInit {
       gridOutline,
       hourglassOutline,
       listOutline,
-      refreshOutline,
       searchOutline,
       starOutline,
       timeOutline,

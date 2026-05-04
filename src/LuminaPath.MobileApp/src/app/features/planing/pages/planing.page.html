@@ -1,14 +1,3 @@
-<ion-header class="planning-header">
-  <ion-toolbar>
-    <ion-title>Plan</ion-title>
-    <ion-buttons slot="end">
-      <ion-button fill="clear" aria-label="Refresh plan" (click)="loadPlan()">
-        <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content [fullscreen]="true" class="planning-shell">
   <ion-refresher slot="fixed" (ionRefresh)="loadPlan($event)">
     <ion-refresher-content></ion-refresher-content>

@@ -2,16 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   IonBadge,
-  IonButton,
-  IonButtons,
   IonContent,
-  IonHeader,
   IonIcon,
   IonRefresher,
   IonRefresherContent,
   IonSkeletonText,
-  IonTitle,
-  IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -21,7 +16,6 @@ import {
   gameControllerOutline,
   hourglassOutline,
   libraryOutline,
-  refreshOutline,
   sparklesOutline,
   timeOutline,
   trendingUpOutline,
@@ -53,16 +47,11 @@ type DashboardMetric = {
   styleUrls: ['./home.page.scss'],
   imports: [
     IonBadge,
-    IonButton,
-    IonButtons,
     IonContent,
-    IonHeader,
     IonIcon,
     IonRefresher,
     IonRefresherContent,
     IonSkeletonText,
-    IonTitle,
-    IonToolbar,
     CommonModule,
   ],
 })
@@ -90,7 +79,6 @@ export class HomePage implements OnInit {
       gameControllerOutline,
       hourglassOutline,
       libraryOutline,
-      refreshOutline,
       sparklesOutline,
       timeOutline,
       trendingUpOutline,

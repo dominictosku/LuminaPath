@@ -1,14 +1,3 @@
-<ion-header class="media-header">
-  <ion-toolbar>
-    <ion-title>Library</ion-title>
-    <ion-buttons slot="end">
-      <ion-button fill="clear" aria-label="Refresh games" (click)="loadGames()">
-        <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content [fullscreen]="true" class="media-shell">
   <ion-refresher slot="fixed" (ionRefresh)="loadGames($event)">
     <ion-refresher-content></ion-refresher-content>

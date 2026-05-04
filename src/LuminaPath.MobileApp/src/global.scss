@@ -37,3 +37,17 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import '@ionic/angular/css/palettes/dark.system.css';
+
+ion-content.dashboard-shell,
+ion-content.media-shell,
+ion-content.planning-shell,
+ion-content.quest-shell {
+  --padding-bottom: calc(132px + env(safe-area-inset-bottom));
+}
+
+ion-content.dashboard-shell::part(scroll),
+ion-content.media-shell::part(scroll),
+ion-content.planning-shell::part(scroll),
+ion-content.quest-shell::part(scroll) {
+  scroll-padding-bottom: calc(132px + env(safe-area-inset-bottom));
+}

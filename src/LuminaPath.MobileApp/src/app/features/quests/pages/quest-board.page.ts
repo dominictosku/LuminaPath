@@ -5,15 +5,11 @@ import {
   AlertController,
   IonBadge,
   IonButton,
-  IonButtons,
   IonContent,
-  IonHeader,
   IonIcon,
   IonProgressBar,
   IonSegment,
   IonSegmentButton,
-  IonTitle,
-  IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -61,15 +57,11 @@ type QuestColumn = {
     FormsModule,
     IonBadge,
     IonButton,
-    IonButtons,
     IonContent,
-    IonHeader,
     IonIcon,
     IonProgressBar,
     IonSegment,
     IonSegmentButton,
-    IonTitle,
-    IonToolbar,
   ],
 })
 export class QuestBoardPage implements OnInit {

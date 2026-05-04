@@ -1,14 +1,3 @@
-<ion-header class="dashboard-header">
-  <ion-toolbar>
-    <ion-title>Home</ion-title>
-    <ion-buttons slot="end">
-      <ion-button fill="clear" aria-label="Refresh dashboard" (click)="loadDashboard()">
-        <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content [fullscreen]="true" class="dashboard-shell">
   <ion-refresher slot="fixed" (ionRefresh)="loadDashboard($event)">
     <ion-refresher-content></ion-refresher-content>
