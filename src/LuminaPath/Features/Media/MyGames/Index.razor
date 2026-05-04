@@ -30,7 +30,8 @@
 	<LuminaGrid T="MyGame" GetData="@(GetData)"
 				Loading="@loading"
 				@bind-SelectedItems="selectedItems"
-				@ref="_table">
+				@ref="_table"
+				SortMode="SortMode.Single">
 		<ToolBarContent>
 			<TableActions TItem="MyGame" Page="this" loading="loading" selectedItems="selectedItems" />
 		</ToolBarContent>
@@ -41,7 +42,7 @@
 					<div class="table-cover" style="background-image: url('@Cover(context.Item)');"></div>
 				</CellTemplate>
 			</TemplateColumn>
-			<TemplateColumn Title="Game">
+			<TemplateColumn Title="Game" SortBy="@((MyGame x) => x.Game == null ? "" : x.Game.Name)" Sortable="true">
 				<CellTemplate>
 					<div class="title-cell">
 						<MudText Typo="Typo.body1">@context.Item.Game?.Name</MudText>
@@ -55,7 +56,8 @@
 					</div>
 				</CellTemplate>
 			</TemplateColumn>
-			<TemplateColumn Title="Status">
+			
+			<TemplateColumn Title="Status" SortBy="@((MyGame x) => x.Status)" Sortable="true">
 				<CellTemplate>
 					<div class="status-stack">
 						<span class="status-pill @StatusClass(context.Item.Status)">@context.Item.Status</span>
@@ -63,7 +65,8 @@
 					</div>
 				</CellTemplate>
 			</TemplateColumn>
-			<TemplateColumn Title="Played Time">
+			
+			<TemplateColumn Title="Played Time" SortBy="@((MyGame x) => TotalHours(x))" Sortable="true">
 				<CellTemplate>
 					<div class="time-stack">
 						<strong>@FormatHours(TotalHours(context.Item))h total</strong>
@@ -72,7 +75,8 @@
 					</div>
 				</CellTemplate>
 			</TemplateColumn>
-			<TemplateColumn Title="Dates">
+			
+			<TemplateColumn Title="Dates" SortBy="@((MyGame x) => x.StartDate)" Sortable="true">
 				<CellTemplate>
 					<div class="detail-stack">
 						<span><MudIcon Icon="@Icons.Material.Filled.PlayArrow" Size="Size.Small" /> @DateText(context.Item.StartDate)</span>

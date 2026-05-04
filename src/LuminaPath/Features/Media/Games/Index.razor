@@ -28,7 +28,8 @@
 		T="GameViewModel"
 		Loading="@loading"
 		@bind-SelectedItems="selectedItems"
-		@ref="_table">
+		@ref="_table"
+		SortMode="SortMode.Single">
 		<ToolBarContent>
 			<TableActions TItem="GameViewModel" Page="this" loading="loading" selectedItems="selectedItems" />
 		</ToolBarContent>
@@ -39,7 +40,7 @@
 					<div class="table-cover" style="background-image: url('@Cover(context.Item)');"></div>
 				</CellTemplate>
 			</TemplateColumn>
-			<TemplateColumn Title="Game">
+			<TemplateColumn Title="Game" SortBy="@((GameViewModel x) => x == null ? "" : x.Name)" Sortable="true">
 				<CellTemplate>
 					<div class="title-cell">
 						<MudText Typo="Typo.body1">@context.Item.Name</MudText>
@@ -53,7 +54,7 @@
 					</div>
 				</CellTemplate>
 			</TemplateColumn>
-			<TemplateColumn Title="Details">
+			<TemplateColumn Title="Details" SortBy="@((GameViewModel x) => x.ReleaseDate)" Sortable="true">
 				<CellTemplate>
 					<div class="detail-stack">
 						<span><MudIcon Icon="@Icons.Material.Filled.VideogameAsset" Size="Size.Small" /> @context.Item.Platforms</span>
