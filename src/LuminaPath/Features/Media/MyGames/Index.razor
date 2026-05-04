@@ -30,7 +30,6 @@
 	<LuminaGrid T="MyGame" GetData="@(GetData)"
 				Loading="@loading"
 				@bind-SelectedItems="selectedItems"
-				@bind-SelectedItem="_currentDto"
 				@ref="_table">
 		<ToolBarContent>
 			<TableActions TItem="MyGame" Page="this" loading="loading" selectedItems="selectedItems" />
