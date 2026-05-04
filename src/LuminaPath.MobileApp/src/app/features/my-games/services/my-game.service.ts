@@ -8,7 +8,10 @@ type AddMyGameRequest = {
   id: number;
   gameId: number;
   status: number;
-  timeSpend: number;
+  timeSpend: number | null;
+  rating?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
 };
 
 @Injectable({
@@ -19,12 +22,11 @@ export class MyGameService extends ApiService<MyGame> {
     super(httpClient, apiEndpoint, 'mygames');
   }
 
-  addToLibrary(gameId: number) {
+  addToLibrary(gameId: number, details: Omit<AddMyGameRequest, 'id' | 'gameId'>) {
     const request: AddMyGameRequest = {
       id: 0,
       gameId,
-      status: 1,
-      timeSpend: 0,
+      ...details,
     };
 
     return this.post(request as MyGame);

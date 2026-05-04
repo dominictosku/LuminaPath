@@ -6,6 +6,7 @@ import {
   IonButton,
   IonContent,
   IonIcon,
+  IonModal,
   IonRefresher,
   IonRefresherContent,
   IonSearchbar,
@@ -21,6 +22,7 @@ import {
   addOutline,
   calendarClearOutline,
   checkmarkCircleOutline,
+  closeOutline,
   gameControllerOutline,
   gridOutline,
   hourglassOutline,
@@ -45,6 +47,13 @@ enum GameStatus {
 
 type ViewMode = 'grid' | 'list';
 type OwnershipFilter = 'all' | 'mine' | 'catalog';
+type AddGameForm = {
+  status: number;
+  timeSpend: number | null;
+  rating: number | null;
+  startDate: string;
+  endDate: string;
+};
 
 @Component({
   selector: 'app-media',
@@ -57,6 +66,7 @@ type OwnershipFilter = 'all' | 'mine' | 'catalog';
     IonButton,
     IonContent,
     IonIcon,
+    IonModal,
     IonRefresher,
     IonRefresherContent,
     IonSearchbar,
@@ -79,6 +89,9 @@ export class MediaPage implements OnInit {
   errorMessage = '';
   successMessage = '';
   addingGameIds = new Set<number>();
+  selectedGame: Game | null = null;
+  isAddDialogOpen = false;
+  addGameForm: AddGameForm = this.createAddGameForm();
 
   readonly platforms = Platforms;
   readonly statusOptions = [
@@ -99,6 +112,7 @@ export class MediaPage implements OnInit {
       albumsOutline,
       calendarClearOutline,
       checkmarkCircleOutline,
+      closeOutline,
       gameControllerOutline,
       gridOutline,
       hourglassOutline,
@@ -167,8 +181,31 @@ export class MediaPage implements OnInit {
     this.applyFilters();
   }
 
-  addToMyGames(game: Game) {
+  openAddDialog(game: Game) {
     if (game.myGames || this.addingGameIds.has(game.id)) {
+      return;
+    }
+
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.selectedGame = game;
+    this.addGameForm = this.createAddGameForm();
+    this.isAddDialogOpen = true;
+  }
+
+  closeAddDialog() {
+    if (this.selectedGame && this.isAdding(this.selectedGame)) {
+      return;
+    }
+
+    this.isAddDialogOpen = false;
+    this.selectedGame = null;
+  }
+
+  submitAddGame() {
+    const game = this.selectedGame;
+
+    if (!game || game.myGames || this.addingGameIds.has(game.id)) {
       return;
     }
 
@@ -176,12 +213,20 @@ export class MediaPage implements OnInit {
     this.successMessage = '';
     this.addingGameIds.add(game.id);
 
-    this.myGameService.addToLibrary(game.id).subscribe({
+    this.myGameService.addToLibrary(game.id, {
+      status: Number(this.addGameForm.status),
+      timeSpend: this.numberOrNull(this.addGameForm.timeSpend),
+      rating: this.numberOrNull(this.addGameForm.rating),
+      startDate: this.addGameForm.startDate || null,
+      endDate: this.addGameForm.endDate || null,
+    }).subscribe({
       next: (myGame) => {
         game.myGames = myGame;
         this.applyFilters();
         this.successMessage = `${game.name} was added to your game list.`;
         this.addingGameIds.delete(game.id);
+        this.isAddDialogOpen = false;
+        this.selectedGame = null;
       },
       error: (error) => {
         this.errorMessage = this.addGameErrorMessage(error);
@@ -300,6 +345,25 @@ export class MediaPage implements OnInit {
   private completeRefresh(event?: CustomEvent) {
     const target = event?.target as HTMLIonRefresherElement | undefined;
     target?.complete();
+  }
+
+  private createAddGameForm(): AddGameForm {
+    return {
+      status: GameStatus.Planned,
+      timeSpend: 0,
+      rating: null,
+      startDate: '',
+      endDate: '',
+    };
+  }
+
+  private numberOrNull(value: number | string | null): number | null {
+    if (value === null || value === '') {
+      return null;
+    }
+
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue : null;
   }
 
   private addGameErrorMessage(error: unknown): string {

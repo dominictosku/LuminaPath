@@ -401,6 +401,99 @@ ion-badge {
   font-size: 2.1rem;
 }
 
+.add-game-modal {
+  --width: min(440px, calc(100vw - 28px));
+  --height: auto;
+  --border-radius: 24px;
+  --box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
+}
+
+.add-game-dialog {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+  color: var(--ink);
+  background: var(--surface-solid);
+}
+
+.add-game-dialog header,
+.add-game-dialog footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.add-game-dialog h2 {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 1.25rem;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.dialog-icon-button {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  --padding-bottom: 0;
+  --padding-end: 0;
+  --padding-start: 0;
+  --padding-top: 0;
+  --border-radius: 14px;
+  --background: rgba(37, 99, 235, 0.1);
+  --box-shadow: none;
+  --color: var(--accent);
+}
+
+.dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.form-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.form-field--wide {
+  grid-column: 1 / -1;
+}
+
+.form-field span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 820;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.form-field input,
+.form-field select {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  outline: none;
+  color: var(--ink);
+  background: var(--media-bg);
+  font: inherit;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  border-color: rgba(37, 99, 235, 0.42);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.add-game-dialog footer {
+  justify-content: flex-end;
+}
+
 @media (min-width: 760px) {
   .media-page {
     grid-template-columns: repeat(12, minmax(0, 1fr));

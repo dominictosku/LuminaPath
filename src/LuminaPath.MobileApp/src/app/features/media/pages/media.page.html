@@ -117,7 +117,7 @@
           class="quick-add-button"
           [disabled]="isAdding(game)"
           [attr.aria-label]="'Add ' + game.name + ' to my games'"
-          (click)="addToMyGames(game)">
+          (click)="openAddDialog(game)">
           <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : 'add-outline'"></ion-icon>
         </ion-button>
         <img [src]="imageFor(game)" alt="" />
@@ -162,7 +162,7 @@
           class="quick-add-button list-row__add"
           [disabled]="isAdding(game)"
           [attr.aria-label]="'Add ' + game.name + ' to my games'"
-          (click)="addToMyGames(game)">
+          (click)="openAddDialog(game)">
           <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : 'add-outline'"></ion-icon>
         </ion-button>
         <img [src]="imageFor(game)" alt="" />
@@ -188,4 +188,86 @@
       <ion-button fill="outline" (click)="clearFilters()">Clear filters</ion-button>
     </section>
   </main>
+
+  <ion-modal
+    class="add-game-modal"
+    [isOpen]="isAddDialogOpen"
+    (didDismiss)="closeAddDialog()">
+    <ng-template>
+      <form class="add-game-dialog" (ngSubmit)="submitAddGame()">
+        <header>
+          <div>
+            <span class="eyebrow">Add to mine</span>
+            <h2>{{ selectedGame?.name }}</h2>
+          </div>
+          <ion-button
+            type="button"
+            fill="clear"
+            class="dialog-icon-button"
+            aria-label="Close"
+            [disabled]="selectedGame ? isAdding(selectedGame) : false"
+            (click)="closeAddDialog()">
+            <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+          </ion-button>
+        </header>
+
+        <div class="dialog-grid">
+          <label class="form-field form-field--wide">
+            <span>Status</span>
+            <select [(ngModel)]="addGameForm.status" name="status">
+              <option *ngFor="let status of statusOptions" [ngValue]="status.value">
+                {{ status.label }}
+              </option>
+            </select>
+          </label>
+
+          <label class="form-field">
+            <span>Played time</span>
+            <input
+              type="number"
+              min="0"
+              inputmode="decimal"
+              [(ngModel)]="addGameForm.timeSpend"
+              name="timeSpend" />
+          </label>
+
+          <label class="form-field">
+            <span>Rating</span>
+            <input
+              type="number"
+              min="1"
+              max="10"
+              inputmode="numeric"
+              placeholder="1-10"
+              [(ngModel)]="addGameForm.rating"
+              name="rating" />
+          </label>
+
+          <label class="form-field">
+            <span>Started</span>
+            <input type="date" [(ngModel)]="addGameForm.startDate" name="startDate" />
+          </label>
+
+          <label class="form-field">
+            <span>Finished</span>
+            <input type="date" [(ngModel)]="addGameForm.endDate" name="endDate" />
+          </label>
+        </div>
+
+        <footer>
+          <ion-button
+            type="button"
+            fill="clear"
+            [disabled]="selectedGame ? isAdding(selectedGame) : false"
+            (click)="closeAddDialog()">
+            Cancel
+          </ion-button>
+          <ion-button type="submit" [disabled]="selectedGame ? isAdding(selectedGame) : true">
+            <ion-icon slot="start" [name]="selectedGame && isAdding(selectedGame) ? 'hourglass-outline' : 'add-outline'"></ion-icon>
+            {{ selectedGame && isAdding(selectedGame) ? 'Adding...' : 'Add game' }}
+          </ion-button>
+        </footer>
+      </form>
+    </ng-template>
+  </ion-modal>
 </ion-content>
