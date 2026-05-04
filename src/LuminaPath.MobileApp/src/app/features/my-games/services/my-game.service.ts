@@ -31,4 +31,14 @@ export class MyGameService extends ApiService<MyGame> {
 
     return this.post(request as MyGame);
   }
+
+  updateLibraryEntry(myGameId: number, gameId: number, details: Omit<AddMyGameRequest, 'id' | 'gameId'>) {
+    const request: AddMyGameRequest = {
+      id: myGameId,
+      gameId,
+      ...details,
+    };
+
+    return this.put(myGameId, request as MyGame);
+  }
 }

@@ -23,6 +23,7 @@ import {
   calendarClearOutline,
   checkmarkCircleOutline,
   closeOutline,
+  createOutline,
   gameControllerOutline,
   gridOutline,
   hourglassOutline,
@@ -113,6 +114,7 @@ export class MediaPage implements OnInit {
       calendarClearOutline,
       checkmarkCircleOutline,
       closeOutline,
+      createOutline,
       gameControllerOutline,
       gridOutline,
       hourglassOutline,
@@ -181,15 +183,15 @@ export class MediaPage implements OnInit {
     this.applyFilters();
   }
 
-  openAddDialog(game: Game) {
-    if (game.myGames || this.addingGameIds.has(game.id)) {
+  openGameListDialog(game: Game) {
+    if (this.addingGameIds.has(game.id)) {
       return;
     }
 
     this.errorMessage = '';
     this.successMessage = '';
     this.selectedGame = game;
-    this.addGameForm = this.createAddGameForm();
+    this.addGameForm = this.createAddGameForm(game);
     this.isAddDialogOpen = true;
   }
 
@@ -205,7 +207,7 @@ export class MediaPage implements OnInit {
   submitAddGame() {
     const game = this.selectedGame;
 
-    if (!game || game.myGames || this.addingGameIds.has(game.id)) {
+    if (!game || this.addingGameIds.has(game.id)) {
       return;
     }
 
@@ -213,17 +215,26 @@ export class MediaPage implements OnInit {
     this.successMessage = '';
     this.addingGameIds.add(game.id);
 
-    this.myGameService.addToLibrary(game.id, {
+    const details = {
       status: Number(this.addGameForm.status),
       timeSpend: this.numberOrNull(this.addGameForm.timeSpend),
       rating: this.numberOrNull(this.addGameForm.rating),
       startDate: this.addGameForm.startDate || null,
       endDate: this.addGameForm.endDate || null,
-    }).subscribe({
+    };
+
+    const existingMyGame = game.myGames;
+    const request = existingMyGame
+      ? this.myGameService.updateLibraryEntry(existingMyGame.id, game.id, details)
+      : this.myGameService.addToLibrary(game.id, details);
+
+    request.subscribe({
       next: (myGame) => {
         game.myGames = myGame;
         this.applyFilters();
-        this.successMessage = `${game.name} was added to your game list.`;
+        this.successMessage = existingMyGame
+          ? `${game.name} was saved.`
+          : `${game.name} was added to your game list.`;
         this.addingGameIds.delete(game.id);
         this.isAddDialogOpen = false;
         this.selectedGame = null;
@@ -237,6 +248,10 @@ export class MediaPage implements OnInit {
 
   isAdding(game: Game): boolean {
     return this.addingGameIds.has(game.id);
+  }
+
+  isEditingSelectedGame(): boolean {
+    return !!this.selectedGame?.myGames;
   }
 
   get totalGames() {
@@ -347,14 +362,30 @@ export class MediaPage implements OnInit {
     target?.complete();
   }
 
-  private createAddGameForm(): AddGameForm {
+  private createAddGameForm(game?: Game): AddGameForm {
+    const myGame = game?.myGames;
+
     return {
-      status: GameStatus.Planned,
-      timeSpend: 0,
-      rating: null,
-      startDate: '',
-      endDate: '',
+      status: Number(myGame?.status ?? GameStatus.Planned),
+      timeSpend: myGame?.timeSpend ?? 0,
+      rating: myGame?.rating ?? null,
+      startDate: this.dateInputValue(myGame?.startDate),
+      endDate: this.dateInputValue(myGame?.endDate),
     };
+  }
+
+  private dateInputValue(value: Date | string | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return date.toISOString().slice(0, 10);
   }
 
   private numberOrNull(value: number | string | null): number | null {

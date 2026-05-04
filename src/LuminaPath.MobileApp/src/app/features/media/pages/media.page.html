@@ -112,13 +112,13 @@
     <section class="game-grid" *ngIf="!isLoading && viewMode === 'grid' && filteredGames.length">
       <article class="game-card" *ngFor="let game of filteredGames; trackBy: trackByGameId">
         <ion-button
-          *ngIf="!game.myGames"
           fill="clear"
           class="quick-add-button"
+          [class.quick-add-button--edit]="game.myGames"
           [disabled]="isAdding(game)"
-          [attr.aria-label]="'Add ' + game.name + ' to my games'"
-          (click)="openAddDialog(game)">
-          <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : 'add-outline'"></ion-icon>
+          [attr.aria-label]="(game.myGames ? 'Edit ' : 'Add ') + game.name + (game.myGames ? ' in my games' : ' to my games')"
+          (click)="openGameListDialog(game)">
+          <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : (game.myGames ? 'create-outline' : 'add-outline')"></ion-icon>
         </ion-button>
         <img [src]="imageFor(game)" alt="" />
         <div class="game-card__content">
@@ -157,13 +157,13 @@
     <section class="game-list" *ngIf="!isLoading && viewMode === 'list' && filteredGames.length">
       <article class="list-row" *ngFor="let game of filteredGames; trackBy: trackByGameId">
         <ion-button
-          *ngIf="!game.myGames"
           fill="clear"
           class="quick-add-button list-row__add"
+          [class.quick-add-button--edit]="game.myGames"
           [disabled]="isAdding(game)"
-          [attr.aria-label]="'Add ' + game.name + ' to my games'"
-          (click)="openAddDialog(game)">
-          <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : 'add-outline'"></ion-icon>
+          [attr.aria-label]="(game.myGames ? 'Edit ' : 'Add ') + game.name + (game.myGames ? ' in my games' : ' to my games')"
+          (click)="openGameListDialog(game)">
+          <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : (game.myGames ? 'create-outline' : 'add-outline')"></ion-icon>
         </ion-button>
         <img [src]="imageFor(game)" alt="" />
         <div class="list-row__main">
@@ -197,7 +197,7 @@
       <form class="add-game-dialog" (ngSubmit)="submitAddGame()">
         <header>
           <div>
-            <span class="eyebrow">Add to mine</span>
+            <span class="eyebrow">{{ isEditingSelectedGame() ? 'Edit my game' : 'Add to mine' }}</span>
             <h2>{{ selectedGame?.name }}</h2>
           </div>
           <ion-button
@@ -264,7 +264,7 @@
           </ion-button>
           <ion-button type="submit" [disabled]="selectedGame ? isAdding(selectedGame) : true">
             <ion-icon slot="start" [name]="selectedGame && isAdding(selectedGame) ? 'hourglass-outline' : 'add-outline'"></ion-icon>
-            {{ selectedGame && isAdding(selectedGame) ? 'Adding...' : 'Add game' }}
+            {{ selectedGame && isAdding(selectedGame) ? 'Saving...' : (isEditingSelectedGame() ? 'Save changes' : 'Add game') }}
           </ion-button>
         </footer>
       </form>

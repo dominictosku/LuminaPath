@@ -18,5 +18,12 @@ namespace LuminaPath.Infrastructure.Controllers
         {
             Includes = new List<string> { "Game" };
         }
+
+        [HttpPut("{id}")]
+        public override async Task<IActionResult> PutAsync(int id, MyGameDto viewModel)
+        {
+            viewModel.MyGameInfo = null;
+            return await base.PutAsync(id, viewModel);
+        }
     }
 }

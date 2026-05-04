@@ -240,6 +240,13 @@ ion-select {
   border: 1px solid rgba(255, 255, 255, 0.72);
 }
 
+.quick-add-button--edit {
+  --background: rgba(16, 185, 129, 0.92);
+  --background-hover: rgba(5, 150, 105, 0.98);
+  --background-focused: rgba(5, 150, 105, 0.98);
+  --color: #fff;
+}
+
 .quick-add-button ion-icon {
   width: 21px;
   height: 21px;
@@ -576,5 +583,12 @@ ion-badge {
 
   .quick-add-button::part(native) {
     border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .quick-add-button--edit {
+    --background: rgba(16, 185, 129, 0.86);
+    --background-hover: rgba(5, 150, 105, 0.96);
+    --background-focused: rgba(5, 150, 105, 0.96);
+    --color: #ecfdf5;
   }
 }
