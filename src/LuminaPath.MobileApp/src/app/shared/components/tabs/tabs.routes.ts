@@ -21,6 +21,12 @@ export const routes: Routes = [
         canActivate: [AuthGuard],
       },
       {
+        path: 'media/:gameId',
+        loadComponent: () =>
+          import('../../../features/my-games/pages/my-game-details.page').then((m) => m.MyGameDetailsPage),
+        canActivate: [AuthGuard],
+      },
+      {
         path: 'planing',
         loadComponent: () =>
           import('../../../features/planing/pages/planing.page').then((m) => m.PlaningPage),

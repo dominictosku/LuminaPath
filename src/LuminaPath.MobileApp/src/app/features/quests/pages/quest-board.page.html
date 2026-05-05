@@ -63,10 +63,10 @@
           <span>+{{ questReward(column.type) }} XP</span>
         </div>
 
-        <div class="quest-list" *ngIf="quests[column.type].length; else emptyColumn">
+        <div class="quest-list" *ngIf="lifeQuestsFor(column.type).length; else emptyColumn">
           <article
             class="quest-card"
-            *ngFor="let quest of quests[column.type]; trackBy: trackByQuest"
+            *ngFor="let quest of lifeQuestsFor(column.type); trackBy: trackByQuest"
             [class.quest-card--done]="quest.completed">
             <button type="button" class="complete-button" (click)="toggleQuest(column.type, quest)">
               <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
@@ -88,6 +88,116 @@
           </div>
         </ng-template>
       </article>
+    </section>
+
+    <section class="linked-section" *ngIf="mode === 'quests'">
+      <header class="linked-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="game-controller-outline"></ion-icon>
+            Linked to your games
+          </span>
+          <h2>Game Quests</h2>
+          <p>Tasks you want to remember while playing a game from your library.</p>
+        </div>
+      </header>
+
+      <article class="linked-card" *ngFor="let group of linkedGroups; trackBy: trackByGroup">
+        <header class="linked-card-header">
+          <div class="linked-card-icon">
+            <ion-icon name="link-outline"></ion-icon>
+          </div>
+          <div>
+            <span>{{ group.quests.length }} quest{{ group.quests.length === 1 ? '' : 's' }}</span>
+            <h3>{{ group.gameName }}</h3>
+          </div>
+        </header>
+
+        <div class="quest-list">
+          <article
+            class="quest-card"
+            *ngFor="let quest of group.quests; trackBy: trackByQuest"
+            [class.quest-card--done]="quest.completed">
+            <button type="button" class="complete-button" (click)="toggleQuest(questTypeFor(quest), quest)">
+              <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
+            </button>
+            <div>
+              <h3>{{ quest.title }}</h3>
+              <p>
+                <ion-badge>{{ questTypeLabel(questTypeFor(quest)) }}</ion-badge>
+                <span class="quest-card-meta">{{ quest.completed ? 'Reward claimed' : 'Ready to complete' }}</span>
+              </p>
+            </div>
+            <button type="button" class="delete-button" aria-label="Delete quest" (click)="deleteQuest(questTypeFor(quest), quest.id)">
+              <ion-icon name="trash-outline"></ion-icon>
+            </button>
+          </article>
+        </div>
+
+        <div class="quest-input quest-input--linked">
+          <input
+            type="text"
+            placeholder="Add a quest for this game"
+            [(ngModel)]="draftForGame(group.myGameId).title"
+            (keydown.enter)="addLinkedQuest(group.myGameId)" />
+          <ion-select
+            interface="popover"
+            [(ngModel)]="draftForGame(group.myGameId).type"
+            aria-label="Quest type">
+            <ion-select-option *ngFor="let option of questTypeOptions" [value]="option.type">
+              {{ option.label }}
+            </ion-select-option>
+          </ion-select>
+          <ion-button fill="clear" aria-label="Add quest" (click)="addLinkedQuest(group.myGameId)">
+            <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+          </ion-button>
+        </div>
+      </article>
+
+      <article class="linked-add-card" *ngIf="unlinkedLibrary.length">
+        <header class="linked-card-header">
+          <div class="linked-card-icon">
+            <ion-icon name="add-outline"></ion-icon>
+          </div>
+          <div>
+            <span>From your library</span>
+            <h3>Link a new game</h3>
+          </div>
+        </header>
+
+        <div class="quest-input quest-input--linked">
+          <ion-select
+            interface="popover"
+            placeholder="Select a game"
+            [(ngModel)]="newLinkedGameId"
+            aria-label="Game">
+            <ion-select-option *ngFor="let game of unlinkedLibrary; trackBy: trackByLibrary" [value]="game.myGameId">
+              {{ game.gameName }}
+            </ion-select-option>
+          </ion-select>
+          <ion-select
+            interface="popover"
+            [(ngModel)]="newLinkedGameType"
+            aria-label="Quest type">
+            <ion-select-option *ngFor="let option of questTypeOptions" [value]="option.type">
+              {{ option.label }}
+            </ion-select-option>
+          </ion-select>
+          <input
+            type="text"
+            placeholder="Quest title"
+            [(ngModel)]="newLinkedGameTitle"
+            (keydown.enter)="addQuestForNewGame()" />
+          <ion-button fill="clear" aria-label="Add quest" (click)="addQuestForNewGame()">
+            <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+          </ion-button>
+        </div>
+      </article>
+
+      <div class="empty-state" *ngIf="!linkedGroups.length && !unlinkedLibrary.length">
+        <ion-icon name="game-controller-outline"></ion-icon>
+        <span>Add games to your library to link quests to them.</span>
+      </div>
     </section>
 
     <section class="skills-layout" *ngIf="mode === 'skills'">

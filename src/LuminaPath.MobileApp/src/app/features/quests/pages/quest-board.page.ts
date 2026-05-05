@@ -10,6 +10,8 @@ import {
   IonProgressBar,
   IonSegment,
   IonSegmentButton,
+  IonSelect,
+  IonSelectOption,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -23,7 +25,9 @@ import {
   createOutline,
   flagOutline,
   flashOutline,
+  gameControllerOutline,
   libraryOutline,
+  linkOutline,
   lockClosedOutline,
   mapOutline,
   restaurantOutline,
@@ -36,6 +40,8 @@ import {
   trophyOutline,
 } from 'ionicons/icons';
 import { Quest, QuestBoardService, QuestBoardState, QuestSkill, QuestType } from '../services/quest-board.service';
+import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
+import { MyGame } from 'src/app/features/games/models/games.model';
 
 type PageMode = 'quests' | 'skills';
 type ModalMode = 'skill' | 'node' | null;
@@ -46,6 +52,17 @@ type QuestColumn = {
   label: string;
   description: string;
   icon: string;
+};
+
+type LinkedGameGroup = {
+  myGameId: number;
+  gameName: string;
+  quests: Quest[];
+};
+
+type LibraryGame = {
+  myGameId: number;
+  gameName: string;
 };
 
 @Component({
@@ -62,6 +79,8 @@ type QuestColumn = {
     IonProgressBar,
     IonSegment,
     IonSegmentButton,
+    IonSelect,
+    IonSelectOption,
   ],
 })
 export class QuestBoardPage implements OnInit {
@@ -99,6 +118,12 @@ export class QuestBoardPage implements OnInit {
 
   readonly skillColorOptions = ['#2563eb', '#0891b2', '#0f766e', '#7c3aed', '#be123c'];
 
+  readonly questTypeOptions: { type: QuestType; label: string }[] = [
+    { type: 'main', label: 'Main' },
+    { type: 'sub', label: 'Sub' },
+    { type: 'faction', label: 'Faction' },
+  ];
+
   mode: PageMode = 'quests';
   modalMode: ModalMode = null;
   xp = 0;
@@ -131,6 +156,12 @@ export class QuestBoardPage implements OnInit {
   selectedSkillId: number | null = null;
   editingSkillId: number | null = null;
 
+  library: LibraryGame[] = [];
+  newLinkedQuest: Record<number, { title: string; type: QuestType }> = {};
+  newLinkedGameId: number | null = null;
+  newLinkedGameType: QuestType = 'sub';
+  newLinkedGameTitle = '';
+
   private readonly xpPerLevel = 200;
   private readonly questRewards: Record<QuestType, number> = {
     main: 150,
@@ -141,6 +172,7 @@ export class QuestBoardPage implements OnInit {
 
   constructor(
     private questBoardService: QuestBoardService,
+    private myGameService: MyGameService,
     private alertController: AlertController
   ) {
     addIcons({
@@ -154,7 +186,9 @@ export class QuestBoardPage implements OnInit {
       createOutline,
       flagOutline,
       flashOutline,
+      gameControllerOutline,
       libraryOutline,
+      linkOutline,
       lockClosedOutline,
       mapOutline,
       restaurantOutline,
@@ -169,7 +203,7 @@ export class QuestBoardPage implements OnInit {
   }
 
   async ngOnInit() {
-    await this.loadBoard();
+    await Promise.all([this.loadBoard(), this.loadLibrary()]);
   }
 
   async addQuest(type: QuestType) {
@@ -186,10 +220,62 @@ export class QuestBoardPage implements OnInit {
         completed: false,
         createdAt: new Date().toISOString(),
         rewardXp: this.questRewards[type],
+        myGameId: null,
       },
       ...this.quests[type],
     ];
     this.newQuest[type] = '';
+    await this.persist();
+  }
+
+  async addLinkedQuest(myGameId: number) {
+    const draft = this.draftForGame(myGameId);
+    const title = draft.title.trim();
+
+    if (!title) {
+      return;
+    }
+
+    this.quests[draft.type] = [
+      ...this.quests[draft.type],
+      {
+        id: this.nextTemporaryId(),
+        title,
+        completed: false,
+        createdAt: new Date().toISOString(),
+        rewardXp: this.questRewards[draft.type],
+        myGameId,
+        gameName: this.gameNameFor(myGameId),
+      },
+    ];
+    draft.title = '';
+    await this.persist();
+  }
+
+  async addQuestForNewGame() {
+    const myGameId = this.newLinkedGameId;
+    const title = this.newLinkedGameTitle.trim();
+
+    if (myGameId == null || !title) {
+      return;
+    }
+
+    const type = this.newLinkedGameType;
+    this.quests[type] = [
+      ...this.quests[type],
+      {
+        id: this.nextTemporaryId(),
+        title,
+        completed: false,
+        createdAt: new Date().toISOString(),
+        rewardXp: this.questRewards[type],
+        myGameId,
+        gameName: this.gameNameFor(myGameId),
+      },
+    ];
+    this.newLinkedGameTitle = '';
+    this.newLinkedGameId = null;
+    this.newLinkedGameType = 'sub';
     await this.persist();
   }
 
@@ -353,7 +439,7 @@ export class QuestBoardPage implements OnInit {
   }
 
   questProgress(column: QuestColumn): number {
-    const quests = this.quests[column.type];
+    const quests = this.lifeQuestsFor(column.type);
 
     if (quests.length === 0) {
       return 0;
@@ -364,6 +450,56 @@ export class QuestBoardPage implements OnInit {
 
   questReward(type: QuestType): number {
     return this.questRewards[type];
+  }
+
+  lifeQuestsFor(type: QuestType): Quest[] {
+    return this.quests[type].filter((quest) => quest.myGameId == null);
+  }
+
+  get linkedGroups(): LinkedGameGroup[] {
+    const map = new Map<number, LinkedGameGroup>();
+
+    for (const type of ['main', 'sub', 'faction'] as QuestType[]) {
+      for (const quest of this.quests[type]) {
+        if (quest.myGameId == null) {
+          continue;
+        }
+        let group = map.get(quest.myGameId);
+        if (!group) {
+          group = {
+            myGameId: quest.myGameId,
+            gameName: quest.gameName ?? this.gameNameFor(quest.myGameId),
+            quests: [],
+          };
+          map.set(quest.myGameId, group);
+        }
+        group.quests.push(quest);
+      }
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.gameName.localeCompare(b.gameName));
+  }
+
+  get unlinkedLibrary(): LibraryGame[] {
+    const linkedIds = new Set(this.linkedGroups.map((group) => group.myGameId));
+    return this.library.filter((game) => !linkedIds.has(game.myGameId));
+  }
+
+  questTypeFor(quest: Quest): QuestType {
+    if (this.quests.main.includes(quest)) return 'main';
+    if (this.quests.faction.includes(quest)) return 'faction';
+    return 'sub';
+  }
+
+  questTypeLabel(type: QuestType): string {
+    return this.questTypeOptions.find((option) => option.type === type)?.label ?? type;
+  }
+
+  draftForGame(myGameId: number): { title: string; type: QuestType } {
+    if (!this.newLinkedQuest[myGameId]) {
+      this.newLinkedQuest[myGameId] = { title: '', type: 'sub' };
+    }
+    return this.newLinkedQuest[myGameId];
   }
 
   skillLevel(skill: QuestSkill): number {
@@ -394,6 +530,14 @@ export class QuestBoardPage implements OnInit {
     return item;
   }
 
+  trackByGroup(_: number, group: LinkedGameGroup): number {
+    return group.myGameId;
+  }
+
+  trackByLibrary(_: number, game: LibraryGame): number {
+    return game.myGameId;
+  }
+
   private async loadBoard() {
     this.isLoading = true;
     this.errorMessage = '';
@@ -407,6 +551,26 @@ export class QuestBoardPage implements OnInit {
     } finally {
       this.isLoading = false;
     }
+  }
+
+  private async loadLibrary() {
+    try {
+      const result = await new Promise<{ data?: MyGame[] }>((resolve, reject) => {
+        this.myGameService.getAll().subscribe({ next: resolve, error: reject });
+      });
+      this.library = (result.data ?? [])
+        .map((myGame) => ({
+          myGameId: myGame.id,
+          gameName: myGame.game?.name ?? 'Unknown game',
+        }))
+        .sort((a, b) => a.gameName.localeCompare(b.gameName));
+    } catch {
+      this.library = [];
+    }
+  }
+
+  private gameNameFor(myGameId: number): string {
+    return this.library.find((game) => game.myGameId === myGameId)?.gameName ?? 'Unknown game';
   }
 
   private async persist(): Promise<boolean> {

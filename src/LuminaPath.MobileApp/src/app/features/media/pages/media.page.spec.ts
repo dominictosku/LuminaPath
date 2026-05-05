@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 
 import { MediaPage } from './media.page';
@@ -25,6 +26,7 @@ describe('MediaPage (Library)', () => {
   let gameService: jasmine.SpyObj<GameService>;
   let myGameService: jasmine.SpyObj<MyGameService>;
   let releaseNotifications: jasmine.SpyObj<ReleaseNotificationService>;
+  let router: jasmine.SpyObj<Router>;
 
   function configure(getAllResponse: Observable<PaginateResult<Game>>) {
     gameService = jasmine.createSpyObj<GameService>('GameService', ['getAll']);
@@ -36,9 +38,11 @@ describe('MediaPage (Library)', () => {
       'ReleaseNotificationService',
       ['syncForGames'],
     );
+    router = jasmine.createSpyObj<Router>('Router', ['navigate']);
 
     gameService.getAll.and.returnValue(getAllResponse);
     releaseNotifications.syncForGames.and.resolveTo();
+    router.navigate.and.resolveTo(true);
 
     TestBed.configureTestingModule({
       imports: [MediaPage],
@@ -46,6 +50,7 @@ describe('MediaPage (Library)', () => {
         { provide: GameService, useValue: gameService },
         { provide: MyGameService, useValue: myGameService },
         { provide: ReleaseNotificationService, useValue: releaseNotifications },
+        { provide: Router, useValue: router },
       ],
     });
 
@@ -216,5 +221,14 @@ describe('MediaPage (Library)', () => {
 
     expect(myGameService.addToLibrary).not.toHaveBeenCalled();
     expect(myGameService.updateLibraryEntry).not.toHaveBeenCalled();
+  });
+
+  it('openDetails navigates to /media/:gameId', () => {
+    configure(of(pageOf([])));
+    fixture.detectChanges();
+
+    component.openDetails(makeGame({ id: 42, name: 'Hades' }));
+
+    expect(router.navigate).toHaveBeenCalledOnceWith(['/media', 42]);
   });
 });

@@ -25,6 +25,11 @@ namespace LuminaPath.Infrastructure
                 .WithMany()
                 .HasForeignKey(quest => quest.LuminaUserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Quest>()
+                .HasOne(quest => quest.MyGame)
+                .WithMany(myGame => myGame.Quests)
+                .HasForeignKey(quest => quest.MyGameId)
+                .OnDelete(DeleteBehavior.SetNull);
             modelBuilder.Entity<QuestProfile>()
                 .HasIndex(profile => profile.LuminaUserId)
                 .IsUnique();

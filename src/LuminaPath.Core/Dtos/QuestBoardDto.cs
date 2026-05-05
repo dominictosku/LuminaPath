@@ -19,6 +19,8 @@ namespace LuminaPath.Core.Dtos
         public DateTime? CompletedAt { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public int SortOrder { get; set; }
+        public int? MyGameId { get; set; }
+        public string? GameName { get; set; }
     }
 
     public class QuestSkillDto

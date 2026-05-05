@@ -120,8 +120,8 @@
           (click)="openGameListDialog(game)">
           <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : (game.myGames ? 'create-outline' : 'add-outline')"></ion-icon>
         </ion-button>
-        <img [src]="imageFor(game)" alt="" />
-        <div class="game-card__content">
+        <img [src]="imageFor(game)" alt="" (click)="openDetails(game)" />
+        <div class="game-card__content" (click)="openDetails(game)">
           <div class="badge-row">
             <ion-badge>{{ statusLabel(game) }}</ion-badge>
             <span>{{ platformLabel(game.platforms) }}</span>
@@ -165,8 +165,8 @@
           (click)="openGameListDialog(game)">
           <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : (game.myGames ? 'create-outline' : 'add-outline')"></ion-icon>
         </ion-button>
-        <img [src]="imageFor(game)" alt="" />
-        <div class="list-row__main">
+        <img [src]="imageFor(game)" alt="" (click)="openDetails(game)" />
+        <div class="list-row__main" (click)="openDetails(game)">
           <div class="badge-row">
             <ion-badge>{{ statusLabel(game) }}</ion-badge>
             <span>{{ platformLabel(game.platforms) }}</span>

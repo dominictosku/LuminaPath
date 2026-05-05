@@ -17,13 +17,43 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         public async Task<QuestBoardDto> GetBoardAsync(string userId)
         {
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
             var profile = await dbContext.QuestProfiles
                 .AsNoTracking()
                 .FirstOrDefaultAsync(profile => profile.LuminaUserId == userId);
 
-            var quests = await dbContext.Quests
+            var quests = await LoadQuestDtos(dbContext, userId);
+            var skills = await LoadSkillDtos(dbContext, userId);
+
+            if (profile == null && quests.Count == 0 && skills.Count == 0)
+            {
+                return CreateDefaultBoard();
+            }
+
+            return new QuestBoardDto
+            {
+                Xp = profile?.TotalXp ?? 0,
+                Quests = quests,
+                Skills = skills
+            };
+        }
+
+        public async Task<List<QuestDto>> GetQuestsForMyGameAsync(string userId, int myGameId)
+        {
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+            var ownsGame = await dbContext.MyGames
                 .AsNoTracking()
-                .Where(quest => quest.LuminaUserId == userId)
+                .AnyAsync(myGame => myGame.Id == myGameId && myGame.LuminaUserId == userId);
+
+            if (!ownsGame)
+            {
+                return [];
+            }
+
+            return await dbContext.Quests
+                .AsNoTracking()
+                .Where(quest => quest.LuminaUserId == userId && quest.MyGameId == myGameId)
                 .OrderBy(quest => quest.Type)
                 .ThenBy(quest => quest.SortOrder)
                 .ThenBy(quest => quest.Id)
@@ -36,10 +66,59 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     Completed = quest.Completed,
                     CompletedAt = quest.CompletedAt,
                     CreatedAt = quest.CreatedAt,
-                    SortOrder = quest.SortOrder
+                    SortOrder = quest.SortOrder,
+                    MyGameId = quest.MyGameId,
+                    GameName = quest.MyGame == null ? null : quest.MyGame.Game!.Name
                 })
                 .ToListAsync();
+        }
 
+        public async Task<QuestBoardDto> SaveBoardAsync(string userId, QuestBoardDto board)
+        {
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+            await UpsertProfileAsync(dbContext, userId, board.Xp);
+
+            var ownedMyGameIds = await dbContext.MyGames
+                .AsNoTracking()
+                .Where(myGame => myGame.LuminaUserId == userId)
+                .Select(myGame => myGame.Id)
+                .ToListAsync();
+
+            await UpsertQuestsAsync(dbContext, userId, board.Quests, ownedMyGameIds);
+            await UpsertSkillsAsync(dbContext, userId, board.Skills);
+
+            await dbContext.SaveChangesAsync();
+            return await GetBoardAsync(userId);
+        }
+
+        private static async Task<List<QuestDto>> LoadQuestDtos(LuminaPathDbContext dbContext, string userId)
+        {
+            return await dbContext.Quests
+                .AsNoTracking()
+                .Where(quest => quest.LuminaUserId == userId)
+                .OrderBy(quest => quest.MyGameId == null ? 0 : 1)
+                .ThenBy(quest => quest.Type)
+                .ThenBy(quest => quest.SortOrder)
+                .ThenBy(quest => quest.Id)
+                .Select(quest => new QuestDto
+                {
+                    Id = quest.Id,
+                    Title = quest.Title,
+                    Type = quest.Type,
+                    RewardXp = quest.RewardXp,
+                    Completed = quest.Completed,
+                    CompletedAt = quest.CompletedAt,
+                    CreatedAt = quest.CreatedAt,
+                    SortOrder = quest.SortOrder,
+                    MyGameId = quest.MyGameId,
+                    GameName = quest.MyGame == null ? null : quest.MyGame.Game!.Name
+                })
+                .ToListAsync();
+        }
+
+        private static async Task<List<QuestSkillDto>> LoadSkillDtos(LuminaPathDbContext dbContext, string userId)
+        {
             var skills = await dbContext.QuestSkills
                 .AsNoTracking()
                 .Include(skill => skill.Nodes)
@@ -48,43 +127,33 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 .ThenBy(skill => skill.Id)
                 .ToListAsync();
 
-            if (profile == null && quests.Count == 0 && skills.Count == 0)
+            return skills.Select(skill => new QuestSkillDto
             {
-                return CreateDefaultBoard();
-            }
-
-            return new QuestBoardDto
-            {
-                Xp = profile?.TotalXp ?? 0,
-                Quests = quests,
-                Skills = skills.Select(skill => new QuestSkillDto
-                {
-                    Id = skill.Id,
-                    Name = skill.Name,
-                    Icon = skill.Icon,
-                    Color = skill.Color,
-                    Xp = skill.Xp,
-                    SortOrder = skill.SortOrder,
-                    Nodes = skill.Nodes
-                        .OrderBy(node => node.SortOrder)
-                        .ThenBy(node => node.Id)
-                        .Select(node => new QuestSkillNodeDto
-                        {
-                            Id = node.Id,
-                            Name = node.Name,
-                            Unlocked = node.Unlocked,
-                            UnlockedAt = node.UnlockedAt,
-                            SortOrder = node.SortOrder
-                        })
-                        .ToList()
-                }).ToList()
-            };
+                Id = skill.Id,
+                Name = skill.Name,
+                Icon = skill.Icon,
+                Color = skill.Color,
+                Xp = skill.Xp,
+                SortOrder = skill.SortOrder,
+                Nodes = skill.Nodes
+                    .OrderBy(node => node.SortOrder)
+                    .ThenBy(node => node.Id)
+                    .Select(node => new QuestSkillNodeDto
+                    {
+                        Id = node.Id,
+                        Name = node.Name,
+                        Unlocked = node.Unlocked,
+                        UnlockedAt = node.UnlockedAt,
+                        SortOrder = node.SortOrder
+                    })
+                    .ToList()
+            }).ToList();
         }
 
-        public async Task<QuestBoardDto> SaveBoardAsync(string userId, QuestBoardDto board)
+        private static async Task UpsertProfileAsync(LuminaPathDbContext dbContext, string userId, int xp)
         {
-            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
-            var profile = await dbContext.QuestProfiles.FirstOrDefaultAsync(profile => profile.LuminaUserId == userId);
+            var profile = await dbContext.QuestProfiles
+                .FirstOrDefaultAsync(profile => profile.LuminaUserId == userId);
 
             if (profile == null)
             {
@@ -96,51 +165,191 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 await dbContext.QuestProfiles.AddAsync(profile);
             }
 
-            profile.TotalXp = Math.Max(0, board.Xp);
+            profile.TotalXp = Math.Max(0, xp);
             profile.UpdatedAt = DateTime.UtcNow;
+        }
 
-            var existingQuests = await dbContext.Quests
+        private static async Task UpsertQuestsAsync(
+            LuminaPathDbContext dbContext,
+            string userId,
+            List<QuestDto> incoming,
+            List<int> ownedMyGameIds)
+        {
+            var existing = await dbContext.Quests
                 .Where(quest => quest.LuminaUserId == userId)
                 .ToListAsync();
-            dbContext.Quests.RemoveRange(existingQuests);
+            var existingById = existing.ToDictionary(quest => quest.Id);
 
-            var existingSkills = await dbContext.QuestSkills
+            var sanitized = incoming
+                .Select(dto => Sanitize(dto, ownedMyGameIds))
+                .Where(dto => !string.IsNullOrWhiteSpace(dto.Title))
+                .ToList();
+
+            var keepIds = new HashSet<int>();
+            foreach (var (dto, index) in sanitized.Select((dto, index) => (dto, index)))
+            {
+                if (dto.Id > 0 && existingById.TryGetValue(dto.Id, out var existingQuest))
+                {
+                    ApplyTo(existingQuest, dto, index);
+                    keepIds.Add(existingQuest.Id);
+                }
+                else
+                {
+                    var newQuest = new Quest { LuminaUserId = userId };
+                    ApplyTo(newQuest, dto, index);
+                    await dbContext.Quests.AddAsync(newQuest);
+                }
+            }
+
+            var toDelete = existing.Where(quest => !keepIds.Contains(quest.Id)).ToList();
+            if (toDelete.Count > 0)
+            {
+                dbContext.Quests.RemoveRange(toDelete);
+            }
+        }
+
+        private static QuestDto Sanitize(QuestDto dto, List<int> ownedMyGameIds)
+        {
+            return new QuestDto
+            {
+                Id = dto.Id,
+                Title = (dto.Title ?? string.Empty).Trim(),
+                Type = dto.Type,
+                RewardXp = dto.RewardXp <= 0 ? RewardFor(dto.Type) : dto.RewardXp,
+                Completed = dto.Completed,
+                CompletedAt = dto.Completed ? dto.CompletedAt ?? DateTime.UtcNow : null,
+                CreatedAt = dto.CreatedAt == default ? DateTime.UtcNow : dto.CreatedAt,
+                SortOrder = dto.SortOrder,
+                MyGameId = dto.MyGameId.HasValue && ownedMyGameIds.Contains(dto.MyGameId.Value)
+                    ? dto.MyGameId
+                    : null
+            };
+        }
+
+        private static void ApplyTo(Quest quest, QuestDto dto, int fallbackSortOrder)
+        {
+            quest.Title = dto.Title;
+            quest.Type = dto.Type;
+            quest.RewardXp = dto.RewardXp;
+            quest.Completed = dto.Completed;
+            quest.CompletedAt = dto.CompletedAt;
+            quest.CreatedAt = dto.CreatedAt;
+            quest.SortOrder = dto.SortOrder == 0 ? fallbackSortOrder : dto.SortOrder;
+            quest.MyGameId = dto.MyGameId;
+        }
+
+        private static async Task UpsertSkillsAsync(
+            LuminaPathDbContext dbContext,
+            string userId,
+            List<QuestSkillDto> incoming)
+        {
+            var existing = await dbContext.QuestSkills
                 .Include(skill => skill.Nodes)
                 .Where(skill => skill.LuminaUserId == userId)
                 .ToListAsync();
-            dbContext.QuestSkills.RemoveRange(existingSkills);
+            var existingById = existing.ToDictionary(skill => skill.Id);
 
-            await dbContext.Quests.AddRangeAsync(board.Quests.Select((quest, index) => new Quest
+            var keepSkillIds = new HashSet<int>();
+            foreach (var (dto, skillIndex) in incoming.Select((dto, index) => (dto, index)))
             {
-                Title = quest.Title.Trim(),
-                Type = quest.Type,
-                RewardXp = quest.RewardXp <= 0 ? RewardFor(quest.Type) : quest.RewardXp,
-                Completed = quest.Completed,
-                CompletedAt = quest.Completed ? quest.CompletedAt ?? DateTime.UtcNow : null,
-                CreatedAt = quest.CreatedAt == default ? DateTime.UtcNow : quest.CreatedAt,
-                SortOrder = quest.SortOrder == 0 ? index : quest.SortOrder,
-                LuminaUserId = userId
-            }).Where(quest => !string.IsNullOrWhiteSpace(quest.Title)));
-
-            await dbContext.QuestSkills.AddRangeAsync(board.Skills.Select((skill, skillIndex) => new QuestSkill
-            {
-                Name = skill.Name.Trim(),
-                Icon = string.IsNullOrWhiteSpace(skill.Icon) ? "code-slash-outline" : skill.Icon,
-                Color = string.IsNullOrWhiteSpace(skill.Color) ? "#2563eb" : skill.Color,
-                Xp = Math.Max(0, skill.Xp),
-                SortOrder = skill.SortOrder == 0 ? skillIndex : skill.SortOrder,
-                LuminaUserId = userId,
-                Nodes = skill.Nodes.Select((node, nodeIndex) => new QuestSkillNode
+                var name = (dto.Name ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(name))
                 {
-                    Name = node.Name.Trim(),
-                    Unlocked = node.Unlocked,
-                    UnlockedAt = node.Unlocked ? node.UnlockedAt ?? DateTime.UtcNow : null,
-                    SortOrder = node.SortOrder == 0 ? nodeIndex : node.SortOrder
-                }).Where(node => !string.IsNullOrWhiteSpace(node.Name)).ToList()
-            }).Where(skill => !string.IsNullOrWhiteSpace(skill.Name)));
+                    continue;
+                }
 
-            await dbContext.SaveChangesAsync();
-            return await GetBoardAsync(userId);
+                if (dto.Id > 0 && existingById.TryGetValue(dto.Id, out var existingSkill))
+                {
+                    ApplySkill(existingSkill, dto, skillIndex, name);
+                    UpsertNodes(dbContext, existingSkill, dto.Nodes);
+                    keepSkillIds.Add(existingSkill.Id);
+                }
+                else
+                {
+                    var newSkill = new QuestSkill
+                    {
+                        LuminaUserId = userId,
+                        Nodes = []
+                    };
+                    ApplySkill(newSkill, dto, skillIndex, name);
+                    foreach (var (nodeDto, nodeIndex) in dto.Nodes.Select((node, index) => (node, index)))
+                    {
+                        var nodeName = (nodeDto.Name ?? string.Empty).Trim();
+                        if (string.IsNullOrWhiteSpace(nodeName))
+                        {
+                            continue;
+                        }
+                        newSkill.Nodes.Add(BuildNewNode(nodeDto, nodeIndex, nodeName));
+                    }
+                    await dbContext.QuestSkills.AddAsync(newSkill);
+                }
+            }
+
+            var skillsToDelete = existing.Where(skill => !keepSkillIds.Contains(skill.Id)).ToList();
+            if (skillsToDelete.Count > 0)
+            {
+                dbContext.QuestSkills.RemoveRange(skillsToDelete);
+            }
+        }
+
+        private static void ApplySkill(QuestSkill skill, QuestSkillDto dto, int fallbackSortOrder, string name)
+        {
+            skill.Name = name;
+            skill.Icon = string.IsNullOrWhiteSpace(dto.Icon) ? "code-slash-outline" : dto.Icon;
+            skill.Color = string.IsNullOrWhiteSpace(dto.Color) ? "#2563eb" : dto.Color;
+            skill.Xp = Math.Max(0, dto.Xp);
+            skill.SortOrder = dto.SortOrder == 0 ? fallbackSortOrder : dto.SortOrder;
+        }
+
+        private static void UpsertNodes(LuminaPathDbContext dbContext, QuestSkill skill, List<QuestSkillNodeDto> nodeDtos)
+        {
+            var nodesById = skill.Nodes.ToDictionary(node => node.Id);
+            var keepNodeIds = new HashSet<int>();
+
+            foreach (var (nodeDto, nodeIndex) in nodeDtos.Select((node, index) => (node, index)))
+            {
+                var nodeName = (nodeDto.Name ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(nodeName))
+                {
+                    continue;
+                }
+
+                if (nodeDto.Id > 0 && nodesById.TryGetValue(nodeDto.Id, out var existingNode))
+                {
+                    existingNode.Name = nodeName;
+                    existingNode.Unlocked = nodeDto.Unlocked;
+                    existingNode.UnlockedAt = nodeDto.Unlocked ? nodeDto.UnlockedAt ?? DateTime.UtcNow : null;
+                    existingNode.SortOrder = nodeDto.SortOrder == 0 ? nodeIndex : nodeDto.SortOrder;
+                    keepNodeIds.Add(existingNode.Id);
+                }
+                else
+                {
+                    skill.Nodes.Add(BuildNewNode(nodeDto, nodeIndex, nodeName));
+                }
+            }
+
+            var nodesToDelete = skill.Nodes
+                .Where(node => node.Id > 0 && !keepNodeIds.Contains(node.Id))
+                .ToList();
+            if (nodesToDelete.Count > 0)
+            {
+                dbContext.QuestSkillNodes.RemoveRange(nodesToDelete);
+                foreach (var node in nodesToDelete)
+                {
+                    skill.Nodes.Remove(node);
+                }
+            }
+        }
+
+        private static QuestSkillNode BuildNewNode(QuestSkillNodeDto dto, int fallbackSortOrder, string name)
+        {
+            return new QuestSkillNode
+            {
+                Name = name,
+                Unlocked = dto.Unlocked,
+                UnlockedAt = dto.Unlocked ? dto.UnlockedAt ?? DateTime.UtcNow : null,
+                SortOrder = dto.SortOrder == 0 ? fallbackSortOrder : dto.SortOrder
+            };
         }
 
         private static QuestBoardDto CreateDefaultBoard()

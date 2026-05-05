@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import {
   IonBadge,
   IonButton,
@@ -110,6 +111,7 @@ export class MediaPage implements OnInit {
     private gameService: GameService,
     private myGameService: MyGameService,
     private releaseNotifications: ReleaseNotificationService,
+    private router: Router,
   ) {
     addIcons({
       addOutline,
@@ -254,6 +256,10 @@ export class MediaPage implements OnInit {
 
   isAdding(game: Game): boolean {
     return this.addingGameIds.has(game.id);
+  }
+
+  openDetails(game: Game) {
+    this.router.navigate(['/media', game.id]);
   }
 
   isEditingSelectedGame(): boolean {

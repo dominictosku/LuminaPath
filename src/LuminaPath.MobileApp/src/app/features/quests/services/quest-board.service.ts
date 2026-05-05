@@ -12,6 +12,8 @@ export type Quest = {
   completedAt?: string;
   createdAt?: string;
   rewardXp?: number;
+  myGameId?: number | null;
+  gameName?: string | null;
 };
 
 export type QuestSkill = {
@@ -47,6 +49,8 @@ type ApiQuest = {
   completedAt?: string;
   createdAt?: string;
   sortOrder: number;
+  myGameId?: number | null;
+  gameName?: string | null;
 };
 
 type ApiQuestSkill = {
@@ -85,6 +89,13 @@ export class QuestBoardService {
     return this.toState(board);
   }
 
+  async getQuestsForGame(myGameId: number): Promise<Quest[]> {
+    const apiQuests = await firstValueFrom(
+      this.http.get<ApiQuest[]>(this.apiEndpoint.url(`quests/for-game/${myGameId}`), this.httpConfig)
+    );
+    return apiQuests.map((quest) => this.toQuest(quest));
+  }
+
   private toState(board: ApiQuestBoard): QuestBoardState {
     const quests: Record<QuestType, Quest[]> = {
       main: [],
@@ -92,15 +103,8 @@ export class QuestBoardService {
       faction: [],
     };
 
-    for (const quest of board.quests) {
-      quests[this.toQuestType(quest.type)].push({
-        id: quest.id,
-        title: quest.title,
-        completed: quest.completed,
-        completedAt: quest.completedAt,
-        createdAt: quest.createdAt,
-        rewardXp: quest.rewardXp,
-      });
+    for (const apiQuest of board.quests) {
+      quests[this.toQuestType(apiQuest.type)].push(this.toQuest(apiQuest));
     }
 
     return {
@@ -120,6 +124,19 @@ export class QuestBoardService {
     };
   }
 
+  private toQuest(apiQuest: ApiQuest): Quest {
+    return {
+      id: apiQuest.id,
+      title: apiQuest.title,
+      completed: apiQuest.completed,
+      completedAt: apiQuest.completedAt,
+      createdAt: apiQuest.createdAt,
+      rewardXp: apiQuest.rewardXp,
+      myGameId: apiQuest.myGameId ?? null,
+      gameName: apiQuest.gameName ?? null,
+    };
+  }
+
   private toApi(state: QuestBoardState): ApiQuestBoard {
     return {
       xp: state.xp,
@@ -133,6 +150,7 @@ export class QuestBoardService {
           completedAt: quest.completedAt,
           createdAt: quest.createdAt,
           sortOrder: index,
+          myGameId: quest.myGameId ?? null,
         }))
       ),
       skills: state.skills.map((skill, skillIndex) => ({

@@ -40,6 +40,15 @@ namespace LuminaPath.Infrastructure.Controllers
                 : Ok(await _service.SaveBoardAsync(user.Id, board));
         }
 
+        [HttpGet("for-game/{myGameId:int}")]
+        public async Task<ActionResult<List<QuestDto>>> GetForGame(int myGameId)
+        {
+            var user = await GetCurrentUser();
+            return user == null
+                ? Unauthorized("Please Login")
+                : Ok(await _service.GetQuestsForMyGameAsync(user.Id, myGameId));
+        }
+
         private async Task<LuminaUser?> GetCurrentUser()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
