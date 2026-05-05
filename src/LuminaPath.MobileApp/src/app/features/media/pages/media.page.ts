@@ -32,10 +32,12 @@ import {
   starOutline,
   timeOutline,
 } from 'ionicons/icons';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Game, Platforms } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { MyGameService } from '../../my-games/services/my-game.service';
+import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
 
 enum GameStatus {
   OnHold = 0,
@@ -106,7 +108,8 @@ export class MediaPage implements OnInit {
 
   constructor(
     private gameService: GameService,
-    private myGameService: MyGameService
+    private myGameService: MyGameService,
+    private releaseNotifications: ReleaseNotificationService,
   ) {
     addIcons({
       addOutline,
@@ -139,6 +142,7 @@ export class MediaPage implements OnInit {
         this.applyFilters();
         this.isLoading = false;
         this.completeRefresh(event);
+        this.releaseNotifications.syncForGames(this.games);
       },
       error: () => {
         this.games = [];
@@ -238,6 +242,8 @@ export class MediaPage implements OnInit {
         this.addingGameIds.delete(game.id);
         this.isAddDialogOpen = false;
         this.selectedGame = null;
+        this.triggerAddHaptic();
+        this.releaseNotifications.syncForGames(this.games);
       },
       error: (error) => {
         this.errorMessage = this.addGameErrorMessage(error);
@@ -360,6 +366,11 @@ export class MediaPage implements OnInit {
   private completeRefresh(event?: CustomEvent) {
     const target = event?.target as HTMLIonRefresherElement | undefined;
     target?.complete();
+  }
+
+  private triggerAddHaptic(): void {
+    Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {
+    });
   }
 
   private createAddGameForm(game?: Game): AddGameForm {

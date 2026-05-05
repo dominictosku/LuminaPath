@@ -2,6 +2,7 @@ import { Component, HostBinding, signal } from '@angular/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { initFlowbite } from 'flowbite';
 import { NavBarComponent } from './shared/components/navigation/nav-bar/nav-bar.component'
+import { ReleaseNotificationService } from './shared/services/release-notification.service';
 
 @Component({
     selector: 'app-root',
@@ -9,7 +10,7 @@ import { NavBarComponent } from './shared/components/navigation/nav-bar/nav-bar.
     imports: [IonApp, IonRouterOutlet, NavBarComponent]
 })
 export class AppComponent {
-  constructor() { }
+  constructor(private releaseNotifications: ReleaseNotificationService) { }
   title = 'web-app';
   darkMode = signal<boolean>(true);
 
@@ -17,5 +18,6 @@ export class AppComponent {
 
   ngOnInit(): void {
     initFlowbite();
+    this.releaseNotifications.init();
   }
 }
