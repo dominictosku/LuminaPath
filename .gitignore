@@ -372,3 +372,6 @@ nginx/certs
 
 # rider
 .idea
+
+# llm
+.claude
