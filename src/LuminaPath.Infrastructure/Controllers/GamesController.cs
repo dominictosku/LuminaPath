@@ -16,7 +16,7 @@ namespace LuminaPath.Infrastructure.Controllers
         public GamesController(GameService service, IObjectMapper mapper) : base(service, mapper)
         {
             _service = service;
-            Includes = new List<string>() { "Image" };
+            Includes = new List<string>() { "Image", "MyGames" };
         }
 
         [HttpGet]
