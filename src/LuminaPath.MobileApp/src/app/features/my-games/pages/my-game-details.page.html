@@ -1,78 +1,107 @@
 <ion-header class="details-header" [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-button fill="clear" aria-label="Back to library" (click)="goBack()">
+      <ion-button fill="clear" class="back-button" aria-label="Go back" (click)="goBack()">
         <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
-    <ion-title>{{ game?.name ?? 'Game' }}</ion-title>
+    <ion-title>{{ game?.name || 'Game details' }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true" class="details-shell">
-  <div class="details-loading" *ngIf="isLoading">
-    <ion-spinner></ion-spinner>
-  </div>
+  <section class="details-state" *ngIf="isLoading">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading game details...</p>
+  </section>
 
-  <div class="details-error" *ngIf="!isLoading && errorMessage">
+  <section class="details-state details-state--error" *ngIf="!isLoading && errorMessage">
     <ion-icon name="game-controller-outline"></ion-icon>
+    <h2>Something went wrong</h2>
     <p>{{ errorMessage }}</p>
-    <ion-button (click)="goBack()">Back to library</ion-button>
-  </div>
+    <ion-button shape="round" (click)="goBack()">Back</ion-button>
+  </section>
 
-  <main class="details-page" *ngIf="!isLoading && !errorMessage && game">
-    <section class="details-hero">
-      <img [src]="imageUrl()" [alt]="game.name" class="details-hero__image" />
-      <div class="details-hero__info">
+  <main class="details-page mt-8" *ngIf="!isLoading && !errorMessage && game">
+    <section class="hero-card">
+      <div class="cover-wrap">
+        <img [src]="imageUrl()" [alt]="game.name" class="cover" />
+        <ion-badge class="library-badge" [class.library-badge--owned]="isInLibrary">
+          <ion-icon name="library-outline"></ion-icon>
+          {{ libraryStatusLabel }}
+        </ion-badge>
+      </div>
+
+      <div class="hero-copy">
+        <span class="eyebrow">Game details</span>
         <h1>{{ game.name }}</h1>
-        <p class="details-hero__description" *ngIf="game.description">{{ game.description }}</p>
-        <div class="details-hero__meta">
-          <ion-badge color="primary">{{ statusLabel }}</ion-badge>
-          <span>
-            <ion-icon name="game-controller-outline"></ion-icon>
-            {{ platformLabel }}
-          </span>
-          <span>
-            <ion-icon name="calendar-clear-outline"></ion-icon>
-            {{ releaseLabel }}
-          </span>
-          <span>
-            <ion-icon name="hourglass-outline"></ion-icon>
-            {{ playtimeLabel }}
-          </span>
+        <p class="description" *ngIf="game.description">{{ game.description }}</p>
+
+        <div class="meta-grid">
+          <div class="meta-item">
+            <span>Status</span>
+            <strong>{{ statusLabel }}</strong>
+          </div>
+          <div class="meta-item">
+            <span>Platform</span>
+            <strong>{{ platformLabel }}</strong>
+          </div>
+          <div class="meta-item">
+            <span>Release</span>
+            <strong>{{ releaseLabel }}</strong>
+          </div>
+          <div class="meta-item">
+            <span>Playtime</span>
+            <strong>{{ playtimeLabel }}</strong>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="details-quests">
-      <header class="details-quests__header">
+    <section class="library-card" [class.library-card--owned]="isInLibrary">
+      <div>
+        <span class="eyebrow">
+          <ion-icon name="library-outline"></ion-icon>
+          Library
+        </span>
+        <h2>{{ isInLibrary ? 'This game is already in your library' : 'This game is not in your library yet' }}</h2>
+        <p>
+          {{ isInLibrary ? questSummaryLabel : 'Add it to your library first to track quests and progress here.' }}
+        </p>
+      </div>
+      <ion-badge>{{ statusLabel }}</ion-badge>
+    </section>
+
+    <section class="quest-panel">
+      <header class="section-header">
         <div>
           <span class="eyebrow">
             <ion-icon name="link-outline"></ion-icon>
             Linked quests
           </span>
           <h2>Game Quests</h2>
-          <p *ngIf="!isInLibrary">Add this game to your library to attach quests.</p>
         </div>
       </header>
 
       <ng-container *ngIf="isInLibrary; else notInLibrary">
-        <div class="details-quest-list" *ngIf="quests.length; else emptyQuests">
+        <div class="quest-list" *ngIf="quests.length; else emptyQuests">
           <article
             class="quest-card"
             *ngFor="let quest of quests; trackBy: trackByQuest"
             [class.quest-card--done]="quest.completed">
-            <button type="button" class="complete-button" (click)="toggleQuest(quest)">
+            <button type="button" class="icon-action icon-action--complete" (click)="toggleQuest(quest)">
               <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
             </button>
-            <div>
+
+            <div class="quest-body">
               <h3>{{ quest.title }}</h3>
               <p>
                 <ion-badge>{{ questTypeLabel(questTypeFor(quest)) }}</ion-badge>
-                <span class="quest-card-meta">{{ quest.completed ? 'Reward claimed' : 'Ready to complete' }}</span>
+                <span>{{ quest.completed ? 'Completed' : 'Ready to complete' }}</span>
               </p>
             </div>
-            <button type="button" class="delete-button" aria-label="Delete quest" (click)="deleteQuest(quest)">
+
+            <button type="button" class="icon-action" aria-label="Delete quest" (click)="deleteQuest(quest)">
               <ion-icon name="trash-outline"></ion-icon>
             </button>
           </article>
@@ -81,11 +110,12 @@
         <ng-template #emptyQuests>
           <div class="empty-state">
             <ion-icon name="link-outline"></ion-icon>
-            <span>No quests yet for {{ game.name }}.</span>
+            <strong>No quests yet</strong>
+            <span>Add your first quest for {{ game.name }}.</span>
           </div>
         </ng-template>
 
-        <div class="details-quest-input">
+        <div class="quest-input">
           <input
             type="text"
             placeholder="Add a quest for this game"
@@ -96,16 +126,17 @@
               {{ option.label }}
             </ion-select-option>
           </ion-select>
-          <ion-button fill="clear" aria-label="Add quest" (click)="addQuest()">
+          <ion-button shape="round" aria-label="Add quest" (click)="addQuest()">
             <ion-icon slot="icon-only" name="add-outline"></ion-icon>
           </ion-button>
         </div>
       </ng-container>
 
       <ng-template #notInLibrary>
-        <div class="empty-state">
+        <div class="empty-state empty-state--locked">
           <ion-icon name="game-controller-outline"></ion-icon>
-          <span>This game is not in your library yet.</span>
+          <strong>Quest tracking is locked</strong>
+          <span>This game needs to be in your library before quests can be attached.</span>
         </div>
       </ng-template>
     </section>
