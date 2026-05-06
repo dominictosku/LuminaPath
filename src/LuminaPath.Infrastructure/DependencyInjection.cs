@@ -160,6 +160,7 @@ namespace LuminaPath.Infrastructure
             services.AddScoped<MyGameService>();
             services.AddScoped<ExcelService>();
             services.AddScoped<QuestService>();
+            services.AddScoped<GamingSessionService>();
             services.AddScoped<DocumentService>();
             services.AddScoped<LuminaUserService>();
             services.AddTransient<PSNService>();

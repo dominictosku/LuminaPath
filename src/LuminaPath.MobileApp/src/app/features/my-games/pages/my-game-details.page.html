@@ -72,6 +72,41 @@
       <ion-badge>{{ statusLabel }}</ion-badge>
     </section>
 
+    <section class="quest-panel forecast-panel" *ngIf="forecast">
+      <header class="section-header">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="hourglass-outline"></ion-icon>
+            Completion forecast
+          </span>
+          <h2>How long until you finish</h2>
+        </div>
+        <ion-button fill="clear" size="small" (click)="goToPlanning()">Plan sessions</ion-button>
+      </header>
+
+      <ion-progress-bar [value]="forecastProgress()"></ion-progress-bar>
+      <p class="forecast-summary">{{ forecastSummary() }}</p>
+
+      <div class="forecast-metrics">
+        <div>
+          <span>Played</span>
+          <strong>{{ forecastHours(forecast.playedHours) }}</strong>
+        </div>
+        <div>
+          <span>Remaining</span>
+          <strong>{{ forecast.remainingHours == null ? '—' : forecastHours(forecast.remainingHours) }}</strong>
+        </div>
+        <div>
+          <span>Scheduled</span>
+          <strong>{{ forecastHours(forecast.scheduledHours) }}</strong>
+        </div>
+        <div>
+          <span>Per week</span>
+          <strong>{{ forecastHours(forecast.weeklyHours) }}</strong>
+        </div>
+      </div>
+    </section>
+
     <section class="quest-panel">
       <header class="section-header">
         <div>

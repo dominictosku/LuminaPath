@@ -30,6 +30,18 @@ namespace LuminaPath.Infrastructure
                 .WithMany(myGame => myGame.Quests)
                 .HasForeignKey(quest => quest.MyGameId)
                 .OnDelete(DeleteBehavior.SetNull);
+            modelBuilder.Entity<GamingSession>()
+                .HasOne(session => session.LuminaUser)
+                .WithMany()
+                .HasForeignKey(session => session.LuminaUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<GamingSession>()
+                .HasOne(session => session.MyGame)
+                .WithMany(myGame => myGame.GamingSessions)
+                .HasForeignKey(session => session.MyGameId)
+                .OnDelete(DeleteBehavior.SetNull);
+            modelBuilder.Entity<GamingSession>()
+                .HasIndex(session => new { session.LuminaUserId, session.ScheduledAt });
             modelBuilder.Entity<QuestProfile>()
                 .HasIndex(profile => profile.LuminaUserId)
                 .IsUnique();
@@ -159,5 +171,6 @@ namespace LuminaPath.Infrastructure
         public DbSet<QuestProfile> QuestProfiles { get; set; }
         public DbSet<QuestSkill> QuestSkills { get; set; }
         public DbSet<QuestSkillNode> QuestSkillNodes { get; set; }
+        public DbSet<GamingSession> GamingSessions { get; set; }
     }
 }

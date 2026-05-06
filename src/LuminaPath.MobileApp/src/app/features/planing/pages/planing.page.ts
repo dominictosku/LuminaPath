@@ -3,56 +3,46 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonBadge,
+  IonButton,
   IonContent,
   IonIcon,
   IonProgressBar,
-  IonRange,
   IonRefresher,
   IonRefresherContent,
-  IonSegment,
-  IonSegmentButton,
-  IonSkeletonText,
+  IonSelect,
+  IonSelectOption,
+  IonSpinner,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
+  addOutline,
   calendarClearOutline,
+  checkmarkCircle,
   checkmarkCircleOutline,
-  flameOutline,
   gameControllerOutline,
   hourglassOutline,
-  layersOutline,
   rocketOutline,
-  sparklesOutline,
   timeOutline,
+  trashOutline,
 } from 'ionicons/icons';
-import { Game, Platforms } from '../../games/models/games.model';
+import { firstValueFrom } from 'rxjs';
+
+import { Game } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
-import { mediaImageUrl } from 'src/app/shared/utils/media-url';
+import { GameForecast, GamingSession, GamingSessionService } from '../services/gaming-session.service';
 
-enum GameStatus {
-  OnHold = 0,
-  Planned = 1,
-  Playing = 2,
-  StoryComplete = 3,
-  Completed = 4,
-  MainGame = 5,
-}
-
-type PlanMode = 'week' | 'release' | 'backlog';
-
-type CalendarDay = {
-  label: number;
-  date: Date;
-  isToday: boolean;
-  isCurrentMonth: boolean;
-  releases: Game[];
+type DraftSession = {
+  myGameId: number | null;
+  scheduledDate: string;
+  scheduledTime: string;
+  durationMinutes: number;
+  notes: string;
 };
 
-type PlanMetric = {
+type DayBucket = {
+  key: string;
   label: string;
-  value: string;
-  detail: string;
-  icon: string;
+  sessions: GamingSession[];
 };
 
 @Component({
@@ -63,250 +53,260 @@ type PlanMetric = {
     CommonModule,
     FormsModule,
     IonBadge,
+    IonButton,
     IonContent,
     IonIcon,
     IonProgressBar,
-    IonRange,
     IonRefresher,
     IonRefresherContent,
-    IonSegment,
-    IonSegmentButton,
-    IonSkeletonText,
+    IonSelect,
+    IonSelectOption,
+    IonSpinner,
   ],
 })
 export class PlaningPage implements OnInit {
-  games: Game[] = [];
-  playingGames: Game[] = [];
-  backlogGames: Game[] = [];
-  upcomingReleases: Game[] = [];
-  calendarDays: CalendarDay[] = [];
-  metrics: PlanMetric[] = [];
-  mode: PlanMode = 'week';
-  weeklyHours = 10;
   isLoading = true;
   errorMessage = '';
-  monthLabel = '';
+  sessions: GamingSession[] = [];
+  buckets: DayBucket[] = [];
+  forecasts: GameForecast[] = [];
+  libraryGames: { myGameId: number; gameName: string; playtime: number | null }[] = [];
 
-  constructor(private gameService: GameService) {
+  draft: DraftSession = this.emptyDraft();
+
+  constructor(
+    private gameService: GameService,
+    private sessionService: GamingSessionService,
+  ) {
     addIcons({
+      addOutline,
       calendarClearOutline,
+      checkmarkCircle,
       checkmarkCircleOutline,
-      flameOutline,
       gameControllerOutline,
       hourglassOutline,
-      layersOutline,
       rocketOutline,
-      sparklesOutline,
       timeOutline,
+      trashOutline,
     });
   }
 
-  ngOnInit() {
-    this.loadPlan();
+  async ngOnInit(): Promise<void> {
+    await this.refresh();
   }
 
-  loadPlan(event?: CustomEvent) {
+  async refresh(event?: CustomEvent): Promise<void> {
     this.isLoading = !event;
     this.errorMessage = '';
 
-    this.gameService.getAll().subscribe({
-      next: (result) => {
-        this.games = result.data ?? [];
-        this.buildPlan();
-        this.isLoading = false;
-        this.completeRefresh(event);
-      },
-      error: () => {
-        this.games = [];
-        this.buildPlan();
-        this.errorMessage = 'Planning data could not be loaded.';
-        this.isLoading = false;
-        this.completeRefresh(event);
-      },
-    });
+    try {
+      const gamesResult = await firstValueFrom(this.gameService.getAll());
+      this.libraryGames = (gamesResult.data ?? [])
+        .filter((game): game is Game & { myGames: { id: number } } => !!game.myGames)
+        .map((game) => ({
+          myGameId: game.myGames!.id,
+          gameName: game.name,
+          playtime: game.playtime ?? null,
+        }))
+        .sort((a, b) => a.gameName.localeCompare(b.gameName));
+
+      const horizon = new Date();
+      horizon.setHours(0, 0, 0, 0);
+      const future = new Date(horizon);
+      future.setDate(horizon.getDate() + 60);
+
+      this.sessions = await firstValueFrom(
+        this.sessionService.list({ from: horizon, to: future }),
+      );
+      this.buckets = this.groupByDay(this.sessions);
+
+      const linkedIds = Array.from(
+        new Set(this.sessions.map((s) => s.myGameId).filter((id): id is number => id != null)),
+      );
+      this.forecasts = await Promise.all(
+        linkedIds.map((id) => firstValueFrom(this.sessionService.forecast(id))),
+      );
+    } catch {
+      this.errorMessage = 'Schedule could not be loaded.';
+    } finally {
+      this.isLoading = false;
+      const target = event?.target as HTMLIonRefresherElement | undefined;
+      target?.complete();
+    }
   }
 
-  updateWeeklyHours() {
-    this.buildMetrics();
+  async addSession(): Promise<void> {
+    const scheduledAt = this.combineDateTime(this.draft.scheduledDate, this.draft.scheduledTime);
+
+    if (!scheduledAt || this.draft.durationMinutes <= 0) {
+      this.errorMessage = 'Pick a date, time, and a duration.';
+      return;
+    }
+
+    try {
+      await firstValueFrom(
+        this.sessionService.create({
+          myGameId: this.draft.myGameId,
+          scheduledAt: scheduledAt.toISOString(),
+          durationMinutes: this.draft.durationMinutes,
+          completed: false,
+          notes: this.draft.notes || null,
+        }),
+      );
+      this.draft = this.emptyDraft();
+      this.errorMessage = '';
+      await this.refresh();
+    } catch (error) {
+      this.errorMessage = this.errorTextFrom(error) ?? 'Session could not be saved.';
+    }
   }
 
-  imageFor(game: Game): string {
-    return mediaImageUrl(game.image);
+  async toggleComplete(session: GamingSession): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.sessionService.update(session.id, {
+          id: session.id,
+          myGameId: session.myGameId,
+          scheduledAt: session.scheduledAt,
+          durationMinutes: session.durationMinutes,
+          completed: !session.completed,
+          notes: session.notes,
+        }),
+      );
+      await this.refresh();
+    } catch {
+      this.errorMessage = 'Could not update session.';
+    }
   }
 
-  platformLabel(value: number | null | undefined): string {
-    return Platforms.find((platform) => platform.value === Number(value))?.label ?? 'Unknown';
+  async removeSession(session: GamingSession): Promise<void> {
+    try {
+      await firstValueFrom(this.sessionService.remove(session.id));
+      await this.refresh();
+    } catch {
+      this.errorMessage = 'Could not delete session.';
+    }
   }
 
-  statusLabel(game: Game): string {
-    const labels: Record<number, string> = {
-      [GameStatus.OnHold]: 'On hold',
-      [GameStatus.Planned]: 'Planned',
-      [GameStatus.Playing]: 'Playing',
-      [GameStatus.StoryComplete]: 'Story complete',
-      [GameStatus.Completed]: 'Completed',
-      [GameStatus.MainGame]: 'Main game',
+  formatDuration(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (hours === 0) return `${remainingMinutes}m`;
+    return remainingMinutes === 0 ? `${hours}h` : `${hours}h ${remainingMinutes}m`;
+  }
+
+  formatTime(isoString: string): string {
+    const date = new Date(isoString);
+    return new Intl.DateTimeFormat('en', { hour: 'numeric', minute: '2-digit' }).format(date);
+  }
+
+  formatDate(isoString: string): string {
+    return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(isoString));
+  }
+
+  formatHours(value: number): string {
+    return `${Math.round(value * 10) / 10}h`;
+  }
+
+  trackBySession(_: number, session: GamingSession): number {
+    return session.id;
+  }
+
+  trackByForecast(_: number, forecast: GameForecast): number {
+    return forecast.myGameId;
+  }
+
+  trackByBucket(_: number, bucket: DayBucket): string {
+    return bucket.key;
+  }
+
+  trackByLibrary(_: number, game: { myGameId: number }): number {
+    return game.myGameId;
+  }
+
+  forecastSummary(forecast: GameForecast): string {
+    if (forecast.remainingHours == null) {
+      return 'No playtime estimate yet';
+    }
+
+    if (forecast.remainingHours <= 0) {
+      return 'Already past the estimated playtime';
+    }
+
+    if (forecast.projectedCompletionDate) {
+      const sessions = forecast.sessionsToCompletion ?? 0;
+      return `${sessions} session${sessions === 1 ? '' : 's'} to finish · ETA ${this.formatDate(forecast.projectedCompletionDate)}`;
+    }
+
+    if (forecast.weeksAtCurrentPace != null) {
+      return `Need ${this.formatHours(forecast.additionalHoursNeeded)} more · ~${forecast.weeksAtCurrentPace} weeks at ${this.formatHours(forecast.weeklyHours)}/week`;
+    }
+
+    return `Need ${this.formatHours(forecast.additionalHoursNeeded)} more — schedule sessions to project an ETA`;
+  }
+
+  forecastProgress(forecast: GameForecast): number {
+    if (!forecast.playtimeEstimateHours || forecast.playtimeEstimateHours <= 0) {
+      return 0;
+    }
+    return Math.min(1, forecast.playedHours / forecast.playtimeEstimateHours);
+  }
+
+  private emptyDraft(): DraftSession {
+    return {
+      myGameId: null,
+      scheduledDate: this.todayIso(),
+      scheduledTime: '20:00',
+      durationMinutes: 90,
+      notes: '',
     };
-
-    return labels[this.statusOf(game)] ?? 'Catalog';
   }
 
-  releaseLabel(game: Game): string {
-    const date = this.releaseDateOf(game);
-
-    if (Number.isNaN(date.getTime())) {
-      return 'No date';
-    }
-
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
-  }
-
-  remainingLabel(game: Game): string {
-    return `${Math.round(this.remainingOf(game))}h left`;
-  }
-
-  progressOf(game: Game): number {
-    const estimated = Number(game.playtime) || 0;
-
-    if (estimated <= 0) {
-      return this.statusOf(game) === GameStatus.Completed ? 1 : 0;
-    }
-
-    return Math.min(1, this.playedOf(game) / estimated);
-  }
-
-  weeksFor(game: Game): number {
-    return Math.max(1, Math.ceil(this.remainingOf(game) / Math.max(1, this.weeklyHours)));
-  }
-
-  trackByGameId(_: number, game: Game): number {
-    return game.id;
-  }
-
-  trackByDay(_: number, day: CalendarDay): string {
-    return day.date.toISOString();
-  }
-
-  private buildPlan() {
-    this.playingGames = this.games
-      .filter((game) => this.statusOf(game) === GameStatus.Playing)
-      .sort((a, b) => this.remainingOf(a) - this.remainingOf(b))
-      .slice(0, 5);
-
-    this.backlogGames = this.games
-      .filter((game) => {
-        const status = this.statusOf(game);
-        return !!game.myGames && (status === GameStatus.Planned || status === GameStatus.MainGame || status === GameStatus.OnHold);
-      })
-      .sort((a, b) => this.remainingOf(b) - this.remainingOf(a))
-      .slice(0, 8);
-
-    const today = this.startOfToday();
-    this.upcomingReleases = this.games
-      .filter((game) => this.releaseDateOf(game) >= today)
-      .sort((a, b) => this.releaseDateOf(a).getTime() - this.releaseDateOf(b).getTime())
-      .slice(0, 8);
-
-    this.calendarDays = this.buildCalendarDays();
-    this.buildMetrics();
-  }
-
-  private buildMetrics() {
-    const remainingHours = Math.round(
-      this.games
-        .filter((game) => !!game.myGames)
-        .reduce((sum, game) => sum + this.remainingOf(game), 0)
-    );
-    const weeksToClear = Math.ceil(remainingHours / Math.max(1, this.weeklyHours));
-    const completed = this.games.filter((game) => this.statusOf(game) === GameStatus.Completed).length;
-
-    this.metrics = [
-      {
-        label: 'Capacity',
-        value: `${this.weeklyHours}h`,
-        detail: 'available per week',
-        icon: 'time-outline',
-      },
-      {
-        label: 'Backlog',
-        value: `${remainingHours}h`,
-        detail: `${weeksToClear} weeks at this pace`,
-        icon: 'hourglass-outline',
-      },
-      {
-        label: 'Active',
-        value: String(this.playingGames.length),
-        detail: 'games in progress',
-        icon: 'game-controller-outline',
-      },
-      {
-        label: 'Done',
-        value: String(completed),
-        detail: 'completed games',
-        icon: 'checkmark-circle-outline',
-      },
-    ];
-  }
-
-  private buildCalendarDays(): CalendarDay[] {
-    const today = this.startOfToday();
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const calendarStart = new Date(monthStart);
-    calendarStart.setDate(monthStart.getDate() - monthStart.getDay());
-
-    this.monthLabel = new Intl.DateTimeFormat('en', {
-      month: 'long',
-      year: 'numeric',
-    }).format(today);
-
-    return Array.from({ length: 42 }, (_, index) => {
-      const date = new Date(calendarStart);
-      date.setDate(calendarStart.getDate() + index);
-
-      return {
-        label: date.getDate(),
-        date,
-        isToday: date.toDateString() === today.toDateString(),
-        isCurrentMonth: date.getMonth() === today.getMonth(),
-        releases: this.games.filter((game) => this.sameDay(this.releaseDateOf(game), date)).slice(0, 3),
-      };
-    });
-  }
-
-  private playedOf(game: Game): number {
-    const manual = Number(game.myGames?.timeSpend) || 0;
-    const tracked = Number(game.myGames?.myGameInfo?.trackedHours) || 0;
-    return manual + tracked;
-  }
-
-  private remainingOf(game: Game): number {
-    return Math.max(0, (Number(game.playtime) || 0) - this.playedOf(game));
-  }
-
-  private statusOf(game: Game): number {
-    return Number(game.myGames?.status ?? -1);
-  }
-
-  private releaseDateOf(game: Game): Date {
-    return game.releaseDate ? new Date(game.releaseDate) : new Date(Number.NaN);
-  }
-
-  private sameDay(a: Date, b: Date): boolean {
-    return !Number.isNaN(a.getTime()) && a.toDateString() === b.toDateString();
-  }
-
-  private startOfToday(): Date {
+  private todayIso(): string {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return today;
+    return today.toISOString().slice(0, 10);
   }
 
-  private completeRefresh(event?: CustomEvent) {
-    const target = event?.target as HTMLIonRefresherElement | undefined;
-    target?.complete();
+  private combineDateTime(dateString: string, timeString: string): Date | null {
+    if (!dateString || !timeString) return null;
+    const [year, month, day] = dateString.split('-').map(Number);
+    const [hours, minutes] = timeString.split(':').map(Number);
+    if ([year, month, day, hours, minutes].some((v) => Number.isNaN(v))) return null;
+    return new Date(year, month - 1, day, hours, minutes, 0, 0);
+  }
+
+  private groupByDay(sessions: GamingSession[]): DayBucket[] {
+    const map = new Map<string, DayBucket>();
+
+    for (const session of sessions) {
+      const date = new Date(session.scheduledAt);
+      const key = date.toISOString().slice(0, 10);
+      let bucket = map.get(key);
+      if (!bucket) {
+        bucket = {
+          key,
+          label: new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric' }).format(date),
+          sessions: [],
+        };
+        map.set(key, bucket);
+      }
+      bucket.sessions.push(session);
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key));
+  }
+
+  private errorTextFrom(error: unknown): string | null {
+    const payload = (error as { error?: unknown })?.error;
+    if (typeof payload === 'string') return payload;
+    if (payload && typeof payload === 'object' && 'message' in payload) {
+      return String((payload as { message: unknown }).message);
+    }
+    if (payload && typeof payload === 'object' && 'errorMessage' in payload) {
+      const errorMessage = (payload as { errorMessage: unknown }).errorMessage;
+      return Array.isArray(errorMessage) ? errorMessage.join(' ') : String(errorMessage);
+    }
+    return null;
   }
 }

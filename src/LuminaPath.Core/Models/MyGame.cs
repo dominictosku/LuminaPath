@@ -20,5 +20,6 @@ namespace LuminaPath.Core.Models
         public Game? Game { get; set; }
         public MyGameInfo? MyGameInfo { get; set; }
         public List<Quest>? Quests { get; set; }
+        public List<GamingSession>? GamingSessions { get; set; }
     }
 }

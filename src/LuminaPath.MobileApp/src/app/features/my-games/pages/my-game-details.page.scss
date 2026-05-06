@@ -221,6 +221,45 @@
   padding: 18px;
 }
 
+.forecast-summary {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.forecast-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+
+  div {
+    padding: 8px 10px;
+    border: 1px solid rgba(137, 180, 255, 0.14);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    text-align: center;
+  }
+
+  span {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  strong {
+    display: block;
+    margin-top: 2px;
+    color: var(--text);
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 540px) {
+  .forecast-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .section-header h2 {
   margin: 4px 0 0;
   font-size: 22px;

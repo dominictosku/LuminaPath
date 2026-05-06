@@ -9,6 +9,7 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
+  IonProgressBar,
   IonSelect,
   IonSelectOption,
   IonSpinner,
@@ -33,6 +34,7 @@ import { firstValueFrom } from 'rxjs';
 import { GameService } from 'src/app/features/games/services/game.service';
 import { Game, Platforms } from 'src/app/features/games/models/games.model';
 import { Quest, QuestBoardService, QuestType } from 'src/app/features/quests/services/quest-board.service';
+import { GameForecast, GamingSessionService } from 'src/app/features/planing/services/gaming-session.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 
 const STATUS_LABELS: Record<number, string> = {
@@ -61,6 +63,7 @@ type GameWithFlexibleLibrary = Game & {
     IonContent,
     IonHeader,
     IonIcon,
+    IonProgressBar,
     IonSelect,
     IonSelectOption,
     IonSpinner,
@@ -71,6 +74,7 @@ type GameWithFlexibleLibrary = Game & {
 export class MyGameDetailsPage implements OnInit {
   game: GameWithFlexibleLibrary | null = null;
   quests: Quest[] = [];
+  forecast: GameForecast | null = null;
   isLoading = true;
   errorMessage = '';
 
@@ -89,6 +93,7 @@ export class MyGameDetailsPage implements OnInit {
     private readonly location: Location,
     private readonly gameService: GameService,
     private readonly questBoardService: QuestBoardService,
+    private readonly sessionService: GamingSessionService,
   ) {
     addIcons({
       addOutline,
@@ -271,7 +276,50 @@ export class MyGameDetailsPage implements OnInit {
 
   private async refreshQuests(): Promise<void> {
     const myGameId = this.myGameId;
-    this.quests = myGameId == null ? [] : await this.questBoardService.getQuestsForGame(myGameId);
+    if (myGameId == null) {
+      this.quests = [];
+      this.forecast = null;
+      return;
+    }
+
+    const [quests, forecast] = await Promise.all([
+      this.questBoardService.getQuestsForGame(myGameId),
+      firstValueFrom(this.sessionService.forecast(myGameId)).catch(() => null),
+    ]);
+    this.quests = quests;
+    this.forecast = forecast;
+  }
+
+  forecastSummary(): string {
+    if (!this.forecast) return '';
+    if (this.forecast.remainingHours == null) {
+      return 'Add a playtime estimate to see a forecast.';
+    }
+    if (this.forecast.remainingHours <= 0) {
+      return 'You are already past the estimated playtime.';
+    }
+    if (this.forecast.projectedCompletionDate) {
+      const sessions = this.forecast.sessionsToCompletion ?? 0;
+      const date = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(this.forecast.projectedCompletionDate));
+      return `${sessions} session${sessions === 1 ? '' : 's'} to finish · ETA ${date}`;
+    }
+    if (this.forecast.weeksAtCurrentPace != null) {
+      return `Need ${this.forecastHours(this.forecast.additionalHoursNeeded)} more · ~${this.forecast.weeksAtCurrentPace} weeks at ${this.forecastHours(this.forecast.weeklyHours)}/week`;
+    }
+    return `Need ${this.forecastHours(this.forecast.additionalHoursNeeded)} more — schedule sessions to project an ETA.`;
+  }
+
+  forecastHours(value: number): string {
+    return `${Math.round(value * 10) / 10}h`;
+  }
+
+  forecastProgress(): number {
+    if (!this.forecast?.playtimeEstimateHours || this.forecast.playtimeEstimateHours <= 0) return 0;
+    return Math.min(1, this.forecast.playedHours / this.forecast.playtimeEstimateHours);
+  }
+
+  goToPlanning(): void {
+    void this.router.navigateByUrl('/planing');
   }
 
   private showError(message: string): void {
