@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { SkillTreeBranch, SkillTreeNode, SkillTreeNodeStatus, SkillTreePickedNode } from '../models/skill-tree.model';
 
-const SKILL_SPACING = 60;
+const SKILL_SPACING = 22;
 const NODE_RADIUS = 0.28;
 const CAPSTONE_RADIUS = 0.42;
 
@@ -27,6 +27,10 @@ type SceneListeners = {
   hoverSound: (() => void)[];
 };
 
+function easeInOutCubic(x: number): number {
+  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+}
+
 export class SkillTreeScene {
   private renderer: any;
   private scene: any;
@@ -42,7 +46,7 @@ export class SkillTreeScene {
   private camFromX = 0;
   private camToX = 0;
   private cameraTargetY = 5;
-  private cameraTargetZ = 18;
+  private cameraTargetZ = 26;
   private cameraDriftX = 0;
   private cameraDriftY = 0;
   private hoveredNode: SkillTreePickedNode | null = null;
@@ -68,11 +72,11 @@ export class SkillTreeScene {
     this.renderer.setClearColor(0x06101f, 1);
 
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0x06101f, 0.012);
+    this.scene.fog = new THREE.FogExp2(0x06101f, 0.018);
 
     const aspect = (canvas.clientWidth || window.innerWidth) / (canvas.clientHeight || window.innerHeight);
     this.camera = new THREE.PerspectiveCamera(55, aspect, 0.1, 800);
-    this.camera.position.set(0, 5, 18);
+    this.camera.position.set(0, 5, 26);
     this.camera.lookAt(0, 5, 0);
 
     this.raycaster = new THREE.Raycaster();
@@ -327,7 +331,7 @@ export class SkillTreeScene {
         `,
       });
       const mesh = new THREE.Mesh(planeGeo, mat);
-      mesh.position.set(i * SKILL_SPACING, 5, -28);
+      mesh.position.set(i * SKILL_SPACING, 5, -34);
       mesh.userData['shaderMat'] = mat;
       group.add(mesh);
     });
@@ -571,11 +575,11 @@ export class SkillTreeScene {
     if (this.nebula) this.nebula.children.forEach((p: any) => p.userData['shaderMat'].uniforms.uTime.value = t);
 
     if (this.camTransitionT < 1) {
-      this.camTransitionT = Math.min(1, this.camTransitionT + dt / 1.1);
-      const e = 1 - Math.pow(1 - this.camTransitionT, 3);
+      this.camTransitionT = Math.min(1, this.camTransitionT + dt / 1.6);
+      const e = easeInOutCubic(this.camTransitionT);
       const baseX = this.camFromX + (this.camToX - this.camFromX) * e;
-      const dollyBack = Math.sin(this.camTransitionT * Math.PI) * 7;
-      this.camera.position.z = 18 + dollyBack;
+      const dollyBack = Math.sin(this.camTransitionT * Math.PI) * 1.8;
+      this.camera.position.z = this.cameraTargetZ + dollyBack;
       this.camera.position.x = baseX + this.cameraDriftX * 1.5;
       this.camera.position.y = this.cameraTargetY + this.cameraDriftY;
       if (this.camTransitionT >= 1) this.currentSkillIdx = this.targetSkillIdx;
@@ -587,7 +591,9 @@ export class SkillTreeScene {
       this.camera.position.y += (targetY - this.camera.position.y) * 0.06;
       this.camera.position.z += (targetZ - this.camera.position.z) * 0.06;
     }
-    this.camera.lookAt(this.currentSkillIdx * SKILL_SPACING, 5, 0);
+    // Look-at follows the camera's own X so the pan feels continuous instead of
+    // pivoting around the destination constellation.
+    this.camera.lookAt(this.camera.position.x - this.cameraDriftX * 1.5, 5, 0);
 
     this.constellations.forEach((c, idx) => {
       const isActive = idx === this.currentSkillIdx;
