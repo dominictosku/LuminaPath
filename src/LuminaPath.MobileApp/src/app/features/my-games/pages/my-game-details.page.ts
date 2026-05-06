@@ -198,7 +198,7 @@ export class MyGameDetailsPage implements OnInit {
     board.quests[this.newQuestType] = [
       ...board.quests[this.newQuestType],
       {
-        id: Date.now(),
+        id: 0,
         title,
         completed: false,
         createdAt: new Date().toISOString(),
