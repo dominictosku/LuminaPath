@@ -1,0 +1,170 @@
+<ion-content [fullscreen]="true" class="skill-tree-shell">
+  <canvas #canvas class="skill-tree-canvas"></canvas>
+
+  <div class="loader" *ngIf="loading">Aligning the heavens…</div>
+
+  <header class="hud-top">
+    <button type="button" class="icon-btn" (click)="goBack()" aria-label="Back">
+      <ion-icon name="arrow-back-outline"></ion-icon>
+    </button>
+
+    <div class="brand">
+      <div class="brand-mark">Astrolabe</div>
+      <div class="brand-sub">A path of becoming</div>
+    </div>
+
+    <div class="player">
+      <div class="player-level"><b>{{ level }}</b><span>Level</span></div>
+      <div class="xp-stack">
+        <div class="xp-bar"><div class="xp-fill" [style.width.%]="xpProgress * 100"></div></div>
+        <div class="xp-text">{{ xpInLevel }} / {{ 200 }} XP · {{ totalXp }} TOTAL</div>
+      </div>
+      <button type="button" class="icon-btn" [class.muted]="muted" (click)="toggleMute()" [attr.aria-label]="muted ? 'Unmute' : 'Mute'">
+        <ion-icon [name]="muted ? 'volume-mute-outline' : 'musical-notes-outline'"></ion-icon>
+      </button>
+      <button type="button" class="icon-btn" (click)="resetProgress()" aria-label="Reset progress">
+        <ion-icon name="refresh-outline"></ion-icon>
+      </button>
+    </div>
+  </header>
+
+  <div class="skill-indicator">
+    <h1 class="skill-name">{{ currentBranch.name }}</h1>
+    <div class="skill-sub">{{ currentBranch.subtitle }} · {{ unlockedInBranch }}/{{ currentBranch.nodes.length }} unlocked</div>
+    <div class="skill-dots">
+      <button
+        type="button"
+        *ngFor="let b of branches; let i = index; trackBy: trackByBranch"
+        class="skill-dot"
+        [class.active]="i === branchIdx"
+        [title]="b.subtitle"
+        (click)="goToBranch(i)"></button>
+    </div>
+  </div>
+
+  <button type="button" class="swipe-hint left" (click)="shiftBranch(-1)" aria-label="Previous skill">
+    <span class="arrow">‹</span>
+    <span>{{ prevBranch.subtitle }}</span>
+  </button>
+  <button type="button" class="swipe-hint right" (click)="shiftBranch(1)" aria-label="Next skill">
+    <span class="arrow">›</span>
+    <span>{{ nextBranch.subtitle }}</span>
+  </button>
+
+  <aside class="todo-panel">
+    <div class="todo-head">
+      <h3>Quests</h3>
+      <span class="todo-count">{{ openQuestCount }} OPEN</span>
+    </div>
+    <ul class="todo-list">
+      <li
+        *ngFor="let quest of branchQuests; trackBy: trackByQuest"
+        class="todo-item"
+        [class.done]="quest.done"
+        (click)="toggleQuest(quest)">
+        <span class="todo-check"></span>
+        <div class="todo-body">
+          <div class="todo-text">{{ quest.text }}</div>
+          <div class="todo-meta">
+            <span class="todo-skill highlighted">{{ currentBranch.subtitle }}</span>
+            <span class="todo-xp">+{{ quest.xp }} XP</span>
+          </div>
+        </div>
+      </li>
+
+      <li *ngIf="branchQuests.length && otherQuests.length" class="todo-divider">Other paths</li>
+
+      <li
+        *ngFor="let quest of otherQuests; trackBy: trackByQuest"
+        class="todo-item"
+        [class.done]="quest.done"
+        (click)="toggleQuest(quest)">
+        <span class="todo-check"></span>
+        <div class="todo-body">
+          <div class="todo-text">{{ quest.text }}</div>
+          <div class="todo-meta">
+            <span class="todo-skill">{{ branchSubtitle(quest.branchId) }}</span>
+            <span class="todo-xp">+{{ quest.xp }} XP</span>
+          </div>
+        </div>
+      </li>
+    </ul>
+    <form class="todo-add" (submit)="$event.preventDefault(); addQuest()">
+      <input
+        type="text"
+        [(ngModel)]="newQuestText"
+        name="newQuestText"
+        placeholder="Add a quest…" />
+      <select [(ngModel)]="newQuestBranchId" name="newQuestBranchId">
+        <option *ngFor="let b of branches; trackBy: trackByBranch" [value]="b.id">{{ b.subtitle }}</option>
+      </select>
+    </form>
+  </aside>
+
+  <aside class="detail-panel" [class.open]="!!detailNode" *ngIf="detailNode as node">
+    <div class="detail-head">
+      <div class="detail-eyebrow">{{ currentBranch.subtitle }} · Perk</div>
+      <h2 class="detail-title">{{ node.name }}</h2>
+      <button type="button" class="detail-close" (click)="closeDetail()" aria-label="Close" *ngIf="!detailIsHoverOnly">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+    </div>
+    <div class="detail-body">
+      <p class="detail-desc">"{{ node.description }}"</p>
+      <div class="detail-meta">
+        <div class="meta-row" [attr.data-status]="detailStatus">
+          <span>Status</span>
+          <span *ngIf="detailStatus === 'unlocked'"><ion-icon name="star-outline"></ion-icon> Unlocked</span>
+          <span *ngIf="detailStatus === 'available'"><ion-icon name="sparkles-outline"></ion-icon> Available</span>
+          <span *ngIf="detailStatus === 'locked'"><ion-icon name="lock-closed-outline"></ion-icon> Locked</span>
+        </div>
+        <div class="meta-row">
+          <span>XP Value</span>
+          <span>{{ node.xp }}</span>
+        </div>
+        <div class="meta-row capstone" *ngIf="node.capstone">
+          <span>Tier</span>
+          <span><ion-icon name="sparkles"></ion-icon> Capstone</span>
+        </div>
+      </div>
+
+      <ng-container *ngIf="node.prereqIds.length">
+        <div class="detail-eyebrow detail-eyebrow--small">Requires</div>
+        <div class="detail-prereqs">
+          <span
+            *ngFor="let p of prereqInfo(node); trackBy: trackByPrereq"
+            class="prereq-chip"
+            [class.met]="p.met">{{ p.name }}</span>
+        </div>
+      </ng-container>
+
+      <button
+        type="button"
+        class="unlock-btn"
+        [class.unlocked]="detailStatus === 'unlocked'"
+        [disabled]="detailStatus !== 'available' || detailIsHoverOnly"
+        (click)="!detailIsHoverOnly && unlockNode(node)">
+        <ng-container [ngSwitch]="detailStatus">
+          <span *ngSwitchCase="'unlocked'"><ion-icon name="star-outline"></ion-icon> Unlocked</span>
+          <span *ngSwitchCase="'available'">Unlock Perk</span>
+          <span *ngSwitchDefault>Locked</span>
+        </ng-container>
+      </button>
+    </div>
+  </aside>
+
+  <div class="bottom-hint">
+    <span><kbd>←</kbd><kbd>→</kbd> Switch path</span>
+    <span><kbd>Click</kbd> Inspect node</span>
+    <span><kbd>M</kbd> Mute</span>
+  </div>
+
+  <div class="toast-host">
+    <div *ngIf="toast" class="toast" [attr.data-kind]="toast.kind">
+      <div class="toast-eyebrow">
+        {{ toast.kind === 'unlock' ? 'Perk Unlocked' : (toast.sub || 'Progress') }}
+      </div>
+      <div class="toast-title">{{ toast.title }}</div>
+    </div>
+  </div>
+</ion-content>

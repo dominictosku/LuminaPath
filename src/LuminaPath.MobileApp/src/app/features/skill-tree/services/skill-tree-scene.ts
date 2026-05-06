@@ -1,0 +1,626 @@
+import * as THREE from 'three';
+import { SkillTreeBranch, SkillTreeNode, SkillTreeNodeStatus, SkillTreePickedNode } from '../models/skill-tree.model';
+
+const SKILL_SPACING = 60;
+const NODE_RADIUS = 0.28;
+const CAPSTONE_RADIUS = 0.42;
+
+type NodeMeshes = {
+  core: any;
+  glow: any;
+  ring: any;
+  node: SkillTreeNode;
+  status?: SkillTreeNodeStatus;
+};
+
+type Constellation = {
+  branch: SkillTreeBranch;
+  group: any;
+  nodeMeshes: Map<string, NodeMeshes>;
+  lineMeshes: any[];
+};
+
+type SceneListeners = {
+  hover: ((picked: SkillTreePickedNode | null) => void)[];
+  click: ((picked: SkillTreePickedNode) => void)[];
+  whoosh: (() => void)[];
+  hoverSound: (() => void)[];
+};
+
+export class SkillTreeScene {
+  private renderer: any;
+  private scene: any;
+  private camera: any;
+  private raycaster: any;
+  private mouse: any;
+  private starField: any;
+  private nebula: any;
+  private constellations: Constellation[] = [];
+  private currentSkillIdx = 0;
+  private targetSkillIdx = 0;
+  private camTransitionT = 1;
+  private camFromX = 0;
+  private camToX = 0;
+  private cameraTargetY = 5;
+  private cameraTargetZ = 18;
+  private cameraDriftX = 0;
+  private cameraDriftY = 0;
+  private hoveredNode: SkillTreePickedNode | null = null;
+  private listeners: SceneListeners = { hover: [], click: [], whoosh: [], hoverSound: [] };
+  private unlockedIds = new Set<string>();
+  private animations: { update(): boolean }[] = [];
+  private glowTexture: any = null;
+  private canvas!: HTMLCanvasElement;
+  private rafId: number | null = null;
+  private lastTime = 0;
+  private resizeHandler = () => this.onResize();
+  private mouseMoveHandler = (e: MouseEvent) => this.onMouseMove(e);
+  private clickHandler = () => this.onClick();
+  private destroyed = false;
+
+  init(canvas: HTMLCanvasElement, branches: SkillTreeBranch[], initialUnlocked: string[]): void {
+    this.canvas = canvas;
+    this.unlockedIds = new Set(initialUnlocked);
+
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setSize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight);
+    this.renderer.setClearColor(0x06101f, 1);
+
+    this.scene = new THREE.Scene();
+    this.scene.fog = new THREE.FogExp2(0x06101f, 0.012);
+
+    const aspect = (canvas.clientWidth || window.innerWidth) / (canvas.clientHeight || window.innerHeight);
+    this.camera = new THREE.PerspectiveCamera(55, aspect, 0.1, 800);
+    this.camera.position.set(0, 5, 18);
+    this.camera.lookAt(0, 5, 0);
+
+    this.raycaster = new THREE.Raycaster();
+    this.raycaster.params.Points = { threshold: 0.4 };
+    this.mouse = new THREE.Vector2(-10, -10);
+
+    this.buildStarfield();
+    this.buildNebula(branches);
+    this.buildConstellations(branches);
+
+    window.addEventListener('resize', this.resizeHandler);
+    canvas.addEventListener('mousemove', this.mouseMoveHandler);
+    canvas.addEventListener('click', this.clickHandler);
+
+    this.lastTime = performance.now();
+    this.rafId = requestAnimationFrame(now => this.animate(now));
+  }
+
+  destroy(): void {
+    this.destroyed = true;
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    window.removeEventListener('resize', this.resizeHandler);
+    if (this.canvas) {
+      this.canvas.removeEventListener('mousemove', this.mouseMoveHandler);
+      this.canvas.removeEventListener('click', this.clickHandler);
+    }
+    this.listeners = { hover: [], click: [], whoosh: [], hoverSound: [] };
+    if (this.renderer) {
+      this.renderer.dispose?.();
+    }
+    this.constellations = [];
+  }
+
+  on(evt: 'hover' | 'click' | 'whoosh' | 'hoverSound', fn: any): void {
+    this.listeners[evt].push(fn);
+  }
+
+  goToSkill(idx: number, branchCount: number): void {
+    idx = Math.max(0, Math.min(branchCount - 1, idx));
+    if (idx === this.targetSkillIdx) return;
+    this.targetSkillIdx = idx;
+    this.camFromX = this.camera.position.x;
+    this.camToX = idx * SKILL_SPACING;
+    this.camTransitionT = 0;
+    this.listeners.whoosh.forEach(fn => fn());
+  }
+
+  unlockNode(branchId: string, nodeId: string): void {
+    const skillIdx = this.constellations.findIndex(c => c.branch.id === branchId);
+    if (skillIdx < 0) return;
+    const c = this.constellations[skillIdx];
+    const m = c.nodeMeshes.get(nodeId);
+    if (!m) return;
+
+    this.unlockedIds.add(nodeId);
+
+    const t0 = performance.now();
+    const dur = 1600;
+    const baseGlowSize = m.glow.userData.baseSize;
+    const startCol = m.core.material.color.clone();
+    const endCol = m.core.userData.baseColor.clone();
+
+    const ringGeo = new THREE.RingGeometry(0.3, 0.34, 64);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: m.core.userData.baseColor.clone(),
+      transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const shock = new THREE.Mesh(ringGeo, ringMat);
+    shock.position.copy(m.core.position);
+    shock.lookAt(this.camera.position);
+    c.group.add(shock);
+
+    const partCount = 24;
+    const partGeo = new THREE.BufferGeometry();
+    const partPos = new Float32Array(partCount * 3);
+    const partVel: [number, number, number][] = [];
+    for (let i = 0; i < partCount; i++) {
+      partPos[i * 3] = m.core.position.x;
+      partPos[i * 3 + 1] = m.core.position.y;
+      partPos[i * 3 + 2] = m.core.position.z;
+      const phi = Math.random() * Math.PI * 2;
+      const theta = Math.acos(Math.random() * 2 - 1);
+      const speed = 0.9 + Math.random() * 0.6;
+      partVel.push([
+        Math.sin(theta) * Math.cos(phi) * speed,
+        Math.sin(theta) * Math.sin(phi) * speed,
+        Math.cos(theta) * speed,
+      ]);
+    }
+    partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+    const partMat = new THREE.PointsMaterial({
+      color: m.core.userData.baseColor.clone(),
+      size: 4,
+      sizeAttenuation: false,
+      transparent: true,
+      opacity: 1,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      map: this.getGlowTexture(),
+    });
+    const points = new THREE.Points(partGeo, partMat);
+    c.group.add(points);
+
+    this.animations.push({
+      update: () => {
+        const t = (performance.now() - t0) / dur;
+        if (t >= 1) {
+          c.group.remove(shock); shock.geometry.dispose(); shock.material.dispose();
+          c.group.remove(points); points.geometry.dispose(); points.material.dispose();
+          this.refreshSkillVisuals(skillIdx);
+          this.drawLinesFrom(skillIdx, nodeId);
+          return true;
+        }
+        const eIn = 1 - Math.pow(1 - t, 3);
+        shock.scale.setScalar(1 + eIn * 14);
+        shock.material.opacity = 0.9 * (1 - t);
+        const pos = points.geometry.attributes['position'].array;
+        for (let i = 0; i < partCount; i++) {
+          pos[i * 3] = m.core.position.x + partVel[i][0] * eIn * 3;
+          pos[i * 3 + 1] = m.core.position.y + partVel[i][1] * eIn * 3;
+          pos[i * 3 + 2] = m.core.position.z + partVel[i][2] * eIn * 3;
+        }
+        points.geometry.attributes['position'].needsUpdate = true;
+        points.material.opacity = 1 - t;
+        const pulse = 1 + Math.sin(t * Math.PI) * 0.6;
+        m.core.scale.setScalar(pulse);
+        m.glow.scale.setScalar(baseGlowSize * (1 + Math.sin(t * Math.PI) * 0.6));
+        m.core.material.color.copy(startCol).lerp(endCol, eIn);
+        m.glow.material.opacity = 0.4 + Math.sin(t * Math.PI) * 0.6;
+        return false;
+      },
+    });
+  }
+
+  setUnlocked(ids: string[]): void {
+    this.unlockedIds = new Set(ids);
+    this.constellations.forEach((_, idx) => this.refreshSkillVisuals(idx));
+  }
+
+  getCurrentSkillIdx(): number {
+    return this.targetSkillIdx;
+  }
+
+  private buildStarfield(): void {
+    const N = 4000;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(N * 3);
+    const col = new Float32Array(N * 3);
+    const sizes = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 600;
+      pos[i * 3 + 1] = (Math.random() - 0.3) * 200;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 200 - 30;
+      const tint = Math.random();
+      if (tint < 0.85) {
+        col[i * 3] = 0.85 + Math.random() * 0.15;
+        col[i * 3 + 1] = 0.88 + Math.random() * 0.12;
+        col[i * 3 + 2] = 1.0;
+      } else if (tint < 0.95) {
+        col[i * 3] = 1.0; col[i * 3 + 1] = 0.85; col[i * 3 + 2] = 0.65;
+      } else {
+        col[i * 3] = 0.7; col[i * 3 + 1] = 0.78; col[i * 3 + 2] = 1.0;
+      }
+      sizes[i] = Math.random() * 1.6 + 0.2;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geo.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
+
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 }, uPixelRatio: { value: this.renderer.getPixelRatio() } },
+      vertexShader: `
+        attribute float aSize;
+        attribute vec3 color;
+        varying vec3 vColor;
+        varying float vTwinkle;
+        uniform float uTime;
+        uniform float uPixelRatio;
+        void main() {
+          vColor = color;
+          float phase = position.x * 0.13 + position.y * 0.27 + position.z * 0.07;
+          vTwinkle = 0.55 + 0.45 * sin(uTime * 1.3 + phase);
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = aSize * (300.0 / -mv.z) * uPixelRatio;
+          gl_Position = projectionMatrix * mv;
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vColor;
+        varying float vTwinkle;
+        void main() {
+          vec2 uv = gl_PointCoord - 0.5;
+          float d = length(uv);
+          float core = smoothstep(0.5, 0.0, d);
+          float halo = smoothstep(0.5, 0.15, d) * 0.4;
+          float a = (core + halo) * vTwinkle;
+          if (a < 0.01) discard;
+          gl_FragColor = vec4(vColor, a);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    this.starField = new THREE.Points(geo, mat);
+    this.scene.add(this.starField);
+  }
+
+  private buildNebula(branches: SkillTreeBranch[]): void {
+    const group = new THREE.Group();
+    branches.forEach((branch, i) => {
+      const color = new THREE.Color().setHSL(branch.hue / 360, 0.55, 0.32);
+      const planeGeo = new THREE.PlaneGeometry(80, 60);
+      const mat = new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        uniforms: { uColor: { value: color }, uTime: { value: 0 } },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          varying vec2 vUv;
+          uniform vec3 uColor;
+          uniform float uTime;
+          float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+          float noise(vec2 p) {
+            vec2 i = floor(p), f = fract(p);
+            float a = hash(i), b = hash(i + vec2(1,0)), c = hash(i + vec2(0,1)), d = hash(i + vec2(1,1));
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+          }
+          void main() {
+            vec2 p = vUv * 3.0;
+            float n = noise(p + uTime * 0.04) * 0.6 + noise(p * 2.0 - uTime * 0.02) * 0.4;
+            float r = distance(vUv, vec2(0.5));
+            float falloff = smoothstep(0.6, 0.05, r);
+            float a = n * falloff * 0.55;
+            gl_FragColor = vec4(uColor * (0.6 + n * 0.6), a);
+          }
+        `,
+      });
+      const mesh = new THREE.Mesh(planeGeo, mat);
+      mesh.position.set(i * SKILL_SPACING, 5, -28);
+      mesh.userData['shaderMat'] = mat;
+      group.add(mesh);
+    });
+    this.nebula = group;
+    this.scene.add(this.nebula);
+  }
+
+  private buildConstellations(branches: SkillTreeBranch[]): void {
+    branches.forEach((branch, i) => {
+      const group = new THREE.Group();
+      group.position.x = i * SKILL_SPACING;
+      const baseColor = new THREE.Color().setHSL(branch.hue / 360, 0.7, 0.62);
+      const dimColor = new THREE.Color().setHSL(branch.hue / 360, 0.3, 0.28);
+
+      const nodeMeshes = new Map<string, NodeMeshes>();
+      const lineMeshes: any[] = [];
+
+      branch.nodes.forEach(node => {
+        const isCapstone = !!node.capstone;
+        const r = isCapstone ? CAPSTONE_RADIUS : NODE_RADIUS;
+
+        const coreGeo = new THREE.IcosahedronGeometry(r, 1);
+        const coreMat = new THREE.MeshBasicMaterial({
+          color: baseColor.clone(),
+          transparent: true,
+          opacity: 1,
+        });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        core.position.set(node.position[0], node.position[1], node.position[2]);
+        core.userData = { branchId: branch.id, nodeId: node.id, baseColor: baseColor.clone(), dimColor: dimColor.clone() };
+        core.renderOrder = 2;
+        group.add(core);
+
+        const glowMat = new THREE.SpriteMaterial({
+          map: this.getGlowTexture(),
+          color: baseColor.clone(),
+          transparent: true,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          opacity: 1,
+        });
+        const glow = new THREE.Sprite(glowMat);
+        const glowSize = isCapstone ? 4.5 : 2.4;
+        glow.scale.set(glowSize, glowSize, glowSize);
+        glow.position.copy(core.position);
+        glow.userData = { branchId: branch.id, nodeId: node.id, isGlow: true, baseSize: glowSize };
+        glow.renderOrder = 1;
+        group.add(glow);
+
+        const ringGeo = new THREE.RingGeometry(r * 1.4, r * 1.6, 32);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: baseColor.clone(),
+          transparent: true,
+          opacity: 0.4,
+          side: THREE.DoubleSide,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.position.copy(core.position);
+        ring.userData['isRing'] = true;
+        ring.lookAt(this.camera.position);
+        group.add(ring);
+
+        nodeMeshes.set(node.id, { core, glow, ring, node });
+      });
+
+      branch.nodes.forEach(node => {
+        node.prereqIds.forEach(prereqId => {
+          const from = branch.nodes.find(n => n.id === prereqId);
+          if (!from) return;
+          const points = [
+            new THREE.Vector3(from.position[0], from.position[1], from.position[2]),
+            new THREE.Vector3(node.position[0], node.position[1], node.position[2]),
+          ];
+          const geo = new THREE.BufferGeometry().setFromPoints(points);
+          const mat = new THREE.LineBasicMaterial({
+            color: dimColor.clone(),
+            transparent: true,
+            opacity: 0.35,
+            blending: THREE.AdditiveBlending,
+          });
+          const line = new THREE.Line(geo, mat);
+          line.userData = {
+            from: prereqId,
+            to: node.id,
+            baseColor: baseColor.clone(),
+            dimColor: dimColor.clone(),
+            originalPoints: points,
+          };
+          group.add(line);
+          lineMeshes.push(line);
+        });
+      });
+
+      this.scene.add(group);
+      this.constellations.push({ branch, group, nodeMeshes, lineMeshes });
+      this.refreshSkillVisuals(i);
+    });
+  }
+
+  private getGlowTexture(): any {
+    if (this.glowTexture) return this.glowTexture;
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const ctx = c.getContext('2d')!;
+    const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.2, 'rgba(255,255,255,0.7)');
+    grad.addColorStop(0.5, 'rgba(255,255,255,0.18)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 128, 128);
+    this.glowTexture = new THREE.CanvasTexture(c);
+    return this.glowTexture;
+  }
+
+  private nodeStatus(node: SkillTreeNode): SkillTreeNodeStatus {
+    if (this.unlockedIds.has(node.id)) return 'unlocked';
+    return node.prereqIds.every(p => this.unlockedIds.has(p)) ? 'available' : 'locked';
+  }
+
+  private refreshSkillVisuals(skillIdx: number): void {
+    const c = this.constellations[skillIdx];
+    if (!c) return;
+    const { branch, nodeMeshes, lineMeshes } = c;
+    branch.nodes.forEach(node => {
+      const m = nodeMeshes.get(node.id);
+      if (!m) return;
+      const status = this.nodeStatus(node);
+      m.status = status;
+      if (status === 'unlocked') {
+        m.core.material.color.copy(m.core.userData.baseColor);
+        m.core.material.opacity = 1;
+        m.glow.material.color.copy(m.core.userData.baseColor);
+        m.glow.material.opacity = 1;
+        m.ring.material.opacity = 0.55;
+      } else if (status === 'available') {
+        m.core.material.color.copy(m.core.userData.baseColor).multiplyScalar(0.9);
+        m.core.material.opacity = 0.95;
+        m.glow.material.color.copy(m.core.userData.baseColor);
+        m.glow.material.opacity = 0.7;
+        m.ring.material.opacity = 0.35;
+      } else {
+        m.core.material.color.copy(m.core.userData.dimColor);
+        m.core.material.opacity = 0.7;
+        m.glow.material.color.copy(m.core.userData.dimColor);
+        m.glow.material.opacity = 0.35;
+        m.ring.material.opacity = 0.12;
+      }
+    });
+    lineMeshes.forEach(line => {
+      const fromUnlocked = this.unlockedIds.has(line.userData.from);
+      const toUnlocked = this.unlockedIds.has(line.userData.to);
+      if (fromUnlocked && toUnlocked) {
+        line.material.color.copy(line.userData.baseColor);
+        line.material.opacity = 0.85;
+      } else if (fromUnlocked) {
+        line.material.color.copy(line.userData.baseColor).lerp(line.userData.dimColor, 0.4);
+        line.material.opacity = 0.55;
+      } else {
+        line.material.color.copy(line.userData.dimColor);
+        line.material.opacity = 0.25;
+      }
+    });
+  }
+
+  private drawLinesFrom(skillIdx: number, fromNodeId: string): void {
+    const c = this.constellations[skillIdx];
+    const lines = c.lineMeshes.filter(l => l.userData.from === fromNodeId || l.userData.to === fromNodeId);
+    lines.forEach(line => {
+      const t0 = performance.now();
+      const dur = 700;
+      const original = line.userData.originalPoints;
+      let p0 = original[0], p1 = original[1];
+      if (line.userData.to === fromNodeId) { p0 = original[1]; p1 = original[0]; }
+      this.animations.push({
+        update: () => {
+          const t = Math.min(1, (performance.now() - t0) / dur);
+          const eased = 1 - Math.pow(1 - t, 3);
+          const mid = new THREE.Vector3().lerpVectors(p0, p1, eased);
+          line.geometry.setFromPoints([p0, mid]);
+          line.geometry.attributes.position.needsUpdate = true;
+          if (t >= 1) {
+            line.geometry.setFromPoints(original);
+            return true;
+          }
+          return false;
+        },
+      });
+    });
+  }
+
+  private onMouseMove(e: MouseEvent): void {
+    const rect = this.canvas.getBoundingClientRect();
+    this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    this.cameraDriftX = this.mouse.x * 0.6;
+    this.cameraDriftY = this.mouse.y * 0.4;
+  }
+
+  private onClick(): void {
+    if (!this.hoveredNode) return;
+    this.listeners.click.forEach(fn => fn(this.hoveredNode!));
+  }
+
+  private pickNode(): SkillTreePickedNode | null {
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const c = this.constellations[this.currentSkillIdx];
+    if (!c) return null;
+    const meshes: any[] = [];
+    c.nodeMeshes.forEach(m => {
+      meshes.push(m.core);
+      meshes.push(m.glow);
+    });
+    const hits = this.raycaster.intersectObjects(meshes, false);
+    if (hits.length === 0) return null;
+    const hit = hits[0].object;
+    return { branchId: hit.userData.branchId, nodeId: hit.userData.nodeId };
+  }
+
+  private setHovered(picked: SkillTreePickedNode | null): void {
+    if (!picked && !this.hoveredNode) return;
+    if (picked && this.hoveredNode &&
+        picked.nodeId === this.hoveredNode.nodeId &&
+        picked.branchId === this.hoveredNode.branchId) return;
+    this.hoveredNode = picked;
+    this.canvas.style.cursor = picked ? 'pointer' : '';
+    this.listeners.hover.forEach(fn => fn(picked));
+    if (picked) this.listeners.hoverSound.forEach(fn => fn());
+  }
+
+  private animate(now: number): void {
+    if (this.destroyed) return;
+    this.rafId = requestAnimationFrame(n => this.animate(n));
+    const dt = Math.min(0.05, (now - this.lastTime) / 1000) || 0.016;
+    this.lastTime = now;
+    const t = now * 0.001;
+
+    if (this.starField) this.starField.material.uniforms.uTime.value = t;
+    if (this.nebula) this.nebula.children.forEach((p: any) => p.userData['shaderMat'].uniforms.uTime.value = t);
+
+    if (this.camTransitionT < 1) {
+      this.camTransitionT = Math.min(1, this.camTransitionT + dt / 1.1);
+      const e = 1 - Math.pow(1 - this.camTransitionT, 3);
+      const baseX = this.camFromX + (this.camToX - this.camFromX) * e;
+      const dollyBack = Math.sin(this.camTransitionT * Math.PI) * 7;
+      this.camera.position.z = 18 + dollyBack;
+      this.camera.position.x = baseX + this.cameraDriftX * 1.5;
+      this.camera.position.y = this.cameraTargetY + this.cameraDriftY;
+      if (this.camTransitionT >= 1) this.currentSkillIdx = this.targetSkillIdx;
+    } else {
+      const targetX = this.currentSkillIdx * SKILL_SPACING + this.cameraDriftX * 1.5;
+      const targetY = this.cameraTargetY + this.cameraDriftY;
+      const targetZ = this.cameraTargetZ;
+      this.camera.position.x += (targetX - this.camera.position.x) * 0.06;
+      this.camera.position.y += (targetY - this.camera.position.y) * 0.06;
+      this.camera.position.z += (targetZ - this.camera.position.z) * 0.06;
+    }
+    this.camera.lookAt(this.currentSkillIdx * SKILL_SPACING, 5, 0);
+
+    this.constellations.forEach((c, idx) => {
+      const isActive = idx === this.currentSkillIdx;
+      c.group.rotation.y = Math.sin(t * 0.07 + idx * 1.3) * 0.04;
+      c.nodeMeshes.forEach(m => {
+        m.ring.lookAt(this.camera.position);
+        const breath = 1 + Math.sin(t * 1.4 + m.core.position.x * 0.5) * 0.06;
+        if (m.status !== 'unlocked' || !isActive) {
+          m.core.scale.lerp(new THREE.Vector3(breath, breath, breath), 0.1);
+        } else {
+          m.core.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+        }
+      });
+    });
+
+    if (this.camTransitionT >= 1) {
+      this.setHovered(this.pickNode());
+    } else {
+      this.setHovered(null);
+    }
+
+    for (let i = this.animations.length - 1; i >= 0; i--) {
+      if (this.animations[i].update()) this.animations.splice(i, 1);
+    }
+
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  private onResize(): void {
+    const w = this.canvas.clientWidth || window.innerWidth;
+    const h = this.canvas.clientHeight || window.innerHeight;
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(w, h, false);
+  }
+}
