@@ -33,6 +33,12 @@ export const routes: Routes = [
         canActivate: [AuthGuard],
       },
       {
+        path: 'release-planing',
+        loadComponent: () =>
+          import('../../../features/release-calendar/pages/release-planing.page').then((m) => m.PlaningPage),
+        canActivate: [AuthGuard],
+      },
+      {
         path: 'quests',
         loadComponent: () =>
           import('../../../features/quests/pages/quest-board.page').then((m) => m.QuestBoardPage),
