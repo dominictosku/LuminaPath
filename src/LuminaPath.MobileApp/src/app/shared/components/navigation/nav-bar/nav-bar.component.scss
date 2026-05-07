@@ -220,10 +220,9 @@
 }
 
 .notification-item {
-  display: grid;
-  grid-template-columns: 38px 1fr;
-  gap: 10px;
+  display: flex;
   align-items: center;
+  gap: 12px;
   padding: 9px;
   border-radius: 16px;
   color: var(--ink);
@@ -251,17 +250,22 @@
 
 .notification-item ion-icon,
 .app-grid ion-icon {
-  display: grid;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   width: 38px;
   height: 38px;
   padding: 9px;
   border-radius: 14px;
   color: var(--accent);
   background: rgba(37, 99, 235, 0.11);
+  box-sizing: border-box;
 }
 
 .notification-item span {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
