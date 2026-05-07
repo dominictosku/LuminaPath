@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { IonIcon, IonHeader } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   calendarClearOutline,
+  checkmarkCircleOutline,
   gameControllerOutline,
   gridOutline,
   hourglassOutline,
@@ -10,12 +11,15 @@ import {
   logOutOutline,
   notificationsOutline,
   personCircleOutline,
+  rocketOutline,
   sparklesOutline,
+  timeOutline,
 } from 'ionicons/icons';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { finalize } from 'rxjs';
+import { Subscription, filter, finalize } from 'rxjs';
+import { NotificationItem, NotificationsService } from 'src/app/shared/services/notifications.service';
 
 @Component({
     selector: 'app-nav-bar',
@@ -23,13 +27,23 @@ import { finalize } from 'rxjs';
     styleUrls: ['./nav-bar.component.scss'],
     imports: [CommonModule, IonIcon, IonHeader]
 })
-export class NavBarComponent implements OnInit {
+export class NavBarComponent implements OnInit, OnDestroy {
   isLoggingOut = false;
   openMenu: 'notifications' | 'apps' | null = null;
+  notifications: NotificationItem[] = [];
+  notificationsLoading = false;
 
-  constructor(private authService: AuthService, public router: Router) {
+  private routerSub?: Subscription;
+  private notificationsSub?: Subscription;
+
+  constructor(
+    private authService: AuthService,
+    public router: Router,
+    private notificationsService: NotificationsService,
+  ) {
     addIcons({
       calendarClearOutline,
+      checkmarkCircleOutline,
       gameControllerOutline,
       gridOutline,
       hourglassOutline,
@@ -37,11 +51,26 @@ export class NavBarComponent implements OnInit {
       logOutOutline,
       notificationsOutline,
       personCircleOutline,
+      rocketOutline,
       sparklesOutline,
+      timeOutline,
     });
   }
 
-  ngOnInit() { }
+  ngOnInit() {
+    this.refreshNotifications();
+    this.routerSub = this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe(() => {
+        this.closeMenus();
+        this.refreshNotifications();
+      });
+  }
+
+  ngOnDestroy() {
+    this.routerSub?.unsubscribe();
+    this.notificationsSub?.unsubscribe();
+  }
 
   get isAuthPage() {
     return this.router.url.startsWith('/auth');
@@ -52,7 +81,11 @@ export class NavBarComponent implements OnInit {
   }
 
   toggleMenu(menu: 'notifications' | 'apps') {
-    this.openMenu = this.openMenu === menu ? null : menu;
+    const next = this.openMenu === menu ? null : menu;
+    this.openMenu = next;
+    if (next === 'notifications') {
+      this.refreshNotifications();
+    }
   }
 
   closeMenus() {
@@ -75,5 +108,29 @@ export class NavBarComponent implements OnInit {
           this.router.navigate(['/auth/login'], { replaceUrl: true });
         },
       });
+  }
+
+  trackByNotification(_: number, item: NotificationItem): string {
+    return item.id;
+  }
+
+  private refreshNotifications() {
+    if (this.isAuthPage) {
+      this.notifications = [];
+      return;
+    }
+
+    this.notificationsLoading = true;
+    this.notificationsSub?.unsubscribe();
+    this.notificationsSub = this.notificationsService.load().subscribe({
+      next: (items) => {
+        this.notifications = items;
+        this.notificationsLoading = false;
+      },
+      error: () => {
+        this.notifications = [];
+        this.notificationsLoading = false;
+      },
+    });
   }
 }

@@ -38,35 +38,37 @@
           [class.active]="openMenu === 'notifications'"
           (click)="toggleMenu('notifications')">
           <ion-icon name="notifications-outline"></ion-icon>
-          <span class="notification-dot"></span>
+          <span class="notification-dot" *ngIf="notifications.length"></span>
         </button>
 
         <section class="dropdown-panel notification-panel" *ngIf="openMenu === 'notifications'">
           <div class="dropdown-heading">
             <span>Notifications</span>
-            <strong>3 new</strong>
+            <strong *ngIf="notifications.length; else noneLabel">{{ notifications.length }} new</strong>
+            <ng-template #noneLabel><strong>All clear</strong></ng-template>
           </div>
-          <a href="/planing" class="notification-item">
-            <ion-icon name="calendar-clear-outline"></ion-icon>
+
+          <a
+            *ngFor="let item of notifications; trackBy: trackByNotification"
+            [href]="item.link"
+            class="notification-item"
+            (click)="closeMenus()">
+            <ion-icon [name]="item.icon"></ion-icon>
             <span>
-              <strong>Release watch</strong>
-              <small>Check upcoming games this week.</small>
+              <strong>{{ item.title }}</strong>
+              <small>{{ item.body }}</small>
             </span>
           </a>
-          <a href="/quests" class="notification-item">
-            <ion-icon name="sparkles-outline"></ion-icon>
-            <span>
-              <strong>Quest streak</strong>
-              <small>Train a skill to keep momentum.</small>
-            </span>
-          </a>
-          <a href="/media" class="notification-item">
-            <ion-icon name="library-outline"></ion-icon>
-            <span>
-              <strong>Library cleanup</strong>
-              <small>Add playtime details to your backlog.</small>
-            </span>
-          </a>
+
+          <div class="notification-empty" *ngIf="!notifications.length && !notificationsLoading">
+            <ion-icon name="checkmark-circle-outline"></ion-icon>
+            <span>You're all caught up.</span>
+          </div>
+
+          <div class="notification-empty" *ngIf="!notifications.length && notificationsLoading">
+            <ion-icon name="hourglass-outline"></ion-icon>
+            <span>Checking for updates…</span>
+          </div>
         </section>
       </div>
 

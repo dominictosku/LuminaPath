@@ -267,6 +267,25 @@
   white-space: nowrap;
 }
 
+.notification-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.notification-empty ion-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  border-radius: 12px;
+  color: var(--accent);
+  background: rgba(37, 99, 235, 0.11);
+}
+
 .app-panel {
   width: min(300px, calc(100vw - 24px));
 }
