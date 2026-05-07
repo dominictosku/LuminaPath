@@ -1,0 +1,95 @@
+<ion-content [fullscreen]="true" class="profile-shell">
+  <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <main class="profile-page mt-12">
+    <header class="profile-hero">
+      <span class="eyebrow">
+        <ion-icon name="person-circle-outline"></ion-icon>
+        Account
+      </span>
+      <h1>{{ user.userName || 'Your profile' }}</h1>
+      <p>Update your contact details and personal data.</p>
+    </header>
+
+    <section class="loading-state" *ngIf="isLoading">
+      <ion-spinner name="crescent"></ion-spinner>
+    </section>
+
+    <form *ngIf="!isLoading" class="profile-form" (ngSubmit)="save()" novalidate>
+      <h2>Personal info</h2>
+
+      <label>
+        <span>
+          <ion-icon name="person-circle-outline"></ion-icon>
+          Username
+        </span>
+        <input
+          type="text"
+          name="userName"
+          autocomplete="username"
+          [(ngModel)]="draft.userName" />
+      </label>
+
+      <label>
+        <span>
+          <ion-icon name="mail-outline"></ion-icon>
+          Email
+        </span>
+        <input
+          type="email"
+          name="email"
+          autocomplete="email"
+          [(ngModel)]="draft.email" />
+      </label>
+
+      <label>
+        <span>
+          <ion-icon name="time-outline"></ion-icon>
+          Age
+        </span>
+        <input
+          type="number"
+          name="age"
+          min="0"
+          [(ngModel)]="draft.age" />
+      </label>
+
+      <label *ngIf="emailChanged">
+        <span>
+          <ion-icon name="card-outline"></ion-icon>
+          Current password
+        </span>
+        <input
+          type="password"
+          name="currentPassword"
+          autocomplete="current-password"
+          placeholder="Required to change email"
+          [(ngModel)]="draft.currentPassword" />
+      </label>
+
+      <div class="profile-form__actions">
+        <ion-button type="submit" shape="round" [disabled]="state === 'saving' || !hasChanges">
+          <ion-icon slot="start" name="save-outline"></ion-icon>
+          {{ state === 'saving' ? 'Saving…' : 'Save changes' }}
+        </ion-button>
+        <span
+          class="profile-form__message"
+          [class.profile-form__message--error]="state === 'error'"
+          [class.profile-form__message--success]="state === 'success'"
+          *ngIf="message">
+          {{ message }}
+        </span>
+      </div>
+    </form>
+
+    <a *ngIf="!isLoading" href="/settings" class="profile-link">
+      <ion-icon name="settings-outline"></ion-icon>
+      <span>
+        <strong>Settings</strong>
+        <small>Change your password, notifications, and more.</small>
+      </span>
+    </a>
+  </main>
+</ion-content>

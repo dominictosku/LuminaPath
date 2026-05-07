@@ -12,6 +12,7 @@ import {
   notificationsOutline,
   personCircleOutline,
   rocketOutline,
+  settingsOutline,
   sparklesOutline,
   timeOutline,
 } from 'ionicons/icons';
@@ -29,7 +30,7 @@ import { NotificationItem, NotificationsService } from 'src/app/shared/services/
 })
 export class NavBarComponent implements OnInit, OnDestroy {
   isLoggingOut = false;
-  openMenu: 'notifications' | 'apps' | null = null;
+  openMenu: 'notifications' | 'apps' | 'profile' | null = null;
   notifications: NotificationItem[] = [];
   notificationsLoading = false;
 
@@ -52,6 +53,7 @@ export class NavBarComponent implements OnInit, OnDestroy {
       notificationsOutline,
       personCircleOutline,
       rocketOutline,
+      settingsOutline,
       sparklesOutline,
       timeOutline,
     });
@@ -80,7 +82,7 @@ export class NavBarComponent implements OnInit, OnDestroy {
     return this.router.url === path || this.router.url.startsWith(`${path}/`);
   }
 
-  toggleMenu(menu: 'notifications' | 'apps') {
+  toggleMenu(menu: 'notifications' | 'apps' | 'profile') {
     const next = this.openMenu === menu ? null : menu;
     this.openMenu = next;
     if (next === 'notifications') {

@@ -108,16 +108,55 @@
         </section>
       </div>
 
-      <button type="button" class="profile-button" aria-label="Sign out" (click)="logout()" [disabled]="isLoggingOut">
-        <span class="profile-icon">
-          <ion-icon [name]="isLoggingOut ? 'hourglass-outline' : 'person-circle-outline'"></ion-icon>
-        </span>
-        <span class="profile-copy">
-          <strong>{{ isLoggingOut ? 'Signing out' : 'Signed in' }}</strong>
-          <small>Sign out</small>
-        </span>
-        <ion-icon class="logout-icon" name="log-out-outline"></ion-icon>
-      </button>
+      <div class="menu-wrap">
+        <button
+          type="button"
+          class="profile-button"
+          aria-label="Open account menu"
+          [class.active]="openMenu === 'profile'"
+          (click)="toggleMenu('profile')"
+          [disabled]="isLoggingOut">
+          <span class="profile-icon">
+            <ion-icon [name]="isLoggingOut ? 'hourglass-outline' : 'person-circle-outline'"></ion-icon>
+          </span>
+          <span class="profile-copy">
+            <strong>{{ isLoggingOut ? 'Signing out' : 'Account' }}</strong>
+            <small>Profile &amp; settings</small>
+          </span>
+        </button>
+
+        <section class="dropdown-panel notification-panel" *ngIf="openMenu === 'profile'">
+          <div class="dropdown-heading">
+            <span>Account</span>
+            <strong>Manage</strong>
+          </div>
+          <a href="/profile" class="notification-item" (click)="closeMenus()">
+            <ion-icon name="person-circle-outline"></ion-icon>
+            <span>
+              <strong>Profile</strong>
+              <small>Update your personal data.</small>
+            </span>
+          </a>
+          <a href="/settings" class="notification-item" (click)="closeMenus()">
+            <ion-icon name="settings-outline"></ion-icon>
+            <span>
+              <strong>Settings</strong>
+              <small>Change password and preferences.</small>
+            </span>
+          </a>
+          <button
+            type="button"
+            class="notification-item notification-item--button"
+            (click)="logout()"
+            [disabled]="isLoggingOut">
+            <ion-icon [name]="isLoggingOut ? 'hourglass-outline' : 'log-out-outline'"></ion-icon>
+            <span>
+              <strong>{{ isLoggingOut ? 'Signing out…' : 'Sign out' }}</strong>
+              <small>End your session on this device.</small>
+            </span>
+          </button>
+        </section>
+      </div>
     </div>
   </nav>
 </ion-header>

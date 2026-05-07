@@ -34,6 +34,16 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    path: 'profile',
+    loadComponent: () => import('./features/profile/pages/profile.page').then(m => m.ProfilePage),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'settings',
+    loadComponent: () => import('./features/profile/pages/settings.page').then(m => m.SettingsPage),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'skill-tree',
     loadComponent: () => import('./features/skill-tree/pages/skill-tree.page').then(m => m.SkillTreePage),
     canActivate: [AuthGuard]
