@@ -69,7 +69,7 @@ namespace LuminaPath.Infrastructure
                 .HasOne(friendship => friendship.Addressee)
                 .WithMany()
                 .HasForeignKey(friendship => friendship.AddresseeId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<Friendship>()
                 .HasIndex(friendship => new { friendship.RequesterId, friendship.AddresseeId })
                 .IsUnique();
@@ -82,7 +82,7 @@ namespace LuminaPath.Infrastructure
                 .HasOne(message => message.Recipient)
                 .WithMany()
                 .HasForeignKey(message => message.RecipientId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<DirectMessage>()
                 .HasIndex(message => new { message.SenderId, message.RecipientId, message.SentAt });
             ConfigureUtcDateTimes(modelBuilder);
