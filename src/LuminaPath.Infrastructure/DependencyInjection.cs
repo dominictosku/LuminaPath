@@ -1,6 +1,9 @@
 ﻿using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Services;
+using LuminaPath.Infrastructure.Services.AiChat;
+using LuminaPath.Infrastructure.Services.AiChat.Mcp;
+using LuminaPath.Infrastructure.Services.AiChat.Tools;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using LuminaPath.Infrastructure.Services.Third_Party;
 using Microsoft.AspNetCore.Builder;
@@ -27,9 +30,51 @@ namespace LuminaPath.Infrastructure
             AddDatabase(services, config);
             AddDefaultIdentity(services, config);
             AddServices(services, config);
+            AddAiChat(services, config);
             AddCors(services, config);
             services.AddOpenApi();
             return services;
+        }
+
+        private static void AddAiChat(IServiceCollection services, IConfiguration config)
+        {
+            services.Configure<AnthropicOptions>(config.GetSection(AnthropicOptions.SectionName));
+            services.PostConfigure<AnthropicOptions>(opts =>
+            {
+                if (string.IsNullOrWhiteSpace(opts.ApiKey))
+                {
+                    opts.ApiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+                }
+            });
+
+            services.Configure<McpOptions>(config.GetSection(McpOptions.SectionName));
+            services.PostConfigure<McpOptions>(opts =>
+            {
+                foreach (var server in opts.Servers)
+                {
+                    foreach (var key in server.Env.Keys.ToList())
+                    {
+                        if (string.IsNullOrWhiteSpace(server.Env[key]))
+                        {
+                            server.Env[key] = Environment.GetEnvironmentVariable(key);
+                        }
+                    }
+                }
+            });
+
+            services.AddHttpClient<AnthropicClient>();
+
+            services.AddSingleton<McpHostService>();
+            services.AddHostedService(sp => sp.GetRequiredService<McpHostService>());
+
+            services.AddSingleton<IChatTool, ListUpcomingReleasesTool>();
+            services.AddSingleton<IChatTool, SearchMyLibraryTool>();
+            services.AddSingleton<IChatTool, MyQuestsTool>();
+            services.AddSingleton<IChatTool, MyGamingSessionsTool>();
+            services.AddSingleton<IChatTool, LibrarySummaryTool>();
+
+            services.AddSingleton<ChatToolRegistry>();
+            services.AddScoped<ChatService>();
         }
 
         private static void AddCors(IServiceCollection services, IConfiguration config)

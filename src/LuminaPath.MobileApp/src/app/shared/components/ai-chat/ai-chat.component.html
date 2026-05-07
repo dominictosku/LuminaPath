@@ -1,0 +1,79 @@
+<button
+  type="button"
+  class="ai-chat-fab"
+  [class.ai-chat-fab--open]="open"
+  (click)="toggle()"
+  [attr.aria-label]="open ? 'Close AI chat' : 'Open AI chat'">
+  <ion-icon [name]="open ? 'close-outline' : 'chatbubble-ellipses-outline'"></ion-icon>
+</button>
+
+<aside class="ai-chat-panel" *ngIf="open" role="dialog" aria-label="AI chat">
+  <header class="ai-chat-panel__header">
+    <div class="ai-chat-panel__title">
+      <ion-icon name="sparkles-outline"></ion-icon>
+      <div>
+        <strong>LuminaPath AI</strong>
+        <small>Ask about releases, your library, or your plan.</small>
+      </div>
+    </div>
+    <button
+      type="button"
+      class="ai-chat-panel__icon-btn"
+      aria-label="Reset conversation"
+      (click)="reset()"
+      [disabled]="isStreaming">
+      <ion-icon name="refresh-outline"></ion-icon>
+    </button>
+  </header>
+
+  <div class="ai-chat-panel__messages">
+    <div class="ai-chat-empty" *ngIf="!messages.length">
+      <ion-icon name="sparkles-outline"></ion-icon>
+      <strong>Try asking…</strong>
+      <ul>
+        <li>"Which games release this month?"</li>
+        <li>"What's in my backlog?"</li>
+        <li>"Do I have a session today?"</li>
+      </ul>
+    </div>
+
+    <article
+      *ngFor="let msg of messages; trackBy: trackByIndex"
+      class="ai-chat-message"
+      [class.ai-chat-message--user]="msg.role === 'user'"
+      [class.ai-chat-message--assistant]="msg.role === 'assistant'"
+      [class.ai-chat-message--error]="msg.errored">
+      <div class="ai-chat-message__bubble">
+        <span *ngIf="msg.content" [innerText]="msg.content"></span>
+        <span class="ai-chat-message__pending" *ngIf="msg.pending && !msg.content">
+          <ion-icon name="hourglass-outline"></ion-icon>
+          Thinking…
+        </span>
+        <div class="ai-chat-message__tools" *ngIf="msg.toolUse?.length">
+          <span class="ai-chat-message__tool" *ngFor="let t of msg.toolUse">
+            {{ shortToolLabel(t.name) }}
+          </span>
+        </div>
+      </div>
+    </article>
+
+    <div #scrollAnchor></div>
+  </div>
+
+  <form class="ai-chat-panel__input" (ngSubmit)="send()">
+    <textarea
+      placeholder="Ask the AI…"
+      rows="1"
+      [(ngModel)]="draft"
+      name="draft"
+      (keydown)="onKeydown($event)"
+      [disabled]="isStreaming"></textarea>
+    <button
+      type="submit"
+      class="ai-chat-panel__send"
+      [disabled]="!draft.trim() || isStreaming"
+      aria-label="Send message">
+      <ion-icon name="paper-plane-outline"></ion-icon>
+    </button>
+  </form>
+</aside>
