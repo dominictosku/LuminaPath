@@ -42,8 +42,15 @@ import {
 import { Quest, QuestBoardService, QuestBoardState, QuestSkill, QuestType } from '../services/quest-board.service';
 import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
 import { MyGame } from 'src/app/features/games/models/games.model';
+import { SkillTreeComponent, NodeUnlockEvent } from 'src/app/features/skill-tree/components/skill-tree.component';
+import { SkillTreeBranch } from 'src/app/features/skill-tree/models/skill-tree.model';
+import {
+  parseNodeId,
+  questSkillsToBranches,
+  unlockedNodeIdsFor,
+} from 'src/app/features/skill-tree/util/skill-adapter';
 
-type PageMode = 'quests' | 'skills';
+type PageMode = 'quests' | 'skills' | 'tree';
 type ModalMode = 'skill' | 'node' | null;
 
 type QuestColumn = {
@@ -81,6 +88,7 @@ type LibraryGame = {
     IonSegmentButton,
     IonSelect,
     IonSelectOption,
+    SkillTreeComponent,
   ],
 })
 export class QuestBoardPage implements OnInit {
@@ -332,6 +340,22 @@ export class QuestBoardPage implements OnInit {
     this.xp += 25;
     this.showToast(`${skill.nodes[nodeIndex]} unlocked`);
     await this.persist();
+  }
+
+  treeBranches: SkillTreeBranch[] = [];
+  treeUnlockedNodeIds: string[] = [];
+
+  async onTreeNodeUnlocked(event: NodeUnlockEvent) {
+    const parsed = parseNodeId(event.nodeId);
+    if (!parsed) return;
+    const skill = this.skills.find((s) => s.id === parsed.skillId);
+    if (!skill) return;
+    await this.unlockNode(skill, parsed.nodeIndex);
+  }
+
+  private rebuildTreeData(): void {
+    this.treeBranches = questSkillsToBranches(this.skills);
+    this.treeUnlockedNodeIds = unlockedNodeIdsFor(this.skills);
   }
 
   openSkillModal() {
@@ -590,6 +614,7 @@ export class QuestBoardPage implements OnInit {
     this.quests = board.quests;
     this.skills = board.skills;
     this.rebuildStats();
+    this.rebuildTreeData();
   }
 
   private currentBoard(): QuestBoardState {

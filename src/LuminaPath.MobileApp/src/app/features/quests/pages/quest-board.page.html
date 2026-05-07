@@ -31,6 +31,7 @@
       <ion-segment [(ngModel)]="mode">
         <ion-segment-button value="quests">Quests</ion-segment-button>
         <ion-segment-button value="skills">Skills</ion-segment-button>
+        <ion-segment-button value="tree">Tree</ion-segment-button>
       </ion-segment>
     </section>
 
@@ -263,6 +264,14 @@
           <small>{{ unlockedCount(skill) }} of {{ skill.nodes.length }} nodes unlocked</small>
         </article>
       </div>
+    </section>
+
+    <section class="tree-layout" *ngIf="mode === 'tree'">
+      <app-skill-tree
+        [branches]="treeBranches"
+        [unlockedNodeIds]="treeUnlockedNodeIds"
+        (nodeUnlocked)="onTreeNodeUnlocked($event)">
+      </app-skill-tree>
     </section>
   </main>
 
