@@ -40,6 +40,8 @@
     <span> | </span>
     <a href="#environment-variables">Configuration</a>
     <span> | </span>
+    <a href="#ai-assistant">AI Assistant</a>
+    <span> | </span>
     <a href="#cicd">CI/CD</a>
   </p>
 </div>
@@ -75,6 +77,7 @@ LuminaPath is a personal game library, backlog planner, playtime tracker and que
 - Dashboard and statistics pages for played hours, completions and upcoming releases.
 - ASP.NET Core Identity authentication with seeded administrator/editor roles.
 - File-system storage by default, with Azure Blob support available through env vars.
+- Streaming AI assistant in the Angular app, powered by Anthropic Claude or any OpenAI-compatible endpoint (Ollama, LM Studio, OpenAI), with MCP tool integration.
 
 ## Tech Stack
 
@@ -287,6 +290,125 @@ cd android
 .\gradlew.bat assembleDebug
 adb install -r app\build\outputs\apk\debug\app-debug.apk
 ```
+
+## AI Assistant
+
+The Angular app ships with a floating chat panel (bottom-right) that streams replies token-by-token from a backend endpoint at `POST /api/chat/stream`. The agent has access to read-only database tools scoped to the signed-in user, plus optional MCP tools for external information.
+
+### Pick a provider
+
+The provider is selected through `AiChat:Provider`. Both providers are wired by default — switch by changing config and supplying the credentials.
+
+| Provider | `AiChat:Provider` | Used for |
+| --- | --- | --- |
+| Anthropic Claude | `anthropic` (default) | Claude 4 family via the official API |
+| OpenAI-compatible | `openai` (or `ollama`) | Ollama, LM Studio, vLLM, llama.cpp server, the official OpenAI API, etc. |
+
+#### Anthropic Claude
+
+```text
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Or in `appsettings.Development.json`:
+
+```jsonc
+"AiChat":   { "Provider": "anthropic" },
+"Anthropic": {
+  "ApiKey": "sk-ant-...",
+  "Model": "claude-sonnet-4-6",
+  "MaxTokens": 4096
+}
+```
+
+#### Ollama (self-hosted)
+
+Install Ollama and pull a tool-capable model (e.g. `llama3.2`, `qwen2.5`, `mistral-small`):
+
+```powershell
+ollama pull llama3.2
+ollama serve
+```
+
+Then point the backend at it:
+
+```jsonc
+"AiChat": { "Provider": "ollama" },
+"OpenAi": {
+  "BaseUrl": "http://localhost:11434/v1",
+  "Model":   "llama3.2"
+}
+```
+
+No API key required. Ollama exposes the OpenAI-compatible Chat Completions API at `/v1/chat/completions`, including tool calls.
+
+#### Other OpenAI-compatible endpoints
+
+```jsonc
+"AiChat": { "Provider": "openai" },
+"OpenAi": {
+  "ApiKey":  "sk-...",                // empty for keyless local servers
+  "BaseUrl": "https://api.openai.com/v1",
+  "Model":   "gpt-4o-mini"
+}
+```
+
+For LM Studio, vLLM or llama.cpp's server, change `BaseUrl` to whatever they expose (typically ending in `/v1`) and pick the model name they advertise.
+
+### Environment variable overrides
+
+These take precedence over `appsettings.json` so you can leave the file blank in source control:
+
+```text
+ANTHROPIC_API_KEY=...     # falls into Anthropic:ApiKey
+OPENAI_API_KEY=...        # falls into OpenAi:ApiKey
+OPENAI_BASE_URL=...       # falls into OpenAi:BaseUrl
+OPENAI_MODEL=...          # falls into OpenAi:Model
+```
+
+### Built-in database tools
+
+The agent can call these tools (all read-only and scoped to the authenticated user):
+
+| Tool | Purpose |
+| --- | --- |
+| `list_upcoming_releases` | Future game releases, optional month/year filter, optional `only_my_library` |
+| `search_my_library` | Search games in the user's library by name fragment, status or platform |
+| `library_summary` | Counts by status, total logged hours, estimated backlog hours |
+| `my_quests` | Quests for the user, filterable by `open` / `completed` / `all` |
+| `my_gaming_sessions` | Scheduled sessions in a date window (default: next 14 days) |
+
+Tool use works with both Anthropic and any OpenAI-compatible model that supports the `tools` / `tool_calls` API.
+
+### MCP servers
+
+External tools can be added through Model Context Protocol servers. Configure them under `Mcp:Servers`. Each server is launched as a subprocess via stdio, so the host machine needs the relevant runtime (e.g. `npx` for Node-based servers).
+
+```jsonc
+"Mcp": {
+  "Servers": [
+    {
+      "Name": "brave-search",
+      "Enabled": true,
+      "Command": "npx",
+      "Args": [ "-y", "@modelcontextprotocol/server-brave-search" ],
+      "Env": { "BRAVE_API_KEY": "" }
+    }
+  ]
+}
+```
+
+Servers with empty env values are skipped at startup, so the chat keeps working without them. To enable Brave Search:
+
+```text
+BRAVE_API_KEY=...
+```
+
+MCP tools appear to the model alongside the built-in ones, namespaced as `mcp__<server>__<tool>` to avoid name clashes. Add more servers (filesystem, time, fetch, custom MCP servers) by appending entries to the `Servers` array.
+
+### Tool iteration limit
+
+The agent will execute up to `AiChat:MaxToolIterations` (default `8`) tool round-trips before forcing a final answer. Bump this if you expect long multi-step reasoning chains.
 
 ## CI/CD
 

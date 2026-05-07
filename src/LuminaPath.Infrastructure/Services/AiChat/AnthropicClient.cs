@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace LuminaPath.Infrastructure.Services.AiChat;
 
-public sealed class AnthropicClient
+public sealed class AnthropicClient : IAiProvider
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
     {
@@ -25,10 +25,14 @@ public sealed class AnthropicClient
         _logger = logger;
     }
 
+    public string Name => "anthropic";
+
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_options.ApiKey);
 
     public async IAsyncEnumerable<AnthropicStreamEvent> StreamAsync(
-        AnthropicMessageRequest request,
+        IReadOnlyList<AnthropicMessage> messages,
+        string? system,
+        IReadOnlyList<AnthropicToolDefinition>? tools,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         if (!IsConfigured)
@@ -36,6 +40,14 @@ public sealed class AnthropicClient
             yield return new StreamErrorEvent("Anthropic API key is not configured.");
             yield break;
         }
+
+        var request = new AnthropicMessageRequest(
+            Model: _options.Model,
+            MaxTokens: _options.MaxTokens,
+            Messages: messages,
+            System: system,
+            Tools: tools is { Count: > 0 } ? tools : null,
+            Stream: true);
 
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{_options.BaseUrl.TrimEnd('/')}/v1/messages");
         httpRequest.Headers.Add("x-api-key", _options.ApiKey);
@@ -63,9 +75,9 @@ public sealed class AnthropicClient
 
         if (response is null || !response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogWarning("Anthropic API returned {Status}: {Body}", (int)response.StatusCode, body);
-            yield return new StreamErrorEvent($"AI service error ({(int)response.StatusCode}).");
+            var body = response is null ? "" : await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogWarning("Anthropic API returned {Status}: {Body}", (int?)response?.StatusCode ?? 0, body);
+            yield return new StreamErrorEvent($"AI service error ({(int?)response?.StatusCode ?? 0}).");
             yield break;
         }
 

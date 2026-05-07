@@ -18,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Net;
 namespace LuminaPath.Infrastructure
 {
@@ -38,12 +39,33 @@ namespace LuminaPath.Infrastructure
 
         private static void AddAiChat(IServiceCollection services, IConfiguration config)
         {
+            services.Configure<AiChatOptions>(config.GetSection(AiChatOptions.SectionName));
+
             services.Configure<AnthropicOptions>(config.GetSection(AnthropicOptions.SectionName));
             services.PostConfigure<AnthropicOptions>(opts =>
             {
                 if (string.IsNullOrWhiteSpace(opts.ApiKey))
                 {
                     opts.ApiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+                }
+            });
+
+            services.Configure<OpenAiOptions>(config.GetSection(OpenAiOptions.SectionName));
+            services.PostConfigure<OpenAiOptions>(opts =>
+            {
+                if (string.IsNullOrWhiteSpace(opts.ApiKey))
+                {
+                    opts.ApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+                }
+                var envBase = Environment.GetEnvironmentVariable("OPENAI_BASE_URL");
+                if (!string.IsNullOrWhiteSpace(envBase))
+                {
+                    opts.BaseUrl = envBase;
+                }
+                var envModel = Environment.GetEnvironmentVariable("OPENAI_MODEL");
+                if (!string.IsNullOrWhiteSpace(envModel))
+                {
+                    opts.Model = envModel;
                 }
             });
 
@@ -63,6 +85,17 @@ namespace LuminaPath.Infrastructure
             });
 
             services.AddHttpClient<AnthropicClient>();
+            services.AddHttpClient<OpenAiCompatibleProvider>();
+
+            services.AddSingleton<IAiProvider>(sp =>
+            {
+                var chatOptions = sp.GetRequiredService<IOptions<AiChatOptions>>().Value;
+                return chatOptions.Provider?.ToLowerInvariant() switch
+                {
+                    "openai" or "ollama" => sp.GetRequiredService<OpenAiCompatibleProvider>(),
+                    _ => sp.GetRequiredService<AnthropicClient>(),
+                };
+            });
 
             services.AddSingleton<McpHostService>();
             services.AddHostedService(sp => sp.GetRequiredService<McpHostService>());

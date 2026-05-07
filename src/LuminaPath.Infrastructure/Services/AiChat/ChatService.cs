@@ -21,18 +21,18 @@ public sealed class ChatService
         - Keep responses concise and skim-friendly. Use short paragraphs or compact lists.
         """;
 
-    private readonly AnthropicClient _anthropic;
-    private readonly AnthropicOptions _options;
+    private readonly IAiProvider _provider;
+    private readonly AiChatOptions _options;
     private readonly ChatToolRegistry _tools;
     private readonly ILogger<ChatService> _logger;
 
     public ChatService(
-        AnthropicClient anthropic,
-        IOptions<AnthropicOptions> options,
+        IAiProvider provider,
+        IOptions<AiChatOptions> options,
         ChatToolRegistry tools,
         ILogger<ChatService> logger)
     {
-        _anthropic = anthropic;
+        _provider = provider;
         _options = options.Value;
         _tools = tools;
         _logger = logger;
@@ -43,9 +43,9 @@ public sealed class ChatService
         ChatToolContext toolContext,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        if (!_anthropic.IsConfigured)
+        if (!_provider.IsConfigured)
         {
-            yield return new ChatErrorEvent("AI is not configured. Set the ANTHROPIC_API_KEY environment variable.");
+            yield return new ChatErrorEvent($"AI provider '{_provider.Name}' is not configured.");
             yield return new ChatDoneEvent();
             yield break;
         }
@@ -55,22 +55,20 @@ public sealed class ChatService
             .Select(t => new AnthropicToolDefinition(t.Name, Truncate(t.Description, 1024), t.InputSchema))
             .ToList();
 
+        var system = SystemPrompt + "\n\nToday's date: " + DateTime.UtcNow.ToString("yyyy-MM-dd");
+
         for (var iteration = 0; iteration < _options.MaxToolIterations; iteration++)
         {
-            var apiRequest = new AnthropicMessageRequest(
-                Model: _options.Model,
-                MaxTokens: _options.MaxTokens,
-                Messages: messages,
-                System: SystemPrompt + "\n\nToday's date: " + DateTime.UtcNow.ToString("yyyy-MM-dd"),
-                Tools: toolDefs.Count == 0 ? null : toolDefs,
-                Stream: true);
-
             var assistantBlocks = new List<AnthropicContentBlock>();
             var toolUseBuffers = new Dictionary<int, ToolUseBuffer>();
             string? stopReason = null;
             var hadError = false;
 
-            await foreach (var ev in _anthropic.StreamAsync(apiRequest, cancellationToken))
+            await foreach (var ev in _provider.StreamAsync(
+                messages,
+                system,
+                toolDefs.Count == 0 ? null : toolDefs,
+                cancellationToken))
             {
                 switch (ev)
                 {
