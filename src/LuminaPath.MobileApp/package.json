@@ -29,6 +29,7 @@
     "@capacitor/local-notifications": "8.0.2",
     "@capacitor/status-bar": "8.0.2",
     "@ionic/angular": "^8.8.5",
+    "@microsoft/signalr": "^9.0.0",
     "@primeuix/themes": "^2.0.3",
     "@tailwindcss/postcss": "^4.2.4",
     "@types/three": "^0.184.0",

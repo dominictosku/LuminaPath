@@ -1,0 +1,47 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/friends"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ otherUser?.fullName || otherUser?.userName || 'Chat' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="chat-content">
+  <div *ngIf="isLoading" class="ion-padding ion-text-center">
+    <ion-spinner></ion-spinner>
+  </div>
+  <div *ngIf="errorMessage" class="ion-padding ion-text-center" style="color: var(--ion-color-danger)">
+    {{ errorMessage }}
+  </div>
+
+  <div class="chat-messages" *ngIf="!isLoading && !errorMessage">
+    <div *ngIf="!messages.length" class="ion-text-center ion-padding">
+      No messages yet. Say hi!
+    </div>
+    <div
+      *ngFor="let message of messages"
+      class="chat-bubble"
+      [class.mine]="isMine(message)"
+      [class.theirs]="!isMine(message)">
+      <div class="chat-bubble-content">{{ message.content }}</div>
+      <div class="chat-bubble-meta">{{ message.sentAt | date: 'shortTime' }}</div>
+    </div>
+  </div>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <div class="chat-input-row">
+      <ion-input
+        [(ngModel)]="draft"
+        placeholder="Type a message"
+        (keydown.enter)="send()"
+        [disabled]="isSending || !!errorMessage">
+      </ion-input>
+      <ion-button (click)="send()" [disabled]="isSending || !draft.trim() || !!errorMessage">
+        <ion-icon slot="icon-only" name="send-outline"></ion-icon>
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

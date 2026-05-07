@@ -60,6 +60,31 @@ namespace LuminaPath.Infrastructure
                 .WithMany(skill => skill.Nodes)
                 .HasForeignKey(node => node.QuestSkillId)
                 .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Friendship>()
+                .HasOne(friendship => friendship.Requester)
+                .WithMany()
+                .HasForeignKey(friendship => friendship.RequesterId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Friendship>()
+                .HasOne(friendship => friendship.Addressee)
+                .WithMany()
+                .HasForeignKey(friendship => friendship.AddresseeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Friendship>()
+                .HasIndex(friendship => new { friendship.RequesterId, friendship.AddresseeId })
+                .IsUnique();
+            modelBuilder.Entity<DirectMessage>()
+                .HasOne(message => message.Sender)
+                .WithMany()
+                .HasForeignKey(message => message.SenderId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<DirectMessage>()
+                .HasOne(message => message.Recipient)
+                .WithMany()
+                .HasForeignKey(message => message.RecipientId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<DirectMessage>()
+                .HasIndex(message => new { message.SenderId, message.RecipientId, message.SentAt });
             ConfigureUtcDateTimes(modelBuilder);
         }
 
@@ -172,5 +197,7 @@ namespace LuminaPath.Infrastructure
         public DbSet<QuestSkill> QuestSkills { get; set; }
         public DbSet<QuestSkillNode> QuestSkillNodes { get; set; }
         public DbSet<GamingSession> GamingSessions { get; set; }
+        public DbSet<Friendship> Friendships { get; set; }
+        public DbSet<DirectMessage> DirectMessages { get; set; }
     }
 }

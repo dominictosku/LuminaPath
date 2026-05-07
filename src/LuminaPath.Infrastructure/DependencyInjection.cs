@@ -1,5 +1,6 @@
 ﻿using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Hubs;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.AiChat;
 using LuminaPath.Infrastructure.Services.AiChat.Mcp;
@@ -33,6 +34,8 @@ namespace LuminaPath.Infrastructure
             AddServices(services, config);
             AddAiChat(services, config);
             AddCors(services, config);
+            services.AddSignalR();
+            services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, UserIdProvider>();
             services.AddOpenApi();
             return services;
         }
@@ -241,6 +244,8 @@ namespace LuminaPath.Infrastructure
             services.AddScoped<GamingSessionService>();
             services.AddScoped<DocumentService>();
             services.AddScoped<LuminaUserService>();
+            services.AddScoped<FriendsService>();
+            services.AddScoped<DirectMessageService>();
             services.AddTransient<PSNService>();
             services.AddTransient<FileSystemService>();
         }
@@ -346,6 +351,7 @@ namespace LuminaPath.Infrastructure
         public static void ConfigureServer(this WebApplication app)
         {
             app.MapControllers();
+            app.MapHub<DirectMessageHub>("/hubs/messages");
             app.MapGroup("/api")
                 .MapIdentityApi<LuminaUser>();
             app.MapPost("/api/logout", async (SignInManager<LuminaUser> signInManager,
