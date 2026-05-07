@@ -14,6 +14,7 @@ import {
   rocketOutline,
   settingsOutline,
   sparklesOutline,
+  peopleOutline,
   timeOutline,
 } from 'ionicons/icons';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
@@ -56,6 +57,7 @@ export class NavBarComponent implements OnInit, OnDestroy {
       settingsOutline,
       sparklesOutline,
       timeOutline,
+      peopleOutline,
     });
   }
 
