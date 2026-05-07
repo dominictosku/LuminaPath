@@ -9,6 +9,8 @@ import {
   IonProgressBar,
   IonRefresher,
   IonRefresherContent,
+  IonSegment,
+  IonSegmentButton,
   IonSelect,
   IonSelectOption,
   IonSpinner,
@@ -29,7 +31,10 @@ import { firstValueFrom } from 'rxjs';
 
 import { Game } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
+import { ReleasePlanComponent } from '../../release-calendar/components/release-plan.component';
 import { GameForecast, GamingSession, GamingSessionService } from '../services/gaming-session.service';
+
+type PlanMode = 'sessions' | 'releases';
 
 type DraftSession = {
   myGameId: number | null;
@@ -59,18 +64,23 @@ type DayBucket = {
     IonProgressBar,
     IonRefresher,
     IonRefresherContent,
+    IonSegment,
+    IonSegmentButton,
     IonSelect,
     IonSelectOption,
     IonSpinner,
+    ReleasePlanComponent,
   ],
 })
 export class PlaningPage implements OnInit {
   isLoading = true;
+  mode: PlanMode = 'sessions';
   errorMessage = '';
   sessions: GamingSession[] = [];
   buckets: DayBucket[] = [];
   forecasts: GameForecast[] = [];
   libraryGames: { myGameId: number; gameName: string; playtime: number | null }[] = [];
+  allGames: Game[] = [];
 
   draft: DraftSession = this.emptyDraft();
 
@@ -101,7 +111,8 @@ export class PlaningPage implements OnInit {
 
     try {
       const gamesResult = await firstValueFrom(this.gameService.getAll());
-      this.libraryGames = (gamesResult.data ?? [])
+      this.allGames = gamesResult.data ?? [];
+      this.libraryGames = this.allGames
         .filter((game): game is Game & { myGames: { id: number } } => !!game.myGames)
         .map((game) => ({
           myGameId: game.myGames!.id,

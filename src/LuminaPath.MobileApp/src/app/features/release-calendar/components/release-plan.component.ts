@@ -1,14 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonBadge,
-  IonContent,
   IonIcon,
   IonProgressBar,
   IonRange,
-  IonRefresher,
-  IonRefresherContent,
   IonSegment,
   IonSegmentButton,
   IonSkeletonText,
@@ -26,7 +23,6 @@ import {
   timeOutline,
 } from 'ionicons/icons';
 import { Game, Platforms } from '../../games/models/games.model';
-import { GameService } from '../../games/services/game.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 
 enum GameStatus {
@@ -38,7 +34,7 @@ enum GameStatus {
   MainGame = 5,
 }
 
-type PlanMode = 'week' | 'release' | 'backlog';
+type ReleaseMode = 'week' | 'release' | 'backlog';
 
 type CalendarDay = {
   label: number;
@@ -56,38 +52,36 @@ type PlanMetric = {
 };
 
 @Component({
-  selector: 'app-planing',
-  templateUrl: './release-planing.page.html',
-  styleUrls: ['./release-planing.page.scss'],
+  selector: 'app-release-plan',
+  templateUrl: './release-plan.component.html',
+  styleUrls: ['./release-plan.component.scss'],
   imports: [
     CommonModule,
     FormsModule,
     IonBadge,
-    IonContent,
     IonIcon,
     IonProgressBar,
     IonRange,
-    IonRefresher,
-    IonRefresherContent,
     IonSegment,
     IonSegmentButton,
     IonSkeletonText,
   ],
 })
-export class PlaningPage implements OnInit {
-  games: Game[] = [];
+export class ReleasePlanComponent implements OnChanges {
+  @Input() games: Game[] = [];
+  @Input() isLoading = false;
+  @Input() errorMessage = '';
+
   playingGames: Game[] = [];
   backlogGames: Game[] = [];
   upcomingReleases: Game[] = [];
   calendarDays: CalendarDay[] = [];
   metrics: PlanMetric[] = [];
-  mode: PlanMode = 'week';
+  mode: ReleaseMode = 'week';
   weeklyHours = 10;
-  isLoading = true;
-  errorMessage = '';
   monthLabel = '';
 
-  constructor(private gameService: GameService) {
+  constructor() {
     addIcons({
       calendarClearOutline,
       checkmarkCircleOutline,
@@ -101,29 +95,10 @@ export class PlaningPage implements OnInit {
     });
   }
 
-  ngOnInit() {
-    this.loadPlan();
-  }
-
-  loadPlan(event?: CustomEvent) {
-    this.isLoading = !event;
-    this.errorMessage = '';
-
-    this.gameService.getAll().subscribe({
-      next: (result) => {
-        this.games = result.data ?? [];
-        this.buildPlan();
-        this.isLoading = false;
-        this.completeRefresh(event);
-      },
-      error: () => {
-        this.games = [];
-        this.buildPlan();
-        this.errorMessage = 'Planning data could not be loaded.';
-        this.isLoading = false;
-        this.completeRefresh(event);
-      },
-    });
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['games']) {
+      this.buildPlan();
+    }
   }
 
   updateWeeklyHours() {
@@ -303,10 +278,5 @@ export class PlaningPage implements OnInit {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return today;
-  }
-
-  private completeRefresh(event?: CustomEvent) {
-    const target = event?.target as HTMLIonRefresherElement | undefined;
-    target?.complete();
   }
 }

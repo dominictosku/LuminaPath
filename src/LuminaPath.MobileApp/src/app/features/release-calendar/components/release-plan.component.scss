@@ -1,4 +1,7 @@
 :host {
+  display: grid;
+  gap: 16px;
+
   --plan-bg: #f5f7fb;
   --ink: #111827;
   --muted: #667085;
@@ -8,24 +11,6 @@
   --accent: #2563eb;
 }
 
-.planning-header ion-toolbar {
-  --background: rgba(245, 247, 251, 0.88);
-  --border-width: 0;
-  --color: var(--ink);
-  backdrop-filter: blur(18px);
-}
-
-.planning-shell {
-  --background: var(--plan-bg);
-}
-
-.planning-page {
-  display: grid;
-  gap: 16px;
-  padding: 16px 14px 104px;
-}
-
-.hero,
 .capacity-card,
 .metric,
 .mode-panel,
@@ -41,18 +26,6 @@
   backdrop-filter: blur(18px);
 }
 
-.hero {
-  display: grid;
-  gap: 18px;
-  overflow: hidden;
-  padding: 22px;
-  border-radius: 28px;
-  color: #fff;
-  background:
-    linear-gradient(135deg, rgba(17, 24, 39, 0.94), rgba(14, 165, 233, 0.72)),
-    url("/assets/png/Placeholder.png") center / cover;
-}
-
 .eyebrow {
   display: inline-flex;
   align-items: center;
@@ -65,55 +38,34 @@
   text-transform: uppercase;
 }
 
-.hero .eyebrow {
-  color: rgba(255, 255, 255, 0.82);
-}
-
-h1,
 h2,
 h3 {
   margin: 0;
   letter-spacing: 0;
 }
 
-.hero h1 {
-  max-width: 640px;
-  margin-top: 10px;
-  font-size: clamp(2.25rem, 11vw, 4.8rem);
-  line-height: 0.95;
-  font-weight: 850;
-}
-
-.hero p {
-  max-width: 520px;
-  margin: 12px 0 0;
-  color: rgba(255, 255, 255, 0.78);
-}
-
 .capacity-card {
   display: grid;
   gap: 6px;
   padding: 16px;
-  border-color: rgba(255, 255, 255, 0.14);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.13);
-  color: #fff;
 }
 
 .capacity-card span {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
   font-size: 0.82rem;
 }
 
 .capacity-card strong {
+  color: var(--ink);
   font-size: 2rem;
   line-height: 1;
 }
 
 .capacity-card ion-range {
-  --bar-background: rgba(255, 255, 255, 0.22);
-  --bar-background-active: #fff;
-  --knob-background: #fff;
+  --bar-background: rgba(37, 99, 235, 0.18);
+  --bar-background-active: var(--accent);
+  --knob-background: var(--accent);
   padding: 0;
 }
 
@@ -369,34 +321,8 @@ ion-progress-bar {
 }
 
 @media (min-width: 760px) {
-  .planning-page {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 20px;
-    width: min(1180px, calc(100% - 40px));
-    margin-inline: auto;
-    padding-top: 24px;
-  }
-
-  .hero,
-  .metric-grid,
-  .mode-panel,
-  .notice {
-    grid-column: 1 / -1;
-  }
-
-  .hero {
-    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
-    align-items: end;
-    min-height: 360px;
-    padding: 34px;
-  }
-
   .metric-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .section-block {
-    grid-column: 1 / -1;
   }
 }
 
@@ -408,10 +334,6 @@ ion-progress-bar {
     --line: rgba(255, 255, 255, 0.1);
     --surface: rgba(18, 24, 38, 0.86);
     --surface-solid: #111827;
-  }
-
-  .planning-header ion-toolbar {
-    --background: rgba(7, 11, 18, 0.86);
   }
 
   .notice {
