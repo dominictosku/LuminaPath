@@ -428,10 +428,10 @@
   align-items: center;
   gap: 10px;
   padding: 18px;
-  border: 1px dashed rgba(102, 112, 133, 0.34);
+  border: 1px dashed var(--line);
   border-radius: 18px;
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.48);
+  background: transparent;
 }
 
 .empty-state ion-icon {
