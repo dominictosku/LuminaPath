@@ -161,6 +161,13 @@
     align-items: start;
 }
 
+.excel-workspace {
+    display: grid;
+    grid-template-columns: minmax(300px, 430px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
 .psn-panel,
 .excel-panel,
 .import-coming-soon {
@@ -229,6 +236,22 @@
     font-size: 30px;
 }
 
+.excel-emblem {
+    display: grid;
+    flex: 0 0 auto;
+    width: 56px;
+    height: 56px;
+    place-items: center;
+    border-radius: 18px;
+    color: #fff;
+    background: linear-gradient(135deg, #15803d, #0891b2);
+    box-shadow: 0 16px 36px rgba(21, 128, 61, .24);
+}
+
+.excel-emblem .mud-icon-root {
+    font-size: 30px;
+}
+
 .steam-profile-card {
     display: flex;
     align-items: center;
@@ -266,6 +289,17 @@
 .steam-alert,
 .steam-progress {
     margin-bottom: 14px;
+}
+
+.excel-action-stack {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.excel-action-stack .mud-button-root {
+    width: 100%;
 }
 
 .psn-search {
@@ -418,10 +452,19 @@
     font-size: 48px;
 }
 
+.excel-errors {
+    margin-top: 12px;
+    border: 1px solid rgba(251, 191, 36, .18);
+    border-radius: 14px;
+    background: rgba(120, 53, 15, .18);
+    color: #fde68a;
+}
+
 @media (max-width: 1050px) {
     .import-hero,
     .psn-workspace,
-    .steam-workspace {
+    .steam-workspace,
+    .excel-workspace {
         grid-template-columns: 1fr;
     }
 

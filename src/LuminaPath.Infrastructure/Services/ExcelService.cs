@@ -215,6 +215,89 @@ namespace LuminaPath.Infrastructure.Services
             return result;
         }
 
+        public async Task<GameExcelPreviewResult> PreviewGamesAsync(Stream stream, LuminaUser user)
+        {
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheets.FirstOrDefault(w => w.Name.Equals("Games", StringComparison.OrdinalIgnoreCase))
+                ?? workbook.Worksheets.FirstOrDefault()
+                ?? throw new InvalidOperationException("The workbook does not contain a worksheet.");
+
+            var headerMap = BuildHeaderMap(worksheet);
+            if (!headerMap.ContainsKey("name"))
+            {
+                throw new InvalidOperationException("The workbook needs a 'Name' column.");
+            }
+
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var games = await context.Games
+                .AsNoTracking()
+                .Include(g => g.GameInfo)
+                .Include(g => g.MyGames!)
+                .ToListAsync();
+
+            var result = new GameExcelPreviewResult();
+            var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
+
+            for (var row = 2; row <= lastRow; row++)
+            {
+                var name = GetText(worksheet, row, headerMap, "name");
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
+
+                var previewRow = new GameExcelPreviewRow
+                {
+                    RowNumber = row,
+                    Name = name,
+                    Platform = GetText(worksheet, row, headerMap, "platform") ?? string.Empty,
+                    Status = GetText(worksheet, row, headerMap, "status") ?? string.Empty,
+                    Source = GetText(worksheet, row, headerMap, "source") ?? "Excel",
+                    PsnId = GetText(worksheet, row, headerMap, "psnid", "psn id", "psn") ?? string.Empty,
+                    TrackedHours = GetDouble(worksheet, row, headerMap, "trackedhours", "playtimeinhours"),
+                };
+
+                try
+                {
+                    var game = FindGame(games, name, previewRow.PsnId);
+                    if (game is null)
+                    {
+                        result.CreatedGames++;
+                        result.CreatedMyGames++;
+                        previewRow.GameAction = "Create";
+                        previewRow.LibraryAction = "Create";
+                    }
+                    else
+                    {
+                        result.UpdatedGames++;
+                        previewRow.GameAction = "Update";
+
+                        if (game.MyGames?.Any(g => g.LuminaUserId == user.Id) == true)
+                        {
+                            result.UpdatedMyGames++;
+                            previewRow.LibraryAction = "Update";
+                        }
+                        else
+                        {
+                            result.CreatedMyGames++;
+                            previewRow.LibraryAction = "Create";
+                        }
+                    }
+
+                    result.RowsDetected++;
+                }
+                catch (Exception ex)
+                {
+                    previewRow.Error = ex.Message;
+                    result.Errors.Add($"Row {row}: {ex.Message}");
+                }
+
+                result.Rows.Add(previewRow);
+            }
+
+            return result;
+        }
+
         public class GameExcelImportResult
         {
             public int RowsImported { get; set; }
@@ -223,6 +306,31 @@ namespace LuminaPath.Infrastructure.Services
             public int CreatedMyGames { get; set; }
             public int UpdatedMyGames { get; set; }
             public List<string> Errors { get; } = new();
+        }
+
+        public class GameExcelPreviewResult
+        {
+            public int RowsDetected { get; set; }
+            public int CreatedGames { get; set; }
+            public int UpdatedGames { get; set; }
+            public int CreatedMyGames { get; set; }
+            public int UpdatedMyGames { get; set; }
+            public List<string> Errors { get; } = new();
+            public List<GameExcelPreviewRow> Rows { get; } = new();
+        }
+
+        public class GameExcelPreviewRow
+        {
+            public int RowNumber { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string Platform { get; set; } = string.Empty;
+            public string Status { get; set; } = string.Empty;
+            public string Source { get; set; } = string.Empty;
+            public string PsnId { get; set; } = string.Empty;
+            public double? TrackedHours { get; set; }
+            public string GameAction { get; set; } = string.Empty;
+            public string LibraryAction { get; set; } = string.Empty;
+            public string Error { get; set; } = string.Empty;
         }
 
         private static Dictionary<string, int> BuildHeaderMap(IXLWorksheet worksheet)

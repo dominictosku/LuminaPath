@@ -301,54 +301,143 @@
 			</div>
 		</RadzenTabsItem>
 		<RadzenTabsItem Text="Excel">
-			<MudStack Spacing="3" Class="excel-panel">
-				<MudStack Row="true" Spacing="2">
-					<MudButton OnClick="DownloadExcel"
-							   Variant="MudBlazor.Variant.Filled"
-							   Color="Color.Primary"
-							   StartIcon="@Icons.Material.Filled.Download">
-						Export Games
-					</MudButton>
+			<div class="excel-workspace">
+				<section class="psn-panel excel-profile-panel">
+					<div class="psn-panel__header">
+						<div>
+							<MudText Typo="Typo.overline">Step 1</MudText>
+							<MudText Typo="Typo.h5">Load workbook</MudText>
+							<MudText Typo="Typo.body2">Upload an .xlsx export to preview which games and library entries will be created or updated.</MudText>
+						</div>
+						<div class="excel-emblem">
+							<MudIcon Icon="@Icons.Material.Filled.TableView" />
+						</div>
+					</div>
 
-					<MudFileUpload T="IBrowserFile"
-								   Accept=".xlsx"
-								   FilesChanged="ImportExcel">
-						<CustomContent Context="fileUpload">
-							<MudButton OnClick="@fileUpload.OpenFilePickerAsync"
+					<div class="excel-action-stack">
+						<MudButton OnClick="DownloadExcel"
+								   Variant="MudBlazor.Variant.Filled"
+								   Color="Color.Primary"
+								   StartIcon="@Icons.Material.Filled.Download">
+							Export Games
+						</MudButton>
+
+						<MudFileUpload T="IBrowserFile"
+									   Accept=".xlsx"
+									   FilesChanged="PreviewExcel">
+							<CustomContent Context="fileUpload">
+								<MudButton OnClick="@fileUpload.OpenFilePickerAsync"
+										   Variant="MudBlazor.Variant.Filled"
+										   Color="Color.Secondary"
+										   StartIcon="@Icons.Material.Filled.UploadFile"
+										   Disabled="@(_excelImporting || _excelSaving)">
+									Preview Excel
+								</MudButton>
+							</CustomContent>
+						</MudFileUpload>
+					</div>
+
+					@if (_excelImporting || _excelSaving)
+					{
+						<MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="steam-progress" />
+					}
+
+					<div class="psn-profile-grid">
+						<div class="psn-profile-stat psn-profile-stat--wide">
+							<span>File</span>
+							<strong>@ExcelFileLabel</strong>
+						</div>
+						<div class="psn-profile-stat">
+							<span>Rows</span>
+							<strong>@ExcelRowsLabel</strong>
+						</div>
+						<div class="psn-profile-stat">
+							<span>Warnings</span>
+							<strong>@ExcelWarningsLabel</strong>
+						</div>
+					</div>
+				</section>
+
+				<section class="psn-panel excel-games-panel">
+					<div class="psn-panel__header">
+						<div>
+							<MudText Typo="Typo.overline">Step 2</MudText>
+							<MudText Typo="Typo.h5">Preview changes</MudText>
+							<MudText Typo="Typo.body2">Review the workbook rows before saving them into LuminaPath.</MudText>
+						</div>
+						<div class="psn-panel__actions">
+							<MudButton OnClick="SaveExcelImport"
 									   Variant="MudBlazor.Variant.Filled"
 									   Color="Color.Secondary"
-									   StartIcon="@Icons.Material.Filled.Upload"
-									   Disabled="_excelImporting">
-								Import Excel
+									   StartIcon="@Icons.Material.Filled.LibraryAdd"
+									   Disabled="@(!CanSaveExcelImport)">
+								Import Games
 							</MudButton>
-						</CustomContent>
-					</MudFileUpload>
-				</MudStack>
+						</div>
+					</div>
 
-				@if (_excelImporting)
-				{
-					<MudProgressLinear Indeterminate="true" Color="Color.Primary" />
-				}
-
-				@if (_excelResult is not null)
-				{
-					<MudAlert Severity="@(_excelResult.Errors.Any() ? Severity.Warning : Severity.Success)">
-						Imported @_excelResult.RowsImported rows.
-						Games: @_excelResult.CreatedGames created, @_excelResult.UpdatedGames updated.
-						My games: @_excelResult.CreatedMyGames created, @_excelResult.UpdatedMyGames updated.
-					</MudAlert>
-
-					@if (_excelResult.Errors.Any())
+					@if (_excelPreview is not null)
 					{
-						<MudList T="string" Dense="true">
-							@foreach (var error in _excelResult.Errors.Take(10))
+						<MudAlert Severity="@(_excelPreview.Errors.Any() ? Severity.Warning : Severity.Info)" Variant="MudBlazor.Variant.Outlined" Class="steam-alert">
+							Detected @_excelPreview.RowsDetected rows. Games: @_excelPreview.CreatedGames created, @_excelPreview.UpdatedGames updated.
+							My games: @_excelPreview.CreatedMyGames created, @_excelPreview.UpdatedMyGames updated.
+						</MudAlert>
+					}
+
+					@if (_excelResult is not null)
+					{
+						<MudAlert Severity="@(_excelResult.Errors.Any() ? Severity.Warning : Severity.Success)" Variant="MudBlazor.Variant.Filled" Class="steam-alert">
+							Imported @_excelResult.RowsImported rows. Games: @_excelResult.CreatedGames created, @_excelResult.UpdatedGames updated.
+							My games: @_excelResult.CreatedMyGames created, @_excelResult.UpdatedMyGames updated.
+						</MudAlert>
+					}
+
+					<div class="psn-grid-shell">
+						@if (_excelPreview?.Rows.Any() == true)
+						{
+							<RadzenDataGrid AllowFiltering="true"
+											AllowColumnResize="true"
+											AllowAlternatingRows="false"
+											AllowSorting="true"
+											PageSize="8"
+											AllowPaging="true"
+											PagerHorizontalAlign="HorizontalAlign.Left"
+											ShowPagingSummary="true"
+											Data="@_excelPreview.Rows"
+											Class="psn-games-grid">
+								<Columns>
+									<RadzenDataGridColumn Width="90px" Property="@nameof(ExcelService.GameExcelPreviewRow.RowNumber)" Title="Row" />
+									<RadzenDataGridColumn Width="260px" Property="@nameof(ExcelService.GameExcelPreviewRow.Name)" Title="Title" />
+									<RadzenDataGridColumn Width="130px" Property="@nameof(ExcelService.GameExcelPreviewRow.GameAction)" Title="Game" />
+									<RadzenDataGridColumn Width="130px" Property="@nameof(ExcelService.GameExcelPreviewRow.LibraryAction)" Title="Library" />
+									<RadzenDataGridColumn Width="140px" Property="@nameof(ExcelService.GameExcelPreviewRow.Status)" Title="Status" />
+									<RadzenDataGridColumn Width="140px" Property="@nameof(ExcelService.GameExcelPreviewRow.Platform)" Title="Platform" />
+									<RadzenDataGridColumn Width="150px" Property="@nameof(ExcelService.GameExcelPreviewRow.TrackedHours)" Title="Tracked hours" />
+									<RadzenDataGridColumn Width="180px" Property="@nameof(ExcelService.GameExcelPreviewRow.PsnId)" Title="PSN ID" />
+								</Columns>
+							</RadzenDataGrid>
+						}
+						else
+						{
+							<div class="psn-empty-state">
+								<MudIcon Icon="@Icons.Material.Filled.TableView" />
+								<MudText Typo="Typo.h6">No Excel preview loaded yet</MudText>
+								<MudText Typo="Typo.body2">Upload a workbook to inspect the rows before importing.</MudText>
+							</div>
+						}
+					</div>
+
+					@if (_excelPreview?.Errors.Any() == true || _excelResult?.Errors.Any() == true)
+					{
+						<MudList T="string" Dense="true" Class="excel-errors">
+							@foreach (var error in ExcelErrors.Take(10))
 							{
-								<MudListItem Text="@error" />
+								<MudListItem>@error</MudListItem>
 							}
 						</MudList>
 					}
-				}
-			</MudStack>
+				</section>
+			</div>
 		</RadzenTabsItem>
 	</Tabs>
 </RadzenTabs>
@@ -375,7 +464,11 @@
 	SteamLibraryPreview? steamPreview;
 	SteamImportResult? steamImportResult;
 	ExcelService.GameExcelImportResult? _excelResult;
+	ExcelService.GameExcelPreviewResult? _excelPreview;
+	byte[]? _excelImportBytes;
+	string? _excelFileName;
 	bool _excelImporting;
+	bool _excelSaving;
 	bool steamPreviewing;
 	bool steamImporting;
 	bool steamConfigured;
@@ -399,6 +492,15 @@
 		&& !steamImporting
 		&& !steamPreviewing
 		&& !string.IsNullOrWhiteSpace(steamIdentifier);
+	string ExcelFileLabel => string.IsNullOrWhiteSpace(_excelFileName) ? "No file loaded" : _excelFileName;
+	string ExcelRowsLabel => _excelPreview is null ? "-" : _excelPreview.RowsDetected.ToString();
+	string ExcelWarningsLabel => _excelPreview is null ? "-" : _excelPreview.Errors.Count.ToString();
+	bool CanSaveExcelImport => !_excelImporting
+		&& !_excelSaving
+		&& _excelImportBytes is not null
+		&& _excelPreview?.Rows.Any() == true;
+	IEnumerable<string> ExcelErrors => (_excelPreview?.Errors ?? Enumerable.Empty<string>())
+		.Concat(_excelResult?.Errors ?? Enumerable.Empty<string>());
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -646,7 +748,7 @@
 		await JS.InvokeVoidAsync("downloadFileFromStream", "LuminaDatabase.xlsx", streamRef);
 	}
 
-	async Task ImportExcel(IBrowserFile file)
+	async Task PreviewExcel(IBrowserFile file)
 	{
 		if (User is null)
 		{
@@ -656,10 +758,56 @@
 
 		_excelImporting = true;
 		_excelResult = null;
+		_excelPreview = null;
+		_excelImportBytes = null;
+		_excelFileName = file.Name;
 
 		try
 		{
 			using var importStream = await CopyToMemoryStream(file);
+			_excelImportBytes = importStream.ToArray();
+			importStream.Position = 0;
+			_excelPreview = await excelService.PreviewGamesAsync(importStream, User);
+			ShowExcelPreviewResult(_excelPreview);
+		}
+		catch (Exception ex)
+		{
+			_excelImportBytes = null;
+			_excelFileName = null;
+			Snackbar.Add($"Excel preview failed: {ex.Message}", Severity.Error);
+		}
+		finally
+		{
+			_excelImporting = false;
+		}
+	}
+
+	async Task SaveExcelImport()
+	{
+		if (User is null)
+		{
+			Snackbar.Add("Please sign in before importing games", Severity.Info);
+			return;
+		}
+
+		if (_excelImportBytes is null)
+		{
+			Snackbar.Add("Preview an Excel file before importing it", Severity.Info);
+			return;
+		}
+
+		bool? confirm = await dialogService.Confirm("Import the previewed Excel rows?", "Import Excel");
+		if (confirm != true)
+		{
+			return;
+		}
+
+		_excelSaving = true;
+		_excelResult = null;
+
+		try
+		{
+			using var importStream = new MemoryStream(_excelImportBytes);
 			_excelResult = await excelService.ImportGamesAsync(importStream, User);
 			ShowExcelImportResult(_excelResult);
 		}
@@ -669,7 +817,7 @@
 		}
 		finally
 		{
-			_excelImporting = false;
+			_excelSaving = false;
 		}
 	}
 
@@ -691,5 +839,16 @@
 		}
 
 		Snackbar.Add($"Imported {result.RowsImported} rows", Severity.Success);
+	}
+
+	void ShowExcelPreviewResult(ExcelService.GameExcelPreviewResult result)
+	{
+		if (result.Errors.Any())
+		{
+			Snackbar.Add($"Previewed {result.RowsDetected} rows with {result.Errors.Count} warnings", Severity.Warning);
+			return;
+		}
+
+		Snackbar.Add($"Previewed {result.RowsDetected} rows", Severity.Success);
 	}
 }
