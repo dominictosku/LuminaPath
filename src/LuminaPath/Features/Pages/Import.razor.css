@@ -394,41 +394,97 @@
     border: 1px solid var(--import-panel-border);
     border-radius: 14px;
     background: rgba(8, 18, 32, .92);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+
+::deep .psn-games-grid {
+    overflow: hidden;
+    background: rgba(8, 18, 32, .92) !important;
+    color: var(--import-text) !important;
 }
 
 ::deep .psn-games-grid .rz-datatable,
-::deep .psn-games-grid .rz-grid-table {
+::deep .psn-games-grid .rz-grid,
+::deep .psn-games-grid .rz-grid-table,
+::deep .psn-games-grid .rz-datatable-scrollable-wrapper,
+::deep .psn-games-grid .rz-datatable-scrollable-view {
     border: 0;
-    background: transparent;
-    color: var(--import-text);
+    background: rgba(8, 18, 32, .92) !important;
+    color: var(--import-text) !important;
+}
+
+::deep .psn-games-grid .rz-column-title,
+::deep .psn-games-grid .rz-sortable-column,
+::deep .psn-games-grid .rz-cell-data {
+    color: inherit !important;
 }
 
 ::deep .psn-games-grid .rz-column-title {
-    color: #dbeafe;
+    color: #eaf7ff !important;
     font-weight: 900;
 }
 
 ::deep .psn-games-grid .rz-grid-table thead th,
 ::deep .psn-games-grid .rz-datatable-thead th {
-    border-color: rgba(147, 197, 253, .12);
-    background: rgba(15, 31, 53, .98);
+    border-color: rgba(147, 197, 253, .14) !important;
+    background: rgba(20, 42, 70, .98) !important;
+    color: #eaf7ff !important;
+    font-size: .9rem;
+    font-weight: 900;
+    letter-spacing: 0;
 }
 
 ::deep .psn-games-grid .rz-data-row td,
-::deep .psn-games-grid .rz-datatable-data td {
-    border-color: rgba(147, 197, 253, .08);
-    color: var(--import-text);
-    background: rgba(8, 18, 32, .74);
+::deep .psn-games-grid .rz-datatable-data td,
+::deep .psn-games-grid .rz-grid-table tbody td {
+    border-color: rgba(147, 197, 253, .08) !important;
+    color: #dcecff !important;
+    background: rgba(10, 24, 42, .86) !important;
 }
 
 ::deep .psn-games-grid .rz-data-row td {
     vertical-align: middle;
 }
 
+::deep .psn-games-grid .rz-data-row:hover td,
+::deep .psn-games-grid .rz-grid-table tbody tr:hover td {
+    background: rgba(18, 42, 72, .96) !important;
+    color: #f8fbff !important;
+}
+
+::deep .psn-games-grid .rz-datatable-even td,
+::deep .psn-games-grid .rz-datatable-odd td {
+    background: rgba(10, 24, 42, .86) !important;
+}
+
 ::deep .psn-games-grid .rz-paginator {
-    border-color: rgba(147, 197, 253, .12);
-    background: rgba(15, 31, 53, .92);
-    color: var(--import-muted);
+    min-height: 64px;
+    border-color: rgba(147, 197, 253, .12) !important;
+    background: rgba(9, 20, 36, .98) !important;
+    color: var(--import-muted) !important;
+}
+
+::deep .psn-games-grid .rz-paginator * {
+    color: var(--import-muted) !important;
+}
+
+::deep .psn-games-grid .rz-paginator .rz-state-active,
+::deep .psn-games-grid .rz-paginator .rz-paginator-page.rz-state-active {
+    color: #7dd3fc !important;
+    background: rgba(56, 189, 248, .14) !important;
+    border-color: rgba(125, 211, 252, .24) !important;
+}
+
+::deep .psn-games-grid .rz-paginator .rz-paginator-page,
+::deep .psn-games-grid .rz-paginator .rz-paginator-first,
+::deep .psn-games-grid .rz-paginator .rz-paginator-prev,
+::deep .psn-games-grid .rz-paginator .rz-paginator-next,
+::deep .psn-games-grid .rz-paginator .rz-paginator-last {
+    border-radius: 10px;
+}
+
+::deep .psn-games-grid .rz-paging-summary {
+    color: var(--import-faint) !important;
 }
 
 .psn-empty-state,
