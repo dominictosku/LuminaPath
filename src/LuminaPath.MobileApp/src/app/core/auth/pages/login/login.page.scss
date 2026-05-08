@@ -281,9 +281,13 @@
   }
 
   .forgot-link {
+    padding: 0;
+    border: 0;
     font-family: 'DM Sans', sans-serif;
     font-size: 0.78rem;
     color: var(--c-accent-1);
+    background: transparent;
+    cursor: pointer;
     text-decoration: none;
     opacity: 0.8;
     transition: opacity 0.2s;

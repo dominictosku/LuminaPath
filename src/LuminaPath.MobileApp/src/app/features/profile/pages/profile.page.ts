@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import {
   IonButton,
   IonContent,
@@ -32,6 +33,7 @@ type FormState = 'idle' | 'saving' | 'success' | 'error';
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     IonButton,
     IonContent,
     IonIcon,

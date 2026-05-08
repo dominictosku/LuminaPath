@@ -1,0 +1,14 @@
+:host {
+  --app-nav-offset: 88px;
+}
+
+ion-router-outlet.app-router-outlet--offset {
+  top: var(--app-nav-offset);
+  height: calc(100% - var(--app-nav-offset));
+}
+
+@media (max-width: 640px) {
+  :host {
+    --app-nav-offset: 76px;
+  }
+}

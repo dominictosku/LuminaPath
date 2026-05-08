@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
 import { NavBarComponent } from './nav-bar.component';
@@ -9,7 +10,8 @@ describe('NavBarComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      imports: [NavBarComponent, IonicModule.forRoot()]
+      imports: [NavBarComponent, IonicModule.forRoot()],
+      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(NavBarComponent);

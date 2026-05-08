@@ -1,6 +1,6 @@
 <ion-header *ngIf="!isAuthPage" class="app-header">
   <nav class="mobile-shell">
-    <a class="brand" href="/home" aria-label="LuminaPath home">
+    <a class="brand" [routerLink]="['/home']" aria-label="LuminaPath home">
       <span class="brand-mark">
         <img src="assets/brand/luminapath-logo.png" alt="" />
       </span>
@@ -11,19 +11,19 @@
     </a>
 
     <div class="nav-links" aria-label="Primary navigation">
-      <a href="/home" [class.active]="isActive('/home')">
+      <a [routerLink]="['/home']" [class.active]="isActive('/home')">
         <ion-icon name="game-controller-outline"></ion-icon>
         <span>Home</span>
       </a>
-      <a href="/media" [class.active]="isActive('/media')">
+      <a [routerLink]="['/media']" [class.active]="isActive('/media')">
         <ion-icon name="library-outline"></ion-icon>
         <span>Library</span>
       </a>
-      <a href="/planing" [class.active]="isActive('/planing')">
+      <a [routerLink]="['/planing']" [class.active]="isActive('/planing')">
         <ion-icon name="calendar-clear-outline"></ion-icon>
         <span>Plan</span>
       </a>
-      <a href="/quests" [class.active]="isActive('/quests')">
+      <a [routerLink]="['/quests']" [class.active]="isActive('/quests')">
         <ion-icon name="sparkles-outline"></ion-icon>
         <span>Quests</span>
       </a>
@@ -50,7 +50,7 @@
 
           <a
             *ngFor="let item of notifications; trackBy: trackByNotification"
-            [href]="item.link"
+            [routerLink]="item.link"
             class="notification-item"
             (click)="closeMenus()">
             <ion-icon [name]="item.icon"></ion-icon>
@@ -88,7 +88,7 @@
             <strong>Apps</strong>
           </div>
           <div class="app-grid">
-            <a href="/friends" (click)="closeMenus()">
+            <a [routerLink]="['/friends']" (click)="closeMenus()">
               <ion-icon name="people-outline"></ion-icon>
               <span>Friends</span>
             </a>
@@ -118,14 +118,14 @@
             <span>Account</span>
             <strong>Manage</strong>
           </div>
-          <a href="/profile" class="notification-item" (click)="closeMenus()">
+          <a [routerLink]="['/profile']" class="notification-item" (click)="closeMenus()">
             <ion-icon name="person-circle-outline"></ion-icon>
             <span>
               <strong>Profile</strong>
               <small>Update your personal data.</small>
             </span>
           </a>
-          <a href="/settings" class="notification-item" (click)="closeMenus()">
+          <a [routerLink]="['/settings']" class="notification-item" (click)="closeMenus()">
             <ion-icon name="settings-outline"></ion-icon>
             <span>
               <strong>Settings</strong>

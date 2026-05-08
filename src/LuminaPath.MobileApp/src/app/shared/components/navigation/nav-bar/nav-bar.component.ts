@@ -18,7 +18,7 @@ import {
   timeOutline,
 } from 'ionicons/icons';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription, filter, finalize } from 'rxjs';
 import { NotificationItem, NotificationsService } from 'src/app/shared/services/notifications.service';
@@ -27,7 +27,7 @@ import { NotificationItem, NotificationsService } from 'src/app/shared/services/
     selector: 'app-nav-bar',
     templateUrl: './nav-bar.component.html',
     styleUrls: ['./nav-bar.component.scss'],
-    imports: [CommonModule, IonIcon, IonHeader]
+    imports: [CommonModule, RouterLink, IonIcon, IonHeader]
 })
 export class NavBarComponent implements OnInit, OnDestroy {
   isLoggingOut = false;

@@ -38,6 +38,74 @@
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import '@ionic/angular/css/palettes/dark.system.css';
 
+:root {
+  --app-chrome-bg: rgba(8, 22, 48, 0.86);
+  --app-chrome-bg-strong: rgba(12, 31, 64, 0.94);
+  --app-chrome-border: rgba(137, 180, 255, 0.16);
+  --app-chrome-text: #eef6ff;
+  --app-chrome-muted: #9fb6d4;
+  --app-chrome-accent: #60a5fa;
+}
+
+ion-header:not(.app-header) {
+  background: transparent;
+  box-shadow: none;
+}
+
+ion-header:not(.app-header)::after {
+  display: none;
+}
+
+ion-header:not(.app-header) ion-toolbar {
+  --background: var(--app-chrome-bg);
+  --border-color: var(--app-chrome-border);
+  --border-width: 0 0 1px;
+  --color: var(--app-chrome-text);
+  --min-height: 58px;
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+
+ion-header:not(.app-header) ion-title {
+  color: var(--app-chrome-text);
+  font-size: 1rem;
+  font-weight: 820;
+  letter-spacing: 0;
+}
+
+ion-header:not(.app-header) ion-segment {
+  --background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--app-chrome-border);
+  border-radius: 16px;
+  padding: 4px;
+}
+
+ion-header:not(.app-header) ion-segment-button {
+  --border-radius: 12px;
+  --color: var(--app-chrome-muted);
+  --color-checked: var(--app-chrome-text);
+  --indicator-color: rgba(96, 165, 250, 0.22);
+  min-height: 38px;
+  font-weight: 780;
+  letter-spacing: 0;
+}
+
+ion-back-button,
+ion-header:not(.app-header) ion-button.back-button,
+ion-header:not(.app-header) ion-buttons ion-button {
+  --background-hover: rgba(96, 165, 250, 0.14);
+  --background-focused: rgba(96, 165, 250, 0.14);
+  --border-radius: 999px;
+  --color: var(--app-chrome-text);
+  min-width: 42px;
+  min-height: 42px;
+}
+
+ion-footer ion-toolbar {
+  --background: var(--app-chrome-bg-strong);
+  --border-color: var(--app-chrome-border);
+  --color: var(--app-chrome-text);
+}
+
 ion-content.dashboard-shell,
 ion-content.media-shell,
 ion-content.planning-shell,
