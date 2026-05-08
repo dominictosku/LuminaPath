@@ -8,10 +8,10 @@
       <div>
         <span class="eyebrow">
           <ion-icon name="albums-outline"></ion-icon>
-          Game library
+          {{ mediaMode.singular }} library
         </span>
-        <h1>Find what to play next.</h1>
-        <p>Browse the catalog, track your owned games, and keep your backlog readable.</p>
+        <h1>{{ heroTitle }}</h1>
+        <p>{{ heroDescription }}</p>
       </div>
 
       <div class="summary-grid">
@@ -24,7 +24,7 @@
           <strong>{{ ownedGames }}</strong>
         </article>
         <article>
-          <span>Playing</span>
+          <span>{{ isGamesMode ? 'Playing' : 'Active' }}</span>
           <strong>{{ playingGames }}</strong>
         </article>
         <article>
@@ -63,6 +63,7 @@
         </ion-select>
 
         <ion-select
+          *ngIf="isGamesMode"
           interface="popover"
           label="Platform"
           label-placement="stacked"
@@ -104,7 +105,7 @@
     <section class="results-heading" *ngIf="!isLoading">
       <div>
         <span class="eyebrow">Results</span>
-        <h2>{{ filteredGames.length }} games</h2>
+        <h2>{{ resultTitle }}</h2>
       </div>
       <ion-button fill="clear" size="small" (click)="clearFilters()">Reset</ion-button>
     </section>
@@ -116,7 +117,7 @@
           class="quick-add-button"
           [class.quick-add-button--edit]="game.myGames"
           [disabled]="isAdding(game)"
-          [attr.aria-label]="(game.myGames ? 'Edit ' : 'Add ') + game.name + (game.myGames ? ' in my games' : ' to my games')"
+          [attr.aria-label]="(game.myGames ? 'Edit ' : 'Add ') + game.name + (game.myGames ? ' in my library' : ' to my library')"
           (click)="openGameListDialog(game)">
           <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : (game.myGames ? 'create-outline' : 'add-outline')"></ion-icon>
         </ion-button>
@@ -161,7 +162,7 @@
           class="quick-add-button list-row__add"
           [class.quick-add-button--edit]="game.myGames"
           [disabled]="isAdding(game)"
-          [attr.aria-label]="(game.myGames ? 'Edit ' : 'Add ') + game.name + (game.myGames ? ' in my games' : ' to my games')"
+          [attr.aria-label]="(game.myGames ? 'Edit ' : 'Add ') + game.name + (game.myGames ? ' in my library' : ' to my library')"
           (click)="openGameListDialog(game)">
           <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : (game.myGames ? 'create-outline' : 'add-outline')"></ion-icon>
         </ion-button>
@@ -183,7 +184,7 @@
 
     <section class="empty-state" *ngIf="!isLoading && !filteredGames.length">
       <ion-icon name="game-controller-outline"></ion-icon>
-      <h2>No games match</h2>
+      <h2>{{ emptyTitle }}</h2>
       <p>Try loosening the search or filters.</p>
       <ion-button fill="outline" (click)="clearFilters()">Clear filters</ion-button>
     </section>
@@ -197,7 +198,7 @@
       <form class="add-game-dialog" (ngSubmit)="submitAddGame()">
         <header>
           <div>
-            <span class="eyebrow">{{ isEditingSelectedGame() ? 'Edit my game' : 'Add to mine' }}</span>
+            <span class="eyebrow">{{ isEditingSelectedGame() ? 'Edit my ' + mediaMode.singular : 'Add to mine' }}</span>
             <h2>{{ selectedGame?.name }}</h2>
           </div>
           <ion-button
@@ -264,7 +265,7 @@
           </ion-button>
           <ion-button type="submit" [disabled]="selectedGame ? isAdding(selectedGame) : true">
             <ion-icon slot="start" [name]="selectedGame && isAdding(selectedGame) ? 'hourglass-outline' : 'add-outline'"></ion-icon>
-            {{ selectedGame && isAdding(selectedGame) ? 'Saving...' : (isEditingSelectedGame() ? 'Save changes' : 'Add game') }}
+            {{ selectedGame && isAdding(selectedGame) ? 'Saving...' : (isEditingSelectedGame() ? 'Save changes' : 'Add ' + mediaMode.singular) }}
           </ion-button>
         </footer>
       </form>

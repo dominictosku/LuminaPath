@@ -8,13 +8,16 @@ import {
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 import { MyGameService } from './my-game.service';
 import { MyGame } from '../../games/models/games.model';
+import { MediaModeService } from 'src/app/shared/services/media-mode.service';
 
 describe('MyGameService', () => {
   let service: MyGameService;
   let httpMock: HttpTestingController;
   let endpoint: string;
+  let mediaMode: MediaModeService;
 
   beforeEach(() => {
+    localStorage.removeItem('luminapath.mediaMode');
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -26,6 +29,7 @@ describe('MyGameService', () => {
 
     service = TestBed.inject(MyGameService);
     httpMock = TestBed.inject(HttpTestingController);
+    mediaMode = TestBed.inject(MediaModeService);
     endpoint = TestBed.inject(ApiEndpointService).url('mygames');
   });
 
@@ -61,6 +65,23 @@ describe('MyGameService', () => {
     const fakeResponse = { id: 7, gameId: 42, status: 1 } as unknown as MyGame;
     req.flush(fakeResponse);
     expect(response).toEqual(fakeResponse);
+  });
+
+  it('addToLibrary uses the selected media library endpoint and id key', () => {
+    mediaMode.select('movies');
+
+    service.addToLibrary(42, { status: 1, timeSpend: 12 }).subscribe();
+
+    const req = httpMock.expectOne(TestBed.inject(ApiEndpointService).url('mymovies'));
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      id: 0,
+      gameId: 42,
+      movieId: 42,
+      status: 1,
+      timeSpend: 12,
+    });
+    req.flush({ id: 7, movieId: 42, status: 1 });
   });
 
   it('addToLibrary surfaces backend errors to the subscriber', () => {

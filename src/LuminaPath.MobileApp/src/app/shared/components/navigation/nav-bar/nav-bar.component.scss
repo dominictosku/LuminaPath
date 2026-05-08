@@ -3,8 +3,9 @@
   --header-border: rgba(15, 23, 42, 0.09);
   --ink: #0f172a;
   --muted: #64748b;
-  --accent: #2563eb;
-  --accent-2: #0891b2;
+  --accent: var(--app-theme-accent, #2563eb);
+  --accent-2: var(--app-theme-accent-2, #0891b2);
+  --accent-soft: var(--app-theme-accent-soft, rgba(37, 99, 235, 0.11));
 }
 
 .app-header {
@@ -28,7 +29,7 @@
 .mobile-shell {
   pointer-events: auto;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: 14px;
   width: min(1180px, 100%);
@@ -64,7 +65,7 @@
   place-items: center;
   color: #fff;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.24);
+  box-shadow: 0 12px 26px var(--app-theme-accent-soft, rgba(37, 99, 235, 0.24));
 }
 
 .brand-mark {
@@ -132,7 +133,7 @@
 
 .nav-links a.active {
   color: var(--accent);
-  background: rgba(37, 99, 235, 0.11);
+  background: var(--accent-soft);
 }
 
 .nav-links a:hover,
@@ -178,7 +179,7 @@
 .icon-action:hover,
 .icon-action:focus-visible {
   color: var(--accent);
-  background: rgba(37, 99, 235, 0.11);
+  background: var(--accent-soft);
   transform: translateY(-1px);
 }
 
@@ -240,7 +241,7 @@
 
 .notification-item:hover,
 .app-grid a:hover {
-  background: rgba(37, 99, 235, 0.09);
+  background: var(--accent-soft);
 }
 
 .notification-item--button {
@@ -268,7 +269,7 @@
   padding: 9px;
   border-radius: 14px;
   color: var(--accent);
-  background: rgba(37, 99, 235, 0.11);
+  background: var(--accent-soft);
   box-sizing: border-box;
 }
 
@@ -310,7 +311,7 @@
   padding: 7px;
   border-radius: 12px;
   color: var(--accent);
-  background: rgba(37, 99, 235, 0.11);
+  background: var(--accent-soft);
 }
 
 .app-panel {
@@ -356,8 +357,8 @@
 .profile-button:hover,
 .profile-button:focus-visible {
   color: var(--accent);
-  border-color: rgba(37, 99, 235, 0.32);
-  background: rgba(37, 99, 235, 0.11);
+  border-color: var(--app-theme-accent-border, rgba(37, 99, 235, 0.32));
+  background: var(--accent-soft);
 }
 
 .profile-button.active .profile-copy strong,
@@ -372,6 +373,80 @@
   border-radius: 999px;
 }
 
+.media-mode-wrap {
+  justify-self: end;
+}
+
+.media-mode-button,
+.media-mode-item {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.media-mode-button {
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.64);
+  font-size: 0.84rem;
+  font-weight: 820;
+}
+
+.media-mode-button ion-icon:first-child {
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+}
+
+.media-mode-button .chevron {
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+}
+
+.media-mode-button.active,
+.media-mode-button:hover,
+.media-mode-button:focus-visible {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.media-mode-panel {
+  right: 0;
+  width: min(220px, calc(100vw - 24px));
+}
+
+.media-mode-item {
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 8px 10px;
+  border-radius: 15px;
+  background: transparent;
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.media-mode-item ion-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+}
+
+.media-mode-item.active,
+.media-mode-item:hover,
+.media-mode-item:focus-visible {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .logout-icon {
   width: 18px;
   height: 18px;
@@ -380,7 +455,7 @@
 
 @media (max-width: 860px) {
   .mobile-shell {
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr auto auto;
     gap: 8px;
   }
 
@@ -400,7 +475,7 @@
   }
 
   .mobile-shell {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     border-radius: 22px;
   }
 
@@ -421,6 +496,24 @@
   .header-actions {
     justify-self: end;
     gap: 5px;
+  }
+
+  .media-mode-wrap {
+    justify-self: end;
+  }
+
+  .media-mode-button {
+    width: 42px;
+    height: 42px;
+    min-height: 42px;
+    justify-content: center;
+    padding: 0;
+    border-radius: 16px;
+  }
+
+  .media-mode-button span,
+  .media-mode-button .chevron {
+    display: none;
   }
 
   .icon-action {
@@ -450,8 +543,9 @@
     --header-border: rgba(255, 255, 255, 0.1);
     --ink: #f8fafc;
     --muted: #98a2b3;
-    --accent: #60a5fa;
-    --accent-2: #22d3ee;
+    --accent: var(--app-theme-accent, #60a5fa);
+    --accent-2: var(--app-theme-accent-2, #22d3ee);
+    --accent-soft: var(--app-theme-accent-soft, rgba(96, 165, 250, 0.14));
   }
 
   .profile-button {
@@ -460,6 +554,11 @@
   }
 
   .icon-action {
+    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.055);
+  }
+
+  .media-mode-button {
     border-color: rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.055);
   }

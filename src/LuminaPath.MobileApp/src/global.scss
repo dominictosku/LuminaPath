@@ -39,12 +39,44 @@
 @import '@ionic/angular/css/palettes/dark.system.css';
 
 :root {
+  --app-theme-accent: #60a5fa;
+  --app-theme-accent-2: #22d3ee;
+  --app-theme-accent-soft: rgba(96, 165, 250, 0.14);
+  --app-theme-accent-border: rgba(96, 165, 250, 0.32);
+  --app-theme-hero-start: rgba(15, 23, 42, 0.92);
+  --app-theme-hero-end: rgba(37, 99, 235, 0.78);
   --app-chrome-bg: rgba(8, 22, 48, 0.86);
   --app-chrome-bg-strong: rgba(12, 31, 64, 0.94);
   --app-chrome-border: rgba(137, 180, 255, 0.16);
   --app-chrome-text: #eef6ff;
   --app-chrome-muted: #9fb6d4;
   --app-chrome-accent: #60a5fa;
+}
+
+body.theme-animes {
+  --app-theme-accent: #f472b6;
+  --app-theme-accent-2: #fb7185;
+  --app-theme-accent-soft: rgba(244, 114, 182, 0.16);
+  --app-theme-accent-border: rgba(244, 114, 182, 0.34);
+  --app-theme-hero-start: rgba(58, 12, 46, 0.94);
+  --app-theme-hero-end: rgba(219, 39, 119, 0.76);
+  --app-chrome-bg: rgba(49, 16, 43, 0.86);
+  --app-chrome-bg-strong: rgba(69, 20, 54, 0.94);
+  --app-chrome-border: rgba(251, 182, 206, 0.2);
+  --app-chrome-accent: #f472b6;
+}
+
+body.theme-movies {
+  --app-theme-accent: #34d399;
+  --app-theme-accent-2: #a3e635;
+  --app-theme-accent-soft: rgba(52, 211, 153, 0.16);
+  --app-theme-accent-border: rgba(52, 211, 153, 0.34);
+  --app-theme-hero-start: rgba(10, 39, 31, 0.94);
+  --app-theme-hero-end: rgba(5, 150, 105, 0.78);
+  --app-chrome-bg: rgba(8, 42, 33, 0.86);
+  --app-chrome-bg-strong: rgba(10, 58, 44, 0.94);
+  --app-chrome-border: rgba(134, 239, 172, 0.2);
+  --app-chrome-accent: #34d399;
 }
 
 ion-header:not(.app-header) {
@@ -83,7 +115,7 @@ ion-header:not(.app-header) ion-segment-button {
   --border-radius: 12px;
   --color: var(--app-chrome-muted);
   --color-checked: var(--app-chrome-text);
-  --indicator-color: rgba(96, 165, 250, 0.22);
+  --indicator-color: var(--app-theme-accent-soft);
   min-height: 38px;
   font-weight: 780;
   letter-spacing: 0;
@@ -92,8 +124,8 @@ ion-header:not(.app-header) ion-segment-button {
 ion-back-button,
 ion-header:not(.app-header) ion-button.back-button,
 ion-header:not(.app-header) ion-buttons ion-button {
-  --background-hover: rgba(96, 165, 250, 0.14);
-  --background-focused: rgba(96, 165, 250, 0.14);
+  --background-hover: var(--app-theme-accent-soft);
+  --background-focused: var(--app-theme-accent-soft);
   --border-radius: 999px;
   --color: var(--app-chrome-text);
   min-width: 42px;

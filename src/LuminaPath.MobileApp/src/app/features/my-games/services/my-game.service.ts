@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { ApiService } from 'src/app/shared/services/api.service';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 import { MyGame } from '../../games/models/games.model';
+import { MediaModeService } from 'src/app/shared/services/media-mode.service';
 
 type AddMyGameRequest = {
   id: number;
@@ -18,8 +19,16 @@ type AddMyGameRequest = {
   providedIn: 'root',
 })
 export class MyGameService extends ApiService<MyGame> {
-  constructor(httpClient: HttpClient, apiEndpoint: ApiEndpointService) {
+  constructor(
+    httpClient: HttpClient,
+    apiEndpoint: ApiEndpointService,
+    private mediaMode: MediaModeService,
+  ) {
     super(httpClient, apiEndpoint, 'mygames');
+  }
+
+  protected override get apiUrl(): string {
+    return this.apiEndpoint.url(this.mediaMode.current.libraryEndpoint);
   }
 
   addToLibrary(gameId: number, details: Omit<AddMyGameRequest, 'id' | 'gameId'>) {
@@ -28,6 +37,7 @@ export class MyGameService extends ApiService<MyGame> {
       gameId,
       ...details,
     };
+    this.assignMediaId(request, gameId);
 
     return this.post(request as MyGame);
   }
@@ -38,7 +48,13 @@ export class MyGameService extends ApiService<MyGame> {
       gameId,
       ...details,
     };
+    this.assignMediaId(request, gameId);
 
     return this.put(myGameId, request as MyGame);
+  }
+
+  private assignMediaId(request: AddMyGameRequest, mediaId: number): void {
+    const mediaKey = this.mediaMode.current.libraryIdKey;
+    (request as AddMyGameRequest & Record<string, number>)[mediaKey] = mediaId;
   }
 }

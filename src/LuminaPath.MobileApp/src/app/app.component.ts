@@ -1,4 +1,5 @@
-import { Component, DestroyRef, HostBinding, inject, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, HostBinding, Inject, inject, OnInit, Renderer2, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { initFlowbite } from 'flowbite';
 import { NavBarComponent } from './shared/components/navigation/nav-bar/nav-bar.component'
@@ -8,6 +9,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { shouldHideAppNavigation } from './shared/utils/app-shell-navigation';
+import { MediaModeService } from './shared/services/media-mode.service';
 
 @Component({
     selector: 'app-root',
@@ -21,6 +23,9 @@ export class AppComponent implements OnInit {
   constructor(
     private releaseNotifications: ReleaseNotificationService,
     private router: Router,
+    private mediaMode: MediaModeService,
+    private renderer: Renderer2,
+    @Inject(DOCUMENT) private document: Document,
   ) { }
 
   title = 'web-app';
@@ -32,6 +37,9 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     initFlowbite();
     this.releaseNotifications.init();
+    this.mediaMode.mode$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((mode) => this.applyMediaTheme(mode.themeClass));
     this.updateShellState(this.router.url);
     this.router.events
       .pipe(
@@ -43,5 +51,13 @@ export class AppComponent implements OnInit {
 
   private updateShellState(url: string): void {
     this.showShellNavigation.set(!shouldHideAppNavigation(url));
+  }
+
+  private applyMediaTheme(themeClass: string): void {
+    for (const mode of this.mediaMode.options) {
+      this.renderer.removeClass(this.document.body, mode.themeClass);
+    }
+
+    this.renderer.addClass(this.document.body, themeClass);
   }
 }

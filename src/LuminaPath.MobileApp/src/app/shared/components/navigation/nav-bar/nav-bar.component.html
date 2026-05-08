@@ -29,6 +29,36 @@
       </a>
     </div>
 
+    <div class="menu-wrap media-mode-wrap">
+      <button
+        type="button"
+        class="media-mode-button"
+        aria-label="Choose media type"
+        [class.active]="openMenu === 'media'"
+        (click)="toggleMenu('media')">
+        <ion-icon [name]="mediaMode.icon"></ion-icon>
+        <span>{{ mediaMode.label }}</span>
+        <ion-icon name="chevron-down-outline" class="chevron"></ion-icon>
+      </button>
+
+      <section class="dropdown-panel media-mode-panel" *ngIf="openMenu === 'media'">
+        <div class="dropdown-heading">
+          <span>Media</span>
+          <strong>{{ mediaMode.label }}</strong>
+        </div>
+
+        <button
+          type="button"
+          class="media-mode-item"
+          *ngFor="let mode of mediaModes"
+          [class.active]="mode.id === mediaMode.id"
+          (click)="selectMediaMode(mode.id)">
+          <ion-icon [name]="mode.icon"></ion-icon>
+          <span>{{ mode.label }}</span>
+        </button>
+      </section>
+    </div>
+
     <div class="header-actions">
       <div class="menu-wrap">
         <button

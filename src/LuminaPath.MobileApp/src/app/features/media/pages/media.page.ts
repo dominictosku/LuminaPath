@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -39,6 +39,8 @@ import { GameService } from '../../games/services/game.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { MyGameService } from '../../my-games/services/my-game.service';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
+import { MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
+import { Subscription } from 'rxjs';
 
 enum GameStatus {
   OnHold = 0,
@@ -81,7 +83,7 @@ type AddGameForm = {
     IonSkeletonText,
   ],
 })
-export class MediaPage implements OnInit {
+export class MediaPage implements OnInit, OnDestroy {
   games: Game[] = [];
   filteredGames: Game[] = [];
   searchTerm = '';
@@ -96,6 +98,9 @@ export class MediaPage implements OnInit {
   selectedGame: Game | null = null;
   isAddDialogOpen = false;
   addGameForm: AddGameForm = this.createAddGameForm();
+  mediaMode: MediaModeOption;
+
+  private mediaModeSub?: Subscription;
 
   readonly platforms = Platforms;
   readonly statusOptions = [
@@ -112,7 +117,9 @@ export class MediaPage implements OnInit {
     private myGameService: MyGameService,
     private releaseNotifications: ReleaseNotificationService,
     private router: Router,
+    private mediaModeService: MediaModeService,
   ) {
+    this.mediaMode = this.mediaModeService.current;
     addIcons({
       addOutline,
       albumsOutline,
@@ -131,7 +138,19 @@ export class MediaPage implements OnInit {
   }
 
   ngOnInit() {
+    this.mediaModeSub = this.mediaModeService.mode$.subscribe((mode) => {
+      const changed = mode.id !== this.mediaMode.id;
+      this.mediaMode = mode;
+      if (changed) {
+        this.clearFilters(false);
+        this.loadGames();
+      }
+    });
     this.loadGames();
+  }
+
+  ngOnDestroy(): void {
+    this.mediaModeSub?.unsubscribe();
   }
 
   loadGames(event?: CustomEvent) {
@@ -144,12 +163,14 @@ export class MediaPage implements OnInit {
         this.applyFilters();
         this.isLoading = false;
         this.completeRefresh(event);
-        this.releaseNotifications.syncForGames(this.games);
+        if (this.mediaMode.id === 'games') {
+          this.releaseNotifications.syncForGames(this.games);
+        }
       },
       error: () => {
         this.games = [];
         this.filteredGames = [];
-        this.errorMessage = 'Games could not be loaded.';
+        this.errorMessage = `${this.mediaMode.label} could not be loaded.`;
         this.isLoading = false;
         this.completeRefresh(event);
       },
@@ -181,12 +202,14 @@ export class MediaPage implements OnInit {
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  clearFilters() {
+  clearFilters(apply = true) {
     this.searchTerm = '';
     this.ownershipFilter = 'all';
     this.statusFilter = 'all';
     this.platformFilter = 'all';
-    this.applyFilters();
+    if (apply) {
+      this.applyFilters();
+    }
   }
 
   openGameListDialog(game: Game) {
@@ -240,12 +263,14 @@ export class MediaPage implements OnInit {
         this.applyFilters();
         this.successMessage = existingMyGame
           ? `${game.name} was saved.`
-          : `${game.name} was added to your game list.`;
+          : `${game.name} was added to your ${this.mediaMode.singular} list.`;
         this.addingGameIds.delete(game.id);
         this.isAddDialogOpen = false;
         this.selectedGame = null;
         this.triggerAddHaptic();
-        this.releaseNotifications.syncForGames(this.games);
+        if (this.mediaMode.id === 'games') {
+          this.releaseNotifications.syncForGames(this.games);
+        }
       },
       error: (error) => {
         this.errorMessage = this.addGameErrorMessage(error);
@@ -276,6 +301,34 @@ export class MediaPage implements OnInit {
 
   get playingGames() {
     return this.games.filter((game) => this.statusOf(game) === GameStatus.Playing).length;
+  }
+
+  get isGamesMode(): boolean {
+    return this.mediaMode.id === 'games';
+  }
+
+  get heroTitle(): string {
+    if (this.mediaMode.id === 'animes') {
+      return 'Find what to watch next.';
+    }
+
+    if (this.mediaMode.id === 'movies') {
+      return 'Plan the next movie night.';
+    }
+
+    return 'Find what to play next.';
+  }
+
+  get heroDescription(): string {
+    return `Browse the catalog, track your owned ${this.mediaMode.label.toLowerCase()}, and keep your backlog readable.`;
+  }
+
+  get resultTitle(): string {
+    return `${this.filteredGames.length} ${this.filteredGames.length === 1 ? this.mediaMode.singular : this.mediaMode.label.toLowerCase()}`;
+  }
+
+  get emptyTitle(): string {
+    return `No ${this.mediaMode.label.toLowerCase()} match`;
   }
 
   get remainingHours() {
@@ -352,7 +405,7 @@ export class MediaPage implements OnInit {
   }
 
   private matchesPlatform(game: Game): boolean {
-    return this.platformFilter === 'all' || Number(game.platforms) === Number(this.platformFilter);
+    return !this.isGamesMode || this.platformFilter === 'all' || Number(game.platforms) === Number(this.platformFilter);
   }
 
   private playedOf(game: Game): number {
@@ -433,9 +486,13 @@ export class MediaPage implements OnInit {
     if (payload && typeof payload === 'object' && 'errors' in payload) {
       const errors = (payload as { errors: Record<string, string[]> }).errors;
       const messages = Object.values(errors).flat();
-      return messages.length ? messages.join(' ') : 'Game could not be added to your list.';
+      return messages.length ? messages.join(' ') : `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`;
     }
 
-    return 'Game could not be added to your list.';
+    return `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`;
+  }
+
+  private capitalize(value: string): string {
+    return `${value[0]?.toUpperCase() ?? ''}${value.slice(1)}`;
   }
 }

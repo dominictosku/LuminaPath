@@ -5,7 +5,10 @@
   --line: rgba(17, 24, 39, 0.09);
   --surface: rgba(255, 255, 255, 0.9);
   --surface-solid: #fff;
-  --accent: #2563eb;
+  --accent: var(--app-theme-accent, #2563eb);
+  --accent-2: var(--app-theme-accent-2, #10b981);
+  --accent-soft: var(--app-theme-accent-soft, rgba(37, 99, 235, 0.12));
+  --accent-border: var(--app-theme-accent-border, rgba(37, 99, 235, 0.42));
 }
 
 .media-header ion-toolbar {
@@ -46,7 +49,7 @@
   border-radius: 28px;
   color: #fff;
   background:
-    linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(37, 99, 235, 0.78)),
+    linear-gradient(135deg, var(--app-theme-hero-start, rgba(15, 23, 42, 0.92)), var(--app-theme-hero-end, rgba(37, 99, 235, 0.78))),
     url("/assets/png/Placeholder.png") center / cover;
 }
 
@@ -273,8 +276,8 @@ ion-select {
 }
 
 ion-badge {
-  --background: rgba(37, 99, 235, 0.1);
-  --color: #1d4ed8;
+  --background: var(--accent-soft);
+  --color: var(--accent);
   font-weight: 750;
 }
 
@@ -342,14 +345,14 @@ ion-badge {
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(37, 99, 235, 0.12);
+  background: var(--accent-soft);
 }
 
 .progress-track span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #2563eb, #10b981);
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
 }
 
 .game-list {
@@ -449,7 +452,7 @@ ion-badge {
   --padding-start: 0;
   --padding-top: 0;
   --border-radius: 14px;
-  --background: rgba(37, 99, 235, 0.1);
+  --background: var(--accent-soft);
   --box-shadow: none;
   --color: var(--accent);
 }
@@ -493,8 +496,8 @@ ion-badge {
 
 .form-field input:focus,
 .form-field select:focus {
-  border-color: rgba(37, 99, 235, 0.42);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .add-game-dialog footer {
@@ -578,7 +581,7 @@ ion-badge {
     --background: rgba(17, 24, 39, 0.86);
     --background-hover: rgba(31, 41, 55, 0.96);
     --background-focused: rgba(31, 41, 55, 0.96);
-    --color: #93c5fd;
+    --color: var(--accent);
   }
 
   .quick-add-button::part(native) {

@@ -9,7 +9,11 @@ import { ApiEndpointService } from './api-endpoint.service';
 export class ApiService<T> {
   private httpConfig = { withCredentials: true };
 
-  constructor(private http: HttpClient, private apiEndpoint: ApiEndpointService, private endpoint: string) {}
+  constructor(
+    protected http: HttpClient,
+    protected apiEndpoint: ApiEndpointService,
+    protected endpoint: string,
+  ) {}
 
   protected get apiUrl(): string {
     return this.apiEndpoint.url(this.endpoint);
