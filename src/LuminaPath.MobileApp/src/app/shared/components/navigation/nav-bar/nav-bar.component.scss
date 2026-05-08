@@ -8,6 +8,7 @@
 }
 
 .app-header {
+  --background: transparent;
   position: fixed;
   top: 0;
   right: 0;
@@ -15,11 +16,17 @@
   z-index: 900;
   overflow: visible;
   padding: max(8px, env(safe-area-inset-top)) 12px 8px;
-  background: transparent;
+  background: transparent !important;
   box-shadow: none;
+  pointer-events: none;
+}
+
+.app-header::after {
+  display: none;
 }
 
 .mobile-shell {
+  pointer-events: auto;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;

@@ -288,12 +288,15 @@
     right: 10px;
     left: 10px;
     width: auto;
-    bottom: calc(max(16px, env(safe-area-inset-bottom)) + 76px);
-    height: 70vh;
+    bottom: calc(164px + env(safe-area-inset-bottom));
+    height: min(62vh, calc(100vh - 230px));
   }
 
   .ai-chat-fab {
     right: 14px;
-    bottom: 16px;
+    bottom: calc(102px + env(safe-area-inset-bottom));
+    width: 52px;
+    height: 52px;
+    border-radius: 17px;
   }
 }

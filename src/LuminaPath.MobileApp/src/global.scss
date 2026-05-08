@@ -106,6 +106,14 @@ ion-footer ion-toolbar {
   --color: var(--app-chrome-text);
 }
 
+ion-router-outlet.app-router-outlet--offset ion-content {
+  --padding-top: var(--app-nav-offset);
+}
+
+ion-router-outlet.app-router-outlet--offset ion-content::part(scroll) {
+  scroll-padding-top: var(--app-nav-offset);
+}
+
 ion-content.dashboard-shell,
 ion-content.media-shell,
 ion-content.planning-shell,

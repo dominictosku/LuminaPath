@@ -7,6 +7,7 @@ import { ReleaseNotificationService } from './shared/services/release-notificati
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { shouldHideAppNavigation } from './shared/utils/app-shell-navigation';
 
 @Component({
     selector: 'app-root',
@@ -24,7 +25,7 @@ export class AppComponent implements OnInit {
 
   title = 'web-app';
   darkMode = signal<boolean>(true);
-  isAuthPage = signal<boolean>(false);
+  showShellNavigation = signal<boolean>(true);
 
   @HostBinding('class.dark') get mode() { return this.darkMode(); }
 
@@ -41,6 +42,6 @@ export class AppComponent implements OnInit {
   }
 
   private updateShellState(url: string): void {
-    this.isAuthPage.set(url.startsWith('/auth'));
+    this.showShellNavigation.set(!shouldHideAppNavigation(url));
   }
 }

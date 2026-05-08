@@ -22,6 +22,7 @@ import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription, filter, finalize } from 'rxjs';
 import { NotificationItem, NotificationsService } from 'src/app/shared/services/notifications.service';
+import { shouldHideAppNavigation } from 'src/app/shared/utils/app-shell-navigation';
 
 @Component({
     selector: 'app-nav-bar',
@@ -76,8 +77,8 @@ export class NavBarComponent implements OnInit, OnDestroy {
     this.notificationsSub?.unsubscribe();
   }
 
-  get isAuthPage() {
-    return this.router.url.startsWith('/auth');
+  get showShellNavigation() {
+    return !shouldHideAppNavigation(this.router.url);
   }
 
   isActive(path: string): boolean {
@@ -119,7 +120,7 @@ export class NavBarComponent implements OnInit, OnDestroy {
   }
 
   private refreshNotifications() {
-    if (this.isAuthPage) {
+    if (!this.showShellNavigation) {
       this.notifications = [];
       return;
     }
