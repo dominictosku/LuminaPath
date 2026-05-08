@@ -12,7 +12,7 @@ using System.Linq.Expressions;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices
 {
-    public class MyGameService : GenericMyModelService<MyGame>
+    public class MyGameService : UserMediaModelService<MyGame, Game>
     {
         public MyGameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IObjectMapper mapper) : base(dbContextFactory, mapper)
         {
@@ -20,6 +20,11 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         public override string[] Includes { get; set; } = ["Game", "Game.Image", "MyGameInfo"];
         protected override Func<IQueryable<MyGame>, IOrderedQueryable<MyGame>> DefaultOrderBy => e => e.OrderByDescending(g => g.Game!.ReleaseDate);
+
+        protected override Expression<Func<MyGame, bool>> HasMediaId(int mediaId)
+        {
+            return myGame => myGame.GameId == mediaId;
+        }
 
         public async Task<byte[]> ExportAsCSV(LuminaUser user)
         {

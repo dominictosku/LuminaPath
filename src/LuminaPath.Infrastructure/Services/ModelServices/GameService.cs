@@ -1,94 +1,60 @@
-using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Entities;
-using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Extensions;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
-using LuminaPath.Infrastructure.Helper;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices
 {
-    public class GameService : GenericModelService<Game>
+    public class GameService : MediaModelService<Game, MyGame>
     {
-        private readonly DocumentService _documentService;
         public override string[] Includes { get; set; } = [nameof(Game.GameInfo), nameof(Game.MyGames), nameof(Game.Image)];
-        public GameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, DocumentService documentService, IObjectMapper mapper) : base(dbContextFactory, mapper)
+
+        public GameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, DocumentService documentService, IObjectMapper mapper)
+            : base(dbContextFactory, documentService, mapper)
         {
-            _documentService = documentService;
         }
 
-        public override async Task<Result<int, FailedResult>> DeleteAsync(int? id)
+        protected override IQueryable<Game> IncludeUserLibrary(IQueryable<Game> query, string userId)
         {
-            using var context = await GetDbContextAsync();
-            var existing = await context.Games.Include(x => x.Image).FirstAsync(x => x.Id == id);
-            await _documentService.DeleteMediaDocument(existing, context);
-            return await base.DeleteAsync(id);
+            return query.Include(g => g.MyGames!.Where(p => p.LuminaUserId == userId));
         }
 
-        public async Task<List<Game>> GetDropdownGames(string? searchName = null)
+        protected override Expression<Func<Game, bool>> IsInUserLibrary(string userId)
         {
-            using var context = await GetDbContextAsync();
-            IQueryable<Game> query = context.Games.Include(game => game.Image);
-            //if (searchName is not null) Todo! Adapt to Postgres
-            //    query = query.Where(u => LuminaPathDbContext.pg_trgm(u.Name, searchName) > 0.3).OrderByDescending(u => LuminaPathDbContext.pg_trgm(u.Name, searchName));
-            return await query.ToListAsync();
+            return game => game.MyGames != null && game.MyGames.Any(myGame => myGame.LuminaUserId == userId);
         }
 
-        public async Task<PaginatedList<Game>> GetAllPaginated(
-            MediaFilter mediaFilter,
-            string UserId,
-            Expression<Func<Game, bool>>? filter = null,
-            IEnumerable<string>? includes = null)
+        protected override Expression<Func<Game, bool>> BuildFilterExpression(MediaFilter mediaFilter, string? userId = null)
         {
-            using var context = await GetDbContextAsync();
-            IQueryable<Game> entities = GetEntities(context);
-            entities = entities.Include(g => g.Image).Include(g => g.MyGames!.Where(p => p.LuminaUserId == UserId));
-            entities = PrepareEntity(entities, filter, e => e.OrderByDescending(g => g.ReleaseDate), includes);
-            return await CreatePaginatedList(entities, mediaFilter.Paging);
-        }
+            var filter = base.BuildFilterExpression(mediaFilter, userId);
 
-        public async Task<PaginatedList<TDto>> GetAndMapEntities<TDto>(MediaFilter mediaFilter, IEnumerable<string> includes, string? userId)
-        {
-            Expression<Func<Game, bool>> filter = GetFilterExpression(mediaFilter, userId);
-
-            PaginatedList<Game> entities = userId != null
-                ? await GetAllPaginated(mediaFilter, userId, filter)
-                : await GetAllPaginated(mediaFilter, includes, filter);
-
-            var entitiesDto = _mapper.Map<IEnumerable<Game>, IEnumerable<TDto>>(entities);
-            return CreatePaginatedList(entitiesDto, mediaFilter.Paging);
-        }
-
-        private static Expression<Func<Game, bool>> GetFilterExpression(MediaFilter mediaFilter, string? userId = null)
-        {
-            Expression<Func<Game, bool>> filter = g => true;
-
-            if (mediaFilter.SearchString != null)
+            if (mediaFilter.Platform != null)
             {
-                filter = g => g.Name.Contains(mediaFilter.SearchString);
+                var platform = mediaFilter.Platform.Value;
+                filter = filter.And(game => game.Platforms.HasFlag(platform));
             }
 
-            if (mediaFilter.From != null)
+            if (mediaFilter.MinPlaytime != null)
             {
-                var from = UtcDateTime.Normalize(mediaFilter.From);
-                filter = filter.And(g => g.ReleaseDate > from);
+                var minPlaytime = mediaFilter.MinPlaytime.Value;
+                filter = filter.And(game => game.Playtime >= minPlaytime);
             }
 
-            if (mediaFilter.To != null)
+            if (mediaFilter.MaxPlaytime != null)
             {
-                var to = UtcDateTime.Normalize(mediaFilter.To);
-                filter = filter.And(g => g.ReleaseDate < to);
-            }
-
-            if (mediaFilter.MyMedia && userId != null)
-            {
-                filter = filter.And(g => g.MyGames != null && g.MyGames.Any(m => m.LuminaUserId == userId));
+                var maxPlaytime = mediaFilter.MaxPlaytime.Value;
+                filter = filter.And(game => game.Playtime <= maxPlaytime);
             }
 
             return filter;
+        }
+
+        public Task<List<Game>> GetDropdownGames(string? searchName = null)
+        {
+            return GetDropdownMedia(searchName);
         }
     }
 }

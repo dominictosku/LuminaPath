@@ -15,6 +15,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 
         public virtual string[] Includes { get; set; } = [];
         protected abstract Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> DefaultOrderBy { get; }
+        protected virtual string DuplicateMediaMessage => "This media is already added";
 
         public GenericMyModelService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IObjectMapper mapper)
         {
@@ -105,7 +106,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
                 return new FailedResult("User not found, please login");
             if (await IsMediaAlreadyAdded(viewModel.MediaId, viewModel.Id, user.Id))
             {
-                return new FailedResult("This is game already added");
+                return new FailedResult(DuplicateMediaMessage);
             }
             viewModel.LuminaUserId = user.Id;
 
@@ -118,7 +119,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
                 return new FailedResult("User not found, please login");
             if (await IsMediaAlreadyAdded(viewModel.MediaId, viewModel.Id, user.Id))
             {
-                return new FailedResult("This is game already added");
+                return new FailedResult(DuplicateMediaMessage);
             }
             viewModel.LuminaUserId = user.Id;
             return await PutAsync(viewModel);
@@ -242,7 +243,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             return Includes.Aggregate(query, (current, include) => current.Include(include));
         }
 
-        protected async Task<bool> IsMediaAlreadyAdded(int id, int myId, string userId)
+        protected virtual async Task<bool> IsMediaAlreadyAdded(int id, int myId, string userId)
         {
             await using var context = await GetDbContextAsync();
             var entities = GetEntities(context);
