@@ -400,6 +400,7 @@
   }
 
   .mobile-shell {
+    grid-template-columns: auto minmax(0, 1fr);
     border-radius: 22px;
   }
 
@@ -418,6 +419,7 @@
   }
 
   .header-actions {
+    justify-self: end;
     gap: 5px;
   }
 
