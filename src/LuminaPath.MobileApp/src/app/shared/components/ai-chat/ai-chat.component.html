@@ -2,6 +2,7 @@
   type="button"
   class="ai-chat-fab"
   [class.ai-chat-fab--open]="open"
+  [class.ai-chat-fab--docked]="!open"
   (click)="toggle()"
   [attr.aria-label]="open ? 'Close AI chat' : 'Open AI chat'">
   <ion-icon [name]="open ? 'close-outline' : 'chatbubble-ellipses-outline'"></ion-icon>

@@ -51,6 +51,31 @@
   background: linear-gradient(135deg, #0f172a, #1e293b);
 }
 
+.ai-chat-fab--docked {
+  top: auto;
+  right: 0;
+  bottom: calc(112px + env(safe-area-inset-bottom));
+  width: 48px;
+  height: 56px;
+  border-radius: 18px 0 0 18px;
+  border: 1px solid rgba(120, 170, 255, 0.24);
+  border-right: 0;
+  background: linear-gradient(160deg, rgba(37, 99, 235, 0.96), rgba(8, 145, 178, 0.96));
+  box-shadow: -10px 18px 34px rgba(0, 0, 0, 0.34);
+  transform: translateX(8px);
+  backdrop-filter: blur(18px);
+
+  ion-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    transform: translateX(0);
+  }
+}
+
 .ai-chat-panel {
   position: fixed;
   right: max(18px, env(safe-area-inset-right));
@@ -298,5 +323,15 @@
     width: 52px;
     height: 52px;
     border-radius: 17px;
+  }
+
+  .ai-chat-fab--docked {
+    top: auto;
+    right: 0;
+    bottom: calc(104px + env(safe-area-inset-bottom));
+    width: 46px;
+    height: 54px;
+    border-radius: 17px 0 0 17px;
+    transform: translateX(7px);
   }
 }
