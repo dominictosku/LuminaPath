@@ -33,10 +33,73 @@
 				<span>Access</span>
 				<strong>Admin</strong>
 			</div>
+			<div class="settings-status-card">
+				<MudIcon Icon="@Icons.Material.Filled.Newspaper" />
+				<span>News</span>
+				<strong>@NewsStatus</strong>
+			</div>
 		</div>
 	</div>
 
 	<MudTabs Class="settings-tabs" Rounded="true">
+		<MudTabPanel Text="General" Icon="@Icons.Material.Filled.Settings">
+			<div class="settings-grid settings-grid--single">
+				<section class="settings-panel settings-panel--primary">
+					<div class="settings-panel__header">
+						<div>
+							<MudText Typo="Typo.overline">System settings</MudText>
+							<MudText Typo="Typo.h5">Game news</MudText>
+							<MudText Typo="Typo.body2">
+								Control whether game detail pages can load news, and optionally replace the default Google News RSS fallback.
+							</MudText>
+						</div>
+						<div class="settings-panel__icon settings-panel__icon--purple">
+							<MudIcon Icon="@Icons.Material.Filled.Newspaper" />
+						</div>
+					</div>
+
+					<div class="settings-form">
+						<MudSwitch @bind-Value="newsEnabled"
+								   Color="Color.Primary"
+								   Label="Enable game news" />
+
+						<MudTextField @bind-Value="customNewsRssUrl"
+									  Label="Custom RSS feed URL"
+									  Variant="MudBlazor.Variant.Outlined"
+									  Placeholder="https://news.google.com/rss/search?q={query}"
+									  HelperText="Optional. Use {query}, {game}, or {GameName} as placeholders. Steam news is still used first when a Steam app id exists."
+									  Immediate="true" />
+
+						<div class="settings-action-row">
+							<MudButton OnClick="SaveSystemSettings"
+									   Variant="MudBlazor.Variant.Filled"
+									   Color="Color.Secondary"
+									   StartIcon="@Icons.Material.Filled.Save">
+								Save System Settings
+							</MudButton>
+							<MudButton OnClick="ClearCustomNewsRss"
+									   Variant="MudBlazor.Variant.Outlined"
+									   Color="Color.Primary"
+									   StartIcon="@Icons.Material.Filled.Clear"
+									   Disabled="@string.IsNullOrWhiteSpace(customNewsRssUrl)">
+								Clear RSS URL
+							</MudButton>
+						</div>
+					</div>
+				</section>
+
+				<section class="settings-panel settings-help-panel">
+					<MudIcon Icon="@Icons.Material.Filled.Info" />
+					<div>
+						<MudText Typo="Typo.h6">RSS fallback behavior</MudText>
+						<MudText Typo="Typo.body2">
+							News uses Steam app announcements first. If Steam has no items, LuminaPath uses your custom RSS URL when set; otherwise it falls back to Google News RSS.
+						</MudText>
+					</div>
+				</section>
+			</div>
+		</MudTabPanel>
+
 		<MudTabPanel Text="PSN" Icon="@Icons.Material.Filled.SportsEsports">
 	<div class="settings-grid">
 		<section class="settings-panel settings-panel--primary">
@@ -156,10 +219,13 @@
 	private string npsso = string.Empty;
 	private string bearerToken = string.Empty;
 	private string result = string.Empty;
+	private string customNewsRssUrl = string.Empty;
+	private bool newsEnabled = true;
 	private bool showNpsso;
 	private bool showBearer;
 
 	private string BearerStatus => string.IsNullOrWhiteSpace(bearerToken) ? "Missing" : "Saved";
+	private string NewsStatus => newsEnabled ? "Enabled" : "Off";
 	private string BearerHelperText => string.IsNullOrWhiteSpace(bearerToken)
 		? "No token is currently loaded from storage."
 		: "A token is loaded. Keep it private.";
@@ -171,6 +237,8 @@
 	protected override async Task OnInitializedAsync()
 	{
 		bearerToken = await applicationSettingsService.GetPsnBearerTokenAsync();
+		newsEnabled = await applicationSettingsService.GetNewsEnabledAsync();
+		customNewsRssUrl = await applicationSettingsService.GetNewsCustomRssUrlAsync();
 	}
 
 	async Task CopyToClipboard()
@@ -229,6 +297,20 @@
 	void ToggleBearerVisibility()
 	{
 		showBearer = !showBearer;
+	}
+
+	async Task SaveSystemSettings()
+	{
+		await applicationSettingsService.SaveNewsEnabledAsync(newsEnabled);
+		await applicationSettingsService.SaveNewsCustomRssUrlAsync(customNewsRssUrl);
+		Snackbar.Add("Saved system settings", Severity.Success);
+	}
+
+	async Task ClearCustomNewsRss()
+	{
+		customNewsRssUrl = string.Empty;
+		await applicationSettingsService.SaveNewsCustomRssUrlAsync(customNewsRssUrl);
+		Snackbar.Add("Cleared custom RSS URL", Severity.Info);
 	}
 
 }

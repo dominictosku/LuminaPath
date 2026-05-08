@@ -1,10 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using LuminaPath.Core.Dtos;
+using LuminaPath.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
@@ -21,6 +24,7 @@ public sealed class GameNewsService
     private readonly HttpClient _http;
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
     private readonly IDistributedCache _cache;
+    private readonly ApplicationSettingsService _settings;
     private readonly GameNewsOptions _options;
     private readonly ILogger<GameNewsService> _logger;
 
@@ -28,18 +32,25 @@ public sealed class GameNewsService
         HttpClient http,
         IDbContextFactory<LuminaPathDbContext> dbContextFactory,
         IDistributedCache cache,
+        ApplicationSettingsService settings,
         IOptions<GameNewsOptions> options,
         ILogger<GameNewsService> logger)
     {
         _http = http;
         _dbContextFactory = dbContextFactory;
         _cache = cache;
+        _settings = settings;
         _options = options.Value;
         _logger = logger;
     }
 
     public async Task<IReadOnlyList<GameNewsItemDto>?> GetNewsAsync(int gameId, bool refresh, CancellationToken cancellationToken)
     {
+        if (!await _settings.GetNewsEnabledAsync(cancellationToken))
+        {
+            return Array.Empty<GameNewsItemDto>();
+        }
+
         await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
         var game = await context.Games
             .AsNoTracking()
@@ -58,7 +69,8 @@ public sealed class GameNewsService
             return null;
         }
 
-        var cacheKey = $"game-news:{CacheVersion}:{game.Id}";
+        var customRssUrl = await _settings.GetNewsCustomRssUrlAsync(cancellationToken);
+        var cacheKey = $"game-news:{CacheVersion}:{game.Id}:{CreateSettingsHash(customRssUrl)}";
         if (!refresh)
         {
             var cached = await TryGetCachedAsync(cacheKey, cancellationToken);
@@ -71,7 +83,9 @@ public sealed class GameNewsService
         var items = await FetchSteamNewsAsync(game.SteamAppId, cancellationToken);
         if (items.Count == 0)
         {
-            items = await FetchGoogleNewsAsync(game.Name, cancellationToken);
+            items = !string.IsNullOrWhiteSpace(customRssUrl)
+                ? await FetchRssNewsAsync(BuildCustomRssUrl(customRssUrl, game.Name), "CustomRss", "Custom RSS", cancellationToken)
+                : await FetchGoogleNewsAsync(game.Name, cancellationToken);
         }
 
         items = items
@@ -137,6 +151,15 @@ public sealed class GameNewsService
         var query = Uri.EscapeDataString($"\"{gameName}\" video game");
         var url = $"{_options.GoogleNewsBaseUrl.TrimEnd('/')}?q={query}&hl={locale}&gl={country}&ceid={country}:en";
 
+        return await FetchRssNewsAsync(url, "GoogleNews", "Google News", cancellationToken);
+    }
+
+    private async Task<List<GameNewsItemDto>> FetchRssNewsAsync(
+        string url,
+        string provider,
+        string defaultSource,
+        CancellationToken cancellationToken)
+    {
         try
         {
             using var stream = await _http.GetStreamAsync(url, cancellationToken);
@@ -152,8 +175,8 @@ public sealed class GameNewsService
                         Title = CleanText(item.Element("title")?.Value),
                         Summary = CleanText(item.Element("description")?.Value),
                         Url = item.Element("link")?.Value ?? string.Empty,
-                        Source = string.IsNullOrWhiteSpace(sourceName) ? "Google News" : sourceName,
-                        Provider = "GoogleNews",
+                        Source = string.IsNullOrWhiteSpace(sourceName) ? defaultSource : sourceName,
+                        Provider = provider,
                         PublishedAt = ParseRssDate(item.Element("pubDate")?.Value),
                     };
                 })
@@ -161,9 +184,26 @@ public sealed class GameNewsService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch Google News RSS for game '{GameName}'", gameName);
+            _logger.LogWarning(ex, "Failed to fetch RSS news from {RssUrl}", url);
             return new List<GameNewsItemDto>();
         }
+    }
+
+    private static string BuildCustomRssUrl(string template, string gameName)
+    {
+        var query = Uri.EscapeDataString($"\"{gameName}\" video game");
+        var encodedGame = Uri.EscapeDataString(gameName);
+        return template
+            .Replace("{query}", query, StringComparison.OrdinalIgnoreCase)
+            .Replace("{game}", encodedGame, StringComparison.OrdinalIgnoreCase)
+            .Replace("{GameName}", encodedGame, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string CreateSettingsHash(string customRssUrl)
+    {
+        var value = string.IsNullOrWhiteSpace(customRssUrl) ? "default" : customRssUrl.Trim();
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(value));
+        return Convert.ToHexString(bytes[..8]).ToLowerInvariant();
     }
 
     private async Task<IReadOnlyList<GameNewsItemDto>?> TryGetCachedAsync(string cacheKey, CancellationToken cancellationToken)

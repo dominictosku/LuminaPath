@@ -7,6 +7,8 @@ public sealed class ApplicationSettingsService
 {
     public const string SteamApiKey = "Steam.ApiKey";
     public const string PsnBearerToken = "PSN.BearerToken";
+    public const string NewsEnabled = "News.Enabled";
+    public const string NewsCustomRssUrl = "News.CustomRssUrl";
 
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
 
@@ -39,6 +41,27 @@ public sealed class ApplicationSettingsService
     public Task SavePsnBearerTokenAsync(string value, CancellationToken cancellationToken = default)
     {
         return SaveValueAsync(PsnBearerToken, value.Trim(), cancellationToken);
+    }
+
+    public async Task<bool> GetNewsEnabledAsync(CancellationToken cancellationToken = default)
+    {
+        var value = await GetValueAsync(NewsEnabled, cancellationToken);
+        return string.IsNullOrWhiteSpace(value) || bool.TryParse(value, out var enabled) && enabled;
+    }
+
+    public Task SaveNewsEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return SaveValueAsync(NewsEnabled, enabled.ToString(), cancellationToken);
+    }
+
+    public async Task<string> GetNewsCustomRssUrlAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetValueAsync(NewsCustomRssUrl, cancellationToken);
+    }
+
+    public Task SaveNewsCustomRssUrlAsync(string value, CancellationToken cancellationToken = default)
+    {
+        return SaveValueAsync(NewsCustomRssUrl, value.Trim(), cancellationToken);
     }
 
     private async Task<string> GetValueAsync(string key, CancellationToken cancellationToken)

@@ -42,9 +42,9 @@
 
 .settings-hero__status {
     display: grid;
-    grid-template-columns: repeat(2, minmax(138px, 1fr));
+    grid-template-columns: repeat(3, minmax(118px, 1fr));
     gap: 12px;
-    min-width: 310px;
+    min-width: 450px;
 }
 
 .settings-status-card {
@@ -82,6 +82,10 @@
     grid-template-columns: minmax(320px, 1.2fr) minmax(300px, .8fr);
     gap: 18px;
     align-items: start;
+}
+
+.settings-grid--single {
+    grid-template-columns: minmax(0, 1fr);
 }
 
 ::deep .settings-tabs {
@@ -147,6 +151,11 @@
 .settings-panel__icon--green {
     background: linear-gradient(135deg, #0f766e, #22c55e);
     box-shadow: 0 16px 36px rgba(15, 118, 110, .24);
+}
+
+.settings-panel__icon--purple {
+    background: linear-gradient(135deg, #7c3aed, #06b6d4);
+    box-shadow: 0 16px 36px rgba(124, 58, 237, .24);
 }
 
 .settings-panel__icon .mud-icon-root {
