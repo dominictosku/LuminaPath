@@ -85,6 +85,9 @@ namespace LuminaPath.Infrastructure
                 .OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<DirectMessage>()
                 .HasIndex(message => new { message.SenderId, message.RecipientId, message.SentAt });
+            modelBuilder.Entity<ApplicationSetting>()
+                .HasIndex(setting => setting.Key)
+                .IsUnique();
             ConfigureUtcDateTimes(modelBuilder);
         }
 
@@ -199,5 +202,6 @@ namespace LuminaPath.Infrastructure
         public DbSet<GamingSession> GamingSessions { get; set; }
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<DirectMessage> DirectMessages { get; set; }
+        public DbSet<ApplicationSetting> ApplicationSettings { get; set; }
     }
 }

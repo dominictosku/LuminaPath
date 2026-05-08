@@ -22,15 +22,15 @@ public sealed class SteamController : ControllerBase
     }
 
     [HttpGet("status")]
-    public IActionResult GetStatus()
+    public async Task<IActionResult> GetStatus(CancellationToken cancellationToken)
     {
-        return Ok(new { configured = _steam.IsConfigured });
+        return Ok(new { configured = await _steam.IsConfiguredAsync(cancellationToken) });
     }
 
     [HttpPost("preview")]
     public async Task<IActionResult> Preview([FromBody] SteamIdentifierRequest request, CancellationToken cancellationToken)
     {
-        if (!_steam.IsConfigured)
+        if (!await _steam.IsConfiguredAsync(cancellationToken))
         {
             return Problem("Steam Web API key is not configured on the server.", statusCode: 503);
         }
@@ -51,7 +51,7 @@ public sealed class SteamController : ControllerBase
     [HttpPost("import")]
     public async Task<IActionResult> Import([FromBody] SteamIdentifierRequest request, CancellationToken cancellationToken)
     {
-        if (!_steam.IsConfigured)
+        if (!await _steam.IsConfiguredAsync(cancellationToken))
         {
             return Problem("Steam Web API key is not configured on the server.", statusCode: 503);
         }

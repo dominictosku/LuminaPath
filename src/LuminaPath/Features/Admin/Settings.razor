@@ -1,4 +1,5 @@
 @page "/settings"
+@using LuminaPath.Features.Admin.Components
 @using LuminaPath.Infrastructure.Services
 @using LuminaPath.Infrastructure.Services.Third_Party
 @using Microsoft.AspNetCore.Authorization
@@ -35,6 +36,8 @@
 		</div>
 	</div>
 
+	<MudTabs Class="settings-tabs" Rounded="true">
+		<MudTabPanel Text="PSN" Icon="@Icons.Material.Filled.SportsEsports">
 	<div class="settings-grid">
 		<section class="settings-panel settings-panel--primary">
 			<div class="settings-panel__header">
@@ -141,6 +144,12 @@
 			</div>
 		</section>
 	</div>
+		</MudTabPanel>
+
+		<MudTabPanel Text="Steam" Icon="@Icons.Material.Filled.DesktopWindows">
+			<SteamSettingsPanel />
+		</MudTabPanel>
+	</MudTabs>
 </section>
 
 @code {
@@ -221,4 +230,5 @@
 	{
 		showBearer = !showBearer;
 	}
+
 }

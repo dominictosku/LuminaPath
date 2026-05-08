@@ -11,6 +11,7 @@ namespace LuminaPath.Core.Interfaces
         DbSet<QuestProfile> QuestProfiles { get; set; }
         DbSet<QuestSkill> QuestSkills { get; set; }
         DbSet<QuestSkillNode> QuestSkillNodes { get; set; }
+        DbSet<ApplicationSetting> ApplicationSettings { get; set; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
 }

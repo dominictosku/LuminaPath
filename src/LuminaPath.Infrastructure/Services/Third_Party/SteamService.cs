@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Third_Party;
+using LuminaPath.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -23,21 +24,27 @@ public sealed class SteamService
     private readonly HttpClient _http;
     private readonly SteamOptions _options;
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
+    private readonly ApplicationSettingsService _settings;
     private readonly ILogger<SteamService> _logger;
 
     public SteamService(
         HttpClient http,
         IOptions<SteamOptions> options,
         IDbContextFactory<LuminaPathDbContext> dbContextFactory,
+        ApplicationSettingsService settings,
         ILogger<SteamService> logger)
     {
         _http = http;
         _options = options.Value;
         _dbContextFactory = dbContextFactory;
+        _settings = settings;
         _logger = logger;
     }
 
-    public bool IsConfigured => !string.IsNullOrWhiteSpace(_options.ApiKey);
+    public Task<bool> IsConfiguredAsync(CancellationToken cancellationToken = default)
+    {
+        return _settings.HasSteamApiKeyAsync(cancellationToken);
+    }
 
     /// <summary>
     /// Accepts a 17-digit steamID64, a vanity name (the segment after /id/), or a full
@@ -66,9 +73,10 @@ public sealed class SteamService
             return null;
         }
 
-        if (!IsConfigured) return null;
+        var apiKey = await _settings.GetSteamApiKeyAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(apiKey)) return null;
 
-        var url = $"{_options.ApiBaseUrl.TrimEnd('/')}/ISteamUser/ResolveVanityURL/v1/?key={_options.ApiKey}&vanityurl={Uri.EscapeDataString(input)}";
+        var url = $"{_options.ApiBaseUrl.TrimEnd('/')}/ISteamUser/ResolveVanityURL/v1/?key={apiKey}&vanityurl={Uri.EscapeDataString(input)}";
 
         try
         {
@@ -88,9 +96,10 @@ public sealed class SteamService
 
     public async Task<SteamProfile?> GetProfileAsync(string steamId, CancellationToken cancellationToken)
     {
-        if (!IsConfigured || string.IsNullOrWhiteSpace(steamId)) return null;
+        var apiKey = await _settings.GetSteamApiKeyAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(steamId)) return null;
 
-        var url = $"{_options.ApiBaseUrl.TrimEnd('/')}/ISteamUser/GetPlayerSummaries/v2/?key={_options.ApiKey}&steamids={steamId}";
+        var url = $"{_options.ApiBaseUrl.TrimEnd('/')}/ISteamUser/GetPlayerSummaries/v2/?key={apiKey}&steamids={steamId}";
 
         try
         {
@@ -115,9 +124,10 @@ public sealed class SteamService
 
     public async Task<List<SteamOwnedGame>> GetOwnedGamesAsync(string steamId, CancellationToken cancellationToken)
     {
-        if (!IsConfigured || string.IsNullOrWhiteSpace(steamId)) return new List<SteamOwnedGame>();
+        var apiKey = await _settings.GetSteamApiKeyAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(steamId)) return new List<SteamOwnedGame>();
 
-        var url = $"{_options.ApiBaseUrl.TrimEnd('/')}/IPlayerService/GetOwnedGames/v1/?key={_options.ApiKey}&steamid={steamId}&include_appinfo=true&include_played_free_games=true";
+        var url = $"{_options.ApiBaseUrl.TrimEnd('/')}/IPlayerService/GetOwnedGames/v1/?key={apiKey}&steamid={steamId}&include_appinfo=true&include_played_free_games=true";
 
         try
         {

@@ -186,10 +186,10 @@
 						</div>
 					</div>
 
-					@if (!steamService.IsConfigured)
+					@if (!steamConfigured)
 					{
 						<MudAlert Severity="Severity.Warning" Variant="MudBlazor.Variant.Outlined" Class="steam-alert">
-							Steam imports need a server Steam API key in configuration or STEAM_API_KEY.
+							Steam imports need an API key saved by an administrator.
 						</MudAlert>
 					}
 
@@ -201,7 +201,7 @@
 								   Variant="MudBlazor.Variant.Filled"
 								   Color="Color.Primary"
 								   StartIcon="@Icons.Material.Filled.ManageSearch"
-								   Disabled="@(!steamService.IsConfigured || steamPreviewing)">
+								   Disabled="@(!steamConfigured || steamPreviewing)">
 							Preview Library
 						</MudButton>
 					</div>
@@ -378,11 +378,12 @@
 	bool _excelImporting;
 	bool steamPreviewing;
 	bool steamImporting;
+	bool steamConfigured;
 	string steamIdentifier = string.Empty;
 	int ImportedGameCount => games?.Count() ?? 0;
 	string TrophyLevelLabel => model.PSNTrophyLevel > 0 ? model.PSNTrophyLevel.ToString() : "-";
 	string ProfileAccountLabel => string.IsNullOrWhiteSpace(model.PSNAccountId) ? "Not connected" : model.PSNAccountId;
-	string SteamConfiguredLabel => steamService.IsConfigured ? "Configured" : "Missing";
+	string SteamConfiguredLabel => steamConfigured ? "Configured" : "Missing";
 	string SteamGameCountLabel => steamPreview is null ? "-" : steamPreview.GameCount.ToString();
 	string SteamIdLabel => !string.IsNullOrWhiteSpace(steamPreview?.Profile.SteamId)
 		? steamPreview.Profile.SteamId
@@ -394,7 +395,7 @@
 		? steamPreview.Profile.AvatarUrl!
 		: model.SteamAvatarUrl;
 	IEnumerable<SteamOwnedGame> SteamPreviewGames => steamPreview?.Games ?? Enumerable.Empty<SteamOwnedGame>();
-	bool CanImportSteam => steamService.IsConfigured
+	bool CanImportSteam => steamConfigured
 		&& !steamImporting
 		&& !steamPreviewing
 		&& !string.IsNullOrWhiteSpace(steamIdentifier);
@@ -411,6 +412,7 @@
 			model.UserId = UserId;
 		}
 		steamIdentifier = model.SteamId;
+		steamConfigured = await steamService.IsConfiguredAsync();
 
 		var bearer = fileSystemService.GetBearer();
 		psnService.SetBearer(bearer);
@@ -573,7 +575,7 @@
 
 	bool ValidateSteamInput()
 	{
-		if (!steamService.IsConfigured)
+		if (!steamConfigured)
 		{
 			Snackbar.Add("Steam API key is not configured", Severity.Warning);
 			return false;

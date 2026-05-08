@@ -1,0 +1,85 @@
+@using LuminaPath.Infrastructure.Services
+@inject ApplicationSettingsService ApplicationSettingsService
+@inject ISnackbar Snackbar
+
+<section class="settings-panel settings-panel--steam">
+	<div class="settings-panel__header">
+		<div>
+			<MudText Typo="Typo.overline">Steam</MudText>
+			<MudText Typo="Typo.h5">Saved Steam API key</MudText>
+			<MudText Typo="Typo.body2">
+				This key is used by the Steam import page to resolve profiles and import public Steam libraries.
+			</MudText>
+		</div>
+		<div class="settings-panel__icon settings-panel__icon--steam">
+			<MudIcon Icon="@Icons.Material.Filled.DesktopWindows" />
+		</div>
+	</div>
+
+	<div class="settings-form">
+		<MudTextField @bind-Value="steamApiKey"
+					  Label="Steam API key"
+					  Variant="MudBlazor.Variant.Outlined"
+					  InputType="@steamApiKeyInputType"
+					  Adornment="Adornment.End"
+					  AdornmentIcon="@SteamApiKeyVisibilityIcon"
+					  OnAdornmentClick="ToggleSteamApiKeyVisibility"
+					  HelperText="@SteamApiKeyHelperText"
+					  Immediate="true" />
+
+		<div class="settings-action-row">
+			<MudButton OnClick="SaveSteamApiKey"
+					   Variant="MudBlazor.Variant.Filled"
+					   Color="Color.Secondary"
+					   StartIcon="@Icons.Material.Filled.Save"
+					   Disabled="@(steamSaving || string.IsNullOrWhiteSpace(steamApiKey))">
+				Save Key
+			</MudButton>
+		</div>
+	</div>
+</section>
+
+@code {
+	private string steamApiKey = string.Empty;
+	private bool showSteamApiKey;
+	private bool steamKeySaved;
+	private bool steamSaving;
+
+	private InputType steamApiKeyInputType => showSteamApiKey ? InputType.Text : InputType.Password;
+	private string SteamApiKeyVisibilityIcon => showSteamApiKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
+	private string SteamApiKeyHelperText => steamKeySaved
+		? "A Steam key is loaded from the database. Keep it private."
+		: "No Steam API key is currently saved.";
+
+	protected override async Task OnInitializedAsync()
+	{
+		steamApiKey = await ApplicationSettingsService.GetSteamApiKeyAsync();
+		steamKeySaved = !string.IsNullOrWhiteSpace(steamApiKey);
+	}
+
+	private async Task SaveSteamApiKey()
+	{
+		if (string.IsNullOrWhiteSpace(steamApiKey))
+		{
+			Snackbar.Add("No Steam API key to save", Severity.Info);
+			return;
+		}
+
+		steamSaving = true;
+		try
+		{
+			await ApplicationSettingsService.SaveSteamApiKeyAsync(steamApiKey);
+			steamKeySaved = true;
+			Snackbar.Add("Saved Steam API key", Severity.Success);
+		}
+		finally
+		{
+			steamSaving = false;
+		}
+	}
+
+	private void ToggleSteamApiKeyVisibility()
+	{
+		showSteamApiKey = !showSteamApiKey;
+	}
+}
