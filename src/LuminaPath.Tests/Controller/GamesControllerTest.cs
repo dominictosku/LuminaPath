@@ -11,8 +11,13 @@ using Moq;
 using Test.Utilities;
 using LuminaPath.Infrastructure.Controllers;
 using LuminaPath.Infrastructure.Services.ModelServices;
+using LuminaPath.Infrastructure.Services;
+using LuminaPath.Infrastructure.Services.Third_Party;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Entities;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 
 namespace Test.Controller
 {
@@ -37,11 +42,20 @@ namespace Test.Controller
 				var mapper = db.GetService<IObjectMapper>();
 				var documentService = new DocumentService(dbContextFactory.Object, azure, new Mock<ILogger<DocumentService>>().Object);
 				var gameService = new GameService(dbContextFactory.Object, documentService, mapper);
+				var settingsService = new ApplicationSettingsService(dbContextFactory.Object);
+				var cache = new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions()));
+				var gameNewsService = new GameNewsService(
+					new HttpClient(),
+					dbContextFactory.Object,
+					cache,
+					settingsService,
+					Options.Create(new GameNewsOptions()),
+					new Mock<ILogger<GameNewsService>>().Object);
 				var games = Seeding.SeedGames(names);
 				db.Games.AddRange(games);
 				await db.SaveChangesAsync();
 
-				GamesController controller = new GamesController(gameService, mapper);
+				GamesController controller = new GamesController(gameService, mapper, gameNewsService);
 				var expectedGames = await db.Games.ToListAsync();
 
 				// Act
