@@ -9,8 +9,7 @@ describe('NavBarComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ NavBarComponent ],
-      imports: [IonicModule.forRoot()]
+      imports: [NavBarComponent, IonicModule.forRoot()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(NavBarComponent);

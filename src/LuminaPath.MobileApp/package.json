@@ -8,6 +8,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:smoke": "ng test --watch=false --browsers=ChromeHeadlessNoSandbox",
     "lint": "ng lint"
   },
   "private": true,

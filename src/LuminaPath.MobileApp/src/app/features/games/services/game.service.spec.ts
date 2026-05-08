@@ -100,4 +100,34 @@ describe('GameService', () => {
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
   });
+
+  it('getNews(gameId) requests the game news endpoint with credentials', () => {
+    service.getNews(42).subscribe((items) => {
+      expect(items[0].title).toBe('Patch notes');
+    });
+
+    const req = httpMock.expectOne(`${endpoint}/42/news`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.withCredentials).toBeTrue();
+    expect(req.request.params.keys().length).toBe(0);
+
+    req.flush([
+      {
+        title: 'Patch notes',
+        summary: 'New update',
+        url: 'https://example.com/news',
+        source: 'Steam',
+        provider: 'Steam',
+        publishedAt: '2026-05-08T00:00:00.000Z',
+      },
+    ]);
+  });
+
+  it('getNews(gameId, true) sends the refresh flag', () => {
+    service.getNews(42, true).subscribe();
+
+    const req = httpMock.expectOne((request) => request.url === `${endpoint}/42/news`);
+    expect(req.request.params.get('refresh')).toBe('true');
+    req.flush([]);
+  });
 });
