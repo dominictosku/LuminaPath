@@ -260,6 +260,11 @@ public sealed class OpenAiCompatibleProvider : IAiProvider
                     parameters = t.InputSchema,
                 },
             }).ToArray();
+
+            if (!string.IsNullOrWhiteSpace(_options.ToolChoice))
+            {
+                body["tool_choice"] = _options.ToolChoice;
+            }
         }
 
         return body;

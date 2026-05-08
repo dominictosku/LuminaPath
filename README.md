@@ -143,6 +143,14 @@ docker compose -f docker-compose.yml -f docker-compose.tools.yml up -d
 
 Open pgAdmin at `http://localhost:5050`.
 
+Optional local vLLM on AMD ROCm:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.vllm.yml up -d --build
+```
+
+This starts `vllm` at `http://localhost:8000/v1` and points the backend AI assistant at it through the OpenAI-compatible provider. The default model is `NousResearch/Hermes-3-Llama-3.1-8B` with the `hermes` tool-call parser, so tool calling works out of the box on a ROCm-capable AMD host. Change `VLLM_MODEL`, `VLLM_TOOL_CALL_PARSER`, `VLLM_HIP_VISIBLE_DEVICES`, `VLLM_ROCR_VISIBLE_DEVICES`, `VLLM_GPU_MEMORY_UTILIZATION` and `VLLM_TENSOR_PARALLEL_SIZE` in `.env` for your GPU and model.
+
 ## Environment Variables
 
 All deployment-specific values are controlled through `.env` or normal ASP.NET environment variables.
@@ -349,11 +357,20 @@ No API key required. Ollama exposes the OpenAI-compatible Chat Completions API a
 "OpenAi": {
   "ApiKey":  "sk-...",                // empty for keyless local servers
   "BaseUrl": "https://api.openai.com/v1",
-  "Model":   "gpt-4o-mini"
+  "Model":   "gpt-4o-mini",
+  "ToolChoice": "auto"                // optional; useful for vLLM auto tool calling
 }
 ```
 
 For LM Studio, vLLM or llama.cpp's server, change `BaseUrl` to whatever they expose (typically ending in `/v1`) and pick the model name they advertise.
+
+For local AMD testing with vLLM:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.vllm.yml up -d --build
+```
+
+The overlay uses `vllm/vllm-openai-rocm`, exposes `/dev/kfd` and `/dev/dri`, and sets `OpenAi:BaseUrl` to `http://vllm:8000/v1` inside Docker. The default tool-calling setup is Hermes-flavored; if you switch to a Llama, Mistral, Qwen or other model, update `VLLM_TOOL_CALL_PARSER` to the parser that matches that model.
 
 ### Environment variable overrides
 

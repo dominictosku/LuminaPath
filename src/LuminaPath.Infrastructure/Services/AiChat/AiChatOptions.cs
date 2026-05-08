@@ -36,5 +36,10 @@ public sealed class OpenAiOptions
     /// </summary>
     public string Model { get; set; } = "llama3.2";
 
+    /// <summary>
+    /// Optional tool_choice value to send when tools are available. Useful for vLLM auto tool calling.
+    /// </summary>
+    public string? ToolChoice { get; set; }
+
     public int MaxTokens { get; set; } = 4096;
 }
