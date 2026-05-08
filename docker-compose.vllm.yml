@@ -1,20 +1,63 @@
+x-vllm-env: &vllm-env
+  HF_TOKEN: ${HF_TOKEN:-}
+  HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+  HF_HOME: /root/.cache/huggingface
+
+x-vllm-command: &vllm-command
+  - --host
+  - 0.0.0.0
+  - --port
+  - "8000"
+  - --model
+  - ${VLLM_MODEL:-NousResearch/Hermes-3-Llama-3.1-8B}
+  - --api-key
+  - ${VLLM_API_KEY:-local-vllm}
+  - --dtype
+  - ${VLLM_DTYPE:-auto}
+  - --max-model-len
+  - ${VLLM_MAX_MODEL_LEN:-8192}
+  - --gpu-memory-utilization
+  - ${VLLM_GPU_MEMORY_UTILIZATION:-0.90}
+  - --tensor-parallel-size
+  - ${VLLM_TENSOR_PARALLEL_SIZE:-1}
+  - --enable-auto-tool-choice
+  - --tool-call-parser
+  - ${VLLM_TOOL_CALL_PARSER:-hermes}
+
+x-vllm-common: &vllm-common
+  restart: unless-stopped
+  ipc: host
+  ports:
+    - "${VLLM_PORT:-8000}:8000"
+  volumes:
+    - luminapath-vllm-hf-cache:/root/.cache/huggingface
+  command: *vllm-command
+  healthcheck:
+    test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/v1/models', timeout=5)\""]
+    interval: 30s
+    timeout: 10s
+    retries: 20
+    start_period: 10m
+  networks:
+    default:
+      aliases:
+        - vllm
+
 services:
   api:
     environment:
       AiChat__Provider: openai
       OpenAi__ApiKey: ${VLLM_API_KEY:-local-vllm}
-      OpenAi__BaseUrl: http://vllm:8000/v1
+      OpenAi__BaseUrl: ${VLLM_BASE_URL:-http://vllm:8000/v1}
       OpenAi__Model: ${VLLM_MODEL:-NousResearch/Hermes-3-Llama-3.1-8B}
       OpenAi__ToolChoice: ${VLLM_TOOL_CHOICE:-auto}
-    depends_on:
-      vllm:
-        condition: service_healthy
 
-  vllm:
-    image: ${VLLM_IMAGE:-vllm/vllm-openai-rocm:latest}
+  vllm-amd:
+    <<: *vllm-common
+    profiles:
+      - amd
+    image: ${VLLM_AMD_IMAGE:-vllm/vllm-openai-rocm:latest}
     container_name: luminapath-vllm
-    restart: unless-stopped
-    ipc: host
     group_add:
       - video
     cap_add:
@@ -25,41 +68,21 @@ services:
       - ${VLLM_AMD_KFD_DEVICE:-/dev/kfd}:/dev/kfd
       - ${VLLM_AMD_DRI_DEVICE:-/dev/dri}:/dev/dri
     environment:
-      HF_TOKEN: ${HF_TOKEN:-}
-      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+      <<: *vllm-env
       HIP_VISIBLE_DEVICES: ${VLLM_HIP_VISIBLE_DEVICES:-0}
       ROCR_VISIBLE_DEVICES: ${VLLM_ROCR_VISIBLE_DEVICES:-0}
-      HF_HOME: /root/.cache/huggingface
-    ports:
-      - "${VLLM_PORT:-8000}:8000"
-    volumes:
-      - luminapath-vllm-hf-cache:/root/.cache/huggingface
-    command:
-      - --host
-      - 0.0.0.0
-      - --port
-      - "8000"
-      - --model
-      - ${VLLM_MODEL:-NousResearch/Hermes-3-Llama-3.1-8B}
-      - --api-key
-      - ${VLLM_API_KEY:-local-vllm}
-      - --dtype
-      - ${VLLM_DTYPE:-auto}
-      - --max-model-len
-      - ${VLLM_MAX_MODEL_LEN:-8192}
-      - --gpu-memory-utilization
-      - ${VLLM_GPU_MEMORY_UTILIZATION:-0.90}
-      - --tensor-parallel-size
-      - ${VLLM_TENSOR_PARALLEL_SIZE:-1}
-      - --enable-auto-tool-choice
-      - --tool-call-parser
-      - ${VLLM_TOOL_CALL_PARSER:-hermes}
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/v1/models', timeout=5)\""]
-      interval: 30s
-      timeout: 10s
-      retries: 20
-      start_period: 10m
+
+  vllm-nvidia:
+    <<: *vllm-common
+    profiles:
+      - nvidia
+    image: ${VLLM_NVIDIA_IMAGE:-vllm/vllm-openai:latest}
+    container_name: luminapath-vllm
+    gpus: ${VLLM_NVIDIA_GPUS:-all}
+    environment:
+      <<: *vllm-env
+      NVIDIA_VISIBLE_DEVICES: ${VLLM_NVIDIA_VISIBLE_DEVICES:-all}
+      NVIDIA_DRIVER_CAPABILITIES: ${VLLM_NVIDIA_DRIVER_CAPABILITIES:-compute,utility}
 
 volumes:
   luminapath-vllm-hf-cache:

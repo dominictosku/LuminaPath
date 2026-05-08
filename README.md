@@ -143,13 +143,13 @@ docker compose -f docker-compose.yml -f docker-compose.tools.yml up -d
 
 Open pgAdmin at `http://localhost:5050`.
 
-Optional local vLLM on AMD ROCm:
+Optional local vLLM:
 
 ```powershell
-docker compose -f docker-compose.yml -f docker-compose.vllm.yml up -d --build
+docker compose --profile amd -f docker-compose.yml -f docker-compose.vllm.yml up -d --build
 ```
 
-This starts `vllm` at `http://localhost:8000/v1` and points the backend AI assistant at it through the OpenAI-compatible provider. The default model is `NousResearch/Hermes-3-Llama-3.1-8B` with the `hermes` tool-call parser, so tool calling works out of the box on a ROCm-capable AMD host. Change `VLLM_MODEL`, `VLLM_TOOL_CALL_PARSER`, `VLLM_HIP_VISIBLE_DEVICES`, `VLLM_ROCR_VISIBLE_DEVICES`, `VLLM_GPU_MEMORY_UTILIZATION` and `VLLM_TENSOR_PARALLEL_SIZE` in `.env` for your GPU and model.
+Use `--profile nvidia` instead on NVIDIA hosts. This starts `vllm` at `http://localhost:8000/v1` and points the backend AI assistant at it through the OpenAI-compatible provider. The default model is `NousResearch/Hermes-3-Llama-3.1-8B` with the `hermes` tool-call parser, so tool calling works out of the box when the selected model/parser pair supports it. Change `VLLM_MODEL`, `VLLM_TOOL_CALL_PARSER`, `VLLM_GPU_MEMORY_UTILIZATION` and `VLLM_TENSOR_PARALLEL_SIZE` in `.env` for your GPU and model.
 
 ## Environment Variables
 
@@ -364,13 +364,26 @@ No API key required. Ollama exposes the OpenAI-compatible Chat Completions API a
 
 For LM Studio, vLLM or llama.cpp's server, change `BaseUrl` to whatever they expose (typically ending in `/v1`) and pick the model name they advertise.
 
-For local AMD testing with vLLM:
+For local GPU testing with vLLM:
 
 ```powershell
-docker compose -f docker-compose.yml -f docker-compose.vllm.yml up -d --build
+docker compose --profile amd -f docker-compose.yml -f docker-compose.vllm.yml up -d --build
 ```
 
-The overlay uses `vllm/vllm-openai-rocm`, exposes `/dev/kfd` and `/dev/dri`, and sets `OpenAi:BaseUrl` to `http://vllm:8000/v1` inside Docker. The default tool-calling setup is Hermes-flavored; if you switch to a Llama, Mistral, Qwen or other model, update `VLLM_TOOL_CALL_PARSER` to the parser that matches that model.
+or:
+
+```powershell
+docker compose --profile nvidia -f docker-compose.yml -f docker-compose.vllm.yml up -d --build
+```
+
+The overlay has two mutually exclusive vLLM profiles:
+
+| Profile | Image default | GPU wiring |
+| --- | --- | --- |
+| `amd` | `vllm/vllm-openai-rocm:latest` | Exposes `/dev/kfd` and `/dev/dri`; uses `HIP_VISIBLE_DEVICES` / `ROCR_VISIBLE_DEVICES` |
+| `nvidia` | `vllm/vllm-openai:latest` | Uses Docker Compose `gpus`; sets `NVIDIA_VISIBLE_DEVICES` / `NVIDIA_DRIVER_CAPABILITIES` |
+
+Both profiles publish `http://localhost:8000/v1` on the host and expose `http://vllm:8000/v1` inside Docker, so the backend config stays the same. Set `COMPOSE_PROFILES=amd` or `COMPOSE_PROFILES=nvidia` in `.env` if you do not want to pass `--profile` every time. The default tool-calling setup is Hermes-flavored; if you switch to a Llama, Mistral, Qwen or other model, update `VLLM_TOOL_CALL_PARSER` to the parser that matches that model.
 
 ### Environment variable overrides
 
