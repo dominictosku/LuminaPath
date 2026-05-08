@@ -33,6 +33,7 @@ namespace LuminaPath.Infrastructure
             AddDefaultIdentity(services, config);
             AddServices(services, config);
             AddAiChat(services, config);
+            AddCache(services, config);
             AddCors(services, config);
             services.AddSignalR();
             services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, UserIdProvider>();
@@ -185,6 +186,21 @@ namespace LuminaPath.Infrastructure
             services.AddScoped<ILuminaPathDbContext, LuminaPathDbContext>();
         }
 
+        private static void AddCache(IServiceCollection services, IConfiguration config)
+        {
+            var redisConnection = FirstConfiguredValue(
+                config.GetConnectionString("Redis"),
+                config["Redis:ConnectionString"],
+                config["REDIS_CONNECTIONSTRING"],
+                "localhost:6379");
+
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisConnection;
+                options.InstanceName = "LuminaPath:";
+            });
+        }
+
         private static void AddDefaultIdentity(IServiceCollection services, IConfiguration config)
         {
             services.AddAuthorization();
@@ -248,6 +264,8 @@ namespace LuminaPath.Infrastructure
             services.AddScoped<DirectMessageService>();
             services.AddScoped<ApplicationSettingsService>();
             services.AddTransient<PSNService>();
+            services.Configure<GameNewsOptions>(config.GetSection(GameNewsOptions.SectionName));
+            services.AddHttpClient<GameNewsService>();
             AddSteam(services, config);
         }
 

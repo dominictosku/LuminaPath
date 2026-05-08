@@ -9,9 +9,13 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
+  IonLabel,
   IonProgressBar,
   IonSelect,
   IonSelectOption,
+  IonSegment,
+  IonSegmentButton,
+  IonSkeletonText,
   IonSpinner,
   IonTitle,
   IonToolbar,
@@ -27,12 +31,15 @@ import {
   hourglassOutline,
   libraryOutline,
   linkOutline,
+  newspaperOutline,
+  openOutline,
+  refreshOutline,
   trashOutline,
 } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 
 import { GameService } from 'src/app/features/games/services/game.service';
-import { Game, Platforms } from 'src/app/features/games/models/games.model';
+import { Game, GameNewsItem, Platforms } from 'src/app/features/games/models/games.model';
 import { Quest, QuestBoardService, QuestType } from 'src/app/features/quests/services/quest-board.service';
 import { GameForecast, GamingSessionService } from 'src/app/features/planing/services/gaming-session.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
@@ -63,9 +70,13 @@ type GameWithFlexibleLibrary = Game & {
     IonContent,
     IonHeader,
     IonIcon,
+    IonLabel,
     IonProgressBar,
     IonSelect,
     IonSelectOption,
+    IonSegment,
+    IonSegmentButton,
+    IonSkeletonText,
     IonSpinner,
     IonTitle,
     IonToolbar,
@@ -75,8 +86,14 @@ export class MyGameDetailsPage implements OnInit {
   game: GameWithFlexibleLibrary | null = null;
   quests: Quest[] = [];
   forecast: GameForecast | null = null;
+  newsItems: GameNewsItem[] = [];
   isLoading = true;
+  isNewsLoading = false;
+  newsLoaded = false;
   errorMessage = '';
+  newsErrorMessage = '';
+  selectedTab: 'overview' | 'news' = 'overview';
+  readonly newsSkeletonRows = [1, 2, 3];
 
   readonly questTypeOptions: { type: QuestType; label: string }[] = [
     { type: 'main', label: 'Main' },
@@ -105,6 +122,9 @@ export class MyGameDetailsPage implements OnInit {
       hourglassOutline,
       libraryOutline,
       linkOutline,
+      newspaperOutline,
+      openOutline,
+      refreshOutline,
       trashOutline,
     });
   }
@@ -249,6 +269,58 @@ export class MyGameDetailsPage implements OnInit {
 
   trackByQuest(_: number, quest: Quest): number {
     return quest.id;
+  }
+
+  trackByNews(_: number, item: GameNewsItem): string {
+    return item.url || item.title;
+  }
+
+  setDetailTab(value: unknown): void {
+    this.selectedTab = value === 'news' ? 'news' : 'overview';
+    if (this.selectedTab === 'news' && !this.newsLoaded && !this.isNewsLoading) {
+      void this.loadNews();
+    }
+  }
+
+  async loadNews(refresh = false): Promise<void> {
+    if (!this.game?.id) {
+      return;
+    }
+
+    this.isNewsLoading = true;
+    this.newsErrorMessage = '';
+
+    try {
+      this.newsItems = await firstValueFrom(this.gameService.getNews(this.game.id, refresh));
+      this.newsLoaded = true;
+    } catch {
+      this.newsErrorMessage = 'News could not be loaded right now.';
+      this.newsItems = [];
+      this.newsLoaded = true;
+    } finally {
+      this.isNewsLoading = false;
+    }
+  }
+
+  newsDateLabel(item: GameNewsItem): string {
+    if (!item.publishedAt) {
+      return 'Recent';
+    }
+
+    const date = new Date(item.publishedAt);
+    if (Number.isNaN(date.getTime())) {
+      return 'Recent';
+    }
+
+    return new Intl.DateTimeFormat('en', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  providerLabel(item: GameNewsItem): string {
+    return item.provider === 'GoogleNews' ? 'Google News' : item.provider;
   }
 
   goBack(): void {

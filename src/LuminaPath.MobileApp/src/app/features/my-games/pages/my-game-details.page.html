@@ -72,6 +72,16 @@
       <ion-badge>{{ statusLabel }}</ion-badge>
     </section>
 
+    <ion-segment class="detail-tabs" [value]="selectedTab" (ionChange)="setDetailTab($any($event).detail.value)">
+      <ion-segment-button value="overview">
+        <ion-label>Overview</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="news">
+        <ion-label>News</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+
+    <ng-container *ngIf="selectedTab === 'overview'">
     <section class="quest-panel forecast-panel" *ngIf="forecast">
       <header class="section-header">
         <div>
@@ -174,6 +184,58 @@
           <span>This game needs to be in your library before quests can be attached.</span>
         </div>
       </ng-template>
+    </section>
+    </ng-container>
+
+    <section class="quest-panel news-panel" *ngIf="selectedTab === 'news'">
+      <header class="section-header news-header">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="newspaper-outline"></ion-icon>
+            Game news
+          </span>
+          <h2>Latest updates</h2>
+        </div>
+        <ion-button fill="clear" size="small" [disabled]="isNewsLoading" (click)="loadNews(true)">
+          <ion-icon slot="start" name="refresh-outline"></ion-icon>
+          Refresh
+        </ion-button>
+      </header>
+
+      <div class="news-list" *ngIf="isNewsLoading">
+        <article class="news-card news-card--loading" *ngFor="let row of newsSkeletonRows">
+          <ion-skeleton-text animated class="news-skeleton-title"></ion-skeleton-text>
+          <ion-skeleton-text animated></ion-skeleton-text>
+          <ion-skeleton-text animated></ion-skeleton-text>
+        </article>
+      </div>
+
+      <div class="empty-state empty-state--locked" *ngIf="!isNewsLoading && newsErrorMessage">
+        <ion-icon name="newspaper-outline"></ion-icon>
+        <strong>News unavailable</strong>
+        <span>{{ newsErrorMessage }}</span>
+      </div>
+
+      <div class="empty-state" *ngIf="!isNewsLoading && !newsErrorMessage && newsLoaded && !newsItems.length">
+        <ion-icon name="newspaper-outline"></ion-icon>
+        <strong>No news found</strong>
+        <span>There are no recent updates for {{ game.name }} yet.</span>
+      </div>
+
+      <div class="news-list" *ngIf="!isNewsLoading && newsItems.length">
+        <article class="news-card" *ngFor="let item of newsItems; trackBy: trackByNews">
+          <div class="news-card__meta">
+            <ion-badge>{{ item.source || providerLabel(item) }}</ion-badge>
+            <span>{{ newsDateLabel(item) }}</span>
+          </div>
+          <h3>{{ item.title }}</h3>
+          <p *ngIf="item.summary">{{ item.summary }}</p>
+          <ion-button fill="clear" size="small" [href]="item.url" target="_blank" rel="noopener noreferrer">
+            Read on {{ providerLabel(item) }}
+            <ion-icon slot="end" name="open-outline"></ion-icon>
+          </ion-button>
+        </article>
+      </div>
     </section>
   </main>
 </ion-content>

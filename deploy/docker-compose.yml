@@ -9,6 +9,7 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Default: Host=luminapath-db;Port=5432;Database=${POSTGRES_DB:-luminapath};Username=${POSTGRES_USER:-luminapath};Password=${POSTGRES_PASSWORD:-change-me};
+      ConnectionStrings__Redis: luminapath-redis:6379
       Database__RunMigrationsOnStartup: ${RUN_MIGRATIONS_ON_STARTUP:-true}
       Https__Redirect: ${HTTPS_REDIRECT:-false}
       Storage__Provider: ${STORAGE_PROVIDER:-FileSystem}
@@ -28,12 +29,28 @@ services:
     depends_on:
       luminapath-db:
         condition: service_healthy
+      luminapath-redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  luminapath-redis:
+    image: redis:${REDIS_VERSION:-7-alpine}
+    container_name: luminapath-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - luminapath-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   luminapath-frontend:
     image: ${LUMINAPATH_FRONTEND_IMAGE:-sekijuo/luminapath-frontend:latest}
@@ -69,3 +86,4 @@ services:
 volumes:
   luminapath-postgres:
   luminapath-storage:
+  luminapath-redis:

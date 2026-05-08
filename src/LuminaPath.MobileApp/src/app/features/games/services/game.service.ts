@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Game } from '../models/games.model';
+import { Game, GameNewsItem } from '../models/games.model';
 import { ApiService } from '../../../shared/services/api.service';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 
 @Injectable({
@@ -22,5 +22,13 @@ export class GameService extends ApiService<Game> {
       this.put(media.id, media);
     }
     return;
+  }
+
+  getNews(gameId: number, refresh = false) {
+    const params = refresh ? new HttpParams().set('refresh', 'true') : undefined;
+    return this.httpClient.get<GameNewsItem[]>(`${this.apiUrl}/${gameId}/news`, {
+      withCredentials: true,
+      params,
+    });
   }
 }

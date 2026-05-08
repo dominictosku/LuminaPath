@@ -73,6 +73,15 @@ export class MyGameInfo {
   }
 }
 
+export interface GameNewsItem {
+  title: string;
+  summary: string;
+  url: string;
+  source: string;
+  provider: 'Steam' | 'GoogleNews' | string;
+  publishedAt: string | null;
+}
+
 export const Platforms = [
   { label: "Playstation", value: 0 },
   { label: "Switch", value: 1 },
