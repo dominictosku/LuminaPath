@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Controllers.Base;
 using LuminaPath.Infrastructure.Services.Third_Party;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -10,15 +10,14 @@ namespace LuminaPath.Infrastructure.Controllers;
 [ApiController]
 [Route("api/steam")]
 [Authorize]
-public sealed class SteamController : ControllerBase
+public sealed class SteamController : AuthorizedControllerBase
 {
     private readonly SteamService _steam;
-    private readonly UserManager<LuminaUser> _userManager;
 
     public SteamController(SteamService steam, UserManager<LuminaUser> userManager)
+        : base(userManager)
     {
         _steam = steam;
-        _userManager = userManager;
     }
 
     [HttpGet("status")]
@@ -60,13 +59,7 @@ public sealed class SteamController : ControllerBase
             return BadRequest(new { message = "Identifier is required." });
         }
 
-        var userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return Unauthorized();
-        }
-
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await GetCurrentUserAsync();
         if (user is null)
         {
             return Unauthorized();

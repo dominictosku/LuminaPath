@@ -57,7 +57,7 @@ public sealed class McpHostService : IHostedService, IAsyncDisposable
                     Arguments = config.Args.ToArray(),
                     EnvironmentVariables = config.Env
                         .Where(kv => kv.Value is not null)
-                        .ToDictionary(kv => kv.Key, kv => kv.Value!),
+                        .ToDictionary(kv => kv.Key, kv => (string?)kv.Value),
                 });
 
                 var client = await McpClient.CreateAsync(transport, cancellationToken: cancellationToken);

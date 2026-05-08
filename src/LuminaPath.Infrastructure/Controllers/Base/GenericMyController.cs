@@ -5,18 +5,16 @@ using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace LuminaPath.Infrastructure.Controllers.Base
 {
     public abstract class GenericMyController<TEntity, TEntityDto>(GenericMyModelService<TEntity> service,
             UserManager<LuminaUser> userManager,
-            IObjectMapper mapper) : ControllerBase
+            IObjectMapper mapper) : AuthorizedControllerBase(userManager)
         where TEntity : class, IMyMedia
         where TEntityDto : class, IBasicInfo
     {
         protected readonly GenericMyModelService<TEntity> _service = service;
-        protected readonly UserManager<LuminaUser> _userManager = userManager;
         protected IEnumerable<string> Includes { get; set; } = new List<string>();
         public IObjectMapper Mapper { get; } = mapper;
 
@@ -42,7 +40,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
                 return BadRequest(ModelState);
             }
 
-            var (user, _) = await GetUserAndUserIdAsync(_userManager);
+            var (user, _) = await GetCurrentUserWithIdAsync();
             var entity = Mapper.Map<TEntity>(viewModel);
             var result = await _service.PostAsync(entity, user);
             return result.Match<ActionResult>(
@@ -59,7 +57,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
                 return BadRequest("Id does not match entity");
             }
 
-            var (user, _) = await GetUserAndUserIdAsync(_userManager);
+            var (user, _) = await GetCurrentUserWithIdAsync();
 
             var entity = Mapper.Map<TEntity>(viewModel);
             var result = await _service.PutAsync(entity, user);
@@ -75,18 +73,6 @@ namespace LuminaPath.Infrastructure.Controllers.Base
             return result.Match<IActionResult>(
                 m => Ok(),
                 f => NotFound(f));
-        }
-
-        protected async Task<(LuminaUser? user, string? UserId)> GetUserAndUserIdAsync(UserManager<LuminaUser> userManager)
-        {
-            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-                return (null, null);
-
-            LuminaUser? user = await userManager.FindByIdAsync(userId);
-            if (user == null)
-                return (null, null);
-            return (user, userId);
         }
     }
 }

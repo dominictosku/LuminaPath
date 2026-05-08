@@ -16,6 +16,6 @@ namespace LuminaPath.Core.Dtos
         public int? TimeSpend { get; set; }
         public int GameId { get; set; }
         public GamesNoIncludeDto? Game { get; set; }
-        public MyGameInfo MyGameInfo { get; set; } = new();
+        public MyGameInfo? MyGameInfo { get; set; } = new();
     }
 }

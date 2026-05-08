@@ -350,8 +350,13 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
             gamesToAdd.Add(newGame);
         }
 
-        private static void UpdateMyGameInfo(MyGameInfo existingInfo, MyGameInfo newInfo)
+        private static void UpdateMyGameInfo(MyGameInfo existingInfo, MyGameInfo? newInfo)
         {
+            if (newInfo is null)
+            {
+                return;
+            }
+
             existingInfo.FirstPlayed = newInfo.FirstPlayed;
             existingInfo.LastPlayed = newInfo.LastPlayed;
             existingInfo.TrackedHours = newInfo.TrackedHours;

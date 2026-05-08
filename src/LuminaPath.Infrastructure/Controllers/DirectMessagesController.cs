@@ -1,25 +1,24 @@
 using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Controllers.Base;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace LuminaPath.Infrastructure.Controllers
 {
     [ApiController]
     [Authorize]
     [Route("api/[controller]")]
-    public class DirectMessagesController : ControllerBase
+    public class DirectMessagesController : AuthorizedControllerBase
     {
         private readonly DirectMessageService _service;
-        private readonly UserManager<LuminaUser> _userManager;
 
         public DirectMessagesController(DirectMessageService service, UserManager<LuminaUser> userManager)
+            : base(userManager)
         {
             _service = service;
-            _userManager = userManager;
         }
 
         [HttpGet("{otherUserId}")]
@@ -28,8 +27,8 @@ namespace LuminaPath.Infrastructure.Controllers
             [FromQuery] DateTime? before,
             [FromQuery] int take = 100)
         {
-            var user = await GetCurrentUser();
-            if (user == null) return Unauthorized("Please Login");
+            var user = await GetCurrentUserAsync();
+            if (user == null) return LoginRequired();
 
             var result = await _service.GetConversationAsync(user.Id, otherUserId, take, before);
             return result.Match<ActionResult>(Ok, BadRequest);
@@ -38,8 +37,8 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpPost]
         public async Task<ActionResult<DirectMessageDto>> Send([FromBody] SendDirectMessageDto dto)
         {
-            var user = await GetCurrentUser();
-            if (user == null) return Unauthorized("Please Login");
+            var user = await GetCurrentUserAsync();
+            if (user == null) return LoginRequired();
             var result = await _service.SendAsync(user.Id, dto.RecipientId, dto.Content);
             return result.Match<ActionResult>(Ok, BadRequest);
         }
@@ -47,15 +46,9 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpPost("{otherUserId}/read")]
         public async Task<ActionResult<int>> MarkRead(string otherUserId)
         {
-            var user = await GetCurrentUser();
-            if (user == null) return Unauthorized("Please Login");
+            var user = await GetCurrentUserAsync();
+            if (user == null) return LoginRequired();
             return Ok(await _service.MarkConversationReadAsync(user.Id, otherUserId));
-        }
-
-        private async Task<LuminaUser?> GetCurrentUser()
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return string.IsNullOrWhiteSpace(userId) ? null : await _userManager.FindByIdAsync(userId);
         }
     }
 }

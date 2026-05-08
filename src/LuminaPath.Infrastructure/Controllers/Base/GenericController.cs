@@ -1,11 +1,8 @@
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
-using LuminaPath.Core.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace LuminaPath.Infrastructure.Controllers.Base
 {
@@ -67,18 +64,6 @@ namespace LuminaPath.Infrastructure.Controllers.Base
             return result.Match<IActionResult>(
                 m => Ok(),
                 f => NotFound(f));
-        }
-
-        protected async Task<(LuminaUser? user, string? UserId)> GetUserAndUserIdAsync(UserManager<LuminaUser> userManager)
-        {
-            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-                return (null, null);
-
-            LuminaUser? user = await userManager.FindByIdAsync(userId);
-            if (user == null)
-                return (null, null);
-            return (user, userId);
         }
     }
 }

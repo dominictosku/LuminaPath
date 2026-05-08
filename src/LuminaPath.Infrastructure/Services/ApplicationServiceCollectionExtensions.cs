@@ -1,0 +1,26 @@
+using LuminaPath.Infrastructure.Services.ModelServices;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace LuminaPath.Infrastructure.Services;
+
+internal static class ApplicationServiceCollectionExtensions
+{
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration config)
+    {
+        services.AddStorageServices(config);
+
+        services.AddScoped<GameService>();
+        services.AddScoped<MyGameService>();
+        services.AddScoped<QuestService>();
+        services.AddScoped<GamingSessionService>();
+        services.AddScoped<DocumentService>();
+        services.AddScoped<LuminaUserService>();
+        services.AddScoped<FriendsService>();
+        services.AddScoped<DirectMessageService>();
+
+        services.AddScoped<ExcelService>();
+        services.AddScoped<ApplicationSettingsService>();
+        return services;
+    }
+}
