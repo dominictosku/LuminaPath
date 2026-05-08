@@ -6,5 +6,6 @@
         public Game? Game { get; set; }
         public int GameId { get; set; }
         public string? PsnId { get; set; }
+        public string? SteamId { get; set; }
     }
 }

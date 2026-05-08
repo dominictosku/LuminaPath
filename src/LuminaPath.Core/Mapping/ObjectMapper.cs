@@ -291,7 +291,8 @@ namespace LuminaPath.Core.Mapping
             {
                 Id = source.Id,
                 GameId = source.GameId,
-                PsnId = source.PsnId
+                PsnId = source.PsnId,
+                SteamId = source.SteamId
             };
         }
 

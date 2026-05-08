@@ -248,6 +248,20 @@ namespace LuminaPath.Infrastructure
             services.AddScoped<DirectMessageService>();
             services.AddTransient<PSNService>();
             services.AddTransient<FileSystemService>();
+            AddSteam(services, config);
+        }
+
+        private static void AddSteam(IServiceCollection services, IConfiguration config)
+        {
+            services.Configure<SteamOptions>(config.GetSection(SteamOptions.SectionName));
+            services.PostConfigure<SteamOptions>(opts =>
+            {
+                if (string.IsNullOrWhiteSpace(opts.ApiKey))
+                {
+                    opts.ApiKey = Environment.GetEnvironmentVariable("STEAM_API_KEY");
+                }
+            });
+            services.AddHttpClient<SteamService>();
         }
 
         private static void AddStorageService(IServiceCollection services, IConfiguration config)

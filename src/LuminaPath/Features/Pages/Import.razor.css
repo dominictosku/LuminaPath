@@ -124,6 +124,13 @@
     align-items: start;
 }
 
+.steam-workspace {
+    display: grid;
+    grid-template-columns: minmax(300px, 430px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
 .psn-panel,
 .excel-panel,
 .import-coming-soon {
@@ -174,6 +181,61 @@
 
 .psn-emblem .mud-icon-root {
     font-size: 30px;
+}
+
+.steam-emblem {
+    display: grid;
+    flex: 0 0 auto;
+    width: 56px;
+    height: 56px;
+    place-items: center;
+    border-radius: 18px;
+    color: #fff;
+    background: linear-gradient(135deg, #0f766e, #2563eb);
+    box-shadow: 0 16px 36px rgba(15, 118, 110, .24);
+}
+
+.steam-emblem .mud-icon-root {
+    font-size: 30px;
+}
+
+.steam-profile-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    margin-bottom: 12px;
+    padding: 14px;
+    border: 1px solid rgba(147, 197, 253, .14);
+    border-radius: 14px;
+    background: var(--import-panel-soft);
+}
+
+.steam-profile-card div {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+}
+
+.steam-profile-card span {
+    overflow: hidden;
+    color: #f8fbff;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.steam-profile-card strong {
+    overflow: hidden;
+    color: var(--import-muted);
+    font-size: .84rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.steam-alert,
+.steam-progress {
+    margin-bottom: 14px;
 }
 
 .psn-search {
@@ -328,7 +390,8 @@
 
 @media (max-width: 1050px) {
     .import-hero,
-    .psn-workspace {
+    .psn-workspace,
+    .steam-workspace {
         grid-template-columns: 1fr;
     }
 

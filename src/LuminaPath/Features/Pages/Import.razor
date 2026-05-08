@@ -12,6 +12,7 @@
 @using static LuminaPath.Core.Entities.PSN.PSNTitles
 @inherits BaseAuth
 @inject PSNService psnService
+@inject SteamService steamService
 @inject LuminaUserService userService
 @inject FileSystemService fileSystemService
 @inject ExcelService excelService
@@ -39,7 +40,7 @@
 			<MudText Typo="Typo.overline" Class="import-eyebrow">Import center</MudText>
 			<MudText Typo="Typo.h3" Class="import-title">Bring your play history into LuminaPath</MudText>
 			<MudText Typo="Typo.body1" Class="import-subtitle">
-				Connect your PlayStation profile, preview tracked games, and keep Excel backups flowing without leaving your library.
+				Connect your PlayStation or Steam profile, preview tracked games, and keep Excel backups flowing without leaving your library.
 			</MudText>
 		</div>
 		<div class="import-hero__status">
@@ -172,10 +173,131 @@
 			</div>
 		</RadzenTabsItem>
 		<RadzenTabsItem Text="Steam">
-			<div class="import-coming-soon">
-				<MudIcon Icon="@Icons.Material.Filled.Construction" />
-				<MudText Typo="Typo.h6">Steam import is coming soon</MudText>
-				<MudText Typo="Typo.body2">This importer will live here once the integration is ready.</MudText>
+			<div class="steam-workspace">
+				<section class="psn-panel steam-profile-panel">
+					<div class="psn-panel__header">
+						<div>
+							<MudText Typo="Typo.overline">Step 1</MudText>
+							<MudText Typo="Typo.h5">Find Steam profile</MudText>
+							<MudText Typo="Typo.body2">Enter a steamID64, vanity name, or full steamcommunity.com profile URL.</MudText>
+						</div>
+						<div class="steam-emblem">
+							<MudIcon Icon="@Icons.Material.Filled.DesktopWindows" />
+						</div>
+					</div>
+
+					@if (!steamService.IsConfigured)
+					{
+						<MudAlert Severity="Severity.Warning" Variant="MudBlazor.Variant.Outlined" Class="steam-alert">
+							Steam imports need a server Steam API key in configuration or STEAM_API_KEY.
+						</MudAlert>
+					}
+
+					<div class="psn-search">
+						<RadzenTextBox @bind-Value="steamIdentifier"
+									   Placeholder="steamID64, vanity name, or profile URL"
+									   Class="psn-search__input" />
+						<MudButton OnClick="PreviewSteamLibrary"
+								   Variant="MudBlazor.Variant.Filled"
+								   Color="Color.Primary"
+								   StartIcon="@Icons.Material.Filled.ManageSearch"
+								   Disabled="@(!steamService.IsConfigured || steamPreviewing)">
+							Preview Library
+						</MudButton>
+					</div>
+
+					<div class="steam-profile-card">
+						@if (!string.IsNullOrWhiteSpace(SteamAvatarUrl))
+						{
+							<MudAvatar Size="Size.Large">
+								<MudImage Src="@SteamAvatarUrl" />
+							</MudAvatar>
+						}
+						else
+						{
+							<MudAvatar Size="Size.Large" Color="Color.Primary">
+								<MudIcon Icon="@Icons.Material.Filled.Person" />
+							</MudAvatar>
+						}
+						<div>
+							<span>@SteamProfileLabel</span>
+							<strong>@SteamIdLabel</strong>
+						</div>
+					</div>
+
+					<div class="psn-profile-grid">
+						<div class="psn-profile-stat">
+							<span>API</span>
+							<strong>@SteamConfiguredLabel</strong>
+						</div>
+						<div class="psn-profile-stat">
+							<span>Games</span>
+							<strong>@SteamGameCountLabel</strong>
+						</div>
+					</div>
+				</section>
+
+				<section class="psn-panel steam-games-panel">
+					<div class="psn-panel__header">
+						<div>
+							<MudText Typo="Typo.overline">Step 2</MudText>
+							<MudText Typo="Typo.h5">Preview owned games</MudText>
+							<MudText Typo="Typo.body2">Steam imports create PC games and add them to your library with tracked Steam playtime.</MudText>
+						</div>
+						<div class="psn-panel__actions">
+							<MudButton OnClick="ImportSteamLibrary"
+									   Variant="MudBlazor.Variant.Filled"
+									   Color="Color.Secondary"
+									   StartIcon="@Icons.Material.Filled.LibraryAdd"
+									   Disabled="@(!CanImportSteam)">
+								Import Games
+							</MudButton>
+						</div>
+					</div>
+
+					@if (steamImporting || steamPreviewing)
+					{
+						<MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="steam-progress" />
+					}
+
+					@if (steamImportResult is not null)
+					{
+						<MudAlert Severity="Severity.Success" Variant="MudBlazor.Variant.Filled" Class="steam-alert">
+							Imported @steamImportResult.Total Steam games. Added @steamImportResult.Added, updated @steamImportResult.Updated.
+						</MudAlert>
+					}
+
+					<div class="psn-grid-shell">
+						@if (SteamPreviewGames.Any())
+						{
+							<RadzenDataGrid AllowFiltering="true"
+											AllowColumnResize="true"
+											AllowAlternatingRows="false"
+											AllowSorting="true"
+											PageSize="8"
+											AllowPaging="true"
+											PagerHorizontalAlign="HorizontalAlign.Left"
+											ShowPagingSummary="true"
+											Data="@SteamPreviewGames"
+											Class="psn-games-grid">
+								<Columns>
+									<RadzenDataGridColumn Width="100px" Property="@nameof(SteamOwnedGame.AppId)" Title="App ID" />
+									<RadzenDataGridColumn Width="300px" Property="@nameof(SteamOwnedGame.Name)" Title="Title" />
+									<RadzenDataGridColumn Width="160px" Property="@nameof(SteamOwnedGame.PlaytimeMinutes)" Title="Minutes played" />
+									<RadzenDataGridColumn Width="180px" Property="@nameof(SteamOwnedGame.LastPlayed)" Title="Last played" />
+								</Columns>
+							</RadzenDataGrid>
+						}
+						else
+						{
+							<div class="psn-empty-state">
+								<MudIcon Icon="@Icons.Material.Filled.TravelExplore" />
+								<MudText Typo="Typo.h6">No Steam games loaded yet</MudText>
+								<MudText Typo="Typo.body2">Preview a public Steam library before importing it.</MudText>
+							</div>
+						}
+					</div>
+				</section>
 			</div>
 		</RadzenTabsItem>
 		<RadzenTabsItem Text="Excel">
@@ -250,11 +372,32 @@
 	const long MaxExcelFileSize = 10 * 1024 * 1024;
 	IQueryable<MyGameDto>? games;
 	LuminaUserInfo model = new();
+	SteamLibraryPreview? steamPreview;
+	SteamImportResult? steamImportResult;
 	ExcelService.GameExcelImportResult? _excelResult;
 	bool _excelImporting;
+	bool steamPreviewing;
+	bool steamImporting;
+	string steamIdentifier = string.Empty;
 	int ImportedGameCount => games?.Count() ?? 0;
 	string TrophyLevelLabel => model.PSNTrophyLevel > 0 ? model.PSNTrophyLevel.ToString() : "-";
 	string ProfileAccountLabel => string.IsNullOrWhiteSpace(model.PSNAccountId) ? "Not connected" : model.PSNAccountId;
+	string SteamConfiguredLabel => steamService.IsConfigured ? "Configured" : "Missing";
+	string SteamGameCountLabel => steamPreview is null ? "-" : steamPreview.GameCount.ToString();
+	string SteamIdLabel => !string.IsNullOrWhiteSpace(steamPreview?.Profile.SteamId)
+		? steamPreview.Profile.SteamId
+		: string.IsNullOrWhiteSpace(model.SteamId) ? "Not connected" : model.SteamId;
+	string SteamProfileLabel => !string.IsNullOrWhiteSpace(steamPreview?.Profile.PersonaName)
+		? steamPreview.Profile.PersonaName
+		: string.IsNullOrWhiteSpace(model.SteamPersonaName) ? "Steam profile" : model.SteamPersonaName;
+	string SteamAvatarUrl => !string.IsNullOrWhiteSpace(steamPreview?.Profile.AvatarUrl)
+		? steamPreview.Profile.AvatarUrl!
+		: model.SteamAvatarUrl;
+	IEnumerable<SteamOwnedGame> SteamPreviewGames => steamPreview?.Games ?? Enumerable.Empty<SteamOwnedGame>();
+	bool CanImportSteam => steamService.IsConfigured
+		&& !steamImporting
+		&& !steamPreviewing
+		&& !string.IsNullOrWhiteSpace(steamIdentifier);
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -263,6 +406,11 @@
 		{
 			model = User.LuminaUserInfo;
 		}
+		if (!string.IsNullOrWhiteSpace(UserId))
+		{
+			model.UserId = UserId;
+		}
+		steamIdentifier = model.SteamId;
 
 		var bearer = fileSystemService.GetBearer();
 		psnService.SetBearer(bearer);
@@ -328,6 +476,136 @@
 		{
 			Snackbar.Add("Admin token expired, please notify the admin", Severity.Warning);
 		}
+	}
+
+	async Task PreviewSteamLibrary()
+	{
+		if (!ValidateSteamInput())
+		{
+			return;
+		}
+
+		steamPreviewing = true;
+		steamImportResult = null;
+
+		try
+		{
+			steamPreview = await steamService.PreviewLibraryAsync(steamIdentifier, CancellationToken.None);
+			if (steamPreview is null)
+			{
+				Snackbar.Add("Steam profile not found", Severity.Warning);
+				return;
+			}
+
+			await SaveSteamProfile(steamPreview.Profile);
+			steamIdentifier = steamPreview.Profile.SteamId;
+
+			if (steamPreview.GameCount == 0)
+			{
+				Snackbar.Add("Steam profile found, but no public games were returned", Severity.Info);
+				return;
+			}
+
+			Snackbar.Add($"Loaded {steamPreview.GameCount} Steam games", Severity.Success);
+		}
+		catch
+		{
+			Snackbar.Add("Steam library could not be loaded", Severity.Warning);
+		}
+		finally
+		{
+			steamPreviewing = false;
+		}
+	}
+
+	async Task ImportSteamLibrary()
+	{
+		if (!ValidateSteamInput() || User is null)
+		{
+			return;
+		}
+
+		bool? confirm = await dialogService.Confirm("Import this Steam library?", "Import Steam");
+		if (confirm != true)
+		{
+			return;
+		}
+
+		steamImporting = true;
+
+		try
+		{
+			steamImportResult = await steamService.ImportLibraryAsync(User, steamIdentifier, CancellationToken.None);
+			if (string.IsNullOrWhiteSpace(steamImportResult.SteamId))
+			{
+				Snackbar.Add("Steam profile not found", Severity.Warning);
+				return;
+			}
+
+			steamIdentifier = steamImportResult.SteamId;
+			if (steamPreview?.Profile.SteamId == steamImportResult.SteamId)
+			{
+				await SaveSteamProfile(steamPreview.Profile);
+			}
+			else
+			{
+				model.SteamId = steamImportResult.SteamId;
+				await userService.UpdateThirdParty(UserId!, model);
+			}
+
+			if (steamImportResult.Total == 0)
+			{
+				Snackbar.Add("Steam profile found, but no public games were returned", Severity.Info);
+				return;
+			}
+
+			Snackbar.Add($"Imported {steamImportResult.Total} Steam games", Severity.Success);
+		}
+		catch
+		{
+			Snackbar.Add("Steam import failed", Severity.Error);
+		}
+		finally
+		{
+			steamImporting = false;
+		}
+	}
+
+	bool ValidateSteamInput()
+	{
+		if (!steamService.IsConfigured)
+		{
+			Snackbar.Add("Steam API key is not configured", Severity.Warning);
+			return false;
+		}
+
+		if (string.IsNullOrWhiteSpace(UserId))
+		{
+			Snackbar.Add("Please sign in before importing a Steam library", Severity.Info);
+			return false;
+		}
+
+		if (string.IsNullOrWhiteSpace(steamIdentifier))
+		{
+			Snackbar.Add("Enter a Steam ID, vanity name, or profile URL", Severity.Info);
+			return false;
+		}
+
+		return true;
+	}
+
+	async Task SaveSteamProfile(SteamProfile profile)
+	{
+		if (string.IsNullOrWhiteSpace(UserId))
+		{
+			return;
+		}
+
+		model.SteamId = profile.SteamId;
+		model.SteamPersonaName = profile.PersonaName;
+		model.SteamProfileUrl = profile.ProfileUrl ?? string.Empty;
+		model.SteamAvatarUrl = profile.AvatarUrl ?? string.Empty;
+		await userService.UpdateThirdParty(UserId, model);
 	}
 
 	async Task<GameData> GetGameData()

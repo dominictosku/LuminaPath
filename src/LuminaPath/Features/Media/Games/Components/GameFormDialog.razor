@@ -173,6 +173,12 @@
                                                       Variant="Variant.Outlined"
                                                       For="@(() => Model.GameInfo!.PsnId)" />
                                     </MudItem>
+                                    <MudItem xs="12" sm="6">
+                                        <MudTextField Label="Steam ID"
+                                                      @bind-Value="Model.GameInfo!.SteamId"
+                                                      Variant="Variant.Outlined"
+                                                      For="@(() => Model.GameInfo!.SteamId)" />
+                                    </MudItem>
                                 </MudGrid>
                             </MudExpansionPanel>
                         </MudExpansionPanels>

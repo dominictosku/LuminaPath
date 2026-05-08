@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using LuminaPath.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LuminaPath.Infrastructure.Migrations
 {
     [DbContext(typeof(LuminaPathDbContext))]
-    partial class LuminaPathDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260508080756_AddSteamIdToGameInfo")]
+    partial class AddSteamIdToGameInfo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -527,22 +530,6 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.Property<int>("PSNTrophyLevel")
                         .HasColumnType("integer");
-
-                    b.Property<string>("SteamAvatarUrl")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("SteamId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("SteamPersonaName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("SteamProfileUrl")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<string>("UserId")
                         .IsRequired()

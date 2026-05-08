@@ -21,5 +21,15 @@
 
         public int PSNPlatinum { get; set; }
         #endregion
+
+        #region Steam
+        public string SteamId { get; set; } = string.Empty;
+
+        public string SteamPersonaName { get; set; } = string.Empty;
+
+        public string SteamProfileUrl { get; set; } = string.Empty;
+
+        public string SteamAvatarUrl { get; set; } = string.Empty;
+        #endregion
     }
 }
