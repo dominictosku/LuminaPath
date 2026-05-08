@@ -5,7 +5,7 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Administrator")]
 @inject PSNService psnService
-@inject FileSystemService fileSystemService
+@inject ApplicationSettingsService applicationSettingsService
 @inject IJSRuntime Js
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -168,9 +168,9 @@
 	private string NpssoVisibilityIcon => showNpsso ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
 	private string BearerVisibilityIcon => showBearer ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
 
-	protected override void OnInitialized()
+	protected override async Task OnInitializedAsync()
 	{
-		bearerToken = fileSystemService.GetBearer();
+		bearerToken = await applicationSettingsService.GetPsnBearerTokenAsync();
 	}
 
 	async Task CopyToClipboard()
@@ -197,7 +197,7 @@
 		Snackbar.Add("Generated PSN bearer response", Severity.Success);
 	}
 
-	void SaveBearer()
+	async Task SaveBearer()
 	{
 		if (string.IsNullOrWhiteSpace(bearerToken))
 		{
@@ -205,7 +205,7 @@
 			return;
 		}
 
-		fileSystemService.WriteBearer(bearerToken);
+		await applicationSettingsService.SavePsnBearerTokenAsync(bearerToken);
 		Snackbar.Add("Saved bearer token", Severity.Success);
 	}
 

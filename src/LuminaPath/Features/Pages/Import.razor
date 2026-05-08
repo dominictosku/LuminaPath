@@ -14,7 +14,7 @@
 @inject PSNService psnService
 @inject SteamService steamService
 @inject LuminaUserService userService
-@inject FileSystemService fileSystemService
+@inject ApplicationSettingsService applicationSettingsService
 @inject ExcelService excelService
 @inject Radzen.DialogService dialogService
 @inject IDialogService DialogService
@@ -414,7 +414,7 @@
 		steamIdentifier = model.SteamId;
 		steamConfigured = await steamService.IsConfiguredAsync();
 
-		var bearer = fileSystemService.GetBearer();
+		var bearer = await applicationSettingsService.GetPsnBearerTokenAsync();
 		psnService.SetBearer(bearer);
 	}
 

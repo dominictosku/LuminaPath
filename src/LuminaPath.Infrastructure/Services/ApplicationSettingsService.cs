@@ -6,6 +6,7 @@ namespace LuminaPath.Infrastructure.Services;
 public sealed class ApplicationSettingsService
 {
     public const string SteamApiKey = "Steam.ApiKey";
+    public const string PsnBearerToken = "PSN.BearerToken";
 
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
 
@@ -28,6 +29,16 @@ public sealed class ApplicationSettingsService
     public Task SaveSteamApiKeyAsync(string value, CancellationToken cancellationToken = default)
     {
         return SaveValueAsync(SteamApiKey, value.Trim(), cancellationToken);
+    }
+
+    public async Task<string> GetPsnBearerTokenAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetValueAsync(PsnBearerToken, cancellationToken);
+    }
+
+    public Task SavePsnBearerTokenAsync(string value, CancellationToken cancellationToken = default)
+    {
+        return SaveValueAsync(PsnBearerToken, value.Trim(), cancellationToken);
     }
 
     private async Task<string> GetValueAsync(string key, CancellationToken cancellationToken)

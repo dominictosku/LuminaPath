@@ -248,7 +248,6 @@ namespace LuminaPath.Infrastructure
             services.AddScoped<DirectMessageService>();
             services.AddScoped<ApplicationSettingsService>();
             services.AddTransient<PSNService>();
-            services.AddTransient<FileSystemService>();
             AddSteam(services, config);
         }
 
