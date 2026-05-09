@@ -303,8 +303,29 @@
   grid-auto-flow: column;
   gap: 14px;
   overflow-x: auto;
-  padding-bottom: 2px;
+  padding-bottom: 12px;
+  scrollbar-color: var(--accent) rgba(37, 99, 235, 0.16);
+  scrollbar-width: thin;
   scroll-snap-type: x mandatory;
+}
+
+.horizontal-list::-webkit-scrollbar {
+  height: 12px;
+}
+
+.horizontal-list::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.16);
+}
+
+.horizontal-list::-webkit-scrollbar-thumb {
+  border: 3px solid rgba(37, 99, 235, 0.16);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563eb, #38bdf8);
+}
+
+.horizontal-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #1d4ed8, #0ea5e9);
 }
 
 .game-card {
