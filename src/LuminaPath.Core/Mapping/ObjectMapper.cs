@@ -57,6 +57,14 @@ namespace LuminaPath.Core.Mapping
                 Movie entity when destinationType == typeof(MoviesDto) => MapMoviesDto(entity),
                 Movie entity when typeof(Movie).IsAssignableFrom(destinationType) => MapMovieToDestination(entity, destinationType),
                 MyMovie entity when destinationType == typeof(MyMovie) => MapMyMovie(entity),
+                SeriesNoIncludeDto dto when destinationType == typeof(Series) => MapSeries(dto),
+                SeriesDto dto when destinationType == typeof(Series) => MapSeries(dto),
+                Series entity when destinationType == typeof(SeriesNoIncludeDto) => MapSeriesNoIncludeDto(entity),
+                Series entity when destinationType == typeof(SeriesDto) => MapSeriesDto(entity),
+                Series entity when typeof(Series).IsAssignableFrom(destinationType) => MapSeriesToDestination(entity, destinationType),
+                MySeriesDto dto when destinationType == typeof(MySeries) => MapMySeries(dto),
+                MySeries entity when destinationType == typeof(MySeriesDto) => MapMySeriesDto(entity),
+                MySeries entity when destinationType == typeof(MySeries) => MapMySeries(entity),
                 _ when destinationType.IsAssignableFrom(source.GetType()) => source,
                 _ => CopyMatchingProperties(source, CreateInstance(destinationType))
             };
@@ -470,6 +478,124 @@ namespace LuminaPath.Core.Mapping
             };
         }
 
+        private static Series MapSeries(SeriesNoIncludeDto source)
+        {
+            return new Series
+            {
+                Id = source.Id,
+                Name = source.Name,
+                Description = source.Description,
+                Genres = SplitGenres(source.Genre),
+                ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimePerEpisodeMinutes = ResolveAnimePerEpisodeMinutes(source.ExpectedWatchTimePerEpisodeMinutes, source.ExpectedWatchTimeMinutes, source.EpisodeCount),
+                EpisodeCount = source.EpisodeCount,
+                Source = source.Source,
+                Image = MapDocument<MediaDocument>(source.Image)
+            };
+        }
+
+        private Series MapSeries(SeriesDto source)
+        {
+            return new Series
+            {
+                Id = source.Id,
+                Name = source.Name,
+                Description = source.Description,
+                Genres = SplitGenres(source.Genre),
+                ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimePerEpisodeMinutes = ResolveAnimePerEpisodeMinutes(source.ExpectedWatchTimePerEpisodeMinutes, source.ExpectedWatchTimeMinutes, source.EpisodeCount),
+                EpisodeCount = source.EpisodeCount,
+                Image = MapDocument<MediaDocument>(source.Image),
+                MySeries = source.MySeries == null ? null : [Map<MySeries>(source.MySeries)]
+            };
+        }
+
+        private SeriesNoIncludeDto MapSeriesNoIncludeDto(Series source)
+        {
+            return new SeriesNoIncludeDto
+            {
+                Id = source.Id,
+                Name = source.Name,
+                Description = source.Description,
+                Genre = JoinGenres(source.Genres),
+                ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimePerEpisodeMinutes = source.ExpectedWatchTimePerEpisodeMinutes,
+                ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
+                EpisodeCount = source.EpisodeCount,
+                Source = source.Source,
+                Image = MapDocument<Document>(source.Image)
+            };
+        }
+
+        private SeriesDto MapSeriesDto(Series source)
+        {
+            return new SeriesDto
+            {
+                Id = source.Id,
+                Name = source.Name,
+                Description = source.Description,
+                Genre = JoinGenres(source.Genres),
+                ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimePerEpisodeMinutes = source.ExpectedWatchTimePerEpisodeMinutes,
+                ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
+                EpisodeCount = source.EpisodeCount,
+                Image = MapDocument<Document>(source.Image),
+                MySeries = source.MySeries == null ? null : Map<MySeriesDto>(source.MySeries.FirstOrDefault())
+            };
+        }
+
+        private MySeries MapMySeries(MySeriesDto source)
+        {
+            return new MySeries
+            {
+                Id = source.Id,
+                Rating = source.Rating,
+                StartDate = source.StartDate,
+                EndDate = source.EndDate,
+                Status = source.Status,
+                TimeSpend = source.TimeSpend,
+                SeriesId = source.SeriesId,
+                Series = source.Series == null ? null : Map<Series>(source.Series),
+                CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes,
+                CurrentEpisode = source.CurrentEpisode
+            }.WithCalculatedSeriesWatchTime();
+        }
+
+        private MySeries MapMySeries(MySeries source)
+        {
+            return new MySeries
+            {
+                Id = source.Id,
+                Rating = source.Rating,
+                Priority = source.Priority,
+                StartDate = source.StartDate,
+                EndDate = source.EndDate,
+                Status = source.Status,
+                TimeSpend = source.TimeSpend,
+                LuminaUserId = source.LuminaUserId,
+                SeriesId = source.SeriesId,
+                CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes,
+                CurrentEpisode = source.CurrentEpisode
+            }.WithCalculatedSeriesWatchTime(source.Series);
+        }
+
+        private MySeriesDto MapMySeriesDto(MySeries source)
+        {
+            return new MySeriesDto
+            {
+                Id = source.Id,
+                Rating = source.Rating.HasValue ? Convert.ToByte(source.Rating.Value) : null,
+                StartDate = source.StartDate,
+                EndDate = source.EndDate,
+                Status = source.Status,
+                TimeSpend = source.TimeSpend.HasValue ? Convert.ToInt32(source.TimeSpend.Value) : null,
+                SeriesId = source.SeriesId,
+                Series = source.Series == null ? null : Map<SeriesNoIncludeDto>(source.Series),
+                CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes,
+                CurrentEpisode = source.CurrentEpisode
+            };
+        }
+
         private static TDocument? MapDocument<TDocument>(Document? source) where TDocument : Document, new()
         {
             if (source == null)
@@ -592,6 +718,39 @@ namespace LuminaPath.Core.Mapping
                 .ToList();
         }
 
+        private object MapSeriesToDestination(Series source, Type destinationType)
+        {
+            var destination = CreateInstance(destinationType);
+            CopyMatchingProperties(source, destination);
+
+            if (destination is Series series)
+            {
+                NormalizeSeriesRelationships(source, series);
+            }
+
+            return destination;
+        }
+
+        private void NormalizeSeriesRelationships(Series source, Series destination)
+        {
+            if (source.MySeries == null)
+            {
+                destination.MySeries = null;
+                return;
+            }
+
+            destination.MySeries = source.MySeries
+                .Select(mySeries =>
+                {
+                    var mappedMySeries = Map<MySeries>(mySeries);
+                    mappedMySeries.Series = destination;
+                    mappedMySeries.SeriesId = destination.Id > 0 ? destination.Id : 0;
+                    mappedMySeries.RecalculateWatchTime(destination);
+                    return mappedMySeries;
+                })
+                .ToList();
+        }
+
         private static GameInfo MapGameInfo(GameInfo source)
         {
             return new GameInfo
@@ -685,6 +844,12 @@ namespace LuminaPath.Core.Mapping
         {
             myAnime.RecalculateWatchTime(anime);
             return myAnime;
+        }
+
+        public static MySeries WithCalculatedSeriesWatchTime(this MySeries mySeries, Series? series = null)
+        {
+            mySeries.RecalculateWatchTime(series);
+            return mySeries;
         }
     }
 }

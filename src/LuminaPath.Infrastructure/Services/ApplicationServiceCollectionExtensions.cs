@@ -16,6 +16,8 @@ internal static class ApplicationServiceCollectionExtensions
         services.AddScoped<MyAnimeService>();
         services.AddScoped<MovieService>();
         services.AddScoped<MyMovieService>();
+        services.AddScoped<SeriesService>();
+        services.AddScoped<MySeriesService>();
         services.AddScoped<QuestService>();
         services.AddScoped<GamingSessionService>();
         services.AddScoped<DocumentService>();
