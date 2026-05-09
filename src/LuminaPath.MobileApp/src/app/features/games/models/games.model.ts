@@ -10,11 +10,7 @@ export class Game implements IGame, IBasicInfo {
   genre: string;
   platforms: number;
   playtime: number;
-  expectedWatchTimeMinutes?: number | null;
-  episodeCount?: number | null;
   myGames: MyGame | null;
-  myAnimes?: MyGame | null;
-  myMovies?: MyGame | null;
   image: MediaFile | null;
 
   constructor(
@@ -47,8 +43,6 @@ export class MyGame implements IBasicInfo {
   gameId: number;
   game: Game | null;
   myGameInfo: MyGameInfo | null;
-  currentWatchTimeMinutes?: number | null;
-  currentEpisode?: number | null;
 
   constructor(gameId: number) {
     this.id = 0;
@@ -60,8 +54,6 @@ export class MyGame implements IBasicInfo {
     this.game = null;
     this.gameId = gameId;
     this.myGameInfo = null;
-    this.currentWatchTimeMinutes = null;
-    this.currentEpisode = null;
   }
 }
 

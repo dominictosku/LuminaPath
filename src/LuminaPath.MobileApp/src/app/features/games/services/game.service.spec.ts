@@ -10,13 +10,11 @@ import { GameService } from './game.service';
 import { Game } from '../models/games.model';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 import { PaginateResult } from 'src/app/core/entities/paginatedResult';
-import { MediaModeService } from 'src/app/shared/services/media-mode.service';
 
 describe('GameService', () => {
   let service: GameService;
   let httpMock: HttpTestingController;
   let endpoint: string;
-  let mediaMode: MediaModeService;
 
   beforeEach(() => {
     localStorage.removeItem('luminapath.mediaMode');
@@ -31,7 +29,6 @@ describe('GameService', () => {
 
     service = TestBed.inject(GameService);
     httpMock = TestBed.inject(HttpTestingController);
-    mediaMode = TestBed.inject(MediaModeService);
     endpoint = TestBed.inject(ApiEndpointService).url('games');
   });
 
@@ -103,16 +100,6 @@ describe('GameService', () => {
     const req = httpMock.expectOne(`${endpoint}/9`);
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
-  });
-
-  it('getAll() follows the selected media mode endpoint', () => {
-    mediaMode.select('animes');
-
-    service.getAll().subscribe();
-
-    const req = httpMock.expectOne(TestBed.inject(ApiEndpointService).url('animes'));
-    expect(req.request.method).toBe('GET');
-    req.flush(new PaginateResult<Game>());
   });
 
   it('getNews(gameId) requests the game news endpoint with credentials', () => {

@@ -1,0 +1,11 @@
+@use '../../my-games/pages/my-game-details.page.scss';
+
+:host {
+  --page-bg: #071b15;
+  --page-bg-soft: #0d3228;
+  --card-bg: rgba(12, 48, 38, 0.84);
+  --card-bg-strong: rgba(18, 68, 54, 0.94);
+  --card-border: rgba(112, 225, 173, 0.22);
+  --accent: #34d399;
+  --accent-strong: #8ff0c3;
+}

@@ -115,11 +115,11 @@
         <ion-button
           fill="clear"
           class="quick-add-button"
-          [class.quick-add-button--edit]="game.myGames"
+          [class.quick-add-button--edit]="hasLibraryEntry(game)"
           [disabled]="isAdding(game)"
-          [attr.aria-label]="(game.myGames ? 'Edit ' : 'Add ') + game.name + (game.myGames ? ' in my library' : ' to my library')"
+          [attr.aria-label]="(hasLibraryEntry(game) ? 'Edit ' : 'Add ') + game.name + (hasLibraryEntry(game) ? ' in my library' : ' to my library')"
           (click)="openGameListDialog(game)">
-          <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : (game.myGames ? 'create-outline' : 'add-outline')"></ion-icon>
+          <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : (hasLibraryEntry(game) ? 'create-outline' : 'add-outline')"></ion-icon>
         </ion-button>
         <img [src]="imageFor(game)" alt="" (click)="openDetails(game)" />
         <div class="game-card__content" (click)="openDetails(game)">
@@ -141,7 +141,7 @@
             </span>
           </div>
 
-          <div class="progress-block" *ngIf="game.myGames">
+          <div class="progress-block" *ngIf="hasLibraryEntry(game)">
             <div>
               <span>{{ playedLabel(game) }}</span>
               <strong>{{ progressOf(game) }}%</strong>
@@ -160,11 +160,11 @@
         <ion-button
           fill="clear"
           class="quick-add-button list-row__add"
-          [class.quick-add-button--edit]="game.myGames"
+          [class.quick-add-button--edit]="hasLibraryEntry(game)"
           [disabled]="isAdding(game)"
-          [attr.aria-label]="(game.myGames ? 'Edit ' : 'Add ') + game.name + (game.myGames ? ' in my library' : ' to my library')"
+          [attr.aria-label]="(hasLibraryEntry(game) ? 'Edit ' : 'Add ') + game.name + (hasLibraryEntry(game) ? ' in my library' : ' to my library')"
           (click)="openGameListDialog(game)">
-          <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : (game.myGames ? 'create-outline' : 'add-outline')"></ion-icon>
+          <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : (hasLibraryEntry(game) ? 'create-outline' : 'add-outline')"></ion-icon>
         </ion-button>
         <img [src]="imageFor(game)" alt="" (click)="openDetails(game)" />
         <div class="list-row__main" (click)="openDetails(game)">
@@ -177,7 +177,7 @@
         </div>
         <div class="list-row__stats">
           <strong>{{ durationLabel(game) }}</strong>
-          <span>{{ game.myGames ? remainingLabel(game) : 'Catalog' }}</span>
+          <span>{{ hasLibraryEntry(game) ? remainingLabel(game) : 'Catalog' }}</span>
         </div>
       </article>
     </section>

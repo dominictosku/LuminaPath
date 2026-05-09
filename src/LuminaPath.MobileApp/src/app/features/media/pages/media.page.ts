@@ -34,13 +34,13 @@ import {
   timeOutline,
 } from 'ionicons/icons';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { Game, MyGame, Platforms } from '../../games/models/games.model';
-import { GameService } from '../../games/services/game.service';
+import { Platforms } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
-import { MyGameService } from '../../my-games/services/my-game.service';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
 import { MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
 import { Subscription } from 'rxjs';
+import { MediaLibraryFacade } from '../services/media-library.facade';
+import { LibraryEntryDetails, MediaItem, UserMediaEntry } from '../models/media-item.model';
 
 enum GameStatus {
   OnHold = 0,
@@ -85,8 +85,8 @@ type AddGameForm = {
   ],
 })
 export class MediaPage implements OnInit, OnDestroy {
-  games: Game[] = [];
-  filteredGames: Game[] = [];
+  games: MediaItem[] = [];
+  filteredGames: MediaItem[] = [];
   searchTerm = '';
   ownershipFilter: OwnershipFilter = 'all';
   statusFilter = 'all';
@@ -96,9 +96,16 @@ export class MediaPage implements OnInit, OnDestroy {
   errorMessage = '';
   successMessage = '';
   addingGameIds = new Set<number>();
-  selectedGame: Game | null = null;
+  selectedGame: MediaItem | null = null;
   isAddDialogOpen = false;
-  addGameForm: AddGameForm = this.createAddGameForm();
+  addGameForm: AddGameForm = {
+    status: GameStatus.Planned,
+    timeSpend: 0,
+    rating: null,
+    startDate: '',
+    endDate: '',
+    currentEpisode: null,
+  };
   mediaMode: MediaModeOption;
 
   private mediaModeSub?: Subscription;
@@ -121,8 +128,7 @@ export class MediaPage implements OnInit, OnDestroy {
   ];
 
   constructor(
-    private gameService: GameService,
-    private myGameService: MyGameService,
+    private mediaLibrary: MediaLibraryFacade,
     private releaseNotifications: ReleaseNotificationService,
     private router: Router,
     private mediaModeService: MediaModeService,
@@ -165,14 +171,14 @@ export class MediaPage implements OnInit, OnDestroy {
     this.isLoading = !event;
     this.errorMessage = '';
 
-    this.gameService.getAll().subscribe({
+    this.mediaLibrary.getAll().subscribe({
       next: (result) => {
-        this.games = (result.data ?? []).map((game) => this.normalizeMedia(game));
+        this.games = result.data ?? [];
         this.applyFilters();
         this.isLoading = false;
         this.completeRefresh(event);
         if (this.mediaMode.id === 'games') {
-          this.releaseNotifications.syncForGames(this.games);
+          this.releaseNotifications.syncForGames(this.gamesForReleaseNotifications());
         }
       },
       error: () => {
@@ -220,7 +226,7 @@ export class MediaPage implements OnInit, OnDestroy {
     }
   }
 
-  openGameListDialog(game: Game) {
+  openGameListDialog(game: MediaItem) {
     if (this.addingGameIds.has(game.id)) {
       return;
     }
@@ -252,7 +258,7 @@ export class MediaPage implements OnInit, OnDestroy {
     this.successMessage = '';
     this.addingGameIds.add(game.id);
 
-    const details = {
+    const details: LibraryEntryDetails = {
       status: Number(this.addGameForm.status),
       timeSpend: this.numberOrNull(this.addGameForm.timeSpend),
       rating: this.numberOrNull(this.addGameForm.rating),
@@ -263,12 +269,12 @@ export class MediaPage implements OnInit, OnDestroy {
 
     const existingMyGame = this.libraryEntry(game);
     const request = existingMyGame
-      ? this.myGameService.updateLibraryEntry(existingMyGame.id, game.id, details)
-      : this.myGameService.addToLibrary(game.id, details);
+      ? this.mediaLibrary.updateLibraryEntry(existingMyGame.id, game.id, details)
+      : this.mediaLibrary.addToLibrary(game.id, details);
 
     request.subscribe({
       next: (myGame) => {
-        game.myGames = myGame;
+        game.libraryEntry = myGame;
         this.applyFilters();
         this.successMessage = existingMyGame
           ? `${game.name} was saved.`
@@ -278,7 +284,7 @@ export class MediaPage implements OnInit, OnDestroy {
         this.selectedGame = null;
         this.triggerAddHaptic();
         if (this.mediaMode.id === 'games') {
-          this.releaseNotifications.syncForGames(this.games);
+          this.releaseNotifications.syncForGames(this.gamesForReleaseNotifications());
         }
       },
       error: (error) => {
@@ -288,12 +294,12 @@ export class MediaPage implements OnInit, OnDestroy {
     });
   }
 
-  isAdding(game: Game): boolean {
+  isAdding(game: MediaItem): boolean {
     return this.addingGameIds.has(game.id);
   }
 
-  openDetails(game: Game) {
-    this.router.navigate(['/media', game.id]);
+  openDetails(game: MediaItem) {
+    this.router.navigate(this.mediaLibrary.detailsRoute(game));
   }
 
   isEditingSelectedGame(): boolean {
@@ -356,7 +362,7 @@ export class MediaPage implements OnInit, OnDestroy {
     );
   }
 
-  imageFor(game: Game): string {
+  imageFor(game: MediaItem): string {
     return mediaImageUrl(game.image);
   }
 
@@ -364,12 +370,12 @@ export class MediaPage implements OnInit, OnDestroy {
     return Platforms.find((platform) => platform.value === Number(value))?.label ?? 'Unknown';
   }
 
-  statusLabel(game: Game): string {
+  statusLabel(game: MediaItem): string {
     const status = this.statusOptions.find((option) => option.value === this.statusOf(game));
     return status?.label ?? 'Catalog';
   }
 
-  releaseLabel(game: Game): string {
+  releaseLabel(game: MediaItem): string {
     const date = game.releaseDate ? new Date(game.releaseDate) : null;
 
     if (!date || Number.isNaN(date.getTime())) {
@@ -383,8 +389,8 @@ export class MediaPage implements OnInit, OnDestroy {
     }).format(date);
   }
 
-  progressOf(game: Game): number {
-    const estimated = Number(game.playtime) || 0;
+  progressOf(game: MediaItem): number {
+    const estimated = this.expectedHoursOf(game);
 
     if (estimated <= 0) {
       return this.statusOf(game) === GameStatus.Completed ? 100 : 0;
@@ -393,19 +399,19 @@ export class MediaPage implements OnInit, OnDestroy {
     return Math.min(100, Math.round((this.playedOf(game) / estimated) * 100));
   }
 
-  playedLabel(game: Game): string {
+  playedLabel(game: MediaItem): string {
     return this.isGamesMode
       ? `${Math.round(this.playedOf(game))}h played`
       : `${Math.round(this.playedOf(game) * 60)}m watched`;
   }
 
-  remainingLabel(game: Game): string {
+  remainingLabel(game: MediaItem): string {
     return this.isGamesMode
       ? `${Math.round(this.remainingOf(game))}h left`
       : `${Math.round(this.remainingOf(game) * 60)}m left`;
   }
 
-  durationLabel(game: Game): string {
+  durationLabel(game: MediaItem): string {
     if (this.isGamesMode) {
       return `${game.playtime || 0}h`;
     }
@@ -424,7 +430,7 @@ export class MediaPage implements OnInit, OnDestroy {
         : `${remainingMinutes}m`;
   }
 
-  episodeLabel(game: Game): string {
+  episodeLabel(game: MediaItem): string {
     if (!this.isAnimesMode) {
       return '';
     }
@@ -434,11 +440,15 @@ export class MediaPage implements OnInit, OnDestroy {
     return episodeCount > 0 ? `Episode ${currentEpisode}/${episodeCount}` : `Episode ${currentEpisode}`;
   }
 
-  trackByGameId(_: number, game: Game): number {
+  hasLibraryEntry(game: MediaItem): boolean {
+    return !!game.libraryEntry;
+  }
+
+  trackByGameId(_: number, game: MediaItem): number {
     return game.id;
   }
 
-  private matchesOwnership(game: Game): boolean {
+  private matchesOwnership(game: MediaItem): boolean {
     if (this.ownershipFilter === 'mine') {
       return !!this.libraryEntry(game);
     }
@@ -450,15 +460,15 @@ export class MediaPage implements OnInit, OnDestroy {
     return true;
   }
 
-  private matchesStatus(game: Game): boolean {
+  private matchesStatus(game: MediaItem): boolean {
     return this.statusFilter === 'all' || this.statusOf(game) === Number(this.statusFilter);
   }
 
-  private matchesPlatform(game: Game): boolean {
+  private matchesPlatform(game: MediaItem): boolean {
     return !this.isGamesMode || this.platformFilter === 'all' || Number(game.platforms) === Number(this.platformFilter);
   }
 
-  private playedOf(game: Game): number {
+  private playedOf(game: MediaItem): number {
     const libraryEntry = this.libraryEntry(game);
     if (!this.isGamesMode) {
       return (Number(libraryEntry?.currentWatchTimeMinutes) || 0) / 60;
@@ -469,11 +479,11 @@ export class MediaPage implements OnInit, OnDestroy {
     return manual + tracked;
   }
 
-  private remainingOf(game: Game): number {
+  private remainingOf(game: MediaItem): number {
     return Math.max(0, this.expectedHoursOf(game) - this.playedOf(game));
   }
 
-  private statusOf(game: Game): number {
+  private statusOf(game: MediaItem): number {
     return Number(this.libraryEntry(game)?.status ?? -1);
   }
 
@@ -487,7 +497,7 @@ export class MediaPage implements OnInit, OnDestroy {
     });
   }
 
-  private createAddGameForm(game?: Game): AddGameForm {
+  private createAddGameForm(game?: MediaItem): AddGameForm {
     const myGame = game ? this.libraryEntry(game) : null;
 
     return {
@@ -500,21 +510,11 @@ export class MediaPage implements OnInit, OnDestroy {
     };
   }
 
-  private normalizeMedia(game: Game): Game {
-    game.myGames = game.myGames ?? game.myAnimes ?? game.myMovies ?? null;
-
-    if (!this.isGamesMode && !game.playtime && game.expectedWatchTimeMinutes) {
-      game.playtime = Math.round(game.expectedWatchTimeMinutes / 60);
-    }
-
-    return game;
+  private libraryEntry(game: MediaItem): UserMediaEntry | null {
+    return game.libraryEntry;
   }
 
-  private libraryEntry(game: Game): MyGame | null {
-    return game.myGames ?? game.myAnimes ?? game.myMovies ?? null;
-  }
-
-  private expectedHoursOf(game: Game): number {
+  private expectedHoursOf(game: MediaItem): number {
     if (this.isGamesMode) {
       return Number(game.playtime) || 0;
     }
@@ -576,5 +576,14 @@ export class MediaPage implements OnInit, OnDestroy {
 
   private capitalize(value: string): string {
     return `${value[0]?.toUpperCase() ?? ''}${value.slice(1)}`;
+  }
+
+  private gamesForReleaseNotifications() {
+    return this.games.map((game) => ({
+      id: game.id,
+      name: game.name,
+      releaseDate: game.releaseDate,
+      myGames: game.libraryEntry,
+    })) as never[];
   }
 }

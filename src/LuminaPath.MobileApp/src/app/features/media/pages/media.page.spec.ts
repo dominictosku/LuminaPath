@@ -3,18 +3,41 @@ import { Router } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 
 import { MediaPage } from './media.page';
-import { GameService } from '../../games/services/game.service';
-import { MyGameService } from '../../my-games/services/my-game.service';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
-import { Game, MyGame } from '../../games/models/games.model';
 import { PaginateResult } from 'src/app/core/entities/paginatedResult';
+import { MediaLibraryFacade } from '../services/media-library.facade';
+import { MediaItem, UserMediaEntry } from '../models/media-item.model';
 
-function makeGame(overrides: Partial<Game> = {}): Game {
-  return Object.assign(new Game(), overrides);
+function makeGame(overrides: Partial<MediaItem> = {}): MediaItem {
+  return {
+    id: 0,
+    name: '',
+    description: '',
+    releaseDate: null,
+    genre: '',
+    image: null,
+    kind: 'games',
+    libraryEntry: null,
+    platforms: 0,
+    playtime: 0,
+    ...overrides,
+  };
 }
 
-function pageOf(games: Game[]): PaginateResult<Game> {
-  const result = new PaginateResult<Game>();
+function makeEntry(overrides: Partial<UserMediaEntry> = {}): UserMediaEntry {
+  return {
+    id: 0,
+    rating: null,
+    startDate: null,
+    endDate: null,
+    status: 1,
+    timeSpend: 0,
+    ...overrides,
+  };
+}
+
+function pageOf(games: MediaItem[]): PaginateResult<MediaItem> {
+  const result = new PaginateResult<MediaItem>();
   result.data = games;
   return result;
 }
@@ -23,16 +46,16 @@ describe('MediaPage (Library)', () => {
   let component: MediaPage;
   let fixture: ComponentFixture<MediaPage>;
 
-  let gameService: jasmine.SpyObj<GameService>;
-  let myGameService: jasmine.SpyObj<MyGameService>;
+  let mediaLibrary: jasmine.SpyObj<MediaLibraryFacade>;
   let releaseNotifications: jasmine.SpyObj<ReleaseNotificationService>;
   let router: jasmine.SpyObj<Router>;
 
-  function configure(getAllResponse: Observable<PaginateResult<Game>>) {
-    gameService = jasmine.createSpyObj<GameService>('GameService', ['getAll']);
-    myGameService = jasmine.createSpyObj<MyGameService>('MyGameService', [
+  function configure(getAllResponse: Observable<PaginateResult<MediaItem>>) {
+    mediaLibrary = jasmine.createSpyObj<MediaLibraryFacade>('MediaLibraryFacade', [
+      'getAll',
       'addToLibrary',
       'updateLibraryEntry',
+      'detailsRoute',
     ]);
     releaseNotifications = jasmine.createSpyObj<ReleaseNotificationService>(
       'ReleaseNotificationService',
@@ -40,15 +63,15 @@ describe('MediaPage (Library)', () => {
     );
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
 
-    gameService.getAll.and.returnValue(getAllResponse);
+    mediaLibrary.getAll.and.returnValue(getAllResponse);
+    mediaLibrary.detailsRoute.and.callFake((item) => ['/media', item.kind, item.id]);
     releaseNotifications.syncForGames.and.resolveTo();
     router.navigate.and.resolveTo(true);
 
     TestBed.configureTestingModule({
       imports: [MediaPage],
       providers: [
-        { provide: GameService, useValue: gameService },
-        { provide: MyGameService, useValue: myGameService },
+        { provide: MediaLibraryFacade, useValue: mediaLibrary },
         { provide: ReleaseNotificationService, useValue: releaseNotifications },
         { provide: Router, useValue: router },
       ],
@@ -67,7 +90,7 @@ describe('MediaPage (Library)', () => {
 
     fixture.detectChanges(); // triggers ngOnInit
 
-    expect(gameService.getAll).toHaveBeenCalledTimes(1);
+    expect(mediaLibrary.getAll).toHaveBeenCalledTimes(1);
     expect(component.games.length).toBe(2);
     expect(component.filteredGames.length).toBe(2);
     expect(component.isLoading).toBeFalse();
@@ -89,7 +112,7 @@ describe('MediaPage (Library)', () => {
     const owned = makeGame({
       id: 1,
       name: 'Owned Game',
-      myGames: Object.assign(new MyGame(1), { id: 10, status: 2 }),
+      libraryEntry: makeEntry({ id: 10, status: 2 }),
     });
     const catalog = makeGame({ id: 2, name: 'Catalog Game' });
     configure(of(pageOf([owned, catalog])));
@@ -114,12 +137,12 @@ describe('MediaPage (Library)', () => {
     configure(of(pageOf([game])));
     fixture.detectChanges();
 
-    const persistedMyGame = Object.assign(new MyGame(7), {
+    const persistedMyGame = makeEntry({
       id: 99,
       status: 1,
       timeSpend: 5,
     });
-    myGameService.addToLibrary.and.returnValue(of(persistedMyGame));
+    mediaLibrary.addToLibrary.and.returnValue(of(persistedMyGame));
 
     component.openGameListDialog(game);
     component.addGameForm = {
@@ -128,33 +151,35 @@ describe('MediaPage (Library)', () => {
       rating: null,
       startDate: '',
       endDate: '',
+      currentEpisode: null,
     };
 
     component.submitAddGame();
     tick();
 
-    expect(myGameService.addToLibrary).toHaveBeenCalledOnceWith(7, {
+    expect(mediaLibrary.addToLibrary).toHaveBeenCalledOnceWith(7, {
       status: 1,
       timeSpend: 5,
       rating: null,
       startDate: null,
       endDate: null,
+      currentEpisode: null,
     });
-    expect(myGameService.updateLibraryEntry).not.toHaveBeenCalled();
-    expect(game.myGames).toBe(persistedMyGame);
+    expect(mediaLibrary.updateLibraryEntry).not.toHaveBeenCalled();
+    expect(game.libraryEntry).toBe(persistedMyGame);
     expect(component.successMessage).toBe('Hades was added to your game list.');
     expect(component.isAddDialogOpen).toBeFalse();
     expect(component.isAdding(game)).toBeFalse();
   }));
 
   it('submitAddGame routes to updateLibraryEntry when the game is already owned', fakeAsync(() => {
-    const existing = Object.assign(new MyGame(7), { id: 99, status: 1 });
-    const game = makeGame({ id: 7, name: 'Hades', myGames: existing });
+    const existing = makeEntry({ id: 99, status: 1 });
+    const game = makeGame({ id: 7, name: 'Hades', libraryEntry: existing });
     configure(of(pageOf([game])));
     fixture.detectChanges();
 
-    const updated = Object.assign(new MyGame(7), { id: 99, status: 2 });
-    myGameService.updateLibraryEntry.and.returnValue(of(updated));
+    const updated = makeEntry({ id: 99, status: 2 });
+    mediaLibrary.updateLibraryEntry.and.returnValue(of(updated));
 
     component.openGameListDialog(game);
     component.addGameForm = {
@@ -163,20 +188,22 @@ describe('MediaPage (Library)', () => {
       rating: null,
       startDate: '',
       endDate: '',
+      currentEpisode: null,
     };
 
     component.submitAddGame();
     tick();
 
-    expect(myGameService.updateLibraryEntry).toHaveBeenCalledOnceWith(99, 7, {
+    expect(mediaLibrary.updateLibraryEntry).toHaveBeenCalledOnceWith(99, 7, {
       status: 2,
       timeSpend: 0,
       rating: null,
       startDate: null,
       endDate: null,
+      currentEpisode: null,
     });
-    expect(myGameService.addToLibrary).not.toHaveBeenCalled();
-    expect(game.myGames).toBe(updated);
+    expect(mediaLibrary.addToLibrary).not.toHaveBeenCalled();
+    expect(game.libraryEntry).toBe(updated);
     expect(component.successMessage).toBe('Hades was saved.');
   }));
 
@@ -185,7 +212,7 @@ describe('MediaPage (Library)', () => {
     configure(of(pageOf([game])));
     fixture.detectChanges();
 
-    myGameService.addToLibrary.and.returnValue(
+    mediaLibrary.addToLibrary.and.returnValue(
       throwError(() => ({ error: 'This is game already added' })),
     );
 
@@ -204,13 +231,13 @@ describe('MediaPage (Library)', () => {
     configure(of(pageOf([game])));
     fixture.detectChanges();
 
-    myGameService.addToLibrary.and.returnValue(new Observable<MyGame>(() => {}));
+    mediaLibrary.addToLibrary.and.returnValue(new Observable<UserMediaEntry>(() => {}));
 
     component.openGameListDialog(game);
     component.submitAddGame();
     component.submitAddGame();
 
-    expect(myGameService.addToLibrary).toHaveBeenCalledTimes(1);
+    expect(mediaLibrary.addToLibrary).toHaveBeenCalledTimes(1);
   });
 
   it('does not call any mutating service when no game is selected', () => {
@@ -219,16 +246,17 @@ describe('MediaPage (Library)', () => {
 
     component.submitAddGame();
 
-    expect(myGameService.addToLibrary).not.toHaveBeenCalled();
-    expect(myGameService.updateLibraryEntry).not.toHaveBeenCalled();
+    expect(mediaLibrary.addToLibrary).not.toHaveBeenCalled();
+    expect(mediaLibrary.updateLibraryEntry).not.toHaveBeenCalled();
   });
 
-  it('openDetails navigates to /media/:gameId', () => {
+  it('openDetails uses the facade route', () => {
     configure(of(pageOf([])));
     fixture.detectChanges();
 
     component.openDetails(makeGame({ id: 42, name: 'Hades' }));
 
-    expect(router.navigate).toHaveBeenCalledOnceWith(['/media', 42]);
+    expect(mediaLibrary.detailsRoute).toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledOnceWith(['/media', 'games', 42]);
   });
 });
