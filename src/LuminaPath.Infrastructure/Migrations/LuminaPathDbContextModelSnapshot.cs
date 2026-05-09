@@ -873,7 +873,7 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<int?>("EpisodeCount")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ExpectedWatchTimeMinutes")
+                    b.Property<int?>("ExpectedWatchTimePerEpisodeMinutes")
                         .HasColumnType("integer");
 
                     b.HasDiscriminator().HasValue("Anime");
@@ -898,12 +898,6 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.Property<int?>("ExpectedWatchTimeMinutes")
                         .HasColumnType("integer");
-
-                    b.ToTable("Media", t =>
-                        {
-                            t.Property("ExpectedWatchTimeMinutes")
-                                .HasColumnName("Movie_ExpectedWatchTimeMinutes");
-                        });
 
                     b.HasDiscriminator().HasValue("Movie");
                 });

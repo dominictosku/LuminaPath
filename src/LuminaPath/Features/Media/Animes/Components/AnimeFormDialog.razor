@@ -28,7 +28,8 @@
                             <MudText Typo="Typo.subtitle1">@PreviewTitle</MudText>
                             <MudText Typo="Typo.body2" Class="mud-text-secondary">@PreviewDetail</MudText>
                             <div class="preview-meta">
-                                <span>@WatchTimeText</span>
+                                <span>@EpisodeWatchTimeText</span>
+                                <span>@TotalWatchTimeText</span>
                                 <span>@EpisodeText</span>
                                 <span>@ReleaseDateText</span>
                             </div>
@@ -74,12 +75,16 @@
                                 <MudDatePicker Label="Release Date" @bind-Date="Model.ReleaseDate" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" Clearable="true" />
                             </MudItem>
 
-                            <MudItem xs="12" sm="6">
-                                <MudNumericField T="int?" Label="Expected watch time" @bind-Value="Model.ExpectedWatchTimeMinutes" Min="@((int?)0)" Immediate="true" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="min" />
+                            <MudItem xs="12" sm="4">
+                                <MudNumericField T="double?" Label="Estimated hours per episode" @bind-Value="ExpectedHoursPerEpisode" Min="@((double?)0)" Immediate="true" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" />
                             </MudItem>
 
-                            <MudItem xs="12" sm="6">
+                            <MudItem xs="12" sm="4">
                                 <MudNumericField T="int?" Label="Episodes" @bind-Value="Model.EpisodeCount" Min="@((int?)0)" Immediate="true" Variant="Variant.Outlined" />
+                            </MudItem>
+
+                            <MudItem xs="12" sm="4">
+                                <MudTextField T="string" Label="Complete watch time" Value="@TotalWatchTimeText" ReadOnly="true" Variant="Variant.Filled" />
                             </MudItem>
                         </MudGrid>
                     </div>
@@ -154,16 +159,12 @@
                                     <MudNumericField T="short?" Label="Rating" @bind-Value="_myAnime.Rating" Min="@((short?)1)" Max="@((short?)10)" Variant="Variant.Outlined" />
                                 </MudItem>
 
-                                <MudItem xs="12" sm="4">
-                                    <MudNumericField T="double?" Label="Manual watch time" @bind-Value="_myAnime.TimeSpend" Min="@((double?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" />
-                                </MudItem>
-
-                                <MudItem xs="12" sm="4">
-                                    <MudNumericField T="int?" Label="Current watch time" @bind-Value="_myAnime.CurrentWatchTimeMinutes" Min="@((int?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="min" />
-                                </MudItem>
-
-                                <MudItem xs="12" sm="4">
+                                <MudItem xs="12" sm="6">
                                     <MudNumericField T="int?" Label="Current episode" @bind-Value="_myAnime.CurrentEpisode" Min="@((int?)0)" Variant="Variant.Outlined" />
+                                </MudItem>
+
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField T="string" Label="Calculated watch time" Value="@CalculatedMyAnimeWatchTimeText" ReadOnly="true" Variant="Variant.Filled" />
                                 </MudItem>
                             </MudGrid>
                         }
@@ -211,9 +212,19 @@
         ? string.Join(" / ", Model.Genres.Take(3))
         : string.IsNullOrWhiteSpace(Model.Description) ? "Add details to shape this anime profile" : Model.Description;
     private string CoverUrl => NormalizeUrl(Model.Image?.Url) ?? _placeholderCover;
-    private string WatchTimeText => Model.ExpectedWatchTimeMinutes is null ? "No estimate" : FormatMinutes(Model.ExpectedWatchTimeMinutes.Value);
+    private string EpisodeWatchTimeText => Model.ExpectedWatchTimePerEpisodeMinutes is null ? "No episode estimate" : $"{FormatMinutes(Model.ExpectedWatchTimePerEpisodeMinutes.Value)} / episode";
+    private string TotalWatchTimeText => Model.ExpectedWatchTimeMinutes is null ? "No total estimate" : $"{FormatMinutes(Model.ExpectedWatchTimeMinutes.Value)} total";
+    private string CalculatedMyAnimeWatchTimeText => CalculatedMyAnimeWatchTimeMinutes is null ? "No estimate" : FormatMinutes(CalculatedMyAnimeWatchTimeMinutes.Value);
     private string EpisodeText => Model.EpisodeCount is null ? "No episode count" : $"{Model.EpisodeCount} episodes";
     private string ReleaseDateText => Model.ReleaseDate?.ToString("dd.MM.yyyy") ?? "No release date";
+    private int? CalculatedMyAnimeWatchTimeMinutes => _myAnime.CurrentEpisode is null || Model.ExpectedWatchTimePerEpisodeMinutes is null
+        ? null
+        : Math.Max(0, _myAnime.CurrentEpisode.Value) * Model.ExpectedWatchTimePerEpisodeMinutes.Value;
+    private double? ExpectedHoursPerEpisode
+    {
+        get => Model.ExpectedWatchTimePerEpisodeMinutes is null ? null : Math.Round(Model.ExpectedWatchTimePerEpisodeMinutes.Value / 60d, 2);
+        set => Model.ExpectedWatchTimePerEpisodeMinutes = value is null ? null : Math.Max(0, (int)Math.Round(value.Value * 60));
+    }
 
     protected override void OnInitialized()
     {
@@ -254,6 +265,7 @@
 
             _myAnime.LuminaUserId = userId;
             NormalizeDates(_myAnime);
+            _myAnime.RecalculateWatchTime(Model);
             Model.MyAnimes.Add(_myAnime);
         }
         else

@@ -22,5 +22,29 @@ namespace LuminaPath.Core.Models
         public int? CurrentWatchTimeMinutes { get; set; }
 
         public int? CurrentEpisode { get; set; }
+
+        public void RecalculateWatchTime(Anime? anime = null)
+        {
+            var resolvedAnime = anime ?? Anime;
+            var currentEpisode = CurrentEpisode ?? 0;
+
+            if (resolvedAnime?.EpisodeCount is > 0)
+            {
+                currentEpisode = Math.Min(currentEpisode, resolvedAnime.EpisodeCount.Value);
+            }
+
+            currentEpisode = Math.Max(0, currentEpisode);
+            CurrentEpisode = currentEpisode;
+
+            if (resolvedAnime?.ExpectedWatchTimePerEpisodeMinutes is not int minutesPerEpisode)
+            {
+                CurrentWatchTimeMinutes = null;
+                TimeSpend = null;
+                return;
+            }
+
+            CurrentWatchTimeMinutes = currentEpisode * minutesPerEpisode;
+            TimeSpend = CurrentWatchTimeMinutes / 60d;
+        }
     }
 }

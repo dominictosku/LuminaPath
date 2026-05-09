@@ -252,7 +252,7 @@ namespace LuminaPath.Core.Mapping
                 Description = source.Description,
                 Genres = SplitGenres(source.Genre),
                 ReleaseDate = source.ReleaseDate,
-                ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
+                ExpectedWatchTimePerEpisodeMinutes = ResolveAnimePerEpisodeMinutes(source.ExpectedWatchTimePerEpisodeMinutes, source.ExpectedWatchTimeMinutes, source.EpisodeCount),
                 EpisodeCount = source.EpisodeCount,
                 Source = source.Source,
                 Image = MapDocument<MediaDocument>(source.Image)
@@ -268,7 +268,7 @@ namespace LuminaPath.Core.Mapping
                 Description = source.Description,
                 Genres = SplitGenres(source.Genre),
                 ReleaseDate = source.ReleaseDate,
-                ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
+                ExpectedWatchTimePerEpisodeMinutes = ResolveAnimePerEpisodeMinutes(source.ExpectedWatchTimePerEpisodeMinutes, source.ExpectedWatchTimeMinutes, source.EpisodeCount),
                 EpisodeCount = source.EpisodeCount,
                 Image = MapDocument<MediaDocument>(source.Image),
                 MyAnimes = source.MyAnimes == null ? null : [Map<MyAnime>(source.MyAnimes)]
@@ -284,6 +284,7 @@ namespace LuminaPath.Core.Mapping
                 Description = source.Description,
                 Genre = JoinGenres(source.Genres),
                 ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimePerEpisodeMinutes = source.ExpectedWatchTimePerEpisodeMinutes,
                 ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
                 EpisodeCount = source.EpisodeCount,
                 Source = source.Source,
@@ -300,6 +301,7 @@ namespace LuminaPath.Core.Mapping
                 Description = source.Description,
                 Genre = JoinGenres(source.Genres),
                 ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimePerEpisodeMinutes = source.ExpectedWatchTimePerEpisodeMinutes,
                 ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
                 EpisodeCount = source.EpisodeCount,
                 Image = MapDocument<Document>(source.Image),
@@ -321,7 +323,7 @@ namespace LuminaPath.Core.Mapping
                 Anime = source.Anime == null ? null : Map<Anime>(source.Anime),
                 CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes,
                 CurrentEpisode = source.CurrentEpisode
-            };
+            }.WithCalculatedAnimeWatchTime();
         }
 
         private MyAnime MapMyAnime(MyAnime source)
@@ -339,7 +341,7 @@ namespace LuminaPath.Core.Mapping
                 AnimeId = source.AnimeId,
                 CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes,
                 CurrentEpisode = source.CurrentEpisode
-            };
+            }.WithCalculatedAnimeWatchTime(source.Anime);
         }
 
         private MyAnimeDto MapMyAnimeDto(MyAnime source)
@@ -659,6 +661,30 @@ namespace LuminaPath.Core.Mapping
         private static string JoinGenres(List<string>? genres)
         {
             return genres == null ? string.Empty : string.Join(", ", genres);
+        }
+
+        private static int? ResolveAnimePerEpisodeMinutes(int? perEpisodeMinutes, int? totalMinutes, int? episodeCount)
+        {
+            if (perEpisodeMinutes is not null)
+            {
+                return perEpisodeMinutes;
+            }
+
+            if (totalMinutes is null || episodeCount is not > 0)
+            {
+                return totalMinutes;
+            }
+
+            return Math.Max(1, (int)Math.Round(totalMinutes.Value / (double)episodeCount.Value));
+        }
+    }
+
+    internal static class AnimeWatchTimeMappingExtensions
+    {
+        public static MyAnime WithCalculatedAnimeWatchTime(this MyAnime myAnime, Anime? anime = null)
+        {
+            myAnime.RecalculateWatchTime(anime);
+            return myAnime;
         }
     }
 }

@@ -51,18 +51,18 @@
                             <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Primary" />
                             <div>
                                 <MudText Typo="Typo.subtitle1">Watch Progress</MudText>
-                                <MudText Typo="Typo.body2" Class="mud-text-secondary">Track watched time and the episode you are on.</MudText>
+                                <MudText Typo="Typo.body2" Class="mud-text-secondary">Watched time is calculated from the current episode and the anime estimate.</MudText>
                             </div>
                         </div>
                         <MudGrid Spacing="2">
                             <MudItem xs="12" md="4">
-                                <MudNumericField T="double?" @bind-Value="Model.TimeSpend" Label="Manual hours" Min="@((double?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" />
-                            </MudItem>
-                            <MudItem xs="12" md="4">
-                                <MudNumericField T="int?" @bind-Value="Model.CurrentWatchTimeMinutes" Label="Current watch time" Min="@((int?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="min" />
-                            </MudItem>
-                            <MudItem xs="12" md="4">
                                 <MudNumericField T="int?" @bind-Value="Model.CurrentEpisode" Label="Current episode" Min="@((int?)0)" Max="@SelectedEpisodeCount" Variant="Variant.Outlined" />
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudTextField T="string" Value="@PerEpisodeWatchTime" Label="Per episode" ReadOnly="true" Variant="Variant.Outlined" />
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudTextField T="string" Value="@CalculatedWatchTime" Label="Calculated watched time" ReadOnly="true" Variant="Variant.Filled" />
                             </MudItem>
                         </MudGrid>
                     </div>
@@ -93,12 +93,22 @@
         : SelectedAnime?.Description ?? "Choose the anime this entry belongs to";
     private string SelectedAnimeCover => NormalizeUrl(SelectedAnime?.Image?.Url) ?? "/Images/Placeholder.png";
     private int? SelectedEpisodeCount => SelectedAnime?.EpisodeCount;
+    private string PerEpisodeWatchTime => SelectedAnime?.ExpectedWatchTimePerEpisodeMinutes is null
+        ? "No estimate"
+        : FormatMinutes(SelectedAnime.ExpectedWatchTimePerEpisodeMinutes.Value);
+    private string CalculatedWatchTime => CalculatedWatchTimeMinutes is null
+        ? "No estimate"
+        : FormatMinutes(CalculatedWatchTimeMinutes.Value);
+    private int? CalculatedWatchTimeMinutes => Model.CurrentEpisode is null || SelectedAnime?.ExpectedWatchTimePerEpisodeMinutes is null
+        ? null
+        : Math.Max(0, Model.CurrentEpisode.Value) * SelectedAnime.ExpectedWatchTimePerEpisodeMinutes.Value;
 
     private MudForm? _form;
 
     public override async Task Submit()
     {
         NormalizeDates();
+        Model.RecalculateWatchTime(SelectedAnime);
         await base.Submit();
     }
 
@@ -124,6 +134,18 @@
         return url.StartsWith("http", StringComparison.OrdinalIgnoreCase) || url.StartsWith("/")
             ? url
             : $"/{url}";
+    }
+
+    private static string FormatMinutes(int minutes)
+    {
+        if (minutes < 60)
+        {
+            return $"{minutes} min";
+        }
+
+        var hours = minutes / 60;
+        var remaining = minutes % 60;
+        return remaining == 0 ? $"{hours}h" : $"{hours}h {remaining}m";
     }
 }
 

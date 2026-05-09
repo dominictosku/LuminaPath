@@ -53,6 +53,7 @@
                 <CellTemplate>
                     <div class="detail-stack">
                         <span><MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" /> @WatchTime(context.Item)</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.AvTimer" Size="Size.Small" /> @EpisodeWatchTime(context.Item)</span>
                         <span><MudIcon Icon="@Icons.Material.Filled.FormatListNumbered" Size="Size.Small" /> @EpisodeCount(context.Item)</span>
                         <span><MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" /> @ReleaseDate(context.Item)</span>
                     </div>
@@ -102,6 +103,7 @@ else
                     </div>
                     <div class="card-metrics">
                         <span><MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" /> @WatchTime(anime)</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.AvTimer" Size="Size.Small" /> @EpisodeWatchTime(anime)</span>
                         <span><MudIcon Icon="@Icons.Material.Filled.FormatListNumbered" Size="Size.Small" /> @EpisodeCount(anime)</span>
                         <span><MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" /> @ReleaseDate(anime)</span>
                     </div>
@@ -219,7 +221,12 @@ else
 
     private static string WatchTime(Anime anime)
     {
-        return anime.ExpectedWatchTimeMinutes is null ? "No estimate" : FormatMinutes(anime.ExpectedWatchTimeMinutes.Value);
+        return anime.ExpectedWatchTimeMinutes is null ? "No total estimate" : $"{FormatMinutes(anime.ExpectedWatchTimeMinutes.Value)} total";
+    }
+
+    private static string EpisodeWatchTime(Anime anime)
+    {
+        return anime.ExpectedWatchTimePerEpisodeMinutes is null ? "No episode estimate" : $"{FormatMinutes(anime.ExpectedWatchTimePerEpisodeMinutes.Value)} / episode";
     }
 
     private static string EpisodeCount(Anime anime)

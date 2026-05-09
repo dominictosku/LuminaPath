@@ -109,6 +109,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
                 return new FailedResult(DuplicateMediaMessage);
             }
             viewModel.LuminaUserId = user.Id;
+            await PrepareForSave(viewModel, user);
 
             return await PostAsync(viewModel);
         }
@@ -122,7 +123,13 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
                 return new FailedResult(DuplicateMediaMessage);
             }
             viewModel.LuminaUserId = user.Id;
+            await PrepareForSave(viewModel, user);
             return await PutAsync(viewModel);
+        }
+
+        protected virtual Task PrepareForSave(TEntity viewModel, LuminaUser user)
+        {
+            return Task.CompletedTask;
         }
 
         public async Task DeleteMyData(LuminaUser user)

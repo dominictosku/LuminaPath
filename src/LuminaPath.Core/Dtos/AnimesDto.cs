@@ -23,7 +23,9 @@ namespace LuminaPath.Core.Dtos
         [Display(Name = "Release Date")]
         public DateTime? ReleaseDate { get; set; }
 
-        [Display(Name = "Expected watch time")]
+        [Display(Name = "Expected watch time per episode")]
+        public int? ExpectedWatchTimePerEpisodeMinutes { get; set; }
+
         public int? ExpectedWatchTimeMinutes { get; set; }
 
         public int? EpisodeCount { get; set; }
@@ -50,7 +52,9 @@ namespace LuminaPath.Core.Dtos
         [Display(Name = "Release Date")]
         public DateTime? ReleaseDate { get; set; }
 
-        [Display(Name = "Expected watch time")]
+        [Display(Name = "Expected watch time per episode")]
+        public int? ExpectedWatchTimePerEpisodeMinutes { get; set; }
+
         public int? ExpectedWatchTimeMinutes { get; set; }
 
         public int? EpisodeCount { get; set; }

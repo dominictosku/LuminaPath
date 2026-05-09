@@ -1,6 +1,7 @@
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -25,6 +26,17 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         protected override Expression<Func<MyAnime, bool>> HasMediaId(int mediaId)
         {
             return myAnime => myAnime.AnimeId == mediaId;
+        }
+
+        protected override async Task PrepareForSave(MyAnime viewModel, LuminaUser user)
+        {
+            await using var dbContext = await GetDbContextAsync();
+            var anime = viewModel.Anime ?? await dbContext.Animes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == viewModel.AnimeId);
+
+            viewModel.RecalculateWatchTime(anime);
+            viewModel.Anime = null;
         }
     }
 }

@@ -1,4 +1,5 @@
 using LuminaPath.Core.Mapping;
+using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,31 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         public Task<List<Anime>> GetDropdownAnimes(string? searchName = null)
         {
             return GetDropdownMedia(searchName);
+        }
+
+        public override Task<Result<Anime, FailedResult>> PostAsync(Anime entity)
+        {
+            RecalculateUserEntries(entity);
+            return base.PostAsync(entity);
+        }
+
+        public override Task<Result<Anime, FailedResult>> PutAsync(Anime entity)
+        {
+            RecalculateUserEntries(entity);
+            return base.PutAsync(entity);
+        }
+
+        private static void RecalculateUserEntries(Anime anime)
+        {
+            if (anime.MyAnimes is null)
+            {
+                return;
+            }
+
+            foreach (var myAnime in anime.MyAnimes)
+            {
+                myAnime.RecalculateWatchTime(anime);
+            }
         }
     }
 }
