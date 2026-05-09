@@ -30,12 +30,12 @@ import { forkJoin } from 'rxjs';
 import { Platforms } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
-import { MediaItem } from '../../media/models/media-item.model';
-import { MediaLibraryForm } from '../../media/models/media-library-form.model';
-import { GameStatus, MediaLibraryViewService } from '../../media/services/media-library-view.service';
-import { MediaLibraryFacade } from '../../media/services/media-library.facade';
-import { ReleaseLibraryGroup, ReleaseLibraryItem, ReleaseLibraryKind } from '../models/release-library.model';
-import { ReleaseLibraryService } from '../services/release-library.service';
+import { MediaItem } from '../../library/models/media-item.model';
+import { MediaLibraryForm } from '../../library/models/media-library-form.model';
+import { GameStatus, MediaLibraryViewService } from '../../library/services/media-library-view.service';
+import { MediaLibraryFacade } from '../../library/services/media-library.facade';
+import { BrowseGroup, BrowseItem, BrowseKind } from '../models/browse.model';
+import { BrowseService } from '../services/browse.service';
 
 const SEASONS = [
   { name: 'Winter', startMonth: 0 },
@@ -45,9 +45,9 @@ const SEASONS = [
 ] as const;
 
 @Component({
-  selector: 'app-release-library',
-  templateUrl: './release-library.page.html',
-  styleUrls: ['./release-library.page.scss'],
+  selector: 'app-browse',
+  templateUrl: './browse.page.html',
+  styleUrls: ['./browse.page.scss'],
   imports: [
     CommonModule,
     FormsModule,
@@ -61,17 +61,17 @@ const SEASONS = [
     IonSkeletonText,
   ],
 })
-export class ReleaseLibraryPage implements OnInit {
-  selectedKind: ReleaseLibraryKind = 'games';
-  games: ReleaseLibraryItem[] = [];
-  animes: ReleaseLibraryItem[] = [];
+export class BrowsePage implements OnInit {
+  selectedKind: BrowseKind = 'games';
+  games: BrowseItem[] = [];
+  animes: BrowseItem[] = [];
   selectedGameMonth = this.startOfMonth(new Date());
   selectedAnimeSeason = this.startOfSeason(new Date());
   isLoading = true;
   errorMessage = '';
   successMessage = '';
   addingItemKeys = new Set<string>();
-  selectedItem: ReleaseLibraryItem | null = null;
+  selectedItem: BrowseItem | null = null;
   selectedMedia: MediaItem | null = null;
   isAddDialogOpen = false;
   addGameForm: MediaLibraryForm = {
@@ -85,7 +85,7 @@ export class ReleaseLibraryPage implements OnInit {
   mediaMode: MediaModeOption;
 
   constructor(
-    private readonly releaseLibrary: ReleaseLibraryService,
+    private readonly browseService: BrowseService,
     private readonly mediaModeService: MediaModeService,
     private readonly mediaLibrary: MediaLibraryFacade,
     public readonly mediaView: MediaLibraryViewService,
@@ -122,17 +122,17 @@ export class ReleaseLibraryPage implements OnInit {
       : 'Review one anime season at a time, with the most popular titles highlighted first.';
   }
 
-  get items(): ReleaseLibraryItem[] {
+  get items(): BrowseItem[] {
     return this.selectedKind === 'games' ? this.games : this.animes;
   }
 
-  get selectedGroup(): ReleaseLibraryGroup {
+  get selectedGroup(): BrowseGroup {
     return this.selectedKind === 'games'
       ? this.groupForGameMonth(this.selectedGameMonth)
       : this.groupForAnimeSeason(this.selectedAnimeSeason);
   }
 
-  get topItems(): ReleaseLibraryItem[] {
+  get topItems(): BrowseItem[] {
     return this.selectedGroup.items.slice(0, 4);
   }
 
@@ -150,7 +150,7 @@ export class ReleaseLibraryPage implements OnInit {
       : 'Seasonal release window';
   }
 
-  selectKind(kind: ReleaseLibraryKind): void {
+  selectKind(kind: BrowseKind): void {
     this.selectedKind = kind;
     this.mediaModeService.select(kind);
     this.mediaMode = this.mediaModeService.current;
@@ -190,8 +190,8 @@ export class ReleaseLibraryPage implements OnInit {
     this.successMessage = '';
 
     forkJoin({
-      games: this.releaseLibrary.getGameReleases(),
-      animes: this.releaseLibrary.getAnimeReleases(),
+      games: this.browseService.getGameReleases(),
+      animes: this.browseService.getAnimeReleases(),
     }).subscribe({
       next: ({ games, animes }) => {
         this.games = games ?? [];
@@ -203,13 +203,13 @@ export class ReleaseLibraryPage implements OnInit {
       error: () => {
         this.games = [];
         this.animes = [];
-        this.errorMessage = 'Release library could not be loaded.';
+        this.errorMessage = 'Browse could not be loaded.';
         this.isLoading = false;
       },
     });
   }
 
-  openLibraryDialog(item: ReleaseLibraryItem): void {
+  openLibraryDialog(item: BrowseItem): void {
     if (this.isAdding(item)) {
       return;
     }
@@ -275,11 +275,11 @@ export class ReleaseLibraryPage implements OnInit {
     });
   }
 
-  isAdding(item: ReleaseLibraryItem | MediaItem): boolean {
+  isAdding(item: BrowseItem | MediaItem): boolean {
     return this.addingItemKeys.has(`${item.kind}-${item.id}`);
   }
 
-  hasLibraryEntry(item: ReleaseLibraryItem): boolean {
+  hasLibraryEntry(item: BrowseItem): boolean {
     return !!item.libraryEntry;
   }
 
@@ -323,11 +323,11 @@ export class ReleaseLibraryPage implements OnInit {
     return this.mediaView.mediaTypeLabel(item, this.mediaMode);
   }
 
-  imageFor(item: ReleaseLibraryItem | MediaItem): string {
+  imageFor(item: BrowseItem | MediaItem): string {
     return mediaImageUrl(item.image);
   }
 
-  releaseLabel(item: ReleaseLibraryItem): string {
+  releaseLabel(item: BrowseItem): string {
     const date = this.releaseDate(item);
     if (!date) {
       return 'No date';
@@ -340,7 +340,7 @@ export class ReleaseLibraryPage implements OnInit {
     }).format(date);
   }
 
-  detailsLabel(item: ReleaseLibraryItem): string {
+  detailsLabel(item: BrowseItem): string {
     if (item.kind === 'games') {
       const platform = Platforms.find((candidate) => candidate.value === Number(item.platforms))?.label ?? 'Unknown';
       const playtime = Number(item.playtime) || 0;
@@ -356,15 +356,15 @@ export class ReleaseLibraryPage implements OnInit {
     return episodes > 0 ? `${episodes} episodes` : watchTime || 'Anime';
   }
 
-  trackByGroup(_: number, group: ReleaseLibraryGroup): string {
+  trackByGroup(_: number, group: BrowseGroup): string {
     return group.id;
   }
 
-  trackByItem(_: number, item: ReleaseLibraryItem): string {
+  trackByItem(_: number, item: BrowseItem): string {
     return `${item.kind}-${item.id}`;
   }
 
-  private groupForGameMonth(month: Date): ReleaseLibraryGroup {
+  private groupForGameMonth(month: Date): BrowseGroup {
     const start = this.startOfMonth(month);
     const end = this.addMonths(start, 1);
     const items = this.games
@@ -380,7 +380,7 @@ export class ReleaseLibraryPage implements OnInit {
     };
   }
 
-  private groupForAnimeSeason(seasonStart: Date): ReleaseLibraryGroup {
+  private groupForAnimeSeason(seasonStart: Date): BrowseGroup {
     const start = this.startOfSeason(seasonStart);
     const end = this.addMonths(start, 3);
     const season = this.seasonFor(start);
@@ -414,26 +414,26 @@ export class ReleaseLibraryPage implements OnInit {
     return SEASONS[0];
   }
 
-  private releaseTime(item: ReleaseLibraryItem): number {
+  private releaseTime(item: BrowseItem): number {
     return this.releaseDate(item)?.getTime() ?? 0;
   }
 
-  private isInRange(item: ReleaseLibraryItem, start: Date, end: Date): boolean {
+  private isInRange(item: BrowseItem, start: Date, end: Date): boolean {
     const date = this.releaseDate(item);
     return !!date && date >= start && date < end;
   }
 
-  private latestMonth(items: ReleaseLibraryItem[]): Date | null {
+  private latestMonth(items: BrowseItem[]): Date | null {
     const latest = this.latestReleaseDate(items);
     return latest ? this.startOfMonth(latest) : null;
   }
 
-  private latestSeason(items: ReleaseLibraryItem[]): Date | null {
+  private latestSeason(items: BrowseItem[]): Date | null {
     const latest = this.latestReleaseDate(items);
     return latest ? this.startOfSeason(latest) : null;
   }
 
-  private latestReleaseDate(items: ReleaseLibraryItem[]): Date | null {
+  private latestReleaseDate(items: BrowseItem[]): Date | null {
     return items
       .map((item) => this.releaseDate(item))
       .filter((date): date is Date => !!date)
@@ -453,7 +453,7 @@ export class ReleaseLibraryPage implements OnInit {
     return new Date(date.getFullYear(), date.getMonth() + months, 1);
   }
 
-  private toMediaItem(item: ReleaseLibraryItem): MediaItem {
+  private toMediaItem(item: BrowseItem): MediaItem {
     return {
       id: item.id,
       name: item.name,
@@ -471,7 +471,7 @@ export class ReleaseLibraryPage implements OnInit {
     };
   }
 
-  private itemKey(item: ReleaseLibraryItem | MediaItem): string {
+  private itemKey(item: BrowseItem | MediaItem): string {
     return `${item.kind}-${item.id}`;
   }
 
@@ -504,7 +504,7 @@ export class ReleaseLibraryPage implements OnInit {
     return `${value[0]?.toUpperCase() ?? ''}${value.slice(1)}`;
   }
 
-  private releaseDate(item: ReleaseLibraryItem): Date | null {
+  private releaseDate(item: BrowseItem): Date | null {
     if (!item.releaseDate) {
       return null;
     }

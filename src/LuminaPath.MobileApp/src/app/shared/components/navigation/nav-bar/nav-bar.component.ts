@@ -117,8 +117,8 @@ export class NavBarComponent implements OnInit, OnDestroy {
   selectMediaMode(mode: MediaMode) {
     this.mediaModeService.select(mode);
     this.closeMenus();
-    if (this.router.url.startsWith('/media/')) {
-      void this.router.navigate(['/media']);
+    if (this.router.url.startsWith('/library/')) {
+      void this.router.navigate(['/library']);
     }
   }
 

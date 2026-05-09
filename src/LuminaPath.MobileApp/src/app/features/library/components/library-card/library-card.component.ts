@@ -15,12 +15,12 @@ import { MediaItem } from '../../models/media-item.model';
 import { MediaLibraryViewService } from '../../services/media-library-view.service';
 
 @Component({
-  selector: 'app-media-library-card',
-  templateUrl: './media-library-card.component.html',
-  styleUrls: ['./media-library-card.component.scss'],
+  selector: 'app-library-card',
+  templateUrl: './library-card.component.html',
+  styleUrls: ['./library-card.component.scss'],
   imports: [CommonModule, IonBadge, IonButton, IonIcon],
 })
-export class MediaLibraryCardComponent {
+export class LibraryCardComponent {
   @Input({ required: true }) item!: MediaItem;
   @Input({ required: true }) mediaMode!: MediaModeOption;
   @Input() isAdding = false;

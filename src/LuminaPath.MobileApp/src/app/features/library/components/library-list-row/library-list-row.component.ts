@@ -9,12 +9,12 @@ import { MediaItem } from '../../models/media-item.model';
 import { MediaLibraryViewService } from '../../services/media-library-view.service';
 
 @Component({
-  selector: 'app-media-library-list-row',
-  templateUrl: './media-library-list-row.component.html',
-  styleUrls: ['./media-library-list-row.component.scss'],
+  selector: 'app-library-list-row',
+  templateUrl: './library-list-row.component.html',
+  styleUrls: ['./library-list-row.component.scss'],
   imports: [CommonModule, IonBadge, IonButton, IonIcon],
 })
-export class MediaLibraryListRowComponent {
+export class LibraryListRowComponent {
   @Input({ required: true }) item!: MediaItem;
   @Input({ required: true }) mediaMode!: MediaModeOption;
   @Input() isAdding = false;

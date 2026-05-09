@@ -38,16 +38,16 @@ import { MediaLibraryFacade } from '../services/media-library.facade';
 import { MediaItem } from '../models/media-item.model';
 import { MediaLibraryForm } from '../models/media-library-form.model';
 import { GameStatus, MediaLibraryViewService } from '../services/media-library-view.service';
-import { MediaLibraryCardComponent } from '../components/media-library-card/media-library-card.component';
-import { MediaLibraryListRowComponent } from '../components/media-library-list-row/media-library-list-row.component';
+import { LibraryCardComponent } from '../components/library-card/library-card.component';
+import { LibraryListRowComponent } from '../components/library-list-row/library-list-row.component';
 
 type ViewMode = 'grid' | 'list';
 type OwnershipFilter = 'all' | 'mine' | 'catalog';
 
 @Component({
-  selector: 'app-media',
-  templateUrl: './media.page.html',
-  styleUrls: ['./media.page.scss'],
+  selector: 'app-library',
+  templateUrl: './library.page.html',
+  styleUrls: ['./library.page.scss'],
   imports: [
     CommonModule,
     FormsModule,
@@ -63,11 +63,11 @@ type OwnershipFilter = 'all' | 'mine' | 'catalog';
     IonSelect,
     IonSelectOption,
     IonSkeletonText,
-    MediaLibraryCardComponent,
-    MediaLibraryListRowComponent,
+    LibraryCardComponent,
+    LibraryListRowComponent,
   ],
 })
-export class MediaPage implements OnInit, OnDestroy {
+export class LibraryPage implements OnInit, OnDestroy {
   games: MediaItem[] = [];
   filteredGames: MediaItem[] = [];
   searchTerm = '';

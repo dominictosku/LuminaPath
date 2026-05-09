@@ -1,9 +1,9 @@
-<ion-content [fullscreen]="true" class="media-shell">
+<ion-content [fullscreen]="true" class="library-shell">
   <ion-refresher slot="fixed" (ionRefresh)="loadGames($event)">
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
-  <main class="media-page">
+  <main class="library-page">
     <section class="hero">
       <div>
         <span class="eyebrow">
@@ -111,25 +111,25 @@
     </section>
 
     <section class="game-grid" *ngIf="!isLoading && viewMode === 'grid' && filteredGames.length">
-      <app-media-library-card
+      <app-library-card
         *ngFor="let game of filteredGames; trackBy: trackByGameId"
         [item]="game"
         [mediaMode]="mediaMode"
         [isAdding]="isAdding(game)"
         (edit)="openGameListDialog($event)"
         (details)="openDetails($event)">
-      </app-media-library-card>
+      </app-library-card>
     </section>
 
     <section class="game-list" *ngIf="!isLoading && viewMode === 'list' && filteredGames.length">
-      <app-media-library-list-row
+      <app-library-list-row
         *ngFor="let game of filteredGames; trackBy: trackByGameId"
         [item]="game"
         [mediaMode]="mediaMode"
         [isAdding]="isAdding(game)"
         (edit)="openGameListDialog($event)"
         (details)="openDetails($event)">
-      </app-media-library-list-row>
+      </app-library-list-row>
     </section>
 
     <section class="empty-state" *ngIf="!isLoading && !filteredGames.length">

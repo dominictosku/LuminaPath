@@ -329,7 +329,7 @@ export class MyGameDetailsPage implements OnInit {
       return;
     }
 
-    void this.router.navigateByUrl('/media');
+    void this.router.navigateByUrl('/library');
   }
 
   private async loadGameAndQuests(gameId: number): Promise<void> {

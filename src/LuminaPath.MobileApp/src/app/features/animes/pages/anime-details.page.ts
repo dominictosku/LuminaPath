@@ -128,7 +128,7 @@ export class AnimeDetailsPage implements OnInit {
       return;
     }
 
-    void this.router.navigateByUrl('/media');
+    void this.router.navigateByUrl('/library');
   }
 
   private async loadAnime(animeId: number): Promise<void> {

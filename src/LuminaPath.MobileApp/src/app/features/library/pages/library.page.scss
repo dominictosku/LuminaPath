@@ -1,5 +1,5 @@
 :host {
-  --media-bg: #f5f7fb;
+  --library-bg: #f5f7fb;
   --ink: #111827;
   --muted: #667085;
   --line: rgba(17, 24, 39, 0.09);
@@ -11,18 +11,11 @@
   --accent-border: var(--app-theme-accent-border, rgba(37, 99, 235, 0.42));
 }
 
-.media-header ion-toolbar {
-  --background: rgba(245, 247, 251, 0.88);
-  --border-width: 0;
-  --color: var(--ink);
-  backdrop-filter: blur(18px);
+.library-shell {
+  --background: var(--library-bg);
 }
 
-.media-shell {
-  --background: var(--media-bg);
-}
-
-.media-page {
+.library-page {
   display: grid;
   gap: 16px;
   padding: 16px 14px 96px;
@@ -349,7 +342,7 @@ ion-select {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: var(--media-bg);
+  background: var(--library-bg);
 }
 
 .editor-stats span,
@@ -409,7 +402,7 @@ ion-select {
   border-radius: 14px;
   outline: none;
   color: var(--ink);
-  background: var(--media-bg);
+  background: var(--library-bg);
   font: inherit;
   font-size: 0.9rem;
   font-weight: 720;
@@ -486,7 +479,7 @@ ion-select {
   border-radius: 14px;
   outline: none;
   color: var(--ink);
-  background: var(--media-bg);
+  background: var(--library-bg);
   font: inherit;
 }
 
@@ -526,7 +519,7 @@ ion-select {
 }
 
 @media (min-width: 760px) {
-  .media-page {
+  .library-page {
     grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 20px;
     width: min(1180px, calc(100% - 40px));
@@ -606,16 +599,12 @@ ion-select {
 
 @media (prefers-color-scheme: dark) {
   :host {
-    --media-bg: #070b12;
+    --library-bg: #070b12;
     --ink: #eef2ff;
     --muted: #98a2b3;
     --line: rgba(255, 255, 255, 0.1);
     --surface: rgba(18, 24, 38, 0.86);
     --surface-solid: #111827;
-  }
-
-  .media-header ion-toolbar {
-    --background: rgba(7, 11, 18, 0.86);
   }
 
   .notice {

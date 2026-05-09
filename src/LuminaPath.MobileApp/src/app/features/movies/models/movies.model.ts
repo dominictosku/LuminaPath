@@ -1,5 +1,5 @@
 import { type IBasicInfo } from 'src/app/core/interfaces/iBasicInfo';
-import { MediaFile } from '../../media/models/mediaFile.model';
+import { MediaFile } from '../../library/models/mediaFile.model';
 
 export class Movie implements IBasicInfo {
   id = 0;

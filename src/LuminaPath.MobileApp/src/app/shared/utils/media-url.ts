@@ -1,5 +1,5 @@
 import { resolveApiEndpoint } from 'src/app/shared/services/api-endpoint.service';
-import { MediaFile } from 'src/app/features/media/models/mediaFile.model';
+import { MediaFile } from 'src/app/features/library/models/mediaFile.model';
 
 const placeholderImage = 'assets/png/Placeholder.png';
 

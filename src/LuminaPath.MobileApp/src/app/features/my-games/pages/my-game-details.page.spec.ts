@@ -221,6 +221,6 @@ describe('MyGameDetailsPage', () => {
   it('goBack navigates to the library', () => {
     configure('1', makeGame({ id: 1, name: 'X' }));
     component.goBack();
-    expect(router.navigateByUrl).toHaveBeenCalledOnceWith('/media');
+    expect(router.navigateByUrl).toHaveBeenCalledOnceWith('/library');
   });
 });

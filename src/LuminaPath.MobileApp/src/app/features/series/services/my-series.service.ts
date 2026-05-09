@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { ApiService } from 'src/app/shared/services/api.service';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 import { MySeries } from '../models/series.model';
-import { LibraryEntryDetails } from '../../media/models/media-item.model';
+import { LibraryEntryDetails } from '../../library/models/media-item.model';
 
 type AddMySeriesRequest = {
   id: number;

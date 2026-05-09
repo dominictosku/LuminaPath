@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { Router } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 
-import { MediaPage } from './media.page';
+import { LibraryPage } from './library.page';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
 import { PaginateResult } from 'src/app/core/entities/paginatedResult';
 import { MediaLibraryFacade } from '../services/media-library.facade';
@@ -42,9 +42,9 @@ function pageOf(games: MediaItem[]): PaginateResult<MediaItem> {
   return result;
 }
 
-describe('MediaPage (Library)', () => {
-  let component: MediaPage;
-  let fixture: ComponentFixture<MediaPage>;
+describe('LibraryPage', () => {
+  let component: LibraryPage;
+  let fixture: ComponentFixture<LibraryPage>;
 
   let mediaLibrary: jasmine.SpyObj<MediaLibraryFacade>;
   let releaseNotifications: jasmine.SpyObj<ReleaseNotificationService>;
@@ -64,12 +64,12 @@ describe('MediaPage (Library)', () => {
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
 
     mediaLibrary.getAll.and.returnValue(getAllResponse);
-    mediaLibrary.detailsRoute.and.callFake((item) => ['/media', item.kind, item.id]);
+    mediaLibrary.detailsRoute.and.callFake((item) => ['/library', item.kind, item.id]);
     releaseNotifications.syncForGames.and.resolveTo();
     router.navigate.and.resolveTo(true);
 
     TestBed.configureTestingModule({
-      imports: [MediaPage],
+      imports: [LibraryPage],
       providers: [
         { provide: MediaLibraryFacade, useValue: mediaLibrary },
         { provide: ReleaseNotificationService, useValue: releaseNotifications },
@@ -77,7 +77,7 @@ describe('MediaPage (Library)', () => {
       ],
     });
 
-    fixture = TestBed.createComponent(MediaPage);
+    fixture = TestBed.createComponent(LibraryPage);
     component = fixture.componentInstance;
   }
 
@@ -257,6 +257,6 @@ describe('MediaPage (Library)', () => {
     component.openDetails(makeGame({ id: 42, name: 'Hades' }));
 
     expect(mediaLibrary.detailsRoute).toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledOnceWith(['/media', 'games', 42]);
+    expect(router.navigate).toHaveBeenCalledOnceWith(['/library', 'games', 42]);
   });
 });

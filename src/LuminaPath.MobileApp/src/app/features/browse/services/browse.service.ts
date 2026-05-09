@@ -2,26 +2,26 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
-import { ReleaseLibraryItem } from '../models/release-library.model';
+import { BrowseItem } from '../models/browse.model';
 
 @Injectable({
   providedIn: 'root',
 })
-export class ReleaseLibraryService {
+export class BrowseService {
   constructor(
     private readonly http: HttpClient,
     private readonly apiEndpoint: ApiEndpointService,
   ) {
   }
 
-  getGameReleases(): Observable<ReleaseLibraryItem[]> {
-    return this.http.get<ReleaseLibraryItem[]>(this.apiEndpoint.url('library/games/releases'), {
+  getGameReleases(): Observable<BrowseItem[]> {
+    return this.http.get<BrowseItem[]>(this.apiEndpoint.url('library/games/releases'), {
       withCredentials: true,
     });
   }
 
-  getAnimeReleases(): Observable<ReleaseLibraryItem[]> {
-    return this.http.get<ReleaseLibraryItem[]>(this.apiEndpoint.url('library/animes/releases'), {
+  getAnimeReleases(): Observable<BrowseItem[]> {
+    return this.http.get<BrowseItem[]>(this.apiEndpoint.url('library/animes/releases'), {
       withCredentials: true,
     });
   }

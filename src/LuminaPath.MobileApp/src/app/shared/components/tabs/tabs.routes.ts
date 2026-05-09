@@ -15,37 +15,43 @@ export const routes: Routes = [
         canActivate: [AuthGuard],
       },
       {
-        path: 'media',
-        loadComponent: () =>
-          import('../../../features/media/pages/media.page').then((m) => m.MediaPage),
-        canActivate: [AuthGuard],
-      },
-      {
         path: 'library',
         loadComponent: () =>
-          import('../../../features/library/pages/release-library.page').then((m) => m.ReleaseLibraryPage),
+          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
         canActivate: [AuthGuard],
       },
       {
-        path: 'media/games/:gameId',
+        path: 'browse',
+        loadComponent: () =>
+          import('../../../features/browse/pages/browse.page').then((m) => m.BrowsePage),
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'library/games/:gameId',
         loadComponent: () =>
           import('../../../features/my-games/pages/my-game-details.page').then((m) => m.MyGameDetailsPage),
         canActivate: [AuthGuard],
       },
       {
-        path: 'media/animes/:animeId',
+        path: 'library/animes/:animeId',
         loadComponent: () =>
           import('../../../features/animes/pages/anime-details.page').then((m) => m.AnimeDetailsPage),
         canActivate: [AuthGuard],
       },
       {
-        path: 'media/movies/:movieId',
+        path: 'library/movies/:movieId',
         loadComponent: () =>
           import('../../../features/movies/pages/movie-details.page').then((m) => m.MovieDetailsPage),
         canActivate: [AuthGuard],
       },
       {
-        path: 'media/:gameId',
+        path: 'library/series/:seriesId',
+        loadComponent: () =>
+          import('../../../features/series/pages/series-details.page').then((m) => m.SeriesDetailsPage),
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'library/:gameId',
         loadComponent: () =>
           import('../../../features/my-games/pages/my-game-details.page').then((m) => m.MyGameDetailsPage),
         canActivate: [AuthGuard],

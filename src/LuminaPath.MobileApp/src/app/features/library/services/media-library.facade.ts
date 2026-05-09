@@ -78,7 +78,7 @@ export class MediaLibraryFacade {
 
   detailsRoute(item: MediaItem): unknown[] {
     const mode = this.mediaMode.current.id;
-    return ['/media', mode, item.id];
+    return ['/library', mode, item.id];
   }
 
   private mapPage<T>(result: PaginateResult<T>, mapper: (item: T) => MediaItem): PaginateResult<MediaItem> {

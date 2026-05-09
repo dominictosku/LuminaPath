@@ -1,6 +1,6 @@
 import { type IBasicInfo } from "src/app/core/interfaces/iBasicInfo";
 import { type IGame } from "../interfaces/iGames";
-import { MediaFile } from "../../media/models/mediaFile.model";
+import { MediaFile } from "../../library/models/mediaFile.model";
 
 export class Game implements IGame, IBasicInfo {
   id: number;

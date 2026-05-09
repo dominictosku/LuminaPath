@@ -1,15 +1,15 @@
-import { MediaFile } from '../../media/models/mediaFile.model';
-import { UserMediaEntry } from '../../media/models/media-item.model';
+import { MediaFile } from '../../library/models/mediaFile.model';
+import { UserMediaEntry } from '../../library/models/media-item.model';
 
-export type ReleaseLibraryKind = 'games' | 'animes';
+export type BrowseKind = 'games' | 'animes';
 
-export interface ReleaseLibraryItem {
+export interface BrowseItem {
   id: number;
   name: string;
   description: string | null;
   genre: string | null;
   releaseDate: Date | string | null;
-  kind: ReleaseLibraryKind;
+  kind: BrowseKind;
   addedCount: number;
   image: MediaFile | null;
   platforms?: number | null;
@@ -20,10 +20,10 @@ export interface ReleaseLibraryItem {
   libraryEntry?: UserMediaEntry | null;
 }
 
-export interface ReleaseLibraryGroup {
+export interface BrowseGroup {
   id: string;
   title: string;
   subtitle: string;
   sortValue: number;
-  items: ReleaseLibraryItem[];
+  items: BrowseItem[];
 }

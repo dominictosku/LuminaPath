@@ -110,7 +110,7 @@ export class NotificationsService {
         icon: 'sparkles-outline',
         title: `${game.name} just released`,
         body: 'It is in your library — start playing?',
-        link: `/media/${game.id}`,
+        link: `/library/games/${game.id}`,
         sortAt: releaseAt,
       });
     }

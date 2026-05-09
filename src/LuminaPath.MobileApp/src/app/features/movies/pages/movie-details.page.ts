@@ -121,7 +121,7 @@ export class MovieDetailsPage implements OnInit {
       return;
     }
 
-    void this.router.navigateByUrl('/media');
+    void this.router.navigateByUrl('/library');
   }
 
   private async loadMovie(movieId: number): Promise<void> {
