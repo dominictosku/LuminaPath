@@ -4,6 +4,7 @@ using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Third_Party;
 using LuminaPath.Infrastructure.Services;
+using LuminaPath.Infrastructure.Services.Imports;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -25,6 +26,7 @@ public sealed class SteamService
     private readonly SteamOptions _options;
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
     private readonly ApplicationSettingsService _settings;
+    private readonly GameImportPipeline _importPipeline;
     private readonly ILogger<SteamService> _logger;
 
     public SteamService(
@@ -32,12 +34,14 @@ public sealed class SteamService
         IOptions<SteamOptions> options,
         IDbContextFactory<LuminaPathDbContext> dbContextFactory,
         ApplicationSettingsService settings,
+        GameImportPipeline importPipeline,
         ILogger<SteamService> logger)
     {
         _http = http;
         _options = options.Value;
         _dbContextFactory = dbContextFactory;
         _settings = settings;
+        _importPipeline = importPipeline;
         _logger = logger;
     }
 
@@ -188,147 +192,28 @@ public sealed class SteamService
             return new SteamImportResult { SteamId = steamId };
         }
 
-        await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-        await UpdateUserSteamProfileAsync(context, user.Id, steamId, profile, cancellationToken);
-
-        var appIds = games.Select(g => g.AppId.ToString()).ToHashSet();
-        var existingGames = await context.Games
-            .Include(g => g.GameInfo)
-            .Include(g => g.MyGames!)
-                .ThenInclude(m => m.MyGameInfo)
-            .Where(g => g.GameInfo != null && g.GameInfo.SteamId != null && appIds.Contains(g.GameInfo.SteamId!))
-            .ToListAsync(cancellationToken);
-
-        var existingByAppId = existingGames.ToDictionary(g => g.GameInfo!.SteamId!, StringComparer.Ordinal);
-
-        var importedNames = games.Select(s => s.Name).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var nameClashes = await context.Games
-            .Where(g => importedNames.Contains(g.Name))
-            .Select(g => g.Name)
-            .ToListAsync(cancellationToken);
-        var existingNames = new HashSet<string>(nameClashes, StringComparer.OrdinalIgnoreCase);
-
-        var added = 0;
-        var updated = 0;
-        var newGames = new List<Game>();
-
-        foreach (var owned in games)
-        {
-            var appIdString = owned.AppId.ToString();
-            var trackedHours = Math.Round(owned.PlaytimeMinutes / 60.0, 2);
-            var lastPlayed = owned.LastPlayed;
-
-            if (existingByAppId.TryGetValue(appIdString, out var existing))
+        await SaveUserSteamProfileAsync(user.Id, steamId, profile, cancellationToken);
+        var importResult = await _importPipeline.ImportAsync(
+            user,
+            games.Select(owned => new GameImportItem
             {
-                ApplyToExisting(existing, user, trackedHours, lastPlayed);
-                updated++;
-            }
-            else
-            {
-                var name = ResolveUniqueName(owned.Name, existingNames, appIdString);
-                existingNames.Add(name);
-                newGames.Add(BuildNewGame(name, appIdString, user, trackedHours, lastPlayed));
-                added++;
-            }
-        }
-
-        if (newGames.Count > 0)
-        {
-            await context.Games.AddRangeAsync(newGames, cancellationToken);
-        }
-
-        await context.SaveChangesAsync(cancellationToken);
+                Name = owned.Name,
+                Source = "Steam",
+                Platforms = Platforms.PC,
+                ExternalProvider = ExternalMediaProvider.Steam,
+                ExternalId = owned.AppId.ToString(),
+                TrackedHours = Math.Round(owned.PlaytimeMinutes / 60.0, 2),
+                FirstPlayed = owned.LastPlayed,
+                LastPlayed = owned.LastPlayed,
+            }),
+            cancellationToken);
 
         return new SteamImportResult
         {
             SteamId = steamId,
             Total = games.Count,
-            Added = added,
-            Updated = updated,
-        };
-    }
-
-    private static void ApplyToExisting(
-        Game existing,
-        LuminaUser user,
-        double trackedHours,
-        DateTime? lastPlayed)
-    {
-        if ((existing.Platforms & Platforms.PC) == 0)
-        {
-            existing.Platforms |= Platforms.PC;
-        }
-
-        var userGame = existing.MyGames?.FirstOrDefault(m => m.LuminaUserId == user.Id);
-        if (userGame is null)
-        {
-            existing.MyGames ??= new List<MyGame>();
-            existing.MyGames.Add(new MyGame
-            {
-                GameId = existing.Id,
-                LuminaUserId = user.Id,
-                MyGameInfo = new MyGameInfo
-                {
-                    TrackedHours = trackedHours,
-                    FirstPlayed = lastPlayed ?? default,
-                    LastPlayed = lastPlayed ?? default,
-                },
-            });
-            return;
-        }
-
-        if (userGame.MyGameInfo is null)
-        {
-            userGame.MyGameInfo = new MyGameInfo
-            {
-                TrackedHours = trackedHours,
-                FirstPlayed = lastPlayed ?? default,
-                LastPlayed = lastPlayed ?? default,
-            };
-        }
-        else
-        {
-            userGame.MyGameInfo.TrackedHours = trackedHours;
-            if (lastPlayed.HasValue && (userGame.MyGameInfo.FirstPlayed == default || userGame.MyGameInfo.FirstPlayed > lastPlayed.Value))
-            {
-                userGame.MyGameInfo.FirstPlayed = lastPlayed.Value;
-            }
-            if (lastPlayed.HasValue)
-            {
-                userGame.MyGameInfo.LastPlayed = lastPlayed.Value;
-            }
-        }
-    }
-
-    private static Game BuildNewGame(
-        string name,
-        string steamAppId,
-        LuminaUser user,
-        double trackedHours,
-        DateTime? lastPlayed)
-    {
-        return new Game
-        {
-            Name = name,
-            Platforms = Platforms.PC,
-            Source = "Steam",
-            GameInfo = new GameInfo
-            {
-                SteamId = steamAppId,
-            },
-            MyGames = new List<MyGame>
-            {
-                new()
-                {
-                    LuminaUserId = user.Id,
-                    MyGameInfo = new MyGameInfo
-                    {
-                        TrackedHours = trackedHours,
-                        FirstPlayed = lastPlayed ?? default,
-                        LastPlayed = lastPlayed ?? default,
-                    },
-                },
-            },
+            Added = importResult.CreatedGames,
+            Updated = importResult.UpdatedGames + importResult.UpdatedMyGames,
         };
     }
 
@@ -366,9 +251,4 @@ public sealed class SteamService
         user.LuminaUserInfo.SteamAvatarUrl = profile?.AvatarUrl ?? user.LuminaUserInfo.SteamAvatarUrl;
     }
 
-    private static string ResolveUniqueName(string desired, HashSet<string> taken, string steamAppId)
-    {
-        if (!taken.Contains(desired)) return desired;
-        return $"{desired} (Steam {steamAppId})";
-    }
 }

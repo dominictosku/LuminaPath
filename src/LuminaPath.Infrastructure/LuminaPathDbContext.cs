@@ -75,5 +75,6 @@ namespace LuminaPath.Infrastructure
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<DirectMessage> DirectMessages { get; set; }
         public DbSet<ApplicationSetting> ApplicationSettings { get; set; }
+        public DbSet<MediaExternalId> MediaExternalIds { get; set; }
     }
 }

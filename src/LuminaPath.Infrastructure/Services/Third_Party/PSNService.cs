@@ -2,7 +2,7 @@ using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Third_Party;
-using Microsoft.EntityFrameworkCore;
+using LuminaPath.Infrastructure.Services.Imports;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -15,9 +15,11 @@ using static LuminaPath.Core.Entities.PSN.PSNTrophy;
 
 namespace LuminaPath.Infrastructure.Services.Third_Party
 {
-    public class PSNService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, ILogger<PSNService> logger)
+    public class PSNService(
+        GameImportPipeline importPipeline,
+        ILogger<PSNService> logger)
     {
-        private IDbContextFactory<LuminaPathDbContext> _dbContextFactory = dbContextFactory;
+        private readonly GameImportPipeline _importPipeline = importPipeline;
         private readonly ILogger<PSNService> _logger = logger;
         string bearerToken = string.Empty;
 
@@ -241,127 +243,30 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
 
         public async Task ImportGames(LuminaUser user, List<MyGameDto> gamesToImport)
         {
-            using var context = await _dbContextFactory.CreateDbContextAsync();
-
-            // Fetch existing games and their related data once
-            var existingGames = await context.Games
-                .Include(g => g.GameInfo)
-                .Include(g => g.MyGames)
-                .ToListAsync();
-
-            var gamesToAdd = new List<Game>();
-
-            foreach (var gameToImport in gamesToImport)
-            {
-                if (gameToImport.Game?.GameInfo == null)
-                {
-                    continue;
-                }
-
-                var importGameInfo = gameToImport.Game.GameInfo;
-                var existingGame = existingGames
-                    .FirstOrDefault(g => g.GameInfo != null && g.GameInfo.PsnId == importGameInfo.PsnId);
-
-                if (existingGame != null)
-                {
-                    HandleExistingGame(context, user, gameToImport, existingGame);
-                }
-                else
-                {
-                    AddNewGame(gamesToAdd, gameToImport, user);
-                }
-            }
-
-            // Add new games in bulk
-            if (gamesToAdd.Any())
-            {
-                await context.Games.AddRangeAsync(gamesToAdd);
-            }
-
-            await context.SaveChangesAsync();
+            await _importPipeline.ImportAsync(user, gamesToImport.Select(ToImportItem));
         }
 
-        private static void HandleExistingGame(LuminaPathDbContext context, LuminaUser user, MyGameDto gameToImport, Game existingGame)
+        private static GameImportItem ToImportItem(MyGameDto gameToImport)
         {
-            var userGame = existingGame.MyGames?.FirstOrDefault(g => g.LuminaUserId == user.Id);
-
-            if (userGame != null)
+            var game = gameToImport.Game;
+            return new GameImportItem
             {
-                // Update MyGameInfo for the existing user's game
-                var myGame = context.MyGames
-                    .Include(g => g.MyGameInfo)
-                    .First(g => g.Id == userGame.Id);
-
-                if (myGame.MyGameInfo == null)
-                {
-                    myGame.MyGameInfo = gameToImport.MyGameInfo;
-                }
-                else
-                {
-                    UpdateMyGameInfo(myGame.MyGameInfo, gameToImport.MyGameInfo);
-                }
-
-                context.MyGames.Update(myGame);
-            }
-            else
-            {
-                // Add a new MyGame for the user
-                context.MyGames.Add(new MyGame
-                {
-                    GameId = existingGame.Id,
-                    LuminaUserId = user.Id,
-                    MyGameInfo = gameToImport.MyGameInfo
-                });
-            }
-        }
-
-        private static void AddNewGame(List<Game> gamesToAdd, MyGameDto gameToImport, LuminaUser user)
-        {
-            if (gameToImport.Game?.GameInfo == null)
-            {
-                return;
-            }
-
-            var newGame = new Game
-            {
-                Name = gameToImport.Game.Name,
-                Platforms = gameToImport.Game.Platforms,
-                Source = "PSN",
-                GameInfo = new GameInfo
-                {
-                    PsnId = gameToImport.Game.GameInfo.PsnId
-                },
-                MyGames = new List<MyGame>
-                {
-                    new MyGame
-                    {
-                        LuminaUserId = user.Id,
-                        MyGameInfo = gameToImport.MyGameInfo
-                    }
-                }
+                Name = game?.Name ?? string.Empty,
+                Source = string.IsNullOrWhiteSpace(game?.Source) ? "PSN" : game.Source,
+                Platforms = game?.Platforms ?? 0,
+                ExternalProvider = ExternalMediaProvider.Psn,
+                ExternalId = game?.GameInfo?.PsnId,
+                Status = gameToImport.Status,
+                Priority = 0,
+                Rating = gameToImport.Rating,
+                StartDate = gameToImport.StartDate,
+                EndDate = gameToImport.EndDate,
+                TimeSpend = gameToImport.TimeSpend,
+                FirstPlayed = gameToImport.MyGameInfo?.FirstPlayed,
+                LastPlayed = gameToImport.MyGameInfo?.LastPlayed,
+                TrackedHours = gameToImport.MyGameInfo?.TrackedHours,
             };
-
-            // Ensure unique game names
-            if (gamesToAdd.Any(g => g.Name == newGame.Name))
-            {
-                newGame.Name += $" Duplicate {gameToImport.Game.GameInfo.PsnId}";
-            }
-
-            gamesToAdd.Add(newGame);
         }
-
-        private static void UpdateMyGameInfo(MyGameInfo existingInfo, MyGameInfo? newInfo)
-        {
-            if (newInfo is null)
-            {
-                return;
-            }
-
-            existingInfo.FirstPlayed = newInfo.FirstPlayed;
-            existingInfo.LastPlayed = newInfo.LastPlayed;
-            existingInfo.TrackedHours = newInfo.TrackedHours;
-        }
-
 
         public class TokenResponse
         {

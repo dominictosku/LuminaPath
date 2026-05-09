@@ -15,13 +15,13 @@ export class BrowseService {
   }
 
   getGameReleases(): Observable<BrowseItem[]> {
-    return this.http.get<BrowseItem[]>(this.apiEndpoint.url('library/games/releases'), {
+    return this.http.get<BrowseItem[]>(this.apiEndpoint.url('browse/games/releases'), {
       withCredentials: true,
     });
   }
 
   getAnimeReleases(): Observable<BrowseItem[]> {
-    return this.http.get<BrowseItem[]>(this.apiEndpoint.url('library/animes/releases'), {
+    return this.http.get<BrowseItem[]>(this.apiEndpoint.url('browse/animes/releases'), {
       withCredentials: true,
     });
   }

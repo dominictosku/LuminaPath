@@ -2,7 +2,7 @@ using LuminaPath.Core.Models.Base;
 
 namespace LuminaPath.Core.Dtos
 {
-    public class ReleaseLibraryItemDto
+    public class BrowseItemDto
     {
         public int Id { get; set; }
 
@@ -30,10 +30,10 @@ namespace LuminaPath.Core.Dtos
 
         public int? ExpectedWatchTimeMinutes { get; set; }
 
-        public ReleaseLibraryUserEntryDto? LibraryEntry { get; set; }
+        public BrowseUserEntryDto? LibraryEntry { get; set; }
     }
 
-    public class ReleaseLibraryUserEntryDto
+    public class BrowseUserEntryDto
     {
         public int Id { get; set; }
 
@@ -47,14 +47,14 @@ namespace LuminaPath.Core.Dtos
 
         public double? TimeSpend { get; set; }
 
-        public ReleaseLibraryGameInfoDto? MyGameInfo { get; set; }
+        public BrowseGameInfoDto? MyGameInfo { get; set; }
 
         public int? CurrentWatchTimeMinutes { get; set; }
 
         public int? CurrentEpisode { get; set; }
     }
 
-    public class ReleaseLibraryGameInfoDto
+    public class BrowseGameInfoDto
     {
         public double? TrackedHours { get; set; }
     }

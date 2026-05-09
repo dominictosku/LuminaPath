@@ -25,5 +25,7 @@ namespace LuminaPath.Core.Models.Base
         public string Source { get; set; } = "Lumina";
 
         public MediaDocument? Image { get; set; }
+
+        public List<MediaExternalId> ExternalIds { get; set; } = new();
     }
 }

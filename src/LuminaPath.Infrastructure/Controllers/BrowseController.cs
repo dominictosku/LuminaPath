@@ -8,19 +8,19 @@ using System.Security.Claims;
 namespace LuminaPath.Infrastructure.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/browse")]
     [Authorize]
-    public class LibraryController : ControllerBase
+    public class BrowseController : ControllerBase
     {
         private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
 
-        public LibraryController(IDbContextFactory<LuminaPathDbContext> dbContextFactory)
+        public BrowseController(IDbContextFactory<LuminaPathDbContext> dbContextFactory)
         {
             _dbContextFactory = dbContextFactory;
         }
 
         [HttpGet("games/releases")]
-        public async Task<ActionResult<IReadOnlyList<ReleaseLibraryItemDto>>> GetGameReleases(CancellationToken cancellationToken)
+        public async Task<ActionResult<IReadOnlyList<BrowseItemDto>>> GetGameReleases(CancellationToken cancellationToken)
         {
             await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
             var userId = CurrentUserId();
@@ -50,7 +50,7 @@ namespace LuminaPath.Infrastructure.Controllers
                 .ToListAsync(cancellationToken);
 
             return Ok(games
-                .Select(game => new ReleaseLibraryItemDto
+                .Select(game => new BrowseItemDto
                 {
                     Id = game.Id,
                     Name = game.Name,
@@ -70,7 +70,7 @@ namespace LuminaPath.Infrastructure.Controllers
         }
 
         [HttpGet("animes/releases")]
-        public async Task<ActionResult<IReadOnlyList<ReleaseLibraryItemDto>>> GetAnimeReleases(CancellationToken cancellationToken)
+        public async Task<ActionResult<IReadOnlyList<BrowseItemDto>>> GetAnimeReleases(CancellationToken cancellationToken)
         {
             await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
             var userId = CurrentUserId();
@@ -99,7 +99,7 @@ namespace LuminaPath.Infrastructure.Controllers
                 .ToListAsync(cancellationToken);
 
             return Ok(animes
-                .Select(anime => new ReleaseLibraryItemDto
+                .Select(anime => new BrowseItemDto
                 {
                     Id = anime.Id,
                     Name = anime.Name,
@@ -122,7 +122,7 @@ namespace LuminaPath.Infrastructure.Controllers
         private string? CurrentUserId()
             => User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        private static ReleaseLibraryUserEntryDto MapGameEntry(MyGame entry)
+        private static BrowseUserEntryDto MapGameEntry(MyGame entry)
             => new()
             {
                 Id = entry.Id,
@@ -133,13 +133,13 @@ namespace LuminaPath.Infrastructure.Controllers
                 TimeSpend = entry.TimeSpend,
                 MyGameInfo = entry.MyGameInfo is null
                     ? null
-                    : new ReleaseLibraryGameInfoDto
+                    : new BrowseGameInfoDto
                     {
                         TrackedHours = entry.MyGameInfo.TrackedHours
                     }
             };
 
-        private static ReleaseLibraryUserEntryDto MapAnimeEntry(MyAnime entry)
+        private static BrowseUserEntryDto MapAnimeEntry(MyAnime entry)
             => new()
             {
                 Id = entry.Id,

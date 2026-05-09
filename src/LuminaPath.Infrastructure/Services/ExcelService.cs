@@ -4,6 +4,7 @@ using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Third_Party;
 using LuminaPath.Infrastructure.Helper;
+using LuminaPath.Infrastructure.Services.Imports;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -35,10 +36,14 @@ namespace LuminaPath.Infrastructure.Services
         ];
 
         private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
+        private readonly GameImportPipeline _importPipeline;
 
-        public ExcelService(IDbContextFactory<LuminaPathDbContext> dbContextFactory)
+        public ExcelService(
+            IDbContextFactory<LuminaPathDbContext> dbContextFactory,
+            GameImportPipeline importPipeline)
         {
             _dbContextFactory = dbContextFactory;
+            _importPipeline = importPipeline;
         }
 
         public async Task<byte[]> ExportGamesAsync(LuminaUser user)
@@ -131,15 +136,9 @@ namespace LuminaPath.Infrastructure.Services
                 throw new InvalidOperationException("The workbook needs a 'Name' column.");
             }
 
-            using var context = await _dbContextFactory.CreateDbContextAsync();
-            var games = await context.Games
-                .Include(g => g.GameInfo)
-                .Include(g => g.MyGames!)
-                    .ThenInclude(m => m.MyGameInfo)
-                .ToListAsync();
-
             var result = new GameExcelImportResult();
             var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
+            var items = new List<GameImportItem>();
 
             for (var row = 2; row <= lastRow; row++)
             {
@@ -151,50 +150,7 @@ namespace LuminaPath.Infrastructure.Services
 
                 try
                 {
-                    var psnId = GetText(worksheet, row, headerMap, "psnid", "psn id", "psn");
-                    var game = FindGame(games, name, psnId);
-                    var isNewGame = game is null;
-
-                    if (game is null)
-                    {
-                        game = new Game { Name = name, Source = "Excel" };
-                        games.Add(game);
-                        context.Games.Add(game);
-                        result.CreatedGames++;
-                    }
-                    else
-                    {
-                        result.UpdatedGames++;
-                    }
-
-                    ApplyGameValues(game, worksheet, row, headerMap, psnId);
-
-                    game.MyGames ??= new List<MyGame>();
-                    var myGame = game.MyGames.FirstOrDefault(g => g.LuminaUserId == user.Id);
-                    if (myGame is null)
-                    {
-                        myGame = new MyGame
-                        {
-                            Game = game,
-                            LuminaUserId = user.Id
-                        };
-                        game.MyGames.Add(myGame);
-                        context.MyGames.Add(myGame);
-                        result.CreatedMyGames++;
-                    }
-                    else
-                    {
-                        result.UpdatedMyGames++;
-                    }
-
-                    ApplyMyGameValues(myGame, worksheet, row, headerMap);
-
-                    if (isNewGame && string.IsNullOrWhiteSpace(game.Source))
-                    {
-                        game.Source = "Excel";
-                    }
-
-                    result.RowsImported++;
+                    items.Add(BuildImportItem(worksheet, row, headerMap, name));
                 }
                 catch (Exception ex)
                 {
@@ -202,15 +158,13 @@ namespace LuminaPath.Infrastructure.Services
                 }
             }
 
-            try
-            {
-                await context.SaveChangesAsync();
-            }
-            catch (DbUpdateException ex)
-            {
-                var message = ex.InnerException?.Message ?? ex.Message;
-                result.Errors.Add($"Database save failed: {message}");
-            }
+            var importResult = await _importPipeline.ImportAsync(user, items);
+            result.RowsImported += importResult.RowsImported;
+            result.CreatedGames += importResult.CreatedGames;
+            result.UpdatedGames += importResult.UpdatedGames;
+            result.CreatedMyGames += importResult.CreatedMyGames;
+            result.UpdatedMyGames += importResult.UpdatedMyGames;
+            result.Errors.AddRange(importResult.Errors);
 
             return result;
         }
@@ -228,15 +182,10 @@ namespace LuminaPath.Infrastructure.Services
                 throw new InvalidOperationException("The workbook needs a 'Name' column.");
             }
 
-            using var context = await _dbContextFactory.CreateDbContextAsync();
-            var games = await context.Games
-                .AsNoTracking()
-                .Include(g => g.GameInfo)
-                .Include(g => g.MyGames!)
-                .ToListAsync();
-
             var result = new GameExcelPreviewResult();
             var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
+            var previewRows = new List<GameExcelPreviewRow>();
+            var items = new List<GameImportItem>();
 
             for (var row = 2; row <= lastRow; row++)
             {
@@ -259,32 +208,7 @@ namespace LuminaPath.Infrastructure.Services
 
                 try
                 {
-                    var game = FindGame(games, name, previewRow.PsnId);
-                    if (game is null)
-                    {
-                        result.CreatedGames++;
-                        result.CreatedMyGames++;
-                        previewRow.GameAction = "Create";
-                        previewRow.LibraryAction = "Create";
-                    }
-                    else
-                    {
-                        result.UpdatedGames++;
-                        previewRow.GameAction = "Update";
-
-                        if (game.MyGames?.Any(g => g.LuminaUserId == user.Id) == true)
-                        {
-                            result.UpdatedMyGames++;
-                            previewRow.LibraryAction = "Update";
-                        }
-                        else
-                        {
-                            result.CreatedMyGames++;
-                            previewRow.LibraryAction = "Create";
-                        }
-                    }
-
-                    result.RowsDetected++;
+                    items.Add(BuildImportItem(worksheet, row, headerMap, name));
                 }
                 catch (Exception ex)
                 {
@@ -292,6 +216,26 @@ namespace LuminaPath.Infrastructure.Services
                     result.Errors.Add($"Row {row}: {ex.Message}");
                 }
 
+                previewRows.Add(previewRow);
+            }
+
+            var pipelinePreview = await _importPipeline.PreviewAsync(user, items);
+            result.RowsDetected = pipelinePreview.RowsDetected;
+            result.CreatedGames = pipelinePreview.CreatedGames;
+            result.UpdatedGames = pipelinePreview.UpdatedGames;
+            result.CreatedMyGames = pipelinePreview.CreatedMyGames;
+            result.UpdatedMyGames = pipelinePreview.UpdatedMyGames;
+            result.Errors.AddRange(pipelinePreview.Errors);
+
+            var pipelineRowsByNumber = pipelinePreview.Rows.ToDictionary(row => row.RowNumber);
+            foreach (var previewRow in previewRows)
+            {
+                pipelineRowsByNumber.TryGetValue(previewRow.RowNumber, out var pipelineRow);
+                previewRow.GameAction = pipelineRow?.GameAction ?? previewRow.GameAction;
+                previewRow.LibraryAction = pipelineRow?.LibraryAction ?? previewRow.LibraryAction;
+                previewRow.Error = string.IsNullOrWhiteSpace(previewRow.Error)
+                    ? pipelineRow?.Error ?? string.Empty
+                    : previewRow.Error;
                 result.Rows.Add(previewRow);
             }
 
@@ -350,76 +294,35 @@ namespace LuminaPath.Infrastructure.Services
             return map;
         }
 
-        private static Game? FindGame(IEnumerable<Game> games, string name, string? psnId)
+        private static GameImportItem BuildImportItem(IXLWorksheet worksheet, int row, Dictionary<string, int> headerMap, string name)
         {
-            if (!string.IsNullOrWhiteSpace(psnId))
-            {
-                var byPsnId = games.FirstOrDefault(g => g.GameInfo?.PsnId?.Equals(psnId, StringComparison.OrdinalIgnoreCase) == true);
-                if (byPsnId is not null)
-                {
-                    return byPsnId;
-                }
-            }
-
-            return games.FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        }
-
-        private static void ApplyGameValues(Game game, IXLWorksheet worksheet, int row, Dictionary<string, int> headerMap, string? psnId)
-        {
-            game.Name = GetText(worksheet, row, headerMap, "name") ?? game.Name;
-            game.Description = GetText(worksheet, row, headerMap, "description") ?? game.Description;
-            game.Source = GetText(worksheet, row, headerMap, "source") ?? game.Source;
-            game.ReleaseDate = ToUtcDate(GetDate(worksheet, row, headerMap, "releasedate")) ?? game.ReleaseDate;
-            game.Playtime = GetInt(worksheet, row, headerMap, "playtime", "estimatedplaytime") ?? game.Playtime;
-
+            var psnId = GetText(worksheet, row, headerMap, "psnid", "psn id", "psn");
             var platform = GetText(worksheet, row, headerMap, "Platform", "platform");
-            if (!string.IsNullOrWhiteSpace(platform))
-            {
-                game.Platforms = ParsePlatforms(platform);
-            }
-
             var genres = GetText(worksheet, row, headerMap, "genre", "genres");
-            if (!string.IsNullOrWhiteSpace(genres))
-            {
-                game.Genres = SplitList(genres).ToList();
-            }
-
-            if (!string.IsNullOrWhiteSpace(psnId))
-            {
-                game.GameInfo ??= new GameInfo();
-                game.GameInfo.PsnId = psnId;
-            }
-        }
-
-        private static void ApplyMyGameValues(MyGame myGame, IXLWorksheet worksheet, int row, Dictionary<string, int> headerMap)
-        {
             var status = GetText(worksheet, row, headerMap, "status");
-            if (!string.IsNullOrWhiteSpace(status))
+
+            return new GameImportItem
             {
-                myGame.Status = ParseStatus(status);
-            }
-
-            myGame.Priority = GetInt(worksheet, row, headerMap, "priority", "Priority") ?? myGame.Priority;
-            myGame.Rating = GetShort(worksheet, row, headerMap, "rating") ?? myGame.Rating;
-            myGame.StartDate = ToUtcDate(GetDate(worksheet, row, headerMap, "startdate", "startedon")) ?? myGame.StartDate;
-            myGame.EndDate = ToUtcDate(GetDate(worksheet, row, headerMap, "enddate", "finishedon")) ?? myGame.EndDate;
-            myGame.TimeSpend = GetDouble(worksheet, row, headerMap, "timespend", "timespent") ?? myGame.TimeSpend;
-
-            var firstPlayed = ToUtcDate(GetDate(worksheet, row, headerMap, "firstplayed"));
-            var lastPlayed = ToUtcDate(GetDate(worksheet, row, headerMap, "lastplayed"));
-            var trackedHours = GetDouble(worksheet, row, headerMap, "trackedhours", "playtimeinhours");
-
-            if (firstPlayed.HasValue || lastPlayed.HasValue || trackedHours.HasValue)
-            {
-                myGame.MyGameInfo ??= new MyGameInfo
-                {
-                    FirstPlayed = UtcDateTime.Normalize(DateTime.MinValue),
-                    LastPlayed = UtcDateTime.Normalize(DateTime.MinValue)
-                };
-                myGame.MyGameInfo.FirstPlayed = firstPlayed ?? ToUtcDate(myGame.MyGameInfo.FirstPlayed) ?? UtcDateTime.Normalize(DateTime.MinValue);
-                myGame.MyGameInfo.LastPlayed = lastPlayed ?? ToUtcDate(myGame.MyGameInfo.LastPlayed) ?? UtcDateTime.Normalize(DateTime.MinValue);
-                myGame.MyGameInfo.TrackedHours = trackedHours ?? myGame.MyGameInfo.TrackedHours;
-            }
+                RowNumber = row,
+                Name = name,
+                Description = GetText(worksheet, row, headerMap, "description"),
+                Source = GetText(worksheet, row, headerMap, "source") ?? "Excel",
+                ReleaseDate = ToUtcDate(GetDate(worksheet, row, headerMap, "releasedate")),
+                Platforms = string.IsNullOrWhiteSpace(platform) ? 0 : ParsePlatforms(platform),
+                Genres = string.IsNullOrWhiteSpace(genres) ? new List<string>() : SplitList(genres).ToList(),
+                Playtime = GetInt(worksheet, row, headerMap, "playtime", "estimatedplaytime"),
+                ExternalProvider = string.IsNullOrWhiteSpace(psnId) ? null : ExternalMediaProvider.Psn,
+                ExternalId = psnId,
+                Status = string.IsNullOrWhiteSpace(status) ? GameStatus.Planned : ParseStatus(status),
+                Priority = GetInt(worksheet, row, headerMap, "priority", "Priority") ?? 0,
+                Rating = GetShort(worksheet, row, headerMap, "rating"),
+                StartDate = ToUtcDate(GetDate(worksheet, row, headerMap, "startdate", "startedon")),
+                EndDate = ToUtcDate(GetDate(worksheet, row, headerMap, "enddate", "finishedon")),
+                TimeSpend = GetDouble(worksheet, row, headerMap, "timespend", "timespent"),
+                FirstPlayed = ToUtcDate(GetDate(worksheet, row, headerMap, "firstplayed")),
+                LastPlayed = ToUtcDate(GetDate(worksheet, row, headerMap, "lastplayed")),
+                TrackedHours = GetDouble(worksheet, row, headerMap, "trackedhours", "playtimeinhours"),
+            };
         }
 
         private static void SetDate(IXLCell cell, DateTime? date)

@@ -18,6 +18,7 @@ namespace LuminaPath.Core.Interfaces
         DbSet<QuestSkill> QuestSkills { get; set; }
         DbSet<QuestSkillNode> QuestSkillNodes { get; set; }
         DbSet<ApplicationSetting> ApplicationSettings { get; set; }
+        DbSet<MediaExternalId> MediaExternalIds { get; set; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
 }

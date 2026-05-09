@@ -1,4 +1,5 @@
 using LuminaPath.Infrastructure.Services.ModelServices;
+using LuminaPath.Infrastructure.Services.Imports;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -26,6 +27,7 @@ internal static class ApplicationServiceCollectionExtensions
         services.AddScoped<DirectMessageService>();
 
         services.AddScoped<ExcelService>();
+        services.AddScoped<GameImportPipeline>();
         services.AddScoped<ApplicationSettingsService>();
         return services;
     }
