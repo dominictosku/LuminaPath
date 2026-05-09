@@ -26,6 +26,36 @@ namespace LuminaPath.Core.Dtos
 
         public int? EpisodeCount { get; set; }
 
+        public int? ExpectedWatchTimePerEpisodeMinutes { get; set; }
+
         public int? ExpectedWatchTimeMinutes { get; set; }
+
+        public ReleaseLibraryUserEntryDto? LibraryEntry { get; set; }
+    }
+
+    public class ReleaseLibraryUserEntryDto
+    {
+        public int Id { get; set; }
+
+        public short? Rating { get; set; }
+
+        public DateTime? StartDate { get; set; }
+
+        public DateTime? EndDate { get; set; }
+
+        public int Status { get; set; }
+
+        public double? TimeSpend { get; set; }
+
+        public ReleaseLibraryGameInfoDto? MyGameInfo { get; set; }
+
+        public int? CurrentWatchTimeMinutes { get; set; }
+
+        public int? CurrentEpisode { get; set; }
+    }
+
+    public class ReleaseLibraryGameInfoDto
+    {
+        public double? TrackedHours { get; set; }
     }
 }

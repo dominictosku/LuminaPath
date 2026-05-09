@@ -5,9 +5,11 @@
   --line: rgba(255, 255, 255, 0.1);
   --surface: rgba(18, 24, 38, 0.86);
   --surface-strong: rgba(24, 32, 48, 0.96);
+  --surface-solid: #111827;
   --accent: var(--app-theme-accent, #60a5fa);
   --accent-2: var(--app-theme-accent-2, #22d3ee);
   --accent-soft: var(--app-theme-accent-soft, rgba(96, 165, 250, 0.16));
+  --accent-border: var(--app-theme-accent-border, rgba(96, 165, 250, 0.42));
 }
 
 .release-shell {
@@ -106,6 +108,11 @@ ion-segment-button {
   border-radius: 18px;
   color: #fecdd3;
   background: rgba(127, 29, 29, 0.36);
+}
+
+.notice--success {
+  color: #bbf7d0;
+  background: rgba(20, 83, 45, 0.38);
 }
 
 .period-panel {
@@ -212,10 +219,54 @@ ion-segment-button {
 
 .top-card,
 .release-card {
+  position: relative;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 22px;
   background: var(--surface-strong);
+}
+
+.quick-add-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  --padding-bottom: 0;
+  --padding-end: 0;
+  --padding-start: 0;
+  --padding-top: 0;
+  --border-radius: 14px;
+  --background: rgba(17, 24, 39, 0.86);
+  --background-hover: rgba(31, 41, 55, 0.96);
+  --background-focused: rgba(31, 41, 55, 0.96);
+  --box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+  --color: var(--accent);
+  backdrop-filter: blur(16px);
+}
+
+.quick-add-button::part(native) {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.quick-add-button--edit {
+  --background: rgba(16, 185, 129, 0.86);
+  --background-hover: rgba(5, 150, 105, 0.96);
+  --background-focused: rgba(5, 150, 105, 0.96);
+  --color: #ecfdf5;
+}
+
+.quick-add-button ion-icon {
+  width: 21px;
+  height: 21px;
+}
+
+.top-card__action {
+  width: 36px;
+  height: 36px;
+  --border-radius: 12px;
 }
 
 .top-card {
@@ -325,6 +376,295 @@ ion-badge {
   font-size: 2.1rem;
 }
 
+.add-game-modal {
+  --width: min(760px, calc(100vw - 24px));
+  --height: auto;
+  --max-height: calc(100vh - 28px);
+  --border-radius: 26px;
+  --box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+}
+
+.library-editor {
+  display: grid;
+  max-height: calc(100vh - 28px);
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--surface-solid);
+}
+
+.editor-cover {
+  position: relative;
+  min-height: 220px;
+  overflow: hidden;
+  background-position: center;
+  background-size: cover;
+  color: #fff;
+}
+
+.editor-cover::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: inherit;
+  filter: blur(22px) saturate(1.08);
+  transform: scale(1.12);
+}
+
+.editor-cover__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(8, 13, 24, 0.9), rgba(8, 13, 24, 0.54)),
+    linear-gradient(180deg, rgba(8, 13, 24, 0.16), rgba(8, 13, 24, 0.88));
+}
+
+.editor-cover__content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 16px;
+  align-items: end;
+  min-height: 220px;
+  padding: 62px 18px 18px;
+}
+
+.editor-cover__content img {
+  width: 96px;
+  aspect-ratio: 3 / 4;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 18px;
+  object-fit: cover;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.34);
+}
+
+.editor-cover h2 {
+  margin: 7px 0 0;
+  color: #fff;
+  font-size: 1.65rem;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.editor-cover p {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.9rem;
+}
+
+.dialog-icon-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  --padding-bottom: 0;
+  --padding-end: 0;
+  --padding-start: 0;
+  --padding-top: 0;
+  --border-radius: 14px;
+  --background: rgba(255, 255, 255, 0.16);
+  --background-hover: rgba(255, 255, 255, 0.24);
+  --background-focused: rgba(255, 255, 255, 0.24);
+  --box-shadow: none;
+  --color: #fff;
+  backdrop-filter: blur(14px);
+}
+
+.dialog-icon-button::part(native) {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.editor-body {
+  display: grid;
+  gap: 18px;
+  max-height: min(560px, calc(100vh - 328px));
+  overflow: auto;
+  padding: 18px;
+}
+
+.editor-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.editor-stats article {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.editor-stats span,
+.editor-stats strong {
+  display: block;
+}
+
+.editor-stats span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.editor-stats strong {
+  overflow: hidden;
+  margin-top: 5px;
+  color: var(--ink);
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.status-picker legend {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 820;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.status-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  align-items: center;
+  min-width: 0;
+  min-height: 50px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  outline: none;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 720;
+  text-align: left;
+}
+
+.status-option span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-option ion-icon {
+  grid-row: 1 / span 2;
+  width: 22px;
+  height: 22px;
+}
+
+.status-option small {
+  overflow: hidden;
+  color: currentColor;
+  font-size: 0.68rem;
+  font-weight: 840;
+  letter-spacing: 0.07em;
+  opacity: 0.78;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status-option--active {
+  border-color: var(--accent-border);
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.24), inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.status-option:focus-visible {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.form-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.form-field span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 820;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.form-field input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  outline: none;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+  font: inherit;
+}
+
+.rating-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px;
+  gap: 10px;
+  align-items: center;
+}
+
+.rating-field input[type="range"] {
+  min-height: 46px;
+  padding: 0;
+  border: 0;
+  accent-color: var(--accent);
+  background: transparent;
+}
+
+.rating-field input[type="number"] {
+  text-align: center;
+}
+
+.form-field input:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-solid);
+}
+
 @media (min-width: 760px) {
   .release-page {
     width: min(1180px, calc(100% - 40px));
@@ -348,11 +688,87 @@ ion-badge {
   .loading-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .library-editor {
+    grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1fr);
+  }
+
+  .editor-cover {
+    grid-row: 1 / span 2;
+    min-height: 100%;
+  }
+
+  .editor-cover__content {
+    grid-template-columns: 118px minmax(0, 1fr);
+    align-content: end;
+    min-height: 100%;
+    padding: 70px 24px 24px;
+  }
+
+  .editor-cover__content img {
+    width: 118px;
+  }
+
+  .editor-body {
+    max-height: min(650px, calc(100vh - 112px));
+    padding: 22px;
+  }
+
+  .editor-actions {
+    grid-column: 2;
+    padding-inline: 22px;
+  }
 }
 
 @media (min-width: 1080px) {
   .release-grid,
   .loading-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .add-game-modal {
+    --width: 100vw;
+    --max-height: 100vh;
+    --border-radius: 0;
+  }
+
+  .library-editor {
+    max-height: 100vh;
+  }
+
+  .editor-cover__content {
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 13px;
+    min-height: 202px;
+    padding: 58px 14px 16px;
+  }
+
+  .editor-cover__content img {
+    width: 82px;
+    border-radius: 14px;
+  }
+
+  .editor-cover h2 {
+    font-size: 1.28rem;
+  }
+
+  .editor-body {
+    max-height: calc(100vh - 288px);
+    padding: 14px;
+  }
+
+  .editor-stats,
+  .editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .status-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-actions {
+    padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
   }
 }

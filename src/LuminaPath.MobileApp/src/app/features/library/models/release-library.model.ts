@@ -1,4 +1,5 @@
 import { MediaFile } from '../../media/models/mediaFile.model';
+import { UserMediaEntry } from '../../media/models/media-item.model';
 
 export type ReleaseLibraryKind = 'games' | 'animes';
 
@@ -14,7 +15,9 @@ export interface ReleaseLibraryItem {
   platforms?: number | null;
   playtime?: number | null;
   episodeCount?: number | null;
+  expectedWatchTimePerEpisodeMinutes?: number | null;
   expectedWatchTimeMinutes?: number | null;
+  libraryEntry?: UserMediaEntry | null;
 }
 
 export interface ReleaseLibraryGroup {

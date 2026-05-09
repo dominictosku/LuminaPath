@@ -30,6 +30,10 @@
       </ion-button>
     </section>
 
+    <section class="notice notice--success" *ngIf="successMessage">
+      <span>{{ successMessage }}</span>
+    </section>
+
     <section class="loading-grid" *ngIf="isLoading">
       <article *ngFor="let item of [1, 2, 3, 4, 5, 6]">
         <ion-skeleton-text animated></ion-skeleton-text>
@@ -65,6 +69,16 @@
 
       <div class="top-scroll">
         <article class="top-card" *ngFor="let item of topItems; trackBy: trackByItem">
+          <ion-button
+            type="button"
+            fill="clear"
+            class="quick-add-button top-card__action"
+            [class.quick-add-button--edit]="hasLibraryEntry(item)"
+            [disabled]="isAdding(item)"
+            [attr.aria-label]="(hasLibraryEntry(item) ? 'Edit ' : 'Add ') + item.name + (hasLibraryEntry(item) ? ' in my library' : ' to my library')"
+            (click)="openLibraryDialog(item)">
+            <ion-icon slot="icon-only" [name]="isAdding(item) ? 'hourglass-outline' : (hasLibraryEntry(item) ? 'create-outline' : 'add-outline')"></ion-icon>
+          </ion-button>
           <img [src]="imageFor(item)" alt="" />
           <div>
             <ion-badge>
@@ -89,6 +103,16 @@
 
       <div class="release-grid">
         <article class="release-card" *ngFor="let item of selectedGroup.items; trackBy: trackByItem">
+          <ion-button
+            type="button"
+            fill="clear"
+            class="quick-add-button"
+            [class.quick-add-button--edit]="hasLibraryEntry(item)"
+            [disabled]="isAdding(item)"
+            [attr.aria-label]="(hasLibraryEntry(item) ? 'Edit ' : 'Add ') + item.name + (hasLibraryEntry(item) ? ' in my library' : ' to my library')"
+            (click)="openLibraryDialog(item)">
+            <ion-icon slot="icon-only" [name]="isAdding(item) ? 'hourglass-outline' : (hasLibraryEntry(item) ? 'create-outline' : 'add-outline')"></ion-icon>
+          </ion-button>
           <img [src]="imageFor(item)" alt="" />
           <div class="card-body">
             <div class="badge-row">
@@ -121,4 +145,134 @@
       <p>Use the period navigation to browse nearby {{ selectedKind === 'games' ? 'months' : 'seasons' }}.</p>
     </section>
   </main>
+
+  <ion-modal
+    class="add-game-modal"
+    [isOpen]="isAddDialogOpen"
+    (didDismiss)="closeAddDialog()">
+    <ng-template>
+      <form *ngIf="selectedMedia as game" class="library-editor" (ngSubmit)="submitAddGame()" novalidate>
+        <section class="editor-cover" [style.background-image]="'url(' + imageFor(game) + ')'">
+          <div class="editor-cover__shade"></div>
+          <ion-button
+            type="button"
+            fill="clear"
+            class="dialog-icon-button"
+            aria-label="Close"
+            [disabled]="isAdding(game)"
+            (click)="closeAddDialog()">
+            <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+          </ion-button>
+
+          <div class="editor-cover__content">
+            <img [src]="imageFor(game)" alt="" />
+            <div>
+              <span class="eyebrow">{{ isEditingSelectedGame() ? 'Edit my ' + mediaMode.singular : 'Add to mine' }}</span>
+              <h2>{{ game.name }}</h2>
+              <p>{{ isGamesMode ? platformLabel(game.platforms) : mediaTypeLabel(game) }} - {{ durationLabel(game) }}</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="editor-body">
+          <div class="editor-stats">
+            <article>
+              <span>Status</span>
+              <strong>{{ statusLabel(game) }}</strong>
+            </article>
+            <article>
+              <span>{{ isGamesMode ? 'Progress' : 'Watched' }}</span>
+              <strong>{{ progressOf(game) }}%</strong>
+            </article>
+            <article>
+              <span>Remaining</span>
+              <strong>{{ remainingLabel(game) }}</strong>
+            </article>
+          </div>
+
+          <fieldset class="status-picker">
+            <legend>Status</legend>
+            <button
+              *ngFor="let status of statusOptions"
+              type="button"
+              class="status-option"
+              [class.status-option--active]="addGameForm.status === status.value"
+              [attr.aria-pressed]="addGameForm.status === status.value"
+              (click)="addGameForm.status = status.value">
+              <span>{{ status.label }}</span>
+              <ion-icon *ngIf="addGameForm.status === status.value" name="checkmark-circle-outline"></ion-icon>
+              <small *ngIf="addGameForm.status === status.value">Selected</small>
+            </button>
+          </fieldset>
+
+          <div class="editor-grid">
+            <label class="form-field">
+              <span>{{ isGamesMode ? 'Played hours' : 'Watched hours' }}</span>
+              <input
+                type="number"
+                min="0"
+                inputmode="decimal"
+                [(ngModel)]="addGameForm.timeSpend"
+                name="timeSpend" />
+            </label>
+
+            <label class="form-field" *ngIf="isEpisodeMode">
+              <span>Current episode</span>
+              <input
+                type="number"
+                min="0"
+                inputmode="numeric"
+                [(ngModel)]="addGameForm.currentEpisode"
+                name="currentEpisode" />
+            </label>
+
+            <label class="form-field">
+              <span>Rating</span>
+              <div class="rating-field">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  step="1"
+                  [(ngModel)]="addGameForm.rating"
+                  name="ratingRange" />
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  inputmode="numeric"
+                  placeholder="--"
+                  [(ngModel)]="addGameForm.rating"
+                  name="rating" />
+              </div>
+            </label>
+
+            <label class="form-field">
+              <span>Started</span>
+              <input type="date" [(ngModel)]="addGameForm.startDate" name="startDate" />
+            </label>
+
+            <label class="form-field">
+              <span>Finished</span>
+              <input type="date" [(ngModel)]="addGameForm.endDate" name="endDate" />
+            </label>
+          </div>
+        </section>
+
+        <footer class="editor-actions">
+          <ion-button
+            type="button"
+            fill="clear"
+            [disabled]="isAdding(game)"
+            (click)="closeAddDialog()">
+            Cancel
+          </ion-button>
+          <ion-button type="submit" [disabled]="isAdding(game)">
+            <ion-icon slot="start" [name]="isAdding(game) ? 'hourglass-outline' : (isEditingSelectedGame() ? 'checkmark-circle-outline' : 'add-outline')"></ion-icon>
+            {{ isAdding(game) ? 'Saving...' : (isEditingSelectedGame() ? 'Save changes' : 'Add ' + mediaMode.singular) }}
+          </ion-button>
+        </footer>
+      </form>
+    </ng-template>
+  </ion-modal>
 </ion-content>

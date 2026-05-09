@@ -2,19 +2,25 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  IonBadge,
   IonButton,
+  IonBadge,
   IonContent,
   IonIcon,
+  IonModal,
   IonSegment,
   IonSegmentButton,
   IonSkeletonText,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
+  addOutline,
   calendarClearOutline,
+  checkmarkCircleOutline,
+  closeOutline,
+  createOutline,
   filmOutline,
   gameControllerOutline,
+  hourglassOutline,
   peopleOutline,
   refreshOutline,
   sparklesOutline,
@@ -23,7 +29,11 @@ import {
 import { forkJoin } from 'rxjs';
 import { Platforms } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
-import { MediaModeService } from 'src/app/shared/services/media-mode.service';
+import { MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
+import { MediaItem } from '../../media/models/media-item.model';
+import { MediaLibraryForm } from '../../media/models/media-library-form.model';
+import { GameStatus, MediaLibraryViewService } from '../../media/services/media-library-view.service';
+import { MediaLibraryFacade } from '../../media/services/media-library.facade';
 import { ReleaseLibraryGroup, ReleaseLibraryItem, ReleaseLibraryKind } from '../models/release-library.model';
 import { ReleaseLibraryService } from '../services/release-library.service';
 
@@ -45,6 +55,7 @@ const SEASONS = [
     IonButton,
     IonContent,
     IonIcon,
+    IonModal,
     IonSegment,
     IonSegmentButton,
     IonSkeletonText,
@@ -58,15 +69,37 @@ export class ReleaseLibraryPage implements OnInit {
   selectedAnimeSeason = this.startOfSeason(new Date());
   isLoading = true;
   errorMessage = '';
+  successMessage = '';
+  addingItemKeys = new Set<string>();
+  selectedItem: ReleaseLibraryItem | null = null;
+  selectedMedia: MediaItem | null = null;
+  isAddDialogOpen = false;
+  addGameForm: MediaLibraryForm = {
+    status: GameStatus.Planned,
+    timeSpend: 0,
+    rating: null,
+    startDate: '',
+    endDate: '',
+    currentEpisode: null,
+  };
+  mediaMode: MediaModeOption;
 
   constructor(
     private readonly releaseLibrary: ReleaseLibraryService,
-    private readonly mediaMode: MediaModeService,
+    private readonly mediaModeService: MediaModeService,
+    private readonly mediaLibrary: MediaLibraryFacade,
+    public readonly mediaView: MediaLibraryViewService,
   ) {
+    this.mediaMode = this.mediaModeService.current;
     addIcons({
+      addOutline,
       calendarClearOutline,
+      checkmarkCircleOutline,
+      closeOutline,
+      createOutline,
       filmOutline,
       gameControllerOutline,
+      hourglassOutline,
       peopleOutline,
       refreshOutline,
       sparklesOutline,
@@ -75,6 +108,7 @@ export class ReleaseLibraryPage implements OnInit {
   }
 
   ngOnInit(): void {
+    this.selectKind(this.selectedKind);
     this.load();
   }
 
@@ -118,7 +152,8 @@ export class ReleaseLibraryPage implements OnInit {
 
   selectKind(kind: ReleaseLibraryKind): void {
     this.selectedKind = kind;
-    this.mediaMode.select(kind);
+    this.mediaModeService.select(kind);
+    this.mediaMode = this.mediaModeService.current;
   }
 
   previousPeriod(): void {
@@ -152,6 +187,7 @@ export class ReleaseLibraryPage implements OnInit {
   load(): void {
     this.isLoading = true;
     this.errorMessage = '';
+    this.successMessage = '';
 
     forkJoin({
       games: this.releaseLibrary.getGameReleases(),
@@ -173,7 +209,121 @@ export class ReleaseLibraryPage implements OnInit {
     });
   }
 
-  imageFor(item: ReleaseLibraryItem): string {
+  openLibraryDialog(item: ReleaseLibraryItem): void {
+    if (this.isAdding(item)) {
+      return;
+    }
+
+    this.selectKind(item.kind);
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.selectedItem = item;
+    this.selectedMedia = this.toMediaItem(item);
+    this.addGameForm = this.mediaView.createLibraryForm(this.selectedMedia, this.mediaMode);
+    this.isAddDialogOpen = true;
+  }
+
+  closeAddDialog(): void {
+    if (this.selectedItem && this.isAdding(this.selectedItem)) {
+      return;
+    }
+
+    this.isAddDialogOpen = false;
+    this.selectedItem = null;
+    this.selectedMedia = null;
+  }
+
+  submitAddGame(): void {
+    const item = this.selectedItem;
+    const media = this.selectedMedia;
+
+    if (!item || !media || this.isAdding(item)) {
+      return;
+    }
+
+    this.selectKind(item.kind);
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.addingItemKeys.add(this.itemKey(item));
+
+    const details = this.mediaView.toLibraryEntryDetails(this.addGameForm, this.mediaMode);
+    const existingEntry = media.libraryEntry;
+    const request = existingEntry
+      ? this.mediaLibrary.updateLibraryEntry(existingEntry.id, media.id, details)
+      : this.mediaLibrary.addToLibrary(media.id, details);
+
+    request.subscribe({
+      next: (libraryEntry) => {
+        item.libraryEntry = libraryEntry;
+        media.libraryEntry = libraryEntry;
+        if (!existingEntry) {
+          item.addedCount += 1;
+        }
+
+        this.successMessage = existingEntry
+          ? `${item.name} was saved.`
+          : `${item.name} was added to your ${this.mediaMode.singular} list.`;
+        this.addingItemKeys.delete(this.itemKey(item));
+        this.isAddDialogOpen = false;
+        this.selectedItem = null;
+        this.selectedMedia = null;
+      },
+      error: (error) => {
+        this.errorMessage = this.addGameErrorMessage(error);
+        this.addingItemKeys.delete(this.itemKey(item));
+      },
+    });
+  }
+
+  isAdding(item: ReleaseLibraryItem | MediaItem): boolean {
+    return this.addingItemKeys.has(`${item.kind}-${item.id}`);
+  }
+
+  hasLibraryEntry(item: ReleaseLibraryItem): boolean {
+    return !!item.libraryEntry;
+  }
+
+  isEditingSelectedGame(): boolean {
+    return !!this.selectedMedia?.libraryEntry;
+  }
+
+  get isGamesMode(): boolean {
+    return this.mediaView.isGamesMode(this.mediaMode);
+  }
+
+  get isEpisodeMode(): boolean {
+    return this.mediaView.isEpisodeMode(this.mediaMode);
+  }
+
+  get statusOptions() {
+    return this.mediaView.statusOptions(this.mediaMode);
+  }
+
+  platformLabel(value: number | null | undefined): string {
+    return this.mediaView.platformLabel(value);
+  }
+
+  statusLabel(item: MediaItem): string {
+    return this.mediaView.statusLabel(item, this.mediaMode);
+  }
+
+  progressOf(item: MediaItem): number {
+    return this.mediaView.progressOf(item, this.mediaMode);
+  }
+
+  remainingLabel(item: MediaItem): string {
+    return this.mediaView.remainingLabel(item, this.mediaMode);
+  }
+
+  durationLabel(item: MediaItem): string {
+    return this.mediaView.durationLabel(item, this.mediaMode);
+  }
+
+  mediaTypeLabel(item: MediaItem): string {
+    return this.mediaView.mediaTypeLabel(item, this.mediaMode);
+  }
+
+  imageFor(item: ReleaseLibraryItem | MediaItem): string {
     return mediaImageUrl(item.image);
   }
 
@@ -301,6 +451,57 @@ export class ReleaseLibraryPage implements OnInit {
 
   private addMonths(date: Date, months: number): Date {
     return new Date(date.getFullYear(), date.getMonth() + months, 1);
+  }
+
+  private toMediaItem(item: ReleaseLibraryItem): MediaItem {
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description ?? '',
+      releaseDate: item.releaseDate,
+      genre: item.genre ?? '',
+      image: item.image,
+      kind: item.kind,
+      libraryEntry: item.libraryEntry ?? null,
+      platforms: item.platforms,
+      playtime: item.playtime,
+      expectedWatchTimePerEpisodeMinutes: item.expectedWatchTimePerEpisodeMinutes,
+      expectedWatchTimeMinutes: item.expectedWatchTimeMinutes,
+      episodeCount: item.episodeCount,
+    };
+  }
+
+  private itemKey(item: ReleaseLibraryItem | MediaItem): string {
+    return `${item.kind}-${item.id}`;
+  }
+
+  private addGameErrorMessage(error: unknown): string {
+    const payload = (error as { error?: unknown })?.error;
+
+    if (typeof payload === 'string') {
+      return payload;
+    }
+
+    if (payload && typeof payload === 'object' && 'message' in payload) {
+      return String((payload as { message: unknown }).message);
+    }
+
+    if (payload && typeof payload === 'object' && 'errorMessage' in payload) {
+      const messages = (payload as { errorMessage: unknown }).errorMessage;
+      return Array.isArray(messages) ? messages.join(' ') : String(messages);
+    }
+
+    if (payload && typeof payload === 'object' && 'errors' in payload) {
+      const errors = (payload as { errors: Record<string, string[]> }).errors;
+      const messages = Object.values(errors).flat();
+      return messages.length ? messages.join(' ') : `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`;
+    }
+
+    return `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`;
+  }
+
+  private capitalize(value: string): string {
+    return `${value[0]?.toUpperCase() ?? ''}${value.slice(1)}`;
   }
 
   private releaseDate(item: ReleaseLibraryItem): Date | null {
