@@ -15,7 +15,7 @@ namespace LuminaPath.Infrastructure.Controllers
         public GamesController(GameService service, IObjectMapper mapper, GameNewsService gameNewsService) : base(service, mapper)
         {
             _gameNewsService = gameNewsService;
-            Includes = new List<string>() { "Image", "MyGames" };
+            Includes = new List<string>() { nameof(Game.Image), nameof(Game.MyGames) };
         }
 
         [HttpGet("{id:int}/news")]

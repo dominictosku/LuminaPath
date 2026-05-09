@@ -18,7 +18,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
         }
 
-        public override string[] Includes { get; set; } = ["Game", "Game.Image", "MyGameInfo"];
+        public override string[] Includes { get; set; } =
+        [
+            nameof(MyGame.Game),
+            $"{nameof(MyGame.Game)}.{nameof(Game.Image)}",
+            nameof(MyGame.MyGameInfo)
+        ];
         protected override Func<IQueryable<MyGame>, IOrderedQueryable<MyGame>> DefaultOrderBy => e => e.OrderByDescending(g => g.Game!.ReleaseDate);
 
         protected override Expression<Func<MyGame, bool>> HasMediaId(int mediaId)

@@ -11,19 +11,17 @@ namespace LuminaPath.Infrastructure.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class MyGamesController : GenericMyController<MyGame, MyGameDto>
+    public class MyGamesController : UserMediaController<MyGame, MyGameDto>
     {
         public MyGamesController(MyGameService service, UserManager<LuminaUser> userManager,
             IObjectMapper mapper) : base(service, userManager, mapper)
         {
-            Includes = new List<string> { "Game" };
+            Includes = new List<string> { nameof(MyGame.Game) };
         }
 
-        [HttpPut("{id}")]
-        public override async Task<IActionResult> PutAsync(int id, MyGameDto viewModel)
+        protected override void PrepareForUpdate(MyGameDto viewModel)
         {
             viewModel.MyGameInfo = null;
-            return await base.PutAsync(id, viewModel);
         }
     }
 }

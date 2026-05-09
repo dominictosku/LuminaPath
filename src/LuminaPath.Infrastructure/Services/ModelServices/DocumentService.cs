@@ -172,7 +172,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
                 if (existingDocument.MediaId != null)
                 {
-                    var media = await context.Games.FindAsync(existingDocument.MediaId);
+                    var media = await context.Set<Media>()
+                        .FirstOrDefaultAsync(item => item.Id == existingDocument.MediaId);
                     if (media != null)
                     {
                         media.Image = null;

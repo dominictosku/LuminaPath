@@ -5,8 +5,6 @@ using LuminaPath.Infrastructure.Helper;
 using LuminaPath.Infrastructure.ModelConfiguration;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace LuminaPath.Infrastructure
 {
@@ -19,76 +17,8 @@ namespace LuminaPath.Infrastructure
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            modelBuilder.ApplyConfiguration(new GameConfiguration());
-            modelBuilder.Entity<Quest>()
-                .HasOne(quest => quest.LuminaUser)
-                .WithMany()
-                .HasForeignKey(quest => quest.LuminaUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<Quest>()
-                .HasOne(quest => quest.MyGame)
-                .WithMany(myGame => myGame.Quests)
-                .HasForeignKey(quest => quest.MyGameId)
-                .OnDelete(DeleteBehavior.SetNull);
-            modelBuilder.Entity<GamingSession>()
-                .HasOne(session => session.LuminaUser)
-                .WithMany()
-                .HasForeignKey(session => session.LuminaUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<GamingSession>()
-                .HasOne(session => session.MyGame)
-                .WithMany(myGame => myGame.GamingSessions)
-                .HasForeignKey(session => session.MyGameId)
-                .OnDelete(DeleteBehavior.SetNull);
-            modelBuilder.Entity<GamingSession>()
-                .HasIndex(session => new { session.LuminaUserId, session.ScheduledAt });
-            modelBuilder.Entity<QuestProfile>()
-                .HasIndex(profile => profile.LuminaUserId)
-                .IsUnique();
-            modelBuilder.Entity<QuestProfile>()
-                .HasOne(profile => profile.LuminaUser)
-                .WithMany()
-                .HasForeignKey(profile => profile.LuminaUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<QuestSkill>()
-                .HasOne(skill => skill.LuminaUser)
-                .WithMany()
-                .HasForeignKey(skill => skill.LuminaUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<QuestSkillNode>()
-                .HasOne(node => node.QuestSkill)
-                .WithMany(skill => skill.Nodes)
-                .HasForeignKey(node => node.QuestSkillId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<Friendship>()
-                .HasOne(friendship => friendship.Requester)
-                .WithMany()
-                .HasForeignKey(friendship => friendship.RequesterId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<Friendship>()
-                .HasOne(friendship => friendship.Addressee)
-                .WithMany()
-                .HasForeignKey(friendship => friendship.AddresseeId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<Friendship>()
-                .HasIndex(friendship => new { friendship.RequesterId, friendship.AddresseeId })
-                .IsUnique();
-            modelBuilder.Entity<DirectMessage>()
-                .HasOne(message => message.Sender)
-                .WithMany()
-                .HasForeignKey(message => message.SenderId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<DirectMessage>()
-                .HasOne(message => message.Recipient)
-                .WithMany()
-                .HasForeignKey(message => message.RecipientId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<DirectMessage>()
-                .HasIndex(message => new { message.SenderId, message.RecipientId, message.SentAt });
-            modelBuilder.Entity<ApplicationSetting>()
-                .HasIndex(setting => setting.Key)
-                .IsUnique();
-            ConfigureUtcDateTimes(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(LuminaPathDbContext).Assembly);
+            UtcDateTimeModelConfiguration.Configure(modelBuilder);
         }
 
         public override int SaveChanges()
@@ -115,73 +45,9 @@ namespace LuminaPath.Infrastructure
             return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
 
-        private static void ConfigureUtcDateTimes(ModelBuilder modelBuilder)
-        {
-            var dateTimeConverter = new ValueConverter<DateTime, DateTime>(
-                dateTime => UtcDateTime.Normalize(dateTime),
-                dateTime => UtcDateTime.Normalize(dateTime));
-
-            var nullableDateTimeConverter = new ValueConverter<DateTime?, DateTime?>(
-                dateTime => UtcDateTime.Normalize(dateTime),
-                dateTime => UtcDateTime.Normalize(dateTime));
-
-            var dateTimeOffsetConverter = new ValueConverter<DateTimeOffset, DateTimeOffset>(
-                dateTimeOffset => UtcDateTime.Normalize(dateTimeOffset),
-                dateTimeOffset => UtcDateTime.Normalize(dateTimeOffset));
-
-            var nullableDateTimeOffsetConverter = new ValueConverter<DateTimeOffset?, DateTimeOffset?>(
-                dateTimeOffset => UtcDateTime.Normalize(dateTimeOffset),
-                dateTimeOffset => UtcDateTime.Normalize(dateTimeOffset));
-
-            foreach (var property in modelBuilder.Model.GetEntityTypes().SelectMany(entityType => entityType.GetProperties()))
-            {
-                if (property.ClrType == typeof(DateTime))
-                {
-                    property.SetValueConverter(dateTimeConverter);
-                }
-                else if (property.ClrType == typeof(DateTime?))
-                {
-                    property.SetValueConverter(nullableDateTimeConverter);
-                }
-                else if (property.ClrType == typeof(DateTimeOffset))
-                {
-                    property.SetValueConverter(dateTimeOffsetConverter);
-                }
-                else if (property.ClrType == typeof(DateTimeOffset?))
-                {
-                    property.SetValueConverter(nullableDateTimeOffsetConverter);
-                }
-            }
-        }
-
         private void NormalizeDateTimes()
         {
-            foreach (var entry in ChangeTracker.Entries()
-                .Where(entry => entry.State is EntityState.Added or EntityState.Modified))
-            {
-                NormalizeDateTimeProperties(entry);
-            }
-        }
-
-        private static void NormalizeDateTimeProperties(EntityEntry entry)
-        {
-            foreach (var property in entry.Properties)
-            {
-                if (property.CurrentValue is DateTime dateTime)
-                {
-                    SetNormalizedValue(entry, property, UtcDateTime.Normalize(dateTime));
-                }
-                else if (property.CurrentValue is DateTimeOffset dateTimeOffset)
-                {
-                    SetNormalizedValue(entry, property, UtcDateTime.Normalize(dateTimeOffset));
-                }
-            }
-        }
-
-        private static void SetNormalizedValue(EntityEntry entry, PropertyEntry property, object value)
-        {
-            property.CurrentValue = value;
-            property.Metadata.PropertyInfo?.SetValue(entry.Entity, value);
+            UtcDateTimeChangeTrackerNormalizer.Normalize(ChangeTracker);
         }
 
         [DbFunction("pg_trgm", IsBuiltIn = true)]
