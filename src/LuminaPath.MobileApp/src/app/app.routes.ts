@@ -59,11 +59,6 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
-    path: 'chat/:userId',
-    loadComponent: () => import('./features/social/pages/chat.page').then(m => m.ChatPage),
-    canActivate: [AuthGuard]
-  },
-  {
     path: 'settings',
     loadComponent: () => import('./features/profile/pages/settings.page').then(m => m.SettingsPage),
     canActivate: [AuthGuard]

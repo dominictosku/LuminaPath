@@ -243,7 +243,9 @@
               [class.status-option--active]="addGameForm.status === status.value"
               [attr.aria-pressed]="addGameForm.status === status.value"
               (click)="addGameForm.status = status.value">
-              {{ status.label }}
+              <span>{{ status.label }}</span>
+              <ion-icon *ngIf="addGameForm.status === status.value" name="checkmark-circle-outline"></ion-icon>
+              <small *ngIf="addGameForm.status === status.value">Selected</small>
             </button>
           </fieldset>
 

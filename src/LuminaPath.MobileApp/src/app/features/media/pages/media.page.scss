@@ -580,9 +580,14 @@ ion-badge {
 }
 
 .status-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  align-items: center;
   min-width: 0;
-  min-height: 42px;
-  padding: 0 12px;
+  min-height: 50px;
+  padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 14px;
   outline: none;
@@ -594,11 +599,36 @@ ion-badge {
   text-align: left;
 }
 
+.status-option span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-option ion-icon {
+  grid-row: 1 / span 2;
+  width: 22px;
+  height: 22px;
+}
+
+.status-option small {
+  overflow: hidden;
+  color: currentColor;
+  font-size: 0.68rem;
+  font-weight: 840;
+  letter-spacing: 0.07em;
+  opacity: 0.78;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .status-option--active {
   border-color: var(--accent-border);
-  color: var(--accent);
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent-border);
+  color: #fff;
+  background:
+    linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.24), inset 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 
 .status-option:focus-visible {
