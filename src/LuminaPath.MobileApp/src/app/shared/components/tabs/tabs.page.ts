@@ -3,6 +3,8 @@ import { RouterLink } from '@angular/router';
 import { IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
+  albums,
+  albumsOutline,
   calendarClear,
   calendarClearOutline,
   gameController,
@@ -24,6 +26,8 @@ export class TabsPage {
 
   constructor() {
     addIcons({
+      albums,
+      albumsOutline,
       calendarClear,
       calendarClearOutline,
       gameController,

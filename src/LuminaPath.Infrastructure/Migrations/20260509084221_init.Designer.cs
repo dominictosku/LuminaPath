@@ -14,7 +14,7 @@ namespace LuminaPath.Infrastructure.Migrations
 {
     [DbContext(typeof(LuminaPathDbContext))]
     [Migration("20260509084221_init")]
-    partial class init
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

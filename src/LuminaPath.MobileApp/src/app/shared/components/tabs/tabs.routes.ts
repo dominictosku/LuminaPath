@@ -21,6 +21,12 @@ export const routes: Routes = [
         canActivate: [AuthGuard],
       },
       {
+        path: 'library',
+        loadComponent: () =>
+          import('../../../features/library/pages/release-library.page').then((m) => m.ReleaseLibraryPage),
+        canActivate: [AuthGuard],
+      },
+      {
         path: 'media/games/:gameId',
         loadComponent: () =>
           import('../../../features/my-games/pages/my-game-details.page').then((m) => m.MyGameDetailsPage),

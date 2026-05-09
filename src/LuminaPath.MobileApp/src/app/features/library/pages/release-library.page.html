@@ -1,0 +1,124 @@
+<ion-content [fullscreen]="true" class="release-shell">
+  <main class="release-page">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">
+          <ion-icon name="calendar-clear-outline"></ion-icon>
+          Release library
+        </span>
+        <h1>{{ title }}</h1>
+        <p>{{ description }}</p>
+      </div>
+
+      <ion-segment [(ngModel)]="selectedKind" (ionChange)="selectKind(selectedKind)">
+        <ion-segment-button value="games">
+          <ion-icon name="game-controller-outline"></ion-icon>
+          Games
+        </ion-segment-button>
+        <ion-segment-button value="animes">
+          <ion-icon name="sparkles-outline"></ion-icon>
+          Animes
+        </ion-segment-button>
+      </ion-segment>
+    </section>
+
+    <section class="notice" *ngIf="errorMessage">
+      <span>{{ errorMessage }}</span>
+      <ion-button fill="clear" size="small" (click)="load()">
+        <ion-icon slot="start" name="refresh-outline"></ion-icon>
+        Retry
+      </ion-button>
+    </section>
+
+    <section class="loading-grid" *ngIf="isLoading">
+      <article *ngFor="let item of [1, 2, 3, 4, 5, 6]">
+        <ion-skeleton-text animated></ion-skeleton-text>
+      </article>
+    </section>
+
+    <section class="period-panel" *ngIf="!isLoading && !errorMessage">
+      <div>
+        <span class="eyebrow">{{ periodSubtitle }}</span>
+        <h2>{{ periodLabel }}</h2>
+      </div>
+
+      <div class="period-actions" aria-label="Change release period">
+        <ion-button fill="clear" aria-label="Previous period" (click)="previousPeriod()">
+          <span aria-hidden="true">‹</span>
+        </ion-button>
+        <ion-button fill="outline" (click)="jumpToCurrentPeriod()">
+          Current
+        </ion-button>
+        <ion-button fill="clear" aria-label="Next period" (click)="nextPeriod()">
+          <span aria-hidden="true">›</span>
+        </ion-button>
+      </div>
+    </section>
+
+    <section class="top-strip" *ngIf="!isLoading && topItems.length">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Most popular</span>
+          <h2>Leading this period</h2>
+        </div>
+      </div>
+
+      <div class="top-scroll">
+        <article class="top-card" *ngFor="let item of topItems; trackBy: trackByItem">
+          <img [src]="imageFor(item)" alt="" />
+          <div>
+            <ion-badge>
+              <ion-icon name="people-outline"></ion-icon>
+              {{ item.addedCount }}
+            </ion-badge>
+            <h3>{{ item.name }}</h3>
+            <p>{{ releaseLabel(item) }}</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="release-group" *ngIf="!isLoading && hasItemsInPeriod">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">{{ selectedGroup.subtitle }}</span>
+          <h2>{{ selectedGroup.title }}</h2>
+        </div>
+        <strong>{{ selectedGroup.items.length }}</strong>
+      </div>
+
+      <div class="release-grid">
+        <article class="release-card" *ngFor="let item of selectedGroup.items; trackBy: trackByItem">
+          <img [src]="imageFor(item)" alt="" />
+          <div class="card-body">
+            <div class="badge-row">
+              <ion-badge>
+                <ion-icon name="people-outline"></ion-icon>
+                {{ item.addedCount }} added
+              </ion-badge>
+              <span>{{ item.kind === 'games' ? 'Game' : 'Anime' }}</span>
+            </div>
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.description || item.genre || detailsLabel(item) }}</p>
+            <div class="meta-row">
+              <span>
+                <ion-icon name="calendar-clear-outline"></ion-icon>
+                {{ releaseLabel(item) }}
+              </span>
+              <span>
+                <ion-icon name="time-outline"></ion-icon>
+                {{ detailsLabel(item) }}
+              </span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="empty-state" *ngIf="!isLoading && !hasItemsInPeriod && !errorMessage">
+      <ion-icon [name]="selectedKind === 'games' ? 'game-controller-outline' : 'sparkles-outline'"></ion-icon>
+      <h2>No releases in {{ periodLabel }}</h2>
+      <p>Use the period navigation to browse nearby {{ selectedKind === 'games' ? 'months' : 'seasons' }}.</p>
+    </section>
+  </main>
+</ion-content>
