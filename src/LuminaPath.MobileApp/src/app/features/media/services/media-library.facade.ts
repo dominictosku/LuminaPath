@@ -12,6 +12,9 @@ import { MyAnimeService } from '../../animes/services/my-anime.service';
 import { Movie, MyMovie } from '../../movies/models/movies.model';
 import { MovieService } from '../../movies/services/movie.service';
 import { MyMovieService } from '../../movies/services/my-movie.service';
+import { Series, MySeries } from '../../series/models/series.model';
+import { SeriesService } from '../../series/services/series.service';
+import { MySeriesService } from '../../series/services/my-series.service';
 import { LibraryEntryDetails, MediaItem, UserMediaEntry } from '../models/media-item.model';
 
 @Injectable({
@@ -26,6 +29,8 @@ export class MediaLibraryFacade {
     private readonly myAnimeService: MyAnimeService,
     private readonly movieService: MovieService,
     private readonly myMovieService: MyMovieService,
+    private readonly seriesService: SeriesService,
+    private readonly mySeriesService: MySeriesService,
   ) {
   }
 
@@ -35,6 +40,8 @@ export class MediaLibraryFacade {
         return this.animeService.getAll(mediaFilter).pipe(map((result) => this.mapPage(result, (anime) => this.mapAnime(anime))));
       case 'movies':
         return this.movieService.getAll(mediaFilter).pipe(map((result) => this.mapPage(result, (movie) => this.mapMovie(movie))));
+      case 'series':
+        return this.seriesService.getAll(mediaFilter).pipe(map((result) => this.mapPage(result, (series) => this.mapSeries(series))));
       case 'games':
       default:
         return this.gameService.getAll(mediaFilter).pipe(map((result) => this.mapPage(result, (game) => this.mapGame(game))));
@@ -47,6 +54,8 @@ export class MediaLibraryFacade {
         return this.myAnimeService.addToLibrary(mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
       case 'movies':
         return this.myMovieService.addToLibrary(mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
+      case 'series':
+        return this.mySeriesService.addToLibrary(mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
       case 'games':
       default:
         return this.myGameService.addToLibrary(mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
@@ -59,6 +68,8 @@ export class MediaLibraryFacade {
         return this.myAnimeService.updateLibraryEntry(libraryEntryId, mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
       case 'movies':
         return this.myMovieService.updateLibraryEntry(libraryEntryId, mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
+      case 'series':
+        return this.mySeriesService.updateLibraryEntry(libraryEntryId, mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
       case 'games':
       default:
         return this.myGameService.updateLibraryEntry(libraryEntryId, mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
@@ -102,6 +113,7 @@ export class MediaLibraryFacade {
       image: anime.image,
       kind: 'animes',
       libraryEntry: this.mapLibraryEntry(anime.myAnimes),
+      expectedWatchTimePerEpisodeMinutes: anime.expectedWatchTimePerEpisodeMinutes,
       expectedWatchTimeMinutes: anime.expectedWatchTimeMinutes,
       episodeCount: anime.episodeCount,
     };
@@ -121,7 +133,23 @@ export class MediaLibraryFacade {
     };
   }
 
-  private mapLibraryEntry(entry: Game['myGames'] | MyAnime | MyMovie | null | undefined): UserMediaEntry | null {
+  private mapSeries(series: Series): MediaItem {
+    return {
+      id: series.id,
+      name: series.name,
+      description: series.description,
+      releaseDate: series.releaseDate,
+      genre: series.genre,
+      image: series.image,
+      kind: 'series',
+      libraryEntry: this.mapLibraryEntry(series.mySeries),
+      expectedWatchTimePerEpisodeMinutes: series.expectedWatchTimePerEpisodeMinutes,
+      expectedWatchTimeMinutes: series.expectedWatchTimeMinutes,
+      episodeCount: series.episodeCount,
+    };
+  }
+
+  private mapLibraryEntry(entry: Game['myGames'] | MyAnime | MyMovie | MySeries | null | undefined): UserMediaEntry | null {
     if (!entry) {
       return null;
     }
@@ -139,7 +167,7 @@ export class MediaLibraryFacade {
     };
   }
 
-  private mapRequiredLibraryEntry(entry: Game['myGames'] | MyAnime | MyMovie): UserMediaEntry {
+  private mapRequiredLibraryEntry(entry: Game['myGames'] | MyAnime | MyMovie | MySeries): UserMediaEntry {
     const mapped = this.mapLibraryEntry(entry);
     if (!mapped) {
       throw new Error('Saved library entry was empty.');

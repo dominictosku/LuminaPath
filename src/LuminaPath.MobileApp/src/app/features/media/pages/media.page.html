@@ -125,7 +125,7 @@
         <div class="game-card__content" (click)="openDetails(game)">
           <div class="badge-row">
             <ion-badge>{{ statusLabel(game) }}</ion-badge>
-            <span>{{ isGamesMode ? platformLabel(game.platforms) : (isAnimesMode ? episodeLabel(game) : 'Movie') }}</span>
+            <span>{{ isGamesMode ? platformLabel(game.platforms) : mediaTypeLabel(game) }}</span>
           </div>
           <h3>{{ game.name }}</h3>
           <p>{{ game.description || game.genre || 'No description yet.' }}</p>
@@ -170,7 +170,7 @@
         <div class="list-row__main" (click)="openDetails(game)">
           <div class="badge-row">
             <ion-badge>{{ statusLabel(game) }}</ion-badge>
-            <span>{{ isGamesMode ? platformLabel(game.platforms) : (isAnimesMode ? episodeLabel(game) : 'Movie') }}</span>
+            <span>{{ isGamesMode ? platformLabel(game.platforms) : mediaTypeLabel(game) }}</span>
           </div>
           <h3>{{ game.name }}</h3>
           <p>{{ game.genre || 'No genre' }} · {{ releaseLabel(game) }}</p>
@@ -213,7 +213,7 @@
             <div>
               <span class="eyebrow">{{ isEditingSelectedGame() ? 'Edit my ' + mediaMode.singular : 'Add to mine' }}</span>
               <h2>{{ game.name }}</h2>
-              <p>{{ isGamesMode ? platformLabel(game.platforms) : (isAnimesMode ? episodeLabel(game) : 'Movie') }} · {{ durationLabel(game) }}</p>
+              <p>{{ isGamesMode ? platformLabel(game.platforms) : mediaTypeLabel(game) }} · {{ durationLabel(game) }}</p>
             </div>
           </div>
         </section>
@@ -260,7 +260,7 @@
                 name="timeSpend" />
             </label>
 
-            <label class="form-field" *ngIf="isAnimesMode">
+            <label class="form-field" *ngIf="isEpisodeMode">
               <span>Current episode</span>
               <input
                 type="number"

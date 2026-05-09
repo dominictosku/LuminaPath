@@ -264,7 +264,7 @@ export class MediaPage implements OnInit, OnDestroy {
       rating: this.numberOrNull(this.addGameForm.rating),
       startDate: this.addGameForm.startDate || null,
       endDate: this.addGameForm.endDate || null,
-      currentEpisode: this.mediaMode.id === 'animes' ? this.numberOrNull(this.addGameForm.currentEpisode) : null,
+      currentEpisode: this.isEpisodeMode ? this.numberOrNull(this.addGameForm.currentEpisode) : null,
     };
 
     const existingMyGame = this.libraryEntry(game);
@@ -326,6 +326,14 @@ export class MediaPage implements OnInit, OnDestroy {
     return this.mediaMode.id === 'animes';
   }
 
+  get isSeriesMode(): boolean {
+    return this.mediaMode.id === 'series';
+  }
+
+  get isEpisodeMode(): boolean {
+    return this.isAnimesMode || this.isSeriesMode;
+  }
+
   get statusOptions() {
     return this.isGamesMode ? this.gameStatusOptions : this.watchStatusOptions;
   }
@@ -337,6 +345,10 @@ export class MediaPage implements OnInit, OnDestroy {
 
     if (this.mediaMode.id === 'movies') {
       return 'Plan the next movie night.';
+    }
+
+    if (this.mediaMode.id === 'series') {
+      return 'Keep every episode on track.';
     }
 
     return 'Find what to play next.';
@@ -431,13 +443,21 @@ export class MediaPage implements OnInit, OnDestroy {
   }
 
   episodeLabel(game: MediaItem): string {
-    if (!this.isAnimesMode) {
+    if (!this.isEpisodeMode) {
       return '';
     }
 
     const currentEpisode = Number(this.libraryEntry(game)?.currentEpisode) || 0;
     const episodeCount = Number(game.episodeCount) || 0;
     return episodeCount > 0 ? `Episode ${currentEpisode}/${episodeCount}` : `Episode ${currentEpisode}`;
+  }
+
+  mediaTypeLabel(game: MediaItem): string {
+    if (this.isEpisodeMode) {
+      return this.episodeLabel(game);
+    }
+
+    return this.capitalize(game.kind.slice(0, -1) || this.mediaMode.singular);
   }
 
   hasLibraryEntry(game: MediaItem): boolean {

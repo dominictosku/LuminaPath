@@ -1,6 +1,6 @@
 import { MediaFile } from './mediaFile.model';
 
-export type MediaKind = 'games' | 'animes' | 'movies';
+export type MediaKind = 'games' | 'animes' | 'movies' | 'series';
 
 export interface UserMediaEntry {
   id: number;
@@ -25,6 +25,7 @@ export interface MediaItem {
   libraryEntry: UserMediaEntry | null;
   platforms?: number | null;
   playtime?: number | null;
+  expectedWatchTimePerEpisodeMinutes?: number | null;
   expectedWatchTimeMinutes?: number | null;
   episodeCount?: number | null;
 }

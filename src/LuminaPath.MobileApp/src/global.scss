@@ -79,6 +79,19 @@ body.theme-movies {
   --app-chrome-accent: #34d399;
 }
 
+body.theme-series {
+  --app-theme-accent: #facc15;
+  --app-theme-accent-2: #fde047;
+  --app-theme-accent-soft: rgba(250, 204, 21, 0.16);
+  --app-theme-accent-border: rgba(250, 204, 21, 0.34);
+  --app-theme-hero-start: rgba(42, 37, 16, 0.94);
+  --app-theme-hero-end: rgba(161, 98, 7, 0.76);
+  --app-chrome-bg: rgba(38, 33, 15, 0.86);
+  --app-chrome-bg-strong: rgba(54, 45, 18, 0.94);
+  --app-chrome-border: rgba(253, 224, 71, 0.24);
+  --app-chrome-accent: #facc15;
+}
+
 ion-header:not(.app-header) {
   background: transparent;
   box-shadow: none;

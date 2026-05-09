@@ -18,6 +18,7 @@ import {
   sparklesOutline,
   peopleOutline,
   timeOutline,
+  tvOutline,
 } from 'ionicons/icons';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
@@ -70,6 +71,7 @@ export class NavBarComponent implements OnInit, OnDestroy {
       sparklesOutline,
       timeOutline,
       peopleOutline,
+      tvOutline,
     });
   }
 

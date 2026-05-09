@@ -1,0 +1,73 @@
+<ion-header class="details-header" [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" class="back-button" aria-label="Go back" (click)="goBack()">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>{{ series?.name || 'Series details' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="details-shell">
+  <section class="details-state" *ngIf="isLoading">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading series details...</p>
+  </section>
+
+  <section class="details-state details-state--error" *ngIf="!isLoading && errorMessage">
+    <ion-icon name="tv-outline"></ion-icon>
+    <h2>Something went wrong</h2>
+    <p>{{ errorMessage }}</p>
+    <ion-button shape="round" (click)="goBack()">Back</ion-button>
+  </section>
+
+  <main class="details-page mt-8" *ngIf="!isLoading && !errorMessage && series">
+    <section class="hero-card">
+      <div class="cover-wrap">
+        <img [src]="imageUrl()" [alt]="series.name" class="cover" />
+        <ion-badge class="library-badge" [class.library-badge--owned]="isInLibrary">
+          <ion-icon name="library-outline"></ion-icon>
+          {{ libraryStatusLabel }}
+        </ion-badge>
+      </div>
+
+      <div class="hero-copy">
+        <span class="eyebrow">Series details</span>
+        <h1>{{ series.name }}</h1>
+        <p class="description" *ngIf="series.description">{{ series.description }}</p>
+
+        <div class="meta-grid">
+          <div class="meta-item">
+            <span>Status</span>
+            <strong>{{ statusLabel }}</strong>
+          </div>
+          <div class="meta-item">
+            <span>Episodes</span>
+            <strong>{{ episodeLabel }}</strong>
+          </div>
+          <div class="meta-item">
+            <span>Release</span>
+            <strong>{{ releaseLabel }}</strong>
+          </div>
+          <div class="meta-item">
+            <span>Watch time</span>
+            <strong>{{ watchTimeLabel }}</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="library-card" [class.library-card--owned]="isInLibrary">
+      <div>
+        <span class="eyebrow">
+          <ion-icon name="time-outline"></ion-icon>
+          {{ episodeTimeLabel }}
+        </span>
+        <h2>{{ isInLibrary ? 'Episode progress' : 'Add this series to track progress' }}</h2>
+        <p>{{ isInLibrary ? episodeLabel + ' watched' : 'Your episode and watch time tracking will show up here.' }}</p>
+      </div>
+      <ion-badge>{{ progress }}%</ion-badge>
+    </section>
+  </main>
+</ion-content>

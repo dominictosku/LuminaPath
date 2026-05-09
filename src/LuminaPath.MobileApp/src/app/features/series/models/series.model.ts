@@ -1,7 +1,7 @@
 import { type IBasicInfo } from 'src/app/core/interfaces/iBasicInfo';
 import { MediaFile } from '../../media/models/mediaFile.model';
 
-export class Anime implements IBasicInfo {
+export class Series implements IBasicInfo {
   id = 0;
   name = '';
   description = '';
@@ -10,23 +10,23 @@ export class Anime implements IBasicInfo {
   expectedWatchTimePerEpisodeMinutes: number | null = null;
   expectedWatchTimeMinutes: number | null = null;
   episodeCount: number | null = null;
-  myAnimes: MyAnime | null = null;
+  mySeries: MySeries | null = null;
   image: MediaFile | null = null;
 }
 
-export class MyAnime implements IBasicInfo {
+export class MySeries implements IBasicInfo {
   id = 0;
   rating: number | null = null;
   startDate: Date | string | null = null;
   endDate: Date | string | null = null;
   status = 1;
   timeSpend: number | null = null;
-  animeId: number;
-  anime: Anime | null = null;
+  seriesId: number;
+  series: Series | null = null;
   currentWatchTimeMinutes: number | null = null;
   currentEpisode: number | null = null;
 
-  constructor(animeId = 0) {
-    this.animeId = animeId;
+  constructor(seriesId = 0) {
+    this.seriesId = seriesId;
   }
 }

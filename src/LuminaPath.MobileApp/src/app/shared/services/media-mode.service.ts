@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
-export type MediaMode = 'games' | 'animes' | 'movies';
+export type MediaMode = 'games' | 'animes' | 'movies' | 'series';
 
 export type MediaModeOption = {
   id: MediaMode;
@@ -9,7 +9,7 @@ export type MediaModeOption = {
   singular: string;
   catalogEndpoint: string;
   libraryEndpoint: string;
-  libraryIdKey: 'gameId' | 'animeId' | 'movieId';
+  libraryIdKey: 'gameId' | 'animeId' | 'movieId' | 'seriesId';
   themeClass: string;
   icon: string;
 };
@@ -46,6 +46,16 @@ export const MEDIA_MODE_OPTIONS: MediaModeOption[] = [
     libraryIdKey: 'movieId',
     themeClass: 'theme-movies',
     icon: 'film-outline',
+  },
+  {
+    id: 'series',
+    label: 'Series',
+    singular: 'series',
+    catalogEndpoint: 'series',
+    libraryEndpoint: 'myseries',
+    libraryIdKey: 'seriesId',
+    themeClass: 'theme-series',
+    icon: 'tv-outline',
   },
 ];
 
