@@ -257,6 +257,11 @@ export class FriendsPage implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
+    const element = event.target as HTMLElement | null;
+    if (element?.closest('ion-button, button, a, input, textarea')) {
+      return;
+    }
+
     const target = event.currentTarget as HTMLElement;
     target.setPointerCapture(event.pointerId);
     this.dragStart = {

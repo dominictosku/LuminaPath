@@ -211,7 +211,12 @@
         </span>
       </div>
 
-      <ion-button fill="clear" class="icon-action" aria-label="Close chat" (click)="closeChat()">
+      <ion-button
+        fill="clear"
+        class="icon-action"
+        aria-label="Close chat"
+        (pointerdown)="$event.stopPropagation()"
+        (click)="$event.stopPropagation(); closeChat()">
         <ion-icon slot="icon-only" name="close-outline"></ion-icon>
       </ion-button>
     </header>
