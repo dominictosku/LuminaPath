@@ -61,6 +61,10 @@ namespace LuminaPath.Infrastructure
         public DbSet<UserDocument> UserDocuments { get; set; }
         public DbSet<Game> Games { get; set; }
         public DbSet<MyGame> MyGames { get; set; }
+        public DbSet<Anime> Animes { get; set; }
+        public DbSet<MyAnime> MyAnimes { get; set; }
+        public DbSet<Movie> Movies { get; set; }
+        public DbSet<MyMovie> MyMovies { get; set; }
         public DbSet<Quest> Quests { get; set; }
         public DbSet<QuestProfile> QuestProfiles { get; set; }
         public DbSet<QuestSkill> QuestSkills { get; set; }

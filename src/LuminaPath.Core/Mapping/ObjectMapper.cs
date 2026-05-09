@@ -36,11 +36,23 @@ namespace LuminaPath.Core.Mapping
                 MyGameDto dto when destinationType == typeof(MyGame) => MapMyGame(dto),
                 MyGame entity when destinationType == typeof(MyGame) => MapMyGame(entity),
                 MyGame entity when destinationType == typeof(MyGameDto) => MapMyGameDto(entity),
+                MyAnimeDto dto when destinationType == typeof(MyAnime) => MapMyAnime(dto),
+                MyAnime entity when destinationType == typeof(MyAnimeDto) => MapMyAnimeDto(entity),
+                MyMovieDto dto when destinationType == typeof(MyMovie) => MapMyMovie(dto),
+                MyMovie entity when destinationType == typeof(MyMovieDto) => MapMyMovieDto(entity),
                 GamesNoIncludeDto dto when destinationType == typeof(Game) => MapGame(dto),
                 GamesDto dto when destinationType == typeof(Game) => MapGame(dto),
                 Game entity when destinationType == typeof(GamesNoIncludeDto) => MapGamesNoIncludeDto(entity),
                 Game entity when destinationType == typeof(GamesDto) => MapGamesDto(entity),
                 Game entity when typeof(Game).IsAssignableFrom(destinationType) => MapGameToDestination(entity, destinationType),
+                AnimesNoIncludeDto dto when destinationType == typeof(Anime) => MapAnime(dto),
+                AnimesDto dto when destinationType == typeof(Anime) => MapAnime(dto),
+                Anime entity when destinationType == typeof(AnimesNoIncludeDto) => MapAnimesNoIncludeDto(entity),
+                Anime entity when destinationType == typeof(AnimesDto) => MapAnimesDto(entity),
+                MoviesNoIncludeDto dto when destinationType == typeof(Movie) => MapMovie(dto),
+                MoviesDto dto when destinationType == typeof(Movie) => MapMovie(dto),
+                Movie entity when destinationType == typeof(MoviesNoIncludeDto) => MapMoviesNoIncludeDto(entity),
+                Movie entity when destinationType == typeof(MoviesDto) => MapMoviesDto(entity),
                 _ when destinationType.IsAssignableFrom(source.GetType()) => source,
                 _ => CopyMatchingProperties(source, CreateInstance(destinationType))
             };
@@ -224,6 +236,196 @@ namespace LuminaPath.Core.Mapping
                 GameId = source.GameId,
                 Game = source.Game == null ? null : Map<GamesNoIncludeDto>(source.Game),
                 MyGameInfo = MapMyGameInfo(source.MyGameInfo) ?? new()
+            };
+        }
+
+        private static Anime MapAnime(AnimesNoIncludeDto source)
+        {
+            return new Anime
+            {
+                Id = source.Id,
+                Name = source.Name,
+                Description = source.Description,
+                Genres = SplitGenres(source.Genre),
+                ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
+                EpisodeCount = source.EpisodeCount,
+                Source = source.Source,
+                Image = MapDocument<MediaDocument>(source.Image)
+            };
+        }
+
+        private Anime MapAnime(AnimesDto source)
+        {
+            return new Anime
+            {
+                Id = source.Id,
+                Name = source.Name,
+                Description = source.Description,
+                Genres = SplitGenres(source.Genre),
+                ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
+                EpisodeCount = source.EpisodeCount,
+                Image = MapDocument<MediaDocument>(source.Image),
+                MyAnimes = source.MyAnimes == null ? null : [Map<MyAnime>(source.MyAnimes)]
+            };
+        }
+
+        private AnimesNoIncludeDto MapAnimesNoIncludeDto(Anime source)
+        {
+            return new AnimesNoIncludeDto
+            {
+                Id = source.Id,
+                Name = source.Name,
+                Description = source.Description,
+                Genre = JoinGenres(source.Genres),
+                ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
+                EpisodeCount = source.EpisodeCount,
+                Source = source.Source,
+                Image = MapDocument<Document>(source.Image)
+            };
+        }
+
+        private AnimesDto MapAnimesDto(Anime source)
+        {
+            return new AnimesDto
+            {
+                Id = source.Id,
+                Name = source.Name,
+                Description = source.Description,
+                Genre = JoinGenres(source.Genres),
+                ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
+                EpisodeCount = source.EpisodeCount,
+                Image = MapDocument<Document>(source.Image),
+                MyAnimes = source.MyAnimes == null ? null : Map<MyAnimeDto>(source.MyAnimes.FirstOrDefault())
+            };
+        }
+
+        private MyAnime MapMyAnime(MyAnimeDto source)
+        {
+            return new MyAnime
+            {
+                Id = source.Id,
+                Rating = source.Rating,
+                StartDate = source.StartDate,
+                EndDate = source.EndDate,
+                Status = source.Status,
+                TimeSpend = source.TimeSpend,
+                AnimeId = source.AnimeId,
+                Anime = source.Anime == null ? null : Map<Anime>(source.Anime),
+                CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes,
+                CurrentEpisode = source.CurrentEpisode
+            };
+        }
+
+        private MyAnimeDto MapMyAnimeDto(MyAnime source)
+        {
+            return new MyAnimeDto
+            {
+                Id = source.Id,
+                Rating = source.Rating.HasValue ? Convert.ToByte(source.Rating.Value) : null,
+                StartDate = source.StartDate,
+                EndDate = source.EndDate,
+                Status = source.Status,
+                TimeSpend = source.TimeSpend.HasValue ? Convert.ToInt32(source.TimeSpend.Value) : null,
+                AnimeId = source.AnimeId,
+                Anime = source.Anime == null ? null : Map<AnimesNoIncludeDto>(source.Anime),
+                CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes,
+                CurrentEpisode = source.CurrentEpisode
+            };
+        }
+
+        private static Movie MapMovie(MoviesNoIncludeDto source)
+        {
+            return new Movie
+            {
+                Id = source.Id,
+                Name = source.Name,
+                Description = source.Description,
+                Genres = SplitGenres(source.Genre),
+                ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
+                Source = source.Source,
+                Image = MapDocument<MediaDocument>(source.Image)
+            };
+        }
+
+        private Movie MapMovie(MoviesDto source)
+        {
+            return new Movie
+            {
+                Id = source.Id,
+                Name = source.Name,
+                Description = source.Description,
+                Genres = SplitGenres(source.Genre),
+                ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
+                Image = MapDocument<MediaDocument>(source.Image),
+                MyMovies = source.MyMovies == null ? null : [Map<MyMovie>(source.MyMovies)]
+            };
+        }
+
+        private MoviesNoIncludeDto MapMoviesNoIncludeDto(Movie source)
+        {
+            return new MoviesNoIncludeDto
+            {
+                Id = source.Id,
+                Name = source.Name,
+                Description = source.Description,
+                Genre = JoinGenres(source.Genres),
+                ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
+                Source = source.Source,
+                Image = MapDocument<Document>(source.Image)
+            };
+        }
+
+        private MoviesDto MapMoviesDto(Movie source)
+        {
+            return new MoviesDto
+            {
+                Id = source.Id,
+                Name = source.Name,
+                Description = source.Description,
+                Genre = JoinGenres(source.Genres),
+                ReleaseDate = source.ReleaseDate,
+                ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
+                Image = MapDocument<Document>(source.Image),
+                MyMovies = source.MyMovies == null ? null : Map<MyMovieDto>(source.MyMovies.FirstOrDefault())
+            };
+        }
+
+        private MyMovie MapMyMovie(MyMovieDto source)
+        {
+            return new MyMovie
+            {
+                Id = source.Id,
+                Rating = source.Rating,
+                StartDate = source.StartDate,
+                EndDate = source.EndDate,
+                Status = source.Status,
+                TimeSpend = source.TimeSpend,
+                MovieId = source.MovieId,
+                Movie = source.Movie == null ? null : Map<Movie>(source.Movie),
+                CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes
+            };
+        }
+
+        private MyMovieDto MapMyMovieDto(MyMovie source)
+        {
+            return new MyMovieDto
+            {
+                Id = source.Id,
+                Rating = source.Rating.HasValue ? Convert.ToByte(source.Rating.Value) : null,
+                StartDate = source.StartDate,
+                EndDate = source.EndDate,
+                Status = source.Status,
+                TimeSpend = source.TimeSpend.HasValue ? Convert.ToInt32(source.TimeSpend.Value) : null,
+                MovieId = source.MovieId,
+                Movie = source.Movie == null ? null : Map<MoviesNoIncludeDto>(source.Movie),
+                CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes
             };
         }
 

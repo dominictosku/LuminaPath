@@ -8,11 +8,15 @@ import { MediaModeService } from 'src/app/shared/services/media-mode.service';
 type AddMyGameRequest = {
   id: number;
   gameId: number;
+  animeId?: number;
+  movieId?: number;
   status: number;
   timeSpend: number | null;
   rating?: number | null;
   startDate?: string | null;
   endDate?: string | null;
+  currentWatchTimeMinutes?: number | null;
+  currentEpisode?: number | null;
 };
 
 @Injectable({
@@ -56,5 +60,9 @@ export class MyGameService extends ApiService<MyGame> {
   private assignMediaId(request: AddMyGameRequest, mediaId: number): void {
     const mediaKey = this.mediaMode.current.libraryIdKey;
     (request as AddMyGameRequest & Record<string, number>)[mediaKey] = mediaId;
+
+    if (this.mediaMode.current.id !== 'games') {
+      request.currentWatchTimeMinutes = request.timeSpend == null ? null : Math.round(Number(request.timeSpend) * 60);
+    }
   }
 }

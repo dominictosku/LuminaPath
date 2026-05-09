@@ -7,6 +7,10 @@ namespace LuminaPath.Core.Interfaces
     {
         DbSet<Game> Games { get; set; }
         DbSet<MyGame> MyGames { get; set; }
+        DbSet<Anime> Animes { get; set; }
+        DbSet<MyAnime> MyAnimes { get; set; }
+        DbSet<Movie> Movies { get; set; }
+        DbSet<MyMovie> MyMovies { get; set; }
         DbSet<Quest> Quests { get; set; }
         DbSet<QuestProfile> QuestProfiles { get; set; }
         DbSet<QuestSkill> QuestSkills { get; set; }

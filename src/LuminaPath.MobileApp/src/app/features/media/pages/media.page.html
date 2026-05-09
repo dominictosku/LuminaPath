@@ -125,7 +125,7 @@
         <div class="game-card__content" (click)="openDetails(game)">
           <div class="badge-row">
             <ion-badge>{{ statusLabel(game) }}</ion-badge>
-            <span>{{ platformLabel(game.platforms) }}</span>
+            <span>{{ isGamesMode ? platformLabel(game.platforms) : (isAnimesMode ? episodeLabel(game) : 'Movie') }}</span>
           </div>
           <h3>{{ game.name }}</h3>
           <p>{{ game.description || game.genre || 'No description yet.' }}</p>
@@ -137,7 +137,7 @@
             </span>
             <span>
               <ion-icon name="time-outline"></ion-icon>
-              {{ game.playtime || 0 }}h
+              {{ durationLabel(game) }}
             </span>
           </div>
 
@@ -170,13 +170,13 @@
         <div class="list-row__main" (click)="openDetails(game)">
           <div class="badge-row">
             <ion-badge>{{ statusLabel(game) }}</ion-badge>
-            <span>{{ platformLabel(game.platforms) }}</span>
+            <span>{{ isGamesMode ? platformLabel(game.platforms) : (isAnimesMode ? episodeLabel(game) : 'Movie') }}</span>
           </div>
           <h3>{{ game.name }}</h3>
           <p>{{ game.genre || 'No genre' }} · {{ releaseLabel(game) }}</p>
         </div>
         <div class="list-row__stats">
-          <strong>{{ game.playtime || 0 }}h</strong>
+          <strong>{{ durationLabel(game) }}</strong>
           <span>{{ game.myGames ? remainingLabel(game) : 'Catalog' }}</span>
         </div>
       </article>
@@ -223,13 +223,23 @@
           </label>
 
           <label class="form-field">
-            <span>Played time</span>
+            <span>{{ isGamesMode ? 'Played time' : 'Watched hours' }}</span>
             <input
               type="number"
               min="0"
               inputmode="decimal"
               [(ngModel)]="addGameForm.timeSpend"
               name="timeSpend" />
+          </label>
+
+          <label class="form-field" *ngIf="isAnimesMode">
+            <span>Current episode</span>
+            <input
+              type="number"
+              min="0"
+              inputmode="numeric"
+              [(ngModel)]="addGameForm.currentEpisode"
+              name="currentEpisode" />
           </label>
 
           <label class="form-field">
