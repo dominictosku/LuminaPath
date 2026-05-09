@@ -7,22 +7,68 @@
 			</NavLink>
 		</div>
 
-		<div class="nav-item px-3">
-			<NavLink class="nav-link" href="Media/Games">
-				<MudIcon Icon="@Icons.Material.Filled.Games" Title="Games" />
-				<span class="bi" aria-hidden="true"></span> Games
-			</NavLink>
-		</div>
+		<MudNavGroup Class="nav-item px-3" Title="Games" Icon="@Icons.Material.Filled.Games" Expanded="true">
+			<div class="nav-item px-3">
+				<NavLink class="nav-link" href="Media/Games">
+					<MudIcon Icon="@Icons.Material.Filled.Games" Title="Games" />
+					<span class="bi" aria-hidden="true"></span> Games
+				</NavLink>
+			</div>
+
+			<AuthorizeView>
+				<Authorized>
+					<div class="nav-item px-3">
+						<NavLink class="nav-link" href="Media/MyGames">
+							<MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Title="MyGames" />
+							<span class="bi" aria-hidden="true"></span> My Games
+						</NavLink>
+					</div>
+				</Authorized>
+			</AuthorizeView>
+		</MudNavGroup>
+
+		<MudNavGroup Class="nav-item px-3" Title="Animes" Icon="@Icons.Material.Filled.AutoStories">
+			<div class="nav-item px-3">
+				<NavLink class="nav-link" href="Media/Animes">
+					<MudIcon Icon="@Icons.Material.Filled.AutoStories" Title="Animes" />
+					<span class="bi" aria-hidden="true"></span> Animes
+				</NavLink>
+			</div>
+
+			<AuthorizeView>
+				<Authorized>
+					<div class="nav-item px-3">
+						<NavLink class="nav-link" href="Media/MyAnimes">
+							<MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Title="MyAnimes" />
+							<span class="bi" aria-hidden="true"></span> My Animes
+						</NavLink>
+					</div>
+				</Authorized>
+			</AuthorizeView>
+		</MudNavGroup>
+
+		<MudNavGroup Class="nav-item px-3" Title="Movies" Icon="@Icons.Material.Filled.Movie">
+			<div class="nav-item px-3">
+				<NavLink class="nav-link" href="Media/Movies">
+					<MudIcon Icon="@Icons.Material.Filled.Movie" Title="Movies" />
+					<span class="bi" aria-hidden="true"></span> Movies
+				</NavLink>
+			</div>
+
+			<AuthorizeView>
+				<Authorized>
+					<div class="nav-item px-3">
+						<NavLink class="nav-link" href="Media/MyMovies">
+							<MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Title="MyMovies" />
+							<span class="bi" aria-hidden="true"></span> My Movies
+						</NavLink>
+					</div>
+				</Authorized>
+			</AuthorizeView>
+		</MudNavGroup>
 
 		<AuthorizeView>
 			<Authorized>
-				<div class="nav-item px-3">
-					<NavLink class="nav-link" href="Media/MyGames">
-						<MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Title="MyGames" />
-						<span class="bi" aria-hidden="true"></span> My Games
-					</NavLink>
-				</div>
-
 				<div class="nav-item px-3">
 					<NavLink class="nav-link" href="statistics">
 						<MudIcon Icon="@Icons.Material.Filled.QueryStats" Title="Statistics" />

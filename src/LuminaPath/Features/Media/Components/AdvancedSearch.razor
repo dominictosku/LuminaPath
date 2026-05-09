@@ -82,12 +82,24 @@
                 @if (ShowPersonalFilters)
                 {
                     <MudItem xs="12" sm="6" md="3">
-                        <MudSelect T="GameStatus?" @bind-Value="Model.Status" Label="Status" Clearable="true" Variant="Variant.Outlined">
-                            @foreach (var status in Enum.GetValues<GameStatus>())
-                            {
-                                <MudSelectItem T="GameStatus?" Value="@((GameStatus?)status)">@status</MudSelectItem>
-                            }
-                        </MudSelect>
+                        @if (UseMediaStatus)
+                        {
+                            <MudSelect T="MediaStatus?" @bind-Value="Model.MediaStatus" Label="Status" Clearable="true" Variant="Variant.Outlined">
+                                @foreach (var status in Enum.GetValues<MediaStatus>())
+                                {
+                                    <MudSelectItem T="MediaStatus?" Value="@((MediaStatus?)status)">@status</MudSelectItem>
+                                }
+                            </MudSelect>
+                        }
+                        else
+                        {
+                            <MudSelect T="GameStatus?" @bind-Value="Model.Status" Label="Status" Clearable="true" Variant="Variant.Outlined">
+                                @foreach (var status in Enum.GetValues<GameStatus>())
+                                {
+                                    <MudSelectItem T="GameStatus?" Value="@((GameStatus?)status)">@status</MudSelectItem>
+                                }
+                            </MudSelect>
+                        }
                     </MudItem>
 
                     <MudItem xs="12" sm="6" md="3">
@@ -164,6 +176,9 @@
     [Parameter]
     public bool ShowPersonalFilters { get; set; }
 
+    [Parameter]
+    public bool UseMediaStatus { get; set; }
+
     private bool _advancedSearchExpanded;
 
     private string ActiveFilterText => ActiveFilterCount == 0
@@ -176,6 +191,7 @@
         Count(Model.To) +
         Count(Model.Platform) +
         Count(Model.Status) +
+        Count(Model.MediaStatus) +
         Count(Model.Genre) +
         Count(Model.Source) +
         Count(Model.MinPlaytime) +
@@ -197,6 +213,7 @@
         Model.To = null;
         Model.Platform = null;
         Model.Status = null;
+        Model.MediaStatus = null;
         Model.Genre = null;
         Model.Source = null;
         Model.MinPlaytime = null;

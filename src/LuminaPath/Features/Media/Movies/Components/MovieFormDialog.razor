@@ -1,0 +1,444 @@
+@using LuminaPath.Core.Enums
+@using LuminaPath.Core.Models
+@using LuminaPath.Features.Media.Movies.ViewModel
+@using LuminaPath.Infrastructure.Services.ModelServices
+@using LuminaPath.Pages.Media.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Security.Claims
+@using Color = MudBlazor.Color
+@inherits MediaFormDialog<MovieViewModel, MediaDocument>
+@inject MovieService MovieService
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" Model="Model">
+            <MudGrid Spacing="3">
+                <MudItem xs="12">
+                    <div class="media-preview">
+                        <div class="cover-preview" style="background-image: url('@CoverUrl');">
+                            <div class="cover-actions">
+                                @if (Model.Image is not null)
+                                {
+                                    <MudIconButton OnClick="@PreviewImage" Icon="@Icons.Material.Filled.Image" aria-label="preview image" Color="Color.Info" Size="Size.Small" />
+                                    <MudIconButton OnClick="@(async () => await DeleteImage())" Icon="@Icons.Material.Filled.Delete" aria-label="delete image" Color="Color.Error" Size="Size.Small" />
+                                }
+                            </div>
+                        </div>
+                        <div class="preview-copy">
+                            <MudText Typo="Typo.subtitle1">@PreviewTitle</MudText>
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary">@PreviewDetail</MudText>
+                            <div class="preview-meta">
+                                <span>@WatchTimeText</span>
+                                <span>@ReleaseDateText</span>
+                            </div>
+                        </div>
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <div class="form-section">
+                        <div class="section-heading">
+                            <MudIcon Icon="@Icons.Material.Filled.Movie" Color="Color.Primary" />
+                            <div>
+                                <MudText Typo="Typo.subtitle1">Movie Details</MudText>
+                                <MudText Typo="Typo.body2" Class="mud-text-secondary">Core catalog information.</MudText>
+                            </div>
+                        </div>
+
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12">
+                                <MudAutocomplete Label="Title"
+                                                 @bind-Value="Model.Name"
+                                                 Required="true"
+                                                 SearchFunc="@SearchAsync"
+                                                 Immediate="true"
+                                                 CoerceValue="true"
+                                                 ResetValueOnEmptyText="true"
+                                                 Variant="Variant.Outlined"
+                                                 AdornmentIcon="@Icons.Material.Filled.Search"
+                                                 AdornmentColor="Color.Primary"
+                                                 Validation="@(new Func<string, IEnumerable<string>>(Validate))"
+                                                 For="@(() => Model.Name)" />
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudTextField Label="Description" Lines="4" Variant="Variant.Outlined" For="@(() => Model.Description)" @bind-Value="Model.Description" />
+                            </MudItem>
+
+                            <MudItem xs="12" sm="6">
+                                <MudTextField Label="Source" @bind-Value="Model.Source" Variant="Variant.Outlined" For="@(() => Model.Source)" />
+                            </MudItem>
+
+                            <MudItem xs="12" sm="6">
+                                <MudDatePicker Label="Release Date" @bind-Date="Model.ReleaseDate" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" Clearable="true" />
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudNumericField T="int?" Label="Expected watch time" @bind-Value="Model.ExpectedWatchTimeMinutes" Min="@((int?)0)" Immediate="true" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="min" />
+                            </MudItem>
+                        </MudGrid>
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <div class="form-section">
+                        <div class="section-heading">
+                            <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Color="Color.Primary" />
+                            <div>
+                                <MudText Typo="Typo.subtitle1">Genres</MudText>
+                                <MudText Typo="Typo.body2" Class="mud-text-secondary">Add tags to make browsing easier.</MudText>
+                            </div>
+                        </div>
+
+                        <MudAutocomplete T="string" Label="Add genre" @bind-Value="newGenre" SearchFunc="SearchGenres" CoerceText="true" ResetValueOnEmptyText="true" Variant="Variant.Outlined" AdornmentIcon="@Icons.Material.Filled.Add" OnBlur="AddGenre" />
+
+                        <div class="genre-list">
+                            @if (Model.Genres.Count == 0)
+                            {
+                                <span class="empty-helper">No genres added yet</span>
+                            }
+                            else
+                            {
+                                @foreach (var genre in Model.Genres)
+                                {
+                                    <MudChip T="string" OnClose="@(() => RemoveGenre(genre))" Color="Color.Primary" Variant="Variant.Filled">@genre</MudChip>
+                                }
+                            }
+                        </div>
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <div class="form-section">
+                        <div class="section-heading split-heading">
+                            <div class="section-heading">
+                                <MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Color="Color.Primary" />
+                                <div>
+                                    <MudText Typo="Typo.subtitle1">Personal Entry</MudText>
+                                    <MudText Typo="Typo.body2" Class="mud-text-secondary">Create a matching MyMovie entry while saving this movie.</MudText>
+                                </div>
+                            </div>
+                            <MudSwitch @bind-Value="_createMyMovie" Color="Color.Primary" Label="Create" />
+                        </div>
+
+                        @if (_createMyMovie)
+                        {
+                            <MudGrid Spacing="2">
+                                <MudItem xs="12" sm="6">
+                                    <MudDatePicker Label="Started On" @bind-Date="_myMovie.StartDate" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" Clearable="true" />
+                                </MudItem>
+
+                                <MudItem xs="12" sm="6">
+                                    <MudDatePicker Label="Finished On" @bind-Date="_myMovie.EndDate" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" Clearable="true" />
+                                </MudItem>
+
+                                <MudItem xs="12" sm="3">
+                                    <MudSelect T="MediaStatus" Label="Status" @bind-Value="_myMovie.Status" Variant="Variant.Outlined">
+                                        @foreach (var status in Enum.GetValues<MediaStatus>())
+                                        {
+                                            <MudSelectItem Value="@status">@status</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </MudItem>
+
+                                <MudItem xs="12" sm="3">
+                                    <MudNumericField T="int" Label="Priority" @bind-Value="_myMovie.Priority" Min="1" Max="4" Variant="Variant.Outlined" />
+                                </MudItem>
+
+                                <MudItem xs="12" sm="3">
+                                    <MudNumericField T="short?" Label="Rating" @bind-Value="_myMovie.Rating" Min="@((short?)1)" Max="@((short?)10)" Variant="Variant.Outlined" />
+                                </MudItem>
+
+                                <MudItem xs="12" sm="3">
+                                    <MudNumericField T="double?" Label="Manual watch time" @bind-Value="_myMovie.TimeSpend" Min="@((double?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" />
+                                </MudItem>
+
+                                <MudItem xs="12">
+                                    <MudNumericField T="int?" Label="Current watch time" @bind-Value="_myMovie.CurrentWatchTimeMinutes" Min="@((int?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="min" />
+                                </MudItem>
+                            </MudGrid>
+                        }
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <div class="upload-row">
+                        <MudFileUpload T="IBrowserFile" FilesChanged="SubmitFile">
+                            <CustomContent Context="fileUpload">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CloudUpload" Disabled="_uploading" OnClick="@fileUpload.OpenFilePickerAsync">
+                                    Upload Cover
+                                </MudButton>
+                            </CustomContent>
+                        </MudFileUpload>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">Use a cover image to make the library easier to scan.</MudText>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Submit" Disabled="@loading" Color="Color.Primary" Variant="Variant.Filled">
+            @if (loading)
+            {
+                <span class="spinner-border spinner-border-sm mr-1"></span>
+            }
+            Save
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+    private MudForm form = default!;
+    private readonly string _placeholderCover = "/Images/Placeholder.png";
+    private List<string> movies = new();
+    private bool _createMyMovie;
+    private MyMovie _myMovie = new() { StartDate = DateTime.Today, Status = MediaStatus.Planned, Priority = 1 };
+    private string? newGenre;
+
+    private string PreviewTitle => string.IsNullOrWhiteSpace(Model.Name) ? "Untitled movie" : Model.Name;
+    private string PreviewDetail => Model.Genres.Count > 0
+        ? string.Join(" / ", Model.Genres.Take(3))
+        : string.IsNullOrWhiteSpace(Model.Description) ? "Add details to shape this movie profile" : Model.Description;
+    private string CoverUrl => NormalizeUrl(Model.Image?.Url) ?? _placeholderCover;
+    private string WatchTimeText => Model.ExpectedWatchTimeMinutes is null ? "No estimate" : FormatMinutes(Model.ExpectedWatchTimeMinutes.Value);
+    private string ReleaseDateText => Model.ReleaseDate?.ToString("dd.MM.yyyy") ?? "No release date";
+
+    protected override void OnInitialized()
+    {
+        Model.Genres ??= [];
+
+        if (Model.MyMovies?.Any() == true)
+        {
+            _createMyMovie = true;
+            _myMovie = Model.MyMovies.First();
+        }
+
+        base.OnInitialized();
+    }
+
+    public override async Task Submit()
+    {
+        await form.ValidateAsync();
+
+        if (!form.IsValid)
+        {
+            return;
+        }
+
+        if (_createMyMovie)
+        {
+            Model.MyMovies ??= new List<MyMovie>();
+            Model.MyMovies.Clear();
+            _myMovie.Movie = Model;
+
+            var state = await AuthState;
+            var user = state.User;
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? user.FindFirst(c => c.Type.Contains("nameidentifier", StringComparison.OrdinalIgnoreCase))?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return;
+            }
+
+            _myMovie.LuminaUserId = userId;
+            NormalizeDates(_myMovie);
+            Model.MyMovies.Add(_myMovie);
+        }
+        else
+        {
+            Model.MyMovies?.Clear();
+        }
+
+        await base.Submit();
+    }
+
+    private Task<IEnumerable<string>> SearchGenres(string value, CancellationToken token)
+    {
+        var predefined = new List<string> { "Action", "Adventure", "Animation", "Comedy", "Drama", "Fantasy", "Horror", "Sci-Fi", "Thriller" };
+        return Task.FromResult(string.IsNullOrWhiteSpace(value)
+            ? predefined.AsEnumerable()
+            : predefined.Where(x => x.Contains(value, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private void AddGenre()
+    {
+        if (!string.IsNullOrWhiteSpace(newGenre) && !Model.Genres.Contains(newGenre))
+        {
+            Model.Genres.Add(newGenre);
+        }
+
+        newGenre = string.Empty;
+    }
+
+    private void RemoveGenre(string genre) => Model.Genres.Remove(genre);
+
+    private async Task<IEnumerable<string>> SearchAsync(string value, CancellationToken token)
+    {
+        var dropdownMovies = await MovieService.GetDropdownMovies(value);
+        movies = dropdownMovies.Select(x => x.Name).ToList();
+        return movies;
+    }
+
+    private IEnumerable<string> Validate(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            yield return "The Title is required";
+            yield break;
+        }
+
+        if (movies.Any(x => x.Equals(value, StringComparison.OrdinalIgnoreCase)))
+        {
+            yield return "Movie already exists";
+        }
+    }
+
+    private static void NormalizeDates(MyMovie myMovie)
+    {
+        if (myMovie.StartDate.HasValue)
+        {
+            myMovie.StartDate = DateTime.SpecifyKind(myMovie.StartDate.Value, DateTimeKind.Utc);
+        }
+        if (myMovie.EndDate.HasValue)
+        {
+            myMovie.EndDate = DateTime.SpecifyKind(myMovie.EndDate.Value, DateTimeKind.Utc);
+        }
+    }
+
+    private static string FormatMinutes(int minutes)
+    {
+        if (minutes < 60)
+        {
+            return $"{minutes} min";
+        }
+
+        var hours = minutes / 60;
+        var remaining = minutes % 60;
+        return remaining == 0 ? $"{hours}h" : $"{hours}h {remaining}m";
+    }
+
+    private static string? NormalizeUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        return url.StartsWith("http", StringComparison.OrdinalIgnoreCase) || url.StartsWith("/")
+            ? url
+            : $"/{url}";
+    }
+}
+
+<style>
+    .media-preview {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        gap: 16px;
+        align-items: stretch;
+        min-height: 136px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .03);
+    }
+
+    .cover-preview {
+        position: relative;
+        min-height: 120px;
+        border-radius: 6px;
+        background-color: #263346;
+        background-size: cover;
+        background-position: center;
+        overflow: hidden;
+    }
+
+    .cover-actions {
+        position: absolute;
+        inset: 6px 6px auto auto;
+        display: flex;
+        gap: 4px;
+        padding: 2px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, .48);
+    }
+
+    .preview-copy {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .preview-meta,
+    .genre-list,
+    .upload-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .preview-meta span {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(118, 228, 196, .12);
+        color: var(--mud-palette-text-primary);
+        font-size: .82rem;
+        font-weight: 700;
+    }
+
+    .form-section {
+        display: grid;
+        gap: 14px;
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .025);
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .split-heading {
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .genre-list {
+        min-height: 32px;
+    }
+
+    .empty-helper {
+        color: var(--mud-palette-text-secondary);
+        font-size: .88rem;
+    }
+
+    .upload-row {
+        align-items: center;
+        gap: 12px;
+    }
+
+    @@media (max-width: 720px) {
+        .media-preview {
+            grid-template-columns: 1fr;
+        }
+
+        .cover-preview {
+            min-height: 190px;
+        }
+
+        .split-heading {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+</style>

@@ -195,87 +195,123 @@
     [isOpen]="isAddDialogOpen"
     (didDismiss)="closeAddDialog()">
     <ng-template>
-      <form class="add-game-dialog" (ngSubmit)="submitAddGame()">
-        <header>
-          <div>
-            <span class="eyebrow">{{ isEditingSelectedGame() ? 'Edit my ' + mediaMode.singular : 'Add to mine' }}</span>
-            <h2>{{ selectedGame?.name }}</h2>
-          </div>
+      <form *ngIf="selectedGame as game" class="library-editor" (ngSubmit)="submitAddGame()" novalidate>
+        <section class="editor-cover" [style.background-image]="'url(' + imageFor(game) + ')'">
+          <div class="editor-cover__shade"></div>
           <ion-button
             type="button"
             fill="clear"
             class="dialog-icon-button"
             aria-label="Close"
-            [disabled]="selectedGame ? isAdding(selectedGame) : false"
+            [disabled]="isAdding(game)"
             (click)="closeAddDialog()">
             <ion-icon slot="icon-only" name="close-outline"></ion-icon>
           </ion-button>
-        </header>
 
-        <div class="dialog-grid">
-          <label class="form-field form-field--wide">
-            <span>Status</span>
-            <select [(ngModel)]="addGameForm.status" name="status">
-              <option *ngFor="let status of statusOptions" [ngValue]="status.value">
-                {{ status.label }}
-              </option>
-            </select>
-          </label>
+          <div class="editor-cover__content">
+            <img [src]="imageFor(game)" alt="" />
+            <div>
+              <span class="eyebrow">{{ isEditingSelectedGame() ? 'Edit my ' + mediaMode.singular : 'Add to mine' }}</span>
+              <h2>{{ game.name }}</h2>
+              <p>{{ isGamesMode ? platformLabel(game.platforms) : (isAnimesMode ? episodeLabel(game) : 'Movie') }} · {{ durationLabel(game) }}</p>
+            </div>
+          </div>
+        </section>
 
-          <label class="form-field">
-            <span>{{ isGamesMode ? 'Played time' : 'Watched hours' }}</span>
-            <input
-              type="number"
-              min="0"
-              inputmode="decimal"
-              [(ngModel)]="addGameForm.timeSpend"
-              name="timeSpend" />
-          </label>
+        <section class="editor-body">
+          <div class="editor-stats">
+            <article>
+              <span>Status</span>
+              <strong>{{ statusLabel(game) }}</strong>
+            </article>
+            <article>
+              <span>{{ isGamesMode ? 'Progress' : 'Watched' }}</span>
+              <strong>{{ progressOf(game) }}%</strong>
+            </article>
+            <article>
+              <span>Remaining</span>
+              <strong>{{ remainingLabel(game) }}</strong>
+            </article>
+          </div>
 
-          <label class="form-field" *ngIf="isAnimesMode">
-            <span>Current episode</span>
-            <input
-              type="number"
-              min="0"
-              inputmode="numeric"
-              [(ngModel)]="addGameForm.currentEpisode"
-              name="currentEpisode" />
-          </label>
+          <fieldset class="status-picker">
+            <legend>Status</legend>
+            <button
+              *ngFor="let status of statusOptions"
+              type="button"
+              class="status-option"
+              [class.status-option--active]="addGameForm.status === status.value"
+              [attr.aria-pressed]="addGameForm.status === status.value"
+              (click)="addGameForm.status = status.value">
+              {{ status.label }}
+            </button>
+          </fieldset>
 
-          <label class="form-field">
-            <span>Rating</span>
-            <input
-              type="number"
-              min="1"
-              max="10"
-              inputmode="numeric"
-              placeholder="1-10"
-              [(ngModel)]="addGameForm.rating"
-              name="rating" />
-          </label>
+          <div class="editor-grid">
+            <label class="form-field">
+              <span>{{ isGamesMode ? 'Played hours' : 'Watched hours' }}</span>
+              <input
+                type="number"
+                min="0"
+                inputmode="decimal"
+                [(ngModel)]="addGameForm.timeSpend"
+                name="timeSpend" />
+            </label>
 
-          <label class="form-field">
-            <span>Started</span>
-            <input type="date" [(ngModel)]="addGameForm.startDate" name="startDate" />
-          </label>
+            <label class="form-field" *ngIf="isAnimesMode">
+              <span>Current episode</span>
+              <input
+                type="number"
+                min="0"
+                inputmode="numeric"
+                [(ngModel)]="addGameForm.currentEpisode"
+                name="currentEpisode" />
+            </label>
 
-          <label class="form-field">
-            <span>Finished</span>
-            <input type="date" [(ngModel)]="addGameForm.endDate" name="endDate" />
-          </label>
-        </div>
+            <label class="form-field">
+              <span>Rating</span>
+              <div class="rating-field">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  step="1"
+                  [(ngModel)]="addGameForm.rating"
+                  name="ratingRange" />
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  inputmode="numeric"
+                  placeholder="--"
+                  [(ngModel)]="addGameForm.rating"
+                  name="rating" />
+              </div>
+            </label>
 
-        <footer>
+            <label class="form-field">
+              <span>Started</span>
+              <input type="date" [(ngModel)]="addGameForm.startDate" name="startDate" />
+            </label>
+
+            <label class="form-field">
+              <span>Finished</span>
+              <input type="date" [(ngModel)]="addGameForm.endDate" name="endDate" />
+            </label>
+          </div>
+        </section>
+
+        <footer class="editor-actions">
           <ion-button
             type="button"
             fill="clear"
-            [disabled]="selectedGame ? isAdding(selectedGame) : false"
+            [disabled]="isAdding(game)"
             (click)="closeAddDialog()">
             Cancel
           </ion-button>
-          <ion-button type="submit" [disabled]="selectedGame ? isAdding(selectedGame) : true">
-            <ion-icon slot="start" [name]="selectedGame && isAdding(selectedGame) ? 'hourglass-outline' : 'add-outline'"></ion-icon>
-            {{ selectedGame && isAdding(selectedGame) ? 'Saving...' : (isEditingSelectedGame() ? 'Save changes' : 'Add ' + mediaMode.singular) }}
+          <ion-button type="submit" [disabled]="isAdding(game)">
+            <ion-icon slot="start" [name]="isAdding(game) ? 'hourglass-outline' : (isEditingSelectedGame() ? 'checkmark-circle-outline' : 'add-outline')"></ion-icon>
+            {{ isAdding(game) ? 'Saving...' : (isEditingSelectedGame() ? 'Save changes' : 'Add ' + mediaMode.singular) }}
           </ion-button>
         </footer>
       </form>

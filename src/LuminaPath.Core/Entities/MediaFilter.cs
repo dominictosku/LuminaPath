@@ -9,6 +9,7 @@ namespace LuminaPath.Core.Entities
         public DateTime? To { get; set; }
         public Platforms? Platform { get; set; }
         public GameStatus? Status { get; set; }
+        public MediaStatus? MediaStatus { get; set; }
         public string? Genre { get; set; }
         public string? Source { get; set; }
         public string? Publisher { get; set; }

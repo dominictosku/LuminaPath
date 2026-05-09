@@ -1,0 +1,343 @@
+@page "/Media/MyMovies"
+@using LuminaPath.Core.Enums
+@using LuminaPath.Core.Models
+@using LuminaPath.Features.Media.Components
+@using LuminaPath.Features.Media.MyMovies.Components
+@using LuminaPath.Infrastructure.Services.ModelServices
+@using LuminaPath.Pages.Media
+@using LuminaPath.Pages.Media.Components
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inherits BaseGridActions<MyMovie, MyMovieFormDialog>
+@inject MovieService MovieService
+@inject MyMovieService ModelService
+
+<PageTitle>My Movies</PageTitle>
+
+<div class="media-page-header">
+    <div>
+        <p class="eyebrow">Personal Library</p>
+        <h1>My Movies</h1>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Track status, watch time, priority, and progress for your movie list.</MudText>
+    </div>
+    <MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@ViewIcon">@ToggleText</MudButton>
+</div>
+
+<AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" ShowPersonalFilters="true" UseMediaStatus="true" />
+
+@if (IsGrid)
+{
+    <LuminaGrid T="MyMovie" GetData="@(GetData)" Loading="@loading" @bind-SelectedItems="selectedItems" @ref="_table" SortMode="SortMode.Single">
+        <ToolBarContent>
+            <TableActions TItem="MyMovie" Page="this" loading="loading" selectedItems="selectedItems" />
+        </ToolBarContent>
+        <Columns>
+            <SelectColumn ShowInFooter="false"></SelectColumn>
+            <TemplateColumn CellStyle="width:72px" Title="" Sortable="false">
+                <CellTemplate><div class="table-cover" style="background-image: url('@Cover(context.Item)');"></div></CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Movie" SortBy="@((MyMovie x) => x.Movie == null ? "" : x.Movie.Name)" Sortable="true">
+                <CellTemplate>
+                    <div class="title-cell">
+                        <MudText Typo="Typo.body1">@context.Item.Movie?.Name</MudText>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@Summary(context.Item)</MudText>
+                        <div class="chip-row">
+                            @foreach (var genre in context.Item.Movie?.Genres?.Take(3) ?? [])
+                            {
+                                <span class="soft-chip">@genre</span>
+                            }
+                        </div>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Status" SortBy="@((MyMovie x) => x.Status)" Sortable="true">
+                <CellTemplate>
+                    <div class="status-stack">
+                        <span class="status-pill @StatusClass(context.Item.Status)">@context.Item.Status</span>
+                        <span class="muted-line">Priority @context.Item.Priority - @Rating(context.Item)</span>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Progress" SortBy="@((MyMovie x) => x.CurrentWatchTimeMinutes)" Sortable="true">
+                <CellTemplate>
+                    <div class="time-stack">
+                        <strong>@WatchProgress(context.Item)</strong>
+                        <span>@ManualHours(context.Item).ToString("0.##")h manual</span>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Dates" SortBy="@((MyMovie x) => x.StartDate)" Sortable="true">
+                <CellTemplate>
+                    <div class="detail-stack">
+                        <span><MudIcon Icon="@Icons.Material.Filled.PlayArrow" Size="Size.Small" /> @DateText(context.Item.StartDate)</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.Flag" Size="Size.Small" /> @DateText(context.Item.EndDate)</span>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn CellStyle="width:76px" Title="Actions" Sortable="false">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Variant="Variant.Filled" DropShadow="false" Size="Size.Small" Dense="true" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+                        <MudMenuItem OnClick="@(async () => await OnUpdate(context.Item))">Edit</MudMenuItem>
+                        <MudMenuItem OnClick="@(async () => await Delete(context.Item))">Delete</MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent><MudText>No movies found</MudText></NoRecordsContent>
+        <LoadingContent><MudText>Loading movies</MudText></LoadingContent>
+        <PagerContent><MudDataGridPager /></PagerContent>
+    </LuminaGrid>
+}
+else
+{
+    <div class="card-toolbar"><TableActions Page="this" loading="loading" selectedItems="selectedItems" /></div>
+    <div class="media-card-grid">
+        @foreach (var movie in Movies)
+        {
+            <article class="media-card">
+                <div class="card-cover" style="background-image: url('@Cover(movie)');">
+                    <span class="status-pill overlay @StatusClass(movie.Status)">@movie.Status</span>
+                </div>
+                <div class="media-card-body">
+                    <div>
+                        <h2>@movie.Movie?.Name</h2>
+                        <p>@Summary(movie)</p>
+                    </div>
+                    <div class="chip-row">
+                        @foreach (var genre in movie.Movie?.Genres?.Take(3) ?? [])
+                        {
+                            <span class="soft-chip">@genre</span>
+                        }
+                    </div>
+                    <div class="time-panel">
+                        <div><span>Watched</span><strong>@WatchProgress(movie)</strong></div>
+                        <div><span>Manual</span><strong>@ManualHours(movie).ToString("0.##")h</strong></div>
+                    </div>
+                    <div class="card-metrics">
+                        <span><MudIcon Icon="@Icons.Material.Filled.Star" Size="Size.Small" /> @Rating(movie)</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.LowPriority" Size="Size.Small" /> Priority @movie.Priority</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" /> @DateRange(movie)</span>
+                    </div>
+                </div>
+                <div class="media-card-actions">
+                    <MudButton OnClick="@(() => OnUpdate(movie))" Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit">Edit</MudButton>
+                    <MudButton OnClick="@(async () => await Delete(movie))" Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete">Delete</MudButton>
+                </div>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    private readonly string _placeholderCover = "/Images/Placeholder.png";
+    private List<MyMovie> Movies = new();
+    private List<Movie> DropdownMovies = new();
+    private MudDataGrid<MyMovie> _table = default!;
+    protected override string EntityLabel => "My Movie";
+    private string ViewIcon => IsGrid ? Icons.Material.Filled.ViewModule : Icons.Material.Filled.TableRows;
+
+    protected override async Task OnInitializedAsync()
+    {
+        DropdownMovies = await MovieService.GetDropdownMovies();
+        await base.OnInitializedAsync();
+    }
+
+    public override async Task ReloadData()
+    {
+        if (IsGrid)
+        {
+            await _table.ReloadServerData();
+        }
+        else
+        {
+            Movies = await GetData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task SwitchView()
+    {
+        IsGrid = !IsGrid;
+        await ReloadData();
+    }
+
+    private async Task<List<MyMovie>> GetData()
+    {
+        if (string.IsNullOrWhiteSpace(UserId))
+        {
+            return [];
+        }
+
+        var result = await ModelService.GetMyMedia(UserId);
+        result = ApplyFilters(result).ToList();
+        Movies = result;
+        return result;
+    }
+
+    private IEnumerable<MyMovie> ApplyFilters(IEnumerable<MyMovie> movies)
+    {
+        if (!string.IsNullOrWhiteSpace(_filter.SearchString))
+        {
+            var search = _filter.SearchString.Trim();
+            movies = movies.Where(myMovie =>
+                Contains(myMovie.Movie?.Name, search) ||
+                Contains(myMovie.Movie?.Description, search) ||
+                Contains(myMovie.Movie?.Source, search) ||
+                myMovie.Movie?.Genres.Any(genre => Contains(genre, search)) == true ||
+                myMovie.Status.ToString().Contains(search, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (_filter.From is not null)
+        {
+            movies = movies.Where(myMovie => myMovie.Movie?.ReleaseDate >= _filter.From);
+        }
+
+        if (_filter.To is not null)
+        {
+            movies = movies.Where(myMovie => myMovie.Movie?.ReleaseDate <= _filter.To);
+        }
+
+        if (_filter.MediaStatus is not null)
+        {
+            movies = movies.Where(myMovie => myMovie.Status == _filter.MediaStatus);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_filter.Genre))
+        {
+            var genreFilter = _filter.Genre.Trim();
+            movies = movies.Where(myMovie => myMovie.Movie?.Genres.Any(genre => Contains(genre, genreFilter)) == true);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_filter.Source))
+        {
+            var sourceFilter = _filter.Source.Trim();
+            movies = movies.Where(myMovie => Contains(myMovie.Movie?.Source, sourceFilter));
+        }
+
+        if (_filter.Priority is not null)
+        {
+            movies = movies.Where(myMovie => myMovie.Priority == _filter.Priority);
+        }
+
+        if (_filter.MinRating is not null)
+        {
+            movies = movies.Where(myMovie => myMovie.Rating >= _filter.MinRating);
+        }
+
+        return movies;
+    }
+
+    public override async Task<MyMovie> GetById(int id) => await ModelService.GetById(id, ModelService.Includes);
+    public override async Task Save(MyMovie entity) => await ModelService.PostAsync(entity, User);
+    public override async Task Update(MyMovie entity) => await ModelService.PutAsync(entity, User);
+    public override async Task DeleteMedia(MyMovie entity) => await ModelService.DeleteAsync(entity.Id);
+
+    private string Cover(MyMovie? myMovie)
+    {
+        return string.IsNullOrWhiteSpace(myMovie?.Movie?.Image?.Url)
+            ? _placeholderCover
+            : NormalizeUrl(myMovie.Movie.Image.Url);
+    }
+
+    private static string NormalizeUrl(string url) => url.StartsWith("http", StringComparison.OrdinalIgnoreCase) || url.StartsWith("/") ? url : $"/{url}";
+
+    private static string Summary(MyMovie myMovie)
+    {
+        var movie = myMovie.Movie;
+        if (movie is null)
+        {
+            return "No movie details";
+        }
+
+        if (string.IsNullOrWhiteSpace(movie.Description))
+        {
+            return movie.Genres.Count > 0 ? string.Join(" / ", movie.Genres.Take(3)) : "No description yet";
+        }
+
+        return movie.Description.Length > 110 ? $"{movie.Description[..110]}..." : movie.Description;
+    }
+
+    private static double ManualHours(MyMovie myMovie) => myMovie.TimeSpend ?? 0;
+    private static string Rating(MyMovie myMovie) => myMovie.Rating is null ? "Unrated" : $"{myMovie.Rating}/10";
+    private static string DateText(DateTime? date) => date?.ToString("dd.MM.yyyy") ?? "No date";
+    private static string DateRange(MyMovie myMovie) => myMovie.StartDate is null && myMovie.EndDate is null ? "No dates" : $"{DateText(myMovie.StartDate)} - {DateText(myMovie.EndDate)}";
+
+    private static string WatchProgress(MyMovie myMovie)
+    {
+        var current = myMovie.CurrentWatchTimeMinutes;
+        var total = myMovie.Movie?.ExpectedWatchTimeMinutes;
+        return current is null && total is null ? "No watch time" : $"{FormatMinutes(current ?? 0)} / {(total is null ? "?" : FormatMinutes(total.Value))}";
+    }
+
+    private static string FormatMinutes(int minutes)
+    {
+        if (minutes < 60)
+        {
+            return $"{minutes}m";
+        }
+
+        var hours = minutes / 60;
+        var remaining = minutes % 60;
+        return remaining == 0 ? $"{hours}h" : $"{hours}h {remaining}m";
+    }
+
+    private static string StatusClass(MediaStatus status)
+    {
+        return status switch
+        {
+            MediaStatus.Watching => "status-playing",
+            MediaStatus.Completed => "status-complete",
+            MediaStatus.Planned => "status-planned",
+            MediaStatus.OnHold => "status-main",
+            _ => "status-default"
+        };
+    }
+
+    private static bool Contains(string? value, string search) => value?.Contains(search, StringComparison.OrdinalIgnoreCase) == true;
+
+    protected override DialogParameters<MyMovieFormDialog> CreateDialogParameters(MyMovie command, Func<MyMovie, Task> OnSubmit)
+    {
+        return new DialogParameters<MyMovieFormDialog>
+            {
+                { x => x.Refresh, new Action(async () => await ReloadData()) },
+                { x => x.Model, command },
+                { x => x.MovieSelect, DropdownMovies },
+                { x => x.loading, loading },
+                { x => x.EventCallBack, OnSubmit }
+            };
+    }
+}
+
+<style>
+    .media-page-header { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .media-page-header h1 { margin: 0; letter-spacing: 0; }
+    .eyebrow { margin: 0 0 4px; color: var(--mud-palette-primary); font-size: .76rem; font-weight: 800; letter-spacing: 0; text-transform: uppercase; }
+    .table-cover { width: 52px; height: 64px; border-radius: 6px; background-color: #263346; background-position: center; background-size: cover; box-shadow: 0 8px 22px rgba(0, 0, 0, .18); }
+    .title-cell, .status-stack, .time-stack, .detail-stack { display: grid; gap: 4px; }
+    .title-cell { min-width: 240px; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .soft-chip, .status-pill { display: inline-flex; align-items: center; width: fit-content; min-height: 24px; padding: 3px 9px; border-radius: 999px; background: rgba(118, 228, 196, .12); color: var(--mud-palette-text-primary); font-size: .78rem; font-weight: 700; }
+    .status-playing { background: rgba(94, 220, 143, .18); }
+    .status-main { background: rgba(244, 201, 93, .2); }
+    .status-complete { background: rgba(117, 167, 255, .18); }
+    .status-planned { background: rgba(188, 154, 255, .18); }
+    .status-default { background: rgba(255, 255, 255, .1); }
+    .status-pill.overlay { position: absolute; top: 10px; right: 10px; background-color: rgba(9, 15, 26, .84); color: #fff; }
+    .muted-line, .time-stack span, .detail-stack, .card-metrics { color: var(--mud-palette-text-secondary); font-size: .88rem; }
+    .time-stack strong { color: var(--mud-palette-text-primary); }
+    .detail-stack span, .card-metrics span { display: inline-flex; align-items: center; gap: 6px; }
+    .card-toolbar { margin: 8px 0 14px; padding: 10px 0; }
+    .media-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .media-card { display: grid; grid-template-rows: 190px 1fr auto; min-height: 470px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 8px; background: var(--mud-palette-surface); overflow: hidden; box-shadow: 0 14px 34px rgba(0, 0, 0, .14); }
+    .card-cover { position: relative; background-color: #263346; background-position: center; background-size: cover; }
+    .media-card-body { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+    .media-card h2 { margin: 0; font-size: 1.15rem; line-height: 1.2; letter-spacing: 0; }
+    .media-card p { margin: 6px 0 0; color: var(--mud-palette-text-secondary); line-height: 1.45; }
+    .time-panel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .time-panel div { display: grid; gap: 2px; padding: 10px; border-radius: 8px; background: rgba(118, 228, 196, .08); }
+    .time-panel span { color: var(--mud-palette-text-secondary); font-size: .74rem; font-weight: 700; }
+    .time-panel strong { font-size: 1.05rem; }
+    .card-metrics { display: grid; gap: 6px; margin-top: auto; }
+    .media-card-actions { display: flex; justify-content: space-between; padding: 8px 10px 10px; border-top: 1px solid rgba(255, 255, 255, .08); }
+    @@media (max-width: 720px) { .media-page-header { align-items: stretch; flex-direction: column; } }
+</style>

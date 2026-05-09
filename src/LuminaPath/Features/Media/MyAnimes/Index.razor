@@ -1,0 +1,352 @@
+@page "/Media/MyAnimes"
+@using LuminaPath.Core.Enums
+@using LuminaPath.Core.Models
+@using LuminaPath.Features.Media.Components
+@using LuminaPath.Features.Media.MyAnimes.Components
+@using LuminaPath.Infrastructure.Services.ModelServices
+@using LuminaPath.Pages.Media
+@using LuminaPath.Pages.Media.Components
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inherits BaseGridActions<MyAnime, MyAnimeFormDialog>
+@inject AnimeService AnimeService
+@inject MyAnimeService ModelService
+
+<PageTitle>My Animes</PageTitle>
+
+<div class="media-page-header">
+    <div>
+        <p class="eyebrow">Personal Library</p>
+        <h1>My Animes</h1>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Track status, time, priority, episodes, and progress for your anime list.</MudText>
+    </div>
+    <MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@ViewIcon">@ToggleText</MudButton>
+</div>
+
+<AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" ShowPersonalFilters="true" UseMediaStatus="true" />
+
+@if (IsGrid)
+{
+    <LuminaGrid T="MyAnime" GetData="@(GetData)" Loading="@loading" @bind-SelectedItems="selectedItems" @ref="_table" SortMode="SortMode.Single">
+        <ToolBarContent>
+            <TableActions TItem="MyAnime" Page="this" loading="loading" selectedItems="selectedItems" />
+        </ToolBarContent>
+        <Columns>
+            <SelectColumn ShowInFooter="false"></SelectColumn>
+            <TemplateColumn CellStyle="width:72px" Title="" Sortable="false">
+                <CellTemplate><div class="table-cover" style="background-image: url('@Cover(context.Item)');"></div></CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Anime" SortBy="@((MyAnime x) => x.Anime == null ? "" : x.Anime.Name)" Sortable="true">
+                <CellTemplate>
+                    <div class="title-cell">
+                        <MudText Typo="Typo.body1">@context.Item.Anime?.Name</MudText>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@Summary(context.Item)</MudText>
+                        <div class="chip-row">
+                            @foreach (var genre in context.Item.Anime?.Genres?.Take(3) ?? [])
+                            {
+                                <span class="soft-chip">@genre</span>
+                            }
+                        </div>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Status" SortBy="@((MyAnime x) => x.Status)" Sortable="true">
+                <CellTemplate>
+                    <div class="status-stack">
+                        <span class="status-pill @StatusClass(context.Item.Status)">@context.Item.Status</span>
+                        <span class="muted-line">Priority @context.Item.Priority - @Rating(context.Item)</span>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Progress" SortBy="@((MyAnime x) => x.CurrentEpisode)" Sortable="true">
+                <CellTemplate>
+                    <div class="time-stack">
+                        <strong>@EpisodeProgress(context.Item)</strong>
+                        <span>@WatchProgress(context.Item)</span>
+                        <span>@ManualHours(context.Item).ToString("0.##")h manual</span>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Dates" SortBy="@((MyAnime x) => x.StartDate)" Sortable="true">
+                <CellTemplate>
+                    <div class="detail-stack">
+                        <span><MudIcon Icon="@Icons.Material.Filled.PlayArrow" Size="Size.Small" /> @DateText(context.Item.StartDate)</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.Flag" Size="Size.Small" /> @DateText(context.Item.EndDate)</span>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn CellStyle="width:76px" Title="Actions" Sortable="false">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Variant="Variant.Filled" DropShadow="false" Size="Size.Small" Dense="true" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+                        <MudMenuItem OnClick="@(async () => await OnUpdate(context.Item))">Edit</MudMenuItem>
+                        <MudMenuItem OnClick="@(async () => await Delete(context.Item))">Delete</MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent><MudText>No animes found</MudText></NoRecordsContent>
+        <LoadingContent><MudText>Loading animes</MudText></LoadingContent>
+        <PagerContent><MudDataGridPager /></PagerContent>
+    </LuminaGrid>
+}
+else
+{
+    <div class="card-toolbar"><TableActions Page="this" loading="loading" selectedItems="selectedItems" /></div>
+    <div class="media-card-grid">
+        @foreach (var anime in Animes)
+        {
+            <article class="media-card">
+                <div class="card-cover" style="background-image: url('@Cover(anime)');">
+                    <span class="status-pill overlay @StatusClass(anime.Status)">@anime.Status</span>
+                </div>
+                <div class="media-card-body">
+                    <div>
+                        <h2>@anime.Anime?.Name</h2>
+                        <p>@Summary(anime)</p>
+                    </div>
+                    <div class="chip-row">
+                        @foreach (var genre in anime.Anime?.Genres?.Take(3) ?? [])
+                        {
+                            <span class="soft-chip">@genre</span>
+                        }
+                    </div>
+                    <div class="time-panel">
+                        <div><span>Episode</span><strong>@EpisodeProgress(anime)</strong></div>
+                        <div><span>Watched</span><strong>@WatchProgress(anime)</strong></div>
+                        <div><span>Manual</span><strong>@ManualHours(anime).ToString("0.##")h</strong></div>
+                    </div>
+                    <div class="card-metrics">
+                        <span><MudIcon Icon="@Icons.Material.Filled.Star" Size="Size.Small" /> @Rating(anime)</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.LowPriority" Size="Size.Small" /> Priority @anime.Priority</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" /> @DateRange(anime)</span>
+                    </div>
+                </div>
+                <div class="media-card-actions">
+                    <MudButton OnClick="@(() => OnUpdate(anime))" Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit">Edit</MudButton>
+                    <MudButton OnClick="@(async () => await Delete(anime))" Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete">Delete</MudButton>
+                </div>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    private readonly string _placeholderCover = "/Images/Placeholder.png";
+    private List<MyAnime> Animes = new();
+    private List<Anime> DropdownAnimes = new();
+    private MudDataGrid<MyAnime> _table = default!;
+    protected override string EntityLabel => "My Anime";
+    private string ViewIcon => IsGrid ? Icons.Material.Filled.ViewModule : Icons.Material.Filled.TableRows;
+
+    protected override async Task OnInitializedAsync()
+    {
+        DropdownAnimes = await AnimeService.GetDropdownAnimes();
+        await base.OnInitializedAsync();
+    }
+
+    public override async Task ReloadData()
+    {
+        if (IsGrid)
+        {
+            await _table.ReloadServerData();
+        }
+        else
+        {
+            Animes = await GetData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task SwitchView()
+    {
+        IsGrid = !IsGrid;
+        await ReloadData();
+    }
+
+    private async Task<List<MyAnime>> GetData()
+    {
+        if (string.IsNullOrWhiteSpace(UserId))
+        {
+            return [];
+        }
+
+        var result = await ModelService.GetMyMedia(UserId);
+        result = ApplyFilters(result).ToList();
+        Animes = result;
+        return result;
+    }
+
+    private IEnumerable<MyAnime> ApplyFilters(IEnumerable<MyAnime> animes)
+    {
+        if (!string.IsNullOrWhiteSpace(_filter.SearchString))
+        {
+            var search = _filter.SearchString.Trim();
+            animes = animes.Where(myAnime =>
+                Contains(myAnime.Anime?.Name, search) ||
+                Contains(myAnime.Anime?.Description, search) ||
+                Contains(myAnime.Anime?.Source, search) ||
+                myAnime.Anime?.Genres.Any(genre => Contains(genre, search)) == true ||
+                myAnime.Status.ToString().Contains(search, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (_filter.From is not null)
+        {
+            animes = animes.Where(myAnime => myAnime.Anime?.ReleaseDate >= _filter.From);
+        }
+
+        if (_filter.To is not null)
+        {
+            animes = animes.Where(myAnime => myAnime.Anime?.ReleaseDate <= _filter.To);
+        }
+
+        if (_filter.MediaStatus is not null)
+        {
+            animes = animes.Where(myAnime => myAnime.Status == _filter.MediaStatus);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_filter.Genre))
+        {
+            var genreFilter = _filter.Genre.Trim();
+            animes = animes.Where(myAnime => myAnime.Anime?.Genres.Any(genre => Contains(genre, genreFilter)) == true);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_filter.Source))
+        {
+            var sourceFilter = _filter.Source.Trim();
+            animes = animes.Where(myAnime => Contains(myAnime.Anime?.Source, sourceFilter));
+        }
+
+        if (_filter.Priority is not null)
+        {
+            animes = animes.Where(myAnime => myAnime.Priority == _filter.Priority);
+        }
+
+        if (_filter.MinRating is not null)
+        {
+            animes = animes.Where(myAnime => myAnime.Rating >= _filter.MinRating);
+        }
+
+        return animes;
+    }
+
+    public override async Task<MyAnime> GetById(int id) => await ModelService.GetById(id, ModelService.Includes);
+    public override async Task Save(MyAnime entity) => await ModelService.PostAsync(entity, User);
+    public override async Task Update(MyAnime entity) => await ModelService.PutAsync(entity, User);
+    public override async Task DeleteMedia(MyAnime entity) => await ModelService.DeleteAsync(entity.Id);
+
+    private string Cover(MyAnime? myAnime)
+    {
+        return string.IsNullOrWhiteSpace(myAnime?.Anime?.Image?.Url)
+            ? _placeholderCover
+            : NormalizeUrl(myAnime.Anime.Image.Url);
+    }
+
+    private static string NormalizeUrl(string url) => url.StartsWith("http", StringComparison.OrdinalIgnoreCase) || url.StartsWith("/") ? url : $"/{url}";
+
+    private static string Summary(MyAnime myAnime)
+    {
+        var anime = myAnime.Anime;
+        if (anime is null)
+        {
+            return "No anime details";
+        }
+
+        if (string.IsNullOrWhiteSpace(anime.Description))
+        {
+            return anime.Genres.Count > 0 ? string.Join(" / ", anime.Genres.Take(3)) : "No description yet";
+        }
+
+        return anime.Description.Length > 110 ? $"{anime.Description[..110]}..." : anime.Description;
+    }
+
+    private static double ManualHours(MyAnime myAnime) => myAnime.TimeSpend ?? 0;
+    private static string Rating(MyAnime myAnime) => myAnime.Rating is null ? "Unrated" : $"{myAnime.Rating}/10";
+    private static string DateText(DateTime? date) => date?.ToString("dd.MM.yyyy") ?? "No date";
+    private static string DateRange(MyAnime myAnime) => myAnime.StartDate is null && myAnime.EndDate is null ? "No dates" : $"{DateText(myAnime.StartDate)} - {DateText(myAnime.EndDate)}";
+
+    private static string EpisodeProgress(MyAnime myAnime)
+    {
+        var current = myAnime.CurrentEpisode?.ToString() ?? "0";
+        var total = myAnime.Anime?.EpisodeCount?.ToString() ?? "?";
+        return $"{current}/{total}";
+    }
+
+    private static string WatchProgress(MyAnime myAnime)
+    {
+        var current = myAnime.CurrentWatchTimeMinutes;
+        var total = myAnime.Anime?.ExpectedWatchTimeMinutes;
+        return current is null && total is null ? "No watch time" : $"{FormatMinutes(current ?? 0)} / {(total is null ? "?" : FormatMinutes(total.Value))}";
+    }
+
+    private static string FormatMinutes(int minutes)
+    {
+        if (minutes < 60)
+        {
+            return $"{minutes}m";
+        }
+
+        var hours = minutes / 60;
+        var remaining = minutes % 60;
+        return remaining == 0 ? $"{hours}h" : $"{hours}h {remaining}m";
+    }
+
+    private static string StatusClass(MediaStatus status)
+    {
+        return status switch
+        {
+            MediaStatus.Watching => "status-playing",
+            MediaStatus.Completed => "status-complete",
+            MediaStatus.Planned => "status-planned",
+            MediaStatus.OnHold => "status-main",
+            _ => "status-default"
+        };
+    }
+
+    private static bool Contains(string? value, string search) => value?.Contains(search, StringComparison.OrdinalIgnoreCase) == true;
+
+    protected override DialogParameters<MyAnimeFormDialog> CreateDialogParameters(MyAnime command, Func<MyAnime, Task> OnSubmit)
+    {
+        return new DialogParameters<MyAnimeFormDialog>
+            {
+                { x => x.Refresh, new Action(async () => await ReloadData()) },
+                { x => x.Model, command },
+                { x => x.AnimeSelect, DropdownAnimes },
+                { x => x.loading, loading },
+                { x => x.EventCallBack, OnSubmit }
+            };
+    }
+}
+
+<style>
+    .media-page-header { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .media-page-header h1 { margin: 0; letter-spacing: 0; }
+    .eyebrow { margin: 0 0 4px; color: var(--mud-palette-primary); font-size: .76rem; font-weight: 800; letter-spacing: 0; text-transform: uppercase; }
+    .table-cover { width: 52px; height: 64px; border-radius: 6px; background-color: #263346; background-position: center; background-size: cover; box-shadow: 0 8px 22px rgba(0, 0, 0, .18); }
+    .title-cell, .status-stack, .time-stack, .detail-stack { display: grid; gap: 4px; }
+    .title-cell { min-width: 240px; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .soft-chip, .status-pill { display: inline-flex; align-items: center; width: fit-content; min-height: 24px; padding: 3px 9px; border-radius: 999px; background: rgba(118, 228, 196, .12); color: var(--mud-palette-text-primary); font-size: .78rem; font-weight: 700; }
+    .status-playing { background: rgba(94, 220, 143, .18); }
+    .status-main { background: rgba(244, 201, 93, .2); }
+    .status-complete { background: rgba(117, 167, 255, .18); }
+    .status-planned { background: rgba(188, 154, 255, .18); }
+    .status-default { background: rgba(255, 255, 255, .1); }
+    .status-pill.overlay { position: absolute; top: 10px; right: 10px; background-color: rgba(9, 15, 26, .84); color: #fff; }
+    .muted-line, .time-stack span, .detail-stack, .card-metrics { color: var(--mud-palette-text-secondary); font-size: .88rem; }
+    .time-stack strong { color: var(--mud-palette-text-primary); }
+    .detail-stack span, .card-metrics span { display: inline-flex; align-items: center; gap: 6px; }
+    .card-toolbar { margin: 8px 0 14px; padding: 10px 0; }
+    .media-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .media-card { display: grid; grid-template-rows: 190px 1fr auto; min-height: 470px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 8px; background: var(--mud-palette-surface); overflow: hidden; box-shadow: 0 14px 34px rgba(0, 0, 0, .14); }
+    .card-cover { position: relative; background-color: #263346; background-position: center; background-size: cover; }
+    .media-card-body { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+    .media-card h2 { margin: 0; font-size: 1.15rem; line-height: 1.2; letter-spacing: 0; }
+    .media-card p { margin: 6px 0 0; color: var(--mud-palette-text-secondary); line-height: 1.45; }
+    .time-panel { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .time-panel div { display: grid; gap: 2px; padding: 10px; border-radius: 8px; background: rgba(118, 228, 196, .08); }
+    .time-panel span { color: var(--mud-palette-text-secondary); font-size: .74rem; font-weight: 700; }
+    .time-panel strong { font-size: 1.05rem; }
+    .card-metrics { display: grid; gap: 6px; margin-top: auto; }
+    .media-card-actions { display: flex; justify-content: space-between; padding: 8px 10px 10px; border-top: 1px solid rgba(255, 255, 255, .08); }
+    @@media (max-width: 720px) { .media-page-header { align-items: stretch; flex-direction: column; } }
+</style>

@@ -49,10 +49,14 @@ namespace LuminaPath.Core.Mapping
                 AnimesDto dto when destinationType == typeof(Anime) => MapAnime(dto),
                 Anime entity when destinationType == typeof(AnimesNoIncludeDto) => MapAnimesNoIncludeDto(entity),
                 Anime entity when destinationType == typeof(AnimesDto) => MapAnimesDto(entity),
+                Anime entity when typeof(Anime).IsAssignableFrom(destinationType) => MapAnimeToDestination(entity, destinationType),
+                MyAnime entity when destinationType == typeof(MyAnime) => MapMyAnime(entity),
                 MoviesNoIncludeDto dto when destinationType == typeof(Movie) => MapMovie(dto),
                 MoviesDto dto when destinationType == typeof(Movie) => MapMovie(dto),
                 Movie entity when destinationType == typeof(MoviesNoIncludeDto) => MapMoviesNoIncludeDto(entity),
                 Movie entity when destinationType == typeof(MoviesDto) => MapMoviesDto(entity),
+                Movie entity when typeof(Movie).IsAssignableFrom(destinationType) => MapMovieToDestination(entity, destinationType),
+                MyMovie entity when destinationType == typeof(MyMovie) => MapMyMovie(entity),
                 _ when destinationType.IsAssignableFrom(source.GetType()) => source,
                 _ => CopyMatchingProperties(source, CreateInstance(destinationType))
             };
@@ -320,6 +324,24 @@ namespace LuminaPath.Core.Mapping
             };
         }
 
+        private MyAnime MapMyAnime(MyAnime source)
+        {
+            return new MyAnime
+            {
+                Id = source.Id,
+                Rating = source.Rating,
+                Priority = source.Priority,
+                StartDate = source.StartDate,
+                EndDate = source.EndDate,
+                Status = source.Status,
+                TimeSpend = source.TimeSpend,
+                LuminaUserId = source.LuminaUserId,
+                AnimeId = source.AnimeId,
+                CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes,
+                CurrentEpisode = source.CurrentEpisode
+            };
+        }
+
         private MyAnimeDto MapMyAnimeDto(MyAnime source)
         {
             return new MyAnimeDto
@@ -413,6 +435,23 @@ namespace LuminaPath.Core.Mapping
             };
         }
 
+        private MyMovie MapMyMovie(MyMovie source)
+        {
+            return new MyMovie
+            {
+                Id = source.Id,
+                Rating = source.Rating,
+                Priority = source.Priority,
+                StartDate = source.StartDate,
+                EndDate = source.EndDate,
+                Status = source.Status,
+                TimeSpend = source.TimeSpend,
+                LuminaUserId = source.LuminaUserId,
+                MovieId = source.MovieId,
+                CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes
+            };
+        }
+
         private MyMovieDto MapMyMovieDto(MyMovie source)
         {
             return new MyMovieDto
@@ -483,6 +522,70 @@ namespace LuminaPath.Core.Mapping
                     mappedMyGame.Game = destination;
                     mappedMyGame.GameId = destination.Id > 0 ? destination.Id : 0;
                     return mappedMyGame;
+                })
+                .ToList();
+        }
+
+        private object MapAnimeToDestination(Anime source, Type destinationType)
+        {
+            var destination = CreateInstance(destinationType);
+            CopyMatchingProperties(source, destination);
+
+            if (destination is Anime anime)
+            {
+                NormalizeAnimeRelationships(source, anime);
+            }
+
+            return destination;
+        }
+
+        private void NormalizeAnimeRelationships(Anime source, Anime destination)
+        {
+            if (source.MyAnimes == null)
+            {
+                destination.MyAnimes = null;
+                return;
+            }
+
+            destination.MyAnimes = source.MyAnimes
+                .Select(myAnime =>
+                {
+                    var mappedMyAnime = Map<MyAnime>(myAnime);
+                    mappedMyAnime.Anime = destination;
+                    mappedMyAnime.AnimeId = destination.Id > 0 ? destination.Id : 0;
+                    return mappedMyAnime;
+                })
+                .ToList();
+        }
+
+        private object MapMovieToDestination(Movie source, Type destinationType)
+        {
+            var destination = CreateInstance(destinationType);
+            CopyMatchingProperties(source, destination);
+
+            if (destination is Movie movie)
+            {
+                NormalizeMovieRelationships(source, movie);
+            }
+
+            return destination;
+        }
+
+        private void NormalizeMovieRelationships(Movie source, Movie destination)
+        {
+            if (source.MyMovies == null)
+            {
+                destination.MyMovies = null;
+                return;
+            }
+
+            destination.MyMovies = source.MyMovies
+                .Select(myMovie =>
+                {
+                    var mappedMyMovie = Map<MyMovie>(myMovie);
+                    mappedMyMovie.Movie = destination;
+                    mappedMyMovie.MovieId = destination.Id > 0 ? destination.Id : 0;
+                    return mappedMyMovie;
                 })
                 .ToList();
         }
