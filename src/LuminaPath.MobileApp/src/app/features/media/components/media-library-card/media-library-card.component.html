@@ -1,0 +1,44 @@
+<article class="game-card">
+  <ion-button
+    fill="clear"
+    class="quick-add-button"
+    [class.quick-add-button--edit]="view.hasLibraryEntry(item)"
+    [disabled]="isAdding"
+    [attr.aria-label]="(view.hasLibraryEntry(item) ? 'Edit ' : 'Add ') + item.name + (view.hasLibraryEntry(item) ? ' in my library' : ' to my library')"
+    (click)="edit.emit(item)">
+    <ion-icon slot="icon-only" [name]="isAdding ? 'hourglass-outline' : (view.hasLibraryEntry(item) ? 'create-outline' : 'add-outline')"></ion-icon>
+  </ion-button>
+
+  <img [src]="imageFor(item)" alt="" (click)="details.emit(item)" />
+
+  <div class="game-card__content" (click)="details.emit(item)">
+    <div class="badge-row">
+      <ion-badge>{{ view.statusLabel(item, mediaMode) }}</ion-badge>
+      <span>{{ view.mediaTypeLabel(item, mediaMode) }}</span>
+    </div>
+
+    <h3>{{ item.name }}</h3>
+    <p>{{ item.description || item.genre || 'No description yet.' }}</p>
+
+    <div class="meta-grid">
+      <span>
+        <ion-icon name="calendar-clear-outline"></ion-icon>
+        {{ view.releaseLabel(item) }}
+      </span>
+      <span>
+        <ion-icon name="time-outline"></ion-icon>
+        {{ view.durationLabel(item, mediaMode) }}
+      </span>
+    </div>
+
+    <div class="progress-block" *ngIf="view.hasLibraryEntry(item)">
+      <div>
+        <span>{{ view.playedLabel(item, mediaMode) }}</span>
+        <strong>{{ view.progressOf(item, mediaMode) }}%</strong>
+      </div>
+      <div class="progress-track">
+        <span [style.width.%]="view.progressOf(item, mediaMode)"></span>
+      </div>
+    </div>
+  </div>
+</article>

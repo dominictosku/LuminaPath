@@ -1,0 +1,27 @@
+<article class="list-row">
+  <ion-button
+    fill="clear"
+    class="quick-add-button list-row__add"
+    [class.quick-add-button--edit]="view.hasLibraryEntry(item)"
+    [disabled]="isAdding"
+    [attr.aria-label]="(view.hasLibraryEntry(item) ? 'Edit ' : 'Add ') + item.name + (view.hasLibraryEntry(item) ? ' in my library' : ' to my library')"
+    (click)="edit.emit(item)">
+    <ion-icon slot="icon-only" [name]="isAdding ? 'hourglass-outline' : (view.hasLibraryEntry(item) ? 'create-outline' : 'add-outline')"></ion-icon>
+  </ion-button>
+
+  <img [src]="imageFor(item)" alt="" (click)="details.emit(item)" />
+
+  <div class="list-row__main" (click)="details.emit(item)">
+    <div class="badge-row">
+      <ion-badge>{{ view.statusLabel(item, mediaMode) }}</ion-badge>
+      <span>{{ view.mediaTypeLabel(item, mediaMode) }}</span>
+    </div>
+    <h3>{{ item.name }}</h3>
+    <p>{{ item.genre || 'No genre' }} · {{ view.releaseLabel(item) }}</p>
+  </div>
+
+  <div class="list-row__stats">
+    <strong>{{ view.durationLabel(item, mediaMode) }}</strong>
+    <span>{{ view.hasLibraryEntry(item) ? view.remainingLabel(item, mediaMode) : 'Catalog' }}</span>
+  </div>
+</article>

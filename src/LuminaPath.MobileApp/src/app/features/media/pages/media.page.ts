@@ -3,7 +3,6 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
-  IonBadge,
   IonButton,
   IonContent,
   IonIcon,
@@ -21,17 +20,13 @@ import { addIcons } from 'ionicons';
 import {
   albumsOutline,
   addOutline,
-  calendarClearOutline,
   checkmarkCircleOutline,
   closeOutline,
-  createOutline,
   gameControllerOutline,
   gridOutline,
   hourglassOutline,
   listOutline,
   searchOutline,
-  starOutline,
-  timeOutline,
 } from 'ionicons/icons';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Platforms } from '../../games/models/games.model';
@@ -40,27 +35,14 @@ import { ReleaseNotificationService } from 'src/app/shared/services/release-noti
 import { MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
 import { Subscription } from 'rxjs';
 import { MediaLibraryFacade } from '../services/media-library.facade';
-import { LibraryEntryDetails, MediaItem, UserMediaEntry } from '../models/media-item.model';
-
-enum GameStatus {
-  OnHold = 0,
-  Planned = 1,
-  Playing = 2,
-  StoryComplete = 3,
-  Completed = 4,
-  MainGame = 5,
-}
+import { MediaItem } from '../models/media-item.model';
+import { MediaLibraryForm } from '../models/media-library-form.model';
+import { GameStatus, MediaLibraryViewService } from '../services/media-library-view.service';
+import { MediaLibraryCardComponent } from '../components/media-library-card/media-library-card.component';
+import { MediaLibraryListRowComponent } from '../components/media-library-list-row/media-library-list-row.component';
 
 type ViewMode = 'grid' | 'list';
 type OwnershipFilter = 'all' | 'mine' | 'catalog';
-type AddGameForm = {
-  status: number;
-  timeSpend: number | null;
-  rating: number | null;
-  startDate: string;
-  endDate: string;
-  currentEpisode: number | null;
-};
 
 @Component({
   selector: 'app-media',
@@ -69,7 +51,6 @@ type AddGameForm = {
   imports: [
     CommonModule,
     FormsModule,
-    IonBadge,
     IonButton,
     IonContent,
     IonIcon,
@@ -82,6 +63,8 @@ type AddGameForm = {
     IonSelect,
     IonSelectOption,
     IonSkeletonText,
+    MediaLibraryCardComponent,
+    MediaLibraryListRowComponent,
   ],
 })
 export class MediaPage implements OnInit, OnDestroy {
@@ -98,7 +81,7 @@ export class MediaPage implements OnInit, OnDestroy {
   addingGameIds = new Set<number>();
   selectedGame: MediaItem | null = null;
   isAddDialogOpen = false;
-  addGameForm: AddGameForm = {
+  addGameForm: MediaLibraryForm = {
     status: GameStatus.Planned,
     timeSpend: 0,
     rating: null,
@@ -111,43 +94,25 @@ export class MediaPage implements OnInit, OnDestroy {
   private mediaModeSub?: Subscription;
 
   readonly platforms = Platforms;
-  readonly gameStatusOptions = [
-    { label: 'On hold', value: GameStatus.OnHold },
-    { label: 'Planned', value: GameStatus.Planned },
-    { label: 'Playing', value: GameStatus.Playing },
-    { label: 'Story complete', value: GameStatus.StoryComplete },
-    { label: 'Completed', value: GameStatus.Completed },
-    { label: 'Main game', value: GameStatus.MainGame },
-  ];
-  readonly watchStatusOptions = [
-    { label: 'On hold', value: 0 },
-    { label: 'Planned', value: 1 },
-    { label: 'Watching', value: 2 },
-    { label: 'Completed', value: 3 },
-    { label: 'Dropped', value: 4 },
-  ];
 
   constructor(
     private mediaLibrary: MediaLibraryFacade,
     private releaseNotifications: ReleaseNotificationService,
     private router: Router,
     private mediaModeService: MediaModeService,
+    public readonly mediaView: MediaLibraryViewService,
   ) {
     this.mediaMode = this.mediaModeService.current;
     addIcons({
       addOutline,
       albumsOutline,
-      calendarClearOutline,
       checkmarkCircleOutline,
       closeOutline,
-      createOutline,
       gameControllerOutline,
       gridOutline,
       hourglassOutline,
       listOutline,
       searchOutline,
-      starOutline,
-      timeOutline,
     });
   }
 
@@ -258,14 +223,7 @@ export class MediaPage implements OnInit, OnDestroy {
     this.successMessage = '';
     this.addingGameIds.add(game.id);
 
-    const details: LibraryEntryDetails = {
-      status: Number(this.addGameForm.status),
-      timeSpend: this.numberOrNull(this.addGameForm.timeSpend),
-      rating: this.numberOrNull(this.addGameForm.rating),
-      startDate: this.addGameForm.startDate || null,
-      endDate: this.addGameForm.endDate || null,
-      currentEpisode: this.isEpisodeMode ? this.numberOrNull(this.addGameForm.currentEpisode) : null,
-    };
+    const details = this.mediaView.toLibraryEntryDetails(this.addGameForm, this.mediaMode);
 
     const existingMyGame = this.libraryEntry(game);
     const request = existingMyGame
@@ -319,51 +277,31 @@ export class MediaPage implements OnInit, OnDestroy {
   }
 
   get isGamesMode(): boolean {
-    return this.mediaMode.id === 'games';
-  }
-
-  get isAnimesMode(): boolean {
-    return this.mediaMode.id === 'animes';
-  }
-
-  get isSeriesMode(): boolean {
-    return this.mediaMode.id === 'series';
+    return this.mediaView.isGamesMode(this.mediaMode);
   }
 
   get isEpisodeMode(): boolean {
-    return this.isAnimesMode || this.isSeriesMode;
+    return this.mediaView.isEpisodeMode(this.mediaMode);
   }
 
   get statusOptions() {
-    return this.isGamesMode ? this.gameStatusOptions : this.watchStatusOptions;
+    return this.mediaView.statusOptions(this.mediaMode);
   }
 
   get heroTitle(): string {
-    if (this.mediaMode.id === 'animes') {
-      return 'Find what to watch next.';
-    }
-
-    if (this.mediaMode.id === 'movies') {
-      return 'Plan the next movie night.';
-    }
-
-    if (this.mediaMode.id === 'series') {
-      return 'Keep every episode on track.';
-    }
-
-    return 'Find what to play next.';
+    return this.mediaView.heroTitle(this.mediaMode);
   }
 
   get heroDescription(): string {
-    return `Browse the catalog, track your owned ${this.mediaMode.label.toLowerCase()}, and keep your backlog readable.`;
+    return this.mediaView.heroDescription(this.mediaMode);
   }
 
   get resultTitle(): string {
-    return `${this.filteredGames.length} ${this.filteredGames.length === 1 ? this.mediaMode.singular : this.mediaMode.label.toLowerCase()}`;
+    return this.mediaView.resultTitle(this.filteredGames.length, this.mediaMode);
   }
 
   get emptyTitle(): string {
-    return `No ${this.mediaMode.label.toLowerCase()} match`;
+    return this.mediaView.emptyTitle(this.mediaMode);
   }
 
   get remainingHours() {
@@ -379,89 +317,43 @@ export class MediaPage implements OnInit, OnDestroy {
   }
 
   platformLabel(value: number | null | undefined): string {
-    return Platforms.find((platform) => platform.value === Number(value))?.label ?? 'Unknown';
+    return this.mediaView.platformLabel(value);
   }
 
   statusLabel(game: MediaItem): string {
-    const status = this.statusOptions.find((option) => option.value === this.statusOf(game));
-    return status?.label ?? 'Catalog';
+    return this.mediaView.statusLabel(game, this.mediaMode);
   }
 
   releaseLabel(game: MediaItem): string {
-    const date = game.releaseDate ? new Date(game.releaseDate) : null;
-
-    if (!date || Number.isNaN(date.getTime())) {
-      return 'No date';
-    }
-
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
+    return this.mediaView.releaseLabel(game);
   }
 
   progressOf(game: MediaItem): number {
-    const estimated = this.expectedHoursOf(game);
-
-    if (estimated <= 0) {
-      return this.statusOf(game) === GameStatus.Completed ? 100 : 0;
-    }
-
-    return Math.min(100, Math.round((this.playedOf(game) / estimated) * 100));
+    return this.mediaView.progressOf(game, this.mediaMode);
   }
 
   playedLabel(game: MediaItem): string {
-    return this.isGamesMode
-      ? `${Math.round(this.playedOf(game))}h played`
-      : `${Math.round(this.playedOf(game) * 60)}m watched`;
+    return this.mediaView.playedLabel(game, this.mediaMode);
   }
 
   remainingLabel(game: MediaItem): string {
-    return this.isGamesMode
-      ? `${Math.round(this.remainingOf(game))}h left`
-      : `${Math.round(this.remainingOf(game) * 60)}m left`;
+    return this.mediaView.remainingLabel(game, this.mediaMode);
   }
 
   durationLabel(game: MediaItem): string {
-    if (this.isGamesMode) {
-      return `${game.playtime || 0}h`;
-    }
-
-    const minutes = Number(game.expectedWatchTimeMinutes) || Math.round((Number(game.playtime) || 0) * 60);
-    if (minutes <= 0) {
-      return 'No estimate';
-    }
-
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return hours > 0 && remainingMinutes > 0
-      ? `${hours}h ${remainingMinutes}m`
-      : hours > 0
-        ? `${hours}h`
-        : `${remainingMinutes}m`;
+    return this.mediaView.durationLabel(game, this.mediaMode);
   }
 
   episodeLabel(game: MediaItem): string {
-    if (!this.isEpisodeMode) {
-      return '';
-    }
-
-    const currentEpisode = Number(this.libraryEntry(game)?.currentEpisode) || 0;
-    const episodeCount = Number(game.episodeCount) || 0;
-    return episodeCount > 0 ? `Episode ${currentEpisode}/${episodeCount}` : `Episode ${currentEpisode}`;
+    return this.mediaView.episodeLabel(game, this.mediaMode);
   }
 
   mediaTypeLabel(game: MediaItem): string {
-    if (this.isEpisodeMode) {
-      return this.episodeLabel(game);
-    }
-
-    return this.capitalize(game.kind.slice(0, -1) || this.mediaMode.singular);
+    return this.mediaView.mediaTypeLabel(game, this.mediaMode);
   }
 
   hasLibraryEntry(game: MediaItem): boolean {
-    return !!game.libraryEntry;
+    return this.mediaView.hasLibraryEntry(game);
   }
 
   trackByGameId(_: number, game: MediaItem): number {
@@ -488,23 +380,12 @@ export class MediaPage implements OnInit, OnDestroy {
     return !this.isGamesMode || this.platformFilter === 'all' || Number(game.platforms) === Number(this.platformFilter);
   }
 
-  private playedOf(game: MediaItem): number {
-    const libraryEntry = this.libraryEntry(game);
-    if (!this.isGamesMode) {
-      return (Number(libraryEntry?.currentWatchTimeMinutes) || 0) / 60;
-    }
-
-    const manual = Number(libraryEntry?.timeSpend) || 0;
-    const tracked = Number(libraryEntry?.myGameInfo?.trackedHours) || 0;
-    return manual + tracked;
-  }
-
   private remainingOf(game: MediaItem): number {
-    return Math.max(0, this.expectedHoursOf(game) - this.playedOf(game));
+    return this.mediaView.remainingOf(game, this.mediaMode);
   }
 
   private statusOf(game: MediaItem): number {
-    return Number(this.libraryEntry(game)?.status ?? -1);
+    return this.mediaView.statusOf(game);
   }
 
   private completeRefresh(event?: CustomEvent) {
@@ -517,56 +398,12 @@ export class MediaPage implements OnInit, OnDestroy {
     });
   }
 
-  private createAddGameForm(game?: MediaItem): AddGameForm {
-    const myGame = game ? this.libraryEntry(game) : null;
-
-    return {
-      status: Number(myGame?.status ?? GameStatus.Planned),
-      timeSpend: this.isGamesMode ? myGame?.timeSpend ?? 0 : Math.round((Number(myGame?.currentWatchTimeMinutes) || 0) / 60),
-      rating: myGame?.rating ?? null,
-      startDate: this.dateInputValue(myGame?.startDate),
-      endDate: this.dateInputValue(myGame?.endDate),
-      currentEpisode: myGame?.currentEpisode ?? null,
-    };
+  private createAddGameForm(game?: MediaItem): MediaLibraryForm {
+    return this.mediaView.createLibraryForm(game ?? null, this.mediaMode);
   }
 
-  private libraryEntry(game: MediaItem): UserMediaEntry | null {
-    return game.libraryEntry;
-  }
-
-  private expectedHoursOf(game: MediaItem): number {
-    if (this.isGamesMode) {
-      return Number(game.playtime) || 0;
-    }
-
-    if (game.expectedWatchTimeMinutes != null) {
-      return Number(game.expectedWatchTimeMinutes) / 60;
-    }
-
-    return Number(game.playtime) || 0;
-  }
-
-  private dateInputValue(value: Date | string | null | undefined): string {
-    if (!value) {
-      return '';
-    }
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return '';
-    }
-
-    return date.toISOString().slice(0, 10);
-  }
-
-  private numberOrNull(value: number | string | null): number | null {
-    if (value === null || value === '') {
-      return null;
-    }
-
-    const numericValue = Number(value);
-    return Number.isFinite(numericValue) ? numericValue : null;
+  private libraryEntry(game: MediaItem) {
+    return this.mediaView.libraryEntry(game);
   }
 
   private addGameErrorMessage(error: unknown): string {

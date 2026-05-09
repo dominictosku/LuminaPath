@@ -111,75 +111,25 @@
     </section>
 
     <section class="game-grid" *ngIf="!isLoading && viewMode === 'grid' && filteredGames.length">
-      <article class="game-card" *ngFor="let game of filteredGames; trackBy: trackByGameId">
-        <ion-button
-          fill="clear"
-          class="quick-add-button"
-          [class.quick-add-button--edit]="hasLibraryEntry(game)"
-          [disabled]="isAdding(game)"
-          [attr.aria-label]="(hasLibraryEntry(game) ? 'Edit ' : 'Add ') + game.name + (hasLibraryEntry(game) ? ' in my library' : ' to my library')"
-          (click)="openGameListDialog(game)">
-          <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : (hasLibraryEntry(game) ? 'create-outline' : 'add-outline')"></ion-icon>
-        </ion-button>
-        <img [src]="imageFor(game)" alt="" (click)="openDetails(game)" />
-        <div class="game-card__content" (click)="openDetails(game)">
-          <div class="badge-row">
-            <ion-badge>{{ statusLabel(game) }}</ion-badge>
-            <span>{{ isGamesMode ? platformLabel(game.platforms) : mediaTypeLabel(game) }}</span>
-          </div>
-          <h3>{{ game.name }}</h3>
-          <p>{{ game.description || game.genre || 'No description yet.' }}</p>
-
-          <div class="meta-grid">
-            <span>
-              <ion-icon name="calendar-clear-outline"></ion-icon>
-              {{ releaseLabel(game) }}
-            </span>
-            <span>
-              <ion-icon name="time-outline"></ion-icon>
-              {{ durationLabel(game) }}
-            </span>
-          </div>
-
-          <div class="progress-block" *ngIf="hasLibraryEntry(game)">
-            <div>
-              <span>{{ playedLabel(game) }}</span>
-              <strong>{{ progressOf(game) }}%</strong>
-            </div>
-            <div class="progress-track">
-              <span [style.width.%]="progressOf(game)"></span>
-            </div>
-          </div>
-
-        </div>
-      </article>
+      <app-media-library-card
+        *ngFor="let game of filteredGames; trackBy: trackByGameId"
+        [item]="game"
+        [mediaMode]="mediaMode"
+        [isAdding]="isAdding(game)"
+        (edit)="openGameListDialog($event)"
+        (details)="openDetails($event)">
+      </app-media-library-card>
     </section>
 
     <section class="game-list" *ngIf="!isLoading && viewMode === 'list' && filteredGames.length">
-      <article class="list-row" *ngFor="let game of filteredGames; trackBy: trackByGameId">
-        <ion-button
-          fill="clear"
-          class="quick-add-button list-row__add"
-          [class.quick-add-button--edit]="hasLibraryEntry(game)"
-          [disabled]="isAdding(game)"
-          [attr.aria-label]="(hasLibraryEntry(game) ? 'Edit ' : 'Add ') + game.name + (hasLibraryEntry(game) ? ' in my library' : ' to my library')"
-          (click)="openGameListDialog(game)">
-          <ion-icon slot="icon-only" [name]="isAdding(game) ? 'hourglass-outline' : (hasLibraryEntry(game) ? 'create-outline' : 'add-outline')"></ion-icon>
-        </ion-button>
-        <img [src]="imageFor(game)" alt="" (click)="openDetails(game)" />
-        <div class="list-row__main" (click)="openDetails(game)">
-          <div class="badge-row">
-            <ion-badge>{{ statusLabel(game) }}</ion-badge>
-            <span>{{ isGamesMode ? platformLabel(game.platforms) : mediaTypeLabel(game) }}</span>
-          </div>
-          <h3>{{ game.name }}</h3>
-          <p>{{ game.genre || 'No genre' }} · {{ releaseLabel(game) }}</p>
-        </div>
-        <div class="list-row__stats">
-          <strong>{{ durationLabel(game) }}</strong>
-          <span>{{ hasLibraryEntry(game) ? remainingLabel(game) : 'Catalog' }}</span>
-        </div>
-      </article>
+      <app-media-library-list-row
+        *ngFor="let game of filteredGames; trackBy: trackByGameId"
+        [item]="game"
+        [mediaMode]="mediaMode"
+        [isAdding]="isAdding(game)"
+        (edit)="openGameListDialog($event)"
+        (details)="openDetails($event)">
+      </app-media-library-list-row>
     </section>
 
     <section class="empty-state" *ngIf="!isLoading && !filteredGames.length">

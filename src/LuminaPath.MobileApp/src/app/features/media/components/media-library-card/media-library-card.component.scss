@@ -1,0 +1,172 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.game-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 18px 46px rgba(16, 24, 40, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.quick-add-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  --padding-bottom: 0;
+  --padding-end: 0;
+  --padding-start: 0;
+  --padding-top: 0;
+  --border-radius: 14px;
+  --background: rgba(255, 255, 255, 0.9);
+  --background-hover: rgba(255, 255, 255, 1);
+  --background-focused: rgba(255, 255, 255, 1);
+  --box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
+  --color: var(--accent);
+  backdrop-filter: blur(16px);
+}
+
+.quick-add-button::part(native) {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+}
+
+.quick-add-button--edit {
+  --background: rgba(16, 185, 129, 0.92);
+  --background-hover: rgba(5, 150, 105, 0.98);
+  --background-focused: rgba(5, 150, 105, 0.98);
+  --color: #fff;
+}
+
+.quick-add-button ion-icon {
+  width: 21px;
+  height: 21px;
+}
+
+.game-card img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: #dbe3ef;
+}
+
+.game-card__content {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 14px;
+}
+
+.badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+ion-badge {
+  --background: var(--accent-soft);
+  --color: var(--accent);
+  font-weight: 750;
+}
+
+.badge-row span,
+.game-card p,
+.meta-grid span,
+.progress-block span {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.game-card h3 {
+  overflow: hidden;
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-card p {
+  display: -webkit-box;
+  min-height: 42px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.meta-grid span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.progress-block {
+  display: grid;
+  gap: 8px;
+}
+
+.progress-block > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.progress-block strong {
+  color: var(--ink);
+}
+
+.progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--accent-soft);
+}
+
+.progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+@media (prefers-color-scheme: dark) {
+  .quick-add-button {
+    --background: rgba(17, 24, 39, 0.86);
+    --background-hover: rgba(31, 41, 55, 0.96);
+    --background-focused: rgba(31, 41, 55, 0.96);
+    --color: var(--accent);
+  }
+
+  .quick-add-button::part(native) {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .quick-add-button--edit {
+    --background: rgba(16, 185, 129, 0.86);
+    --background-hover: rgba(5, 150, 105, 0.96);
+    --background-focused: rgba(5, 150, 105, 0.96);
+    --color: #ecfdf5;
+  }
+}

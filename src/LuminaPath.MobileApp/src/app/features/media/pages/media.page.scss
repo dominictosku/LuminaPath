@@ -30,8 +30,6 @@
 
 .hero,
 .toolbar-panel,
-.game-card,
-.list-row,
 .notice,
 .empty-state,
 .loading-grid article {
@@ -71,8 +69,6 @@
 
 .hero h1,
 .results-heading h2,
-.game-card h3,
-.list-row h3,
 .empty-state h2 {
   margin: 0;
   color: inherit;
@@ -212,188 +208,9 @@ ion-select {
   font-weight: 820;
 }
 
-.game-card {
-  position: relative;
-  overflow: hidden;
-  border-radius: 24px;
-}
-
-.quick-add-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
-  width: 42px;
-  height: 42px;
-  margin: 0;
-  --padding-bottom: 0;
-  --padding-end: 0;
-  --padding-start: 0;
-  --padding-top: 0;
-  --border-radius: 14px;
-  --background: rgba(255, 255, 255, 0.9);
-  --background-hover: rgba(255, 255, 255, 1);
-  --background-focused: rgba(255, 255, 255, 1);
-  --box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
-  --color: var(--accent);
-  backdrop-filter: blur(16px);
-}
-
-.quick-add-button::part(native) {
-  border: 1px solid rgba(255, 255, 255, 0.72);
-}
-
-.quick-add-button--edit {
-  --background: rgba(16, 185, 129, 0.92);
-  --background-hover: rgba(5, 150, 105, 0.98);
-  --background-focused: rgba(5, 150, 105, 0.98);
-  --color: #fff;
-}
-
-.quick-add-button ion-icon {
-  width: 21px;
-  height: 21px;
-}
-
-.game-card img {
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  object-fit: cover;
-  background: #dbe3ef;
-}
-
-.game-card__content {
-  display: grid;
-  gap: 12px;
-  padding: 14px;
-}
-
-.badge-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-ion-badge {
-  --background: var(--accent-soft);
-  --color: var(--accent);
-  font-weight: 750;
-}
-
-.badge-row span,
-.game-card p,
-.list-row p,
-.list-row__stats span,
-.meta-grid span,
-.progress-block span,
-.empty-state p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.84rem;
-}
-
-.game-card h3,
-.list-row h3 {
-  overflow: hidden;
-  color: var(--ink);
-  font-size: 1.08rem;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.game-card p {
-  display: -webkit-box;
-  min-height: 42px;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.meta-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.meta-grid span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.progress-block {
-  display: grid;
-  gap: 8px;
-}
-
-.progress-block > div:first-child {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.progress-block strong,
-.list-row__stats strong {
-  color: var(--ink);
-}
-
-.progress-track {
-  height: 8px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--accent-soft);
-}
-
-.progress-track span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-}
-
 .game-list {
   display: grid;
   gap: 10px;
-}
-
-.list-row {
-  position: relative;
-  display: grid;
-  grid-template-columns: 74px minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 58px 10px 10px;
-  border-radius: 20px;
-}
-
-.list-row__add {
-  top: 50%;
-  right: 10px;
-  transform: translateY(-50%);
-}
-
-.list-row img {
-  width: 74px;
-  height: 74px;
-  border-radius: 15px;
-  object-fit: cover;
-}
-
-.list-row__main {
-  display: grid;
-  min-width: 0;
-  gap: 5px;
-}
-
-.list-row__stats {
-  display: grid;
-  justify-items: end;
-  gap: 3px;
-  min-width: 66px;
 }
 
 .empty-state {
@@ -811,24 +628,6 @@ ion-badge {
     background: rgba(20, 83, 45, 0.38);
   }
 
-  .quick-add-button {
-    --background: rgba(17, 24, 39, 0.86);
-    --background-hover: rgba(31, 41, 55, 0.96);
-    --background-focused: rgba(31, 41, 55, 0.96);
-    --color: var(--accent);
-  }
-
-  .quick-add-button::part(native) {
-    border-color: rgba(255, 255, 255, 0.12);
-  }
-
-  .quick-add-button--edit {
-    --background: rgba(16, 185, 129, 0.86);
-    --background-hover: rgba(5, 150, 105, 0.96);
-    --background-focused: rgba(5, 150, 105, 0.96);
-    --color: #ecfdf5;
-  }
-
   .editor-stats article,
   .form-field input,
   .form-field select,
@@ -882,3 +681,4 @@ ion-badge {
     padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
   }
 }
+
