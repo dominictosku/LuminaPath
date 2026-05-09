@@ -1,0 +1,295 @@
+@page "/Media/Series"
+@using LuminaPath.Features.Media.Components
+@using LuminaPath.Features.Media.Series.Components
+@using LuminaPath.Features.Media.Series.ViewModel
+@using LuminaPath.Infrastructure.Services.ModelServices
+@using LuminaPath.Pages.Media
+@using LuminaPath.Pages.Media.Components
+@inject SeriesService SeriesService
+@inherits MediaGridActions<LuminaPath.Core.Models.Series, SeriesViewModel, SeriesFormDialog>
+
+<PageTitle>Series</PageTitle>
+
+<div class="media-page-header">
+    <div>
+        <p class="eyebrow">Library</p>
+        <h1>Series</h1>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Browse, compare, and maintain the series catalog.</MudText>
+    </div>
+    <MudButton OnClick="SwitchView" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@ViewIcon">@ToggleText</MudButton>
+</div>
+
+<AdvancedSearch Model="_filter" OnConditionChanged="ReloadData" />
+
+@if (IsGrid)
+{
+    <LuminaGrid GetData="@(GetData)" T="SeriesViewModel" Loading="@loading" @bind-SelectedItems="selectedItems" @ref="_table" SortMode="SortMode.Single">
+        <ToolBarContent>
+            <TableActions TItem="SeriesViewModel" Page="this" loading="loading" selectedItems="selectedItems" />
+        </ToolBarContent>
+        <Columns>
+            <SelectColumn ShowInFooter="false"></SelectColumn>
+            <TemplateColumn CellStyle="width:72px" Title="" Sortable="false">
+                <CellTemplate>
+                    <div class="table-cover" style="background-image: url('@Cover(context.Item)');"></div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Series" SortBy="@((SeriesViewModel x) => x == null ? "" : x.Name)" Sortable="true">
+                <CellTemplate>
+                    <div class="title-cell">
+                        <MudText Typo="Typo.body1">@context.Item.Name</MudText>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@Summary(context.Item)</MudText>
+                        <div class="chip-row">
+                            @foreach (var genre in context.Item.Genres.Take(3))
+                            {
+                                <span class="soft-chip">@genre</span>
+                            }
+                        </div>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Details" SortBy="@((SeriesViewModel x) => x.ReleaseDate)" Sortable="true">
+                <CellTemplate>
+                    <div class="detail-stack">
+                        <span><MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" /> @WatchTime(context.Item)</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.AvTimer" Size="Size.Small" /> @EpisodeWatchTime(context.Item)</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.FormatListNumbered" Size="Size.Small" /> @EpisodeCount(context.Item)</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" /> @ReleaseDate(context.Item)</span>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Source">
+                <CellTemplate>
+                    <span class="source-pill">@context.Item.Source</span>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn CellStyle="width:76px" Title="Actions" Sortable="false">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Variant="Variant.Filled" DropShadow="false" Size="Size.Small" Dense="true" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+                        <MudMenuItem OnClick="@(async () => await OnUpdate(context.Item))">Edit</MudMenuItem>
+                        <MudMenuItem OnClick="@(async () => await Delete(context.Item))">Delete</MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent><MudText>No series found</MudText></NoRecordsContent>
+        <LoadingContent><MudText>Loading series</MudText></LoadingContent>
+        <PagerContent><MudDataGridPager /></PagerContent>
+    </LuminaGrid>
+}
+else
+{
+    <div class="card-toolbar">
+        <TableActions Page="this" loading="loading" selectedItems="selectedItems" />
+    </div>
+    <div class="media-card-grid">
+        @foreach (var series in SeriesItems)
+        {
+            <article class="media-card">
+                <div class="card-cover" style="background-image: url('@Cover(series)');">
+                    <span class="source-pill overlay">@series.Source</span>
+                </div>
+                <div class="media-card-body">
+                    <div>
+                        <h2>@series.Name</h2>
+                        <p>@Summary(series)</p>
+                    </div>
+                    <div class="chip-row">
+                        @foreach (var genre in series.Genres.Take(3))
+                        {
+                            <span class="soft-chip">@genre</span>
+                        }
+                    </div>
+                    <div class="card-metrics">
+                        <span><MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" /> @WatchTime(series)</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.AvTimer" Size="Size.Small" /> @EpisodeWatchTime(series)</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.FormatListNumbered" Size="Size.Small" /> @EpisodeCount(series)</span>
+                        <span><MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" /> @ReleaseDate(series)</span>
+                    </div>
+                </div>
+                <div class="media-card-actions">
+                    <MudButton OnClick="@(() => OnUpdate(series))" Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit">Edit</MudButton>
+                    <MudButton OnClick="@(async () => await Delete(series))" Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete">Delete</MudButton>
+                </div>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    private readonly string _placeholderCover = "/Images/Placeholder.png";
+    private List<SeriesViewModel> SeriesItems = new();
+    private MudDataGrid<SeriesViewModel> _table = default!;
+    protected override string EntityLabel => "Series";
+    private string ViewIcon => IsGrid ? Icons.Material.Filled.ViewModule : Icons.Material.Filled.TableRows;
+
+    protected override void OnInitialized()
+    {
+        ModelService = SeriesService;
+        base.OnInitialized();
+    }
+
+    public override async Task ReloadData()
+    {
+        if (IsGrid)
+        {
+            await _table.ReloadServerData();
+        }
+        else
+        {
+            SeriesItems = await GetData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task SwitchView()
+    {
+        IsGrid = !IsGrid;
+        await ReloadData();
+    }
+
+    private async Task<List<SeriesViewModel>> GetData()
+    {
+        var result = await SeriesService.GetAll();
+        var series = mapper.Map<List<SeriesViewModel>>(result);
+        series = ApplyFilters(series).ToList();
+        SeriesItems = series;
+        return series;
+    }
+
+    private IEnumerable<SeriesViewModel> ApplyFilters(IEnumerable<SeriesViewModel> series)
+    {
+        if (!string.IsNullOrWhiteSpace(_filter.SearchString))
+        {
+            var search = _filter.SearchString.Trim();
+            series = series.Where(item =>
+                Contains(item.Name, search) ||
+                Contains(item.Description, search) ||
+                Contains(item.Source, search) ||
+                item.Genres.Any(genre => Contains(genre, search)));
+        }
+
+        if (_filter.From is not null)
+        {
+            series = series.Where(item => item.ReleaseDate >= _filter.From);
+        }
+
+        if (_filter.To is not null)
+        {
+            series = series.Where(item => item.ReleaseDate <= _filter.To);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_filter.Genre))
+        {
+            var genreFilter = _filter.Genre.Trim();
+            series = series.Where(item => item.Genres.Any(genre => Contains(genre, genreFilter)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(_filter.Source))
+        {
+            var sourceFilter = _filter.Source.Trim();
+            series = series.Where(item => Contains(item.Source, sourceFilter));
+        }
+
+        return series;
+    }
+
+    private string Cover(LuminaPath.Core.Models.Series? series)
+    {
+        return string.IsNullOrWhiteSpace(series?.Image?.Url)
+            ? _placeholderCover
+            : NormalizeUrl(series.Image.Url);
+    }
+
+    private static string NormalizeUrl(string url)
+    {
+        return url.StartsWith("http", StringComparison.OrdinalIgnoreCase) || url.StartsWith("/")
+            ? url
+            : $"/{url}";
+    }
+
+    private static string Summary(LuminaPath.Core.Models.Series series)
+    {
+        if (string.IsNullOrWhiteSpace(series.Description))
+        {
+            return series.Genres.Count > 0 ? string.Join(" / ", series.Genres.Take(3)) : "No description yet";
+        }
+
+        return series.Description.Length > 120 ? $"{series.Description[..120]}..." : series.Description;
+    }
+
+    private static string WatchTime(LuminaPath.Core.Models.Series series)
+    {
+        return series.ExpectedWatchTimeMinutes is null ? "No total estimate" : $"{FormatMinutes(series.ExpectedWatchTimeMinutes.Value)} total";
+    }
+
+    private static string EpisodeWatchTime(LuminaPath.Core.Models.Series series)
+    {
+        return series.ExpectedWatchTimePerEpisodeMinutes is null ? "No episode estimate" : $"{FormatMinutes(series.ExpectedWatchTimePerEpisodeMinutes.Value)} / episode";
+    }
+
+    private static string EpisodeCount(LuminaPath.Core.Models.Series series)
+    {
+        return series.EpisodeCount is null ? "No episodes" : $"{series.EpisodeCount} episodes";
+    }
+
+    private static string ReleaseDate(LuminaPath.Core.Models.Series series)
+    {
+        return series.ReleaseDate?.ToString("dd.MM.yyyy") ?? "No date";
+    }
+
+    private static string FormatMinutes(int minutes)
+    {
+        if (minutes < 60)
+        {
+            return $"{minutes} min";
+        }
+
+        var hours = minutes / 60;
+        var remaining = minutes % 60;
+        return remaining == 0 ? $"{hours}h" : $"{hours}h {remaining}m";
+    }
+
+    private static bool Contains(string? value, string search)
+    {
+        return value?.Contains(search, StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    protected override DialogParameters<SeriesFormDialog> CreateDialogParameters(SeriesViewModel command, Func<SeriesViewModel, Task> OnSubmit)
+    {
+        return new DialogParameters<SeriesFormDialog>
+            {
+                { x => x.Refresh, new Action(async () => await ReloadData()) },
+                { x => x.Model, command },
+                { x => x.loading, loading },
+                { x => x.EventCallBack, OnSubmit },
+                { x => x.OnSubmitFile, SubmitFile },
+                { x => x.OnDeleteImage, DeleteImage }
+            };
+    }
+}
+
+<style>
+    .media-page-header { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .media-page-header h1 { margin: 0; letter-spacing: 0; }
+    .eyebrow { margin: 0 0 4px; color: var(--mud-palette-primary); font-size: .76rem; font-weight: 800; letter-spacing: 0; text-transform: uppercase; }
+    .table-cover { width: 52px; height: 64px; border-radius: 6px; background-color: #263346; background-position: center; background-size: cover; box-shadow: 0 8px 22px rgba(0, 0, 0, .18); }
+    .title-cell, .detail-stack { display: grid; gap: 4px; }
+    .title-cell { min-width: 240px; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .soft-chip, .source-pill { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 9px; border-radius: 999px; background: rgba(118, 228, 196, .12); color: var(--mud-palette-text-primary); font-size: .78rem; font-weight: 700; }
+    .source-pill { background: rgba(117, 167, 255, .14); }
+    .source-pill.overlay { position: absolute; top: 10px; right: 10px; background: rgba(9, 15, 26, .82); color: #fff; }
+    .detail-stack, .card-metrics { color: var(--mud-palette-text-secondary); font-size: .88rem; }
+    .detail-stack span, .card-metrics span { display: inline-flex; align-items: center; gap: 6px; }
+    .card-toolbar { margin: 8px 0 14px; padding: 10px 0; }
+    .media-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .media-card { display: grid; grid-template-rows: 190px 1fr auto; min-height: 420px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 8px; background: var(--mud-palette-surface); overflow: hidden; box-shadow: 0 14px 34px rgba(0, 0, 0, .14); }
+    .card-cover { position: relative; background-color: #263346; background-position: center; background-size: cover; }
+    .media-card-body { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+    .media-card h2 { margin: 0; font-size: 1.15rem; line-height: 1.2; letter-spacing: 0; }
+    .media-card p { margin: 6px 0 0; color: var(--mud-palette-text-secondary); line-height: 1.45; }
+    .card-metrics { display: grid; gap: 6px; margin-top: auto; }
+    .media-card-actions { display: flex; justify-content: space-between; padding: 8px 10px 10px; border-top: 1px solid rgba(255, 255, 255, .08); }
+    @@media (max-width: 720px) { .media-page-header { align-items: stretch; flex-direction: column; } }
+</style>

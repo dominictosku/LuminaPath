@@ -105,6 +105,11 @@ nav {
     --nav-accent-rgb: 98, 217, 137;
 }
 
+.nav-series {
+    --nav-accent: #4fd1c5;
+    --nav-accent-rgb: 79, 209, 197;
+}
+
 .media-nav-group ::deep > .mud-nav-link {
     border: 1px solid rgba(var(--nav-accent-rgb), .16);
     background: rgba(var(--nav-accent-rgb), .055);

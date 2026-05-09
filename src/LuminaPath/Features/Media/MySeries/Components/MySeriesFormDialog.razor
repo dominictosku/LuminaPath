@@ -1,0 +1,188 @@
+@using LuminaPath.Core.Enums
+@using LuminaPath.Core.Models
+@using LuminaPath.Pages.Media.Components
+@using Color = MudBlazor.Color
+@inherits BaseFormDialog<MySeries>
+
+<MudDialog>
+    <DialogContent>
+        <MudForm Model="@Model" @ref="@_form">
+            <MudGrid Spacing="3">
+                <MudItem xs="12">
+                    <div class="selected-media-preview">
+                        <div class="selected-cover" style="background-image: url('@SelectedSeriesCover');"></div>
+                        <div>
+                            <MudText Typo="Typo.subtitle1">@SelectedSeriesName</MudText>
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary">@SelectedSeriesDetail</MudText>
+                        </div>
+                    </div>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect @bind-Value="Model.SeriesId" Label="Series" Clearable="true" Variant="Variant.Outlined">
+                        @foreach (var series in SeriesSelect)
+                        {
+                            <MudSelectItem Value="series.Id">@series.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect @bind-Value="Model.Status" Label="Status" Variant="Variant.Outlined">
+                        @foreach (var status in Enum.GetValues(typeof(MediaStatus)).Cast<MediaStatus>())
+                        {
+                            <MudSelectItem Value="status">@status</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudNumericField T="int" @bind-Value="Model.Priority" Label="Priority" Min="1" Max="4" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudNumericField T="short?" @bind-Value="Model.Rating" Label="Rating" Min="@((short?)1)" Max="@((short?)10)" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="Started On" @bind-Date="Model.StartDate" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" Clearable="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="Finished On" @bind-Date="Model.EndDate" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" Clearable="true" />
+                </MudItem>
+                <MudItem xs="12">
+                    <div class="time-summary">
+                        <div class="time-summary-heading">
+                            <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Primary" />
+                            <div>
+                                <MudText Typo="Typo.subtitle1">Watch Progress</MudText>
+                                <MudText Typo="Typo.body2" Class="mud-text-secondary">Watched time is calculated from the current episode and the series estimate.</MudText>
+                            </div>
+                        </div>
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12" md="4">
+                                <MudNumericField T="int?" @bind-Value="Model.CurrentEpisode" Label="Current episode" Min="@((int?)0)" Max="@SelectedEpisodeCount" Variant="Variant.Outlined" />
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudTextField T="string" Value="@PerEpisodeWatchTime" Label="Per episode" ReadOnly="true" Variant="Variant.Outlined" />
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudTextField T="string" Value="@CalculatedWatchTime" Label="Calculated watched time" ReadOnly="true" Variant="Variant.Filled" />
+                            </MudItem>
+                        </MudGrid>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Submit" Disabled="@loading">
+            @if (loading)
+            {
+                <span class="spinner-border spinner-border-sm mr-1"></span>
+            }
+            Save
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public List<Core.Models.Series> SeriesSelect { get; set; } = new();
+
+    private Core.Models.Series? SelectedSeries => SeriesSelect.FirstOrDefault(x => x.Id == Model.SeriesId) ?? Model.Series;
+    private string SelectedSeriesName => SelectedSeries?.Name ?? "Select a series";
+    private string SelectedSeriesDetail => SelectedSeries?.Genres?.Count > 0
+        ? string.Join(" / ", SelectedSeries.Genres.Take(3))
+        : SelectedSeries?.Description ?? "Choose the series this entry belongs to";
+    private string SelectedSeriesCover => NormalizeUrl(SelectedSeries?.Image?.Url) ?? "/Images/Placeholder.png";
+    private int? SelectedEpisodeCount => SelectedSeries?.EpisodeCount;
+    private string PerEpisodeWatchTime => SelectedSeries?.ExpectedWatchTimePerEpisodeMinutes is null
+        ? "No estimate"
+        : FormatMinutes(SelectedSeries.ExpectedWatchTimePerEpisodeMinutes.Value);
+    private string CalculatedWatchTime => CalculatedWatchTimeMinutes is null
+        ? "No estimate"
+        : FormatMinutes(CalculatedWatchTimeMinutes.Value);
+    private int? CalculatedWatchTimeMinutes => Model.CurrentEpisode is null || SelectedSeries?.ExpectedWatchTimePerEpisodeMinutes is null
+        ? null
+        : Math.Max(0, Model.CurrentEpisode.Value) * SelectedSeries.ExpectedWatchTimePerEpisodeMinutes.Value;
+
+    private MudForm? _form;
+
+    public override async Task Submit()
+    {
+        NormalizeDates();
+        Model.RecalculateWatchTime(SelectedSeries);
+        await base.Submit();
+    }
+
+    private void NormalizeDates()
+    {
+        if (Model.StartDate.HasValue)
+        {
+            Model.StartDate = DateTime.SpecifyKind(Model.StartDate.Value, DateTimeKind.Utc);
+        }
+        if (Model.EndDate.HasValue)
+        {
+            Model.EndDate = DateTime.SpecifyKind(Model.EndDate.Value, DateTimeKind.Utc);
+        }
+    }
+
+    private static string? NormalizeUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        return url.StartsWith("http", StringComparison.OrdinalIgnoreCase) || url.StartsWith("/")
+            ? url
+            : $"/{url}";
+    }
+
+    private static string FormatMinutes(int minutes)
+    {
+        if (minutes < 60)
+        {
+            return $"{minutes} min";
+        }
+
+        var hours = minutes / 60;
+        var remaining = minutes % 60;
+        return remaining == 0 ? $"{hours}h" : $"{hours}h {remaining}m";
+    }
+}
+
+<style>
+    .selected-media-preview {
+        display: grid;
+        grid-template-columns: 72px 1fr;
+        gap: 14px;
+        align-items: center;
+        min-height: 88px;
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .03);
+    }
+
+    .selected-cover {
+        width: 72px;
+        height: 72px;
+        border-radius: 6px;
+        background-color: #263346;
+        background-size: cover;
+        background-position: center;
+    }
+
+    .time-summary {
+        display: grid;
+        gap: 14px;
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: rgba(118, 228, 196, .06);
+    }
+
+    .time-summary-heading {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+</style>
