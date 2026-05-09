@@ -10,7 +10,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 {
     public class GameService : MediaModelService<Game, MyGame>
     {
-        public override string[] Includes { get; set; } = [nameof(Game.GameInfo), nameof(Game.MyGames), nameof(Game.Image)];
+        public override string[] Includes { get; set; } = [nameof(Game.ExternalIds), nameof(Game.MyGames), nameof(Game.Image)];
         protected override string UserLibraryNavigationName => nameof(Game.MyGames);
 
         public GameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, DocumentService documentService, IObjectMapper mapper)

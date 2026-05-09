@@ -136,10 +136,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
                         Name = gameName,
                         Source = "PSN",
                         Platforms = platform,
-                        GameInfo = new()
-                        {
-                            PsnId = title.TitleId,
-                        }
+                        PsnId = title.TitleId
                     },
                 };
                 list.Add(game);
@@ -255,7 +252,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
                 Source = string.IsNullOrWhiteSpace(game?.Source) ? "PSN" : game.Source,
                 Platforms = game?.Platforms ?? 0,
                 ExternalProvider = ExternalMediaProvider.Psn,
-                ExternalId = game?.GameInfo?.PsnId,
+                ExternalId = game?.PsnId,
                 Status = gameToImport.Status,
                 Priority = 0,
                 Rating = gameToImport.Rating,

@@ -7,6 +7,8 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Enums;
+using LuminaPath.Core.Extensions;
 using LuminaPath.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
@@ -54,13 +56,13 @@ public sealed class GameNewsService
         await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
         var game = await context.Games
             .AsNoTracking()
-            .Include(g => g.GameInfo)
+            .Include(g => g.ExternalIds)
             .Where(g => g.Id == gameId)
             .Select(g => new
             {
                 g.Id,
                 g.Name,
-                SteamAppId = g.GameInfo == null ? null : g.GameInfo.SteamId,
+                g.ExternalIds
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -80,7 +82,8 @@ public sealed class GameNewsService
             }
         }
 
-        var items = await FetchSteamNewsAsync(game.SteamAppId, cancellationToken);
+        var steamAppId = game.ExternalIds.GetExternalId(ExternalMediaProvider.Steam);
+        var items = await FetchSteamNewsAsync(steamAppId, cancellationToken);
         if (items.Count == 0)
         {
             items = !string.IsNullOrWhiteSpace(customRssUrl)

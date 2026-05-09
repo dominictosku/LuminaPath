@@ -169,15 +169,15 @@
                                 <MudGrid Spacing="2">
                                     <MudItem xs="12" sm="6">
                                         <MudTextField Label="PSN ID"
-                                                      @bind-Value="Model.GameInfo!.PsnId"
+                                                      @bind-Value="Model.PsnId"
                                                       Variant="Variant.Outlined"
-                                                      For="@(() => Model.GameInfo!.PsnId)" />
+                                                      For="@(() => Model.PsnId)" />
                                     </MudItem>
                                     <MudItem xs="12" sm="6">
                                         <MudTextField Label="Steam ID"
-                                                      @bind-Value="Model.GameInfo!.SteamId"
+                                                      @bind-Value="Model.SteamId"
                                                       Variant="Variant.Outlined"
-                                                      For="@(() => Model.GameInfo!.SteamId)" />
+                                                      For="@(() => Model.SteamId)" />
                                     </MudItem>
                                 </MudGrid>
                             </MudExpansionPanel>
@@ -317,7 +317,6 @@
 
     protected override void OnInitialized()
     {
-        Model.GameInfo ??= new GameInfo();
         Model.Genres ??= [];
 
         if (Model.MyGames?.Any() == true)

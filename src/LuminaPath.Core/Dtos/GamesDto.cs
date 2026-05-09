@@ -2,7 +2,6 @@ using LuminaPath.Core.Enums;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Base;
-using LuminaPath.Core.Models.Third_Party;
 using LuminaPath.Core.Validation;
 using System.ComponentModel.DataAnnotations;
 
@@ -56,6 +55,9 @@ namespace LuminaPath.Core.Dtos
         public string Source { get; set; } = string.Empty;
 
         public Document? Image { get; set; }
-        public GameInfo? GameInfo { get; set; }
+
+        public string? PsnId { get; set; }
+
+        public string? SteamId { get; set; }
     }
 }

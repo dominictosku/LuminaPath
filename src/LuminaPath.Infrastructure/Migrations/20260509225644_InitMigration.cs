@@ -8,7 +8,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LuminaPath.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class InitMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -79,12 +79,14 @@ namespace LuminaPath.Infrastructure.Migrations
                     Genres = table.Column<List<string>>(type: "text[]", nullable: false),
                     ReleaseDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Source = table.Column<string>(type: "text", nullable: false),
-                    Discriminator = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
+                    Discriminator = table.Column<string>(type: "character varying(8)", maxLength: 8, nullable: false),
                     ExpectedWatchTimePerEpisodeMinutes = table.Column<int>(type: "integer", nullable: true),
                     EpisodeCount = table.Column<int>(type: "integer", nullable: true),
                     Platforms = table.Column<int>(type: "integer", nullable: true),
                     Playtime = table.Column<int>(type: "integer", nullable: true),
-                    ExpectedWatchTimeMinutes = table.Column<int>(type: "integer", nullable: true)
+                    ExpectedWatchTimeMinutes = table.Column<int>(type: "integer", nullable: true),
+                    Series_ExpectedWatchTimePerEpisodeMinutes = table.Column<int>(type: "integer", nullable: true),
+                    Series_EpisodeCount = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -365,21 +367,21 @@ namespace LuminaPath.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "GameInfo",
+                name: "MediaExternalIds",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    GameId = table.Column<int>(type: "integer", nullable: false),
-                    PsnId = table.Column<string>(type: "text", nullable: true),
-                    SteamId = table.Column<string>(type: "text", nullable: true)
+                    MediaId = table.Column<int>(type: "integer", nullable: false),
+                    Provider = table.Column<int>(type: "integer", nullable: false),
+                    ExternalId = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_GameInfo", x => x.Id);
+                    table.PrimaryKey("PK_MediaExternalIds", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_GameInfo_Media_GameId",
-                        column: x => x.GameId,
+                        name: "FK_MediaExternalIds_Media_MediaId",
+                        column: x => x.MediaId,
                         principalTable: "Media",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -479,6 +481,40 @@ namespace LuminaPath.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_MyMovies_Media_MovieId",
                         column: x => x.MovieId,
+                        principalTable: "Media",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MySeries",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    SeriesId = table.Column<int>(type: "integer", nullable: false),
+                    CurrentWatchTimeMinutes = table.Column<int>(type: "integer", nullable: true),
+                    CurrentEpisode = table.Column<int>(type: "integer", nullable: true),
+                    Rating = table.Column<short>(type: "smallint", nullable: true),
+                    Priority = table.Column<int>(type: "integer", nullable: false),
+                    StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    EndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    TimeSpend = table.Column<double>(type: "double precision", nullable: true),
+                    LuminaUserId = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MySeries", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MySeries_AspNetUsers_LuminaUserId",
+                        column: x => x.LuminaUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MySeries_Media_SeriesId",
+                        column: x => x.SeriesId,
                         principalTable: "Media",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -670,12 +706,6 @@ namespace LuminaPath.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_GameInfo_GameId",
-                table: "GameInfo",
-                column: "GameId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_GamingSessions_LuminaUserId_ScheduledAt",
                 table: "GamingSessions",
                 columns: new[] { "LuminaUserId", "ScheduledAt" });
@@ -695,6 +725,17 @@ namespace LuminaPath.Infrastructure.Migrations
                 name: "IX_Media_Name",
                 table: "Media",
                 column: "Name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MediaExternalIds_MediaId",
+                table: "MediaExternalIds",
+                column: "MediaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MediaExternalIds_Provider_ExternalId",
+                table: "MediaExternalIds",
+                columns: new[] { "Provider", "ExternalId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -732,6 +773,16 @@ namespace LuminaPath.Infrastructure.Migrations
                 name: "IX_MyMovies_MovieId",
                 table: "MyMovies",
                 column: "MovieId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MySeries_LuminaUserId",
+                table: "MySeries",
+                column: "LuminaUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MySeries_SeriesId",
+                table: "MySeries",
+                column: "SeriesId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_QuestProfiles_LuminaUserId",
@@ -791,13 +842,13 @@ namespace LuminaPath.Infrastructure.Migrations
                 name: "Friendships");
 
             migrationBuilder.DropTable(
-                name: "GameInfo");
-
-            migrationBuilder.DropTable(
                 name: "GamingSessions");
 
             migrationBuilder.DropTable(
                 name: "LuminaUserInfo");
+
+            migrationBuilder.DropTable(
+                name: "MediaExternalIds");
 
             migrationBuilder.DropTable(
                 name: "MyAnimes");
@@ -807,6 +858,9 @@ namespace LuminaPath.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "MyMovies");
+
+            migrationBuilder.DropTable(
+                name: "MySeries");
 
             migrationBuilder.DropTable(
                 name: "QuestProfiles");

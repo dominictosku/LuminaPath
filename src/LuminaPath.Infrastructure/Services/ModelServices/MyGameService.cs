@@ -3,6 +3,8 @@ using CsvHelper.Configuration;
 using CsvHelper.TypeConversion;
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Entities.Results;
+using LuminaPath.Core.Enums;
+using LuminaPath.Core.Extensions;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
@@ -22,6 +24,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         [
             nameof(MyGame.Game),
             $"{nameof(MyGame.Game)}.{nameof(Game.Image)}",
+            $"{nameof(MyGame.Game)}.{nameof(Game.ExternalIds)}",
             nameof(MyGame.MyGameInfo)
         ];
         protected override Func<IQueryable<MyGame>, IOrderedQueryable<MyGame>> DefaultOrderBy => e => e.OrderByDescending(g => g.Game!.ReleaseDate);
@@ -38,7 +41,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 .Where(g => g.LuminaUserId == user.Id)
                 .Include(g => g.MyGameInfo)
                 .Include(g => g.Game)
-                    .ThenInclude(g => g!.GameInfo)
+                    .ThenInclude(g => g!.ExternalIds)
                 .OrderBy(g => g.Game!.Name)
                 .ToListAsync();
 
@@ -70,7 +73,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 Map(m => m.MyGameInfo!.FirstPlayed);
                 Map(m => m.MyGameInfo!.LastPlayed);
                 Map(m => m.MyGameInfo!.TrackedHours);
-                Map(m => m.Game!.GameInfo!.PsnId);
+                Map(m => m.Game!.ExternalIds.GetExternalId(ExternalMediaProvider.Psn)).Name("PsnId");
             }
         }
     }

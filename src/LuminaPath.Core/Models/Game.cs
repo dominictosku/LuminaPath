@@ -1,6 +1,5 @@
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models.Base;
-using LuminaPath.Core.Models.Third_Party;
 using System.ComponentModel.DataAnnotations;
 
 namespace LuminaPath.Core.Models
@@ -12,6 +11,5 @@ namespace LuminaPath.Core.Models
         [Display(Name = "Estimated playtime")]
         public int? Playtime { get; set; }
         public List<MyGame>? MyGames { get; set; }
-        public GameInfo? GameInfo { get; set; }
     }
 }

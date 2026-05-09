@@ -26,7 +26,7 @@
 	var baseInclude = nameof(MyGameDto.Game) + ".";
 	var infoInclude = nameof(MyGameDto.MyGameInfo)  + ".";
 	var nameInclude = baseInclude + nameof(Game.Name);
-	var psnIdInclude = baseInclude + nameof(GamesNoIncludeDto.GameInfo) + nameof(GameInfo.PsnId);
+	var psnIdInclude = baseInclude + nameof(GamesNoIncludeDto.PsnId);
 	var include1 = infoInclude + nameof(MyGameInfo.FirstPlayed);
 	var include2 = infoInclude + nameof(MyGameInfo.LastPlayed);
 	var include3 = infoInclude + nameof(MyGameInfo.TrackedHours);

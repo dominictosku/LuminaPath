@@ -311,6 +311,35 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.MediaExternalId", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("MediaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaId");
+
+                    b.HasIndex("Provider", "ExternalId")
+                        .IsUnique();
+
+                    b.ToTable("MediaExternalIds");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.MyAnime", b =>
                 {
                     b.Property<int>("Id")
@@ -638,31 +667,6 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasIndex("QuestSkillId");
 
                     b.ToTable("QuestSkillNodes");
-                });
-
-            modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.GameInfo", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("GameId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("PsnId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("SteamId")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GameId")
-                        .IsUnique();
-
-                    b.ToTable("GameInfo");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.LuminaUserInfo", b =>
@@ -1028,6 +1032,17 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Navigation("MyGame");
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.MediaExternalId", b =>
+                {
+                    b.HasOne("LuminaPath.Core.Models.Base.Media", "Media")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("MediaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Media");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.MyAnime", b =>
                 {
                     b.HasOne("LuminaPath.Core.Models.Anime", "Anime")
@@ -1155,17 +1170,6 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Navigation("QuestSkill");
                 });
 
-            modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.GameInfo", b =>
-                {
-                    b.HasOne("LuminaPath.Core.Models.Game", "Game")
-                        .WithOne("GameInfo")
-                        .HasForeignKey("LuminaPath.Core.Models.Third_Party.GameInfo", "GameId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Game");
-                });
-
             modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.LuminaUserInfo", b =>
                 {
                     b.HasOne("LuminaPath.Core.Models.LuminaUser", "User")
@@ -1261,6 +1265,8 @@ namespace LuminaPath.Infrastructure.Migrations
 
             modelBuilder.Entity("LuminaPath.Core.Models.Base.Media", b =>
                 {
+                    b.Navigation("ExternalIds");
+
                     b.Navigation("Image");
                 });
 
@@ -1294,8 +1300,6 @@ namespace LuminaPath.Infrastructure.Migrations
 
             modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
                 {
-                    b.Navigation("GameInfo");
-
                     b.Navigation("MyGames");
                 });
 

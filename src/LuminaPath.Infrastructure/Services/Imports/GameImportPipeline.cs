@@ -127,8 +127,6 @@ public sealed class GameImportPipeline
                 }
 
                 EnsureExternalId(game, item);
-                EnsureCompatibilityGameInfo(game, item);
-
                 game.MyGames ??= new List<MyGame>();
                 var myGame = game.MyGames.FirstOrDefault(entry => entry.LuminaUserId == user.Id);
                 if (myGame is null)
@@ -172,7 +170,6 @@ public sealed class GameImportPipeline
     {
         return context.Games
             .Include(game => game.ExternalIds)
-            .Include(game => game.GameInfo)
             .Include(game => game.MyGames!)
                 .ThenInclude(myGame => myGame.MyGameInfo);
     }
@@ -192,24 +189,9 @@ public sealed class GameImportPipeline
                 return byExternalId;
             }
 
-            var byCompatibilityId = games.FirstOrDefault(game => MatchesCompatibilityId(game, item));
-            if (byCompatibilityId is not null)
-            {
-                return byCompatibilityId;
-            }
         }
 
         return games.FirstOrDefault(game => game.Name.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private static bool MatchesCompatibilityId(Game game, GameImportItem item)
-    {
-        return item.ExternalProvider switch
-        {
-            ExternalMediaProvider.Steam => game.GameInfo?.SteamId?.Equals(NormalizeExternalId(item.ExternalId), StringComparison.OrdinalIgnoreCase) == true,
-            ExternalMediaProvider.Psn => game.GameInfo?.PsnId?.Equals(NormalizeExternalId(item.ExternalId), StringComparison.OrdinalIgnoreCase) == true,
-            _ => false
-        };
     }
 
     private static Game CreateGame(GameImportItem item, HashSet<string> names)
@@ -289,29 +271,6 @@ public sealed class GameImportPipeline
             Provider = item.ExternalProvider.Value,
             ExternalId = normalizedExternalId
         });
-    }
-
-    private static void EnsureCompatibilityGameInfo(Game game, GameImportItem item)
-    {
-        var normalizedExternalId = NormalizeExternalId(item.ExternalId);
-        if (item.ExternalProvider is null || string.IsNullOrWhiteSpace(normalizedExternalId))
-        {
-            return;
-        }
-
-        if (item.ExternalProvider is not (ExternalMediaProvider.Steam or ExternalMediaProvider.Psn))
-        {
-            return;
-        }
-
-        game.GameInfo ??= new GameInfo();
-        if (item.ExternalProvider == ExternalMediaProvider.Steam)
-        {
-            game.GameInfo.SteamId = normalizedExternalId;
-            return;
-        }
-
-        game.GameInfo.PsnId = normalizedExternalId;
     }
 
     private static string? NormalizeExternalId(string? externalId)

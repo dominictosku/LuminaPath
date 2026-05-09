@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LuminaPath.Infrastructure.Migrations
 {
     [DbContext(typeof(LuminaPathDbContext))]
-    [Migration("20260509084221_init")]
-    partial class Init
+    [Migration("20260509225644_InitMigration")]
+    partial class InitMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -103,8 +103,8 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.Property<string>("Discriminator")
                         .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("character varying(5)");
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
 
                     b.PrimitiveCollection<List<string>>("Genres")
                         .IsRequired()
@@ -314,6 +314,35 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.MediaExternalId", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("MediaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaId");
+
+                    b.HasIndex("Provider", "ExternalId")
+                        .IsUnique();
+
+                    b.ToTable("MediaExternalIds");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.MyAnime", b =>
                 {
                     b.Property<int>("Id")
@@ -447,6 +476,54 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasIndex("MovieId");
 
                     b.ToTable("MyMovies");
+                });
+
+            modelBuilder.Entity("LuminaPath.Core.Models.MySeries", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CurrentEpisode")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("CurrentWatchTimeMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LuminaUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<short?>("Rating")
+                        .HasColumnType("smallint");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<double?>("TimeSpend")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LuminaUserId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.ToTable("MySeries");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Quest", b =>
@@ -593,31 +670,6 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasIndex("QuestSkillId");
 
                     b.ToTable("QuestSkillNodes");
-                });
-
-            modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.GameInfo", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("GameId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("PsnId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("SteamId")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GameId")
-                        .IsUnique();
-
-                    b.ToTable("GameInfo");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.LuminaUserInfo", b =>
@@ -905,6 +957,28 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasDiscriminator().HasValue("Movie");
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.Series", b =>
+                {
+                    b.HasBaseType("LuminaPath.Core.Models.Base.Media");
+
+                    b.Property<int?>("EpisodeCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ExpectedWatchTimePerEpisodeMinutes")
+                        .HasColumnType("integer");
+
+                    b.ToTable("Media", t =>
+                        {
+                            t.Property("EpisodeCount")
+                                .HasColumnName("Series_EpisodeCount");
+
+                            t.Property("ExpectedWatchTimePerEpisodeMinutes")
+                                .HasColumnName("Series_ExpectedWatchTimePerEpisodeMinutes");
+                        });
+
+                    b.HasDiscriminator().HasValue("Series");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.DirectMessage", b =>
                 {
                     b.HasOne("LuminaPath.Core.Models.LuminaUser", "Recipient")
@@ -959,6 +1033,17 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Navigation("LuminaUser");
 
                     b.Navigation("MyGame");
+                });
+
+            modelBuilder.Entity("LuminaPath.Core.Models.MediaExternalId", b =>
+                {
+                    b.HasOne("LuminaPath.Core.Models.Base.Media", "Media")
+                        .WithMany("ExternalIds")
+                        .HasForeignKey("MediaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Media");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.MyAnime", b =>
@@ -1018,6 +1103,25 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Navigation("Movie");
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.MySeries", b =>
+                {
+                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "LuminaUser")
+                        .WithMany()
+                        .HasForeignKey("LuminaUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LuminaPath.Core.Models.Series", "Series")
+                        .WithMany("MySeries")
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LuminaUser");
+
+                    b.Navigation("Series");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.Quest", b =>
                 {
                     b.HasOne("LuminaPath.Core.Models.LuminaUser", "LuminaUser")
@@ -1067,17 +1171,6 @@ namespace LuminaPath.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("QuestSkill");
-                });
-
-            modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.GameInfo", b =>
-                {
-                    b.HasOne("LuminaPath.Core.Models.Game", "Game")
-                        .WithOne("GameInfo")
-                        .HasForeignKey("LuminaPath.Core.Models.Third_Party.GameInfo", "GameId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Game");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.LuminaUserInfo", b =>
@@ -1175,6 +1268,8 @@ namespace LuminaPath.Infrastructure.Migrations
 
             modelBuilder.Entity("LuminaPath.Core.Models.Base.Media", b =>
                 {
+                    b.Navigation("ExternalIds");
+
                     b.Navigation("Image");
                 });
 
@@ -1208,14 +1303,17 @@ namespace LuminaPath.Infrastructure.Migrations
 
             modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
                 {
-                    b.Navigation("GameInfo");
-
                     b.Navigation("MyGames");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Movie", b =>
                 {
                     b.Navigation("MyMovies");
+                });
+
+            modelBuilder.Entity("LuminaPath.Core.Models.Series", b =>
+                {
+                    b.Navigation("MySeries");
                 });
 #pragma warning restore 612, 618
         }

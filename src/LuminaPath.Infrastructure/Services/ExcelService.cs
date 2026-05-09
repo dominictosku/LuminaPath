@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Enums;
+using LuminaPath.Core.Extensions;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Third_Party;
 using LuminaPath.Infrastructure.Helper;
@@ -53,7 +54,7 @@ namespace LuminaPath.Infrastructure.Services
                 .Where(g => g.LuminaUserId == user.Id)
                 .Include(g => g.MyGameInfo)
                 .Include(g => g.Game)
-                    .ThenInclude(g => g!.GameInfo)
+                    .ThenInclude(g => g!.ExternalIds)
                 .OrderBy(g => g.Game!.Name)
                 .ToListAsync();
 
@@ -94,7 +95,7 @@ namespace LuminaPath.Infrastructure.Services
                 {
                     worksheet.Cell(row, 10).Value = game.Playtime.Value;
                 }
-                worksheet.Cell(row, 11).Value = game.GameInfo?.PsnId;
+                worksheet.Cell(row, 11).Value = game.ExternalIds.GetExternalId(ExternalMediaProvider.Psn);
                 if (myGame.Rating.HasValue)
                 {
                     worksheet.Cell(row, 12).Value = myGame.Rating.Value;

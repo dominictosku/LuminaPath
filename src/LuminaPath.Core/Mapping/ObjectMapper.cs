@@ -1,4 +1,6 @@
 using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Enums;
+using LuminaPath.Core.Extensions;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Base;
 using LuminaPath.Core.Models.Third_Party;
@@ -140,7 +142,7 @@ namespace LuminaPath.Core.Mapping
                 Playtime = source.Playtime,
                 Source = source.Source,
                 Image = MapDocument<MediaDocument>(source.Image),
-                GameInfo = source.GameInfo
+                ExternalIds = MapGameExternalIds(source.PsnId, source.SteamId)
             };
         }
 
@@ -173,7 +175,8 @@ namespace LuminaPath.Core.Mapping
                 Playtime = source.Playtime,
                 Source = source.Source,
                 Image = MapDocument<Document>(source.Image),
-                GameInfo = source.GameInfo
+                PsnId = source.ExternalIds.GetExternalId(ExternalMediaProvider.Psn),
+                SteamId = source.ExternalIds.GetExternalId(ExternalMediaProvider.Steam)
             };
         }
 
@@ -626,16 +629,7 @@ namespace LuminaPath.Core.Mapping
 
         private void NormalizeGameRelationships(Game source, Game destination)
         {
-            if (source.GameInfo == null)
-            {
-                destination.GameInfo = null;
-            }
-            else
-            {
-                destination.GameInfo = MapGameInfo(source.GameInfo);
-                destination.GameInfo.Game = destination;
-                destination.GameInfo.GameId = destination.Id > 0 ? destination.Id : 0;
-            }
+            destination.ExternalIds = MapExternalIds(source.ExternalIds, destination.Id);
 
             if (source.MyGames == null)
             {
@@ -751,15 +745,31 @@ namespace LuminaPath.Core.Mapping
                 .ToList();
         }
 
-        private static GameInfo MapGameInfo(GameInfo source)
+        private static List<MediaExternalId> MapGameExternalIds(string? psnId, string? steamId)
         {
-            return new GameInfo
-            {
-                Id = source.Id,
-                GameId = source.GameId,
-                PsnId = source.PsnId,
-                SteamId = source.SteamId
-            };
+            var externalIds = new List<MediaExternalId>();
+            externalIds.SetExternalId(ExternalMediaProvider.Psn, psnId);
+            externalIds.SetExternalId(ExternalMediaProvider.Steam, steamId);
+            return externalIds;
+        }
+
+        private static List<MediaExternalId> MapExternalIds(IEnumerable<MediaExternalId>? source, int mediaId)
+        {
+            return source?
+                .Where(externalId => !string.IsNullOrWhiteSpace(externalId.ExternalId))
+                .GroupBy(externalId => externalId.Provider)
+                .Select(group =>
+                {
+                    var externalId = group.First();
+                    return new MediaExternalId
+                    {
+                        Id = externalId.Id,
+                        MediaId = mediaId > 0 ? mediaId : externalId.MediaId,
+                        Provider = externalId.Provider,
+                        ExternalId = externalId.ExternalId.Trim()
+                    };
+                })
+                .ToList() ?? new List<MediaExternalId>();
         }
 
         private static MyGameInfo? MapMyGameInfo(MyGameInfo? source)
