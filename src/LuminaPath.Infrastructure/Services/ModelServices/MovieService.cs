@@ -13,6 +13,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             nameof(Movie.MyMovies),
             nameof(Movie.Image)
         ];
+        protected override string UserLibraryNavigationName => nameof(Movie.MyMovies);
 
         public MovieService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, DocumentService documentService, IObjectMapper mapper)
             : base(dbContextFactory, documentService, mapper)

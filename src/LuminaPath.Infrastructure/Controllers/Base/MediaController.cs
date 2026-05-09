@@ -29,4 +29,12 @@ public abstract class MediaController<TMedia, TMediaDto, TService, TUserMedia> :
         var result = await MediaService.GetAndMapEntities<TMediaDto>(mediaFilter, Includes, userId);
         return Ok(new PaginatedResult<TMediaDto>(result));
     }
+
+    [HttpGet("{id}")]
+    public override async Task<ActionResult<TMediaDto>> GetById(int? id)
+    {
+        var userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var result = await MediaService.GetByIdAndMap<TMediaDto>(id, Includes, userId);
+        return Ok(result);
+    }
 }

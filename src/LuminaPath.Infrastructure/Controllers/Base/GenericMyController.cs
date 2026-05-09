@@ -5,6 +5,7 @@ using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq.Expressions;
 
 namespace LuminaPath.Infrastructure.Controllers.Base
 {
@@ -21,14 +22,32 @@ namespace LuminaPath.Infrastructure.Controllers.Base
         [HttpGet]
         public virtual async Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)
         {
-            var result = await _service.GetAllPaginated<TEntityDto>(mediaFilter, Includes);
+            var (user, _) = await GetCurrentUserWithIdAsync();
+            if (user is null)
+            {
+                return LoginRequired();
+            }
+
+            Expression<Func<TEntity, bool>> userFilter = entity => entity.LuminaUserId == user.Id;
+            var result = await _service.GetAllPaginated<TEntityDto>(mediaFilter, Includes, userFilter);
             return Ok(new PaginatedResult<TEntityDto>(result));
         }
 
         [HttpGet("{id}")]
         public virtual async Task<ActionResult<TEntityDto>> GetById(int? id)
         {
+            var (user, _) = await GetCurrentUserWithIdAsync();
+            if (user is null)
+            {
+                return LoginRequired();
+            }
+
             var result = await _service.GetById(id, Includes);
+            if (result.LuminaUserId != user.Id)
+            {
+                return NotFound();
+            }
+
             return Ok(Mapper.Map<TEntityDto>(result));
         }
 
@@ -66,9 +85,21 @@ namespace LuminaPath.Infrastructure.Controllers.Base
                 f => BadRequest(f));
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         public virtual async Task<IActionResult> DeleteAsync(int? id)
         {
+            var (user, _) = await GetCurrentUserWithIdAsync();
+            if (user is null)
+            {
+                return LoginRequired();
+            }
+
+            var entity = await _service.GetById(id);
+            if (entity.LuminaUserId != user.Id)
+            {
+                return NotFound();
+            }
+
             var result = await _service.DeleteAsync(id);
             return result.Match<IActionResult>(
                 m => Ok(),

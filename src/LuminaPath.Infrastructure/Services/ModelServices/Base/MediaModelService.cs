@@ -35,6 +35,8 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
 
     protected abstract Expression<Func<TMedia, bool>> IsInUserLibrary(string userId);
 
+    protected abstract string UserLibraryNavigationName { get; }
+
     public override async Task<Result<int, FailedResult>> DeleteAsync(int? id)
     {
         if (id is null)
@@ -101,6 +103,32 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
         return CreatePaginatedList(entitiesDto, mediaFilter.Paging);
     }
 
+    public virtual async Task<TDto> GetByIdAndMap<TDto>(int? id, IEnumerable<string> includes, string? userId)
+    {
+        if (id is null)
+        {
+            throw new Exception("No id given");
+        }
+
+        await using var context = await GetDbContextAsync();
+        IQueryable<TMedia> query = context.Set<TMedia>().Include(media => media.Image);
+
+        if (userId != null)
+        {
+            query = IncludeUserLibrary(query, userId);
+            query = IncludeNonLibraryNavigations(query, includes);
+        }
+        else
+        {
+            query = IncludeNavigations(query, includes);
+        }
+
+        var entity = await query.FirstOrDefaultAsync(media => media.Id == id.Value)
+            ?? throw new KeyNotFoundException("Entity not found");
+
+        return _mapper.Map<TDto>(entity);
+    }
+
     protected virtual Expression<Func<TMedia, bool>> BuildFilterExpression(MediaFilter mediaFilter, string? userId = null)
     {
         Expression<Func<TMedia, bool>> filter = media => true;
@@ -157,5 +185,23 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
         return (includes ?? Includes)
             .Append(nameof(Media.Image))
             .Distinct();
+    }
+
+    private IQueryable<TMedia> IncludeNonLibraryNavigations(IQueryable<TMedia> query, IEnumerable<string>? includes)
+    {
+        return IncludeNavigations(
+            query,
+            includes?.Where(include =>
+                !string.Equals(include, nameof(Media.Image), StringComparison.Ordinal)
+                && !string.Equals(include, UserLibraryNavigationName, StringComparison.Ordinal)));
+    }
+
+    private static IQueryable<TMedia> IncludeNavigations(IQueryable<TMedia> query, IEnumerable<string>? includes)
+    {
+        return includes?
+            .Where(include => !string.IsNullOrWhiteSpace(include))
+            .Distinct()
+            .Aggregate(query, (current, include) => current.Include(include))
+            ?? query;
     }
 }

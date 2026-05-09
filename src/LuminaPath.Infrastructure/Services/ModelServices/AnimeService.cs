@@ -13,6 +13,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             nameof(Anime.MyAnimes),
             nameof(Anime.Image)
         ];
+        protected override string UserLibraryNavigationName => nameof(Anime.MyAnimes);
 
         public AnimeService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, DocumentService documentService, IObjectMapper mapper)
             : base(dbContextFactory, documentService, mapper)

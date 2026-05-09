@@ -57,7 +57,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
                 f => BadRequest(f));
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         public virtual async Task<IActionResult> DeleteAsync(int? id)
         {
             var result = await _service.DeleteAsync(id);
