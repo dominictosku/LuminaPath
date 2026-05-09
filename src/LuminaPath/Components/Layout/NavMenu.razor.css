@@ -85,7 +85,7 @@ nav {
     border-radius: 14px;
 }
 
-.media-nav-group {
+.media-nav-shell {
     --nav-accent: #75a7ff;
     --nav-accent-rgb: 117, 167, 255;
 }
@@ -106,27 +106,27 @@ nav {
 }
 
 .nav-series {
-    --nav-accent: #4fd1c5;
-    --nav-accent-rgb: 79, 209, 197;
+    --nav-accent: #facc15;
+    --nav-accent-rgb: 250, 204, 21;
 }
 
-.media-nav-group ::deep > .mud-nav-link {
+.media-nav-shell ::deep .media-nav-group > .mud-nav-link {
     border: 1px solid rgba(var(--nav-accent-rgb), .16);
     background: rgba(var(--nav-accent-rgb), .055);
     color: #d7dfec;
 }
 
-.media-nav-group ::deep > .mud-nav-link .mud-icon-root {
+.media-nav-shell ::deep .media-nav-group > .mud-nav-link .mud-icon-root {
     color: var(--nav-accent);
 }
 
-.media-nav-group ::deep > .mud-nav-link:hover {
+.media-nav-shell ::deep .media-nav-group > .mud-nav-link:hover {
     border-color: rgba(var(--nav-accent-rgb), .28);
     background: rgba(var(--nav-accent-rgb), .1);
     color: #fff;
 }
 
-.media-nav-group ::deep .nav-link:hover {
+.media-nav-shell ::deep .nav-link:hover {
     background: rgba(var(--nav-accent-rgb), .08);
 }
 
