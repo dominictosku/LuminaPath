@@ -28,9 +28,21 @@ namespace LuminaPath.Pages.Media
         public bool loading;
         public HashSet<TEntity> selectedItems = new();
         public string ToggleText => IsGrid ? "Grid View" : "Table View";
+        public string? SearchText
+        {
+            get => _filter.SearchString;
+            set => _filter.SearchString = value;
+        }
+
         protected virtual string EntityLabel => "Media";
 
         public virtual async Task ReloadData() => await Task.Yield();
+
+        public async Task ApplySearch(string? searchText)
+        {
+            SearchText = searchText;
+            await ReloadData();
+        }
 
         #region Events
         public async Task OnCreate()

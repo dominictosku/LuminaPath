@@ -242,6 +242,12 @@
     public bool loading;
     public HashSet<MediaDocument> selectedItems = new();
     public string ToggleText => IsGrid ? "Table View" : "Gallery View";
+    public string? SearchText
+    {
+        get => _filter.SearchString;
+        set => _filter.SearchString = value;
+    }
+
     private string CardSummary => cardDocuments.Count == 1
         ? "1 document ready"
         : $"{cardDocuments.Count} documents ready";
@@ -284,6 +290,12 @@
         {
             await _table.ReloadServerData();
         }
+    }
+
+    public async Task ApplySearch(string? searchText)
+    {
+        SearchText = searchText;
+        await ReloadData();
     }
 
     private async Task SwitchView()

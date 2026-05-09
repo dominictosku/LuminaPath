@@ -1,72 +1,142 @@
 ﻿@using LuminaPath.Core.Models
 @using LuminaPath.Features.Media
 @typeparam TItem
-<div class="d-flex align-start flex-grow-1">
-    <div class="flex-grow-1" />
+<div class="table-actions-shell">
+    <div class="table-actions-spacer"></div>
 
-    <div class="d-flex flex-column justify-end">
-        <div class="d-flex">
-            <MudHidden Breakpoint="Breakpoint.SmAndDown">
-                <MudButton DropShadow="false" Variant="Variant.Outlined"
-                            Size="Size.Small"
-                            Disabled="@loading"
-                            OnClick="Page.ReloadData"
-                            StartIcon="@Icons.Material.Filled.Refresh" IconColor="Color.Surface" Color="Color.Primary"
-                            Style="margin-right: 4px; margin-bottom:4px">
-                     Refresh
-                 </MudButton>
+    <div class="table-actions-panel">
+        <MudTextField T="string"
+                      Value="@Page.SearchText"
+                      ValueChanged="ApplySearch"
+                      Placeholder="Search this view"
+                      Clearable="true"
+                      Immediate="true"
+                      DebounceInterval="250"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      IconSize="Size.Small"
+                      Class="table-action-search" />
 
-                 <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Primary"
-                            StartIcon="@Icons.Material.Filled.Add"
-                            Size="Size.Small"
-                            Disabled="@loading"
-                            OnClick="Page.OnCreate"
-                            Style="margin-right: 4px; margin-bottom:4px"
-                            IconColor="Color.Surface">
-                     Create
-                 </MudButton>
-                 <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Error"
-                            StartIcon="@Icons.Material.Filled.Delete"
-                            Disabled="@(!(selectedItems.Count > 0))"
-                            Size="Size.Small"
-                            Style="margin-right: 4px; margin-bottom:4px"
-                            OnClick="Page.OnDeleteChecked"
-                            IconColor="Color.Surface">
-                     Delete
-                 </MudButton>
-             </MudHidden>
+        <div class="table-actions-buttons">
+            <MudTooltip Text="Reload table data">
+                <MudIconButton DropShadow="false"
+                               Variant="Variant.Text"
+                               Disabled="@loading"
+                               OnClick="Page.ReloadData"
+                               Icon="@Icons.Material.Filled.Refresh"
+                               Color="Color.Primary"
+                               Size="Size.Medium"
+                               Class="table-action-icon" />
+            </MudTooltip>
 
-             @* Mobile view *@
-             <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="true">
+            <MudButton DropShadow="false"
+                       Variant="Variant.Text"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Size="Size.Medium"
+                       Disabled="@loading"
+                       OnClick="Page.OnCreate"
+                       Class="table-action-button">
+                Create
+            </MudButton>
 
-                 <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Primary"
-                            StartIcon="@Icons.Material.Filled.Add"
-                            Size="Size.Small"
-                            Disabled="@loading"
-                            OnClick="Page.OnCreate"
-                            Style="margin-right: 4px; margin-bottom:4px"
-                            IconColor="Color.Surface">
-                     Create
-                 </MudButton>
+            <MudButton DropShadow="false"
+                       Variant="Variant.Text"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       Disabled="@(!(selectedItems.Count > 0))"
+                       Size="Size.Medium"
+                       OnClick="Page.OnDeleteChecked"
+                       Class="table-action-button table-action-danger">
+                Delete
+            </MudButton>
+        </div>
+    </div>
+</div>
 
-                 <MudButton DropShadow="false" Variant="Variant.Outlined" Color="Color.Error"
-                            StartIcon="@Icons.Material.Filled.Delete"
-                            Disabled="@(!(selectedItems.Count > 0))"
-                            Size="Size.Small"
-                            Style="margin-right: 4px; margin-bottom:4px"
-                            OnClick="Page.OnDeleteChecked"
-                            IconColor="Color.Surface">
-                     Delete
-                 </MudButton>
-             </MudHidden>
-         </div>
+<style>
+    .table-actions-shell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+    }
 
-         <MudTextField T="string" ValueChanged="@Page.ReloadData" Placeholder="search..." Adornment="Adornment.End"
-                       AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
-         </MudTextField>
+    .table-actions-spacer {
+        flex: 1 1 auto;
+    }
 
-     </div>
- </div>
+    .table-actions-panel {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        min-width: min(100%, 620px);
+    }
+
+    .table-actions-buttons {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 6px;
+        width: auto;
+    }
+
+    .table-action-button {
+        min-height: 34px;
+        border-radius: 6px;
+        font-weight: 700;
+        letter-spacing: 0;
+        color: var(--mud-palette-text-primary);
+    }
+
+    .table-action-icon {
+        border-radius: 6px;
+        color: var(--mud-palette-primary);
+    }
+
+    .table-action-danger {
+        color: var(--mud-palette-error);
+    }
+
+    .table-action-search {
+        width: 280px;
+        max-width: 36vw;
+    }
+
+    @@media (max-width: 720px) {
+        .table-actions-shell,
+        .table-actions-panel {
+            display: grid;
+            width: 100%;
+        }
+
+        .table-actions-spacer {
+            display: none;
+        }
+
+        .table-actions-panel {
+            justify-items: stretch;
+            min-width: 0;
+            gap: 8px;
+        }
+
+        .table-actions-buttons {
+            justify-content: stretch;
+            width: 100%;
+        }
+
+        .table-action-button {
+            flex: 1 1 132px;
+        }
+
+        .table-action-search {
+            max-width: none;
+        }
+    }
+</style>
 
 @code{
     [EditorRequired]
@@ -80,4 +150,9 @@
     [EditorRequired]
     [Parameter]
     public HashSet<TItem> selectedItems { get; set; } = default!;
+
+    private async Task ApplySearch(string? searchText)
+    {
+        await Page.ApplySearch(searchText);
+    }
 }
