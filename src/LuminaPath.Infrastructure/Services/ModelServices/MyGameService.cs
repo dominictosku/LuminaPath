@@ -73,7 +73,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 Map(m => m.MyGameInfo!.FirstPlayed);
                 Map(m => m.MyGameInfo!.LastPlayed);
                 Map(m => m.MyGameInfo!.TrackedHours);
-                Map(m => m.Game!.ExternalIds.GetExternalId(ExternalMediaProvider.Psn)).Name("PsnId");
+                Map(m => m.Game)
+                    .Name("PsnId")
+                    .Convert((ConvertToString<MyGame>)(args => args.Value.Game?.ExternalIds.GetExternalId(ExternalMediaProvider.Psn)));
             }
         }
     }

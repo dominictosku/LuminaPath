@@ -1,8 +1,10 @@
 using ClosedXML.Excel;
 using LuminaPath.Core.Enums;
+using LuminaPath.Core.Extensions;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Services;
+using LuminaPath.Infrastructure.Services.Imports;
 using Microsoft.EntityFrameworkCore;
 
 namespace Test.Services
@@ -26,32 +28,28 @@ namespace Test.Services
                 await context.SaveChangesAsync();
             }
 
-            // Todo fix test
-            //var service = new ExcelService(new TestDbContextFactory(options));
-
-            //using var stream = CreateWorkbookStream();
-            //var result = await service.ImportGamesAsync(stream, user);
-
-            //await using var assertContext = new LuminaPathDbContext(options);
-            //var game = await assertContext.Games
-            //    .Include(g => g.GameInfo)
-            //    .Include(g => g.MyGames!)
-            //        .ThenInclude(g => g.MyGameInfo)
-            //    .SingleAsync();
-
-            //var myGame = game.MyGames!.Single();
-
-            //Assert.Empty(result.Errors);
-            //Assert.Equal(1, result.RowsImported);
-            //Assert.Equal("Test Game", game.Name);
-            //Assert.Equal("PSN-123", game.GameInfo!.PsnId);
-            //Assert.Equal(GameStatus.Playing, myGame.Status);
-            //Assert.Equal(user.Id, myGame.LuminaUserId);
-            //Assert.NotNull(myGame.MyGameInfo);
-            //Assert.Equal(DateTimeKind.Utc, game.ReleaseDate!.Value.Kind);
-            //Assert.Equal(DateTimeKind.Utc, myGame.StartDate!.Value.Kind);
-            //Assert.Equal(DateTimeKind.Utc, myGame.MyGameInfo!.FirstPlayed.Kind);
-            //Assert.Equal(DateTimeKind.Utc, myGame.MyGameInfo.LastPlayed.Kind);
+            var dbContextFactory = new TestDbContextFactory(options);
+            var service = new ExcelService(dbContextFactory, new GameImportPipeline(dbContextFactory));
+            using var stream = CreateWorkbookStream();
+            var result = await service.ImportGamesAsync(stream, user);
+            await using var assertContext = new LuminaPathDbContext(options);
+            var game = await assertContext.Games
+                .Include(g => g.ExternalIds)
+                .Include(g => g.MyGames!)
+                    .ThenInclude(g => g.MyGameInfo)
+                .SingleAsync();
+            var myGame = game.MyGames!.Single();
+            Assert.Empty(result.Errors);
+            Assert.Equal(1, result.RowsImported);
+            Assert.Equal("Test Game", game.Name);
+            Assert.Equal("PSN-123", game.ExternalIds.GetExternalId(ExternalMediaProvider.Psn));
+            Assert.Equal(GameStatus.Playing, myGame.Status);
+            Assert.Equal(user.Id, myGame.LuminaUserId);
+            Assert.NotNull(myGame.MyGameInfo);
+            Assert.Equal(DateTimeKind.Utc, game.ReleaseDate!.Value.Kind);
+            Assert.Equal(DateTimeKind.Utc, myGame.StartDate!.Value.Kind);
+            Assert.Equal(DateTimeKind.Utc, myGame.MyGameInfo!.FirstPlayed.Kind);
+            Assert.Equal(DateTimeKind.Utc, myGame.MyGameInfo.LastPlayed.Kind);
         }
 
         private static DbContextOptions<LuminaPathDbContext> CreateOptions()
@@ -110,6 +108,11 @@ namespace Test.Services
             public LuminaPathDbContext CreateDbContext()
             {
                 return new LuminaPathDbContext(_options);
+            }
+
+            public ValueTask<LuminaPathDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+            {
+                return new ValueTask<LuminaPathDbContext>(CreateDbContext());
             }
         }
     }
