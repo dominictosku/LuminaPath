@@ -3,7 +3,6 @@
   "compileOnSave": false,
   "compilerOptions": {
     "baseUrl": "./",
-    "ignoreDeprecations": "6.0", /* Todo: remove */
     "types": ["jasmine"],
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,
