@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { forkJoin } from 'rxjs';
 import {
   IonBadge,
   IonContent,
@@ -19,10 +20,20 @@ import {
   sparklesOutline,
   timeOutline,
   trendingUpOutline,
+  filmOutline,
+  bookOutline,
+  tvOutline,
 } from 'ionicons/icons';
 import { Game, Platforms } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
+import { Anime } from '../../animes/models/animes.model';
+import { AnimeService } from '../../animes/services/anime.service';
+import { Movie } from '../../movies/models/movies.model';
+import { MovieService } from '../../movies/services/movie.service';
+import { Series } from '../../series/models/series.model';
+import { SeriesService } from '../../series/services/series.service';
+import { MediaFile } from '../../library/models/mediaFile.model';
 
 enum GameStatus {
   OnHold = 0,
@@ -41,6 +52,23 @@ type DashboardMetric = {
   tone: 'blue' | 'green' | 'amber' | 'rose';
 };
 
+type MediaKind = 'Game' | 'Anime' | 'Movie' | 'Series';
+
+type DashboardMediaItem = {
+  id: number;
+  kind: MediaKind;
+  name: string;
+  description?: string | null;
+  genre?: string | null;
+  releaseDate: Date | string | null;
+  image: MediaFile | null;
+  status: number;
+  estimatedHours: number;
+  playedHours: number;
+  remainingHours: number;
+  context: string;
+};
+
 @Component({
   selector: 'app-home',
   templateUrl: './home.page.html',
@@ -57,13 +85,17 @@ type DashboardMetric = {
 })
 export class HomePage implements OnInit {
   games: Game[] = [];
+  animes: Anime[] = [];
+  movies: Movie[] = [];
+  series: Series[] = [];
+  mediaItems: DashboardMediaItem[] = [];
   metrics: DashboardMetric[] = [];
-  ownedGames: Game[] = [];
-  playingGames: Game[] = [];
-  upcomingReleases: Game[] = [];
-  backlogGames: Game[] = [];
-  recentGames: Game[] = [];
-  featuredGame: Game | null = null;
+  ownedItems: DashboardMediaItem[] = [];
+  playingItems: DashboardMediaItem[] = [];
+  upcomingReleases: DashboardMediaItem[] = [];
+  backlogItems: DashboardMediaItem[] = [];
+  recentItems: DashboardMediaItem[] = [];
+  featuredItem: DashboardMediaItem | null = null;
   remainingHours = 0;
   playedHours = 0;
   completionRate = 0;
@@ -71,7 +103,12 @@ export class HomePage implements OnInit {
   isLoading = true;
   errorMessage = '';
 
-  constructor(private gameService: GameService) {
+  constructor(
+    private gameService: GameService,
+    private animeService: AnimeService,
+    private movieService: MovieService,
+    private seriesService: SeriesService,
+  ) {
     addIcons({
       calendarClearOutline,
       checkmarkDoneOutline,
@@ -82,6 +119,9 @@ export class HomePage implements OnInit {
       sparklesOutline,
       timeOutline,
       trendingUpOutline,
+      filmOutline,
+      bookOutline,
+      tvOutline,
     });
   }
 
@@ -93,15 +133,26 @@ export class HomePage implements OnInit {
     this.isLoading = !event;
     this.errorMessage = '';
 
-    this.gameService.getAll().subscribe({
+    forkJoin({
+      games: this.gameService.getAll(),
+      animes: this.animeService.getAll(),
+      movies: this.movieService.getAll(),
+      series: this.seriesService.getAll(),
+    }).subscribe({
       next: (result) => {
-        this.games = result.data ?? [];
+        this.games = result.games.data ?? [];
+        this.animes = result.animes.data ?? [];
+        this.movies = result.movies.data ?? [];
+        this.series = result.series.data ?? [];
         this.buildDashboard();
         this.isLoading = false;
         this.completeRefresh(event);
       },
       error: () => {
         this.games = [];
+        this.animes = [];
+        this.movies = [];
+        this.series = [];
         this.buildDashboard();
         this.errorMessage = 'Dashboard data could not be loaded.';
         this.isLoading = false;
@@ -111,54 +162,60 @@ export class HomePage implements OnInit {
   }
 
   private buildDashboard() {
-    this.ownedGames = this.games.filter((game) => !!game.myGames);
-    this.playingGames = this.ownedGames
-      .filter((game) => this.statusOf(game) === GameStatus.Playing)
+    this.mediaItems = [
+      ...this.games.map((game) => this.fromGame(game)),
+      ...this.animes.map((anime) => this.fromAnime(anime)),
+      ...this.movies.map((movie) => this.fromMovie(movie)),
+      ...this.series.map((series) => this.fromSeries(series)),
+    ];
+    this.ownedItems = this.mediaItems.filter((item) => item.status >= 0);
+    this.playingItems = this.ownedItems
+      .filter((item) => item.status === GameStatus.Playing)
       .sort((a, b) => this.progressOf(b) - this.progressOf(a))
       .slice(0, 4);
     this.upcomingReleases = this.getUpcomingReleases();
-    this.backlogGames = this.getBacklogGames();
-    this.recentGames = [...this.games]
+    this.backlogItems = this.getBacklogItems();
+    this.recentItems = [...this.mediaItems]
       .sort((a, b) => b.id - a.id)
       .slice(0, 8);
-    this.featuredGame = this.playingGames[0] ?? this.upcomingReleases[0] ?? this.recentGames[0] ?? null;
+    this.featuredItem = this.playingItems[0] ?? this.upcomingReleases[0] ?? this.recentItems[0] ?? null;
     this.remainingHours = Math.round(
-      this.ownedGames.reduce((sum, game) => sum + this.remainingOf(game), 0)
+      this.ownedItems.reduce((sum, item) => sum + item.remainingHours, 0)
     );
     this.playedHours = Math.round(
-      this.ownedGames.reduce((sum, game) => sum + this.playedOf(game), 0)
+      this.ownedItems.reduce((sum, item) => sum + item.playedHours, 0)
     );
 
-    const completedGames = this.ownedGames.filter((game) => this.statusOf(game) === GameStatus.Completed).length;
-    this.completionRate = this.ownedGames.length === 0
+    const completedItems = this.ownedItems.filter((item) => item.status === GameStatus.Completed).length;
+    this.completionRate = this.ownedItems.length === 0
       ? 0
-      : Math.round((completedGames / this.ownedGames.length) * 100);
-    this.heroProgress = this.featuredGame ? this.progressOf(this.featuredGame) : 0;
-    this.metrics = this.createMetrics(completedGames);
+      : Math.round((completedItems / this.ownedItems.length) * 100);
+    this.heroProgress = this.featuredItem ? this.progressOf(this.featuredItem) : 0;
+    this.metrics = this.createMetrics(completedItems);
   }
 
-  private createMetrics(completedGames: number): DashboardMetric[] {
-    const ownedGames = this.ownedGames.length;
-    const activeGames = this.playingGames.length;
+  private createMetrics(completedItems: number): DashboardMetric[] {
+    const ownedItems = this.ownedItems.length;
+    const activeItems = this.playingItems.length;
 
     return [
       {
         label: 'Library',
-        value: String(this.games.length),
-        detail: `${ownedGames} in your collection`,
+        value: String(this.mediaItems.length),
+        detail: `${ownedItems} in your collection`,
         icon: 'library-outline',
         tone: 'blue',
       },
       {
-        label: 'Playing',
-        value: String(activeGames),
-        detail: activeGames === 1 ? 'active game' : 'active games',
+        label: 'Active',
+        value: String(activeItems),
+        detail: activeItems === 1 ? 'currently active item' : 'currently active items',
         icon: 'game-controller-outline',
         tone: 'green',
       },
       {
         label: 'Completed',
-        value: String(completedGames),
+        value: String(completedItems),
         detail: `${this.completionRate}% completion rate`,
         icon: 'checkmark-done-outline',
         tone: 'amber',
@@ -173,34 +230,30 @@ export class HomePage implements OnInit {
     ];
   }
 
-  private getUpcomingReleases(): Game[] {
+  private getUpcomingReleases(): DashboardMediaItem[] {
     const today = this.startOfToday();
 
-    return this.games
-      .filter((game) => this.releaseDateOf(game) >= today)
+    return this.mediaItems
+      .filter((item) => this.releaseDateOf(item) >= today)
       .sort((a, b) => this.releaseDateOf(a).getTime() - this.releaseDateOf(b).getTime())
       .slice(0, 5);
   }
 
-  private getBacklogGames(): Game[] {
-    return this.ownedGames
-      .filter((game) => {
-        const status = this.statusOf(game);
+  private getBacklogItems(): DashboardMediaItem[] {
+    return this.ownedItems
+      .filter((item) => {
+        const status = item.status;
         return status === GameStatus.Planned || status === GameStatus.OnHold || status === GameStatus.MainGame;
       })
-      .sort((a, b) => this.remainingOf(b) - this.remainingOf(a))
+      .sort((a, b) => b.remainingHours - a.remainingHours)
       .slice(0, 4);
   }
 
-  imageFor(game: Game | null): string {
-    return mediaImageUrl(game?.image);
+  imageFor(item: DashboardMediaItem | null): string {
+    return mediaImageUrl(item?.image);
   }
 
-  platformLabel(value: number | null | undefined): string {
-    return Platforms.find((platform) => platform.value === value)?.label ?? 'Unknown';
-  }
-
-  statusLabel(game: Game): string {
+  statusLabel(item: DashboardMediaItem): string {
     const labels: Record<number, string> = {
       [GameStatus.OnHold]: 'On hold',
       [GameStatus.Planned]: 'Planned',
@@ -210,11 +263,11 @@ export class HomePage implements OnInit {
       [GameStatus.MainGame]: 'Main game',
     };
 
-    return labels[this.statusOf(game)] ?? 'Not started';
+    return labels[item.status] ?? 'Not started';
   }
 
-  releaseLabel(game: Game): string {
-    const date = this.releaseDateOf(game);
+  releaseLabel(item: DashboardMediaItem): string {
+    const date = this.releaseDateOf(item);
 
     if (Number.isNaN(date.getTime())) {
       return 'No release date';
@@ -227,8 +280,8 @@ export class HomePage implements OnInit {
     }).format(date);
   }
 
-  daysUntil(game: Game): string {
-    const date = this.releaseDateOf(game);
+  daysUntil(item: DashboardMediaItem): string {
+    const date = this.releaseDateOf(item);
     const today = this.startOfToday();
     const days = Math.ceil((date.getTime() - today.getTime()) / 86400000);
 
@@ -243,44 +296,90 @@ export class HomePage implements OnInit {
     return `${days} days`;
   }
 
-  playedLabel(game: Game): string {
-    return `${Math.round(this.playedOf(game))}h played`;
+  playedLabel(item: DashboardMediaItem): string {
+    return `${Math.round(item.playedHours)}h logged`;
   }
 
-  remainingLabel(game: Game): string {
-    return `${Math.round(this.remainingOf(game))}h left`;
+  remainingLabel(item: DashboardMediaItem): string {
+    return `${Math.round(item.remainingHours)}h left`;
   }
 
-  progressOf(game: Game): number {
-    const estimated = Number(game.playtime) || 0;
+  progressOf(item: DashboardMediaItem): number {
+    const estimated = item.estimatedHours;
 
     if (estimated <= 0) {
-      return this.statusOf(game) === GameStatus.Completed ? 100 : 0;
+      return item.status === GameStatus.Completed ? 100 : 0;
     }
 
-    return Math.min(100, Math.round((this.playedOf(game) / estimated) * 100));
+    return Math.min(100, Math.round((item.playedHours / estimated) * 100));
   }
 
-  trackByGameId(_: number, game: Game): number {
-    return game.id;
+  trackByItem(_: number, item: DashboardMediaItem): string {
+    return `${item.kind}-${item.id}`;
   }
 
-  private playedOf(game: Game): number {
+  private fromGame(game: Game): DashboardMediaItem {
     const manual = Number(game.myGames?.timeSpend) || 0;
     const tracked = Number(game.myGames?.myGameInfo?.trackedHours) || 0;
-    return manual + tracked;
+    const playedHours = manual + tracked;
+    const estimatedHours = Number(game.playtime) || 0;
+
+    return {
+      id: game.id,
+      kind: 'Game',
+      name: game.name,
+      description: game.description,
+      genre: game.genre,
+      releaseDate: game.releaseDate,
+      image: game.image,
+      status: Number(game.myGames?.status ?? -1),
+      estimatedHours,
+      playedHours,
+      remainingHours: Math.max(0, estimatedHours - playedHours),
+      context: Platforms.find((platform) => platform.value === game.platforms)?.label ?? 'Game',
+    };
   }
 
-  private remainingOf(game: Game): number {
-    return Math.max(0, (Number(game.playtime) || 0) - this.playedOf(game));
+  private fromAnime(anime: Anime): DashboardMediaItem {
+    return this.fromWatchMedia('Anime', anime, anime.myAnimes?.status, anime.expectedWatchTimeMinutes, anime.myAnimes?.currentWatchTimeMinutes);
   }
 
-  private statusOf(game: Game): number {
-    return Number(game.myGames?.status ?? -1);
+  private fromMovie(movie: Movie): DashboardMediaItem {
+    return this.fromWatchMedia('Movie', movie, movie.myMovies?.status, movie.expectedWatchTimeMinutes, movie.myMovies?.currentWatchTimeMinutes);
   }
 
-  private releaseDateOf(game: Game): Date {
-    return game.releaseDate ? new Date(game.releaseDate) : new Date(Number.NaN);
+  private fromSeries(series: Series): DashboardMediaItem {
+    return this.fromWatchMedia('Series', series, series.mySeries?.status, series.expectedWatchTimeMinutes, series.mySeries?.currentWatchTimeMinutes);
+  }
+
+  private fromWatchMedia(
+    kind: MediaKind,
+    media: Anime | Movie | Series,
+    status: number | null | undefined,
+    expectedMinutes: number | null | undefined,
+    watchedMinutes: number | null | undefined,
+  ): DashboardMediaItem {
+    const estimatedHours = Math.round(((Number(expectedMinutes) || 0) / 60) * 10) / 10;
+    const playedHours = Math.round(((Number(watchedMinutes) || 0) / 60) * 10) / 10;
+
+    return {
+      id: media.id,
+      kind,
+      name: media.name,
+      description: media.description,
+      genre: media.genre,
+      releaseDate: media.releaseDate,
+      image: media.image,
+      status: Number(status ?? -1),
+      estimatedHours,
+      playedHours,
+      remainingHours: Math.max(0, estimatedHours - playedHours),
+      context: kind,
+    };
+  }
+
+  private releaseDateOf(item: DashboardMediaItem): Date {
+    return item.releaseDate ? new Date(item.releaseDate) : new Date(Number.NaN);
   }
 
   private startOfToday(): Date {

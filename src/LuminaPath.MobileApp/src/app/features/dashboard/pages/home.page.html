@@ -6,21 +6,21 @@
   <main class="dashboard">
     <section class="hero" *ngIf="!isLoading; else heroLoading">
       <div class="hero__media">
-        <img [src]="imageFor(featuredGame)" alt="" />
+        <img [src]="imageFor(featuredItem)" alt="" />
       </div>
       <div class="hero__content">
         <span class="eyebrow">
           <ion-icon name="sparkles-outline"></ion-icon>
           Today
         </span>
-        <h1>{{ featuredGame?.name || 'Your library is ready' }}</h1>
+        <h1>{{ featuredItem?.name || 'Your library is ready' }}</h1>
         <p>
-          {{ featuredGame ? statusLabel(featuredGame) + ' on ' + platformLabel(featuredGame.platforms) : 'Log in and start shaping your game plan.' }}
+          {{ featuredItem ? statusLabel(featuredItem) + ' · ' + featuredItem.context : 'Log in and start shaping your media plan.' }}
         </p>
 
-        <div class="hero__progress" *ngIf="featuredGame">
+        <div class="hero__progress" *ngIf="featuredItem">
           <div class="hero__progress-label">
-            <span>{{ playedLabel(featuredGame) }}</span>
+            <span>{{ playedLabel(featuredItem) }}</span>
             <strong>{{ heroProgress }}%</strong>
           </div>
           <div class="progress-track">
@@ -70,22 +70,22 @@
         <div>
           <span class="eyebrow">
             <ion-icon name="game-controller-outline"></ion-icon>
-            Playing
+            Active
           </span>
-          <h2>Keep Going</h2>
+          <h2>Currently Active</h2>
         </div>
-        <ion-badge>{{ playingGames.length }}</ion-badge>
+        <ion-badge>{{ playingItems.length }}</ion-badge>
       </div>
 
-      <div class="horizontal-list" *ngIf="playingGames.length; else noPlaying">
-        <article class="game-card game-card--large" *ngFor="let game of playingGames; trackBy: trackByGameId">
-          <img [src]="imageFor(game)" alt="" />
+      <div class="horizontal-list" *ngIf="playingItems.length; else noPlaying">
+        <article class="game-card game-card--large" *ngFor="let item of playingItems; trackBy: trackByItem">
+          <img [src]="imageFor(item)" alt="" />
           <div class="game-card__body">
-            <ion-badge>{{ statusLabel(game) }}</ion-badge>
-            <h3>{{ game.name }}</h3>
-            <p>{{ platformLabel(game.platforms) }} · {{ remainingLabel(game) }}</p>
+            <ion-badge>{{ item.kind }}</ion-badge>
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.context }} · {{ remainingLabel(item) }}</p>
             <div class="progress-track">
-              <span [style.width.%]="progressOf(game)"></span>
+              <span [style.width.%]="progressOf(item)"></span>
             </div>
           </div>
         </article>
@@ -94,7 +94,7 @@
       <ng-template #noPlaying>
         <div class="empty-state">
           <ion-icon name="game-controller-outline"></ion-icon>
-          <span>No active games yet.</span>
+          <span>No active media yet.</span>
         </div>
       </ng-template>
     </section>
@@ -111,14 +111,14 @@
       </div>
 
       <div class="release-list" *ngIf="upcomingReleases.length; else noReleases">
-        <article class="release-item" *ngFor="let game of upcomingReleases; trackBy: trackByGameId">
+        <article class="release-item" *ngFor="let item of upcomingReleases; trackBy: trackByItem">
           <div class="release-date">
-            <strong>{{ daysUntil(game) }}</strong>
-            <span>{{ releaseLabel(game) }}</span>
+            <strong>{{ daysUntil(item) }}</strong>
+            <span>{{ releaseLabel(item) }}</span>
           </div>
           <div class="release-info">
-            <h3>{{ game.name }}</h3>
-            <p>{{ game.genre || 'No genre' }} · {{ platformLabel(game.platforms) }}</p>
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.genre || 'No genre' }} · {{ item.context }}</p>
           </div>
         </article>
       </div>
@@ -142,13 +142,13 @@
         </div>
       </div>
 
-      <div class="backlog-list" *ngIf="backlogGames.length; else noBacklog">
-        <article class="backlog-item" *ngFor="let game of backlogGames; trackBy: trackByGameId">
+      <div class="backlog-list" *ngIf="backlogItems.length; else noBacklog">
+        <article class="backlog-item" *ngFor="let item of backlogItems; trackBy: trackByItem">
           <div>
-            <h3>{{ game.name }}</h3>
-            <p>{{ playedLabel(game) }} · {{ remainingLabel(game) }}</p>
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.kind }} · {{ playedLabel(item) }} · {{ remainingLabel(item) }}</p>
           </div>
-          <strong>{{ game.playtime || 0 }}h</strong>
+          <strong>{{ item.estimatedHours || 0 }}h</strong>
         </article>
       </div>
 
@@ -172,10 +172,10 @@
       </div>
 
       <div class="library-grid">
-        <article class="mini-card" *ngFor="let game of recentGames; trackBy: trackByGameId">
-          <img [src]="imageFor(game)" alt="" />
-          <h3>{{ game.name }}</h3>
-          <p>{{ platformLabel(game.platforms) }}</p>
+        <article class="mini-card" *ngFor="let item of recentItems; trackBy: trackByItem">
+          <img [src]="imageFor(item)" alt="" />
+          <h3>{{ item.name }}</h3>
+          <p>{{ item.kind }}</p>
         </article>
       </div>
     </section>
