@@ -1,6 +1,6 @@
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Controllers.Base;
-using LuminaPath.Infrastructure.Services.Third_Party;
+using LuminaPath.Infrastructure.Services.Application;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,24 +12,24 @@ namespace LuminaPath.Infrastructure.Controllers;
 [Authorize]
 public sealed class SteamController : AuthorizedControllerBase
 {
-    private readonly SteamService _steam;
+    private readonly MediaImportService _mediaImportService;
 
-    public SteamController(SteamService steam, UserManager<LuminaUser> userManager)
+    public SteamController(MediaImportService mediaImportService, UserManager<LuminaUser> userManager)
         : base(userManager)
     {
-        _steam = steam;
+        _mediaImportService = mediaImportService;
     }
 
     [HttpGet("status")]
     public async Task<IActionResult> GetStatus(CancellationToken cancellationToken)
     {
-        return Ok(new { configured = await _steam.IsConfiguredAsync(cancellationToken) });
+        return Ok(new { configured = await _mediaImportService.IsSteamConfiguredAsync(cancellationToken) });
     }
 
     [HttpPost("preview")]
     public async Task<IActionResult> Preview([FromBody] SteamIdentifierRequest request, CancellationToken cancellationToken)
     {
-        if (!await _steam.IsConfiguredAsync(cancellationToken))
+        if (!await _mediaImportService.IsSteamConfiguredAsync(cancellationToken))
         {
             return Problem("Steam Web API key is not configured on the server.", statusCode: 503);
         }
@@ -38,7 +38,7 @@ public sealed class SteamController : AuthorizedControllerBase
             return BadRequest(new { message = "Identifier is required." });
         }
 
-        var preview = await _steam.PreviewLibraryAsync(request.Identifier, cancellationToken);
+        var preview = await _mediaImportService.PreviewSteamLibraryAsync(request.Identifier, cancellationToken);
         if (preview is null)
         {
             return NotFound(new { message = "Could not resolve that Steam ID. Check the spelling or use the steamID64." });
@@ -50,7 +50,7 @@ public sealed class SteamController : AuthorizedControllerBase
     [HttpPost("import")]
     public async Task<IActionResult> Import([FromBody] SteamIdentifierRequest request, CancellationToken cancellationToken)
     {
-        if (!await _steam.IsConfiguredAsync(cancellationToken))
+        if (!await _mediaImportService.IsSteamConfiguredAsync(cancellationToken))
         {
             return Problem("Steam Web API key is not configured on the server.", statusCode: 503);
         }
@@ -65,7 +65,7 @@ public sealed class SteamController : AuthorizedControllerBase
             return Unauthorized();
         }
 
-        var result = await _steam.ImportLibraryAsync(user, request.Identifier, cancellationToken);
+        var result = await _mediaImportService.ImportSteamLibraryAsync(user, request.Identifier, cancellationToken);
         if (string.IsNullOrEmpty(result.SteamId))
         {
             return NotFound(new { message = "Could not resolve that Steam ID." });
