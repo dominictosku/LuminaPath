@@ -8,6 +8,12 @@ namespace LuminaPath.Infrastructure.ModelConfiguration
     {
         public void Configure(EntityTypeBuilder<Series> builder)
         {
+            builder.HasOne(series => series.ParentSeries)
+                .WithMany(series => series.Seasons)
+                .HasForeignKey(series => series.ParentSeriesId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasIndex(series => series.ParentSeriesId);
         }
     }
 }

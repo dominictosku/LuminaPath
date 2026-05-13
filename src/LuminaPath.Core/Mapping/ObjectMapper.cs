@@ -142,6 +142,7 @@ namespace LuminaPath.Core.Mapping
                 Playtime = source.Playtime,
                 Source = source.Source,
                 Image = MapDocument<MediaDocument>(source.Image),
+                ParentGameId = source.ParentGameId,
                 ExternalIds = MapGameExternalIds(source.PsnId, source.SteamId)
             };
         }
@@ -158,6 +159,7 @@ namespace LuminaPath.Core.Mapping
                 Platforms = source.Platforms,
                 Playtime = source.Playtime,
                 Image = MapDocument<MediaDocument>(source.Image),
+                ParentGameId = source.ParentGameId,
                 MyGames = source.MyGames == null ? null : [Map<MyGame>(source.MyGames)]
             };
         }
@@ -175,6 +177,7 @@ namespace LuminaPath.Core.Mapping
                 Playtime = source.Playtime,
                 Source = source.Source,
                 Image = MapDocument<Document>(source.Image),
+                ParentGameId = source.ParentGameId,
                 PsnId = source.ExternalIds.GetExternalId(ExternalMediaProvider.Psn),
                 SteamId = source.ExternalIds.GetExternalId(ExternalMediaProvider.Steam)
             };
@@ -192,6 +195,9 @@ namespace LuminaPath.Core.Mapping
                 Platforms = source.Platforms,
                 Playtime = source.Playtime,
                 Image = MapDocument<Document>(source.Image),
+                ParentGameId = source.ParentGameId,
+                ParentGameName = source.ParentGame?.Name,
+                Dlcs = source.Dlcs?.Select(MapGamesNoIncludeDto).ToList(),
                 MyGames = source.MyGames == null ? null : Map<MyGameDto>(source.MyGames.FirstOrDefault())
             };
         }
@@ -266,7 +272,8 @@ namespace LuminaPath.Core.Mapping
                 ExpectedWatchTimePerEpisodeMinutes = ResolveAnimePerEpisodeMinutes(source.ExpectedWatchTimePerEpisodeMinutes, source.ExpectedWatchTimeMinutes, source.EpisodeCount),
                 EpisodeCount = source.EpisodeCount,
                 Source = source.Source,
-                Image = MapDocument<MediaDocument>(source.Image)
+                Image = MapDocument<MediaDocument>(source.Image),
+                ParentAnimeId = source.ParentAnimeId
             };
         }
 
@@ -282,11 +289,12 @@ namespace LuminaPath.Core.Mapping
                 ExpectedWatchTimePerEpisodeMinutes = ResolveAnimePerEpisodeMinutes(source.ExpectedWatchTimePerEpisodeMinutes, source.ExpectedWatchTimeMinutes, source.EpisodeCount),
                 EpisodeCount = source.EpisodeCount,
                 Image = MapDocument<MediaDocument>(source.Image),
+                ParentAnimeId = source.ParentAnimeId,
                 MyAnimes = source.MyAnimes == null ? null : [Map<MyAnime>(source.MyAnimes)]
             };
         }
 
-        private AnimesNoIncludeDto MapAnimesNoIncludeDto(Anime source)
+        private static AnimesNoIncludeDto MapAnimesNoIncludeDto(Anime source)
         {
             return new AnimesNoIncludeDto
             {
@@ -299,7 +307,8 @@ namespace LuminaPath.Core.Mapping
                 ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
                 EpisodeCount = source.EpisodeCount,
                 Source = source.Source,
-                Image = MapDocument<Document>(source.Image)
+                Image = MapDocument<Document>(source.Image),
+                ParentAnimeId = source.ParentAnimeId
             };
         }
 
@@ -316,6 +325,9 @@ namespace LuminaPath.Core.Mapping
                 ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
                 EpisodeCount = source.EpisodeCount,
                 Image = MapDocument<Document>(source.Image),
+                ParentAnimeId = source.ParentAnimeId,
+                ParentAnimeName = source.ParentAnime?.Name,
+                Seasons = source.Seasons?.Select(MapAnimesNoIncludeDto).ToList(),
                 MyAnimes = source.MyAnimes == null ? null : Map<MyAnimeDto>(source.MyAnimes.FirstOrDefault())
             };
         }
@@ -493,7 +505,8 @@ namespace LuminaPath.Core.Mapping
                 ExpectedWatchTimePerEpisodeMinutes = ResolveAnimePerEpisodeMinutes(source.ExpectedWatchTimePerEpisodeMinutes, source.ExpectedWatchTimeMinutes, source.EpisodeCount),
                 EpisodeCount = source.EpisodeCount,
                 Source = source.Source,
-                Image = MapDocument<MediaDocument>(source.Image)
+                Image = MapDocument<MediaDocument>(source.Image),
+                ParentSeriesId = source.ParentSeriesId
             };
         }
 
@@ -509,11 +522,12 @@ namespace LuminaPath.Core.Mapping
                 ExpectedWatchTimePerEpisodeMinutes = ResolveAnimePerEpisodeMinutes(source.ExpectedWatchTimePerEpisodeMinutes, source.ExpectedWatchTimeMinutes, source.EpisodeCount),
                 EpisodeCount = source.EpisodeCount,
                 Image = MapDocument<MediaDocument>(source.Image),
+                ParentSeriesId = source.ParentSeriesId,
                 MySeries = source.MySeries == null ? null : [Map<MySeries>(source.MySeries)]
             };
         }
 
-        private SeriesNoIncludeDto MapSeriesNoIncludeDto(Series source)
+        private static SeriesNoIncludeDto MapSeriesNoIncludeDto(Series source)
         {
             return new SeriesNoIncludeDto
             {
@@ -526,7 +540,8 @@ namespace LuminaPath.Core.Mapping
                 ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
                 EpisodeCount = source.EpisodeCount,
                 Source = source.Source,
-                Image = MapDocument<Document>(source.Image)
+                Image = MapDocument<Document>(source.Image),
+                ParentSeriesId = source.ParentSeriesId
             };
         }
 
@@ -543,6 +558,9 @@ namespace LuminaPath.Core.Mapping
                 ExpectedWatchTimeMinutes = source.ExpectedWatchTimeMinutes,
                 EpisodeCount = source.EpisodeCount,
                 Image = MapDocument<Document>(source.Image),
+                ParentSeriesId = source.ParentSeriesId,
+                ParentSeriesName = source.ParentSeries?.Name,
+                Seasons = source.Seasons?.Select(MapSeriesNoIncludeDto).ToList(),
                 MySeries = source.MySeries == null ? null : Map<MySeriesDto>(source.MySeries.FirstOrDefault())
             };
         }

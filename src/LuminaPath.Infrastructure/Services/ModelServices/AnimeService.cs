@@ -1,5 +1,7 @@
-using LuminaPath.Core.Mapping;
+using LuminaPath.Core.Entities;
 using LuminaPath.Core.Entities.Results;
+using LuminaPath.Core.Extensions;
+using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +33,18 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return anime => anime.MyAnimes != null && anime.MyAnimes.Any(myAnime => myAnime.LuminaUserId == userId);
         }
 
+        protected override Expression<Func<Anime, bool>> BuildFilterExpression(MediaFilter mediaFilter, string? userId = null)
+        {
+            var filter = base.BuildFilterExpression(mediaFilter, userId);
+
+            if (!mediaFilter.IncludeChildren)
+            {
+                filter = filter.And(anime => anime.ParentAnimeId == null);
+            }
+
+            return filter;
+        }
+
         public Task<List<Anime>> GetDropdownAnimes(string? searchName = null)
         {
             return GetDropdownMedia(searchName);
@@ -46,6 +60,18 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             RecalculateUserEntries(entity);
             return base.PutAsync(entity);
+        }
+
+        public async Task<List<Anime>> GetSeasonsAsync(int parentAnimeId, CancellationToken cancellationToken = default)
+        {
+            await using var context = await GetDbContextAsync();
+            return await context.Animes
+                .AsNoTracking()
+                .Include(anime => anime.Image)
+                .Where(anime => anime.ParentAnimeId == parentAnimeId)
+                .OrderBy(anime => anime.ReleaseDate)
+                .ThenBy(anime => anime.Name)
+                .ToListAsync(cancellationToken);
         }
 
         private static void RecalculateUserEntries(Anime anime)

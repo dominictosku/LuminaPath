@@ -29,6 +29,12 @@ namespace LuminaPath.Core.Dtos
 
         public Document? Image { get; set; }
 
+        public int? ParentGameId { get; set; }
+
+        public string? ParentGameName { get; set; }
+
+        public List<GamesNoIncludeDto>? Dlcs { get; set; }
+
         public MyGameDto? MyGames { get; set; }
 
     }
@@ -55,6 +61,8 @@ namespace LuminaPath.Core.Dtos
         public string Source { get; set; } = string.Empty;
 
         public Document? Image { get; set; }
+
+        public int? ParentGameId { get; set; }
 
         public string? PsnId { get; set; }
 

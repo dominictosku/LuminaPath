@@ -32,6 +32,12 @@ namespace LuminaPath.Core.Dtos
 
         public Document? Image { get; set; }
 
+        public int? ParentSeriesId { get; set; }
+
+        public string? ParentSeriesName { get; set; }
+
+        public List<SeriesNoIncludeDto>? Seasons { get; set; }
+
         public MySeriesDto? MySeries { get; set; }
     }
 
@@ -62,5 +68,7 @@ namespace LuminaPath.Core.Dtos
         public string Source { get; set; } = string.Empty;
 
         public Document? Image { get; set; }
+
+        public int? ParentSeriesId { get; set; }
     }
 }

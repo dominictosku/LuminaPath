@@ -17,6 +17,10 @@ namespace LuminaPath.Core.Models
                 ? null
                 : EpisodeCount.Value * ExpectedWatchTimePerEpisodeMinutes.Value;
 
+        public int? ParentAnimeId { get; set; }
+        public Anime? ParentAnime { get; set; }
+        public List<Anime>? Seasons { get; set; }
+
         public List<MyAnime>? MyAnimes { get; set; }
     }
 }

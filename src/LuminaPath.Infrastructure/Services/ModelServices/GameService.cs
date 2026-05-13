@@ -32,6 +32,11 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             var filter = base.BuildFilterExpression(mediaFilter, userId);
 
+            if (!mediaFilter.IncludeChildren)
+            {
+                filter = filter.And(game => game.ParentGameId == null);
+            }
+
             if (mediaFilter.Platform != null)
             {
                 var platform = mediaFilter.Platform.Value;
@@ -56,6 +61,18 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         public Task<List<Game>> GetDropdownGames(string? searchName = null)
         {
             return GetDropdownMedia(searchName);
+        }
+
+        public async Task<List<Game>> GetDlcsAsync(int parentGameId, CancellationToken cancellationToken = default)
+        {
+            await using var context = await GetDbContextAsync();
+            return await context.Games
+                .AsNoTracking()
+                .Include(game => game.Image)
+                .Where(game => game.ParentGameId == parentGameId)
+                .OrderByDescending(game => game.ReleaseDate)
+                .ThenBy(game => game.Name)
+                .ToListAsync(cancellationToken);
         }
     }
 }

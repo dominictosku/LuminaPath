@@ -38,7 +38,7 @@ public sealed class BrowseLibraryService
         var games = await context.Games
             .AsNoTracking()
             .Include(game => game.Image)
-            .Where(game => game.ReleaseDate != null)
+            .Where(game => game.ReleaseDate != null && game.ParentGameId == null)
             .ToListAsync(cancellationToken);
 
         return games
@@ -85,7 +85,7 @@ public sealed class BrowseLibraryService
         var animes = await context.Animes
             .AsNoTracking()
             .Include(anime => anime.Image)
-            .Where(anime => anime.ReleaseDate != null)
+            .Where(anime => anime.ReleaseDate != null && anime.ParentAnimeId == null)
             .ToListAsync(cancellationToken);
 
         return animes

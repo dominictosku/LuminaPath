@@ -8,6 +8,12 @@ namespace LuminaPath.Infrastructure.ModelConfiguration
     {
         public void Configure(EntityTypeBuilder<Game> builder)
         {
+            builder.HasOne(game => game.ParentGame)
+                .WithMany(game => game.Dlcs)
+                .HasForeignKey(game => game.ParentGameId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasIndex(game => game.ParentGameId);
         }
     }
 }
