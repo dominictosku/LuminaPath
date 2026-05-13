@@ -4,7 +4,7 @@
   <h1>LuminaPath</h1>
 
   <p>
-    <strong>Your game library, backlog, playtime tracker and quest board in one self-hosted command center.</strong>
+    <strong>Your games, movies, series and anime library, backlog, playtime tracker, social hub and quest board in one self-hosted command center.</strong>
   </p>
 
   <p>
@@ -50,30 +50,37 @@
 
 ## Overview
 
-LuminaPath is a personal game library, backlog planner, playtime tracker and quest-style productivity app. The main experience is an ASP.NET Core Blazor app with a PostgreSQL backend. An optional Ionic/Angular frontend is included for a mobile-style interface and can run against the same API.
+LuminaPath is a personal media library, backlog planner, playtime tracker, social hub and quest-style productivity app. It tracks games, movies, series and anime in one place, layers a friends/DM/co-op-session social layer on top, and adds an RPG-style quest and skill-tree system for real-life goals. The main experience is an ASP.NET Core Blazor app with a PostgreSQL backend. An optional Ionic/Angular frontend is included for a mobile-style interface and can run against the same API.
 
 <table>
   <tr>
-    <td><strong>Library</strong><br />Catalog games, covers, platforms, genres and release dates.</td>
-    <td><strong>Playtime</strong><br />Track manual hours next to third-party playtime such as PSN.</td>
+    <td><strong>Library</strong><br />Catalog games, movies, series and anime with covers, platforms, genres and release dates.</td>
+    <td><strong>Playtime</strong><br />Track manual hours next to third-party playtime such as PSN and Steam.</td>
     <td><strong>Quest Board</strong><br />Plan main quests, side quests, factions and real-life skill trees.</td>
   </tr>
   <tr>
-    <td><strong>Dashboards</strong><br />See what you are playing, what is finished and what is ahead.</td>
-    <td><strong>Imports</strong><br />Bring in data from Excel and PlayStation Network flows.</td>
+    <td><strong>Dashboards</strong><br />See what you are playing/watching, what is finished and what is ahead.</td>
+    <td><strong>Social</strong><br />Add friends, send direct messages and schedule co-op gaming sessions.</td>
+    <td><strong>Imports</strong><br />Bring in data from Excel, PlayStation Network and Steam.</td>
+  </tr>
+  <tr>
+    <td><strong>AI Assistant</strong><br />Streaming chat with read-only DB tools and MCP server support.</td>
+    <td><strong>Release Calendar</strong><br />Browse upcoming releases and plan ahead.</td>
     <td><strong>Self-hosting</strong><br />Run the backend, database and optional Angular app through Docker.</td>
   </tr>
 </table>
 
 ## Features
 
-- Game catalog with platforms, genres, release dates, cover images and estimated playtime.
-- Personal game tracking with status, priority, rating, start/end dates and manual played hours.
+- Multi-media catalog covering games, movies, series and anime, with platforms, genres, release dates, cover images and estimated playtime/runtime.
+- Personal tracking per media type with status, priority, rating, start/end dates and manual played/watched hours.
 - Manual playtime and third-party playtime stay separate, while the UI shows a combined total.
 - Excel import/export for library and play history data.
-- PlayStation Network import flow.
+- PlayStation Network and Steam import flows.
+- Browse and release-calendar views for discovering and planning upcoming titles.
+- Social layer: friends, direct messages and scheduled co-op gaming sessions.
 - Media document management for uploaded covers and files.
-- RPG-style quest board with main quests, sub quests, faction quests and skill trees.
+- RPG-style quest board with main quests, sub quests, faction quests and skill trees for real-life goals.
 - Dashboard and statistics pages for played hours, completions and upcoming releases.
 - ASP.NET Core Identity authentication with seeded administrator/editor roles.
 - File-system storage by default, with Azure Blob support available through env vars.
