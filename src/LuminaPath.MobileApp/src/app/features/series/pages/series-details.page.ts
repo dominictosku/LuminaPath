@@ -1,6 +1,6 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   IonBadge,
   IonButton,
@@ -16,13 +16,15 @@ import { addIcons } from 'ionicons';
 import {
   arrowBackOutline,
   calendarClearOutline,
+  layersOutline,
   libraryOutline,
+  returnUpBackOutline,
   timeOutline,
   tvOutline,
 } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
-import { Series } from '../models/series.model';
+import { Series, SeriesSummary } from '../models/series.model';
 import { SeriesService } from '../services/series.service';
 
 const WATCH_STATUS_LABELS: Record<number, string> = {
@@ -39,6 +41,7 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
   styleUrls: ['./series-details.page.scss'],
   imports: [
     CommonModule,
+    RouterLink,
     IonBadge,
     IonButton,
     IonButtons,
@@ -64,20 +67,26 @@ export class SeriesDetailsPage implements OnInit {
     addIcons({
       arrowBackOutline,
       calendarClearOutline,
+      layersOutline,
       libraryOutline,
+      returnUpBackOutline,
       timeOutline,
       tvOutline,
     });
   }
 
-  async ngOnInit(): Promise<void> {
-    const seriesId = Number(this.route.snapshot.paramMap.get('seriesId'));
-    if (!Number.isInteger(seriesId) || seriesId <= 0) {
-      this.showError('Series not found.');
-      return;
-    }
+  ngOnInit(): void {
+    this.route.paramMap.subscribe(async (params) => {
+      const seriesId = Number(params.get('seriesId'));
+      if (!Number.isInteger(seriesId) || seriesId <= 0) {
+        this.showError('Series not found.');
+        return;
+      }
 
-    await this.loadSeries(seriesId);
+      this.isLoading = true;
+      this.errorMessage = '';
+      await this.loadSeries(seriesId);
+    });
   }
 
   get isInLibrary(): boolean {
@@ -121,8 +130,28 @@ export class SeriesDetailsPage implements OnInit {
     return total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
   }
 
+  get seasons(): SeriesSummary[] {
+    return this.series?.seasons ?? [];
+  }
+
+  get hasParent(): boolean {
+    return !!this.series?.parentSeriesId;
+  }
+
   imageUrl(): string {
     return mediaImageUrl(this.series?.image);
+  }
+
+  seasonImageUrl(season: SeriesSummary): string {
+    return mediaImageUrl(season.image ?? null);
+  }
+
+  seasonReleaseLabel(season: SeriesSummary): string {
+    return this.formatDate(season.releaseDate);
+  }
+
+  trackBySeason(_: number, season: SeriesSummary): number {
+    return season.id;
   }
 
   goBack(): void {

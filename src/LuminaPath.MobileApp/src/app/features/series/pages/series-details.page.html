@@ -35,6 +35,13 @@
       <div class="hero-copy">
         <span class="eyebrow">Series details</span>
         <h1>{{ series.name }}</h1>
+        <a
+          *ngIf="hasParent"
+          class="parent-link"
+          [routerLink]="['/library/series', series.parentSeriesId]">
+          <ion-icon name="return-up-back-outline"></ion-icon>
+          Season of {{ series.parentSeriesName || 'parent series' }}
+        </a>
         <p class="description" *ngIf="series.description">{{ series.description }}</p>
 
         <div class="meta-grid">
@@ -68,6 +75,31 @@
         <p>{{ isInLibrary ? episodeLabel + ' watched' : 'Your episode and watch time tracking will show up here.' }}</p>
       </div>
       <ion-badge>{{ progress }}%</ion-badge>
+    </section>
+
+    <section class="quest-panel dlc-panel" *ngIf="seasons.length">
+      <header class="section-header">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="layers-outline"></ion-icon>
+            Seasons
+          </span>
+          <h2>{{ seasons.length }} season{{ seasons.length === 1 ? '' : 's' }}</h2>
+        </div>
+      </header>
+
+      <div class="dlc-list">
+        <a
+          *ngFor="let season of seasons; trackBy: trackBySeason"
+          class="dlc-card"
+          [routerLink]="['/library/series', season.id]">
+          <img *ngIf="season.image" [src]="seasonImageUrl(season)" [alt]="season.name" />
+          <div class="dlc-body">
+            <h3>{{ season.name }}</h3>
+            <span>{{ seasonReleaseLabel(season) }}</span>
+          </div>
+        </a>
+      </div>
     </section>
   </main>
 </ion-content>

@@ -10,8 +10,23 @@ export class Series implements IBasicInfo {
   expectedWatchTimePerEpisodeMinutes: number | null = null;
   expectedWatchTimeMinutes: number | null = null;
   episodeCount: number | null = null;
+  parentSeriesId: number | null = null;
+  parentSeriesName: string | null = null;
+  seasons: SeriesSummary[] | null = null;
   mySeries: MySeries | null = null;
   image: MediaFile | null = null;
+}
+
+export interface SeriesSummary {
+  id: number;
+  name: string;
+  description?: string | null;
+  releaseDate?: Date | string | null;
+  episodeCount?: number | null;
+  expectedWatchTimePerEpisodeMinutes?: number | null;
+  expectedWatchTimeMinutes?: number | null;
+  image?: MediaFile | null;
+  parentSeriesId?: number | null;
 }
 
 export class MySeries implements IBasicInfo {

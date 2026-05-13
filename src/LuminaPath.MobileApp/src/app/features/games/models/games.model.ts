@@ -10,6 +10,9 @@ export class Game implements IGame, IBasicInfo {
   genre: string;
   platforms: number;
   playtime: number;
+  parentGameId: number | null;
+  parentGameName: string | null;
+  dlcs: GameSummary[] | null;
   myGames: MyGame | null;
   image: MediaFile | null;
 
@@ -28,9 +31,23 @@ export class Game implements IGame, IBasicInfo {
     this.genre = genre ?? "";
     this.platforms = platforms ?? 0;
     this.playtime = playtime ?? 0;
+    this.parentGameId = null;
+    this.parentGameName = null;
+    this.dlcs = null;
     this.myGames = myGame ?? null;
     this.image = null;
   }
+}
+
+export interface GameSummary {
+  id: number;
+  name: string;
+  description?: string | null;
+  releaseDate?: Date | string | null;
+  platforms?: number;
+  playtime?: number | null;
+  image?: MediaFile | null;
+  parentGameId?: number | null;
 }
 
 export class MyGame implements IBasicInfo {

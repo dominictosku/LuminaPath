@@ -10,8 +10,23 @@ export class Anime implements IBasicInfo {
   expectedWatchTimePerEpisodeMinutes: number | null = null;
   expectedWatchTimeMinutes: number | null = null;
   episodeCount: number | null = null;
+  parentAnimeId: number | null = null;
+  parentAnimeName: string | null = null;
+  seasons: AnimeSummary[] | null = null;
   myAnimes: MyAnime | null = null;
   image: MediaFile | null = null;
+}
+
+export interface AnimeSummary {
+  id: number;
+  name: string;
+  description?: string | null;
+  releaseDate?: Date | string | null;
+  episodeCount?: number | null;
+  expectedWatchTimePerEpisodeMinutes?: number | null;
+  expectedWatchTimeMinutes?: number | null;
+  image?: MediaFile | null;
+  parentAnimeId?: number | null;
 }
 
 export class MyAnime implements IBasicInfo {

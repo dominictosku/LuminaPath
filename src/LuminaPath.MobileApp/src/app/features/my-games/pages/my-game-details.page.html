@@ -35,6 +35,13 @@
       <div class="hero-copy">
         <span class="eyebrow">Game details</span>
         <h1>{{ game.name }}</h1>
+        <a
+          *ngIf="hasParent"
+          class="parent-link"
+          [routerLink]="['/library/games', game.parentGameId]">
+          <ion-icon name="return-up-back-outline"></ion-icon>
+          DLC of {{ game.parentGameName || 'parent game' }}
+        </a>
         <p class="description" *ngIf="game.description">{{ game.description }}</p>
 
         <div class="meta-grid">
@@ -82,6 +89,31 @@
     </ion-segment>
 
     <ng-container *ngIf="selectedTab === 'overview'">
+    <section class="quest-panel dlc-panel" *ngIf="dlcs.length">
+      <header class="section-header">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="cube-outline"></ion-icon>
+            Downloadable content
+          </span>
+          <h2>{{ dlcs.length }} DLC{{ dlcs.length === 1 ? '' : 's' }}</h2>
+        </div>
+      </header>
+
+      <div class="dlc-list">
+        <a
+          *ngFor="let dlc of dlcs; trackBy: trackByDlc"
+          class="dlc-card"
+          [routerLink]="['/library/games', dlc.id]">
+          <img *ngIf="dlc.image" [src]="dlcImageUrl(dlc)" [alt]="dlc.name" />
+          <div class="dlc-body">
+            <h3>{{ dlc.name }}</h3>
+            <span>{{ dlcReleaseLabel(dlc) }}</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
     <section class="quest-panel forecast-panel" *ngIf="forecast">
       <header class="section-header">
         <div>

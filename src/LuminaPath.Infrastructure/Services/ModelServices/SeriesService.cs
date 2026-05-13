@@ -51,6 +51,26 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return GetDropdownMedia(searchName);
         }
 
+        public async Task<List<Series>> GetDropdownParentSeries(string? searchName = null, int? excludeId = null)
+        {
+            await using var context = await GetDbContextAsync();
+            IQueryable<Series> query = context.Series
+                .Include(series => series.Image)
+                .Where(series => series.ParentSeriesId == null);
+
+            if (!string.IsNullOrWhiteSpace(searchName))
+            {
+                query = query.Where(series => series.Name.Contains(searchName));
+            }
+
+            if (excludeId is int id && id > 0)
+            {
+                query = query.Where(series => series.Id != id);
+            }
+
+            return await query.OrderBy(series => series.Name).ToListAsync();
+        }
+
         public override Task<Result<Series, FailedResult>> PostAsync(Series entity)
         {
             RecalculateUserEntries(entity);

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Game, GameNewsItem } from '../models/games.model';
+import { Game, GameNewsItem, GameSummary } from '../models/games.model';
 import { ApiService } from '../../../shared/services/api.service';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
@@ -32,6 +32,12 @@ export class GameService extends ApiService<Game> {
     return this.httpClient.get<GameNewsItem[]>(`${this.apiUrl}/${gameId}/news`, {
       withCredentials: true,
       params,
+    });
+  }
+
+  getDlcs(gameId: number) {
+    return this.httpClient.get<GameSummary[]>(`${this.apiUrl}/${gameId}/dlcs`, {
+      withCredentials: true,
     });
   }
 }

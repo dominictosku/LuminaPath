@@ -120,6 +120,29 @@
 
                 <MudItem xs="12">
                     <div class="form-section">
+                        <div class="section-heading">
+                            <MudIcon Icon="@Icons.Material.Filled.Layers" Color="Color.Primary" />
+                            <div>
+                                <MudText Typo="Typo.subtitle1">Parent Anime (Season)</MudText>
+                                <MudText Typo="Typo.body2" Class="mud-text-secondary">Link this entry as a season of another anime.</MudText>
+                            </div>
+                        </div>
+
+                        <MudAutocomplete T="Anime"
+                                         Label="Parent anime"
+                                         Value="_selectedParent"
+                                         ValueChanged="OnParentChanged"
+                                         SearchFunc="SearchParentAsync"
+                                         ToStringFunc="@(anime => anime?.Name ?? string.Empty)"
+                                         Clearable="true"
+                                         CoerceText="true"
+                                         ResetValueOnEmptyText="true"
+                                         Variant="Variant.Outlined" />
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <div class="form-section">
                         <div class="section-heading split-heading">
                             <div class="section-heading">
                                 <MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Color="Color.Primary" />
@@ -226,7 +249,9 @@
         set => Model.ExpectedWatchTimePerEpisodeMinutes = value is null ? null : Math.Max(0, (int)Math.Round(value.Value * 60));
     }
 
-    protected override void OnInitialized()
+    private Anime? _selectedParent;
+
+    protected override async Task OnInitializedAsync()
     {
         Model.Genres ??= [];
 
@@ -236,7 +261,13 @@
             _myAnime = Model.MyAnimes.First();
         }
 
-        base.OnInitialized();
+        if (Model.ParentAnimeId is int parentId && parentId > 0)
+        {
+            _selectedParent = Model.ParentAnime
+                ?? (await AnimeService.GetById(parentId, []));
+        }
+
+        await base.OnInitializedAsync();
     }
 
     public override async Task Submit()
@@ -301,6 +332,18 @@
         var dropdownAnimes = await AnimeService.GetDropdownAnimes(value);
         animes = dropdownAnimes.Select(x => x.Name).ToList();
         return animes;
+    }
+
+    private async Task<IEnumerable<Anime>> SearchParentAsync(string value, CancellationToken token)
+    {
+        return await AnimeService.GetDropdownParentAnimes(value, Model.Id);
+    }
+
+    private void OnParentChanged(Anime? parent)
+    {
+        _selectedParent = parent;
+        Model.ParentAnimeId = parent?.Id;
+        Model.ParentAnime = null;
     }
 
     private IEnumerable<string> Validate(string value)

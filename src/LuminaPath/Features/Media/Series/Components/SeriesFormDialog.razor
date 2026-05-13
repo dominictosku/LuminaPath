@@ -120,6 +120,29 @@
 
                 <MudItem xs="12">
                     <div class="form-section">
+                        <div class="section-heading">
+                            <MudIcon Icon="@Icons.Material.Filled.Layers" Color="Color.Primary" />
+                            <div>
+                                <MudText Typo="Typo.subtitle1">Parent Series (Season)</MudText>
+                                <MudText Typo="Typo.body2" Class="mud-text-secondary">Link this entry as a season of another series.</MudText>
+                            </div>
+                        </div>
+
+                        <MudAutocomplete T="LuminaPath.Core.Models.Series"
+                                         Label="Parent series"
+                                         Value="_selectedParent"
+                                         ValueChanged="OnParentChanged"
+                                         SearchFunc="SearchParentAsync"
+                                         ToStringFunc="@(series => series?.Name ?? string.Empty)"
+                                         Clearable="true"
+                                         CoerceText="true"
+                                         ResetValueOnEmptyText="true"
+                                         Variant="Variant.Outlined" />
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <div class="form-section">
                         <div class="section-heading split-heading">
                             <div class="section-heading">
                                 <MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Color="Color.Primary" />
@@ -226,7 +249,9 @@
         set => Model.ExpectedWatchTimePerEpisodeMinutes = value is null ? null : Math.Max(0, (int)Math.Round(value.Value * 60));
     }
 
-    protected override void OnInitialized()
+    private LuminaPath.Core.Models.Series? _selectedParent;
+
+    protected override async Task OnInitializedAsync()
     {
         Model.Genres ??= [];
 
@@ -236,7 +261,13 @@
             _mySeries = Model.MySeries.First();
         }
 
-        base.OnInitialized();
+        if (Model.ParentSeriesId is int parentId && parentId > 0)
+        {
+            _selectedParent = Model.ParentSeries
+                ?? (await SeriesService.GetById(parentId, []));
+        }
+
+        await base.OnInitializedAsync();
     }
 
     public override async Task Submit()
@@ -301,6 +332,18 @@
         var dropdownSeries = await SeriesService.GetDropdownSeries(value);
         series = dropdownSeries.Select(x => x.Name).ToList();
         return series;
+    }
+
+    private async Task<IEnumerable<LuminaPath.Core.Models.Series>> SearchParentAsync(string value, CancellationToken token)
+    {
+        return await SeriesService.GetDropdownParentSeries(value, Model.Id);
+    }
+
+    private void OnParentChanged(LuminaPath.Core.Models.Series? parent)
+    {
+        _selectedParent = parent;
+        Model.ParentSeriesId = parent?.Id;
+        Model.ParentSeries = null;
     }
 
     private IEnumerable<string> Validate(string value)

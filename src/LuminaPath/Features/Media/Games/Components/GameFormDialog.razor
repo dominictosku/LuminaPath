@@ -163,6 +163,29 @@
                 </MudItem>
 
                 <MudItem xs="12">
+                    <div class="form-section">
+                        <div class="section-heading">
+                            <MudIcon Icon="@Icons.Material.Filled.Extension" Color="Color.Primary" />
+                            <div>
+                                <MudText Typo="Typo.subtitle1">Parent Game (DLC)</MudText>
+                                <MudText Typo="Typo.body2" Class="mud-text-secondary">Link this entry as DLC of another game.</MudText>
+                            </div>
+                        </div>
+
+                        <MudAutocomplete T="Game"
+                                         Label="Parent game"
+                                         Value="_selectedParent"
+                                         ValueChanged="OnParentChanged"
+                                         SearchFunc="SearchParentAsync"
+                                         ToStringFunc="@(game => game?.Name ?? string.Empty)"
+                                         Clearable="true"
+                                         CoerceText="true"
+                                         ResetValueOnEmptyText="true"
+                                         Variant="Variant.Outlined" />
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12">
                     <div class="form-section compact-section">
                         <MudExpansionPanels Elevation="0">
                             <MudExpansionPanel Text="Advanced Game Info">
@@ -315,7 +338,9 @@
     private string PlaytimeText => Model.Playtime is null ? "No estimate" : $"{Model.Playtime}h estimate";
     private string ReleaseDateText => Model.ReleaseDate?.ToString("dd.MM.yyyy") ?? "No release date";
 
-    protected override void OnInitialized()
+    private Game? _selectedParent;
+
+    protected override async Task OnInitializedAsync()
     {
         Model.Genres ??= [];
 
@@ -325,7 +350,13 @@
             _myGame = Model.MyGames.First();
         }
 
-        base.OnInitialized();
+        if (Model.ParentGameId is int parentId && parentId > 0)
+        {
+            _selectedParent = Model.ParentGame
+                ?? (await gameService.GetById(parentId, []));
+        }
+
+        await base.OnInitializedAsync();
     }
 
     public override async Task Submit()
@@ -412,6 +443,18 @@
         games = dropdownGames.Select(x => x.Name).ToList();
 
         return games;
+    }
+
+    private async Task<IEnumerable<Game>> SearchParentAsync(string value, CancellationToken token)
+    {
+        return await gameService.GetDropdownParentGames(value, Model.Id);
+    }
+
+    private void OnParentChanged(Game? parent)
+    {
+        _selectedParent = parent;
+        Model.ParentGameId = parent?.Id;
+        Model.ParentGame = null;
     }
 
     private IEnumerable<string> Validate(string value)

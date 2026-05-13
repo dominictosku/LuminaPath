@@ -1,7 +1,7 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   IonBadge,
   IonButton,
@@ -27,6 +27,7 @@ import {
   calendarClearOutline,
   checkmarkCircle,
   checkmarkCircleOutline,
+  cubeOutline,
   gameControllerOutline,
   hourglassOutline,
   libraryOutline,
@@ -34,12 +35,13 @@ import {
   newspaperOutline,
   openOutline,
   refreshOutline,
+  returnUpBackOutline,
   trashOutline,
 } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 
 import { GameService } from 'src/app/features/games/services/game.service';
-import { Game, GameNewsItem, Platforms } from 'src/app/features/games/models/games.model';
+import { Game, GameNewsItem, GameSummary, Platforms } from 'src/app/features/games/models/games.model';
 import { Quest, QuestBoardService, QuestType } from 'src/app/features/quests/services/quest-board.service';
 import { GameForecast, GamingSessionService } from 'src/app/features/planing/services/gaming-session.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
@@ -64,6 +66,7 @@ type GameWithFlexibleLibrary = Game & {
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     IonBadge,
     IonButton,
     IonButtons,
@@ -118,6 +121,7 @@ export class MyGameDetailsPage implements OnInit {
       calendarClearOutline,
       checkmarkCircle,
       checkmarkCircleOutline,
+      cubeOutline,
       gameControllerOutline,
       hourglassOutline,
       libraryOutline,
@@ -125,19 +129,24 @@ export class MyGameDetailsPage implements OnInit {
       newspaperOutline,
       openOutline,
       refreshOutline,
+      returnUpBackOutline,
       trashOutline,
     });
   }
 
-  async ngOnInit(): Promise<void> {
-    const gameId = Number(this.route.snapshot.paramMap.get('gameId'));
+  ngOnInit(): void {
+    this.route.paramMap.subscribe(async (params) => {
+      const gameId = Number(params.get('gameId'));
+      if (!Number.isInteger(gameId) || gameId <= 0) {
+        this.showError('Game not found.');
+        return;
+      }
 
-    if (!Number.isInteger(gameId) || gameId <= 0) {
-      this.showError('Game not found.');
-      return;
-    }
-
-    await this.loadGameAndQuests(gameId);
+      this.newsLoaded = false;
+      this.newsItems = [];
+      this.selectedTab = 'overview';
+      await this.loadGameAndQuests(gameId);
+    });
   }
 
   get libraryEntry(): { id?: number; status?: number } | null {
@@ -189,6 +198,37 @@ export class MyGameDetailsPage implements OnInit {
 
   get playtimeLabel(): string {
     return this.game?.playtime ? `${this.game.playtime}h estimated` : 'No estimate';
+  }
+
+  get dlcs(): GameSummary[] {
+    return this.game?.dlcs ?? [];
+  }
+
+  get hasParent(): boolean {
+    return !!this.game?.parentGameId;
+  }
+
+  dlcReleaseLabel(dlc: GameSummary): string {
+    if (!dlc.releaseDate) {
+      return 'No release date';
+    }
+    const date = new Date(dlc.releaseDate);
+    if (Number.isNaN(date.getTime())) {
+      return 'No release date';
+    }
+    return new Intl.DateTimeFormat('en', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  dlcImageUrl(dlc: GameSummary): string {
+    return mediaImageUrl(dlc.image ?? null);
+  }
+
+  trackByDlc(_: number, dlc: GameSummary): number {
+    return dlc.id;
   }
 
   get completedQuestCount(): number {

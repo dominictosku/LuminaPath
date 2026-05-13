@@ -1,6 +1,6 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   IonBadge,
   IonButton,
@@ -17,12 +17,14 @@ import {
   arrowBackOutline,
   calendarClearOutline,
   filmOutline,
+  layersOutline,
   libraryOutline,
+  returnUpBackOutline,
   sparklesOutline,
   timeOutline,
 } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
-import { Anime } from '../models/animes.model';
+import { Anime, AnimeSummary } from '../models/animes.model';
 import { AnimeService } from '../services/anime.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 
@@ -40,6 +42,7 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
   styleUrls: ['./anime-details.page.scss'],
   imports: [
     CommonModule,
+    RouterLink,
     IonBadge,
     IonButton,
     IonButtons,
@@ -66,20 +69,26 @@ export class AnimeDetailsPage implements OnInit {
       arrowBackOutline,
       calendarClearOutline,
       filmOutline,
+      layersOutline,
       libraryOutline,
+      returnUpBackOutline,
       sparklesOutline,
       timeOutline,
     });
   }
 
-  async ngOnInit(): Promise<void> {
-    const animeId = Number(this.route.snapshot.paramMap.get('animeId'));
-    if (!Number.isInteger(animeId) || animeId <= 0) {
-      this.showError('Anime not found.');
-      return;
-    }
+  ngOnInit(): void {
+    this.route.paramMap.subscribe(async (params) => {
+      const animeId = Number(params.get('animeId'));
+      if (!Number.isInteger(animeId) || animeId <= 0) {
+        this.showError('Anime not found.');
+        return;
+      }
 
-    await this.loadAnime(animeId);
+      this.isLoading = true;
+      this.errorMessage = '';
+      await this.loadAnime(animeId);
+    });
   }
 
   get isInLibrary(): boolean {
@@ -118,8 +127,28 @@ export class AnimeDetailsPage implements OnInit {
     return total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
   }
 
+  get seasons(): AnimeSummary[] {
+    return this.anime?.seasons ?? [];
+  }
+
+  get hasParent(): boolean {
+    return !!this.anime?.parentAnimeId;
+  }
+
   imageUrl(): string {
     return mediaImageUrl(this.anime?.image);
+  }
+
+  seasonImageUrl(season: AnimeSummary): string {
+    return mediaImageUrl(season.image ?? null);
+  }
+
+  seasonReleaseLabel(season: AnimeSummary): string {
+    return this.formatDate(season.releaseDate);
+  }
+
+  trackBySeason(_: number, season: AnimeSummary): number {
+    return season.id;
   }
 
   goBack(): void {
