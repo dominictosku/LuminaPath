@@ -254,53 +254,42 @@ export class MyGameDetailsPage implements OnInit {
       return;
     }
 
-    const board = await this.questBoardService.getBoard();
-    board.quests[this.newQuestType] = [
-      ...board.quests[this.newQuestType],
-      {
-        id: 0,
+    try {
+      await this.questBoardService.createQuest({
         title,
-        completed: false,
-        createdAt: new Date().toISOString(),
+        type: this.newQuestType,
         myGameId,
-      },
-    ];
-
-    await this.questBoardService.saveBoard(board);
-    this.newQuestTitle = '';
-    await this.refreshQuests();
+      });
+      this.newQuestTitle = '';
+      await this.refreshQuests();
+    } catch {
+      // swallow; user-visible feedback can be added later
+    }
   }
 
   async toggleQuest(quest: Quest): Promise<void> {
-    const board = await this.questBoardService.getBoard();
-    const targetType = this.questTypeFor(quest);
-    const target = board.quests[targetType].find((item) => item.id === quest.id);
-
-    if (!target) {
-      return;
+    const previous = quest.completed;
+    quest.completed = !previous;
+    try {
+      await this.questBoardService.updateQuest(quest.id, { completed: !previous });
+      await this.refreshQuests();
+    } catch {
+      quest.completed = previous;
     }
-
-    target.completed = !target.completed;
-    target.completedAt = target.completed ? new Date().toISOString() : undefined;
-
-    await this.questBoardService.saveBoard(board);
-    await this.refreshQuests();
   }
 
   async deleteQuest(quest: Quest): Promise<void> {
-    const board = await this.questBoardService.getBoard();
-    for (const type of this.questTypeOptions.map((option) => option.type)) {
-      board.quests[type] = board.quests[type].filter((item) => item.id !== quest.id);
+    const id = quest.id;
+    this.quests = this.quests.filter((item) => item.id !== id);
+    try {
+      await this.questBoardService.deleteQuest(id);
+    } catch {
+      await this.refreshQuests();
     }
-
-    await this.questBoardService.saveBoard(board);
-    await this.refreshQuests();
   }
 
   questTypeFor(quest: Quest): QuestType {
-    if (quest.rewardXp === 150) return 'main';
-    if (quest.rewardXp === 100) return 'faction';
-    return 'sub';
+    return quest.type;
   }
 
   questTypeLabel(type: QuestType): string {

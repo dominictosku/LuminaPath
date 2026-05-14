@@ -4,10 +4,10 @@
       <div class="hero__copy">
         <span class="eyebrow">
           <ion-icon name="sparkles-outline"></ion-icon>
-          Life RPG
+          Quest Board
         </span>
-        <h1>{{ title }} Level {{ level }}</h1>
-        <p>Turn tasks into quests and real-life practice into a skill tree.</p>
+        <h1>{{ title }} · Level {{ level }}</h1>
+        <p>Your todo list with XP. Focus on today, ship the rest as you go.</p>
       </div>
 
       <div class="hero__panel">
@@ -20,9 +20,9 @@
         </div>
         <ion-progress-bar [value]="xpProgress"></ion-progress-bar>
         <div class="stat-row">
-          <span>{{ activeQuestCount }} active</span>
-          <span>{{ completedQuestCount }} complete</span>
-          <span>{{ unlockedNodeCount }} nodes</span>
+          <span><ion-icon name="today-outline"></ion-icon> {{ todayCount }} today</span>
+          <span><ion-icon name="alert-circle-outline"></ion-icon> {{ overdueCount }} overdue</span>
+          <span><ion-icon name="checkmark-circle-outline"></ion-icon> {{ completedQuestCount }} done</span>
         </div>
       </div>
     </section>
@@ -31,175 +31,235 @@
       <ion-segment [(ngModel)]="mode">
         <ion-segment-button value="quests">Quests</ion-segment-button>
         <ion-segment-button value="skills">Skills</ion-segment-button>
-        <ion-segment-button value="tree">Tree</ion-segment-button>
       </ion-segment>
     </section>
 
-    <section class="quest-grid" *ngIf="mode === 'quests'">
-      <article class="quest-column" *ngFor="let column of questColumns; trackBy: trackByColumn">
-        <header class="column-header">
-          <div class="column-icon">
-            <ion-icon [name]="column.icon"></ion-icon>
-          </div>
-          <div>
-            <span>{{ column.label }}</span>
-            <h2>{{ column.title }}</h2>
-            <p>{{ column.description }}</p>
-          </div>
-        </header>
-
-        <div class="quest-input">
+    <ng-container *ngIf="mode === 'quests'">
+      <section class="quick-add-card">
+        <div class="quick-add-row">
           <input
             type="text"
-            [placeholder]="'Add ' + column.title.toLowerCase()"
-            [(ngModel)]="newQuest[column.type]"
-            (keydown.enter)="addQuest(column.type)" />
-          <ion-button fill="clear" aria-label="Add quest" (click)="addQuest(column.type)">
+            class="quick-add-input"
+            placeholder="Add a quest and press Enter"
+            [(ngModel)]="quickAddTitle"
+            (keydown.enter)="submitQuickAdd()" />
+          <ion-button shape="round" (click)="submitQuickAdd()" aria-label="Add quest">
             <ion-icon slot="icon-only" name="add-outline"></ion-icon>
           </ion-button>
         </div>
 
-        <div class="column-progress">
-          <ion-progress-bar [value]="questProgress(column)"></ion-progress-bar>
-          <span>+{{ questReward(column.type) }} XP</span>
-        </div>
+        <div class="quick-add-meta">
+          <label class="meta-chip">
+            <ion-icon name="flag-outline"></ion-icon>
+            <select [(ngModel)]="quickAddType">
+              <option *ngFor="let option of typeOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
 
-        <div class="quest-list" *ngIf="lifeQuestsFor(column.type).length; else emptyColumn">
-          <article
-            class="quest-card"
-            *ngFor="let quest of lifeQuestsFor(column.type); trackBy: trackByQuest"
-            [class.quest-card--done]="quest.completed">
-            <button type="button" class="complete-button" (click)="toggleQuest(column.type, quest)">
-              <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
+          <label class="meta-chip">
+            <ion-icon name="flame-outline"></ion-icon>
+            <select [(ngModel)]="quickAddPriority">
+              <option *ngFor="let option of priorityOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
+
+          <label class="meta-chip">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <input type="date" [(ngModel)]="quickAddDue" />
+            <button *ngIf="quickAddDue" type="button" class="meta-chip-clear" aria-label="Clear due date" (click)="resetQuickAddDue()">
+              <ion-icon name="close-outline"></ion-icon>
             </button>
-            <div>
-              <h3>{{ quest.title }}</h3>
-              <p>{{ quest.completed ? 'Reward claimed' : 'Ready to complete' }}</p>
-            </div>
-            <button type="button" class="delete-button" aria-label="Delete quest" (click)="deleteQuest(column.type, quest.id)">
-              <ion-icon name="trash-outline"></ion-icon>
-            </button>
-          </article>
-        </div>
+          </label>
 
-        <ng-template #emptyColumn>
-          <div class="empty-state">
-            <ion-icon name="library-outline"></ion-icon>
-            <span>No quests here yet.</span>
-          </div>
-        </ng-template>
-      </article>
-    </section>
+          <button type="button" class="meta-chip meta-chip--ghost" (click)="setQuickAddToday()">Today</button>
+          <button type="button" class="meta-chip meta-chip--ghost" (click)="setQuickAddTomorrow()">Tomorrow</button>
 
-    <section class="linked-section" *ngIf="mode === 'quests'">
-      <header class="linked-heading">
-        <div>
-          <span class="eyebrow">
+          <label class="meta-chip">
+            <ion-icon name="refresh-outline"></ion-icon>
+            <select [(ngModel)]="quickAddRecurrence">
+              <option *ngFor="let option of recurrenceOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
+
+          <label class="meta-chip" *ngIf="library.length">
             <ion-icon name="game-controller-outline"></ion-icon>
-            Linked to your games
-          </span>
-          <h2>Game Quests</h2>
-          <p>Tasks you want to remember while playing a game from your library.</p>
+            <select [(ngModel)]="quickAddGameId">
+              <option [ngValue]="null">No game</option>
+              <option *ngFor="let game of library; trackBy: trackByLibrary" [ngValue]="game.myGameId">{{ game.gameName }}</option>
+            </select>
+          </label>
         </div>
-      </header>
+      </section>
 
-      <article class="linked-card" *ngFor="let group of linkedGroups; trackBy: trackByGroup">
-        <header class="linked-card-header">
-          <div class="linked-card-icon">
-            <ion-icon name="link-outline"></ion-icon>
-          </div>
-          <div>
-            <span>{{ group.quests.length }} quest{{ group.quests.length === 1 ? '' : 's' }}</span>
-            <h3>{{ group.gameName }}</h3>
-          </div>
-        </header>
+      <section class="filter-row">
+        <ion-segment [value]="filter" (ionChange)="setFilter($any($event).detail.value)">
+          <ion-segment-button *ngFor="let option of filterOptions" [value]="option.value">
+            <ion-icon [name]="option.icon"></ion-icon>
+            <ion-label>{{ option.label }}</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+      </section>
 
-        <div class="quest-list">
+      <section class="search-row">
+        <label class="search-field">
+          <ion-icon name="search-outline"></ion-icon>
+          <input
+            type="text"
+            placeholder="Search quests"
+            [(ngModel)]="searchQuery" />
+          <button *ngIf="searchQuery" type="button" class="meta-chip-clear" aria-label="Clear search" (click)="clearSearch()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </label>
+
+        <div class="tag-filter-strip" *ngIf="availableTags.length">
+          <span class="tag-filter-label">Tags</span>
+          <button
+            type="button"
+            *ngFor="let tag of availableTags; trackBy: trackByText"
+            class="tag-chip"
+            [class.tag-chip--active]="tagFilter === tag"
+            (click)="selectTag(tag)">
+            <ion-icon name="pricetag-outline"></ion-icon>
+            {{ tag }}
+          </button>
+          <button *ngIf="tagFilter" type="button" class="tag-chip tag-chip--clear" (click)="clearTagFilter()">
+            <ion-icon name="close-outline"></ion-icon>
+            Clear
+          </button>
+        </div>
+      </section>
+
+      <section class="quest-list">
+        <div class="empty-state" *ngIf="!isLoading && !visibleQuests.length">
+          <ion-icon name="sparkles-outline"></ion-icon>
+          <strong>Nothing here yet</strong>
+          <span *ngIf="filter === 'today' && !searchQuery && !tagFilter">No quests due today. Add one above.</span>
+          <span *ngIf="filter === 'upcoming' && !searchQuery && !tagFilter">No quests scheduled.</span>
+          <span *ngIf="filter === 'overdue' && !searchQuery && !tagFilter">No overdue quests — nice.</span>
+          <span *ngIf="filter === 'all' && !searchQuery && !tagFilter">Start by adding a quest at the top.</span>
+          <span *ngIf="searchQuery || tagFilter">No quests match the current filters.</span>
+        </div>
+
+        <ion-reorder-group
+          [disabled]="!isManualOrderActive"
+          (ionItemReorder)="handleReorder($any($event))">
           <article
             class="quest-card"
-            *ngFor="let quest of group.quests; trackBy: trackByQuest"
-            [class.quest-card--done]="quest.completed">
-            <button type="button" class="complete-button" (click)="toggleQuest(questTypeFor(quest), quest)">
+            *ngFor="let quest of visibleQuests; trackBy: trackByQuest"
+            [class.quest-card--done]="quest.completed"
+            [class.quest-card--expanded]="expandedQuestId === quest.id"
+            [attr.data-due]="dueState(quest)">
+            <button type="button" class="complete-button" aria-label="Toggle complete" (click)="toggleQuest(quest)">
               <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
             </button>
-            <div>
-              <h3>{{ quest.title }}</h3>
-              <p>
-                <ion-badge>{{ questTypeLabel(questTypeFor(quest)) }}</ion-badge>
-                <span class="quest-card-meta">{{ quest.completed ? 'Reward claimed' : 'Ready to complete' }}</span>
-              </p>
+
+            <div class="quest-body" (click)="toggleExpand(quest)">
+              <div class="quest-line">
+                <h3>{{ quest.title }}</h3>
+                <span class="priority-pill priority-pill--{{ quest.priority }}">
+                  {{ priorityLabel(quest.priority) }}
+                </span>
+              </div>
+
+              <p class="quest-notes" *ngIf="quest.notes && expandedQuestId !== quest.id">{{ quest.notes }}</p>
+
+              <div class="quest-meta">
+                <span class="meta-pill meta-pill--type">
+                  <ion-icon [name]="typeIcon(quest.type)"></ion-icon>
+                  {{ typeLabel(quest.type) }}
+                </span>
+                <span *ngIf="quest.dueDate" class="meta-pill meta-pill--due" [attr.data-state]="dueState(quest)">
+                  <ion-icon name="calendar-outline"></ion-icon>
+                  {{ dueDateLabel(quest) }}
+                </span>
+                <span *ngIf="quest.recurrence && quest.recurrence !== 'none'" class="meta-pill meta-pill--recurrence">
+                  <ion-icon name="refresh-outline"></ion-icon>
+                  {{ recurrenceLabel(quest.recurrence) }}
+                </span>
+                <span *ngIf="quest.gameName" class="meta-pill meta-pill--game">
+                  <ion-icon name="game-controller-outline"></ion-icon>
+                  {{ quest.gameName }}
+                </span>
+                <button
+                  type="button"
+                  *ngFor="let tag of quest.tags; trackBy: trackByText"
+                  class="meta-pill meta-pill--tag tag-button"
+                  [class.tag-button--active]="tagFilter === tag"
+                  (click)="$event.stopPropagation(); selectTag(tag)">
+                  <ion-icon name="pricetag-outline"></ion-icon>
+                  {{ tag }}
+                </button>
+              </div>
             </div>
-            <button type="button" class="delete-button" aria-label="Delete quest" (click)="deleteQuest(questTypeFor(quest), quest.id)">
+
+            <button type="button" class="delete-button" aria-label="Delete quest" (click)="beginDelete(quest)">
               <ion-icon name="trash-outline"></ion-icon>
             </button>
+
+            <ion-reorder *ngIf="isManualOrderActive" class="reorder-handle"></ion-reorder>
+
+            <div class="quest-edit" *ngIf="expandedQuestId === quest.id && editDraft">
+              <label class="edit-field">
+                <span>Title</span>
+                <input type="text" [(ngModel)]="editDraft.title" />
+              </label>
+
+              <label class="edit-field">
+                <span>Notes</span>
+                <textarea rows="3" [(ngModel)]="editDraft.notes" placeholder="Optional notes"></textarea>
+              </label>
+
+              <div class="edit-row">
+                <label class="edit-field edit-field--inline">
+                  <span>Type</span>
+                  <select [(ngModel)]="editDraft.type">
+                    <option *ngFor="let option of typeOptions" [value]="option.value">{{ option.label }}</option>
+                  </select>
+                </label>
+
+                <label class="edit-field edit-field--inline">
+                  <span>Priority</span>
+                  <select [(ngModel)]="editDraft.priority">
+                    <option *ngFor="let option of priorityOptions" [value]="option.value">{{ option.label }}</option>
+                  </select>
+                </label>
+
+                <label class="edit-field edit-field--inline">
+                  <span>Repeat</span>
+                  <select [(ngModel)]="editDraft.recurrence">
+                    <option *ngFor="let option of recurrenceOptions" [value]="option.value">{{ option.label }}</option>
+                  </select>
+                </label>
+
+                <label class="edit-field edit-field--inline">
+                  <span>Due date</span>
+                  <input type="date" [(ngModel)]="editDraft.dueDate" />
+                </label>
+
+                <label class="edit-field edit-field--inline" *ngIf="library.length">
+                  <span>Game</span>
+                  <select [(ngModel)]="editDraft.myGameId">
+                    <option [ngValue]="null">No game</option>
+                    <option *ngFor="let game of library; trackBy: trackByLibrary" [ngValue]="game.myGameId">{{ game.gameName }}</option>
+                  </select>
+                </label>
+              </div>
+
+              <label class="edit-field">
+                <span>Tags <small>(comma separated)</small></span>
+                <input type="text" [(ngModel)]="editDraft.tags" placeholder="errand, focus, deep-work" />
+              </label>
+
+              <div class="edit-actions">
+                <ion-button fill="clear" (click)="cancelEdit()">Cancel</ion-button>
+                <ion-button (click)="saveEdit(quest)">Save</ion-button>
+              </div>
+            </div>
           </article>
-        </div>
-
-        <div class="quest-input quest-input--linked">
-          <input
-            type="text"
-            placeholder="Add a quest for this game"
-            [(ngModel)]="draftForGame(group.myGameId).title"
-            (keydown.enter)="addLinkedQuest(group.myGameId)" />
-          <ion-select
-            interface="popover"
-            [(ngModel)]="draftForGame(group.myGameId).type"
-            aria-label="Quest type">
-            <ion-select-option *ngFor="let option of questTypeOptions" [value]="option.type">
-              {{ option.label }}
-            </ion-select-option>
-          </ion-select>
-          <ion-button fill="clear" aria-label="Add quest" (click)="addLinkedQuest(group.myGameId)">
-            <ion-icon slot="icon-only" name="add-outline"></ion-icon>
-          </ion-button>
-        </div>
-      </article>
-
-      <article class="linked-add-card" *ngIf="unlinkedLibrary.length">
-        <header class="linked-card-header">
-          <div class="linked-card-icon">
-            <ion-icon name="add-outline"></ion-icon>
-          </div>
-          <div>
-            <span>From your library</span>
-            <h3>Link a new game</h3>
-          </div>
-        </header>
-
-        <div class="quest-input quest-input--linked">
-          <ion-select
-            interface="popover"
-            placeholder="Select a game"
-            [(ngModel)]="newLinkedGameId"
-            aria-label="Game">
-            <ion-select-option *ngFor="let game of unlinkedLibrary; trackBy: trackByLibrary" [value]="game.myGameId">
-              {{ game.gameName }}
-            </ion-select-option>
-          </ion-select>
-          <ion-select
-            interface="popover"
-            [(ngModel)]="newLinkedGameType"
-            aria-label="Quest type">
-            <ion-select-option *ngFor="let option of questTypeOptions" [value]="option.type">
-              {{ option.label }}
-            </ion-select-option>
-          </ion-select>
-          <input
-            type="text"
-            placeholder="Quest title"
-            [(ngModel)]="newLinkedGameTitle"
-            (keydown.enter)="addQuestForNewGame()" />
-          <ion-button fill="clear" aria-label="Add quest" (click)="addQuestForNewGame()">
-            <ion-icon slot="icon-only" name="add-outline"></ion-icon>
-          </ion-button>
-        </div>
-      </article>
-
-      <div class="empty-state" *ngIf="!linkedGroups.length && !unlinkedLibrary.length">
-        <ion-icon name="game-controller-outline"></ion-icon>
-        <span>Add games to your library to link quests to them.</span>
-      </div>
-    </section>
+        </ion-reorder-group>
+      </section>
+    </ng-container>
 
     <section class="skills-layout" *ngIf="mode === 'skills'">
       <div class="skills-heading">
@@ -265,14 +325,6 @@
         </article>
       </div>
     </section>
-
-    <section class="tree-layout" *ngIf="mode === 'tree'">
-      <app-skill-tree
-        [branches]="treeBranches"
-        [unlockedNodeIds]="treeUnlockedNodeIds"
-        (nodeUnlocked)="onTreeNodeUnlocked($event)">
-      </app-skill-tree>
-    </section>
   </main>
 
   <div class="modal-backdrop" *ngIf="modalMode" (click)="closeModal()">
@@ -333,6 +385,14 @@
         <ion-button expand="block" (click)="addNode()">Add Node</ion-button>
       </ng-template>
     </section>
+  </div>
+
+  <div class="undo-toast" *ngIf="pendingDeleteList.length">
+    <div class="undo-toast__row" *ngFor="let quest of pendingDeleteList; trackBy: trackByQuest">
+      <ion-icon name="trash-outline"></ion-icon>
+      <span>Deleted "{{ quest.title }}"</span>
+      <button type="button" (click)="undoDelete(quest.id)">Undo</button>
+    </div>
   </div>
 
   <div class="toast" *ngIf="toastMessage">

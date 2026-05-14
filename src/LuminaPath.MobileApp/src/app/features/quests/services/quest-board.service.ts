@@ -5,15 +5,65 @@ import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service
 
 export type QuestType = 'main' | 'sub' | 'faction';
 
+export type QuestPriority = 'low' | 'medium' | 'high';
+
+export type QuestRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';
+
 export type Quest = {
   id: number;
   title: string;
+  notes?: string | null;
+  type: QuestType;
+  priority: QuestPriority;
+  recurrence: QuestRecurrence;
+  dueDate?: string | null;
+  tags: string[];
   completed: boolean;
   completedAt?: string;
   createdAt?: string;
-  rewardXp?: number;
+  updatedAt?: string;
+  rewardXp: number;
+  sortOrder: number;
   myGameId?: number | null;
   gameName?: string | null;
+};
+
+export type QuestCreate = {
+  title: string;
+  notes?: string | null;
+  type?: QuestType;
+  priority?: QuestPriority;
+  recurrence?: QuestRecurrence;
+  dueDate?: string | null;
+  tags?: string[];
+  myGameId?: number | null;
+};
+
+export type QuestUpdate = {
+  title?: string;
+  notes?: string | null;
+  type?: QuestType;
+  priority?: QuestPriority;
+  recurrence?: QuestRecurrence;
+  dueDate?: string | null;
+  clearDueDate?: boolean;
+  tags?: string[];
+  completed?: boolean;
+  myGameId?: number | null;
+  clearMyGame?: boolean;
+  sortOrder?: number;
+};
+
+export type QuestReorderItem = {
+  id: number;
+  sortOrder: number;
+  type: QuestType;
+};
+
+export type QuestMutationResult = {
+  quest: Quest;
+  spawnedQuest?: Quest | null;
+  totalXp: number;
 };
 
 export type QuestSkill = {
@@ -28,11 +78,13 @@ export type QuestSkill = {
 
 export type QuestBoardState = {
   xp: number;
-  quests: Record<QuestType, Quest[]>;
+  quests: Quest[];
   skills: QuestSkill[];
 };
 
 type ApiQuestType = 0 | 1 | 2;
+type ApiQuestPriority = 0 | 1 | 2;
+type ApiQuestRecurrence = 0 | 1 | 2 | 3;
 
 type ApiQuestBoard = {
   xp: number;
@@ -43,14 +95,26 @@ type ApiQuestBoard = {
 type ApiQuest = {
   id: number;
   title: string;
+  notes?: string | null;
   type: ApiQuestType;
+  priority: ApiQuestPriority;
+  recurrence: ApiQuestRecurrence;
+  dueDate?: string | null;
+  tags: string[];
   rewardXp: number;
   completed: boolean;
   completedAt?: string;
   createdAt?: string;
+  updatedAt?: string;
   sortOrder: number;
   myGameId?: number | null;
   gameName?: string | null;
+};
+
+type ApiQuestMutationResult = {
+  quest: ApiQuest;
+  spawnedQuest?: ApiQuest | null;
+  totalXp: number;
 };
 
 type ApiQuestSkill = {
@@ -84,8 +148,57 @@ export class QuestBoardService {
     return this.toState(board);
   }
 
-  async saveBoard(state: QuestBoardState): Promise<QuestBoardState> {
-    const board = await firstValueFrom(this.http.put<ApiQuestBoard>(this.apiEndpoint.url('quests/board'), this.toApi(state), this.httpConfig));
+  async createQuest(input: QuestCreate): Promise<QuestMutationResult> {
+    const payload = {
+      title: input.title,
+      notes: input.notes ?? null,
+      type: this.toApiQuestType(input.type ?? 'sub'),
+      priority: this.toApiPriority(input.priority ?? 'medium'),
+      recurrence: this.toApiRecurrence(input.recurrence ?? 'none'),
+      dueDate: input.dueDate ?? null,
+      tags: input.tags ?? [],
+      myGameId: input.myGameId ?? null,
+    };
+    const response = await firstValueFrom(this.http.post<ApiQuestMutationResult>(this.apiEndpoint.url('quests'), payload, this.httpConfig));
+    return this.toMutation(response);
+  }
+
+  async updateQuest(id: number, input: QuestUpdate): Promise<QuestMutationResult> {
+    const payload: Record<string, unknown> = {};
+    if (input.title !== undefined) payload['title'] = input.title;
+    if (input.notes !== undefined) payload['notes'] = input.notes;
+    if (input.type !== undefined) payload['type'] = this.toApiQuestType(input.type);
+    if (input.priority !== undefined) payload['priority'] = this.toApiPriority(input.priority);
+    if (input.recurrence !== undefined) payload['recurrence'] = this.toApiRecurrence(input.recurrence);
+    if (input.dueDate !== undefined) payload['dueDate'] = input.dueDate;
+    if (input.clearDueDate !== undefined) payload['clearDueDate'] = input.clearDueDate;
+    if (input.tags !== undefined) payload['tags'] = input.tags;
+    if (input.completed !== undefined) payload['completed'] = input.completed;
+    if (input.myGameId !== undefined) payload['myGameId'] = input.myGameId;
+    if (input.clearMyGame !== undefined) payload['clearMyGame'] = input.clearMyGame;
+    if (input.sortOrder !== undefined) payload['sortOrder'] = input.sortOrder;
+
+    const response = await firstValueFrom(this.http.patch<ApiQuestMutationResult>(this.apiEndpoint.url(`quests/${id}`), payload, this.httpConfig));
+    return this.toMutation(response);
+  }
+
+  async deleteQuest(id: number): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(this.apiEndpoint.url(`quests/${id}`), this.httpConfig));
+  }
+
+  async reorderQuests(items: QuestReorderItem[]): Promise<void> {
+    const payload = items.map((item) => ({
+      id: item.id,
+      sortOrder: item.sortOrder,
+      type: this.toApiQuestType(item.type),
+    }));
+    await firstValueFrom(this.http.put<void>(this.apiEndpoint.url('quests/reorder'), payload, this.httpConfig));
+  }
+
+  async saveSkills(state: QuestBoardState): Promise<QuestBoardState> {
+    const board = await firstValueFrom(
+      this.http.put<ApiQuestBoard>(this.apiEndpoint.url('quests/skills'), this.toApi(state), this.httpConfig)
+    );
     return this.toState(board);
   }
 
@@ -97,19 +210,9 @@ export class QuestBoardService {
   }
 
   private toState(board: ApiQuestBoard): QuestBoardState {
-    const quests: Record<QuestType, Quest[]> = {
-      main: [],
-      sub: [],
-      faction: [],
-    };
-
-    for (const apiQuest of board.quests) {
-      quests[this.toQuestType(apiQuest.type)].push(this.toQuest(apiQuest));
-    }
-
     return {
       xp: board.xp,
-      quests,
+      quests: board.quests.map((quest) => this.toQuest(quest)),
       skills: board.skills.map((skill) => ({
         id: skill.id,
         name: skill.name,
@@ -128,31 +231,35 @@ export class QuestBoardService {
     return {
       id: apiQuest.id,
       title: apiQuest.title,
+      notes: apiQuest.notes ?? null,
+      type: this.toQuestType(apiQuest.type),
+      priority: this.toPriority(apiQuest.priority),
+      recurrence: this.toRecurrence(apiQuest.recurrence ?? 0),
+      dueDate: apiQuest.dueDate ?? null,
+      tags: apiQuest.tags ?? [],
       completed: apiQuest.completed,
       completedAt: apiQuest.completedAt,
       createdAt: apiQuest.createdAt,
+      updatedAt: apiQuest.updatedAt,
       rewardXp: apiQuest.rewardXp,
+      sortOrder: apiQuest.sortOrder,
       myGameId: apiQuest.myGameId ?? null,
       gameName: apiQuest.gameName ?? null,
+    };
+  }
+
+  private toMutation(api: ApiQuestMutationResult): QuestMutationResult {
+    return {
+      quest: this.toQuest(api.quest),
+      spawnedQuest: api.spawnedQuest ? this.toQuest(api.spawnedQuest) : null,
+      totalXp: api.totalXp,
     };
   }
 
   private toApi(state: QuestBoardState): ApiQuestBoard {
     return {
       xp: state.xp,
-      quests: (['main', 'sub', 'faction'] as QuestType[]).flatMap((type) =>
-        state.quests[type].map((quest, index) => ({
-          id: quest.id > 0 ? quest.id : 0,
-          title: quest.title,
-          type: this.toApiQuestType(type),
-          rewardXp: quest.rewardXp ?? this.rewardFor(type),
-          completed: quest.completed,
-          completedAt: quest.completedAt,
-          createdAt: quest.createdAt,
-          sortOrder: index,
-          myGameId: quest.myGameId ?? null,
-        }))
-      ),
+      quests: [],
       skills: state.skills.map((skill, skillIndex) => ({
         id: skill.id > 0 ? skill.id : 0,
         name: skill.name,
@@ -179,7 +286,19 @@ export class QuestBoardService {
     return type === 'main' ? 0 : type === 'faction' ? 2 : 1;
   }
 
-  private rewardFor(type: QuestType): number {
-    return type === 'main' ? 150 : type === 'faction' ? 100 : 75;
+  private toPriority(value: ApiQuestPriority): QuestPriority {
+    return value === 0 ? 'low' : value === 2 ? 'high' : 'medium';
+  }
+
+  private toApiPriority(value: QuestPriority): ApiQuestPriority {
+    return value === 'low' ? 0 : value === 'high' ? 2 : 1;
+  }
+
+  private toRecurrence(value: ApiQuestRecurrence): QuestRecurrence {
+    return value === 1 ? 'daily' : value === 2 ? 'weekly' : value === 3 ? 'monthly' : 'none';
+  }
+
+  private toApiRecurrence(value: QuestRecurrence): ApiQuestRecurrence {
+    return value === 'daily' ? 1 : value === 'weekly' ? 2 : value === 'monthly' ? 3 : 0;
   }
 }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using LuminaPath.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LuminaPath.Infrastructure.Migrations
 {
     [DbContext(typeof(LuminaPathDbContext))]
-    partial class LuminaPathDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260514191747_QuestCRUDAndPriority")]
+    partial class QuestCRUDAndPriority
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -554,9 +557,6 @@ namespace LuminaPath.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("Priority")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Recurrence")
                         .HasColumnType("integer");
 
                     b.Property<int>("RewardXp")

@@ -575,44 +575,85 @@
     private async Task AddQuest(QuestColumn column)
     {
         var title = column.Input.Trim();
-        if (string.IsNullOrWhiteSpace(title))
+        if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(UserId))
         {
             return;
         }
 
-        _board.Quests.Insert(0, new QuestDto
+        var result = await QuestService.CreateAsync(UserId, new QuestCreateDto
         {
-            Id = _temporaryId--,
             Title = title,
-            Type = column.Type,
-            RewardXp = RewardFor(column.Type),
-            CreatedAt = DateTime.UtcNow
+            Type = column.Type
         });
-        column.Input = string.Empty;
-        await Save("Quest added");
+
+        result.Match(
+            mutation =>
+            {
+                _board.Quests.Insert(0, mutation.Quest);
+                _board.Xp = mutation.TotalXp;
+                column.Input = string.Empty;
+                Snackbar.Add("Quest added", Severity.Success);
+                return 0;
+            },
+            failed =>
+            {
+                Snackbar.Add(string.Join("; ", failed.errorMessage), Severity.Error);
+                return 0;
+            });
     }
 
     private async Task ToggleQuest(QuestDto quest)
     {
-        quest.Completed = !quest.Completed;
-        if (quest.Completed && quest.CompletedAt == null)
+        if (string.IsNullOrWhiteSpace(UserId))
         {
-            quest.CompletedAt = DateTime.UtcNow;
-            _board.Xp += quest.RewardXp <= 0 ? RewardFor(quest.Type) : quest.RewardXp;
+            return;
         }
 
-        if (!quest.Completed)
+        var newCompleted = !quest.Completed;
+        var result = await QuestService.UpdateAsync(UserId, quest.Id, new QuestUpdateDto
         {
-            quest.CompletedAt = null;
-        }
+            Completed = newCompleted
+        });
 
-        await Save(quest.Completed ? $"+{quest.RewardXp} XP earned" : "Quest reopened");
+        result.Match(
+            mutation =>
+            {
+                var index = _board.Quests.FindIndex(q => q.Id == quest.Id);
+                if (index >= 0)
+                {
+                    _board.Quests[index] = mutation.Quest;
+                }
+                _board.Xp = mutation.TotalXp;
+                Snackbar.Add(newCompleted ? $"+{mutation.Quest.RewardXp} XP earned" : "Quest reopened", Severity.Success);
+                return 0;
+            },
+            failed =>
+            {
+                Snackbar.Add(string.Join("; ", failed.errorMessage), Severity.Error);
+                return 0;
+            });
     }
 
     private async Task DeleteQuest(QuestDto quest)
     {
-        _board.Quests.Remove(quest);
-        await Save("Quest deleted");
+        if (string.IsNullOrWhiteSpace(UserId))
+        {
+            return;
+        }
+
+        var result = await QuestService.DeleteAsync(UserId, quest.Id);
+        result.Match(
+            _ =>
+            {
+                _board.Quests.RemoveAll(q => q.Id == quest.Id);
+                Snackbar.Add("Quest deleted", Severity.Success);
+                return 0;
+            },
+            failed =>
+            {
+                Snackbar.Add(string.Join("; ", failed.errorMessage), Severity.Error);
+                return 0;
+            });
     }
 
     private async Task SaveSkill()
@@ -732,7 +773,7 @@
             return;
         }
 
-        _board = await QuestService.SaveBoardAsync(UserId, _board);
+        _board = await QuestService.SaveSkillsAsync(UserId, _board);
         Snackbar.Add(message, Severity.Success);
     }
 

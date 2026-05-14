@@ -13,14 +13,62 @@ namespace LuminaPath.Core.Dtos
     {
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
+        public string? Notes { get; set; }
         public QuestType Type { get; set; } = QuestType.Sub;
+        public QuestPriority Priority { get; set; } = QuestPriority.Medium;
+        public QuestRecurrence Recurrence { get; set; } = QuestRecurrence.None;
+        public DateTime? DueDate { get; set; }
+        public List<string> Tags { get; set; } = [];
         public int RewardXp { get; set; }
         public bool Completed { get; set; }
         public DateTime? CompletedAt { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public int SortOrder { get; set; }
         public int? MyGameId { get; set; }
         public string? GameName { get; set; }
+    }
+
+    public class QuestCreateDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Notes { get; set; }
+        public QuestType Type { get; set; } = QuestType.Sub;
+        public QuestPriority Priority { get; set; } = QuestPriority.Medium;
+        public QuestRecurrence Recurrence { get; set; } = QuestRecurrence.None;
+        public DateTime? DueDate { get; set; }
+        public List<string> Tags { get; set; } = [];
+        public int? MyGameId { get; set; }
+    }
+
+    public class QuestUpdateDto
+    {
+        public string? Title { get; set; }
+        public string? Notes { get; set; }
+        public QuestType? Type { get; set; }
+        public QuestPriority? Priority { get; set; }
+        public QuestRecurrence? Recurrence { get; set; }
+        public DateTime? DueDate { get; set; }
+        public bool? ClearDueDate { get; set; }
+        public List<string>? Tags { get; set; }
+        public bool? Completed { get; set; }
+        public int? MyGameId { get; set; }
+        public bool? ClearMyGame { get; set; }
+        public int? SortOrder { get; set; }
+    }
+
+    public class QuestReorderItemDto
+    {
+        public int Id { get; set; }
+        public int SortOrder { get; set; }
+        public QuestType Type { get; set; } = QuestType.Sub;
+    }
+
+    public class QuestMutationResultDto
+    {
+        public QuestDto Quest { get; set; } = new();
+        public QuestDto? SpawnedQuest { get; set; }
+        public int TotalXp { get; set; }
     }
 
     public class QuestSkillDto

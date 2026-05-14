@@ -1,4 +1,5 @@
 using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 using Microsoft.EntityFrameworkCore;
@@ -25,11 +26,6 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             var quests = await LoadQuestDtos(dbContext, userId);
             var skills = await LoadSkillDtos(dbContext, userId);
 
-            if (profile == null && quests.Count == 0 && skills.Count == 0)
-            {
-                return CreateDefaultBoard();
-            }
-
             return new QuestBoardDto
             {
                 Xp = profile?.TotalXp ?? 0,
@@ -54,42 +50,371 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return await dbContext.Quests
                 .AsNoTracking()
                 .Where(quest => quest.LuminaUserId == userId && quest.MyGameId == myGameId)
-                .OrderBy(quest => quest.Type)
-                .ThenBy(quest => quest.SortOrder)
+                .OrderBy(quest => quest.SortOrder)
                 .ThenBy(quest => quest.Id)
-                .Select(quest => new QuestDto
-                {
-                    Id = quest.Id,
-                    Title = quest.Title,
-                    Type = quest.Type,
-                    RewardXp = quest.RewardXp,
-                    Completed = quest.Completed,
-                    CompletedAt = quest.CompletedAt,
-                    CreatedAt = quest.CreatedAt,
-                    SortOrder = quest.SortOrder,
-                    MyGameId = quest.MyGameId,
-                    GameName = quest.MyGame == null ? null : quest.MyGame.Game!.Name
-                })
+                .Select(quest => ProjectQuestDto(quest))
                 .ToListAsync();
         }
 
-        public async Task<QuestBoardDto> SaveBoardAsync(string userId, QuestBoardDto board)
+        public async Task<Result<QuestMutationResultDto, FailedResult>> CreateAsync(string userId, QuestCreateDto dto)
+        {
+            var title = (dto.Title ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return new FailedResult("Title is required");
+            }
+
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+            int? myGameId = null;
+            if (dto.MyGameId.HasValue)
+            {
+                var ownsGame = await dbContext.MyGames
+                    .AsNoTracking()
+                    .AnyAsync(myGame => myGame.Id == dto.MyGameId.Value && myGame.LuminaUserId == userId);
+                if (ownsGame)
+                {
+                    myGameId = dto.MyGameId.Value;
+                }
+            }
+
+            var nextSort = await dbContext.Quests
+                .Where(q => q.LuminaUserId == userId && q.Type == dto.Type)
+                .Select(q => (int?)q.SortOrder)
+                .MaxAsync() ?? -1;
+
+            var quest = new Quest
+            {
+                LuminaUserId = userId,
+                Title = title,
+                Notes = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim(),
+                Type = dto.Type,
+                Priority = dto.Priority,
+                Recurrence = dto.Recurrence,
+                DueDate = NormalizeDate(dto.DueDate),
+                Tags = NormalizeTags(dto.Tags),
+                RewardXp = RewardFor(dto.Type),
+                Completed = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                SortOrder = nextSort + 1,
+                MyGameId = myGameId
+            };
+
+            await dbContext.Quests.AddAsync(quest);
+            await dbContext.SaveChangesAsync();
+
+            return await BuildMutationResultAsync(dbContext, userId, quest.Id);
+        }
+
+        public async Task<Result<QuestMutationResultDto, FailedResult>> UpdateAsync(string userId, int id, QuestUpdateDto dto)
         {
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
 
-            await UpsertProfileAsync(dbContext, userId, board.Xp);
+            var quest = await dbContext.Quests
+                .FirstOrDefaultAsync(q => q.Id == id && q.LuminaUserId == userId);
 
-            var ownedMyGameIds = await dbContext.MyGames
-                .AsNoTracking()
-                .Where(myGame => myGame.LuminaUserId == userId)
-                .Select(myGame => myGame.Id)
-                .ToListAsync();
+            if (quest == null)
+            {
+                return new FailedResult("Quest not found");
+            }
 
-            await UpsertQuestsAsync(dbContext, userId, board.Quests, ownedMyGameIds);
-            await UpsertSkillsAsync(dbContext, userId, board.Skills);
+            var profile = await GetOrCreateProfileAsync(dbContext, userId);
+
+            if (dto.Title is not null)
+            {
+                var trimmed = dto.Title.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed))
+                {
+                    return new FailedResult("Title cannot be empty");
+                }
+                quest.Title = trimmed;
+            }
+
+            if (dto.Notes is not null)
+            {
+                quest.Notes = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim();
+            }
+
+            if (dto.Type.HasValue && dto.Type.Value != quest.Type)
+            {
+                quest.Type = dto.Type.Value;
+                if (!quest.Completed)
+                {
+                    quest.RewardXp = RewardFor(quest.Type);
+                }
+            }
+
+            if (dto.Priority.HasValue)
+            {
+                quest.Priority = dto.Priority.Value;
+            }
+
+            if (dto.Recurrence.HasValue)
+            {
+                quest.Recurrence = dto.Recurrence.Value;
+            }
+
+            if (dto.ClearDueDate == true)
+            {
+                quest.DueDate = null;
+            }
+            else if (dto.DueDate.HasValue)
+            {
+                quest.DueDate = NormalizeDate(dto.DueDate);
+            }
+
+            if (dto.Tags is not null)
+            {
+                quest.Tags = NormalizeTags(dto.Tags);
+            }
+
+            if (dto.ClearMyGame == true)
+            {
+                quest.MyGameId = null;
+            }
+            else if (dto.MyGameId.HasValue)
+            {
+                var ownsGame = await dbContext.MyGames
+                    .AsNoTracking()
+                    .AnyAsync(myGame => myGame.Id == dto.MyGameId.Value && myGame.LuminaUserId == userId);
+                if (ownsGame)
+                {
+                    quest.MyGameId = dto.MyGameId.Value;
+                }
+            }
+
+            if (dto.SortOrder.HasValue)
+            {
+                quest.SortOrder = dto.SortOrder.Value;
+            }
+
+            Quest? spawned = null;
+            if (dto.Completed.HasValue && dto.Completed.Value != quest.Completed)
+            {
+                if (dto.Completed.Value)
+                {
+                    quest.Completed = true;
+                    quest.CompletedAt = DateTime.UtcNow;
+                    profile.TotalXp = Math.Max(0, profile.TotalXp + quest.RewardXp);
+
+                    if (quest.Recurrence != QuestRecurrence.None)
+                    {
+                        spawned = await SpawnNextRecurrenceAsync(dbContext, userId, quest);
+                    }
+                }
+                else
+                {
+                    quest.Completed = false;
+                    quest.CompletedAt = null;
+                    profile.TotalXp = Math.Max(0, profile.TotalXp - quest.RewardXp);
+                }
+            }
+
+            quest.UpdatedAt = DateTime.UtcNow;
+            profile.UpdatedAt = DateTime.UtcNow;
 
             await dbContext.SaveChangesAsync();
+            return await BuildMutationResultAsync(dbContext, userId, quest.Id, spawned?.Id);
+        }
+
+        public async Task<Result<int, FailedResult>> DeleteAsync(string userId, int id)
+        {
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+            var quest = await dbContext.Quests
+                .FirstOrDefaultAsync(q => q.Id == id && q.LuminaUserId == userId);
+
+            if (quest == null)
+            {
+                return new FailedResult("Quest not found");
+            }
+
+            dbContext.Quests.Remove(quest);
+            await dbContext.SaveChangesAsync();
+            return id;
+        }
+
+        public async Task<Result<int, FailedResult>> ReorderAsync(string userId, List<QuestReorderItemDto> items)
+        {
+            if (items.Count == 0)
+            {
+                return 0;
+            }
+
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+            var ids = items.Select(item => item.Id).Distinct().ToList();
+            var quests = await dbContext.Quests
+                .Where(q => q.LuminaUserId == userId && ids.Contains(q.Id))
+                .ToListAsync();
+            var questsById = quests.ToDictionary(q => q.Id);
+
+            foreach (var item in items)
+            {
+                if (!questsById.TryGetValue(item.Id, out var quest))
+                {
+                    continue;
+                }
+                quest.SortOrder = item.SortOrder;
+                quest.Type = item.Type;
+                quest.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await dbContext.SaveChangesAsync();
+            return items.Count;
+        }
+
+        public async Task<QuestBoardDto> SaveSkillsAsync(string userId, QuestBoardDto board)
+        {
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+            var profile = await GetOrCreateProfileAsync(dbContext, userId);
+            profile.TotalXp = Math.Max(0, board.Xp);
+            profile.UpdatedAt = DateTime.UtcNow;
+
+            await UpsertSkillsAsync(dbContext, userId, board.Skills);
+            await dbContext.SaveChangesAsync();
+
             return await GetBoardAsync(userId);
+        }
+
+        private static async Task<QuestMutationResultDto> BuildMutationResultAsync(LuminaPathDbContext dbContext, string userId, int questId, int? spawnedId = null)
+        {
+            var quest = await dbContext.Quests
+                .AsNoTracking()
+                .Include(q => q.MyGame)
+                    .ThenInclude(myGame => myGame!.Game)
+                .Where(q => q.Id == questId && q.LuminaUserId == userId)
+                .Select(q => ProjectQuestDto(q))
+                .FirstAsync();
+
+            QuestDto? spawned = null;
+            if (spawnedId is int sid)
+            {
+                spawned = await dbContext.Quests
+                    .AsNoTracking()
+                    .Include(q => q.MyGame)
+                        .ThenInclude(myGame => myGame!.Game)
+                    .Where(q => q.Id == sid && q.LuminaUserId == userId)
+                    .Select(q => ProjectQuestDto(q))
+                    .FirstOrDefaultAsync();
+            }
+
+            var profile = await dbContext.QuestProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.LuminaUserId == userId);
+
+            return new QuestMutationResultDto
+            {
+                Quest = quest,
+                SpawnedQuest = spawned,
+                TotalXp = profile?.TotalXp ?? 0
+            };
+        }
+
+        private static async Task<Quest> SpawnNextRecurrenceAsync(LuminaPathDbContext dbContext, string userId, Quest source)
+        {
+            var anchor = source.DueDate ?? source.CompletedAt ?? DateTime.UtcNow;
+            var nextDue = source.Recurrence switch
+            {
+                QuestRecurrence.Daily => anchor.AddDays(1),
+                QuestRecurrence.Weekly => anchor.AddDays(7),
+                QuestRecurrence.Monthly => anchor.AddMonths(1),
+                _ => anchor
+            };
+
+            var nextSort = await dbContext.Quests
+                .Where(q => q.LuminaUserId == userId && q.Type == source.Type)
+                .Select(q => (int?)q.SortOrder)
+                .MaxAsync() ?? -1;
+
+            var clone = new Quest
+            {
+                LuminaUserId = userId,
+                Title = source.Title,
+                Notes = source.Notes,
+                Type = source.Type,
+                Priority = source.Priority,
+                Recurrence = source.Recurrence,
+                DueDate = NormalizeDate(nextDue),
+                Tags = new List<string>(source.Tags ?? new List<string>()),
+                RewardXp = source.RewardXp,
+                Completed = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                SortOrder = nextSort + 1,
+                MyGameId = source.MyGameId
+            };
+
+            await dbContext.Quests.AddAsync(clone);
+            return clone;
+        }
+
+        private static async Task<QuestProfile> GetOrCreateProfileAsync(LuminaPathDbContext dbContext, string userId)
+        {
+            var profile = await dbContext.QuestProfiles
+                .FirstOrDefaultAsync(p => p.LuminaUserId == userId);
+
+            if (profile != null)
+            {
+                return profile;
+            }
+
+            profile = new QuestProfile
+            {
+                LuminaUserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await dbContext.QuestProfiles.AddAsync(profile);
+            return profile;
+        }
+
+        private static DateTime? NormalizeDate(DateTime? value)
+        {
+            if (!value.HasValue)
+            {
+                return null;
+            }
+
+            var date = value.Value;
+            return date.Kind == DateTimeKind.Utc
+                ? date
+                : DateTime.SpecifyKind(date.ToUniversalTime(), DateTimeKind.Utc);
+        }
+
+        private static List<string> NormalizeTags(List<string> tags)
+        {
+            return (tags ?? new())
+                .Select(tag => (tag ?? string.Empty).Trim())
+                .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(8)
+                .ToList();
+        }
+
+        private static QuestDto ProjectQuestDto(Quest quest)
+        {
+            return new QuestDto
+            {
+                Id = quest.Id,
+                Title = quest.Title,
+                Notes = quest.Notes,
+                Type = quest.Type,
+                Priority = quest.Priority,
+                Recurrence = quest.Recurrence,
+                DueDate = quest.DueDate,
+                Tags = quest.Tags ?? new(),
+                RewardXp = quest.RewardXp,
+                Completed = quest.Completed,
+                CompletedAt = quest.CompletedAt,
+                CreatedAt = quest.CreatedAt,
+                UpdatedAt = quest.UpdatedAt,
+                SortOrder = quest.SortOrder,
+                MyGameId = quest.MyGameId,
+                GameName = quest.MyGame == null ? null : quest.MyGame.Game!.Name
+            };
         }
 
         private static async Task<List<QuestDto>> LoadQuestDtos(LuminaPathDbContext dbContext, string userId)
@@ -97,23 +422,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return await dbContext.Quests
                 .AsNoTracking()
                 .Where(quest => quest.LuminaUserId == userId)
-                .OrderBy(quest => quest.MyGameId == null ? 0 : 1)
-                .ThenBy(quest => quest.Type)
-                .ThenBy(quest => quest.SortOrder)
+                .OrderBy(quest => quest.SortOrder)
                 .ThenBy(quest => quest.Id)
-                .Select(quest => new QuestDto
-                {
-                    Id = quest.Id,
-                    Title = quest.Title,
-                    Type = quest.Type,
-                    RewardXp = quest.RewardXp,
-                    Completed = quest.Completed,
-                    CompletedAt = quest.CompletedAt,
-                    CreatedAt = quest.CreatedAt,
-                    SortOrder = quest.SortOrder,
-                    MyGameId = quest.MyGameId,
-                    GameName = quest.MyGame == null ? null : quest.MyGame.Game!.Name
-                })
+                .Select(quest => ProjectQuestDto(quest))
                 .ToListAsync();
         }
 
@@ -148,94 +459,6 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     })
                     .ToList()
             }).ToList();
-        }
-
-        private static async Task UpsertProfileAsync(LuminaPathDbContext dbContext, string userId, int xp)
-        {
-            var profile = await dbContext.QuestProfiles
-                .FirstOrDefaultAsync(profile => profile.LuminaUserId == userId);
-
-            if (profile == null)
-            {
-                profile = new QuestProfile
-                {
-                    LuminaUserId = userId,
-                    CreatedAt = DateTime.UtcNow
-                };
-                await dbContext.QuestProfiles.AddAsync(profile);
-            }
-
-            profile.TotalXp = Math.Max(0, xp);
-            profile.UpdatedAt = DateTime.UtcNow;
-        }
-
-        private static async Task UpsertQuestsAsync(
-            LuminaPathDbContext dbContext,
-            string userId,
-            List<QuestDto> incoming,
-            List<int> ownedMyGameIds)
-        {
-            var existing = await dbContext.Quests
-                .Where(quest => quest.LuminaUserId == userId)
-                .ToListAsync();
-            var existingById = existing.ToDictionary(quest => quest.Id);
-
-            var sanitized = incoming
-                .Select(dto => Sanitize(dto, ownedMyGameIds))
-                .Where(dto => !string.IsNullOrWhiteSpace(dto.Title))
-                .ToList();
-
-            var keepIds = new HashSet<int>();
-            foreach (var (dto, index) in sanitized.Select((dto, index) => (dto, index)))
-            {
-                if (dto.Id > 0 && existingById.TryGetValue(dto.Id, out var existingQuest))
-                {
-                    ApplyTo(existingQuest, dto, index);
-                    keepIds.Add(existingQuest.Id);
-                }
-                else
-                {
-                    var newQuest = new Quest { LuminaUserId = userId };
-                    ApplyTo(newQuest, dto, index);
-                    await dbContext.Quests.AddAsync(newQuest);
-                }
-            }
-
-            var toDelete = existing.Where(quest => !keepIds.Contains(quest.Id)).ToList();
-            if (toDelete.Count > 0)
-            {
-                dbContext.Quests.RemoveRange(toDelete);
-            }
-        }
-
-        private static QuestDto Sanitize(QuestDto dto, List<int> ownedMyGameIds)
-        {
-            return new QuestDto
-            {
-                Id = dto.Id,
-                Title = (dto.Title ?? string.Empty).Trim(),
-                Type = dto.Type,
-                RewardXp = dto.RewardXp <= 0 ? RewardFor(dto.Type) : dto.RewardXp,
-                Completed = dto.Completed,
-                CompletedAt = dto.Completed ? dto.CompletedAt ?? DateTime.UtcNow : null,
-                CreatedAt = dto.CreatedAt == default ? DateTime.UtcNow : dto.CreatedAt,
-                SortOrder = dto.SortOrder,
-                MyGameId = dto.MyGameId.HasValue && ownedMyGameIds.Contains(dto.MyGameId.Value)
-                    ? dto.MyGameId
-                    : null
-            };
-        }
-
-        private static void ApplyTo(Quest quest, QuestDto dto, int fallbackSortOrder)
-        {
-            quest.Title = dto.Title;
-            quest.Type = dto.Type;
-            quest.RewardXp = dto.RewardXp;
-            quest.Completed = dto.Completed;
-            quest.CompletedAt = dto.CompletedAt;
-            quest.CreatedAt = dto.CreatedAt;
-            quest.SortOrder = dto.SortOrder == 0 ? fallbackSortOrder : dto.SortOrder;
-            quest.MyGameId = dto.MyGameId;
         }
 
         private static async Task UpsertSkillsAsync(
@@ -349,69 +572,6 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 Unlocked = dto.Unlocked,
                 UnlockedAt = dto.Unlocked ? dto.UnlockedAt ?? DateTime.UtcNow : null,
                 SortOrder = dto.SortOrder == 0 ? fallbackSortOrder : dto.SortOrder
-            };
-        }
-
-        private static QuestBoardDto CreateDefaultBoard()
-        {
-            return new QuestBoardDto
-            {
-                Quests =
-                [
-                    new() { Id = -1, Title = "Define the next personal milestone", Type = QuestType.Main, RewardXp = RewardFor(QuestType.Main), SortOrder = 0 },
-                    new() { Id = -2, Title = "Finish one meaningful project sprint", Type = QuestType.Main, RewardXp = RewardFor(QuestType.Main), SortOrder = 1 },
-                    new() { Id = -3, Title = "Clear the desk before starting", Type = QuestType.Sub, RewardXp = RewardFor(QuestType.Sub), SortOrder = 0 },
-                    new() { Id = -4, Title = "Plan tomorrow in three bullets", Type = QuestType.Sub, RewardXp = RewardFor(QuestType.Sub), Completed = true, CompletedAt = DateTime.UtcNow, SortOrder = 1 },
-                    new() { Id = -5, Title = "Check in with someone you care about", Type = QuestType.Faction, RewardXp = RewardFor(QuestType.Faction), SortOrder = 0 }
-                ],
-                Skills =
-                [
-                    new()
-                    {
-                        Id = -11,
-                        Name = "Programming",
-                        Icon = "code-slash-outline",
-                        Color = "#2563eb",
-                        Xp = 120,
-                        SortOrder = 0,
-                        Nodes =
-                        [
-                            new() { Id = -111, Name = "Debugging", Unlocked = true, UnlockedAt = DateTime.UtcNow, SortOrder = 0 },
-                            new() { Id = -112, Name = "Architecture", SortOrder = 1 },
-                            new() { Id = -113, Name = "Shipping", SortOrder = 2 }
-                        ]
-                    },
-                    new()
-                    {
-                        Id = -12,
-                        Name = "Drawing",
-                        Icon = "brush-outline",
-                        Color = "#0891b2",
-                        Xp = 60,
-                        SortOrder = 1,
-                        Nodes =
-                        [
-                            new() { Id = -121, Name = "Sketching", SortOrder = 0 },
-                            new() { Id = -122, Name = "Color study", SortOrder = 1 },
-                            new() { Id = -123, Name = "Finished piece", SortOrder = 2 }
-                        ]
-                    },
-                    new()
-                    {
-                        Id = -13,
-                        Name = "Cooking",
-                        Icon = "restaurant-outline",
-                        Color = "#0f766e",
-                        Xp = 90,
-                        SortOrder = 2,
-                        Nodes =
-                        [
-                            new() { Id = -131, Name = "Knife basics", Unlocked = true, UnlockedAt = DateTime.UtcNow, SortOrder = 0 },
-                            new() { Id = -132, Name = "Meal prep", SortOrder = 1 },
-                            new() { Id = -133, Name = "Signature dish", SortOrder = 2 }
-                        ]
-                    }
-                ]
             };
         }
 
