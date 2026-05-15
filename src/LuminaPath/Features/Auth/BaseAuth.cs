@@ -1,4 +1,4 @@
-﻿using LuminaPath.Core.Models;
+﻿using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;

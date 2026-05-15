@@ -21,7 +21,8 @@ namespace LuminaPath.Infrastructure.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> PostImage(IFormFile file)
         {
-            var result = await Storage.UploadAsync(file);
+            await using var stream = file.OpenReadStream();
+            var result = await Storage.UploadAsync(stream, file.FileName, file.ContentType);
             if (result.Error)
             {
                 return BadRequest(result.Status);

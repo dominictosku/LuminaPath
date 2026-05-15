@@ -1,9 +1,11 @@
-﻿using LuminaPath.Core.Models.Third_Party;
+﻿using LuminaPath.Core.Interfaces;
+using LuminaPath.Core.Models;
+using LuminaPath.Core.Models.Third_Party;
 using Microsoft.AspNetCore.Identity;
 
-namespace LuminaPath.Core.Models
+namespace LuminaPath.Infrastructure.Identity
 {
-    public class LuminaUser : IdentityUser
+    public class LuminaUser : IdentityUser, ILuminaUser
     {
         public string FullName { get; set; } = string.Empty;
         public List<UserDocument> Documents { get; set; } = [];

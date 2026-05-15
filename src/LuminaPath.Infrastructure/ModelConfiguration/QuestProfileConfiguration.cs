@@ -10,11 +10,6 @@ namespace LuminaPath.Infrastructure.ModelConfiguration
         {
             builder.HasIndex(profile => profile.LuminaUserId)
                 .IsUnique();
-
-            builder.HasOne(profile => profile.LuminaUser)
-                .WithMany()
-                .HasForeignKey(profile => profile.LuminaUserId)
-                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

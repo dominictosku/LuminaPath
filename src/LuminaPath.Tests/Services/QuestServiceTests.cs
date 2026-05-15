@@ -2,6 +2,7 @@ using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.EntityFrameworkCore;
 using Test.Utilities;

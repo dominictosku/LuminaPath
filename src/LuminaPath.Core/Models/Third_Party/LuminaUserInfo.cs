@@ -3,7 +3,6 @@
     public class LuminaUserInfo
     {
         public int Id { get; set; }
-        public LuminaUser? User { get; set; }
         public string UserId { get; set; } = string.Empty;
 
         #region PSN

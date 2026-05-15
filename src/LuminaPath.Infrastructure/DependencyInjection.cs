@@ -1,9 +1,9 @@
 using System.Net;
 using System.Reflection;
 using FluentValidation;
-using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Configuration;
 using LuminaPath.Infrastructure.Hubs;
+using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.AiChat;
 using LuminaPath.Infrastructure.Services.Third_Party;

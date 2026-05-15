@@ -3,6 +3,7 @@ using LuminaPath.Core.Enums;
 using LuminaPath.Core.Extensions;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.Imports;
 using Microsoft.EntityFrameworkCore;

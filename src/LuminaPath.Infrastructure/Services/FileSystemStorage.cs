@@ -53,12 +53,6 @@ namespace LuminaPath.Infrastructure.Services
             return Task.FromResult<BlobDto?>(blob);
         }
 
-        public async Task<BlobResponseDto> UploadAsync(IFormFile blob)
-        {
-            await using var stream = blob.OpenReadStream();
-            return await UploadAsync(stream, blob.FileName, blob.ContentType);
-        }
-
         public async Task<BlobResponseDto> UploadAsync(Stream blob, string fileName, string? contentType = null)
         {
             BlobResponseDto response = new();

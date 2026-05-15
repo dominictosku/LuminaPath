@@ -9,6 +9,5 @@ namespace LuminaPath.Core.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public string LuminaUserId { get; set; } = string.Empty;
-        public LuminaUser? LuminaUser { get; set; }
     }
 }

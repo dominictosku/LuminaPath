@@ -1,5 +1,6 @@
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;

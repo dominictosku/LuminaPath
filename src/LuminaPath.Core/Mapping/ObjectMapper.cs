@@ -230,7 +230,6 @@ namespace LuminaPath.Core.Mapping
                 Status = source.Status,
                 TimeSpend = source.TimeSpend,
                 LuminaUserId = source.LuminaUserId,
-                LuminaUser = source.LuminaUser,
                 GameId = source.GameId,
                 MyGameInfo = MapMyGameInfo(source.MyGameInfo)
             };

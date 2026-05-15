@@ -20,7 +20,6 @@ namespace LuminaPath.Core.Models
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public int SortOrder { get; set; }
         public string LuminaUserId { get; set; } = string.Empty;
-        public LuminaUser? LuminaUser { get; set; }
         public int? MyGameId { get; set; }
         public MyGame? MyGame { get; set; }
     }

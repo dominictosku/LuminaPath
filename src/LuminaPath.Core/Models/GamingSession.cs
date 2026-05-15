@@ -6,7 +6,6 @@ namespace LuminaPath.Core.Models
     {
         public int Id { get; set; }
         public string LuminaUserId { get; set; } = string.Empty;
-        public LuminaUser? LuminaUser { get; set; }
         public int? MyGameId { get; set; }
         public MyGame? MyGame { get; set; }
         public DateTime ScheduledAt { get; set; }

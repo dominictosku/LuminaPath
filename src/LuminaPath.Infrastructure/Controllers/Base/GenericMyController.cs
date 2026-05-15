@@ -1,7 +1,7 @@
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
-using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

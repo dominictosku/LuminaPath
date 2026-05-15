@@ -1,7 +1,7 @@
-﻿using LuminaPath.Core.Entities;
+using LuminaPath.Core.Entities;
 using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Interfaces;
-using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Identity;
 using System.Linq.Expressions;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices.Base

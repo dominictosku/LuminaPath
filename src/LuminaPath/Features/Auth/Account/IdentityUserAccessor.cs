@@ -1,4 +1,4 @@
-using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 
 namespace LuminaPath.Features.Auth.Account

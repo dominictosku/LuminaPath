@@ -1,4 +1,4 @@
-using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

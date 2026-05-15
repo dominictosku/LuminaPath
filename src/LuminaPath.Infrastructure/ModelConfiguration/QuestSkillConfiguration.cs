@@ -8,10 +8,6 @@ namespace LuminaPath.Infrastructure.ModelConfiguration
     {
         public void Configure(EntityTypeBuilder<QuestSkill> builder)
         {
-            builder.HasOne(skill => skill.LuminaUser)
-                .WithMany()
-                .HasForeignKey(skill => skill.LuminaUserId)
-                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

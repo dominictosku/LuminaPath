@@ -1,17 +1,9 @@
 ﻿using LuminaPath.Core.Dtos;
-using Microsoft.AspNetCore.Http;
 
 namespace LuminaPath.Core.Interfaces
 {
     public interface IStorageService
     {
-        /// <summary>
-        /// This method uploads a file submitted with the request
-        /// </summary>
-        /// <param name="file">File for upload</param>
-        /// <returns>Blob with status</returns>
-        Task<BlobResponseDto> UploadAsync(IFormFile file);
-
         /// <summary>
         /// This method uploads a file submitted with the request
         /// </summary>

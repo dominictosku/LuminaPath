@@ -5,7 +5,7 @@ using LuminaPath.Core.Mapping;
 using LuminaPath.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Identity;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 {

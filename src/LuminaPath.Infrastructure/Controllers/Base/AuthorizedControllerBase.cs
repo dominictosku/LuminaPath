@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 

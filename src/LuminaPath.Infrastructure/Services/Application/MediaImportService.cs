@@ -1,4 +1,4 @@
-using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.Third_Party;
 
 namespace LuminaPath.Infrastructure.Services.Application;

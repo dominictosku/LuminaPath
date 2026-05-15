@@ -1,6 +1,6 @@
 ﻿using LuminaPath.Core.Dtos;
-using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Third_Party;
+using LuminaPath.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;

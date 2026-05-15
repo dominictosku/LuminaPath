@@ -1,7 +1,7 @@
 using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Enums;
-using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Third_Party;
+using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.Imports;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;

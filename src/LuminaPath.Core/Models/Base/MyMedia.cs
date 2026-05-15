@@ -21,7 +21,5 @@ namespace LuminaPath.Core.Models.Base
 
         [Required(AllowEmptyStrings = false)]
         public string LuminaUserId { get; set; } = string.Empty;
-
-        public LuminaUser? LuminaUser { get; set; }
     }
 }

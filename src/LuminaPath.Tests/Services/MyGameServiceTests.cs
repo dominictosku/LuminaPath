@@ -4,6 +4,7 @@ using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Third_Party;
 using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.EntityFrameworkCore;
 using Test.Utilities;
@@ -37,7 +38,6 @@ namespace Test.Services
                 dbContext.MyGames.Add(new MyGame
                 {
                     Game = game,
-                    LuminaUser = user,
                     LuminaUserId = userId,
                     Status = GameStatus.Planned,
                     Priority = 1

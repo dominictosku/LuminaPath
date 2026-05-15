@@ -8,11 +8,6 @@ namespace LuminaPath.Infrastructure.ModelConfiguration
     {
         public void Configure(EntityTypeBuilder<GamingSession> builder)
         {
-            builder.HasOne(session => session.LuminaUser)
-                .WithMany()
-                .HasForeignKey(session => session.LuminaUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
             builder.HasOne(session => session.MyGame)
                 .WithMany(myGame => myGame.GamingSessions)
                 .HasForeignKey(session => session.MyGameId)

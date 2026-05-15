@@ -1,5 +1,6 @@
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Test.Infrastructure

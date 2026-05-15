@@ -8,16 +8,6 @@ namespace LuminaPath.Infrastructure.ModelConfiguration
     {
         public void Configure(EntityTypeBuilder<Friendship> builder)
         {
-            builder.HasOne(friendship => friendship.Requester)
-                .WithMany()
-                .HasForeignKey(friendship => friendship.RequesterId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            builder.HasOne(friendship => friendship.Addressee)
-                .WithMany()
-                .HasForeignKey(friendship => friendship.AddresseeId)
-                .OnDelete(DeleteBehavior.Cascade);
-
             builder.HasIndex(friendship => new { friendship.RequesterId, friendship.AddresseeId })
                 .IsUnique();
         }

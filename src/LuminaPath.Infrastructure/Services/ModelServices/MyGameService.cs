@@ -7,6 +7,7 @@ using LuminaPath.Core.Enums;
 using LuminaPath.Core.Extensions;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;

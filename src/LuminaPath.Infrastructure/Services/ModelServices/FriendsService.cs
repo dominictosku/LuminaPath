@@ -1,6 +1,7 @@
 using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices
@@ -19,13 +20,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
             var rows = await dbContext.Friendships
                 .AsNoTracking()
-                .Include(friendship => friendship.Requester)
-                .Include(friendship => friendship.Addressee)
                 .Where(friendship => friendship.RequesterId == userId || friendship.AddresseeId == userId)
                 .OrderByDescending(friendship => friendship.CreatedAt)
                 .ToListAsync();
 
-            return rows.Select(friendship => MapToDto(friendship, userId)).ToList();
+            var users = await LoadUsersForFriendships(dbContext, rows);
+            return rows.Select(friendship => MapToDto(friendship, users, userId)).ToList();
         }
 
         public async Task<List<FriendUserDto>> SearchUsersAsync(string currentUserId, string query)
@@ -164,16 +164,30 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             var friendship = await dbContext.Friendships
                 .AsNoTracking()
-                .Include(row => row.Requester)
-                .Include(row => row.Addressee)
                 .FirstAsync(row => row.Id == id);
-            return MapToDto(friendship, viewerId);
+            var users = await LoadUsersForFriendships(dbContext, new[] { friendship });
+            return MapToDto(friendship, users, viewerId);
         }
 
-        private static FriendshipDto MapToDto(Friendship friendship, string viewerId)
+        private static async Task<Dictionary<string, LuminaUser>> LoadUsersForFriendships(
+            LuminaPathDbContext dbContext, IEnumerable<Friendship> friendships)
+        {
+            var userIds = friendships
+                .SelectMany(f => new[] { f.RequesterId, f.AddresseeId })
+                .Distinct()
+                .ToList();
+
+            return await dbContext.Users
+                .AsNoTracking()
+                .Where(user => userIds.Contains(user.Id))
+                .ToDictionaryAsync(user => user.Id);
+        }
+
+        private static FriendshipDto MapToDto(Friendship friendship, Dictionary<string, LuminaUser> users, string viewerId)
         {
             var isIncoming = friendship.AddresseeId == viewerId;
-            var other = isIncoming ? friendship.Requester : friendship.Addressee;
+            var otherId = isIncoming ? friendship.RequesterId : friendship.AddresseeId;
+            users.TryGetValue(otherId, out var other);
             return new FriendshipDto
             {
                 Id = friendship.Id,

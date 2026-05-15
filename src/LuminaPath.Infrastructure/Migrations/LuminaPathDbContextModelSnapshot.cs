@@ -47,7 +47,7 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasIndex("Key")
                         .IsUnique();
 
-                    b.ToTable("ApplicationSettings");
+                    b.ToTable("ApplicationSettings", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Base.Document", b =>
@@ -80,7 +80,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Documents");
+                    b.ToTable("Documents", (string)null);
 
                     b.HasDiscriminator<string>("Discriminator").HasValue("Document");
 
@@ -124,7 +124,7 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Media");
+                    b.ToTable("Media", (string)null);
 
                     b.HasDiscriminator<string>("Discriminator").HasValue("Media");
 
@@ -163,7 +163,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasIndex("SenderId", "RecipientId", "SentAt");
 
-                    b.ToTable("DirectMessages");
+                    b.ToTable("DirectMessages", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Friendship", b =>
@@ -198,7 +198,7 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasIndex("RequesterId", "AddresseeId")
                         .IsUnique();
 
-                    b.ToTable("Friendships");
+                    b.ToTable("Friendships", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.GamingSession", b =>
@@ -240,7 +240,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasIndex("LuminaUserId", "ScheduledAt");
 
-                    b.ToTable("GamingSessions");
+                    b.ToTable("GamingSessions", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.LuminaUser", b =>
@@ -337,7 +337,7 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasIndex("Provider", "ExternalId")
                         .IsUnique();
 
-                    b.ToTable("MediaExternalIds");
+                    b.ToTable("MediaExternalIds", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.MyAnime", b =>
@@ -385,7 +385,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasIndex("LuminaUserId");
 
-                    b.ToTable("MyAnimes");
+                    b.ToTable("MyAnimes", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.MyGame", b =>
@@ -427,7 +427,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasIndex("LuminaUserId");
 
-                    b.ToTable("MyGames");
+                    b.ToTable("MyGames", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.MyMovie", b =>
@@ -472,7 +472,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasIndex("MovieId");
 
-                    b.ToTable("MyMovies");
+                    b.ToTable("MyMovies", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.MySeries", b =>
@@ -520,7 +520,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasIndex("SeriesId");
 
-                    b.ToTable("MySeries");
+                    b.ToTable("MySeries", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Quest", b =>
@@ -587,7 +587,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasIndex("LuminaUserId", "Completed", "DueDate");
 
-                    b.ToTable("Quests");
+                    b.ToTable("Quests", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.QuestProfile", b =>
@@ -616,7 +616,7 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasIndex("LuminaUserId")
                         .IsUnique();
 
-                    b.ToTable("QuestProfiles");
+                    b.ToTable("QuestProfiles", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.QuestSkill", b =>
@@ -656,7 +656,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasIndex("LuminaUserId");
 
-                    b.ToTable("QuestSkills");
+                    b.ToTable("QuestSkills", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.QuestSkillNode", b =>
@@ -687,7 +687,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasIndex("QuestSkillId");
 
-                    b.ToTable("QuestSkillNodes");
+                    b.ToTable("QuestSkillNodes", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.LuminaUserInfo", b =>
@@ -746,7 +746,7 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("LuminaUserInfo");
+                    b.ToTable("LuminaUserInfo", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.MyGameInfo", b =>
@@ -774,7 +774,7 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasIndex("MyGameId")
                         .IsUnique();
 
-                    b.ToTable("MyGameInfo");
+                    b.ToTable("MyGameInfo", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -1000,7 +1000,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.HasIndex("ParentSeriesId");
 
-                    b.ToTable("Media", t =>
+                    b.ToTable("Media", null, t =>
                         {
                             t.Property("EpisodeCount")
                                 .HasColumnName("Series_EpisodeCount");
