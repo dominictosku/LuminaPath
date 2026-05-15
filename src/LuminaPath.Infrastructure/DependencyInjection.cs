@@ -1,11 +1,13 @@
 using System.Net;
-using LuminaPath.Core.Interfaces;
+using System.Reflection;
+using FluentValidation;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Configuration;
 using LuminaPath.Infrastructure.Hubs;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.AiChat;
 using LuminaPath.Infrastructure.Services.Third_Party;
+using LuminaPath.Infrastructure.Validators;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -36,6 +38,7 @@ namespace LuminaPath.Infrastructure
             services.AddSignalR();
             services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, UserIdProvider>();
             services.AddOpenApi();
+            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
             return services;
         }
 
@@ -211,6 +214,7 @@ namespace LuminaPath.Infrastructure
             services.AddControllers(options =>
             {
                 options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider());
+                options.Filters.Add<FluentValidationActionFilter>();
             });
         }
 

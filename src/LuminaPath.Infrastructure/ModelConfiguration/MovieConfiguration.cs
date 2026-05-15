@@ -8,6 +8,7 @@ namespace LuminaPath.Infrastructure.ModelConfiguration
     {
         public void Configure(EntityTypeBuilder<Movie> builder)
         {
+            builder.HasIndex(movie => movie.Name).IsUnique();
         }
     }
 }

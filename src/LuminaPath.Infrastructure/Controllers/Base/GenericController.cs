@@ -1,8 +1,10 @@
 using LuminaPath.Core.Entities;
+using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace LuminaPath.Infrastructure.Controllers.Base
 {
@@ -38,8 +40,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
             var result = await _service.PostAsync(entity);
             return result.Match<ActionResult>(
                 m => CreatedAtAction("GetById", new { id = viewModel.Id }, Mapper.Map<TEntityDto>(m)),
-                f => BadRequest(f)
-                );
+                FailureToActionResult);
         }
 
         [HttpPut("{id}")]
@@ -54,7 +55,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
             var result = await _service.PutAsync(entity);
             return result.Match<IActionResult>(
                 m => Ok(Mapper.Map<TEntityDto>(m)),
-                f => BadRequest(f));
+                FailureToActionResult);
         }
 
         [HttpDelete("{id}")]
@@ -64,6 +65,21 @@ namespace LuminaPath.Infrastructure.Controllers.Base
             return result.Match<IActionResult>(
                 m => Ok(),
                 f => NotFound(f));
+        }
+
+        protected ActionResult FailureToActionResult(FailedResult failure)
+        {
+            if (failure is ValidationFailed validation)
+            {
+                var modelState = new ModelStateDictionary();
+                foreach (var error in validation.Errors)
+                {
+                    modelState.AddModelError(error.PropertyName, error.ErrorMessage);
+                }
+                return ValidationProblem(modelState);
+            }
+
+            return BadRequest(failure);
         }
     }
 }

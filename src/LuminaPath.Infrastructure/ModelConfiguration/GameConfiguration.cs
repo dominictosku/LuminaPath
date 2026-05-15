@@ -8,6 +8,8 @@ namespace LuminaPath.Infrastructure.ModelConfiguration
     {
         public void Configure(EntityTypeBuilder<Game> builder)
         {
+            builder.HasIndex(game => game.Name).IsUnique();
+
             builder.HasOne(game => game.ParentGame)
                 .WithMany(game => game.Dlcs)
                 .HasForeignKey(game => game.ParentGameId)

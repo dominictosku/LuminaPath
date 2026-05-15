@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-
-namespace LuminaPath.Core.Entities
+﻿namespace LuminaPath.Core.Entities
 {
     public class PaginatedList<T> : List<T>
     {
@@ -18,19 +16,6 @@ namespace LuminaPath.Core.Entities
         public bool HasPreviousPage => PageIndex > 1;
 
         public bool HasNextPage => PageIndex < TotalPages;
-
-        public static async Task<PaginatedList<T>> CreateAsync(
-            IQueryable<T> source, int pageIndex, int pageSize)
-        {
-            pageIndex = Math.Max(1, pageIndex);
-            pageSize = Math.Max(1, pageSize);
-
-            var count = await source.CountAsync();
-            var items = await source.Skip(
-                (pageIndex - 1) * pageSize)
-                .Take(pageSize).ToListAsync();
-            return new PaginatedList<T>(items, count, pageIndex, pageSize);
-        }
 
         public static PaginatedList<T> Create(
             IEnumerable<T> source, int pageIndex, int pageSize)

@@ -1,6 +1,5 @@
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models.Base;
-using LuminaPath.Core.Validation;
 using System.ComponentModel.DataAnnotations;
 
 namespace LuminaPath.Core.Dtos
@@ -9,9 +8,6 @@ namespace LuminaPath.Core.Dtos
     {
         public int Id { get; set; }
 
-        [Required(AllowEmptyStrings = false)]
-        [StringLength(50, MinimumLength = 2)]
-        [UniqueName]
         [Display(Name = "Title")]
         public string Name { get; set; } = string.Empty;
 

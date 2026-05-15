@@ -2,6 +2,7 @@ using LuminaPath.Core.Entities;
 using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
+using LuminaPath.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -148,11 +149,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
         protected virtual async Task<PaginatedList<TEntity>> CreatePaginatedList(IQueryable<TEntity> entities, Paging paging)
         {
             int pageIndex = paging.PageIndex;
-            if (paging.Count > 0)
-            {
-                return await PaginatedList<TEntity>.CreateAsync(entities, pageIndex, paging.Count);
-            }
-            return await PaginatedList<TEntity>.CreateAsync(entities, pageIndex, 10);
+            int pageSize = paging.Count > 0 ? paging.Count : 10;
+            return await entities.ToPaginatedListAsync(pageIndex, pageSize);
         }
 
         protected virtual PaginatedList<TDto> CreatePaginatedList<TDto>(IEnumerable<TDto> entities, Paging paging)

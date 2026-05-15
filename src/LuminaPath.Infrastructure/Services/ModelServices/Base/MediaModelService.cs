@@ -37,6 +37,40 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
 
     protected abstract string UserLibraryNavigationName { get; }
 
+    public override async Task<Result<TMedia, FailedResult>> PostAsync(TMedia entity)
+    {
+        var conflict = await EnsureNameUnique(entity);
+        if (conflict is not null)
+        {
+            return conflict;
+        }
+
+        return await base.PostAsync(entity);
+    }
+
+    public override async Task<Result<TMedia, FailedResult>> PutAsync(TMedia entity)
+    {
+        var conflict = await EnsureNameUnique(entity);
+        if (conflict is not null)
+        {
+            return conflict;
+        }
+
+        return await base.PutAsync(entity);
+    }
+
+    private async Task<ValidationFailed?> EnsureNameUnique(TMedia entity)
+    {
+        await using var context = await GetDbContextAsync();
+        var exists = await context.Set<TMedia>()
+            .AsNoTracking()
+            .AnyAsync(media => media.Id != entity.Id && media.Name == entity.Name);
+
+        return exists
+            ? new ValidationFailed(new ValidationFailure(nameof(Media.Name), "Title is already registered"))
+            : null;
+    }
+
     public override async Task<Result<int, FailedResult>> DeleteAsync(int? id)
     {
         if (id is null)

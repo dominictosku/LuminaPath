@@ -1,10 +1,8 @@
 ﻿using LuminaPath.Core.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace LuminaPath.Core.Models.Base
 {
-    [Index(nameof(Name), IsUnique = true)]
     public abstract class Media : IMedia<MediaDocument>
     {
         public int Id { get; set; }

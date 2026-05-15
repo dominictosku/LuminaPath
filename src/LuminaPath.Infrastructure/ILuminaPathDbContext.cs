@@ -1,7 +1,7 @@
-﻿using LuminaPath.Core.Models;
+using LuminaPath.Core.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace LuminaPath.Core.Interfaces
+namespace LuminaPath.Infrastructure
 {
     public interface ILuminaPathDbContext
     {
