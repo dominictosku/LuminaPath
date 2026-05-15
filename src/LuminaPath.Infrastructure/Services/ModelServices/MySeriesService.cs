@@ -1,5 +1,6 @@
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
+using LuminaPath.Core.Interfaces;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +29,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return mySeries => mySeries.SeriesId == mediaId;
         }
 
-        protected override async Task PrepareForSave(MySeries viewModel, LuminaUser user)
+        protected override async Task PrepareForSave(MySeries viewModel, ILuminaUser user)
         {
             await using var dbContext = await GetDbContextAsync();
             var series = viewModel.Series ?? await dbContext.Series

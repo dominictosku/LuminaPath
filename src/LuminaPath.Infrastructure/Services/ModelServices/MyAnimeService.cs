@@ -1,3 +1,4 @@
+using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Identity;
@@ -29,7 +30,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return myAnime => myAnime.AnimeId == mediaId;
         }
 
-        protected override async Task PrepareForSave(MyAnime viewModel, LuminaUser user)
+        protected override async Task PrepareForSave(MyAnime viewModel, ILuminaUser user)
         {
             await using var dbContext = await GetDbContextAsync();
             var anime = viewModel.Anime ?? await dbContext.Animes

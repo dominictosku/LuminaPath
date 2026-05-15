@@ -101,7 +101,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             }
         }
 
-        public async Task<Result<TEntity, FailedResult>> PostAsync(TEntity viewModel, LuminaUser? user)
+        public async Task<Result<TEntity, FailedResult>> PostAsync(TEntity viewModel, ILuminaUser? user)
         {
             if (user == null)
                 return new FailedResult("User not found, please login");
@@ -115,7 +115,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             return await PostAsync(viewModel);
         }
 
-        public async Task<Result<TEntity, FailedResult>> PutAsync(TEntity viewModel, LuminaUser? user)
+        public async Task<Result<TEntity, FailedResult>> PutAsync(TEntity viewModel, ILuminaUser? user)
         {
             if (user == null)
                 return new FailedResult("User not found, please login");
@@ -128,12 +128,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             return await PutAsync(viewModel);
         }
 
-        protected virtual Task PrepareForSave(TEntity viewModel, LuminaUser user)
+        protected virtual Task PrepareForSave(TEntity viewModel, ILuminaUser user)
         {
             return Task.CompletedTask;
         }
 
-        public async Task DeleteMyData(LuminaUser user)
+        public async Task DeleteMyData(ILuminaUser user)
         {
             using var context = await GetDbContextAsync();
             var myEntities = GetEntities(context).Where(g => g.LuminaUserId == user.Id);
