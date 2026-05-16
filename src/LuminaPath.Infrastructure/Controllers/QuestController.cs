@@ -91,5 +91,39 @@ namespace LuminaPath.Infrastructure.Controllers
             var result = await _service.ReorderAsync(user.Id, items);
             return result.Match<IActionResult>(_ => NoContent(), f => BadRequest(f));
         }
+
+        [HttpPost("{questId:int}/subtasks")]
+        public async Task<ActionResult<QuestMutationResultDto>> AddSubtask(int questId, QuestSubtaskCreateDto dto)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return LoginRequired();
+
+            var result = await _service.AddSubtaskAsync(user.Id, questId, dto);
+            return result.Match<ActionResult<QuestMutationResultDto>>(
+                mutation => Ok(mutation),
+                failed => NotFound(failed));
+        }
+
+        [HttpPatch("{questId:int}/subtasks/{subtaskId:int}")]
+        public async Task<ActionResult<QuestMutationResultDto>> UpdateSubtask(int questId, int subtaskId, QuestSubtaskUpdateDto dto)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return LoginRequired();
+
+            var result = await _service.UpdateSubtaskAsync(user.Id, questId, subtaskId, dto);
+            return result.Match<ActionResult<QuestMutationResultDto>>(
+                mutation => Ok(mutation),
+                failed => NotFound(failed));
+        }
+
+        [HttpDelete("{questId:int}/subtasks/{subtaskId:int}")]
+        public async Task<IActionResult> DeleteSubtask(int questId, int subtaskId)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return LoginRequired();
+
+            var result = await _service.DeleteSubtaskAsync(user.Id, questId, subtaskId);
+            return result.Match<IActionResult>(_ => NoContent(), f => NotFound(f));
+        }
     }
 }

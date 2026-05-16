@@ -26,6 +26,17 @@ export type Quest = {
   sortOrder: number;
   myGameId?: number | null;
   gameName?: string | null;
+  skillId?: number | null;
+  skillName?: string | null;
+  subtasks: QuestSubtask[];
+};
+
+export type QuestSubtask = {
+  id: number;
+  title: string;
+  completed: boolean;
+  completedAt?: string;
+  sortOrder: number;
 };
 
 export type QuestCreate = {
@@ -37,6 +48,7 @@ export type QuestCreate = {
   dueDate?: string | null;
   tags?: string[];
   myGameId?: number | null;
+  skillId?: number | null;
 };
 
 export type QuestUpdate = {
@@ -52,6 +64,14 @@ export type QuestUpdate = {
   myGameId?: number | null;
   clearMyGame?: boolean;
   sortOrder?: number;
+  skillId?: number | null;
+  clearSkill?: boolean;
+};
+
+export type QuestSubtaskUpdate = {
+  title?: string;
+  completed?: boolean;
+  sortOrder?: number;
 };
 
 export type QuestReorderItem = {
@@ -64,6 +84,19 @@ export type QuestMutationResult = {
   quest: Quest;
   spawnedQuest?: Quest | null;
   totalXp: number;
+  currentStreakDays: number;
+  longestStreakDays: number;
+  awardedSkillXp?: number | null;
+  awardedSkillId?: number | null;
+  unlockedAchievements: AchievementInfo[];
+};
+
+export type AchievementInfo = {
+  code: string;
+  title: string;
+  description: string;
+  icon: string;
+  unlockedAt: string;
 };
 
 export type QuestSkill = {
@@ -78,8 +111,12 @@ export type QuestSkill = {
 
 export type QuestBoardState = {
   xp: number;
+  currentStreakDays: number;
+  longestStreakDays: number;
+  lastCompletionDate?: string | null;
   quests: Quest[];
   skills: QuestSkill[];
+  achievements: AchievementInfo[];
 };
 
 type ApiQuestType = 0 | 1 | 2;
@@ -88,8 +125,12 @@ type ApiQuestRecurrence = 0 | 1 | 2 | 3;
 
 type ApiQuestBoard = {
   xp: number;
+  currentStreakDays: number;
+  longestStreakDays: number;
+  lastCompletionDate?: string | null;
   quests: ApiQuest[];
   skills: ApiQuestSkill[];
+  achievements: ApiAchievement[];
 };
 
 type ApiQuest = {
@@ -109,12 +150,36 @@ type ApiQuest = {
   sortOrder: number;
   myGameId?: number | null;
   gameName?: string | null;
+  skillId?: number | null;
+  skillName?: string | null;
+  subtasks: ApiQuestSubtask[];
+};
+
+type ApiQuestSubtask = {
+  id: number;
+  title: string;
+  completed: boolean;
+  completedAt?: string;
+  sortOrder: number;
+};
+
+type ApiAchievement = {
+  code: string;
+  title: string;
+  description: string;
+  icon: string;
+  unlockedAt: string;
 };
 
 type ApiQuestMutationResult = {
   quest: ApiQuest;
   spawnedQuest?: ApiQuest | null;
   totalXp: number;
+  currentStreakDays: number;
+  longestStreakDays: number;
+  awardedSkillXp?: number | null;
+  awardedSkillId?: number | null;
+  unlockedAchievements: ApiAchievement[];
 };
 
 type ApiQuestSkill = {
@@ -158,6 +223,7 @@ export class QuestBoardService {
       dueDate: input.dueDate ?? null,
       tags: input.tags ?? [],
       myGameId: input.myGameId ?? null,
+      skillId: input.skillId ?? null,
     };
     const response = await firstValueFrom(this.http.post<ApiQuestMutationResult>(this.apiEndpoint.url('quests'), payload, this.httpConfig));
     return this.toMutation(response);
@@ -177,9 +243,35 @@ export class QuestBoardService {
     if (input.myGameId !== undefined) payload['myGameId'] = input.myGameId;
     if (input.clearMyGame !== undefined) payload['clearMyGame'] = input.clearMyGame;
     if (input.sortOrder !== undefined) payload['sortOrder'] = input.sortOrder;
+    if (input.skillId !== undefined) payload['skillId'] = input.skillId;
+    if (input.clearSkill !== undefined) payload['clearSkill'] = input.clearSkill;
 
     const response = await firstValueFrom(this.http.patch<ApiQuestMutationResult>(this.apiEndpoint.url(`quests/${id}`), payload, this.httpConfig));
     return this.toMutation(response);
+  }
+
+  async addSubtask(questId: number, title: string): Promise<QuestMutationResult> {
+    const response = await firstValueFrom(
+      this.http.post<ApiQuestMutationResult>(this.apiEndpoint.url(`quests/${questId}/subtasks`), { title }, this.httpConfig)
+    );
+    return this.toMutation(response);
+  }
+
+  async updateSubtask(questId: number, subtaskId: number, input: QuestSubtaskUpdate): Promise<QuestMutationResult> {
+    const payload: Record<string, unknown> = {};
+    if (input.title !== undefined) payload['title'] = input.title;
+    if (input.completed !== undefined) payload['completed'] = input.completed;
+    if (input.sortOrder !== undefined) payload['sortOrder'] = input.sortOrder;
+    const response = await firstValueFrom(
+      this.http.patch<ApiQuestMutationResult>(this.apiEndpoint.url(`quests/${questId}/subtasks/${subtaskId}`), payload, this.httpConfig)
+    );
+    return this.toMutation(response);
+  }
+
+  async deleteSubtask(questId: number, subtaskId: number): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(this.apiEndpoint.url(`quests/${questId}/subtasks/${subtaskId}`), this.httpConfig)
+    );
   }
 
   async deleteQuest(id: number): Promise<void> {
@@ -212,6 +304,9 @@ export class QuestBoardService {
   private toState(board: ApiQuestBoard): QuestBoardState {
     return {
       xp: board.xp,
+      currentStreakDays: board.currentStreakDays ?? 0,
+      longestStreakDays: board.longestStreakDays ?? 0,
+      lastCompletionDate: board.lastCompletionDate ?? null,
       quests: board.quests.map((quest) => this.toQuest(quest)),
       skills: board.skills.map((skill) => ({
         id: skill.id,
@@ -224,6 +319,7 @@ export class QuestBoardService {
           .map((node, index) => (node.unlocked ? index : -1))
           .filter((index) => index >= 0),
       })),
+      achievements: (board.achievements ?? []).map((a) => ({ ...a })),
     };
   }
 
@@ -245,6 +341,15 @@ export class QuestBoardService {
       sortOrder: apiQuest.sortOrder,
       myGameId: apiQuest.myGameId ?? null,
       gameName: apiQuest.gameName ?? null,
+      skillId: apiQuest.skillId ?? null,
+      skillName: apiQuest.skillName ?? null,
+      subtasks: (apiQuest.subtasks ?? []).map((s) => ({
+        id: s.id,
+        title: s.title,
+        completed: s.completed,
+        completedAt: s.completedAt,
+        sortOrder: s.sortOrder,
+      })),
     };
   }
 
@@ -253,12 +358,20 @@ export class QuestBoardService {
       quest: this.toQuest(api.quest),
       spawnedQuest: api.spawnedQuest ? this.toQuest(api.spawnedQuest) : null,
       totalXp: api.totalXp,
+      currentStreakDays: api.currentStreakDays ?? 0,
+      longestStreakDays: api.longestStreakDays ?? 0,
+      awardedSkillXp: api.awardedSkillXp ?? null,
+      awardedSkillId: api.awardedSkillId ?? null,
+      unlockedAchievements: (api.unlockedAchievements ?? []).map((a) => ({ ...a })),
     };
   }
 
   private toApi(state: QuestBoardState): ApiQuestBoard {
     return {
       xp: state.xp,
+      currentStreakDays: state.currentStreakDays,
+      longestStreakDays: state.longestStreakDays,
+      lastCompletionDate: state.lastCompletionDate ?? null,
       quests: [],
       skills: state.skills.map((skill, skillIndex) => ({
         id: skill.id > 0 ? skill.id : 0,
@@ -275,6 +388,7 @@ export class QuestBoardService {
           sortOrder: nodeIndex,
         })),
       })),
+      achievements: [],
     };
   }
 

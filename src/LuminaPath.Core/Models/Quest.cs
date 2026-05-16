@@ -22,5 +22,8 @@ namespace LuminaPath.Core.Models
         public string LuminaUserId { get; set; } = string.Empty;
         public int? MyGameId { get; set; }
         public MyGame? MyGame { get; set; }
+        public int? SkillId { get; set; }
+        public QuestSkill? Skill { get; set; }
+        public List<QuestSubtask> Subtasks { get; set; } = new();
     }
 }

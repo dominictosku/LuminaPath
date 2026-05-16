@@ -1190,6 +1190,261 @@ label input {
   outline-offset: -2px;
 }
 
+/* streak + skill + subtask + achievements */
+.streak-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.streak-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.streak-pill ion-icon {
+  font-size: 0.92rem;
+}
+
+.streak-best {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.meta-pill--skill {
+  background: rgba(124, 58, 237, 0.14);
+  color: #6d28d9;
+}
+
+.meta-pill--subtasks {
+  background: rgba(15, 118, 110, 0.14);
+  color: #0f766e;
+}
+
+.subtask-progress {
+  margin-top: 6px;
+}
+
+.subtask-progress ion-progress-bar {
+  --progress-background: var(--accent);
+  height: 4px;
+  border-radius: 999px;
+}
+
+.subtask-list {
+  list-style: none;
+  margin: 6px 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.subtask {
+  display: grid;
+  grid-template-columns: 26px 1fr 26px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--line);
+  font-size: 0.86rem;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.subtask--done {
+  opacity: 0.6;
+}
+
+.subtask--done .subtask-title {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.subtask-toggle,
+.subtask-delete,
+.subtask-add-button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.subtask-delete {
+  color: var(--muted);
+}
+
+.subtask-delete:hover {
+  color: #b91c1c;
+}
+
+.subtask-title {
+  min-width: 0;
+  word-break: break-word;
+  color: var(--ink);
+}
+
+.subtask-add {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.subtask-add input {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-solid);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.86rem;
+}
+
+.subtask-add input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.subtask-add-button {
+  width: 36px;
+  height: 36px;
+  background: rgba(37, 99, 235, 0.12);
+  border-radius: 10px;
+}
+
+/* Achievements gallery */
+.achievements-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.06);
+  animation: slide-in 220ms ease-out;
+  margin-top: 16px;
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.achievement-card {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.achievement-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.achievement-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.18);
+  color: #b45309;
+  font-size: 1.1rem;
+}
+
+.achievement-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.achievement-body strong {
+  font-size: 0.86rem;
+  color: var(--ink);
+}
+
+.achievement-body span {
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.achievement-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 150px;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 18px 14px 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 70, 239, 0.92));
+  color: #fff;
+  box-shadow: 0 22px 50px rgba(217, 70, 239, 0.35);
+  cursor: pointer;
+  z-index: 700;
+  animation: slide-up 240ms ease-out;
+  max-width: 380px;
+}
+
+.achievement-toast__icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 1.6rem;
+}
+
+.achievement-toast__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.achievement-toast__body .eyebrow {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.achievement-toast__body strong {
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.achievement-toast__body span {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.3;
+}
+
 /* ion-reorder handle */
 ion-reorder-group {
   display: grid;

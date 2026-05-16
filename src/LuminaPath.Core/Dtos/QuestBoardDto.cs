@@ -5,8 +5,12 @@ namespace LuminaPath.Core.Dtos
     public class QuestBoardDto
     {
         public int Xp { get; set; }
+        public int CurrentStreakDays { get; set; }
+        public int LongestStreakDays { get; set; }
+        public DateTime? LastCompletionDate { get; set; }
         public List<QuestDto> Quests { get; set; } = [];
         public List<QuestSkillDto> Skills { get; set; } = [];
+        public List<AchievementDto> Achievements { get; set; } = [];
     }
 
     public class QuestDto
@@ -27,6 +31,30 @@ namespace LuminaPath.Core.Dtos
         public int SortOrder { get; set; }
         public int? MyGameId { get; set; }
         public string? GameName { get; set; }
+        public int? SkillId { get; set; }
+        public string? SkillName { get; set; }
+        public List<QuestSubtaskDto> Subtasks { get; set; } = [];
+    }
+
+    public class QuestSubtaskDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public bool Completed { get; set; }
+        public DateTime? CompletedAt { get; set; }
+        public int SortOrder { get; set; }
+    }
+
+    public class QuestSubtaskCreateDto
+    {
+        public string Title { get; set; } = string.Empty;
+    }
+
+    public class QuestSubtaskUpdateDto
+    {
+        public string? Title { get; set; }
+        public bool? Completed { get; set; }
+        public int? SortOrder { get; set; }
     }
 
     public class QuestCreateDto
@@ -39,6 +67,7 @@ namespace LuminaPath.Core.Dtos
         public DateTime? DueDate { get; set; }
         public List<string> Tags { get; set; } = [];
         public int? MyGameId { get; set; }
+        public int? SkillId { get; set; }
     }
 
     public class QuestUpdateDto
@@ -55,6 +84,8 @@ namespace LuminaPath.Core.Dtos
         public int? MyGameId { get; set; }
         public bool? ClearMyGame { get; set; }
         public int? SortOrder { get; set; }
+        public int? SkillId { get; set; }
+        public bool? ClearSkill { get; set; }
     }
 
     public class QuestReorderItemDto
@@ -69,6 +100,20 @@ namespace LuminaPath.Core.Dtos
         public QuestDto Quest { get; set; } = new();
         public QuestDto? SpawnedQuest { get; set; }
         public int TotalXp { get; set; }
+        public int CurrentStreakDays { get; set; }
+        public int LongestStreakDays { get; set; }
+        public int? AwardedSkillXp { get; set; }
+        public int? AwardedSkillId { get; set; }
+        public List<AchievementDto> UnlockedAchievements { get; set; } = [];
+    }
+
+    public class AchievementDto
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Icon { get; set; } = string.Empty;
+        public DateTime UnlockedAt { get; set; }
     }
 
     public class QuestSkillDto

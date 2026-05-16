@@ -50,12 +50,15 @@ import {
   trophyOutline,
 } from 'ionicons/icons';
 import {
+  AchievementInfo,
   Quest,
   QuestBoardService,
   QuestBoardState,
+  QuestMutationResult,
   QuestPriority,
   QuestRecurrence,
   QuestSkill,
+  QuestSubtask,
   QuestType,
 } from '../services/quest-board.service';
 import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
@@ -168,12 +171,18 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   unlockedNodeCount = 0;
   todayCount = 0;
   overdueCount = 0;
+  currentStreakDays = 0;
+  longestStreakDays = 0;
   toastMessage = '';
+  achievementToast: AchievementInfo | null = null;
   isLoading = true;
   errorMessage = '';
 
   quests: Quest[] = [];
   skills: QuestSkill[] = [];
+  achievements: AchievementInfo[] = [];
+
+  newSubtaskTitle: Record<number, string> = {};
 
   // Quick-add
   quickAddTitle = '';
@@ -182,6 +191,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   quickAddRecurrence: QuestRecurrence = 'none';
   quickAddDue: string | null = null;
   quickAddGameId: number | null = null;
+  quickAddSkillId: number | null = null;
 
   // Search & tag filter
   searchQuery = '';
@@ -198,6 +208,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     dueDate: string | null;
     tags: string;
     myGameId: number | null;
+    skillId: number | null;
   } | null = null;
 
   // Skills
@@ -420,6 +431,9 @@ export class QuestBoardPage implements OnInit, OnDestroy {
       sortOrder: 0,
       myGameId: this.quickAddGameId ?? null,
       gameName: this.quickAddGameId == null ? null : this.gameNameFor(this.quickAddGameId),
+      skillId: this.quickAddSkillId ?? null,
+      skillName: this.quickAddSkillId == null ? null : this.skillNameFor(this.quickAddSkillId),
+      subtasks: [],
     };
 
     this.quests = [optimistic, ...this.quests];
@@ -434,10 +448,10 @@ export class QuestBoardPage implements OnInit, OnDestroy {
         recurrence: this.quickAddRecurrence,
         dueDate: this.quickAddDue ?? null,
         myGameId: this.quickAddGameId ?? null,
+        skillId: this.quickAddSkillId ?? null,
       });
       this.quests = this.quests.map((q) => (q.id === tempId ? mutation.quest : q));
-      this.xp = mutation.totalXp;
-      this.rebuildStats();
+      this.applyMutationMeta(mutation);
       this.savePrefs();
     } catch {
       this.quests = this.quests.filter((q) => q.id !== tempId);
@@ -472,11 +486,16 @@ export class QuestBoardPage implements OnInit, OnDestroy {
       if (mutation.spawnedQuest) {
         this.quests = [mutation.spawnedQuest, ...this.quests];
       }
-      this.xp = mutation.totalXp;
-      this.rebuildStats();
+      this.applyMutationMeta(mutation);
       if (mutation.quest.completed) {
-        const xpMsg = `+${mutation.quest.rewardXp} XP`;
-        this.showToast(mutation.spawnedQuest ? `${xpMsg} · next one queued` : xpMsg);
+        const xpParts = [`+${mutation.quest.rewardXp} XP`];
+        if (mutation.awardedSkillXp && mutation.awardedSkillXp > 0) {
+          xpParts.push(`+${mutation.awardedSkillXp} skill XP`);
+        }
+        if (mutation.spawnedQuest) {
+          xpParts.push('next one queued');
+        }
+        this.showToast(xpParts.join(' · '));
       }
     } catch {
       quest.completed = previous;
@@ -503,6 +522,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
       dueDate: quest.dueDate ? isoDate(new Date(quest.dueDate)) : null,
       tags: (quest.tags ?? []).join(', '),
       myGameId: quest.myGameId ?? null,
+      skillId: quest.skillId ?? null,
     };
   }
 
@@ -527,6 +547,8 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     quest.tags = tags;
     quest.myGameId = draft.myGameId ?? null;
     quest.gameName = draft.myGameId == null ? null : this.gameNameFor(draft.myGameId);
+    quest.skillId = draft.skillId ?? null;
+    quest.skillName = draft.skillId == null ? null : this.skillNameFor(draft.skillId);
 
     this.expandedQuestId = null;
     this.editDraft = null;
@@ -543,10 +565,11 @@ export class QuestBoardPage implements OnInit, OnDestroy {
         tags,
         myGameId: draft.myGameId ?? undefined,
         clearMyGame: draft.myGameId == null,
+        skillId: draft.skillId ?? undefined,
+        clearSkill: draft.skillId == null,
       });
       this.applyMutation(quest.id, mutation.quest);
-      this.xp = mutation.totalXp;
-      this.rebuildStats();
+      this.applyMutationMeta(mutation);
     } catch {
       const index = this.quests.findIndex((q) => q.id === quest.id);
       if (index >= 0) this.quests[index] = previous;
@@ -821,6 +844,119 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     this.quests = this.quests.map((q) => (q.id === id ? updated : q));
   }
 
+  private applyMutationMeta(mutation: QuestMutationResult): void {
+    this.xp = mutation.totalXp;
+    this.currentStreakDays = mutation.currentStreakDays;
+    this.longestStreakDays = mutation.longestStreakDays;
+    this.rebuildStats();
+
+    if (mutation.unlockedAchievements?.length) {
+      const known = new Set(this.achievements.map((a) => a.code));
+      const newOnes = mutation.unlockedAchievements.filter((a) => !known.has(a.code));
+      if (newOnes.length) {
+        this.achievements = [...newOnes, ...this.achievements];
+        this.showAchievementToast(newOnes[newOnes.length - 1]);
+      }
+    }
+  }
+
+  private skillNameFor(skillId: number): string {
+    return this.skills.find((s) => s.id === skillId)?.name ?? 'Skill';
+  }
+
+  // -------- Subtasks --------
+
+  async addSubtask(quest: Quest): Promise<void> {
+    const draft = this.subtaskDraft(quest.id).trim();
+    if (!draft) return;
+
+    const tempId = this.nextTemporaryId();
+    const optimistic: QuestSubtask = {
+      id: tempId,
+      title: draft,
+      completed: false,
+      sortOrder: quest.subtasks.length,
+    };
+    quest.subtasks = [...quest.subtasks, optimistic];
+    this.newSubtaskTitle[quest.id] = '';
+
+    try {
+      const mutation = await this.questBoardService.addSubtask(quest.id, draft);
+      this.applyMutation(quest.id, mutation.quest);
+      this.applyMutationMeta(mutation);
+    } catch {
+      quest.subtasks = quest.subtasks.filter((s) => s.id !== tempId);
+      this.showToast('Could not add subtask');
+    }
+  }
+
+  async toggleSubtask(quest: Quest, subtask: QuestSubtask): Promise<void> {
+    const previous = subtask.completed;
+    subtask.completed = !previous;
+    subtask.completedAt = subtask.completed ? new Date().toISOString() : undefined;
+
+    try {
+      const mutation = await this.questBoardService.updateSubtask(quest.id, subtask.id, {
+        completed: subtask.completed,
+      });
+      this.applyMutation(quest.id, mutation.quest);
+      this.applyMutationMeta(mutation);
+    } catch {
+      subtask.completed = previous;
+      subtask.completedAt = previous ? subtask.completedAt : undefined;
+      this.showToast('Could not update subtask');
+    }
+  }
+
+  async deleteSubtask(quest: Quest, subtask: QuestSubtask): Promise<void> {
+    const removed = subtask;
+    quest.subtasks = quest.subtasks.filter((s) => s.id !== removed.id);
+    try {
+      await this.questBoardService.deleteSubtask(quest.id, removed.id);
+    } catch {
+      quest.subtasks = [...quest.subtasks, removed].sort((a, b) => a.sortOrder - b.sortOrder);
+      this.showToast('Could not delete subtask');
+    }
+  }
+
+  subtaskDraft(questId: number): string {
+    return this.newSubtaskTitle[questId] ?? '';
+  }
+
+  setSubtaskDraft(questId: number, value: string): void {
+    this.newSubtaskTitle[questId] = value;
+  }
+
+  subtaskProgress(quest: Quest): number {
+    if (!quest.subtasks.length) return 0;
+    return quest.subtasks.filter((s) => s.completed).length / quest.subtasks.length;
+  }
+
+  subtaskCompletedCount(quest: Quest): number {
+    return quest.subtasks.filter((s) => s.completed).length;
+  }
+
+  trackBySubtask(_: number, subtask: QuestSubtask): number {
+    return subtask.id;
+  }
+
+  trackByAchievement(_: number, achievement: AchievementInfo): string {
+    return achievement.code;
+  }
+
+  closeAchievementToast(): void {
+    this.achievementToast = null;
+  }
+
+  private showAchievementToast(achievement: AchievementInfo): void {
+    this.achievementToast = achievement;
+    window.setTimeout(() => {
+      if (this.achievementToast?.code === achievement.code) {
+        this.achievementToast = null;
+      }
+    }, 4500);
+  }
+
   private async loadBoard() {
     this.isLoading = true;
     this.errorMessage = '';
@@ -857,8 +993,11 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   private applyBoard(board: QuestBoardState) {
     this.xp = board.xp;
+    this.currentStreakDays = board.currentStreakDays;
+    this.longestStreakDays = board.longestStreakDays;
     this.quests = board.quests;
     this.skills = board.skills;
+    this.achievements = board.achievements;
     this.rebuildStats();
   }
 
@@ -866,8 +1005,12 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     try {
       this.applyBoard(await this.questBoardService.saveSkills({
         xp: this.xp,
+        currentStreakDays: this.currentStreakDays,
+        longestStreakDays: this.longestStreakDays,
+        lastCompletionDate: null,
         quests: this.quests,
         skills: this.skills,
+        achievements: this.achievements,
       }));
       return true;
     } catch {

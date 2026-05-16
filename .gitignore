@@ -375,3 +375,6 @@ nginx/certs
 
 # llm
 .claude
+
+# other
+*.lscache

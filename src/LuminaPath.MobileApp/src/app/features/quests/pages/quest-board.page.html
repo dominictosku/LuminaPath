@@ -24,6 +24,15 @@
           <span><ion-icon name="alert-circle-outline"></ion-icon> {{ overdueCount }} overdue</span>
           <span><ion-icon name="checkmark-circle-outline"></ion-icon> {{ completedQuestCount }} done</span>
         </div>
+        <div class="streak-row" *ngIf="currentStreakDays > 0 || longestStreakDays > 0">
+          <span class="streak-pill">
+            <ion-icon name="flame-outline"></ion-icon>
+            {{ currentStreakDays }}-day streak
+          </span>
+          <span class="streak-best" *ngIf="longestStreakDays > currentStreakDays">
+            best: {{ longestStreakDays }}
+          </span>
+        </div>
       </div>
     </section>
 
@@ -86,6 +95,14 @@
             <select [(ngModel)]="quickAddGameId">
               <option [ngValue]="null">No game</option>
               <option *ngFor="let game of library; trackBy: trackByLibrary" [ngValue]="game.myGameId">{{ game.gameName }}</option>
+            </select>
+          </label>
+
+          <label class="meta-chip" *ngIf="skills.length">
+            <ion-icon name="trophy-outline"></ion-icon>
+            <select [(ngModel)]="quickAddSkillId">
+              <option [ngValue]="null">No skill</option>
+              <option *ngFor="let skill of skills; trackBy: trackBySkill" [ngValue]="skill.id">{{ skill.name }}</option>
             </select>
           </label>
         </div>
@@ -181,6 +198,14 @@
                   <ion-icon name="game-controller-outline"></ion-icon>
                   {{ quest.gameName }}
                 </span>
+                <span *ngIf="quest.skillName" class="meta-pill meta-pill--skill">
+                  <ion-icon name="trophy-outline"></ion-icon>
+                  {{ quest.skillName }}
+                </span>
+                <span *ngIf="quest.subtasks.length" class="meta-pill meta-pill--subtasks">
+                  <ion-icon name="checkmark-done-outline"></ion-icon>
+                  {{ subtaskCompletedCount(quest) }}/{{ quest.subtasks.length }}
+                </span>
                 <button
                   type="button"
                   *ngFor="let tag of quest.tags; trackBy: trackByText"
@@ -190,6 +215,10 @@
                   <ion-icon name="pricetag-outline"></ion-icon>
                   {{ tag }}
                 </button>
+              </div>
+
+              <div class="subtask-progress" *ngIf="quest.subtasks.length && expandedQuestId !== quest.id">
+                <ion-progress-bar [value]="subtaskProgress(quest)"></ion-progress-bar>
               </div>
             </div>
 
@@ -244,12 +273,56 @@
                     <option *ngFor="let game of library; trackBy: trackByLibrary" [ngValue]="game.myGameId">{{ game.gameName }}</option>
                   </select>
                 </label>
+
+                <label class="edit-field edit-field--inline" *ngIf="skills.length">
+                  <span>Skill</span>
+                  <select [(ngModel)]="editDraft.skillId">
+                    <option [ngValue]="null">No skill</option>
+                    <option *ngFor="let skill of skills; trackBy: trackBySkill" [ngValue]="skill.id">{{ skill.name }}</option>
+                  </select>
+                </label>
               </div>
 
               <label class="edit-field">
                 <span>Tags <small>(comma separated)</small></span>
                 <input type="text" [(ngModel)]="editDraft.tags" placeholder="errand, focus, deep-work" />
               </label>
+
+              <div class="edit-field">
+                <span>Subtasks <small *ngIf="quest.subtasks.length">{{ subtaskCompletedCount(quest) }} / {{ quest.subtasks.length }} done</small></span>
+                <ul class="subtask-list" *ngIf="quest.subtasks.length">
+                  <li *ngFor="let subtask of quest.subtasks; trackBy: trackBySubtask"
+                      class="subtask"
+                      [class.subtask--done]="subtask.completed">
+                    <button type="button"
+                            class="subtask-toggle"
+                            aria-label="Toggle subtask"
+                            (click)="toggleSubtask(quest, subtask)">
+                      <ion-icon [name]="subtask.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
+                    </button>
+                    <span class="subtask-title">{{ subtask.title }}</span>
+                    <button type="button"
+                            class="subtask-delete"
+                            aria-label="Delete subtask"
+                            (click)="deleteSubtask(quest, subtask)">
+                      <ion-icon name="close-outline"></ion-icon>
+                    </button>
+                  </li>
+                </ul>
+                <div class="subtask-add">
+                  <input type="text"
+                         placeholder="Add a subtask"
+                         [ngModel]="subtaskDraft(quest.id)"
+                         (ngModelChange)="setSubtaskDraft(quest.id, $event)"
+                         (keydown.enter)="addSubtask(quest)" />
+                  <button type="button"
+                          class="subtask-add-button"
+                          aria-label="Add subtask"
+                          (click)="addSubtask(quest)">
+                    <ion-icon name="add-outline"></ion-icon>
+                  </button>
+                </div>
+              </div>
 
               <div class="edit-actions">
                 <ion-button fill="clear" (click)="cancelEdit()">Cancel</ion-button>
@@ -385,6 +458,42 @@
         <ion-button expand="block" (click)="addNode()">Add Node</ion-button>
       </ng-template>
     </section>
+  </div>
+
+  <section class="achievements-panel" *ngIf="mode === 'quests' && achievements.length">
+    <header class="section-header">
+      <div>
+        <span class="eyebrow">
+          <ion-icon name="trophy-outline"></ion-icon>
+          Achievements
+        </span>
+        <h2>{{ achievements.length }} unlocked</h2>
+      </div>
+    </header>
+    <div class="achievement-grid">
+      <article class="achievement-card"
+               *ngFor="let achievement of achievements; trackBy: trackByAchievement"
+               [title]="achievement.description">
+        <div class="achievement-icon">
+          <ion-icon [name]="achievement.icon"></ion-icon>
+        </div>
+        <div class="achievement-body">
+          <strong>{{ achievement.title }}</strong>
+          <span>{{ achievement.description }}</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <div class="achievement-toast" *ngIf="achievementToast" (click)="closeAchievementToast()">
+    <div class="achievement-toast__icon">
+      <ion-icon [name]="achievementToast.icon"></ion-icon>
+    </div>
+    <div class="achievement-toast__body">
+      <span class="eyebrow">Achievement unlocked</span>
+      <strong>{{ achievementToast.title }}</strong>
+      <span>{{ achievementToast.description }}</span>
+    </div>
   </div>
 
   <div class="undo-toast" *ngIf="pendingDeleteList.length">

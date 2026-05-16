@@ -21,6 +21,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
             var profile = await dbContext.QuestProfiles
                 .AsNoTracking()
+                .Include(p => p.Achievements)
                 .FirstOrDefaultAsync(profile => profile.LuminaUserId == userId);
 
             var quests = await LoadQuestDtos(dbContext, userId);
@@ -29,8 +30,15 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return new QuestBoardDto
             {
                 Xp = profile?.TotalXp ?? 0,
+                CurrentStreakDays = profile?.CurrentStreakDays ?? 0,
+                LongestStreakDays = profile?.LongestStreakDays ?? 0,
+                LastCompletionDate = profile?.LastCompletionDate?.ToDateTime(TimeOnly.MinValue),
                 Quests = quests,
-                Skills = skills
+                Skills = skills,
+                Achievements = profile?.Achievements
+                    .OrderByDescending(a => a.UnlockedAt)
+                    .Select(ProjectAchievementDto)
+                    .ToList() ?? []
             };
         }
 
@@ -78,6 +86,18 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 }
             }
 
+            int? skillId = null;
+            if (dto.SkillId.HasValue)
+            {
+                var ownsSkill = await dbContext.QuestSkills
+                    .AsNoTracking()
+                    .AnyAsync(skill => skill.Id == dto.SkillId.Value && skill.LuminaUserId == userId);
+                if (ownsSkill)
+                {
+                    skillId = dto.SkillId.Value;
+                }
+            }
+
             var nextSort = await dbContext.Quests
                 .Where(q => q.LuminaUserId == userId && q.Type == dto.Type)
                 .Select(q => (int?)q.SortOrder)
@@ -98,7 +118,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 SortOrder = nextSort + 1,
-                MyGameId = myGameId
+                MyGameId = myGameId,
+                SkillId = skillId
             };
 
             await dbContext.Quests.AddAsync(quest);
@@ -184,12 +205,31 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 }
             }
 
+            if (dto.ClearSkill == true)
+            {
+                quest.SkillId = null;
+            }
+            else if (dto.SkillId.HasValue)
+            {
+                var ownsSkill = await dbContext.QuestSkills
+                    .AsNoTracking()
+                    .AnyAsync(skill => skill.Id == dto.SkillId.Value && skill.LuminaUserId == userId);
+                if (ownsSkill)
+                {
+                    quest.SkillId = dto.SkillId.Value;
+                }
+            }
+
             if (dto.SortOrder.HasValue)
             {
                 quest.SortOrder = dto.SortOrder.Value;
             }
 
             Quest? spawned = null;
+            int? awardedSkillXp = null;
+            int? awardedSkillId = null;
+            var unlockedAchievements = new List<Achievement>();
+
             if (dto.Completed.HasValue && dto.Completed.Value != quest.Completed)
             {
                 if (dto.Completed.Value)
@@ -198,16 +238,43 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     quest.CompletedAt = DateTime.UtcNow;
                     profile.TotalXp = Math.Max(0, profile.TotalXp + quest.RewardXp);
 
+                    if (quest.SkillId.HasValue)
+                    {
+                        var skill = await dbContext.QuestSkills
+                            .FirstOrDefaultAsync(s => s.Id == quest.SkillId.Value && s.LuminaUserId == userId);
+                        if (skill != null)
+                        {
+                            var skillReward = SkillRewardFor(quest.Type);
+                            skill.Xp = Math.Max(0, skill.Xp + skillReward);
+                            awardedSkillXp = skillReward;
+                            awardedSkillId = skill.Id;
+                        }
+                    }
+
+                    UpdateStreakOnCompletion(profile);
+
                     if (quest.Recurrence != QuestRecurrence.None)
                     {
                         spawned = await SpawnNextRecurrenceAsync(dbContext, userId, quest);
                     }
+
+                    unlockedAchievements = await EvaluateAchievementsAsync(dbContext, userId, profile, quest);
                 }
                 else
                 {
                     quest.Completed = false;
                     quest.CompletedAt = null;
                     profile.TotalXp = Math.Max(0, profile.TotalXp - quest.RewardXp);
+
+                    if (quest.SkillId.HasValue)
+                    {
+                        var skill = await dbContext.QuestSkills
+                            .FirstOrDefaultAsync(s => s.Id == quest.SkillId.Value && s.LuminaUserId == userId);
+                        if (skill != null)
+                        {
+                            skill.Xp = Math.Max(0, skill.Xp - SkillRewardFor(quest.Type));
+                        }
+                    }
                 }
             }
 
@@ -215,7 +282,11 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             profile.UpdatedAt = DateTime.UtcNow;
 
             await dbContext.SaveChangesAsync();
-            return await BuildMutationResultAsync(dbContext, userId, quest.Id, spawned?.Id);
+            var result = await BuildMutationResultAsync(dbContext, userId, quest.Id, spawned?.Id);
+            result.AwardedSkillXp = awardedSkillXp;
+            result.AwardedSkillId = awardedSkillId;
+            result.UnlockedAchievements = unlockedAchievements.Select(ProjectAchievementDto).ToList();
+            return result;
         }
 
         public async Task<Result<int, FailedResult>> DeleteAsync(string userId, int id)
@@ -283,22 +354,26 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             var quest = await dbContext.Quests
                 .AsNoTracking()
-                .Include(q => q.MyGame)
-                    .ThenInclude(myGame => myGame!.Game)
+                .Include(q => q.MyGame).ThenInclude(g => g!.Game)
+                .Include(q => q.Skill)
+                .Include(q => q.Subtasks)
                 .Where(q => q.Id == questId && q.LuminaUserId == userId)
-                .Select(q => ProjectQuestDto(q))
                 .FirstAsync();
 
             QuestDto? spawned = null;
             if (spawnedId is int sid)
             {
-                spawned = await dbContext.Quests
+                var spawnedEntity = await dbContext.Quests
                     .AsNoTracking()
-                    .Include(q => q.MyGame)
-                        .ThenInclude(myGame => myGame!.Game)
+                    .Include(q => q.MyGame).ThenInclude(g => g!.Game)
+                    .Include(q => q.Skill)
+                    .Include(q => q.Subtasks)
                     .Where(q => q.Id == sid && q.LuminaUserId == userId)
-                    .Select(q => ProjectQuestDto(q))
                     .FirstOrDefaultAsync();
+                if (spawnedEntity != null)
+                {
+                    spawned = ProjectQuestDto(spawnedEntity);
+                }
             }
 
             var profile = await dbContext.QuestProfiles
@@ -307,9 +382,11 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
             return new QuestMutationResultDto
             {
-                Quest = quest,
+                Quest = ProjectQuestDto(quest),
                 SpawnedQuest = spawned,
-                TotalXp = profile?.TotalXp ?? 0
+                TotalXp = profile?.TotalXp ?? 0,
+                CurrentStreakDays = profile?.CurrentStreakDays ?? 0,
+                LongestStreakDays = profile?.LongestStreakDays ?? 0
             };
         }
 
@@ -344,7 +421,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 SortOrder = nextSort + 1,
-                MyGameId = source.MyGameId
+                MyGameId = source.MyGameId,
+                SkillId = source.SkillId
             };
 
             await dbContext.Quests.AddAsync(clone);
@@ -413,7 +491,34 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 UpdatedAt = quest.UpdatedAt,
                 SortOrder = quest.SortOrder,
                 MyGameId = quest.MyGameId,
-                GameName = quest.MyGame == null ? null : quest.MyGame.Game!.Name
+                GameName = quest.MyGame == null ? null : quest.MyGame.Game!.Name,
+                SkillId = quest.SkillId,
+                SkillName = quest.Skill == null ? null : quest.Skill.Name,
+                Subtasks = (quest.Subtasks ?? new())
+                    .OrderBy(s => s.SortOrder)
+                    .ThenBy(s => s.Id)
+                    .Select(s => new QuestSubtaskDto
+                    {
+                        Id = s.Id,
+                        Title = s.Title,
+                        Completed = s.Completed,
+                        CompletedAt = s.CompletedAt,
+                        SortOrder = s.SortOrder
+                    })
+                    .ToList()
+            };
+        }
+
+        private static AchievementDto ProjectAchievementDto(Achievement achievement)
+        {
+            var def = AchievementCatalog.TryGet(achievement.Code);
+            return new AchievementDto
+            {
+                Code = achievement.Code,
+                Title = def?.Title ?? achievement.Code,
+                Description = def?.Description ?? string.Empty,
+                Icon = def?.Icon ?? "trophy-outline",
+                UnlockedAt = achievement.UnlockedAt
             };
         }
 
@@ -421,11 +526,14 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             return await dbContext.Quests
                 .AsNoTracking()
+                .Include(q => q.MyGame).ThenInclude(g => g!.Game)
+                .Include(q => q.Skill)
+                .Include(q => q.Subtasks)
                 .Where(quest => quest.LuminaUserId == userId)
                 .OrderBy(quest => quest.SortOrder)
                 .ThenBy(quest => quest.Id)
-                .Select(quest => ProjectQuestDto(quest))
-                .ToListAsync();
+                .ToListAsync()
+                .ContinueWith(t => t.Result.Select(ProjectQuestDto).ToList());
         }
 
         private static async Task<List<QuestSkillDto>> LoadSkillDtos(LuminaPathDbContext dbContext, string userId)
@@ -584,5 +692,235 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 _ => 75
             };
         }
+
+        private static int SkillRewardFor(QuestType type)
+        {
+            return type switch
+            {
+                QuestType.Main => 30,
+                QuestType.Faction => 20,
+                _ => 15
+            };
+        }
+
+        private static void UpdateStreakOnCompletion(QuestProfile profile)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var last = profile.LastCompletionDate;
+
+            if (last == today)
+            {
+                return;
+            }
+
+            if (last is DateOnly previous && previous.AddDays(1) == today)
+            {
+                profile.CurrentStreakDays = Math.Max(1, profile.CurrentStreakDays + 1);
+            }
+            else
+            {
+                profile.CurrentStreakDays = 1;
+            }
+
+            profile.LastCompletionDate = today;
+            if (profile.CurrentStreakDays > profile.LongestStreakDays)
+            {
+                profile.LongestStreakDays = profile.CurrentStreakDays;
+            }
+        }
+
+        // -------- Subtasks --------
+
+        public async Task<Result<QuestMutationResultDto, FailedResult>> AddSubtaskAsync(string userId, int questId, QuestSubtaskCreateDto dto)
+        {
+            var title = (dto.Title ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return new FailedResult("Subtask title is required");
+            }
+
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var quest = await dbContext.Quests
+                .Include(q => q.Subtasks)
+                .FirstOrDefaultAsync(q => q.Id == questId && q.LuminaUserId == userId);
+            if (quest == null)
+            {
+                return new FailedResult("Quest not found");
+            }
+
+            var nextSort = quest.Subtasks.Count == 0 ? 0 : quest.Subtasks.Max(s => s.SortOrder) + 1;
+            var subtask = new QuestSubtask
+            {
+                QuestId = quest.Id,
+                Title = title,
+                SortOrder = nextSort,
+                CreatedAt = DateTime.UtcNow
+            };
+            quest.Subtasks.Add(subtask);
+            quest.UpdatedAt = DateTime.UtcNow;
+            await dbContext.SaveChangesAsync();
+
+            return await BuildMutationResultAsync(dbContext, userId, quest.Id);
+        }
+
+        public async Task<Result<QuestMutationResultDto, FailedResult>> UpdateSubtaskAsync(string userId, int questId, int subtaskId, QuestSubtaskUpdateDto dto)
+        {
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var quest = await dbContext.Quests
+                .Include(q => q.Subtasks)
+                .FirstOrDefaultAsync(q => q.Id == questId && q.LuminaUserId == userId);
+            if (quest == null)
+            {
+                return new FailedResult("Quest not found");
+            }
+
+            var subtask = quest.Subtasks.FirstOrDefault(s => s.Id == subtaskId);
+            if (subtask == null)
+            {
+                return new FailedResult("Subtask not found");
+            }
+
+            if (dto.Title is not null)
+            {
+                var trimmed = dto.Title.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed))
+                {
+                    return new FailedResult("Subtask title cannot be empty");
+                }
+                subtask.Title = trimmed;
+            }
+
+            if (dto.Completed.HasValue)
+            {
+                if (dto.Completed.Value && !subtask.Completed)
+                {
+                    subtask.Completed = true;
+                    subtask.CompletedAt = DateTime.UtcNow;
+                }
+                else if (!dto.Completed.Value && subtask.Completed)
+                {
+                    subtask.Completed = false;
+                    subtask.CompletedAt = null;
+                }
+            }
+
+            if (dto.SortOrder.HasValue)
+            {
+                subtask.SortOrder = dto.SortOrder.Value;
+            }
+
+            quest.UpdatedAt = DateTime.UtcNow;
+            await dbContext.SaveChangesAsync();
+
+            return await BuildMutationResultAsync(dbContext, userId, quest.Id);
+        }
+
+        public async Task<Result<int, FailedResult>> DeleteSubtaskAsync(string userId, int questId, int subtaskId)
+        {
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var subtask = await dbContext.QuestSubtasks
+                .Include(s => s.Quest)
+                .FirstOrDefaultAsync(s => s.Id == subtaskId && s.QuestId == questId && s.Quest!.LuminaUserId == userId);
+            if (subtask == null)
+            {
+                return new FailedResult("Subtask not found");
+            }
+
+            dbContext.QuestSubtasks.Remove(subtask);
+            await dbContext.SaveChangesAsync();
+            return subtaskId;
+        }
+
+        // -------- Achievements --------
+
+        private static async Task<List<Achievement>> EvaluateAchievementsAsync(LuminaPathDbContext dbContext, string userId, QuestProfile profile, Quest justCompleted)
+        {
+            var already = await dbContext.Achievements
+                .AsNoTracking()
+                .Where(a => a.QuestProfileId == profile.Id)
+                .Select(a => a.Code)
+                .ToListAsync();
+            var alreadySet = new HashSet<string>(already, StringComparer.OrdinalIgnoreCase);
+
+            var completedCount = await dbContext.Quests
+                .AsNoTracking()
+                .CountAsync(q => q.LuminaUserId == userId && q.Completed);
+
+            var newlyUnlocked = new List<Achievement>();
+            void Try(string code)
+            {
+                if (!alreadySet.Contains(code))
+                {
+                    newlyUnlocked.Add(new Achievement
+                    {
+                        Code = code,
+                        UnlockedAt = DateTime.UtcNow,
+                        QuestProfileId = profile.Id
+                    });
+                    alreadySet.Add(code);
+                }
+            }
+
+            if (completedCount >= 1) Try(AchievementCatalog.FirstQuest);
+            if (completedCount >= 10) Try(AchievementCatalog.TenQuests);
+            if (completedCount >= 100) Try(AchievementCatalog.HundredQuests);
+
+            if (justCompleted.Type == QuestType.Main)
+            {
+                Try(AchievementCatalog.FirstMainQuest);
+            }
+
+            if (justCompleted.Recurrence != QuestRecurrence.None)
+            {
+                Try(AchievementCatalog.DailyDiscipline);
+            }
+
+            if (justCompleted.Subtasks?.Count > 0 && justCompleted.Subtasks.All(s => s.Completed))
+            {
+                Try(AchievementCatalog.Completionist);
+            }
+
+            if (profile.CurrentStreakDays >= 7) Try(AchievementCatalog.SevenDayStreak);
+            if (profile.CurrentStreakDays >= 30) Try(AchievementCatalog.ThirtyDayStreak);
+
+            if (newlyUnlocked.Count > 0)
+            {
+                await dbContext.Achievements.AddRangeAsync(newlyUnlocked);
+                await dbContext.SaveChangesAsync();
+            }
+
+            return newlyUnlocked;
+        }
     }
+
+    internal static class AchievementCatalog
+    {
+        public const string FirstQuest = "first_quest";
+        public const string TenQuests = "ten_quests";
+        public const string HundredQuests = "hundred_quests";
+        public const string FirstMainQuest = "first_main_quest";
+        public const string DailyDiscipline = "daily_discipline";
+        public const string Completionist = "completionist";
+        public const string SevenDayStreak = "seven_day_streak";
+        public const string ThirtyDayStreak = "thirty_day_streak";
+
+        private static readonly Dictionary<string, AchievementDefinition> Definitions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            [FirstQuest] = new("First Steps", "Complete your first quest.", "footsteps-outline"),
+            [TenQuests] = new("Apprentice", "Complete 10 quests.", "ribbon-outline"),
+            [HundredQuests] = new("Centurion", "Complete 100 quests.", "trophy-outline"),
+            [FirstMainQuest] = new("Main Story", "Complete your first main quest.", "map-outline"),
+            [DailyDiscipline] = new("Daily Discipline", "Complete a recurring quest.", "refresh-outline"),
+            [Completionist] = new("Completionist", "Finish every subtask on a boss quest.", "checkmark-done-outline"),
+            [SevenDayStreak] = new("Week One", "Maintain a 7-day quest streak.", "flame-outline"),
+            [ThirtyDayStreak] = new("Unbroken", "Maintain a 30-day quest streak.", "flame")
+        };
+
+        public static AchievementDefinition? TryGet(string code)
+        {
+            return Definitions.TryGetValue(code, out var def) ? def : null;
+        }
+    }
+
+    internal sealed record AchievementDefinition(string Title, string Description, string Icon);
 }
