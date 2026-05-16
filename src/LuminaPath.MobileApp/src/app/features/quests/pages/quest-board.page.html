@@ -44,6 +44,9 @@
         <ion-segment-button value="skills">
           <ion-label>Skills</ion-label>
         </ion-segment-button>
+        <ion-segment-button value="tree">
+          <ion-label>Skill Tree</ion-label>
+        </ion-segment-button>
       </ion-segment>
     </section>
 
@@ -399,6 +402,28 @@
           <ion-progress-bar [value]="skillCompletion(skill)"></ion-progress-bar>
         </article>
       </div>
+    </section>
+
+    <section class="skills-layout" *ngIf="mode === 'tree'">
+      @defer (on viewport) {
+        <app-skill-tree
+          [branches]="skillTreeBranches"
+          [unlockedNodeIds]="skillTreeUnlockedNodeIds"
+          (nodeUnlocked)="handleSkillTreeNodeUnlocked($event)">
+        </app-skill-tree>
+      } @placeholder {
+        <div class="empty-state">
+          <ion-icon name="sparkles-outline"></ion-icon>
+          <strong>Skill tree is ready when you are</strong>
+          <span>The 3D view will load once this panel is visible.</span>
+        </div>
+      } @loading (minimum 300ms) {
+        <div class="empty-state">
+          <ion-icon name="sparkles-outline"></ion-icon>
+          <strong>Loading skill tree</strong>
+          <span>Preparing the 3D path view.</span>
+        </div>
+      }
     </section>
   </main>
 

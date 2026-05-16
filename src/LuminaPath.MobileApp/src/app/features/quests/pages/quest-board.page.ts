@@ -67,8 +67,15 @@ import {
 } from '../services/quest-board.service';
 import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
 import { MyGame } from 'src/app/features/games/models/games.model';
+import { SkillTreeComponent } from 'src/app/features/skill-tree/components/skill-tree.component';
+import type { SkillTreeBranch } from 'src/app/features/skill-tree/models/skill-tree.model';
+import {
+  parseNodeId,
+  questSkillsToBranches,
+  unlockedNodeIdsFor,
+} from 'src/app/features/skill-tree/util/skill-adapter';
 
-type PageMode = 'quests' | 'skills';
+type PageMode = 'quests' | 'skills' | 'tree';
 type ModalMode = 'skill' | 'node' | null;
 type QuestFilter = 'today' | 'upcoming' | 'inbox' | 'all';
 
@@ -116,6 +123,12 @@ type PendingDelete = {
   timeoutId: number;
 };
 
+type SkillTreeUnlockPayload = {
+  branchId: string;
+  nodeId: string;
+  xp: number;
+};
+
 @Component({
   selector: 'app-quest-board',
   templateUrl: './quest-board.page.html',
@@ -133,6 +146,7 @@ type PendingDelete = {
     IonReorderGroup,
     IonSegment,
     IonSegmentButton,
+    SkillTreeComponent,
   ],
 })
 export class QuestBoardPage implements OnInit, OnDestroy {
@@ -1084,6 +1098,22 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     this.setQuickAddToday();
     this.savePrefs();
     this.showToast(`${skill.name} quest draft ready`);
+  }
+
+  get skillTreeBranches(): SkillTreeBranch[] {
+    return questSkillsToBranches(this.skills);
+  }
+
+  get skillTreeUnlockedNodeIds(): string[] {
+    return unlockedNodeIdsFor(this.skills);
+  }
+
+  async handleSkillTreeNodeUnlocked(event: SkillTreeUnlockPayload): Promise<void> {
+    const parsed = parseNodeId(event.nodeId);
+    if (!parsed) return;
+    const skill = this.skills.find((item) => item.id === parsed.skillId);
+    if (!skill) return;
+    await this.unlockNode(skill, parsed.nodeIndex);
   }
 
   private defaultNodesForSkill(name: string): string[] {
