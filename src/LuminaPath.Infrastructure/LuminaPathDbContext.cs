@@ -113,6 +113,8 @@ namespace LuminaPath.Infrastructure
         public DbSet<QuestSkill> QuestSkills { get; set; }
         public DbSet<QuestSkillNode> QuestSkillNodes { get; set; }
         public DbSet<Achievement> Achievements { get; set; }
+        public DbSet<GameAchievement> GameAchievements { get; set; }
+        public DbSet<UserGameAchievement> UserGameAchievements { get; set; }
         public DbSet<GamingSession> GamingSessions { get; set; }
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<DirectMessage> DirectMessages { get; set; }

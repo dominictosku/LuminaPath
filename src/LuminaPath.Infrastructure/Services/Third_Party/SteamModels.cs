@@ -34,6 +34,23 @@ public sealed class SteamImportResult
     public int Updated { get; set; }
 }
 
+public sealed class SteamAchievementDefinition
+{
+    public string ApiName { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? IconUrl { get; set; }
+    public string? GrayIconUrl { get; set; }
+    public bool Hidden { get; set; }
+}
+
+public sealed class SteamPlayerAchievement
+{
+    public string ApiName { get; set; } = string.Empty;
+    public bool Achieved { get; set; }
+    public DateTime? UnlockTime { get; set; }
+}
+
 // ---------- Steam Web API DTOs (private wire shapes) ----------
 
 internal sealed class ResolveVanityResponse
@@ -115,4 +132,67 @@ internal sealed class OwnedGame
 
     [JsonPropertyName("img_icon_url")]
     public string? ImgIconUrl { get; set; }
+}
+
+internal sealed class SteamSchemaResponse
+{
+    [JsonPropertyName("game")]
+    public SteamSchemaGame Game { get; set; } = new();
+}
+
+internal sealed class SteamSchemaGame
+{
+    [JsonPropertyName("availableGameStats")]
+    public SteamAvailableGameStats? AvailableGameStats { get; set; }
+}
+
+internal sealed class SteamAvailableGameStats
+{
+    [JsonPropertyName("achievements")]
+    public List<SteamSchemaAchievement> Achievements { get; set; } = new();
+}
+
+internal sealed class SteamSchemaAchievement
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("displayName")]
+    public string DisplayName { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("icon")]
+    public string? Icon { get; set; }
+
+    [JsonPropertyName("icongray")]
+    public string? IconGray { get; set; }
+
+    [JsonPropertyName("hidden")]
+    public int Hidden { get; set; }
+}
+
+internal sealed class SteamPlayerAchievementsResponse
+{
+    [JsonPropertyName("playerstats")]
+    public SteamPlayerStats PlayerStats { get; set; } = new();
+}
+
+internal sealed class SteamPlayerStats
+{
+    [JsonPropertyName("achievements")]
+    public List<SteamPlayerAchievementWire> Achievements { get; set; } = new();
+}
+
+internal sealed class SteamPlayerAchievementWire
+{
+    [JsonPropertyName("apiname")]
+    public string ApiName { get; set; } = string.Empty;
+
+    [JsonPropertyName("achieved")]
+    public int Achieved { get; set; }
+
+    [JsonPropertyName("unlocktime")]
+    public long UnlockTime { get; set; }
 }

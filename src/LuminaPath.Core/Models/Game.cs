@@ -16,5 +16,6 @@ namespace LuminaPath.Core.Models
         public List<Game>? Dlcs { get; set; }
 
         public List<MyGame>? MyGames { get; set; }
+        public List<GameAchievement>? Achievements { get; set; }
     }
 }

@@ -109,5 +109,62 @@ namespace LuminaPath.Core.Entities.PSN
             [JsonPropertyName("platinum")]
             public int Platinum { get; set; }
         }
+
+        public class TitleTrophyData
+        {
+            [JsonPropertyName("trophies")]
+            public List<TitleTrophy> Trophies { get; set; } = new();
+
+            [JsonPropertyName("totalItemCount")]
+            public int TotalItemCount { get; set; }
+        }
+
+        public class TitleTrophy
+        {
+            [JsonPropertyName("trophyId")]
+            public int TrophyId { get; set; }
+
+            [JsonPropertyName("trophyHidden")]
+            public bool TrophyHidden { get; set; }
+
+            [JsonPropertyName("trophyType")]
+            public string TrophyType { get; set; } = string.Empty;
+
+            [JsonPropertyName("trophyName")]
+            public string TrophyName { get; set; } = string.Empty;
+
+            [JsonPropertyName("trophyDetail")]
+            public string? TrophyDetail { get; set; }
+
+            [JsonPropertyName("trophyIconUrl")]
+            public string? TrophyIconUrl { get; set; }
+
+            [JsonPropertyName("trophyGroupId")]
+            public string TrophyGroupId { get; set; } = "default";
+        }
+
+        public class UserTrophyData
+        {
+            [JsonPropertyName("trophies")]
+            public List<UserTrophy> Trophies { get; set; } = new();
+        }
+
+        public class UserTrophy
+        {
+            [JsonPropertyName("trophyId")]
+            public int TrophyId { get; set; }
+
+            [JsonPropertyName("earned")]
+            public bool Earned { get; set; }
+
+            [JsonPropertyName("earnedDateTime")]
+            public DateTime? EarnedDateTime { get; set; }
+
+            [JsonPropertyName("trophyType")]
+            public string TrophyType { get; set; } = string.Empty;
+
+            [JsonPropertyName("trophyGroupId")]
+            public string TrophyGroupId { get; set; } = "default";
+        }
     }
 }

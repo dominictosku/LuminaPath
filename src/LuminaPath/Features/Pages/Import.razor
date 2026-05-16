@@ -13,6 +13,7 @@
 @inherits BaseAuth
 @inject PSNService psnService
 @inject SteamService steamService
+@inject AchievementSyncService achievementSyncService
 @inject LuminaUserService userService
 @inject ApplicationSettingsService applicationSettingsService
 @inject ExcelService excelService
@@ -134,8 +135,27 @@
 									   Disabled="@(!(games?.Any() ?? false))">
 								Import Games
 							</MudButton>
+							<MudButton OnClick="SyncPsnAchievements"
+									   Variant="MudBlazor.Variant.Outlined"
+									   Color="Color.Secondary"
+									   StartIcon="@Icons.Material.Filled.EmojiEvents"
+									   Disabled="@psnAchievementSyncing">
+								Sync Trophies
+							</MudButton>
 						</div>
 					</div>
+
+					@if (psnAchievementSyncing)
+					{
+						<MudProgressLinear Indeterminate="true" Color="Color.Secondary" Class="steam-progress" />
+					}
+					@if (psnAchievementSyncResult is not null)
+					{
+						<MudAlert Severity="Severity.Success" Variant="MudBlazor.Variant.Outlined" Class="steam-alert">
+							PSN trophies synced for @psnAchievementSyncResult.GamesScanned games.
+							@psnAchievementSyncResult.TotalDefinitionsTouched definitions touched, @psnAchievementSyncResult.UnlocksAdded new unlocks.
+						</MudAlert>
+					}
 
 					<div class="psn-grid-shell">
 						@if (games?.Any() ?? false)
@@ -252,10 +272,17 @@
 									   Disabled="@(!CanImportSteam)">
 								Import Games
 							</MudButton>
+							<MudButton OnClick="SyncSteamAchievements"
+									   Variant="MudBlazor.Variant.Outlined"
+									   Color="Color.Secondary"
+									   StartIcon="@Icons.Material.Filled.EmojiEvents"
+									   Disabled="@(!steamConfigured || steamAchievementSyncing)">
+								Sync Achievements
+							</MudButton>
 						</div>
 					</div>
 
-					@if (steamImporting || steamPreviewing)
+					@if (steamImporting || steamPreviewing || steamAchievementSyncing)
 					{
 						<MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="steam-progress" />
 					}
@@ -264,6 +291,13 @@
 					{
 						<MudAlert Severity="Severity.Success" Variant="MudBlazor.Variant.Filled" Class="steam-alert">
 							Imported @steamImportResult.Total Steam games. Added @steamImportResult.Added, updated @steamImportResult.Updated.
+						</MudAlert>
+					}
+					@if (steamAchievementSyncResult is not null)
+					{
+						<MudAlert Severity="Severity.Success" Variant="MudBlazor.Variant.Outlined" Class="steam-alert">
+							Steam achievements synced for @steamAchievementSyncResult.GamesScanned games.
+							@steamAchievementSyncResult.TotalDefinitionsTouched definitions touched, @steamAchievementSyncResult.UnlocksAdded new unlocks.
 						</MudAlert>
 					}
 
@@ -463,6 +497,8 @@
 	LuminaUserInfo model = new();
 	SteamLibraryPreview? steamPreview;
 	SteamImportResult? steamImportResult;
+	AchievementSyncResult? steamAchievementSyncResult;
+	AchievementSyncResult? psnAchievementSyncResult;
 	ExcelService.GameExcelImportResult? _excelResult;
 	ExcelService.GameExcelPreviewResult? _excelPreview;
 	byte[]? _excelImportBytes;
@@ -471,6 +507,8 @@
 	bool _excelSaving;
 	bool steamPreviewing;
 	bool steamImporting;
+	bool steamAchievementSyncing;
+	bool psnAchievementSyncing;
 	bool steamConfigured;
 	string steamIdentifier = string.Empty;
 	int ImportedGameCount => games?.Count() ?? 0;
@@ -672,6 +710,71 @@
 		finally
 		{
 			steamImporting = false;
+		}
+	}
+
+	async Task SyncSteamAchievements()
+	{
+		if (!ValidateSteamInput() || User is null)
+		{
+			return;
+		}
+
+		steamAchievementSyncing = true;
+		steamAchievementSyncResult = null;
+
+		try
+		{
+			steamAchievementSyncResult = await achievementSyncService.SyncSteamAsync(User, CancellationToken.None);
+			foreach (var warning in steamAchievementSyncResult.Warnings)
+			{
+				Snackbar.Add(warning, Severity.Warning);
+			}
+
+			Snackbar.Add(
+				$"Synced Steam achievements: {steamAchievementSyncResult.UnlocksAdded} new unlocks",
+				Severity.Success);
+		}
+		catch
+		{
+			Snackbar.Add("Steam achievement sync failed", Severity.Error);
+		}
+		finally
+		{
+			steamAchievementSyncing = false;
+		}
+	}
+
+	async Task SyncPsnAchievements()
+	{
+		if (User is null || string.IsNullOrWhiteSpace(model.PSNAccountId))
+		{
+			Snackbar.Add("Please import your PSN profile first", Severity.Info);
+			return;
+		}
+
+		psnAchievementSyncing = true;
+		psnAchievementSyncResult = null;
+
+		try
+		{
+			psnAchievementSyncResult = await achievementSyncService.SyncPsnAsync(User, CancellationToken.None);
+			foreach (var warning in psnAchievementSyncResult.Warnings)
+			{
+				Snackbar.Add(warning, Severity.Warning);
+			}
+
+			Snackbar.Add(
+				$"Synced PSN trophies: {psnAchievementSyncResult.UnlocksAdded} new unlocks",
+				Severity.Success);
+		}
+		catch
+		{
+			Snackbar.Add("PSN trophy sync failed", Severity.Error);
+		}
+		finally
+		{
+			psnAchievementSyncing = false;
 		}
 	}
 

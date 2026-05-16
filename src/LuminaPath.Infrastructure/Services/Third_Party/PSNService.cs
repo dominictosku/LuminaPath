@@ -187,6 +187,22 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
             return trophyData;
         }
 
+        public async Task<TitleTrophyData> GetTitleTrophies(string npCommunicationId, string? npServiceName = null)
+        {
+            var apiUrl = $"https://m.np.playstation.com/api/trophy/v1/npCommunicationIds/{npCommunicationId}/trophyGroups/all/trophies";
+            apiUrl = AppendNpServiceName(apiUrl, npServiceName);
+            var responseData = await MakeRequest(apiUrl);
+            return JsonSerializer.Deserialize<TitleTrophyData>(responseData) ?? new();
+        }
+
+        public async Task<UserTrophyData> GetUserTrophiesEarnedForTitle(string accountId, string npCommunicationId, string? npServiceName = null)
+        {
+            var apiUrl = $"https://m.np.playstation.com/api/trophy/v1/users/{accountId}/npCommunicationIds/{npCommunicationId}/trophyGroups/all/trophies";
+            apiUrl = AppendNpServiceName(apiUrl, npServiceName);
+            var responseData = await MakeRequest(apiUrl);
+            return JsonSerializer.Deserialize<UserTrophyData>(responseData) ?? new();
+        }
+
         private async Task<string> MakeRequest(string apiUrl)
         {
             try
@@ -217,6 +233,13 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
                 _logger.LogError(ex, "PlayStation request failed.");
                 return "";
             }
+        }
+
+        private static string AppendNpServiceName(string apiUrl, string? npServiceName)
+        {
+            return string.IsNullOrWhiteSpace(npServiceName)
+                ? apiUrl
+                : $"{apiUrl}?npServiceName={Uri.EscapeDataString(npServiceName)}";
         }
 
         private static double DurationToHours(string duration)
