@@ -23,6 +23,7 @@
 .quick-add-card,
 .board-toolbar,
 .quest-section,
+.skill-card,
 .quest-modal,
 .quest-detail-sheet,
 .empty-state {
@@ -278,17 +279,194 @@ input, textarea, select { min-width: 0; color: var(--ink); }
 .empty-state { justify-items: center; gap: 8px; padding: 28px 18px; border-radius: 20px; color: var(--ink); text-align: center; box-shadow: none; }
 .empty-state ion-icon { color: var(--accent); font-size: 2rem; }
 
-.skill-card { --skill-color: var(--accent); display: grid; gap: 12px; padding: 16px; border-radius: 22px; background: var(--surface); }
-.skill-card header { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
-.skill-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 17px; background: var(--skill-color); }
-.skill-card-actions { display: flex; gap: 6px; }
-.skill-next { padding: 10px 12px; border-radius: 16px; background: var(--field); }
-.skill-next span, .skill-next small, .node small { display: block; color: var(--muted); font-size: .74rem; }
-.skill-next strong, .node strong { color: var(--ink); }
-.node { display: grid; grid-template-columns: auto 1fr auto; gap: 9px; padding: 9px 11px; border: 1px dashed var(--line); border-radius: 15px; color: var(--muted); }
-.node--available { border-style: solid; background: var(--accent-soft); }
-.node--locked { opacity: .58; }
-.node-quest-button { border: 0; border-radius: 999px; padding: 5px 9px; color: #fff; background: var(--accent); }
+.skill-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.skill-card {
+  --skill-color: var(--accent);
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 24px;
+  background: var(--surface);
+}
+
+.skill-card header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.skill-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 17px;
+  color: #fff;
+  background: var(--skill-color);
+  font-size: 1.3rem;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--skill-color) 36%, transparent);
+}
+
+.skill-card header h3 {
+  color: var(--ink);
+  font-size: 1.08rem;
+  font-weight: 830;
+  line-height: 1.2;
+}
+
+.skill-card header p {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.skill-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skill-card-actions button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.14);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.skill-card-actions button:hover {
+  color: var(--ink);
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.skill-card-actions button:first-child {
+  color: var(--skill-color);
+}
+
+.skill-card ion-progress-bar {
+  --background: rgba(148, 163, 184, 0.2);
+  --progress-background: var(--skill-color);
+  height: 6px;
+  border-radius: 999px;
+}
+
+.skill-card > ion-progress-bar:last-child,
+.skill-next,
+.node small {
+  display: none;
+}
+
+.skill-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.skill-actions ion-button {
+  margin: 0;
+  --border-radius: 999px;
+  font-weight: 820;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+.skill-actions ion-button:first-child {
+  --background: var(--skill-color);
+  --background-hover: color-mix(in srgb, var(--skill-color) 86%, white);
+  --color: #fff;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  height: 36px;
+}
+
+.skill-actions ion-button:last-child {
+  --color: var(--skill-color);
+  --background: transparent;
+}
+
+.node-list {
+  display: grid;
+  gap: 8px;
+}
+
+.node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px dashed rgba(148, 163, 184, 0.32);
+  border-radius: 14px;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.06);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.node ion-icon {
+  flex: 0 0 auto;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.node strong {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: inherit;
+}
+
+.node--unlocked {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--skill-color) 40%, transparent);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--skill-color) 14%, transparent);
+}
+
+.node--unlocked ion-icon {
+  color: var(--skill-color);
+}
+
+.node--available {
+  border-style: solid;
+  border-color: var(--accent-border);
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.node--available ion-icon {
+  color: var(--accent);
+}
+
+.node-quest-button {
+  margin-left: auto;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: #fff;
+  background: var(--skill-color);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
 
 .modal-backdrop {
   position: fixed;
@@ -333,10 +511,71 @@ input, textarea, select { min-width: 0; color: var(--ink); }
 .subtask-add { display: grid; grid-template-columns: 1fr 38px; gap: 7px; }
 .subtask-add input { min-height: 38px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--solid); outline: 0; }
 
-.choice-row, .color-row { display: flex; gap: 8px; }
-.choice-row button { padding: 9px; border: 1px solid var(--line); border-radius: 16px; color: var(--muted); background: rgba(148,163,184,.08); }
-.choice--selected { color: var(--accent) !important; background: var(--accent-soft) !important; }
-.color-row button { width: 34px; height: 34px; border: 0; border-radius: 999px; }
+.choice-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.choice-row button {
+  display: grid;
+  gap: 5px;
+  justify-items: center;
+  min-height: 64px;
+  padding: 9px 5px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.08);
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.choice-row button:hover {
+  color: var(--ink);
+  border-color: var(--accent-border);
+}
+
+.choice-row ion-icon {
+  font-size: 1.25rem;
+}
+
+.choice-row span {
+  font-size: 0.68rem;
+  font-weight: 760;
+}
+
+.choice--selected {
+  border-color: var(--accent-border) !important;
+  color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+}
+
+.color-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.color-row button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.color-row button:hover {
+  transform: translateY(-1px);
+}
+
+.color--selected {
+  outline: 3px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  outline-offset: 3px;
+}
 
 .achievement-toast, .undo-toast, .toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 1200; color: #fff; background: rgba(15,23,42,.94); border-radius: 18px; padding: 12px; }
 .achievement-toast { bottom: calc(150px + env(safe-area-inset-bottom)); display: grid; grid-template-columns: 56px 1fr; gap: 14px; }
