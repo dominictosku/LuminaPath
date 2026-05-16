@@ -22,8 +22,11 @@ import {
   brushOutline,
   calendarClearOutline,
   calendarOutline,
+  chevronDownOutline,
+  chevronUpOutline,
   checkmarkCircle,
   checkmarkCircleOutline,
+  checkmarkDoneOutline,
   closeOutline,
   codeSlashOutline,
   createOutline,
@@ -36,6 +39,7 @@ import {
   linkOutline,
   lockClosedOutline,
   mapOutline,
+  optionsOutline,
   pricetagOutline,
   refreshOutline,
   restaurantOutline,
@@ -66,7 +70,7 @@ import { MyGame } from 'src/app/features/games/models/games.model';
 
 type PageMode = 'quests' | 'skills';
 type ModalMode = 'skill' | 'node' | null;
-type QuestFilter = 'today' | 'upcoming' | 'overdue' | 'all';
+type QuestFilter = 'today' | 'upcoming' | 'inbox' | 'all';
 
 type LibraryGame = {
   myGameId: number;
@@ -78,6 +82,17 @@ type FilterOption = {
   label: string;
   icon: string;
 };
+
+type QuestSection = {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  tone: 'danger' | 'warning' | 'accent' | 'muted' | 'success';
+  quests: Quest[];
+};
+
+type SkillNodeState = 'completed' | 'available' | 'locked';
 
 type PriorityOption = {
   value: QuestPriority;
@@ -151,9 +166,9 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   ];
 
   readonly filterOptions: FilterOption[] = [
-    { value: 'today', label: 'Today', icon: 'today-outline' },
+    { value: 'today', label: 'Focus', icon: 'today-outline' },
     { value: 'upcoming', label: 'Upcoming', icon: 'calendar-outline' },
-    { value: 'overdue', label: 'Overdue', icon: 'alert-circle-outline' },
+    { value: 'inbox', label: 'Inbox', icon: 'library-outline' },
     { value: 'all', label: 'All', icon: 'filter-outline' },
   ];
 
@@ -192,6 +207,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   quickAddDue: string | null = null;
   quickAddGameId: number | null = null;
   quickAddSkillId: number | null = null;
+  quickAddAdvancedOpen = false;
 
   // Search & tag filter
   searchQuery = '';
@@ -235,8 +251,11 @@ export class QuestBoardPage implements OnInit, OnDestroy {
       brushOutline,
       calendarClearOutline,
       calendarOutline,
+      chevronDownOutline,
+      chevronUpOutline,
       checkmarkCircle,
       checkmarkCircleOutline,
+      checkmarkDoneOutline,
       closeOutline,
       codeSlashOutline,
       createOutline,
@@ -249,6 +268,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
       linkOutline,
       lockClosedOutline,
       mapOutline,
+      optionsOutline,
       pricetagOutline,
       refreshOutline,
       restaurantOutline,
@@ -297,15 +317,14 @@ export class QuestBoardPage implements OnInit, OnDestroy {
           }
           if (!quest.dueDate) return false;
           const due = new Date(quest.dueDate);
-          return due >= today && due < tomorrow;
+          return due < tomorrow;
         }
         case 'upcoming': {
           if (quest.completed || !quest.dueDate) return false;
           return new Date(quest.dueDate) >= tomorrow;
         }
-        case 'overdue': {
-          if (quest.completed || !quest.dueDate) return false;
-          return new Date(quest.dueDate) < today;
+        case 'inbox': {
+          return !quest.completed && !quest.dueDate;
         }
         case 'all':
         default:
@@ -337,6 +356,60 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     return filtered.sort((a, b) => this.compareQuests(a, b));
   }
 
+  get questSections(): QuestSection[] {
+    const scoped = Boolean(this.searchQuery.trim() || this.tagFilter);
+    if (scoped) {
+      return this.visibleQuests.length
+        ? [{
+            id: 'results',
+            title: 'Matching quests',
+            subtitle: `${this.visibleQuests.length} found`,
+            icon: 'search-outline',
+            tone: 'accent',
+            quests: this.visibleQuests,
+          }]
+        : [];
+    }
+
+    if (this.filter === 'today') {
+      return [
+        this.createSection('overdue', 'Overdue', 'Needs a decision', 'alert-circle-outline', 'danger', this.activeQuestsByDue('overdue')),
+        this.createSection('today', 'Today', 'Your current focus', 'today-outline', 'warning', this.activeQuestsByDue('today')),
+        this.createSection('completed', 'Completed today', 'Momentum banked', 'checkmark-circle-outline', 'success', this.completedToday()),
+      ].filter((section) => section.quests.length);
+    }
+
+    if (this.filter === 'upcoming') {
+      return [
+        this.createSection('soon', 'Next few days', 'Close enough to plan', 'calendar-outline', 'accent', this.upcomingQuests(7)),
+        this.createSection('later', 'Later', 'Scheduled, not urgent', 'calendar-clear-outline', 'muted', this.laterQuests(7)),
+      ].filter((section) => section.quests.length);
+    }
+
+    if (this.filter === 'inbox') {
+      return [
+        this.createSection('inbox', 'Inbox', 'Captured without a date', 'library-outline', 'muted', this.visibleQuests),
+      ].filter((section) => section.quests.length);
+    }
+
+    return [
+      this.createSection('overdue', 'Overdue', 'Needs a decision', 'alert-circle-outline', 'danger', this.activeQuestsByDue('overdue')),
+      this.createSection('today', 'Today', 'Your current focus', 'today-outline', 'warning', this.activeQuestsByDue('today')),
+      this.createSection('inbox', 'Inbox', 'Captured without a date', 'library-outline', 'muted', this.activeInboxQuests()),
+      this.createSection('upcoming', 'Upcoming', 'Scheduled ahead', 'calendar-outline', 'accent', this.activeFutureQuests()),
+      this.createSection('completed', 'Completed', 'Recently finished', 'checkmark-circle-outline', 'success', this.completedQuests()),
+    ].filter((section) => section.quests.length);
+  }
+
+  get selectedQuest(): Quest | null {
+    if (this.expandedQuestId === null) return null;
+    return this.quests.find((quest) => quest.id === this.expandedQuestId) ?? null;
+  }
+
+  get nextQueuedQuest(): Quest | null {
+    return this.activeInboxQuests()[0] ?? this.activeFutureQuests()[0] ?? null;
+  }
+
   get availableTags(): string[] {
     const set = new Set<string>();
     for (const quest of this.quests) {
@@ -348,7 +421,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   }
 
   get isManualOrderActive(): boolean {
-    return this.filter === 'all' && !this.searchQuery.trim() && !this.tagFilter;
+    return this.filter === 'inbox' && !this.searchQuery.trim() && !this.tagFilter;
   }
 
   private compareForManualOrder(a: Quest, b: Quest): number {
@@ -387,8 +460,77 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     return this.priorityOptions.find((option) => option.value === priority)?.weight ?? 1;
   }
 
+  private createSection(
+    id: string,
+    title: string,
+    subtitle: string,
+    icon: string,
+    tone: QuestSection['tone'],
+    quests: Quest[],
+  ): QuestSection {
+    return { id, title, subtitle, icon, tone, quests };
+  }
+
+  private activeQuestsByDue(state: 'overdue' | 'today'): Quest[] {
+    return this.quests
+      .filter((quest) => !quest.completed && this.dueState(quest) === state)
+      .sort((a, b) => this.compareQuests(a, b));
+  }
+
+  private activeInboxQuests(): Quest[] {
+    return this.quests
+      .filter((quest) => !quest.completed && !quest.dueDate)
+      .sort((a, b) => this.compareForManualOrder(a, b));
+  }
+
+  private activeFutureQuests(): Quest[] {
+    return this.quests
+      .filter((quest) => {
+        if (quest.completed || !quest.dueDate) return false;
+        const due = startOfDay(new Date(quest.dueDate));
+        return due > startOfDay(new Date());
+      })
+      .sort((a, b) => this.compareQuests(a, b));
+  }
+
+  private upcomingQuests(days: number): Quest[] {
+    const today = startOfDay(new Date());
+    const tomorrow = addDays(today, 1);
+    const limit = addDays(today, days);
+    return this.quests
+      .filter((quest) => {
+        if (quest.completed || !quest.dueDate) return false;
+        const due = startOfDay(new Date(quest.dueDate));
+        return due >= tomorrow && due <= limit;
+      })
+      .sort((a, b) => this.compareQuests(a, b));
+  }
+
+  private laterQuests(days: number): Quest[] {
+    const limit = addDays(startOfDay(new Date()), days);
+    return this.quests
+      .filter((quest) => {
+        if (quest.completed || !quest.dueDate) return false;
+        return startOfDay(new Date(quest.dueDate)) > limit;
+      })
+      .sort((a, b) => this.compareQuests(a, b));
+  }
+
+  private completedToday(): Quest[] {
+    const today = startOfDay(new Date()).getTime();
+    return this.quests
+      .filter((quest) => quest.completed && quest.completedAt && startOfDay(new Date(quest.completedAt)).getTime() === today)
+      .sort((a, b) => this.compareQuests(a, b));
+  }
+
+  private completedQuests(): Quest[] {
+    return this.quests
+      .filter((quest) => quest.completed)
+      .sort((a, b) => this.compareQuests(a, b));
+  }
+
   setFilter(value: unknown): void {
-    if (value === 'today' || value === 'upcoming' || value === 'overdue' || value === 'all') {
+    if (value === 'today' || value === 'upcoming' || value === 'inbox' || value === 'all') {
       this.filter = value;
       this.savePrefs();
     }
@@ -470,6 +612,52 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   setQuickAddTomorrow(): void {
     this.quickAddDue = isoDate(addDays(startOfDay(new Date()), 1));
+  }
+
+  toggleQuickAddAdvanced(): void {
+    this.quickAddAdvancedOpen = !this.quickAddAdvancedOpen;
+  }
+
+  isQuickAddDue(value: 'none' | 'today' | 'tomorrow'): boolean {
+    if (value === 'none') return this.quickAddDue === null;
+    const today = startOfDay(new Date());
+    const date = value === 'today' ? today : addDays(today, 1);
+    return this.quickAddDue === isoDate(date);
+  }
+
+  filterCount(filter: QuestFilter): number {
+    const today = startOfDay(new Date());
+    const tomorrow = addDays(today, 1);
+
+    switch (filter) {
+      case 'today':
+        return this.quests.filter((quest) => {
+          if (quest.completed) return false;
+          if (!quest.dueDate) return false;
+          return new Date(quest.dueDate) < tomorrow;
+        }).length;
+      case 'upcoming':
+        return this.quests.filter((quest) => !quest.completed && Boolean(quest.dueDate) && new Date(quest.dueDate as string) >= tomorrow).length;
+      case 'inbox':
+        return this.quests.filter((quest) => !quest.completed && !quest.dueDate).length;
+      case 'all':
+      default:
+        return this.quests.length;
+    }
+  }
+
+  canScheduleToday(quest: Quest): boolean {
+    return !quest.completed && this.dueState(quest) !== 'today';
+  }
+
+  canScheduleTomorrow(quest: Quest): boolean {
+    if (quest.completed) return false;
+    const tomorrow = isoDate(addDays(startOfDay(new Date()), 1));
+    return quest.dueDate !== tomorrow;
+  }
+
+  canMoveToInbox(quest: Quest): boolean {
+    return !quest.completed && Boolean(quest.dueDate);
   }
 
   // -------- Toggle / edit / delete --------
@@ -583,6 +771,52 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     this.editDraft = null;
   }
 
+  async scheduleQuest(quest: Quest, dueDate: string | null, label: string): Promise<void> {
+    const previous = quest.dueDate ?? null;
+    quest.dueDate = dueDate;
+    if (this.expandedQuestId === quest.id && this.editDraft) {
+      this.editDraft.dueDate = dueDate;
+    }
+    this.rebuildStats();
+
+    try {
+      const mutation = await this.questBoardService.updateQuest(quest.id, {
+        dueDate: dueDate ?? undefined,
+        clearDueDate: dueDate === null,
+      });
+      this.applyMutation(quest.id, mutation.quest);
+      this.applyMutationMeta(mutation);
+      this.showToast(label);
+    } catch {
+      quest.dueDate = previous;
+      if (this.expandedQuestId === quest.id && this.editDraft) {
+        this.editDraft.dueDate = previous;
+      }
+      this.rebuildStats();
+      this.showToast('Could not reschedule quest');
+    }
+  }
+
+  scheduleToday(quest: Quest): Promise<void> {
+    return this.scheduleQuest(quest, isoDate(startOfDay(new Date())), 'Moved to today');
+  }
+
+  scheduleTomorrow(quest: Quest): Promise<void> {
+    return this.scheduleQuest(quest, isoDate(addDays(startOfDay(new Date()), 1)), 'Moved to tomorrow');
+  }
+
+  clearQuestDueDate(quest: Quest): Promise<void> {
+    return this.scheduleQuest(quest, null, 'Moved to inbox');
+  }
+
+  async pullNextQuestToToday(): Promise<void> {
+    const quest = this.nextQueuedQuest;
+    if (!quest) return;
+    await this.scheduleToday(quest);
+    this.filter = 'today';
+    this.savePrefs();
+  }
+
   beginDelete(quest: Quest): void {
     const removed = quest;
     this.quests = this.quests.filter((q) => q.id !== removed.id);
@@ -683,7 +917,11 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     return game.myGameId;
   }
 
-  // -------- Skills (unchanged behavior, board save) --------
+  trackByQuestSection(_: number, section: QuestSection): string {
+    return section.id;
+  }
+
+  // -------- Skills --------
 
   async trainSkill(skill: QuestSkill) {
     skill.xp += 40;
@@ -694,6 +932,10 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   async unlockNode(skill: QuestSkill, nodeIndex: number) {
     if (skill.unlockedNodes.includes(nodeIndex)) {
+      return;
+    }
+    if (this.skillNodeState(skill, nodeIndex) === 'locked') {
+      this.showToast('Unlock the previous node first');
       return;
     }
     skill.unlockedNodes = [...skill.unlockedNodes, nodeIndex];
@@ -760,7 +1002,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
         icon: this.newSkill.icon,
         color: this.newSkill.color,
         xp: 0,
-        nodes: ['First practice', 'Weekly streak', 'Personal project'],
+        nodes: this.defaultNodesForSkill(name),
         unlockedNodes: [],
       },
     ];
@@ -801,14 +1043,67 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     return (skill.xp % 100) / 100;
   }
 
+  skillCompletion(skill: QuestSkill): number {
+    if (!skill.nodes.length) return 0;
+    return skill.unlockedNodes.length / skill.nodes.length;
+  }
+
   unlockedCount(skill: QuestSkill): number {
     return skill.unlockedNodes.length;
   }
 
+  nextNodeIndex(skill: QuestSkill): number {
+    return skill.nodes.findIndex((_, index) => !skill.unlockedNodes.includes(index));
+  }
+
+  nextNodeName(skill: QuestSkill): string {
+    const index = this.nextNodeIndex(skill);
+    return index >= 0 ? skill.nodes[index] : 'Mastery path complete';
+  }
+
+  skillNodeState(skill: QuestSkill, nodeIndex: number): SkillNodeState {
+    if (skill.unlockedNodes.includes(nodeIndex)) return 'completed';
+    return nodeIndex === this.nextNodeIndex(skill) ? 'available' : 'locked';
+  }
+
+  linkedQuestCount(skill: QuestSkill): number {
+    return this.quests.filter((quest) => quest.skillId === skill.id).length;
+  }
+
+  activeLinkedQuestCount(skill: QuestSkill): number {
+    return this.quests.filter((quest) => quest.skillId === skill.id && !quest.completed).length;
+  }
+
+  startNodeQuest(skill: QuestSkill, node: string): void {
+    this.mode = 'quests';
+    this.filter = 'today';
+    this.quickAddTitle = `Practice: ${node}`;
+    this.quickAddType = 'sub';
+    this.quickAddPriority = 'medium';
+    this.quickAddSkillId = skill.id;
+    this.setQuickAddToday();
+    this.savePrefs();
+    this.showToast(`${skill.name} quest draft ready`);
+  }
+
+  private defaultNodesForSkill(name: string): string[] {
+    const lower = name.toLowerCase();
+    if (lower.includes('program')) {
+      return ['Programming fundamentals', 'Object-oriented programming', 'Functional programming', 'Build a real app', 'Deploy and maintain it'];
+    }
+    if (lower.includes('fit') || lower.includes('health')) {
+      return ['First weekly routine', 'Basic nutrition', 'Consistent workouts', 'Endurance milestone', 'Sustainable lifestyle'];
+    }
+    if (lower.includes('language') || lower.includes('japanese')) {
+      return ['Core phrases', 'Daily vocabulary habit', 'Basic grammar', 'First conversation', 'Read native material'];
+    }
+    return ['First practice', 'Core concepts', 'Guided project', 'Independent project', 'Mastery milestone'];
+  }
+
   // -------- Drag-to-reorder --------
 
-  async handleReorder(event: CustomEvent<ItemReorderEventDetail>): Promise<void> {
-    const visible = this.visibleQuests;
+  async handleReorder(event: CustomEvent<ItemReorderEventDetail>, sectionQuests = this.visibleQuests): Promise<void> {
+    const visible = sectionQuests;
     const moved = visible[event.detail.from];
     if (!moved) {
       event.detail.complete();
@@ -1069,12 +1364,14 @@ export class QuestBoardPage implements OnInit, OnDestroy {
       const raw = window.localStorage.getItem(this.prefsStorageKey);
       if (!raw) return;
       const parsed = JSON.parse(raw) as {
-        filter?: QuestFilter;
+        filter?: QuestFilter | 'overdue';
         quickAddType?: QuestType;
         quickAddPriority?: QuestPriority;
         quickAddRecurrence?: QuestRecurrence;
       };
-      if (parsed.filter && ['today', 'upcoming', 'overdue', 'all'].includes(parsed.filter)) {
+      if (parsed.filter === 'overdue') {
+        this.filter = 'today';
+      } else if (parsed.filter && ['today', 'upcoming', 'inbox', 'all'].includes(parsed.filter)) {
         this.filter = parsed.filter;
       }
       if (parsed.quickAddType && ['main', 'sub', 'faction'].includes(parsed.quickAddType)) {

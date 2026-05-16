@@ -1,54 +1,52 @@
 :host {
-  --quest-bg: #f4f8ff;
-  --ink: #0f172a;
-  --muted: #64748b;
-  --line: rgba(15, 23, 42, 0.1);
-  --surface: rgba(255, 255, 255, 0.9);
-  --surface-solid: #fff;
-  --accent: #2563eb;
-  --accent-2: #0891b2;
+  --quest-bg: linear-gradient(180deg, rgba(8, 22, 48, 0.98) 0%, rgba(6, 16, 35, 1) 100%);
+  --ink: var(--app-chrome-text, #eef6ff);
+  --muted: var(--app-chrome-muted, #9fb6d4);
+  --line: var(--app-chrome-border, rgba(137, 180, 255, 0.16));
+  --surface: var(--app-chrome-bg, rgba(8, 22, 48, 0.86));
+  --solid: var(--app-chrome-bg-strong, rgba(12, 31, 64, 0.94));
+  --field: rgba(255, 255, 255, 0.06);
+  --accent: var(--app-chrome-accent, #60a5fa);
+  --accent-2: var(--app-theme-accent-2, #22d3ee);
+  --accent-soft: var(--app-theme-accent-soft, rgba(96, 165, 250, 0.16));
+  --accent-border: var(--app-theme-accent-border, rgba(96, 165, 250, 0.34));
+  --danger: #fb7185;
+  --warning: #fbbf24;
+  --success: #34d399;
 }
 
-.quest-header ion-toolbar {
-  --background: rgba(244, 248, 255, 0.88);
-  --border-width: 0;
-  --color: var(--ink);
-  backdrop-filter: blur(18px);
-}
+.quest-shell { --background: var(--quest-bg); background: var(--quest-bg); }
+.quest-page { display: grid; gap: 16px; padding: 16px 14px 112px; }
 
-.quest-shell {
-  --background: var(--quest-bg);
-}
-
-.quest-page {
-  display: grid;
-  gap: 16px;
-  padding: 16px 14px 108px;
-}
-
-.hero,
+.quest-hero,
 .mode-panel,
-.quest-column,
-.skill-card,
+.quick-add-card,
+.board-toolbar,
+.quest-section,
 .quest-modal,
+.quest-detail-sheet,
 .empty-state {
   border: 1px solid var(--line);
   background: var(--surface);
-  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 24px 54px rgba(8, 22, 48, 0.18);
   backdrop-filter: blur(18px);
 }
 
-.hero {
+.quest-hero {
   display: grid;
   gap: 18px;
   overflow: hidden;
-  padding: 23px;
-  border-radius: 30px;
+  padding: 22px;
+  border-radius: 28px;
   color: #fff;
   background:
-    linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(37, 99, 235, 0.78) 56%, rgba(8, 145, 178, 0.72)),
+    linear-gradient(135deg, var(--app-theme-hero-start, rgba(15, 23, 42, 0.92)), var(--app-theme-hero-end, rgba(37, 99, 235, 0.78))),
     url("/assets/png/Placeholder.png") center / cover;
 }
+
+h1, h2, h3, p { margin: 0; letter-spacing: 0; }
+.quest-hero h1 { max-width: 650px; font-size: clamp(2.1rem, 9vw, 4.4rem); line-height: .96; font-weight: 850; }
+.quest-hero p { color: rgba(255,255,255,.78); line-height: 1.45; }
 
 .eyebrow {
   display: inline-flex;
@@ -56,358 +54,241 @@
   gap: 7px;
   width: fit-content;
   color: var(--muted);
-  font-size: 0.73rem;
-  font-weight: 830;
-  letter-spacing: 0.08em;
+  font-size: .74rem;
+  font-weight: 800;
+  letter-spacing: .08em;
   text-transform: uppercase;
 }
+.quest-hero .eyebrow, .achievement-toast .eyebrow { color: rgba(255,255,255,.82); }
 
-.hero .eyebrow {
-  color: rgba(255, 255, 255, 0.82);
-}
-
-h1,
-h2,
-h3,
-p {
-  margin: 0;
-}
-
-h1,
-h2,
-h3 {
-  letter-spacing: 0;
-}
-
-.hero h1 {
-  max-width: 660px;
-  margin-top: 10px;
-  font-size: clamp(2.25rem, 10vw, 4.6rem);
-  line-height: 0.95;
-  font-weight: 880;
-}
-
-.hero p {
-  max-width: 540px;
-  margin-top: 12px;
-  color: rgba(255, 255, 255, 0.76);
-}
-
-.hero__panel {
+.quest-hero__copy,
+.quest-hero__panel,
+.quick-add-card,
+.board-toolbar,
+.quest-board,
+.quest-stack,
+.skills-layout,
+.detail-heading,
+.quest-body,
+.edit-field,
+label {
   display: grid;
-  gap: 13px;
+  gap: 12px;
+}
+
+.quest-hero__panel {
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255,255,255,.16);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.13);
+  background: rgba(255,255,255,.13);
 }
 
 .rank-row,
 .stat-row,
-.skills-heading,
-.skill-actions,
-.column-progress {
+.streak-row,
+.quest-section__header,
+.section-header,
+.quick-date-row,
+.quick-add-meta,
+.quest-meta,
+.tag-filter-strip,
+.detail-actions,
+.quest-plan-actions,
+.empty-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
-.rank-row span,
-.stat-row,
-.column-header span,
-.skill-card small,
-.skill-card p,
-.quest-card p,
-.empty-state span,
-label span {
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-
-.hero .rank-row span,
-.hero .stat-row {
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.rank-row strong {
-  display: block;
-  margin-top: 2px;
-  font-size: 2.2rem;
-  line-height: 1;
-}
+.rank-row, .stat-row, .quest-section__header, .section-header { justify-content: space-between; }
+.rank-row span, .stat-row, .quest-section p, .quest-card p, .empty-state span, label span, .detail-heading p { color: var(--muted); font-size: .82rem; }
+.quest-hero .rank-row span, .quest-hero .stat-row { color: rgba(255,255,255,.75); }
+.rank-row strong { display: block; margin-top: 2px; font-size: 2.2rem; line-height: 1; }
 
 ion-progress-bar {
   height: 8px;
   border-radius: 999px;
   overflow: hidden;
-  --background: rgba(37, 99, 235, 0.13);
-  --progress-background: linear-gradient(90deg, #2563eb, #06b6d4, #10b981);
+  --background: color-mix(in srgb, var(--accent) 13%, transparent);
+  --progress-background: linear-gradient(90deg, var(--accent), var(--accent-2), #34d399);
 }
+.quest-hero ion-progress-bar { --background: rgba(255,255,255,.18); --progress-background: #fff; }
+ion-badge { --background: var(--accent-soft); --color: var(--accent); font-weight: 760; }
+.quest-hero ion-badge { --background: rgba(255,255,255,.17); --color: #fff; }
 
-.hero ion-progress-bar {
-  --background: rgba(255, 255, 255, 0.18);
-  --progress-background: #fff;
-}
-
-ion-badge {
-  --background: rgba(37, 99, 235, 0.12);
-  --color: #1d4ed8;
-  font-weight: 760;
-}
-
-.hero ion-badge {
-  --background: rgba(255, 255, 255, 0.17);
-  --color: #fff;
-}
-
-.mode-panel {
-  padding: 8px;
-  border-radius: 21px;
-}
-
-ion-segment {
-  min-height: 48px;
-  border-radius: 16px;
-  background: var(--surface-solid);
-}
-
-.quest-grid,
-.skills-layout,
-.skill-grid {
-  display: grid;
-  gap: 14px;
-}
-
-.quest-column,
-.skill-card {
-  display: grid;
-  gap: 15px;
-  padding: 16px;
-  border-radius: 24px;
-}
-
-.column-header,
-.quest-card {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
-  align-items: center;
-}
-
-.skill-card header {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-}
-
-.column-icon,
-.skill-icon {
-  display: grid;
-  width: 46px;
-  height: 46px;
-  place-items: center;
-  border-radius: 17px;
-  color: #fff;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-}
-
-.column-header h2,
-.skills-heading h2 {
-  margin-top: 4px;
-  color: var(--ink);
-  font-size: 1.34rem;
-  font-weight: 850;
-}
-
-.column-header p {
-  margin-top: 5px;
-  color: var(--muted);
-  font-size: 0.84rem;
-  line-height: 1.35;
-}
-
-.quest-input {
-  display: grid;
-  grid-template-columns: 1fr 46px;
-  gap: 8px;
-  align-items: center;
-  padding: 7px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface-solid);
-}
-
-input {
-  min-width: 0;
-  height: 42px;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-}
-
-.quest-input ion-button {
-  width: 42px;
-  height: 42px;
-  margin: 0;
-  --border-radius: 14px;
-  --color: var(--accent);
-}
-
-.column-progress span {
-  color: var(--accent);
-  font-size: 0.77rem;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.quest-list,
-.node-list {
-  display: grid;
-  gap: 9px;
-}
-
-.quest-card {
-  grid-template-columns: auto 1fr auto;
-  padding: 11px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 18px;
-  background: var(--surface-solid);
-}
-
-.quest-card h3 {
-  color: var(--ink);
-  font-size: 0.98rem;
-  font-weight: 790;
-  line-height: 1.25;
-}
-
-.quest-card--done h3 {
-  color: var(--muted);
-  text-decoration: line-through;
-}
-
-.complete-button,
-.delete-button,
-.modal-close,
-.node,
-.choice-row button,
-.color-row button {
-  border: 0;
-  font: inherit;
-  cursor: pointer;
-}
-
-.complete-button,
-.delete-button,
-.modal-close {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border-radius: 14px;
-  color: var(--accent);
-  background: rgba(37, 99, 235, 0.1);
-}
-
-.delete-button {
-  color: #64748b;
-  background: transparent;
-}
-
-.empty-state {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  padding: 24px 16px;
-  border-radius: 18px;
-  box-shadow: none;
-}
-
-.empty-state ion-icon {
-  color: var(--accent);
-  font-size: 1.8rem;
-}
-
-.skills-heading {
-  align-items: end;
-}
-
-.skills-heading ion-button {
-  --color: var(--accent);
-  font-weight: 760;
-}
-
-.skill-card {
-  --skill-color: #2563eb;
-}
-
-.skill-icon {
-  background: var(--skill-color);
-}
-
-.skill-card h3 {
-  color: var(--ink);
-  font-size: 1.08rem;
-  font-weight: 830;
-}
-
-.skill-card-actions {
-  display: flex;
+.streak-row { margin-top: 2px; }
+.streak-pill {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(245,158,11,.18);
+  color: #fbbf24;
+  font-size: .78rem;
+  font-weight: 800;
 }
 
-.skill-card-actions button {
+.mode-panel { padding: 8px; border-radius: 20px; }
+ion-segment { min-height: 48px; border-radius: 16px; background: var(--solid); }
+ion-segment-button {
+  --border-radius: 13px;
+  --color: var(--muted);
+  --color-checked: var(--ink);
+  --indicator-color: var(--accent-soft);
+  min-height: 42px;
+  font-weight: 760;
+  text-transform: none;
+}
+
+.quick-add-card, .board-toolbar, .quest-section { padding: 14px; border-radius: 22px; }
+.quick-add-row { display: grid; grid-template-columns: 1fr 46px; gap: 10px; align-items: center; }
+.quick-add-row ion-button { width: 46px; height: 46px; margin: 0; --border-radius: 15px; --background: var(--accent); }
+
+input, textarea, select, button { font: inherit; }
+input, textarea, select { min-width: 0; color: var(--ink); }
+.quick-add-input, .search-field, .edit-field input, .edit-field select, .edit-field textarea, label input {
+  border: 1px solid var(--line);
+  background: var(--field);
+}
+.quick-add-input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 15px;
+  outline: 0;
+  font-weight: 650;
+}
+.quick-add-input:focus, .search-field:focus-within, .edit-field input:focus, .edit-field select:focus, .edit-field textarea:focus, label input:focus { border-color: var(--accent); outline: 0; }
+
+.quick-date-row, .quick-add-meta, .quest-meta, .tag-filter-strip, .detail-actions, .quest-plan-actions, .empty-actions { flex-wrap: wrap; }
+.quick-date, .meta-chip, .tag-chip, .detail-actions button, .quest-plan-actions button, .empty-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--solid);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: .82rem;
+  font-weight: 700;
+}
+.quick-date--active, .tag-chip--active, .detail-actions button:hover { border-color: var(--accent); background: var(--accent); color: #fff; }
+.empty-actions button { background: var(--accent); color: #fff; }
+.quest-plan-actions { gap: 6px; padding-top: 2px; }
+.quest-plan-actions button { min-height: 28px; padding: 4px 9px; font-size: .74rem; }
+.quick-date--tools { margin-left: auto; color: var(--accent); background: var(--accent-soft); border-color: var(--accent-border); }
+.meta-chip select, .meta-chip input[type="date"] { border: 0; background: transparent; color: inherit; outline: 0; }
+.meta-chip ion-icon, .tag-chip ion-icon { color: var(--muted); }
+.meta-chip-clear {
   display: grid;
-  width: 34px;
-  height: 34px;
   place-items: center;
+  width: 20px;
+  height: 20px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
   color: var(--muted);
-  background: rgba(148, 163, 184, 0.1);
   cursor: pointer;
 }
 
-.skill-card-actions button:first-child {
-  color: var(--skill-color);
-}
-
-.skill-card ion-progress-bar {
-  --progress-background: var(--skill-color);
-}
-
-.skill-actions ion-button:first-child {
-  --background: var(--skill-color);
-  --border-radius: 14px;
-}
-
-.skill-actions ion-button:last-child {
-  --color: var(--skill-color);
-}
-
-.node {
-  display: flex;
+.board-toolbar ion-segment { border: 1px solid var(--line); background: var(--solid); }
+.board-toolbar ion-segment-button { min-height: 54px; }
+.board-toolbar ion-segment-button ion-badge { margin-top: 3px; font-size: .64rem; }
+.search-field {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 9px;
-  min-height: 42px;
-  padding: 9px 11px;
-  border: 1px dashed rgba(100, 116, 139, 0.28);
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 12px;
   border-radius: 15px;
-  color: var(--muted);
-  background: rgba(148, 163, 184, 0.08);
-  text-align: left;
 }
+.search-field > ion-icon { color: var(--muted); }
+.search-field > input { height: 42px; border: 0; background: transparent; outline: 0; }
+.tag-chip--clear { background: transparent; color: var(--muted); }
 
-.node--unlocked {
-  border-style: solid;
-  color: var(--ink);
-  background: color-mix(in srgb, var(--skill-color) 12%, transparent);
+.section-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #fff;
 }
+.section-icon { width: 42px; height: 42px; border-radius: 15px; background: var(--accent); }
+.quest-section--danger .section-icon { background: var(--danger); }
+.quest-section--warning .section-icon { background: var(--warning); }
+.quest-section--muted .section-icon { background: #64748b; }
+.quest-section h2, .section-header h2 { color: var(--ink); font-size: 1.24rem; }
+
+.quest-card {
+  display: grid;
+  grid-template-columns: 38px 1fr 38px;
+  gap: 10px;
+  align-items: start;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.06);
+}
+.quest-card[data-due="overdue"] { border-left: 3px solid var(--danger); }
+
+.complete-button, .delete-button, .modal-close, .skill-card-actions button, .subtask-toggle, .subtask-delete, .subtask-add-button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  cursor: pointer;
+}
+.complete-button, .delete-button, .modal-close { width: 38px; height: 38px; border-radius: 14px; }
+.complete-button { color: var(--accent); background: var(--accent-soft); }
+.delete-button { color: var(--muted); background: transparent; }
+.quest-body { min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.quest-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: .7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.dot { width: 3px; height: 3px; border-radius: 999px; background: currentColor; opacity: .55; }
+.quest-card h3 { color: var(--ink); font-size: .98rem; font-weight: 760; line-height: 1.3; word-break: break-word; }
+.quest-card--done h3 { color: var(--muted); text-decoration: line-through; }
+.quest-notes { overflow: hidden; line-height: 1.4; }
+
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  color: var(--muted);
+  font-size: .74rem;
+  font-weight: 650;
+}
+.meta-pill--due[data-state="overdue"] { background: rgba(251,113,133,.16); color: #fecdd3; }
+.meta-pill--due[data-state="today"] { background: rgba(251,191,36,.16); color: #fde68a; }
+.meta-pill--due[data-state="soon"], .meta-pill--type { background: var(--accent-soft); color: var(--accent); }
+.subtask-progress ion-progress-bar { height: 4px; }
+
+.empty-state { justify-items: center; gap: 8px; padding: 28px 18px; border-radius: 20px; color: var(--ink); text-align: center; box-shadow: none; }
+.empty-state ion-icon { color: var(--accent); font-size: 2rem; }
+
+.skill-card { --skill-color: var(--accent); display: grid; gap: 12px; padding: 16px; border-radius: 22px; background: var(--surface); }
+.skill-card header { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+.skill-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 17px; background: var(--skill-color); }
+.skill-card-actions { display: flex; gap: 6px; }
+.skill-next { padding: 10px 12px; border-radius: 16px; background: var(--field); }
+.skill-next span, .skill-next small, .node small { display: block; color: var(--muted); font-size: .74rem; }
+.skill-next strong, .node strong { color: var(--ink); }
+.node { display: grid; grid-template-columns: auto 1fr auto; gap: 9px; padding: 9px 11px; border: 1px dashed var(--line); border-radius: 15px; color: var(--muted); }
+.node--available { border-style: solid; background: var(--accent-soft); }
+.node--locked { opacity: .58; }
+.node-quest-button { border: 0; border-radius: 999px; padding: 5px 9px; color: #fff; background: var(--accent); }
 
 .modal-backdrop {
   position: fixed;
@@ -416,1059 +297,56 @@ input {
   display: grid;
   align-items: end;
   padding: 18px;
-  background: rgba(15, 23, 42, 0.44);
+  background: rgba(15,23,42,.44);
   backdrop-filter: blur(10px);
 }
-
-.quest-modal {
+.quest-modal, .quest-detail-sheet {
   position: relative;
-  display: grid;
-  gap: 16px;
-  width: min(520px, 100%);
+  width: min(560px, 100%);
+  max-height: calc(100vh - 42px);
   margin-inline: auto;
+  overflow: auto;
   padding: 22px;
   border-radius: 26px;
-  background: var(--surface-solid);
+  background: var(--solid);
 }
+.quest-detail-sheet { width: min(760px, 100%); }
+.quest-modal h2, .quest-detail-sheet h2 { color: var(--ink); font-size: 1.45rem; font-weight: 850; line-height: 1.15; }
+.modal-close { position: absolute; top: 14px; right: 14px; color: var(--muted); background: rgba(148,163,184,.12); }
+.detail-heading { padding-right: 42px; }
+.detail-heading p { line-height: 1.45; }
+.edit-field > span, label span { font-weight: 750; }
+.edit-field input, .edit-field select, .edit-field textarea, label input {
+  min-height: 44px;
+  padding: 9px 12px;
+  border-radius: 13px;
+  outline: 0;
+}
+.edit-field textarea { resize: vertical; }
+.edit-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.edit-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-.quest-modal h2 {
-  color: var(--ink);
-  font-size: 1.55rem;
-  font-weight: 850;
-}
+.subtask-list { display: grid; gap: 6px; margin: 6px 0 8px; padding: 0; list-style: none; }
+.subtask { display: grid; grid-template-columns: 28px 1fr 28px; gap: 8px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 13px; background: var(--field); }
+.subtask--done { opacity: .62; }
+.subtask-toggle, .subtask-delete, .subtask-add-button { width: 28px; height: 28px; border-radius: 9px; color: var(--accent); background: transparent; }
+.subtask-add { display: grid; grid-template-columns: 1fr 38px; gap: 7px; }
+.subtask-add input { min-height: 38px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--solid); outline: 0; }
 
-.modal-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-}
+.choice-row, .color-row { display: flex; gap: 8px; }
+.choice-row button { padding: 9px; border: 1px solid var(--line); border-radius: 16px; color: var(--muted); background: rgba(148,163,184,.08); }
+.choice--selected { color: var(--accent) !important; background: var(--accent-soft) !important; }
+.color-row button { width: 34px; height: 34px; border: 0; border-radius: 999px; }
 
-label {
-  display: grid;
-  gap: 7px;
-}
-
-label input {
-  height: 48px;
-  padding-inline: 13px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgba(148, 163, 184, 0.08);
-}
-
-.choice-row {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.choice-row button {
-  display: grid;
-  gap: 5px;
-  justify-items: center;
-  min-height: 64px;
-  padding: 9px 5px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  color: var(--muted);
-  background: rgba(148, 163, 184, 0.08);
-}
-
-.choice-row ion-icon {
-  font-size: 1.25rem;
-}
-
-.choice-row span {
-  font-size: 0.68rem;
-  font-weight: 760;
-}
-
-.choice--selected {
-  border-color: rgba(37, 99, 235, 0.5) !important;
-  color: var(--accent) !important;
-  background: rgba(37, 99, 235, 0.1) !important;
-}
-
-.color-row {
-  display: flex;
-  gap: 10px;
-}
-
-.color-row button {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-}
-
-.color--selected {
-  outline: 3px solid rgba(37, 99, 235, 0.22);
-  outline-offset: 3px;
-}
-
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: calc(100px + env(safe-area-inset-bottom));
-  z-index: 1200;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  max-width: calc(100% - 36px);
-  padding: 12px 15px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
-  color: #fff;
-  background: rgba(15, 23, 42, 0.9);
-  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.26);
-  transform: translateX(-50%);
-}
+.achievement-toast, .undo-toast, .toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 1200; color: #fff; background: rgba(15,23,42,.94); border-radius: 18px; padding: 12px; }
+.achievement-toast { bottom: calc(150px + env(safe-area-inset-bottom)); display: grid; grid-template-columns: 56px 1fr; gap: 14px; }
+.undo-toast { bottom: calc(90px + env(safe-area-inset-bottom)); display: grid; gap: 8px; pointer-events: none; }
+.toast { bottom: calc(100px + env(safe-area-inset-bottom)); }
 
 @media (min-width: 760px) {
-  .quest-page {
-    gap: 20px;
-    width: min(1180px, calc(100% - 40px));
-    margin-inline: auto;
-    padding-top: 24px;
-  }
-
-  .hero {
-    grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
-    align-items: end;
-    min-height: 340px;
-    padding: 34px;
-  }
-
-  .quest-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-items: start;
-  }
-
-  .skill-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .modal-backdrop {
-    align-items: center;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :host {
-    --quest-bg: #070b12;
-    --ink: #eef2ff;
-    --muted: #98a2b3;
-    --line: rgba(255, 255, 255, 0.1);
-    --surface: rgba(18, 24, 38, 0.86);
-    --surface-solid: #111827;
-  }
-
-  .quest-header ion-toolbar {
-    --background: rgba(7, 11, 18, 0.86);
-  }
-
-  .quest-card {
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-}
-
-.linked-section {
-  display: grid;
-  gap: 14px;
-}
-
-.linked-heading {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0 4px;
-
-  h2 {
-    font-size: 22px;
-    margin: 4px 0 0;
-  }
-
-  p {
-    color: var(--muted);
-    font-size: 13px;
-    margin: 0;
-  }
-}
-
-.linked-card,
-.linked-add-card {
-  border: 1px solid var(--line);
-  background: var(--surface);
-  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(18px);
-  border-radius: 22px;
-  padding: 16px;
-  display: grid;
-  gap: 12px;
-}
-
-.linked-card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  span {
-    color: var(--muted);
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  h3 {
-    margin: 2px 0 0;
-    font-size: 18px;
-  }
-}
-
-.linked-card-icon {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: rgba(37, 99, 235, 0.12);
-  color: var(--accent);
-}
-
-.quest-input--linked {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 8px;
-  align-items: center;
-
-  ion-select {
-    min-width: 92px;
-  }
-}
-
-.quest-card-meta {
-  margin-left: 8px;
-}
-
-/* ===== Redesigned quest list ===== */
-
-.quick-add-card {
-  display: grid;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--surface);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.06);
-  animation: slide-in 220ms ease-out;
-}
-
-.quick-add-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  align-items: center;
-}
-
-.quick-add-input {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface-solid);
-  color: var(--ink);
-  font-size: 0.98rem;
-  font-weight: 600;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.quick-add-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
-}
-
-.quick-add-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.meta-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface-solid);
-  color: var(--ink);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.meta-chip ion-icon {
-  font-size: 0.95rem;
-  color: var(--muted);
-}
-
-.meta-chip select,
-.meta-chip input[type="date"] {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  outline: none;
-}
-
-.meta-chip:hover {
-  border-color: var(--accent);
-}
-
-.meta-chip--ghost {
-  background: transparent;
-  color: var(--accent);
-  border-color: rgba(37, 99, 235, 0.3);
-}
-
-.meta-chip-clear {
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  margin-left: 2px;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.06);
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.filter-row ion-segment {
-  --background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 4px;
-}
-
-.filter-row ion-segment-button {
-  --indicator-color: var(--accent);
-  --color: var(--muted);
-  --color-checked: #fff;
-  --background-checked: var(--accent);
-  --border-radius: 999px;
-  min-height: 36px;
-  text-transform: none;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-/* override layout for new quest cards */
-.quest-list .quest-card {
-  display: grid;
-  grid-template-columns: 38px 1fr 38px;
-  grid-template-rows: auto auto;
-  column-gap: 10px;
-  row-gap: 0;
-  align-items: start;
-  padding: 12px;
-  border-radius: 18px;
-  background: var(--surface-solid);
-  border: 1px solid var(--line);
-  transition: transform 0.18s ease, opacity 0.18s ease, border-color 0.18s ease;
-  animation: slide-in 200ms ease-out;
-}
-
-.quest-list .quest-card:hover {
-  border-color: rgba(37, 99, 235, 0.3);
-}
-
-.quest-list .quest-card--done {
-  opacity: 0.72;
-  background: rgba(15, 23, 42, 0.03);
-}
-
-.quest-list .quest-card--expanded {
-  border-color: var(--accent);
-  box-shadow: 0 18px 46px rgba(37, 99, 235, 0.12);
-}
-
-.quest-list .quest-card[data-due="overdue"] {
-  border-left: 3px solid #dc2626;
-}
-
-.quest-list .quest-card[data-due="today"] {
-  border-left: 3px solid #f59e0b;
-}
-
-.quest-list .quest-card .complete-button {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.quest-list .quest-card .delete-button {
-  grid-column: 3;
-  grid-row: 1;
-}
-
-.quest-list .quest-card .quest-body {
-  grid-column: 2;
-  grid-row: 1;
-  display: grid;
-  gap: 6px;
-  cursor: pointer;
-  min-width: 0;
-}
-
-.quest-list .quest-card .quest-edit {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  padding-top: 12px;
-  margin-top: 8px;
-  border-top: 1px solid var(--line);
-  animation: slide-in 160ms ease-out;
-}
-
-.quest-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.quest-line h3 {
-  flex: 1;
-  min-width: 0;
-  font-size: 0.96rem;
-  font-weight: 720;
-  line-height: 1.3;
-  word-break: break-word;
-}
-
-.quest-notes {
-  color: var(--muted);
-  font-size: 0.85rem;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.quest-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 2px;
-}
-
-.priority-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.priority-pill--low {
-  background: rgba(100, 116, 139, 0.14);
-  color: #475569;
-}
-
-.priority-pill--medium {
-  background: rgba(37, 99, 235, 0.14);
-  color: #1d4ed8;
-}
-
-.priority-pill--high {
-  background: rgba(220, 38, 38, 0.14);
-  color: #b91c1c;
-}
-
-.meta-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.06);
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.meta-pill ion-icon {
-  font-size: 0.78rem;
-}
-
-.meta-pill--type {
-  background: rgba(37, 99, 235, 0.1);
-  color: var(--accent);
-}
-
-.meta-pill--game {
-  background: rgba(8, 145, 178, 0.12);
-  color: #0e7490;
-}
-
-.meta-pill--tag {
-  background: rgba(124, 58, 237, 0.1);
-  color: #6d28d9;
-}
-
-.meta-pill--due[data-state="overdue"] {
-  background: rgba(220, 38, 38, 0.14);
-  color: #b91c1c;
-}
-
-.meta-pill--due[data-state="today"] {
-  background: rgba(245, 158, 11, 0.18);
-  color: #b45309;
-}
-
-.meta-pill--due[data-state="soon"] {
-  background: rgba(37, 99, 235, 0.14);
-  color: #1d4ed8;
-}
-
-.quest-edit {
-  display: grid;
-  gap: 10px;
-}
-
-.edit-field {
-  display: grid;
-  gap: 4px;
-}
-
-.edit-field > span {
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.edit-field > span small {
-  text-transform: none;
-  letter-spacing: 0;
-  font-weight: 500;
-  color: var(--muted);
-}
-
-.edit-field input,
-.edit-field select,
-.edit-field textarea {
-  padding: 9px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface-solid);
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.9rem;
-  resize: vertical;
-}
-
-.edit-field input:focus,
-.edit-field select:focus,
-.edit-field textarea:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.edit-row {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.edit-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.undo-toast {
-  position: fixed;
-  left: 50%;
-  bottom: 90px;
-  transform: translateX(-50%);
-  display: grid;
-  gap: 8px;
-  z-index: 600;
-  pointer-events: none;
-}
-
-.undo-toast__row {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.94);
-  color: #fff;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.32);
-  font-size: 0.86rem;
-  pointer-events: auto;
-  animation: slide-up 200ms ease-out;
-}
-
-.undo-toast__row ion-icon {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.undo-toast__row button {
-  border: 0;
-  background: transparent;
-  color: #93c5fd;
-  font-weight: 800;
-  cursor: pointer;
-  padding: 4px 6px;
-}
-
-.undo-toast__row button:hover {
-  color: #fff;
-}
-
-@keyframes slide-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (max-width: 540px) {
-  .edit-row {
-    grid-template-columns: 1fr;
-  }
-
-  .quick-add-meta {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 4px;
-  }
-}
-
-/* search + tag filter */
-.search-row {
-  display: grid;
-  gap: 10px;
-}
-
-.search-field {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface-solid);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.search-field:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16);
-}
-
-.search-field > ion-icon {
-  color: var(--muted);
-  font-size: 1rem;
-}
-
-.search-field > input {
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.92rem;
-  outline: none;
-  min-width: 0;
-}
-
-.tag-filter-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-
-.tag-filter-label {
-  color: var(--muted);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  margin-right: 4px;
-}
-
-.tag-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface-solid);
-  color: var(--ink);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.tag-chip ion-icon {
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-
-.tag-chip:hover {
-  border-color: var(--accent);
-}
-
-.tag-chip--active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
-.tag-chip--active ion-icon {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.tag-chip--clear {
-  background: transparent;
-  color: var(--muted);
-  border-color: rgba(15, 23, 42, 0.15);
-}
-
-/* recurrence pill */
-.meta-pill--recurrence {
-  background: rgba(15, 118, 110, 0.12);
-  color: #0f766e;
-}
-
-/* clickable tag inside card */
-.tag-button {
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-  transition: transform 0.1s ease, background 0.15s ease;
-}
-
-.tag-button:hover {
-  transform: translateY(-1px);
-}
-
-.tag-button--active {
-  outline: 2px solid currentColor;
-  outline-offset: -2px;
-}
-
-/* streak + skill + subtask + achievements */
-.streak-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.streak-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(245, 158, 11, 0.18);
-  color: #fbbf24;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.streak-pill ion-icon {
-  font-size: 0.92rem;
-}
-
-.streak-best {
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.meta-pill--skill {
-  background: rgba(124, 58, 237, 0.14);
-  color: #6d28d9;
-}
-
-.meta-pill--subtasks {
-  background: rgba(15, 118, 110, 0.14);
-  color: #0f766e;
-}
-
-.subtask-progress {
-  margin-top: 6px;
-}
-
-.subtask-progress ion-progress-bar {
-  --progress-background: var(--accent);
-  height: 4px;
-  border-radius: 999px;
-}
-
-.subtask-list {
-  list-style: none;
-  margin: 6px 0 8px;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-}
-
-.subtask {
-  display: grid;
-  grid-template-columns: 26px 1fr 26px;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.04);
-  border: 1px solid var(--line);
-  font-size: 0.86rem;
-  transition: opacity 0.15s ease, background 0.15s ease;
-}
-
-.subtask--done {
-  opacity: 0.6;
-}
-
-.subtask--done .subtask-title {
-  text-decoration: line-through;
-  color: var(--muted);
-}
-
-.subtask-toggle,
-.subtask-delete,
-.subtask-add-button {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--accent);
-  cursor: pointer;
-}
-
-.subtask-delete {
-  color: var(--muted);
-}
-
-.subtask-delete:hover {
-  color: #b91c1c;
-}
-
-.subtask-title {
-  min-width: 0;
-  word-break: break-word;
-  color: var(--ink);
-}
-
-.subtask-add {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 6px;
-  margin-top: 2px;
-}
-
-.subtask-add input {
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface-solid);
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.86rem;
-}
-
-.subtask-add input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.subtask-add-button {
-  width: 36px;
-  height: 36px;
-  background: rgba(37, 99, 235, 0.12);
-  border-radius: 10px;
-}
-
-/* Achievements gallery */
-.achievements-panel {
-  display: grid;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--surface);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.06);
-  animation: slide-in 220ms ease-out;
-  margin-top: 16px;
-}
-
-.achievement-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
-}
-
-.achievement-card {
-  display: grid;
-  grid-template-columns: 40px 1fr;
-  gap: 10px;
-  align-items: center;
-  padding: 10px;
-  border-radius: 14px;
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.22);
-  transition: transform 0.15s ease, border-color 0.15s ease;
-}
-
-.achievement-card:hover {
-  transform: translateY(-1px);
-  border-color: rgba(245, 158, 11, 0.5);
-}
-
-.achievement-icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: rgba(245, 158, 11, 0.18);
-  color: #b45309;
-  font-size: 1.1rem;
-}
-
-.achievement-body {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.achievement-body strong {
-  font-size: 0.86rem;
-  color: var(--ink);
-}
-
-.achievement-body span {
-  font-size: 0.74rem;
-  color: var(--muted);
-  line-height: 1.3;
-}
-
-.achievement-toast {
-  position: fixed;
-  left: 50%;
-  bottom: 150px;
-  transform: translateX(-50%);
-  display: grid;
-  grid-template-columns: 56px 1fr;
-  gap: 14px;
-  align-items: center;
-  padding: 14px 18px 14px 14px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 70, 239, 0.92));
-  color: #fff;
-  box-shadow: 0 22px 50px rgba(217, 70, 239, 0.35);
-  cursor: pointer;
-  z-index: 700;
-  animation: slide-up 240ms ease-out;
-  max-width: 380px;
-}
-
-.achievement-toast__icon {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.18);
-  font-size: 1.6rem;
-}
-
-.achievement-toast__body {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.achievement-toast__body .eyebrow {
-  color: rgba(255, 255, 255, 0.78);
-}
-
-.achievement-toast__body strong {
-  font-size: 0.98rem;
-  font-weight: 800;
-}
-
-.achievement-toast__body span {
-  font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.82);
-  line-height: 1.3;
-}
-
-/* ion-reorder handle */
-ion-reorder-group {
-  display: grid;
-  gap: 9px;
-}
-
-.reorder-handle {
-  grid-column: 3;
-  grid-row: 1;
-  align-self: center;
-  color: var(--muted);
-  cursor: grab;
-  opacity: 0.55;
-  transition: opacity 0.15s ease;
-}
-
-.reorder-handle:hover {
-  opacity: 1;
-}
-
-.quest-list .quest-card:has(.reorder-handle) {
-  grid-template-columns: 38px 1fr 38px 28px;
-}
-
-.quest-list .quest-card:has(.reorder-handle) .delete-button {
-  grid-column: 3;
+  .quest-page { width: min(1180px, calc(100% - 40px)); margin-inline: auto; padding-top: 24px; }
+  .quest-hero { grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); align-items: end; min-height: 300px; padding: 32px; }
+  .quest-board { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .skill-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .modal-backdrop { align-items: center; }
 }

@@ -1,16 +1,16 @@
 <ion-content [fullscreen]="true" class="quest-shell">
   <main class="quest-page">
-    <section class="hero">
-      <div class="hero__copy">
+    <section class="quest-hero">
+      <div class="quest-hero__copy">
         <span class="eyebrow">
           <ion-icon name="sparkles-outline"></ion-icon>
           Quest Board
         </span>
-        <h1>{{ title }} · Level {{ level }}</h1>
-        <p>Your todo list with XP. Focus on today, ship the rest as you go.</p>
+        <h1>Level {{ level }} {{ title }}</h1>
+        <p>Pick the next real-world quest, keep the streak alive, and let the rest wait in the right lane.</p>
       </div>
 
-      <div class="hero__panel">
+      <div class="quest-hero__panel">
         <div class="rank-row">
           <div>
             <span>Total XP</span>
@@ -38,8 +38,12 @@
 
     <section class="mode-panel">
       <ion-segment [(ngModel)]="mode">
-        <ion-segment-button value="quests">Quests</ion-segment-button>
-        <ion-segment-button value="skills">Skills</ion-segment-button>
+        <ion-segment-button value="quests">
+          <ion-label>Quests</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="skills">
+          <ion-label>Skills</ion-label>
+        </ion-segment-button>
       </ion-segment>
     </section>
 
@@ -49,15 +53,44 @@
           <input
             type="text"
             class="quick-add-input"
-            placeholder="Add a quest and press Enter"
+            placeholder="Capture a quest"
             [(ngModel)]="quickAddTitle"
             (keydown.enter)="submitQuickAdd()" />
-          <ion-button shape="round" (click)="submitQuickAdd()" aria-label="Add quest">
+          <ion-button (click)="submitQuickAdd()" aria-label="Add quest">
             <ion-icon slot="icon-only" name="add-outline"></ion-icon>
           </ion-button>
         </div>
 
-        <div class="quick-add-meta">
+        <div class="quick-date-row" aria-label="Quest due date shortcuts">
+          <button
+            type="button"
+            class="quick-date"
+            [class.quick-date--active]="isQuickAddDue('today')"
+            (click)="setQuickAddToday()">
+            Today
+          </button>
+          <button
+            type="button"
+            class="quick-date"
+            [class.quick-date--active]="isQuickAddDue('tomorrow')"
+            (click)="setQuickAddTomorrow()">
+            Tomorrow
+          </button>
+          <button
+            type="button"
+            class="quick-date"
+            [class.quick-date--active]="isQuickAddDue('none')"
+            (click)="resetQuickAddDue()">
+            Inbox
+          </button>
+          <button type="button" class="quick-date quick-date--tools" (click)="toggleQuickAddAdvanced()">
+            <ion-icon name="options-outline"></ion-icon>
+            More
+            <ion-icon [name]="quickAddAdvancedOpen ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+          </button>
+        </div>
+
+        <div class="quick-add-meta" *ngIf="quickAddAdvancedOpen">
           <label class="meta-chip">
             <ion-icon name="flag-outline"></ion-icon>
             <select [(ngModel)]="quickAddType">
@@ -79,9 +112,6 @@
               <ion-icon name="close-outline"></ion-icon>
             </button>
           </label>
-
-          <button type="button" class="meta-chip meta-chip--ghost" (click)="setQuickAddToday()">Today</button>
-          <button type="button" class="meta-chip meta-chip--ghost" (click)="setQuickAddTomorrow()">Tomorrow</button>
 
           <label class="meta-chip">
             <ion-icon name="refresh-outline"></ion-icon>
@@ -108,29 +138,24 @@
         </div>
       </section>
 
-      <section class="filter-row">
+      <section class="board-toolbar">
         <ion-segment [value]="filter" (ionChange)="setFilter($any($event).detail.value)">
           <ion-segment-button *ngFor="let option of filterOptions" [value]="option.value">
             <ion-icon [name]="option.icon"></ion-icon>
             <ion-label>{{ option.label }}</ion-label>
+            <ion-badge>{{ filterCount(option.value) }}</ion-badge>
           </ion-segment-button>
         </ion-segment>
-      </section>
 
-      <section class="search-row">
         <label class="search-field">
           <ion-icon name="search-outline"></ion-icon>
-          <input
-            type="text"
-            placeholder="Search quests"
-            [(ngModel)]="searchQuery" />
+          <input type="text" placeholder="Search quests, notes, tags" [(ngModel)]="searchQuery" />
           <button *ngIf="searchQuery" type="button" class="meta-chip-clear" aria-label="Clear search" (click)="clearSearch()">
             <ion-icon name="close-outline"></ion-icon>
           </button>
         </label>
 
         <div class="tag-filter-strip" *ngIf="availableTags.length">
-          <span class="tag-filter-label">Tags</span>
           <button
             type="button"
             *ngFor="let tag of availableTags; trackBy: trackByText"
@@ -147,190 +172,146 @@
         </div>
       </section>
 
-      <section class="quest-list">
+      <section class="quest-board">
         <div class="empty-state" *ngIf="!isLoading && !visibleQuests.length">
           <ion-icon name="sparkles-outline"></ion-icon>
-          <strong>Nothing here yet</strong>
-          <span *ngIf="filter === 'today' && !searchQuery && !tagFilter">No quests due today. Add one above.</span>
-          <span *ngIf="filter === 'upcoming' && !searchQuery && !tagFilter">No quests scheduled.</span>
-          <span *ngIf="filter === 'overdue' && !searchQuery && !tagFilter">No overdue quests — nice.</span>
-          <span *ngIf="filter === 'all' && !searchQuery && !tagFilter">Start by adding a quest at the top.</span>
-          <span *ngIf="searchQuery || tagFilter">No quests match the current filters.</span>
+          <strong>Nothing needs your attention here</strong>
+          <span>Capture a quest above, or switch lanes to see what is scheduled elsewhere.</span>
+          <div class="empty-actions" *ngIf="nextQueuedQuest as nextQuest">
+            <button type="button" (click)="pullNextQuestToToday()">
+              Pull "{{ nextQuest.title }}" into today
+            </button>
+          </div>
         </div>
 
-        <ion-reorder-group
-          [disabled]="!isManualOrderActive"
-          (ionItemReorder)="handleReorder($any($event))">
-          <article
-            class="quest-card"
-            *ngFor="let quest of visibleQuests; trackBy: trackByQuest"
-            [class.quest-card--done]="quest.completed"
-            [class.quest-card--expanded]="expandedQuestId === quest.id"
-            [attr.data-due]="dueState(quest)">
-            <button type="button" class="complete-button" aria-label="Toggle complete" (click)="toggleQuest(quest)">
-              <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
-            </button>
+        <section
+          class="quest-section quest-section--{{ section.tone }}"
+          *ngFor="let section of questSections; trackBy: trackByQuestSection">
+          <header class="quest-section__header">
+            <div class="section-icon">
+              <ion-icon [name]="section.icon"></ion-icon>
+            </div>
+            <div>
+              <h2>{{ section.title }}</h2>
+              <p>{{ section.subtitle }}</p>
+            </div>
+            <ion-badge>{{ section.quests.length }}</ion-badge>
+          </header>
 
-            <div class="quest-body" (click)="toggleExpand(quest)">
-              <div class="quest-line">
-                <h3>{{ quest.title }}</h3>
-                <span class="priority-pill priority-pill--{{ quest.priority }}">
-                  {{ priorityLabel(quest.priority) }}
-                </span>
-              </div>
+          <ion-reorder-group
+            class="quest-stack"
+            [disabled]="!isManualOrderActive"
+            (ionItemReorder)="handleReorder($any($event), section.quests)">
+            <article
+              class="quest-card"
+              *ngFor="let quest of section.quests; trackBy: trackByQuest"
+              [class.quest-card--done]="quest.completed"
+              [class.quest-card--selected]="expandedQuestId === quest.id"
+              [attr.data-due]="dueState(quest)">
+              <button type="button" class="complete-button" aria-label="Toggle complete" (click)="toggleQuest(quest)">
+                <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
+              </button>
 
-              <p class="quest-notes" *ngIf="quest.notes && expandedQuestId !== quest.id">{{ quest.notes }}</p>
-
-              <div class="quest-meta">
-                <span class="meta-pill meta-pill--type">
+              <div
+                class="quest-body"
+                role="button"
+                tabindex="0"
+                (click)="toggleExpand(quest)"
+                (keydown.enter)="toggleExpand(quest)"
+                (keydown.space)="$event.preventDefault(); toggleExpand(quest)">
+                <span class="quest-kicker">
                   <ion-icon [name]="typeIcon(quest.type)"></ion-icon>
                   {{ typeLabel(quest.type) }}
+                  <span class="dot"></span>
+                  {{ priorityLabel(quest.priority) }}
                 </span>
-                <span *ngIf="quest.dueDate" class="meta-pill meta-pill--due" [attr.data-state]="dueState(quest)">
-                  <ion-icon name="calendar-outline"></ion-icon>
-                  {{ dueDateLabel(quest) }}
-                </span>
-                <span *ngIf="quest.recurrence && quest.recurrence !== 'none'" class="meta-pill meta-pill--recurrence">
-                  <ion-icon name="refresh-outline"></ion-icon>
-                  {{ recurrenceLabel(quest.recurrence) }}
-                </span>
-                <span *ngIf="quest.gameName" class="meta-pill meta-pill--game">
-                  <ion-icon name="game-controller-outline"></ion-icon>
-                  {{ quest.gameName }}
-                </span>
-                <span *ngIf="quest.skillName" class="meta-pill meta-pill--skill">
-                  <ion-icon name="trophy-outline"></ion-icon>
-                  {{ quest.skillName }}
-                </span>
-                <span *ngIf="quest.subtasks.length" class="meta-pill meta-pill--subtasks">
-                  <ion-icon name="checkmark-done-outline"></ion-icon>
-                  {{ subtaskCompletedCount(quest) }}/{{ quest.subtasks.length }}
-                </span>
-                <button
-                  type="button"
-                  *ngFor="let tag of quest.tags; trackBy: trackByText"
-                  class="meta-pill meta-pill--tag tag-button"
-                  [class.tag-button--active]="tagFilter === tag"
-                  (click)="$event.stopPropagation(); selectTag(tag)">
-                  <ion-icon name="pricetag-outline"></ion-icon>
-                  {{ tag }}
-                </button>
-              </div>
-
-              <div class="subtask-progress" *ngIf="quest.subtasks.length && expandedQuestId !== quest.id">
-                <ion-progress-bar [value]="subtaskProgress(quest)"></ion-progress-bar>
-              </div>
-            </div>
-
-            <button type="button" class="delete-button" aria-label="Delete quest" (click)="beginDelete(quest)">
-              <ion-icon name="trash-outline"></ion-icon>
-            </button>
-
-            <ion-reorder *ngIf="isManualOrderActive" class="reorder-handle"></ion-reorder>
-
-            <div class="quest-edit" *ngIf="expandedQuestId === quest.id && editDraft">
-              <label class="edit-field">
-                <span>Title</span>
-                <input type="text" [(ngModel)]="editDraft.title" />
-              </label>
-
-              <label class="edit-field">
-                <span>Notes</span>
-                <textarea rows="3" [(ngModel)]="editDraft.notes" placeholder="Optional notes"></textarea>
-              </label>
-
-              <div class="edit-row">
-                <label class="edit-field edit-field--inline">
-                  <span>Type</span>
-                  <select [(ngModel)]="editDraft.type">
-                    <option *ngFor="let option of typeOptions" [value]="option.value">{{ option.label }}</option>
-                  </select>
-                </label>
-
-                <label class="edit-field edit-field--inline">
-                  <span>Priority</span>
-                  <select [(ngModel)]="editDraft.priority">
-                    <option *ngFor="let option of priorityOptions" [value]="option.value">{{ option.label }}</option>
-                  </select>
-                </label>
-
-                <label class="edit-field edit-field--inline">
-                  <span>Repeat</span>
-                  <select [(ngModel)]="editDraft.recurrence">
-                    <option *ngFor="let option of recurrenceOptions" [value]="option.value">{{ option.label }}</option>
-                  </select>
-                </label>
-
-                <label class="edit-field edit-field--inline">
-                  <span>Due date</span>
-                  <input type="date" [(ngModel)]="editDraft.dueDate" />
-                </label>
-
-                <label class="edit-field edit-field--inline" *ngIf="library.length">
-                  <span>Game</span>
-                  <select [(ngModel)]="editDraft.myGameId">
-                    <option [ngValue]="null">No game</option>
-                    <option *ngFor="let game of library; trackBy: trackByLibrary" [ngValue]="game.myGameId">{{ game.gameName }}</option>
-                  </select>
-                </label>
-
-                <label class="edit-field edit-field--inline" *ngIf="skills.length">
-                  <span>Skill</span>
-                  <select [(ngModel)]="editDraft.skillId">
-                    <option [ngValue]="null">No skill</option>
-                    <option *ngFor="let skill of skills; trackBy: trackBySkill" [ngValue]="skill.id">{{ skill.name }}</option>
-                  </select>
-                </label>
-              </div>
-
-              <label class="edit-field">
-                <span>Tags <small>(comma separated)</small></span>
-                <input type="text" [(ngModel)]="editDraft.tags" placeholder="errand, focus, deep-work" />
-              </label>
-
-              <div class="edit-field">
-                <span>Subtasks <small *ngIf="quest.subtasks.length">{{ subtaskCompletedCount(quest) }} / {{ quest.subtasks.length }} done</small></span>
-                <ul class="subtask-list" *ngIf="quest.subtasks.length">
-                  <li *ngFor="let subtask of quest.subtasks; trackBy: trackBySubtask"
-                      class="subtask"
-                      [class.subtask--done]="subtask.completed">
-                    <button type="button"
-                            class="subtask-toggle"
-                            aria-label="Toggle subtask"
-                            (click)="toggleSubtask(quest, subtask)">
-                      <ion-icon [name]="subtask.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
-                    </button>
-                    <span class="subtask-title">{{ subtask.title }}</span>
-                    <button type="button"
-                            class="subtask-delete"
-                            aria-label="Delete subtask"
-                            (click)="deleteSubtask(quest, subtask)">
-                      <ion-icon name="close-outline"></ion-icon>
-                    </button>
-                  </li>
-                </ul>
-                <div class="subtask-add">
-                  <input type="text"
-                         placeholder="Add a subtask"
-                         [ngModel]="subtaskDraft(quest.id)"
-                         (ngModelChange)="setSubtaskDraft(quest.id, $event)"
-                         (keydown.enter)="addSubtask(quest)" />
-                  <button type="button"
-                          class="subtask-add-button"
-                          aria-label="Add subtask"
-                          (click)="addSubtask(quest)">
-                    <ion-icon name="add-outline"></ion-icon>
+                <h3>{{ quest.title }}</h3>
+                <p class="quest-notes" *ngIf="quest.notes">{{ quest.notes }}</p>
+                <div class="quest-meta">
+                  <span *ngIf="quest.dueDate" class="meta-pill meta-pill--due" [attr.data-state]="dueState(quest)">
+                    <ion-icon name="calendar-outline"></ion-icon>
+                    {{ dueDateLabel(quest) }}
+                  </span>
+                  <span *ngIf="!quest.dueDate && !quest.completed" class="meta-pill">
+                    <ion-icon name="library-outline"></ion-icon>
+                    Inbox
+                  </span>
+                  <span *ngIf="quest.recurrence && quest.recurrence !== 'none'" class="meta-pill meta-pill--recurrence">
+                    <ion-icon name="refresh-outline"></ion-icon>
+                    {{ recurrenceLabel(quest.recurrence) }}
+                  </span>
+                  <span *ngIf="quest.gameName" class="meta-pill meta-pill--game">
+                    <ion-icon name="game-controller-outline"></ion-icon>
+                    {{ quest.gameName }}
+                  </span>
+                  <span *ngIf="quest.skillName" class="meta-pill meta-pill--skill">
+                    <ion-icon name="trophy-outline"></ion-icon>
+                    {{ quest.skillName }}
+                  </span>
+                  <span *ngIf="quest.subtasks.length" class="meta-pill meta-pill--subtasks">
+                    <ion-icon name="checkmark-done-outline"></ion-icon>
+                    {{ subtaskCompletedCount(quest) }}/{{ quest.subtasks.length }}
+                  </span>
+                </div>
+                <div class="subtask-progress" *ngIf="quest.subtasks.length">
+                  <ion-progress-bar [value]="subtaskProgress(quest)"></ion-progress-bar>
+                </div>
+                <div class="quest-plan-actions" *ngIf="!quest.completed">
+                  <button
+                    *ngIf="canScheduleToday(quest)"
+                    type="button"
+                    (click)="$event.stopPropagation(); scheduleToday(quest)">
+                    Today
+                  </button>
+                  <button
+                    *ngIf="canScheduleTomorrow(quest)"
+                    type="button"
+                    (click)="$event.stopPropagation(); scheduleTomorrow(quest)">
+                    Tomorrow
+                  </button>
+                  <button
+                    *ngIf="canMoveToInbox(quest)"
+                    type="button"
+                    (click)="$event.stopPropagation(); clearQuestDueDate(quest)">
+                    Inbox
                   </button>
                 </div>
               </div>
 
-              <div class="edit-actions">
-                <ion-button fill="clear" (click)="cancelEdit()">Cancel</ion-button>
-                <ion-button (click)="saveEdit(quest)">Save</ion-button>
-              </div>
+              <button type="button" class="delete-button" aria-label="Delete quest" (click)="beginDelete(quest)">
+                <ion-icon name="trash-outline"></ion-icon>
+              </button>
+
+              <ion-reorder *ngIf="isManualOrderActive" class="reorder-handle"></ion-reorder>
+            </article>
+          </ion-reorder-group>
+        </section>
+      </section>
+
+      <section class="achievements-panel" *ngIf="achievements.length">
+        <header class="section-header">
+          <div>
+            <span class="eyebrow">
+              <ion-icon name="trophy-outline"></ion-icon>
+              Achievements
+            </span>
+            <h2>{{ achievements.length }} unlocked</h2>
+          </div>
+        </header>
+        <div class="achievement-grid">
+          <article
+            class="achievement-card"
+            *ngFor="let achievement of achievements; trackBy: trackByAchievement"
+            [title]="achievement.description">
+            <div class="achievement-icon">
+              <ion-icon [name]="achievement.icon"></ion-icon>
+            </div>
+            <div class="achievement-body">
+              <strong>{{ achievement.title }}</strong>
+              <span>{{ achievement.description }}</span>
             </div>
           </article>
-        </ion-reorder-group>
+        </div>
       </section>
     </ng-container>
 
@@ -339,9 +320,9 @@
         <div>
           <span class="eyebrow">
             <ion-icon name="trophy-outline"></ion-icon>
-            Skill tree
+            Mastery paths
           </span>
-          <h2>Real Life Mastery</h2>
+          <h2>End Goals</h2>
         </div>
         <ion-button fill="clear" (click)="openSkillModal()">
           <ion-icon slot="start" name="add-outline"></ion-icon>
@@ -357,7 +338,7 @@
             </div>
             <div>
               <h3>{{ skill.name }}</h3>
-              <p>Level {{ skillLevel(skill) }} · {{ skill.xp }} XP</p>
+              <p>Level {{ skillLevel(skill) }} · {{ skill.xp }} XP · {{ activeLinkedQuestCount(skill) }} active quests</p>
             </div>
             <div class="skill-card-actions">
               <button type="button" aria-label="Edit skill" (click)="openEditSkillModal(skill)">
@@ -371,6 +352,12 @@
 
           <ion-progress-bar [value]="skillProgress(skill)"></ion-progress-bar>
 
+          <div class="skill-next">
+            <span>Next node</span>
+            <strong>{{ nextNodeName(skill) }}</strong>
+            <small>{{ unlockedCount(skill) }} / {{ skill.nodes.length }} nodes · {{ linkedQuestCount(skill) }} linked quests</small>
+          </div>
+
           <div class="skill-actions">
             <ion-button size="small" (click)="trainSkill(skill)">
               <ion-icon slot="start" name="flash-outline"></ion-icon>
@@ -383,22 +370,155 @@
           </div>
 
           <div class="node-list">
-            <button
-              type="button"
+            <div
               class="node"
+              role="button"
+              tabindex="0"
               *ngFor="let node of skill.nodes; let nodeIndex = index; trackBy: trackByText"
-              [class.node--unlocked]="skill.unlockedNodes.includes(nodeIndex)"
-              (click)="unlockNode(skill, nodeIndex)">
-              <ion-icon [name]="skill.unlockedNodes.includes(nodeIndex) ? 'star-outline' : 'lock-closed-outline'"></ion-icon>
-              <span>{{ node }}</span>
-            </button>
+              [class.node--unlocked]="skillNodeState(skill, nodeIndex) === 'completed'"
+              [class.node--available]="skillNodeState(skill, nodeIndex) === 'available'"
+              [class.node--locked]="skillNodeState(skill, nodeIndex) === 'locked'"
+              (click)="unlockNode(skill, nodeIndex)"
+              (keydown.enter)="unlockNode(skill, nodeIndex)"
+              (keydown.space)="$event.preventDefault(); unlockNode(skill, nodeIndex)">
+              <ion-icon [name]="skillNodeState(skill, nodeIndex) === 'completed' ? 'star-outline' : skillNodeState(skill, nodeIndex) === 'available' ? 'sparkles-outline' : 'lock-closed-outline'"></ion-icon>
+              <span>
+                <strong>{{ node }}</strong>
+                <small>{{ skillNodeState(skill, nodeIndex) === 'completed' ? 'Completed' : skillNodeState(skill, nodeIndex) === 'available' ? 'Ready to unlock' : 'Locked' }}</small>
+              </span>
+              <button
+                *ngIf="skillNodeState(skill, nodeIndex) === 'available'"
+                type="button"
+                class="node-quest-button"
+                (click)="$event.stopPropagation(); startNodeQuest(skill, node)">
+                Quest
+              </button>
+            </div>
           </div>
 
-          <small>{{ unlockedCount(skill) }} of {{ skill.nodes.length }} nodes unlocked</small>
+          <ion-progress-bar [value]="skillCompletion(skill)"></ion-progress-bar>
         </article>
       </div>
     </section>
   </main>
+
+  <div class="modal-backdrop detail-backdrop" *ngIf="selectedQuest as quest" (click)="cancelEdit()">
+    <section class="quest-detail-sheet" (click)="$event.stopPropagation()">
+      <button type="button" class="modal-close" aria-label="Close" (click)="cancelEdit()">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+
+      <div class="detail-heading">
+        <span class="eyebrow">
+          <ion-icon [name]="typeIcon(quest.type)"></ion-icon>
+          {{ typeLabel(quest.type) }} quest
+        </span>
+        <h2>{{ quest.title }}</h2>
+        <p *ngIf="quest.notes">{{ quest.notes }}</p>
+      </div>
+
+      <div class="detail-actions">
+        <button type="button" (click)="scheduleToday(quest)">Today</button>
+        <button type="button" (click)="scheduleTomorrow(quest)">Tomorrow</button>
+        <button type="button" (click)="clearQuestDueDate(quest)">Inbox</button>
+      </div>
+
+      <ng-container *ngIf="editDraft">
+        <label class="edit-field">
+          <span>Title</span>
+          <input type="text" [(ngModel)]="editDraft.title" />
+        </label>
+
+        <label class="edit-field">
+          <span>Notes</span>
+          <textarea rows="3" [(ngModel)]="editDraft.notes" placeholder="Optional notes"></textarea>
+        </label>
+
+        <div class="edit-row">
+          <label class="edit-field edit-field--inline">
+            <span>Type</span>
+            <select [(ngModel)]="editDraft.type">
+              <option *ngFor="let option of typeOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
+
+          <label class="edit-field edit-field--inline">
+            <span>Priority</span>
+            <select [(ngModel)]="editDraft.priority">
+              <option *ngFor="let option of priorityOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
+
+          <label class="edit-field edit-field--inline">
+            <span>Repeat</span>
+            <select [(ngModel)]="editDraft.recurrence">
+              <option *ngFor="let option of recurrenceOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
+
+          <label class="edit-field edit-field--inline">
+            <span>Due date</span>
+            <input type="date" [(ngModel)]="editDraft.dueDate" />
+          </label>
+
+          <label class="edit-field edit-field--inline" *ngIf="library.length">
+            <span>Game</span>
+            <select [(ngModel)]="editDraft.myGameId">
+              <option [ngValue]="null">No game</option>
+              <option *ngFor="let game of library; trackBy: trackByLibrary" [ngValue]="game.myGameId">{{ game.gameName }}</option>
+            </select>
+          </label>
+
+          <label class="edit-field edit-field--inline" *ngIf="skills.length">
+            <span>Skill</span>
+            <select [(ngModel)]="editDraft.skillId">
+              <option [ngValue]="null">No skill</option>
+              <option *ngFor="let skill of skills; trackBy: trackBySkill" [ngValue]="skill.id">{{ skill.name }}</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="edit-field">
+          <span>Tags <small>(comma separated)</small></span>
+          <input type="text" [(ngModel)]="editDraft.tags" placeholder="errand, focus, deep-work" />
+        </label>
+
+        <div class="edit-field">
+          <span>Subtasks <small *ngIf="quest.subtasks.length">{{ subtaskCompletedCount(quest) }} / {{ quest.subtasks.length }} done</small></span>
+          <ul class="subtask-list" *ngIf="quest.subtasks.length">
+            <li
+              *ngFor="let subtask of quest.subtasks; trackBy: trackBySubtask"
+              class="subtask"
+              [class.subtask--done]="subtask.completed">
+              <button type="button" class="subtask-toggle" aria-label="Toggle subtask" (click)="toggleSubtask(quest, subtask)">
+                <ion-icon [name]="subtask.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
+              </button>
+              <span class="subtask-title">{{ subtask.title }}</span>
+              <button type="button" class="subtask-delete" aria-label="Delete subtask" (click)="deleteSubtask(quest, subtask)">
+                <ion-icon name="close-outline"></ion-icon>
+              </button>
+            </li>
+          </ul>
+          <div class="subtask-add">
+            <input
+              type="text"
+              placeholder="Add a subtask"
+              [ngModel]="subtaskDraft(quest.id)"
+              (ngModelChange)="setSubtaskDraft(quest.id, $event)"
+              (keydown.enter)="addSubtask(quest)" />
+            <button type="button" class="subtask-add-button" aria-label="Add subtask" (click)="addSubtask(quest)">
+              <ion-icon name="add-outline"></ion-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="edit-actions">
+          <ion-button fill="clear" (click)="cancelEdit()">Cancel</ion-button>
+          <ion-button (click)="saveEdit(quest)">Save</ion-button>
+        </div>
+      </ng-container>
+    </section>
+  </div>
 
   <div class="modal-backdrop" *ngIf="modalMode" (click)="closeModal()">
     <section class="quest-modal" (click)="$event.stopPropagation()">
@@ -459,31 +579,6 @@
       </ng-template>
     </section>
   </div>
-
-  <section class="achievements-panel" *ngIf="mode === 'quests' && achievements.length">
-    <header class="section-header">
-      <div>
-        <span class="eyebrow">
-          <ion-icon name="trophy-outline"></ion-icon>
-          Achievements
-        </span>
-        <h2>{{ achievements.length }} unlocked</h2>
-      </div>
-    </header>
-    <div class="achievement-grid">
-      <article class="achievement-card"
-               *ngFor="let achievement of achievements; trackBy: trackByAchievement"
-               [title]="achievement.description">
-        <div class="achievement-icon">
-          <ion-icon [name]="achievement.icon"></ion-icon>
-        </div>
-        <div class="achievement-body">
-          <strong>{{ achievement.title }}</strong>
-          <span>{{ achievement.description }}</span>
-        </div>
-      </article>
-    </div>
-  </section>
 
   <div class="achievement-toast" *ngIf="achievementToast" (click)="closeAchievementToast()">
     <div class="achievement-toast__icon">
