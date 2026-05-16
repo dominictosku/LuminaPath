@@ -1,0 +1,93 @@
+site_name: LuminaPath docs
+site_description: Architecture, decisions and runbooks for the LuminaPath self-hosted media tracker.
+site_url: https://dominictosku.github.io/LuminaPath/
+repo_url: https://github.com/dominictosku/LuminaPath
+repo_name: dominictosku/LuminaPath
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: cyan
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: cyan
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+nav:
+  - Home: index.md
+  - Overview:
+      - 01-overview/index.md
+  - Architecture:
+      - 02-architecture/index.md
+      - C4 — System Context: 02-architecture/c4-context.md
+      - C4 — Containers: 02-architecture/c4-container.md
+      - Adding a media type: backend-media-types.md
+  - Features:
+      - 03-features/index.md
+  - Decisions:
+      - 04-decisions/index.md
+      - ADR template: 04-decisions/template.md
+      - "ADR-0001 — Record architecture decisions": 04-decisions/0001-record-architecture-decisions.md
+      - "ADR-0002 — Two front-ends": 04-decisions/0002-blazor-admin-and-angular-app.md
+  - Runbooks:
+      - 05-runbooks/index.md
+      - Local setup: 05-runbooks/local-setup.md
+  - Contributing to docs: contributing.md
+
+extra:
+  generator: false
+
+# To preview locally:
+#   pip install "mkdocs-material>=9.5" pymdown-extensions
+#   mkdocs serve
+# To build the static site:
+#   mkdocs build

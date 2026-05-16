@@ -86,6 +86,10 @@ LuminaPath is a personal media library, backlog planner, playtime tracker, socia
 - File-system storage by default, with Azure Blob support available through env vars.
 - Streaming AI assistant in the Angular app, powered by Anthropic Claude or any OpenAI-compatible endpoint (Ollama, LM Studio, OpenAI), with MCP tool integration.
 
+## Documentation
+
+Full project documentation lives in [`docs/`](docs/index.md) — architecture (C4), decisions (ADRs), feature deep-dives, and runbooks. Preview locally with `mkdocs serve` (see [`mkdocs.yml`](mkdocs.yml)).
+
 ## Tech Stack
 
 | Layer | Tools |
