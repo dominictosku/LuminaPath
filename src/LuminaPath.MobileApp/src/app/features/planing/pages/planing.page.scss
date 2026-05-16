@@ -1,21 +1,25 @@
 :host {
-  --page-bg: #061329;
-  --page-bg-soft: #0a1f42;
-  --card-bg: rgba(12, 31, 64, 0.84);
-  --card-bg-strong: rgba(18, 43, 86, 0.94);
-  --card-border: rgba(137, 180, 255, 0.18);
-  --text: #edf5ff;
-  --muted: #a9bdd8;
-  --accent: #48a7ff;
-  --accent-strong: #75c7ff;
+  --page-bg: #03081a;
+  --page-bg-soft: #081935;
+  --card-bg: var(--app-chrome-bg, rgba(8, 22, 48, 0.86));
+  --card-bg-strong: var(--app-chrome-bg-strong, rgba(12, 31, 64, 0.94));
+  --card-bg-solid: #08162f;
+  --card-border: var(--app-chrome-border, rgba(137, 180, 255, 0.16));
+  --text: var(--app-chrome-text, #eef6ff);
+  --muted: var(--app-chrome-muted, #9fb6d4);
+  --accent: var(--app-theme-accent, #60a5fa);
+  --accent-strong: var(--app-theme-accent-2, #22d3ee);
+  --accent-soft: var(--app-theme-accent-soft, rgba(96, 165, 250, 0.14));
+  --accent-border: var(--app-theme-accent-border, rgba(96, 165, 250, 0.32));
   --success: #4ade80;
   color: var(--text);
 }
 
 .planning-shell {
   --background:
-    radial-gradient(circle at 20% 0%, rgba(38, 121, 255, 0.28), transparent 34%),
-    linear-gradient(180deg, var(--page-bg-soft), var(--page-bg) 48%, #030914);
+    radial-gradient(circle at 18% -8%, var(--accent-soft), transparent 38%),
+    radial-gradient(circle at 92% 110%, rgba(34, 211, 238, 0.1), transparent 42%),
+    linear-gradient(180deg, var(--page-bg-soft), var(--page-bg) 52%, #02060f);
 }
 
 .planning-page {
@@ -56,6 +60,7 @@
 .schedule-form,
 .forecast-card,
 .day-bucket,
+.mode-panel,
 .empty-state,
 .loading-state {
   border: 1px solid var(--card-border);
@@ -64,6 +69,26 @@
   box-shadow: 0 18px 46px rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(18px);
   padding: 16px;
+}
+
+.mode-panel {
+  padding: 5px;
+}
+
+.mode-panel ion-segment {
+  min-height: 46px;
+  border: 1px solid rgba(137, 180, 255, 0.12);
+  border-radius: 17px;
+  background: rgba(3, 8, 26, 0.42);
+}
+
+.mode-panel ion-segment-button {
+  --border-radius: 13px;
+  --color: var(--muted);
+  --color-checked: var(--text);
+  --indicator-color: rgba(96, 165, 250, 0.22);
+  min-height: 38px;
+  font-weight: 800;
 }
 
 .schedule-form h2 {
@@ -89,9 +114,9 @@
     ion-select {
       min-height: 40px;
       padding: 0 12px;
-      border: 1px solid rgba(137, 180, 255, 0.18);
+      border: 1px solid var(--card-border);
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(3, 8, 26, 0.48);
       color: var(--text);
       font-size: 14px;
     }
@@ -148,7 +173,7 @@
     }
 
     ion-badge {
-      --background: rgba(72, 167, 255, 0.18);
+      --background: var(--accent-soft);
       --color: var(--accent-strong);
       display: inline-flex;
       align-items: center;
@@ -171,7 +196,7 @@
       padding: 8px 10px;
       border: 1px solid rgba(137, 180, 255, 0.14);
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(3, 8, 26, 0.36);
       text-align: center;
     }
 
@@ -238,13 +263,19 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border: 1px solid rgba(137, 180, 255, 0.14);
+  border: 1px solid rgba(137, 180, 255, 0.16);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, rgba(8, 22, 48, 0.86), rgba(6, 16, 35, 0.82));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 
-  &--done h4 {
-    color: var(--muted);
-    text-decoration: line-through;
+  &--done {
+    border-color: rgba(74, 222, 128, 0.2);
+    background: rgba(8, 22, 48, 0.58);
+
+    h4 {
+      color: var(--muted);
+      text-decoration: line-through;
+    }
   }
 
   h4 {
@@ -267,7 +298,7 @@
   place-items: center;
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(96, 165, 250, 0.1);
   color: var(--muted);
   font-size: 21px;
 
