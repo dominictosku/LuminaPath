@@ -3,6 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
+  ActionSheetController,
+  AlertController,
   IonBadge,
   IonButton,
   IonButtons,
@@ -23,8 +25,10 @@ import {
 import { addIcons } from 'ionicons';
 import {
   addOutline,
+  alertCircleOutline,
   arrowBackOutline,
   calendarClearOutline,
+  ellipsisVertical,
   checkmarkCircle,
   checkmarkCircleOutline,
   checkmarkDoneOutline,
@@ -133,9 +137,12 @@ export class MyGameDetailsPage implements OnInit {
     private readonly myGameService: MyGameService,
     private readonly questBoardService: QuestBoardService,
     private readonly sessionService: GamingSessionService,
+    private readonly alertController: AlertController,
+    private readonly actionSheetController: ActionSheetController,
   ) {
     addIcons({
       addOutline,
+      alertCircleOutline,
       arrowBackOutline,
       calendarClearOutline,
       checkmarkCircle,
@@ -144,6 +151,7 @@ export class MyGameDetailsPage implements OnInit {
       chevronDownOutline,
       chevronUpOutline,
       cubeOutline,
+      ellipsisVertical,
       flagOutline,
       gameControllerOutline,
       hourglassOutline,
@@ -487,15 +495,58 @@ export class MyGameDetailsPage implements OnInit {
     }
   }
 
-  async removeFromLibrary(): Promise<void> {
+  async openMoreMenu(): Promise<void> {
+    if (!this.isInLibrary) return;
+
+    const sheet = await this.actionSheetController.create({
+      header: this.game?.name ?? 'Game options',
+      cssClass: 'media-action-sheet',
+      buttons: [
+        {
+          text: 'Remove from library',
+          role: 'destructive',
+          icon: 'trash-outline',
+          handler: () => {
+            void this.confirmRemoveFromLibrary();
+          },
+        },
+        {
+          text: 'Cancel',
+          role: 'cancel',
+        },
+      ],
+    });
+    await sheet.present();
+  }
+
+  async confirmRemoveFromLibrary(): Promise<void> {
+    if (!this.isInLibrary || this.isUpdatingLibrary) return;
+
+    const alert = await this.alertController.create({
+      header: 'Remove from library?',
+      subHeader: this.game?.name ?? undefined,
+      message:
+        'This will also delete the quests and gaming sessions you linked to this game. This cannot be undone.',
+      cssClass: 'media-confirm-alert',
+      buttons: [
+        { text: 'Keep', role: 'cancel' },
+        {
+          text: 'Remove',
+          role: 'destructive',
+          cssClass: 'media-confirm-alert__destructive',
+          handler: () => {
+            void this.removeFromLibrary();
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  private async removeFromLibrary(): Promise<void> {
     const gameId = this.game?.id;
     const myGameId = this.myGameId;
     if (!gameId || myGameId == null || this.isUpdatingLibrary) return;
-
-    const confirmed = window.confirm(
-      `Remove "${this.game?.name ?? 'this game'}" from your library? Linked quests and sessions will be removed too.`,
-    );
-    if (!confirmed) return;
 
     this.isUpdatingLibrary = true;
     try {

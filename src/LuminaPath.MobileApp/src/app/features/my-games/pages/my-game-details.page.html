@@ -13,6 +13,16 @@
       </div>
     </div>
     <ion-title class="default-title">{{ game?.name || 'Game details' }}</ion-title>
+    <ion-buttons slot="end" *ngIf="isInLibrary">
+      <ion-button
+        fill="clear"
+        class="overflow-button"
+        aria-label="More actions"
+        [disabled]="isUpdatingLibrary"
+        (click)="openMoreMenu()">
+        <ion-icon slot="icon-only" name="ellipsis-vertical"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -102,15 +112,6 @@
           (click)="goToPlanning()">
           <ion-icon slot="start" name="calendar-clear-outline"></ion-icon>
           Plan sessions
-        </ion-button>
-        <ion-button
-          shape="round"
-          fill="clear"
-          class="quick-action quick-action--danger"
-          aria-label="Remove from library"
-          [disabled]="isUpdatingLibrary"
-          (click)="removeFromLibrary()">
-          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
         </ion-button>
       </ng-container>
     </section>

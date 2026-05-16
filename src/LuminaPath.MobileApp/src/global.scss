@@ -172,3 +172,119 @@ ion-content.planning-shell::part(scroll),
 ion-content.quest-shell::part(scroll) {
   scroll-padding-bottom: calc(132px + env(safe-area-inset-bottom));
 }
+
+ion-alert.media-confirm-alert {
+  --background: var(--app-chrome-bg-strong);
+  --backdrop-opacity: 0.7;
+
+  .alert-wrapper {
+    border: 1px solid var(--app-chrome-border);
+    border-radius: 22px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(22px) saturate(1.2);
+    overflow: hidden;
+  }
+
+  .alert-head {
+    padding: 22px 22px 8px;
+    text-align: left;
+  }
+
+  .alert-title {
+    color: var(--app-chrome-text);
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .alert-sub-title {
+    margin-top: 6px;
+    color: var(--app-theme-accent);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .alert-message {
+    padding: 0 22px 18px;
+    color: var(--app-chrome-muted);
+    font-size: 0.92rem;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  .alert-button-group {
+    padding: 8px;
+    gap: 6px;
+    border-top: 1px solid var(--app-chrome-border);
+  }
+
+  .alert-button {
+    flex: 1;
+    margin: 0;
+    min-height: 44px;
+    border-radius: 14px;
+    color: var(--app-chrome-text);
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
+
+    &.media-confirm-alert__destructive {
+      color: #ffd6d6;
+      background: linear-gradient(135deg, #d63b3b, #ef4444);
+      box-shadow: 0 10px 22px rgba(239, 68, 68, 0.32);
+    }
+  }
+}
+
+ion-action-sheet.media-action-sheet {
+  --background: var(--app-chrome-bg-strong);
+  --backdrop-opacity: 0.55;
+  --color: var(--app-chrome-text);
+
+  .action-sheet-wrapper {
+    padding: 8px;
+  }
+
+  .action-sheet-container {
+    border-radius: 22px;
+    border: 1px solid var(--app-chrome-border);
+    overflow: hidden;
+    backdrop-filter: blur(22px) saturate(1.2);
+  }
+
+  .action-sheet-title {
+    color: var(--app-chrome-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding-top: 18px;
+  }
+
+  .action-sheet-button {
+    --color: var(--app-chrome-text);
+    --background: transparent;
+    --background-hover: var(--app-theme-accent-soft);
+    font-size: 0.96rem;
+    font-weight: 600;
+
+    ion-icon {
+      color: var(--app-chrome-muted);
+    }
+
+    &.action-sheet-destructive {
+      --color: #fca5a5;
+
+      ion-icon {
+        color: #fca5a5;
+      }
+    }
+
+    &.action-sheet-cancel {
+      --color: var(--app-chrome-muted);
+      font-weight: 700;
+    }
+  }
+}

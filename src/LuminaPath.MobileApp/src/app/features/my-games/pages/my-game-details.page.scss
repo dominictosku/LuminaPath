@@ -305,18 +305,13 @@
     --color: var(--text);
     --background: rgba(255, 255, 255, 0.04);
   }
+}
 
-  .quick-action--danger {
-    flex: 0 0 auto;
-    min-width: 0;
-    --color: #fca5a5;
-    --background: rgba(248, 113, 113, 0.08);
-    --background-hover: rgba(248, 113, 113, 0.18);
-
-    &:hover {
-      --color: #fecaca;
-    }
-  }
+.overflow-button {
+  --color: var(--text);
+  --border-radius: 999px;
+  width: 42px;
+  height: 42px;
 }
 
 .library-card {
