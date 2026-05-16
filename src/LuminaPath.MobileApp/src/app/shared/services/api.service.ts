@@ -72,6 +72,26 @@ export class ApiService<T> {
       params = params.set('status', String(mediaFilter.Status));
     }
 
+    if (mediaFilter.MediaStatus !== undefined && mediaFilter.MediaStatus !== null) {
+      params = params.set('mediaStatus', String(mediaFilter.MediaStatus));
+    }
+
+    if (mediaFilter.Platform !== undefined && mediaFilter.Platform !== null) {
+      params = params.set('platform', String(mediaFilter.Platform));
+    }
+
+    if (mediaFilter.Ownership) {
+      params = params.set('ownership', mediaFilter.Ownership);
+    }
+
+    if (mediaFilter.SortBy) {
+      params = params.set('sortBy', mediaFilter.SortBy);
+    }
+
+    if (mediaFilter.SmartFilter) {
+      params = params.set('smartFilter', mediaFilter.SmartFilter);
+    }
+
     return params;
   }
 }

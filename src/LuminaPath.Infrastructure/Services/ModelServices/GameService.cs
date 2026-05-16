@@ -55,7 +55,72 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 filter = filter.And(game => game.Playtime <= maxPlaytime);
             }
 
+            if (mediaFilter.Status != null && userId != null)
+            {
+                var status = mediaFilter.Status.Value;
+                filter = filter.And(game => game.MyGames != null
+                    && game.MyGames.Any(myGame => myGame.LuminaUserId == userId && myGame.Status == status));
+            }
+
+            if (userId != null)
+            {
+                filter = mediaFilter.SmartFilter?.ToLowerInvariant() switch
+                {
+                    "short" => filter.And(game => game.MyGames != null
+                        && game.MyGames.Any(myGame =>
+                            myGame.LuminaUserId == userId
+                            && myGame.Status != Core.Enums.GameStatus.Completed
+                            && game.Playtime != null
+                            && game.Playtime - ((myGame.TimeSpend ?? 0) + (myGame.MyGameInfo != null ? myGame.MyGameInfo.TrackedHours : 0)) > 0
+                            && game.Playtime - ((myGame.TimeSpend ?? 0) + (myGame.MyGameInfo != null ? myGame.MyGameInfo.TrackedHours : 0)) <= 10)),
+                    "abandoned" => filter.And(game => game.MyGames != null
+                        && game.MyGames.Any(myGame =>
+                            myGame.LuminaUserId == userId
+                            && myGame.Status != Core.Enums.GameStatus.Playing
+                            && myGame.Status != Core.Enums.GameStatus.Completed
+                            && ((myGame.TimeSpend ?? 0) + (myGame.MyGameInfo != null ? myGame.MyGameInfo.TrackedHours : 0)) > 0
+                            && game.Playtime != null
+                            && game.Playtime - ((myGame.TimeSpend ?? 0) + (myGame.MyGameInfo != null ? myGame.MyGameInfo.TrackedHours : 0)) > 0)),
+                    "best" => filter.And(game => game.MyGames != null
+                        && game.MyGames.Any(myGame =>
+                            myGame.LuminaUserId == userId
+                            && myGame.Status != Core.Enums.GameStatus.Completed
+                            && game.Playtime != null
+                            && game.Playtime - ((myGame.TimeSpend ?? 0) + (myGame.MyGameInfo != null ? myGame.MyGameInfo.TrackedHours : 0)) > 0)),
+                    _ => filter
+                };
+            }
+
             return filter;
+        }
+
+        protected override IOrderedQueryable<Game> ApplyOrdering(IQueryable<Game> query, MediaFilter mediaFilter, string? userId)
+        {
+            if (userId is null)
+            {
+                return base.ApplyOrdering(query, mediaFilter, userId);
+            }
+
+            return mediaFilter.SortBy?.ToLowerInvariant() switch
+            {
+                "remaining-asc" => query
+                    .OrderBy(game => game.MyGames!
+                        .Where(myGame => myGame.LuminaUserId == userId)
+                        .Select(myGame => (game.Playtime ?? 0) - ((myGame.TimeSpend ?? 0) + (myGame.MyGameInfo != null ? myGame.MyGameInfo.TrackedHours : 0)))
+                        .FirstOrDefault())
+                    .ThenBy(game => game.Name),
+                "best-finish" => query
+                    .OrderBy(game => game.MyGames!
+                        .Where(myGame => myGame.LuminaUserId == userId)
+                        .Select(myGame =>
+                            ((game.Playtime ?? 0) - ((myGame.TimeSpend ?? 0) + (myGame.MyGameInfo != null ? myGame.MyGameInfo.TrackedHours : 0)))
+                            - (myGame.Status == Core.Enums.GameStatus.Playing ? 5 : 0)
+                            - (((myGame.TimeSpend ?? 0) + (myGame.MyGameInfo != null ? myGame.MyGameInfo.TrackedHours : 0)) > 0 ? 3 : 0)
+                            - ((myGame.Rating ?? 0) / 3.0))
+                        .FirstOrDefault())
+                    .ThenBy(game => game.Name),
+                _ => base.ApplyOrdering(query, mediaFilter, userId),
+            };
         }
 
         public Task<List<Game>> GetDropdownGames(string? searchName = null)

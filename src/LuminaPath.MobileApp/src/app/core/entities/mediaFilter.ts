@@ -1,15 +1,14 @@
-enum StatusOptions {
-  Any,
-  Completed,
-  Open,
-}
-
 export class MediaFilter {
   SearchString: string;
   From: string | null;
   To: string | null;
   MyMedia: boolean;
-  Status: StatusOptions;
+  Status: number | null;
+  MediaStatus: number | null;
+  Platform: number | null;
+  Ownership: string;
+  SortBy: string;
+  SmartFilter: string;
   Paging: Paging;
 
   constructor() {
@@ -17,7 +16,12 @@ export class MediaFilter {
     this.From = null;
     this.To = null;
     this.MyMedia = false;
-    this.Status = StatusOptions.Any;
+    this.Status = null;
+    this.MediaStatus = null;
+    this.Platform = null;
+    this.Ownership = "all";
+    this.SortBy = "title";
+    this.SmartFilter = "none";
     this.Paging = new Paging();
   }
 

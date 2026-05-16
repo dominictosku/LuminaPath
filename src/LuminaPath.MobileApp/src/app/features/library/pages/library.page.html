@@ -238,7 +238,7 @@
 
   <ion-infinite-scroll
     threshold="160px"
-    [disabled]="!hasMorePages || isLoading || isLoadingMore"
+    [disabled]="!hasMorePages || isLoading"
     (ionInfinite)="loadMoreGames($event)">
     <ion-infinite-scroll-content
       loadingSpinner="crescent"

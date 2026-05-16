@@ -12,5 +12,13 @@ namespace LuminaPath.Core.Extensions
             return Expression.Lambda<Func<T, bool>>(
                 Expression.AndAlso(left.Body, invokedExpr), left.Parameters);
         }
+
+        public static Expression<Func<T, bool>> Not<T>(
+            this Expression<Func<T, bool>> expression)
+        {
+            return Expression.Lambda<Func<T, bool>>(
+                Expression.Not(expression.Body),
+                expression.Parameters);
+        }
     }
 }

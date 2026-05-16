@@ -118,7 +118,7 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
         entities = IncludeUserLibrary(entities, userId);
 
         var composedFilter = ComposeFilter(mediaFilter, userId, filter);
-        entities = PrepareEntity(entities, composedFilter, DefaultOrderBy, includes);
+        entities = PrepareEntity(entities, composedFilter, query => ApplyOrdering(query, mediaFilter, userId), includes);
         return await CreatePaginatedList(entities, mediaFilter.Paging);
     }
 
@@ -131,7 +131,7 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
 
         PaginatedList<TMedia> entities = userId != null
             ? await GetAllPaginated(mediaFilter, userId, filter)
-            : await GetAllPaginated<TMedia>(mediaFilter, GetDefaultIncludes(includes), filter, DefaultOrderBy);
+            : await GetAllPaginated<TMedia>(mediaFilter, GetDefaultIncludes(includes), filter, query => ApplyOrdering(query, mediaFilter, userId));
 
         var entitiesDto = _mapper.Map<IEnumerable<TMedia>, IEnumerable<TDto>>(entities);
         var pageSize = mediaFilter.Paging.Count > 0 ? mediaFilter.Paging.Count : 10;
@@ -175,7 +175,10 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
         if (!string.IsNullOrWhiteSpace(mediaFilter.SearchString))
         {
             var search = mediaFilter.SearchString;
-            filter = filter.And(media => media.Name.Contains(search));
+            filter = filter.And(media =>
+                media.Name.Contains(search)
+                || (media.Description != null && media.Description.Contains(search))
+                || media.Genres.Any(genre => genre.Contains(search)));
         }
 
         if (mediaFilter.From != null)
@@ -207,7 +210,47 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
             filter = filter.And(IsInUserLibrary(userId));
         }
 
+        if (mediaFilter.MediaStatus != null && userId != null)
+        {
+            var mediaStatus = (int)mediaFilter.MediaStatus.Value;
+            filter = filter.And(media => EF.Property<IEnumerable<TUserMedia>>(media, UserLibraryNavigationName)
+                .Any(entry => entry.LuminaUserId == userId && EF.Property<int>(entry, "Status") == mediaStatus));
+        }
+
+        if (userId != null && string.Equals(mediaFilter.Ownership, "mine", StringComparison.OrdinalIgnoreCase))
+        {
+            filter = filter.And(IsInUserLibrary(userId));
+        }
+
+        if (userId != null && string.Equals(mediaFilter.Ownership, "catalog", StringComparison.OrdinalIgnoreCase))
+        {
+            filter = filter.And(IsNotInUserLibrary(userId));
+        }
+
         return filter;
+    }
+
+    protected virtual IOrderedQueryable<TMedia> ApplyOrdering(IQueryable<TMedia> query, MediaFilter mediaFilter, string? userId)
+    {
+        return mediaFilter.SortBy?.ToLowerInvariant() switch
+        {
+            "title" => query.OrderBy(media => media.Name),
+            "release-desc" => query.OrderByDescending(media => media.ReleaseDate).ThenBy(media => media.Name),
+            "release-asc" => query.OrderBy(media => media.ReleaseDate == null).ThenBy(media => media.ReleaseDate).ThenBy(media => media.Name),
+            "rating-desc" when userId != null => query
+                .OrderByDescending(media => EF.Property<IEnumerable<TUserMedia>>(media, UserLibraryNavigationName)
+                    .Where(entry => entry.LuminaUserId == userId)
+                    .Select(entry => entry.Rating)
+                    .FirstOrDefault())
+                .ThenBy(media => media.Name),
+            "recently-added" when userId != null => query
+                .OrderByDescending(media => EF.Property<IEnumerable<TUserMedia>>(media, UserLibraryNavigationName)
+                    .Where(entry => entry.LuminaUserId == userId)
+                    .Select(entry => entry.Id)
+                    .FirstOrDefault())
+                .ThenBy(media => media.Name),
+            _ => DefaultOrderBy(query),
+        };
     }
 
     private Expression<Func<TMedia, bool>> ComposeFilter(
@@ -217,6 +260,12 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
     {
         var filter = BuildFilterExpression(mediaFilter, userId);
         return additionalFilter is null ? filter : filter.And(additionalFilter);
+    }
+
+    protected virtual Expression<Func<TMedia, bool>> IsNotInUserLibrary(string userId)
+    {
+        var inLibrary = IsInUserLibrary(userId);
+        return inLibrary.Not();
     }
 
     private IEnumerable<string> GetDefaultIncludes(IEnumerable<string>? includes)

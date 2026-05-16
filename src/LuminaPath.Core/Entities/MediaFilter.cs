@@ -19,6 +19,9 @@ namespace LuminaPath.Core.Entities
         public short? MinRating { get; set; }
         public double? MinPlayedHours { get; set; }
         public bool OnlyWithRemainingHours { get; set; }
+        public string? Ownership { get; set; }
+        public string? SortBy { get; set; }
+        public string? SmartFilter { get; set; }
         public bool MyMedia { get; set; }
         public bool IncludeChildren { get; set; }
         public Paging Paging { get; set; } = new Paging();

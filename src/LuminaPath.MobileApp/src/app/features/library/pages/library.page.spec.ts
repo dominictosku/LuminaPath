@@ -162,7 +162,7 @@ describe('LibraryPage', () => {
     expect(component.isLoading).toBeFalse();
   });
 
-  it('filters games by ownership and search term', () => {
+  it('reloads from the first page with ownership and search filters', () => {
     const owned = makeGame({
       id: 1,
       name: 'Owned Game',
@@ -174,19 +174,24 @@ describe('LibraryPage', () => {
 
     component.ownershipFilter = 'mine';
     component.applyFilters();
-    expect(component.filteredGames.map((g) => g.id)).toEqual([1]);
+    let filter = mediaLibrary.getAll.calls.mostRecent().args[0];
+    expect(filter?.Paging.PageIndex).toBe(1);
+    expect(filter?.Ownership).toBe('mine');
 
     component.ownershipFilter = 'catalog';
     component.applyFilters();
-    expect(component.filteredGames.map((g) => g.id)).toEqual([2]);
+    filter = mediaLibrary.getAll.calls.mostRecent().args[0];
+    expect(filter?.Ownership).toBe('catalog');
 
     component.ownershipFilter = 'all';
     component.searchTerm = 'catalog';
     component.applyFilters();
-    expect(component.filteredGames.map((g) => g.id)).toEqual([2]);
+    filter = mediaLibrary.getAll.calls.mostRecent().args[0];
+    expect(filter?.Ownership).toBe('all');
+    expect(filter?.SearchString).toBe('catalog');
   });
 
-  it('applies smart filters for short and stalled games', () => {
+  it('sends smart filters to the server', () => {
     const shortGame = makeGame({
       id: 1,
       name: 'Tiny Quest',
@@ -209,13 +214,16 @@ describe('LibraryPage', () => {
     fixture.detectChanges();
 
     component.setSmartFilter('short');
-    expect(component.filteredGames.map((game) => game.id)).toEqual([1]);
+    let filter = mediaLibrary.getAll.calls.mostRecent().args[0];
+    expect(filter?.SmartFilter).toBe('short');
+    expect(filter?.Paging.PageIndex).toBe(1);
 
     component.setSmartFilter('abandoned');
-    expect(component.filteredGames.map((game) => game.id)).toEqual([2]);
+    filter = mediaLibrary.getAll.calls.mostRecent().args[0];
+    expect(filter?.SmartFilter).toBe('abandoned');
   });
 
-  it('sorts games by remaining hours, rating, and release date', () => {
+  it('sends sort modes to the server', () => {
     const shorter = makeGame({
       id: 1,
       name: 'Shorter',
@@ -235,15 +243,18 @@ describe('LibraryPage', () => {
 
     component.sortMode = 'remaining-asc';
     component.applyFilters();
-    expect(component.filteredGames.map((game) => game.id)).toEqual([1, 2]);
+    let filter = mediaLibrary.getAll.calls.mostRecent().args[0];
+    expect(filter?.SortBy).toBe('remaining-asc');
 
     component.sortMode = 'rating-desc';
     component.applyFilters();
-    expect(component.filteredGames.map((game) => game.id)).toEqual([2, 1]);
+    filter = mediaLibrary.getAll.calls.mostRecent().args[0];
+    expect(filter?.SortBy).toBe('rating-desc');
 
     component.sortMode = 'release-desc';
     component.applyFilters();
-    expect(component.filteredGames.map((game) => game.id)).toEqual([2, 1]);
+    filter = mediaLibrary.getAll.calls.mostRecent().args[0];
+    expect(filter?.SortBy).toBe('release-desc');
   });
 
   it('saves and applies library filter presets', () => {
