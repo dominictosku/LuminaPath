@@ -8,7 +8,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LuminaPath.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitMigration : Migration
+    public partial class InitialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -82,15 +82,36 @@ namespace LuminaPath.Infrastructure.Migrations
                     Discriminator = table.Column<string>(type: "character varying(8)", maxLength: 8, nullable: false),
                     ExpectedWatchTimePerEpisodeMinutes = table.Column<int>(type: "integer", nullable: true),
                     EpisodeCount = table.Column<int>(type: "integer", nullable: true),
+                    ParentAnimeId = table.Column<int>(type: "integer", nullable: true),
                     Platforms = table.Column<int>(type: "integer", nullable: true),
                     Playtime = table.Column<int>(type: "integer", nullable: true),
+                    ParentGameId = table.Column<int>(type: "integer", nullable: true),
                     ExpectedWatchTimeMinutes = table.Column<int>(type: "integer", nullable: true),
                     Series_ExpectedWatchTimePerEpisodeMinutes = table.Column<int>(type: "integer", nullable: true),
-                    Series_EpisodeCount = table.Column<int>(type: "integer", nullable: true)
+                    Series_EpisodeCount = table.Column<int>(type: "integer", nullable: true),
+                    ParentSeriesId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Media", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Media_Media_ParentAnimeId",
+                        column: x => x.ParentAnimeId,
+                        principalTable: "Media",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Media_Media_ParentGameId",
+                        column: x => x.ParentGameId,
+                        principalTable: "Media",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Media_Media_ParentSeriesId",
+                        column: x => x.ParentSeriesId,
+                        principalTable: "Media",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -294,6 +315,9 @@ namespace LuminaPath.Infrastructure.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     TotalXp = table.Column<int>(type: "integer", nullable: false),
+                    CurrentStreakDays = table.Column<int>(type: "integer", nullable: false),
+                    LongestStreakDays = table.Column<int>(type: "integer", nullable: false),
+                    LastCompletionDate = table.Column<DateOnly>(type: "date", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     LuminaUserId = table.Column<string>(type: "text", nullable: false)
@@ -521,6 +545,27 @@ namespace LuminaPath.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Achievements",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Code = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    UnlockedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    QuestProfileId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Achievements", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Achievements_QuestProfiles_QuestProfileId",
+                        column: x => x.QuestProfileId,
+                        principalTable: "QuestProfiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "QuestSkillNodes",
                 columns: table => new
                 {
@@ -604,14 +649,21 @@ namespace LuminaPath.Infrastructure.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Title = table.Column<string>(type: "text", nullable: false),
+                    Notes = table.Column<string>(type: "text", nullable: true),
                     Type = table.Column<int>(type: "integer", nullable: false),
+                    Priority = table.Column<int>(type: "integer", nullable: false),
+                    Recurrence = table.Column<int>(type: "integer", nullable: false),
+                    DueDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Tags = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb"),
                     RewardXp = table.Column<int>(type: "integer", nullable: false),
                     Completed = table.Column<bool>(type: "boolean", nullable: false),
                     CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     SortOrder = table.Column<int>(type: "integer", nullable: false),
                     LuminaUserId = table.Column<string>(type: "text", nullable: false),
-                    MyGameId = table.Column<int>(type: "integer", nullable: true)
+                    MyGameId = table.Column<int>(type: "integer", nullable: true),
+                    SkillId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -628,7 +680,43 @@ namespace LuminaPath.Infrastructure.Migrations
                         principalTable: "MyGames",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Quests_QuestSkills_SkillId",
+                        column: x => x.SkillId,
+                        principalTable: "QuestSkills",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "QuestSubtasks",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    Completed = table.Column<bool>(type: "boolean", nullable: false),
+                    CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    SortOrder = table.Column<int>(type: "integer", nullable: false),
+                    QuestId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_QuestSubtasks", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_QuestSubtasks_Quests_QuestId",
+                        column: x => x.QuestId,
+                        principalTable: "Quests",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Achievements_QuestProfileId_Code",
+                table: "Achievements",
+                columns: new[] { "QuestProfileId", "Code" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ApplicationSettings_Key",
@@ -728,6 +816,21 @@ namespace LuminaPath.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Media_ParentAnimeId",
+                table: "Media",
+                column: "ParentAnimeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Media_ParentGameId",
+                table: "Media",
+                column: "ParentGameId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Media_ParentSeriesId",
+                table: "Media",
+                column: "ParentSeriesId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MediaExternalIds_MediaId",
                 table: "MediaExternalIds",
                 column: "MediaId");
@@ -791,14 +894,24 @@ namespace LuminaPath.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Quests_LuminaUserId",
+                name: "IX_Quests_LuminaUserId_Completed_DueDate",
                 table: "Quests",
-                column: "LuminaUserId");
+                columns: new[] { "LuminaUserId", "Completed", "DueDate" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Quests_LuminaUserId_SortOrder",
+                table: "Quests",
+                columns: new[] { "LuminaUserId", "SortOrder" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Quests_MyGameId",
                 table: "Quests",
                 column: "MyGameId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Quests_SkillId",
+                table: "Quests",
+                column: "SkillId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_QuestSkillNodes_QuestSkillId",
@@ -809,11 +922,19 @@ namespace LuminaPath.Infrastructure.Migrations
                 name: "IX_QuestSkills_LuminaUserId",
                 table: "QuestSkills",
                 column: "LuminaUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_QuestSubtasks_QuestId_SortOrder",
+                table: "QuestSubtasks",
+                columns: new[] { "QuestId", "SortOrder" });
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "Achievements");
+
             migrationBuilder.DropTable(
                 name: "ApplicationSettings");
 
@@ -863,16 +984,19 @@ namespace LuminaPath.Infrastructure.Migrations
                 name: "MySeries");
 
             migrationBuilder.DropTable(
-                name: "QuestProfiles");
-
-            migrationBuilder.DropTable(
-                name: "Quests");
-
-            migrationBuilder.DropTable(
                 name: "QuestSkillNodes");
 
             migrationBuilder.DropTable(
+                name: "QuestSubtasks");
+
+            migrationBuilder.DropTable(
+                name: "QuestProfiles");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
+
+            migrationBuilder.DropTable(
+                name: "Quests");
 
             migrationBuilder.DropTable(
                 name: "MyGames");

@@ -1,5 +1,7 @@
+using System.Text.Json;
 using LuminaPath.Core.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LuminaPath.Infrastructure.ModelConfiguration
@@ -23,11 +25,44 @@ namespace LuminaPath.Infrastructure.ModelConfiguration
                 .HasForeignKey(subtask => subtask.QuestId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.PrimitiveCollection(quest => quest.Tags)
-                .HasColumnType("text[]");
+            builder.Property(quest => quest.Tags)
+                .HasColumnType("jsonb")
+                .HasDefaultValueSql("'[]'::jsonb")
+                .HasConversion(
+                    tags => JsonSerializer.Serialize(tags ?? new List<string>(), (JsonSerializerOptions?)null),
+                    json => DeserializeTags(json))
+                .Metadata.SetValueComparer(new ValueComparer<List<string>>(
+                    (a, b) => (a ?? new()).SequenceEqual(b ?? new()),
+                    list => list == null ? 0 : list.Aggregate(0, (hash, item) => HashCode.Combine(hash, item.GetHashCode())),
+                    list => list == null ? new List<string>() : list.ToList()));
 
             builder.HasIndex(quest => new { quest.LuminaUserId, quest.Completed, quest.DueDate });
             builder.HasIndex(quest => new { quest.LuminaUserId, quest.SortOrder });
+        }
+
+        private static List<string> DeserializeTags(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return new List<string>();
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                {
+                    return new List<string>();
+                }
+                return doc.RootElement.EnumerateArray()
+                    .Where(element => element.ValueKind == JsonValueKind.String)
+                    .Select(element => element.GetString() ?? string.Empty)
+                    .ToList();
+            }
+            catch (JsonException)
+            {
+                return new List<string>();
+            }
         }
     }
 }

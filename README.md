@@ -519,3 +519,11 @@ On Windows, if another process locks normal build output, use:
 ```powershell
 dotnet test Test/Test.csproj -p:OutDir=.\artifacts\test-out\
 ```
+
+## Migrations
+
+Apply Migrations
+
+```powershell
+dotnet ef migrations --project src/LuminaPath.Infrastructure/LuminaPath.Infrastructure.csproj --startup-project src/LuminaPath/LuminaPath.csproj add FixQuestMigration
+```

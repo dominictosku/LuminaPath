@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LuminaPath.Infrastructure.Migrations
 {
     [DbContext(typeof(LuminaPathDbContext))]
-    [Migration("20260514191747_QuestCRUDAndPriority")]
-    partial class QuestCRUDAndPriority
+    [Migration("20260516055308_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,6 +25,33 @@ namespace LuminaPath.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("LuminaPath.Core.Models.Achievement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("QuestProfileId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UnlockedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestProfileId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Achievements");
+                });
 
             modelBuilder.Entity("LuminaPath.Core.Models.ApplicationSetting", b =>
                 {
@@ -123,9 +150,6 @@ namespace LuminaPath.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
 
                     b.ToTable("Media");
 
@@ -244,74 +268,6 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasIndex("LuminaUserId", "ScheduledAt");
 
                     b.ToTable("GamingSessions");
-                });
-
-            modelBuilder.Entity("LuminaPath.Core.Models.LuminaUser", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<int>("AccessFailedCount")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("NormalizedEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("NormalizedUserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("text");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("SecurityStamp")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("UserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedEmail")
-                        .HasDatabaseName("EmailIndex");
-
-                    b.HasIndex("NormalizedUserName")
-                        .IsUnique()
-                        .HasDatabaseName("UserNameIndex");
-
-                    b.ToTable("AspNetUsers", (string)null);
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.MediaExternalId", b =>
@@ -559,7 +515,13 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<int>("Priority")
                         .HasColumnType("integer");
 
+                    b.Property<int>("Recurrence")
+                        .HasColumnType("integer");
+
                     b.Property<int>("RewardXp")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SkillId")
                         .HasColumnType("integer");
 
                     b.Property<int>("SortOrder")
@@ -567,7 +529,9 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.Property<string>("Tags")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValueSql("'[]'::jsonb");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -582,6 +546,8 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("MyGameId");
+
+                    b.HasIndex("SkillId");
 
                     b.HasIndex("LuminaUserId", "SortOrder");
 
@@ -600,6 +566,15 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CurrentStreakDays")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly?>("LastCompletionDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("LongestStreakDays")
+                        .HasColumnType("integer");
 
                     b.Property<string>("LuminaUserId")
                         .IsRequired()
@@ -690,6 +665,40 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.ToTable("QuestSkillNodes");
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.QuestSubtask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Completed")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("QuestId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestId", "SortOrder");
+
+                    b.ToTable("QuestSubtasks");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.LuminaUserInfo", b =>
                 {
                     b.Property<int>("Id")
@@ -775,6 +784,74 @@ namespace LuminaPath.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("MyGameInfo");
+                });
+
+            modelBuilder.Entity("LuminaPath.Infrastructure.Identity.LuminaUser", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex");
+
+                    b.ToTable("AspNetUsers", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -952,6 +1029,9 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<int?>("ParentAnimeId")
                         .HasColumnType("integer");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.HasIndex("ParentAnimeId");
 
                     b.HasDiscriminator().HasValue("Anime");
@@ -970,6 +1050,9 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<int?>("Playtime")
                         .HasColumnType("integer");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.HasIndex("ParentGameId");
 
                     b.HasDiscriminator().HasValue("Game");
@@ -981,6 +1064,9 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.Property<int?>("ExpectedWatchTimeMinutes")
                         .HasColumnType("integer");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.HasDiscriminator().HasValue("Movie");
                 });
@@ -998,6 +1084,9 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<int?>("ParentSeriesId")
                         .HasColumnType("integer");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.HasIndex("ParentSeriesId");
 
                     b.ToTable("Media", t =>
@@ -1012,47 +1101,50 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.HasDiscriminator().HasValue("Series");
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.Achievement", b =>
+                {
+                    b.HasOne("LuminaPath.Core.Models.QuestProfile", "QuestProfile")
+                        .WithMany("Achievements")
+                        .HasForeignKey("QuestProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("QuestProfile");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.DirectMessage", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "Recipient")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("RecipientId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "Sender")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("SenderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Recipient");
-
-                    b.Navigation("Sender");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Friendship", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "Addressee")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("AddresseeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "Requester")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("RequesterId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Addressee");
-
-                    b.Navigation("Requester");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.GamingSession", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "LuminaUser")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("LuminaUserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1062,8 +1154,6 @@ namespace LuminaPath.Infrastructure.Migrations
                         .WithMany("GamingSessions")
                         .HasForeignKey("MyGameId")
                         .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("LuminaUser");
 
                     b.Navigation("MyGame");
                 });
@@ -1087,15 +1177,13 @@ namespace LuminaPath.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "LuminaUser")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("LuminaUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Anime");
-
-                    b.Navigation("LuminaUser");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.MyGame", b =>
@@ -1106,20 +1194,18 @@ namespace LuminaPath.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "LuminaUser")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany("MyGames")
                         .HasForeignKey("LuminaUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Game");
-
-                    b.Navigation("LuminaUser");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.MyMovie", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "LuminaUser")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("LuminaUserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1131,14 +1217,12 @@ namespace LuminaPath.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("LuminaUser");
-
                     b.Navigation("Movie");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.MySeries", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "LuminaUser")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("LuminaUserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1150,14 +1234,12 @@ namespace LuminaPath.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("LuminaUser");
-
                     b.Navigation("Series");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Quest", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "LuminaUser")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("LuminaUserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1168,31 +1250,32 @@ namespace LuminaPath.Infrastructure.Migrations
                         .HasForeignKey("MyGameId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.Navigation("LuminaUser");
+                    b.HasOne("LuminaPath.Core.Models.QuestSkill", "Skill")
+                        .WithMany()
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("MyGame");
+
+                    b.Navigation("Skill");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.QuestProfile", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "LuminaUser")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("LuminaUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("LuminaUser");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.QuestSkill", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "LuminaUser")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("LuminaUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("LuminaUser");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.QuestSkillNode", b =>
@@ -1206,15 +1289,24 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Navigation("QuestSkill");
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.QuestSubtask", b =>
+                {
+                    b.HasOne("LuminaPath.Core.Models.Quest", "Quest")
+                        .WithMany("Subtasks")
+                        .HasForeignKey("QuestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quest");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.LuminaUserInfo", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "User")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithOne("LuminaUserInfo")
                         .HasForeignKey("LuminaPath.Core.Models.Third_Party.LuminaUserInfo", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Third_Party.MyGameInfo", b =>
@@ -1239,7 +1331,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", null)
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1248,7 +1340,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", null)
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1263,7 +1355,7 @@ namespace LuminaPath.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", null)
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1272,7 +1364,7 @@ namespace LuminaPath.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", null)
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1290,13 +1382,11 @@ namespace LuminaPath.Infrastructure.Migrations
 
             modelBuilder.Entity("LuminaPath.Core.Models.UserDocument", b =>
                 {
-                    b.HasOne("LuminaPath.Core.Models.LuminaUser", "User")
+                    b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
                         .WithMany("Documents")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Anime", b =>
@@ -1336,15 +1426,6 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Navigation("Image");
                 });
 
-            modelBuilder.Entity("LuminaPath.Core.Models.LuminaUser", b =>
-                {
-                    b.Navigation("Documents");
-
-                    b.Navigation("LuminaUserInfo");
-
-                    b.Navigation("MyGames");
-                });
-
             modelBuilder.Entity("LuminaPath.Core.Models.MyGame", b =>
                 {
                     b.Navigation("GamingSessions");
@@ -1354,9 +1435,28 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Navigation("Quests");
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.Quest", b =>
+                {
+                    b.Navigation("Subtasks");
+                });
+
+            modelBuilder.Entity("LuminaPath.Core.Models.QuestProfile", b =>
+                {
+                    b.Navigation("Achievements");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.QuestSkill", b =>
                 {
                     b.Navigation("Nodes");
+                });
+
+            modelBuilder.Entity("LuminaPath.Infrastructure.Identity.LuminaUser", b =>
+                {
+                    b.Navigation("Documents");
+
+                    b.Navigation("LuminaUserInfo");
+
+                    b.Navigation("MyGames");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.Anime", b =>

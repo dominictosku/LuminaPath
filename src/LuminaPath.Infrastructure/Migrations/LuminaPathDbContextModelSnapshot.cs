@@ -524,9 +524,11 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer");
 
-                    b.PrimitiveCollection<List<string>>("Tags")
+                    b.Property<string>("Tags")
                         .IsRequired()
-                        .HasColumnType("text[]");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValueSql("'[]'::jsonb");
 
                     b.Property<string>("Title")
                         .IsRequired()
