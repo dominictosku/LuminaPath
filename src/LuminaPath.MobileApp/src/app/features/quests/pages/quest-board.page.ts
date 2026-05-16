@@ -1016,7 +1016,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
         icon: this.newSkill.icon,
         color: this.newSkill.color,
         xp: 0,
-        nodes: this.defaultNodesForSkill(name),
+        nodes: [],
         unlockedNodes: [],
       },
     ];
@@ -1072,7 +1072,8 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   nextNodeName(skill: QuestSkill): string {
     const index = this.nextNodeIndex(skill);
-    return index >= 0 ? skill.nodes[index] : 'Mastery path complete';
+    if (index >= 0) return skill.nodes[index];
+    return skill.nodes.length === 0 ? 'Add your first node' : 'Mastery path complete';
   }
 
   skillNodeState(skill: QuestSkill, nodeIndex: number): SkillNodeState {
@@ -1114,20 +1115,6 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     const skill = this.skills.find((item) => item.id === parsed.skillId);
     if (!skill) return;
     await this.unlockNode(skill, parsed.nodeIndex);
-  }
-
-  private defaultNodesForSkill(name: string): string[] {
-    const lower = name.toLowerCase();
-    if (lower.includes('program')) {
-      return ['Programming fundamentals', 'Object-oriented programming', 'Functional programming', 'Build a real app', 'Deploy and maintain it'];
-    }
-    if (lower.includes('fit') || lower.includes('health')) {
-      return ['First weekly routine', 'Basic nutrition', 'Consistent workouts', 'Endurance milestone', 'Sustainable lifestyle'];
-    }
-    if (lower.includes('language') || lower.includes('japanese')) {
-      return ['Core phrases', 'Daily vocabulary habit', 'Basic grammar', 'First conversation', 'Read native material'];
-    }
-    return ['First practice', 'Core concepts', 'Guided project', 'Independent project', 'Mastery milestone'];
   }
 
   // -------- Drag-to-reorder --------
