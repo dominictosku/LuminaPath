@@ -3,7 +3,7 @@ import { Game } from '../../models/games.model';
 import { GameService } from 'src/app/features/games/services/game.service';
 import { IonicFunctionsService } from 'src/app/shared/services/ionic-functions.service';
 import { MyGameFormComponent } from 'src/app/features/my-games/components/my-game-form/my-game-form.component';
-import { IonFab, IonFabButton, IonIcon, IonInfiniteScrollContent, IonInfiniteScroll } from '@ionic/angular/standalone';
+import { IonFab, IonFabButton, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from "ionicons";
 import { create } from 'ionicons/icons';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
@@ -12,7 +12,7 @@ import { mediaImageUrl } from 'src/app/shared/utils/media-url';
     selector: 'app-grid-game-data',
     templateUrl: './grid-game-data.component.html',
     styleUrls: ['./grid-game-data.component.scss'],
-    imports: [IonInfiniteScrollContent, IonFab, IonFabButton, IonIcon, IonInfiniteScroll]
+    imports: [IonFab, IonFabButton, IonIcon]
 })
 export class GridGameDataComponent implements OnInit {
 
@@ -26,8 +26,6 @@ export class GridGameDataComponent implements OnInit {
     });
   }
 
-  countMedia = 50
-
   games: Game[] = [];
 
   openModal() {
@@ -37,16 +35,6 @@ export class GridGameDataComponent implements OnInit {
   navigate() {
 
   }
-
-  ionInfinite = async (ev: any) => {
-    this.countMedia += 50;
-    this.gameService.getAll().subscribe((event: any) => {
-      this.games = event.data
-    });
-    setTimeout(() => {
-      ev.target.complete();
-    }, 500);
-  };
 
   GroupedMedia = () => {
     const media = this.games;
