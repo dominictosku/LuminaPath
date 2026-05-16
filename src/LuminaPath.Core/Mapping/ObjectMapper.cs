@@ -213,6 +213,7 @@ namespace LuminaPath.Core.Mapping
                 Status = source.Status,
                 TimeSpend = source.TimeSpend,
                 GameId = source.GameId,
+                PersonalNotes = source.PersonalNotes,
                 Game = source.Game == null ? null : Map<Game>(source.Game),
                 MyGameInfo = MapMyGameInfo(source.MyGameInfo)
             };
@@ -231,6 +232,7 @@ namespace LuminaPath.Core.Mapping
                 TimeSpend = source.TimeSpend,
                 LuminaUserId = source.LuminaUserId,
                 GameId = source.GameId,
+                PersonalNotes = source.PersonalNotes,
                 MyGameInfo = MapMyGameInfo(source.MyGameInfo)
             };
 
@@ -254,6 +256,7 @@ namespace LuminaPath.Core.Mapping
                 Status = source.Status,
                 TimeSpend = source.TimeSpend.HasValue ? Convert.ToInt32(source.TimeSpend.Value) : null,
                 GameId = source.GameId,
+                PersonalNotes = source.PersonalNotes,
                 Game = source.Game == null ? null : Map<GamesNoIncludeDto>(source.Game),
                 MyGameInfo = MapMyGameInfo(source.MyGameInfo) ?? new()
             };

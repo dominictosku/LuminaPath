@@ -34,7 +34,11 @@ import {
   checkmarkDoneOutline,
   chevronDownOutline,
   chevronUpOutline,
+  closeOutline,
+  createOutline,
   cubeOutline,
+  documentTextOutline,
+  eyeOutline,
   flagOutline,
   gameControllerOutline,
   hourglassOutline,
@@ -45,6 +49,7 @@ import {
   playOutline,
   refreshOutline,
   returnUpBackOutline,
+  saveOutline,
   trashOutline,
 } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
@@ -66,7 +71,17 @@ const STATUS_LABELS: Record<number, string> = {
 };
 
 type GameWithFlexibleLibrary = Game & {
-  myGames?: { id?: number; status?: number } | { id?: number; status?: number }[] | null;
+  myGames?: GameLibraryEntry | GameLibraryEntry[] | null;
+};
+
+type GameLibraryEntry = {
+  id?: number;
+  status?: number;
+  timeSpend?: number | null;
+  rating?: number | null;
+  startDate?: Date | string | null;
+  endDate?: Date | string | null;
+  personalNotes?: string | null;
 };
 
 @Component({
@@ -119,6 +134,9 @@ export class MyGameDetailsPage implements OnInit {
   newQuestType: QuestType = 'sub';
 
   isUpdatingLibrary = false;
+  isEditingNotes = false;
+  isSavingNotes = false;
+  notesDraft = '';
   headerCondensed = false;
   completedExpanded = false;
   isAddingStarter = false;
@@ -150,8 +168,12 @@ export class MyGameDetailsPage implements OnInit {
       checkmarkDoneOutline,
       chevronDownOutline,
       chevronUpOutline,
+      closeOutline,
+      createOutline,
       cubeOutline,
+      documentTextOutline,
       ellipsisVertical,
+      eyeOutline,
       flagOutline,
       gameControllerOutline,
       hourglassOutline,
@@ -162,6 +184,7 @@ export class MyGameDetailsPage implements OnInit {
       playOutline,
       refreshOutline,
       returnUpBackOutline,
+      saveOutline,
       trashOutline,
     });
   }
@@ -182,7 +205,7 @@ export class MyGameDetailsPage implements OnInit {
     });
   }
 
-  get libraryEntry(): { id?: number; status?: number } | null {
+  get libraryEntry(): GameLibraryEntry | null {
     const entry = this.game?.myGames;
     if (Array.isArray(entry)) {
       return entry[0] ?? null;
@@ -236,6 +259,18 @@ export class MyGameDetailsPage implements OnInit {
 
   get playtimeLabel(): string {
     return this.game?.playtime ? `${this.game.playtime}h estimated` : 'No estimate';
+  }
+
+  get personalNotes(): string {
+    return this.libraryEntry?.personalNotes?.trim() ?? '';
+  }
+
+  get hasPersonalNotes(): boolean {
+    return this.personalNotes.length > 0;
+  }
+
+  get renderedPersonalNotes(): string {
+    return this.renderMarkdown(this.personalNotes);
   }
 
   get dlcs(): GameSummary[] {
@@ -449,6 +484,40 @@ export class MyGameDetailsPage implements OnInit {
     this.selectedNewsProvider = value;
   }
 
+  startEditingNotes(): void {
+    this.notesDraft = this.libraryEntry?.personalNotes ?? '';
+    this.isEditingNotes = true;
+  }
+
+  cancelEditingNotes(): void {
+    this.notesDraft = '';
+    this.isEditingNotes = false;
+  }
+
+  async savePersonalNotes(): Promise<void> {
+    const gameId = this.game?.id;
+    const myGameId = this.myGameId;
+    if (!gameId || myGameId == null || this.isSavingNotes) {
+      return;
+    }
+
+    this.isSavingNotes = true;
+    try {
+      await firstValueFrom(
+        this.myGameService.updateLibraryEntry(myGameId, gameId, this.libraryUpdateDetails({
+          personalNotes: this.normalizeNotes(this.notesDraft),
+        })),
+      );
+      this.isEditingNotes = false;
+      this.notesDraft = '';
+      await this.loadGameAndQuests(gameId);
+    } catch {
+      // silent; the draft stays in place so the note is not lost
+    } finally {
+      this.isSavingNotes = false;
+    }
+  }
+
   onScroll(event: CustomEvent<{ scrollTop: number }>): void {
     const scrollTop = event.detail?.scrollTop ?? 0;
     const condensed = scrollTop > 140;
@@ -485,6 +554,7 @@ export class MyGameDetailsPage implements OnInit {
           rating: null,
           startDate: null,
           endDate: null,
+          personalNotes: null,
         }),
       );
       await this.loadGameAndQuests(this.game.id);
@@ -567,23 +637,12 @@ export class MyGameDetailsPage implements OnInit {
     const current = Number(this.libraryEntry?.status ?? 1);
     const next = current === 4 ? 1 : current === 1 ? 2 : current === 2 ? 3 : current === 3 ? 4 : 2;
 
-    const entry = (this.libraryEntry ?? {}) as {
-      timeSpend?: number | null;
-      rating?: number | null;
-      startDate?: string | null;
-      endDate?: string | null;
-    };
-
     this.isUpdatingLibrary = true;
     try {
       await firstValueFrom(
-        this.myGameService.updateLibraryEntry(myGameId, gameId, {
+        this.myGameService.updateLibraryEntry(myGameId, gameId, this.libraryUpdateDetails({
           status: next,
-          timeSpend: entry.timeSpend ?? null,
-          rating: entry.rating ?? null,
-          startDate: entry.startDate ?? null,
-          endDate: entry.endDate ?? null,
-        }),
+        })),
       );
       await this.loadGameAndQuests(gameId);
     } catch {
@@ -684,6 +743,128 @@ export class MyGameDetailsPage implements OnInit {
 
   goToPlanning(): void {
     void this.router.navigateByUrl('/planing');
+  }
+
+  private libraryUpdateDetails(overrides: Partial<{
+    status: number;
+    timeSpend: number | null;
+    rating: number | null;
+    startDate: string | null;
+    endDate: string | null;
+    personalNotes: string | null;
+  }> = {}) {
+    const entry = this.libraryEntry ?? {};
+    return {
+      status: Number(entry.status ?? 1),
+      timeSpend: entry.timeSpend ?? null,
+      rating: entry.rating ?? null,
+      startDate: this.serializeDate(entry.startDate),
+      endDate: this.serializeDate(entry.endDate),
+      personalNotes: entry.personalNotes ?? null,
+      ...overrides,
+    };
+  }
+
+  private normalizeNotes(value: string): string | null {
+    const normalized = value.replace(/\r\n/g, '\n').trim();
+    return normalized.length ? normalized : null;
+  }
+
+  private serializeDate(value: Date | string | null | undefined): string | null {
+    if (!value) {
+      return null;
+    }
+    return value instanceof Date ? value.toISOString() : value;
+  }
+
+  renderMarkdown(markdown: string): string {
+    const lines = this.escapeHtml(markdown).split('\n');
+    const html: string[] = [];
+    let paragraph: string[] = [];
+    let listItems: string[] = [];
+    let codeLines: string[] | null = null;
+
+    const flushParagraph = () => {
+      if (!paragraph.length) return;
+      html.push(`<p>${this.renderInline(paragraph.join(' '))}</p>`);
+      paragraph = [];
+    };
+
+    const flushList = () => {
+      if (!listItems.length) return;
+      html.push(`<ul>${listItems.map((item) => `<li>${this.renderInline(item)}</li>`).join('')}</ul>`);
+      listItems = [];
+    };
+
+    for (const line of lines) {
+      if (line.trim().startsWith('```')) {
+        flushParagraph();
+        flushList();
+        if (codeLines) {
+          html.push(`<pre><code>${codeLines.join('\n')}</code></pre>`);
+          codeLines = null;
+        } else {
+          codeLines = [];
+        }
+        continue;
+      }
+
+      if (codeLines) {
+        codeLines.push(line);
+        continue;
+      }
+
+      const trimmed = line.trim();
+      if (!trimmed) {
+        flushParagraph();
+        flushList();
+        continue;
+      }
+
+      const heading = trimmed.match(/^(#{1,3})\s+(.+)$/);
+      if (heading) {
+        flushParagraph();
+        flushList();
+        const level = heading[1].length + 2;
+        html.push(`<h${level}>${this.renderInline(heading[2])}</h${level}>`);
+        continue;
+      }
+
+      const listItem = trimmed.match(/^[-*]\s+(.+)$/);
+      if (listItem) {
+        flushParagraph();
+        listItems.push(listItem[1]);
+        continue;
+      }
+
+      flushList();
+      paragraph.push(trimmed);
+    }
+
+    flushParagraph();
+    flushList();
+    if (codeLines) {
+      html.push(`<pre><code>${codeLines.join('\n')}</code></pre>`);
+    }
+
+    return html.join('');
+  }
+
+  private renderInline(value: string): string {
+    return value
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   private showError(message: string): void {

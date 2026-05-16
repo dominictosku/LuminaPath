@@ -17,6 +17,8 @@ namespace LuminaPath.Core.Models
         [Display(Name = "Game Id")]
         public int GameId { get; set; }
 
+        public string? PersonalNotes { get; set; }
+
         public Game? Game { get; set; }
         public MyGameInfo? MyGameInfo { get; set; }
         public List<Quest>? Quests { get; set; }

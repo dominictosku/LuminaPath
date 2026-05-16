@@ -9,6 +9,7 @@ export interface UserMediaEntry {
   endDate: Date | string | null;
   status: number;
   timeSpend: number | null;
+  personalNotes?: string | null;
   myGameInfo?: { trackedHours?: number | null } | null;
   currentWatchTimeMinutes?: number | null;
   currentEpisode?: number | null;
@@ -36,5 +37,6 @@ export type LibraryEntryDetails = {
   rating?: number | null;
   startDate?: string | null;
   endDate?: string | null;
+  personalNotes?: string | null;
   currentEpisode?: number | null;
 };

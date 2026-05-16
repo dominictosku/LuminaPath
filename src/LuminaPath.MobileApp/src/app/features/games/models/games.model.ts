@@ -58,6 +58,7 @@ export class MyGame implements IBasicInfo {
   status: number;
   timeSpend: number | null;
   gameId: number;
+  personalNotes: string | null;
   game: Game | null;
   myGameInfo: MyGameInfo | null;
 
@@ -70,6 +71,7 @@ export class MyGame implements IBasicInfo {
     this.timeSpend = 0;
     this.game = null;
     this.gameId = gameId;
+    this.personalNotes = null;
     this.myGameInfo = null;
   }
 }

@@ -161,6 +161,7 @@ export class MediaLibraryFacade {
       endDate: entry.endDate,
       status: entry.status,
       timeSpend: entry.timeSpend,
+      personalNotes: 'personalNotes' in entry ? entry.personalNotes as string | null : null,
       myGameInfo: 'myGameInfo' in entry ? entry.myGameInfo : null,
       currentWatchTimeMinutes: 'currentWatchTimeMinutes' in entry ? entry.currentWatchTimeMinutes : null,
       currentEpisode: 'currentEpisode' in entry ? entry.currentEpisode : null,

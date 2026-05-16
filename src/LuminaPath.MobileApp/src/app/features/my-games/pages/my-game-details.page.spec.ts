@@ -6,9 +6,10 @@ import { of } from 'rxjs';
 
 import { MyGameDetailsPage } from './my-game-details.page';
 import { GameService } from 'src/app/features/games/services/game.service';
-import { QuestBoardService } from 'src/app/features/quests/services/quest-board.service';
+import { Quest, QuestBoardService } from 'src/app/features/quests/services/quest-board.service';
 import { Game, MyGame } from 'src/app/features/games/models/games.model';
 import { GamingSessionService } from 'src/app/features/planing/services/gaming-session.service';
+import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
 
 function makeGame(overrides: Partial<Game> = {}): Game {
   return Object.assign(new Game(), overrides);
@@ -18,6 +19,22 @@ function makeMyGame(id: number, gameId: number): MyGame {
   return Object.assign(new MyGame(gameId), { id });
 }
 
+function makeQuest(overrides: Partial<Quest>): Quest {
+  return {
+    id: 1,
+    title: 'Quest',
+    type: 'sub',
+    priority: 'medium',
+    recurrence: 'none',
+    tags: [],
+    completed: false,
+    rewardXp: 10,
+    sortOrder: 0,
+    subtasks: [],
+    ...overrides,
+  };
+}
+
 describe('MyGameDetailsPage', () => {
   let fixture: ComponentFixture<MyGameDetailsPage>;
   let component: MyGameDetailsPage;
@@ -25,17 +42,24 @@ describe('MyGameDetailsPage', () => {
   let gameService: jasmine.SpyObj<GameService>;
   let questBoardService: jasmine.SpyObj<QuestBoardService>;
   let sessionService: jasmine.SpyObj<GamingSessionService>;
+  let myGameService: jasmine.SpyObj<MyGameService>;
   let router: jasmine.SpyObj<Router>;
   let location: jasmine.SpyObj<Location>;
 
   function configure(gameId: string | null, gameOverride?: Game) {
     gameService = jasmine.createSpyObj<GameService>('GameService', ['get', 'getNews']);
     questBoardService = jasmine.createSpyObj<QuestBoardService>('QuestBoardService', [
-      'getBoard',
-      'saveBoard',
+      'createQuest',
+      'updateQuest',
+      'deleteQuest',
       'getQuestsForGame',
     ]);
     sessionService = jasmine.createSpyObj<GamingSessionService>('GamingSessionService', ['forecast']);
+    myGameService = jasmine.createSpyObj<MyGameService>('MyGameService', [
+      'addToLibrary',
+      'updateLibraryEntry',
+      'delete',
+    ]);
     router = jasmine.createSpyObj<Router>('Router', ['navigate', 'navigateByUrl']);
     location = jasmine.createSpyObj<Location>('Location', ['back']);
 
@@ -44,7 +68,11 @@ describe('MyGameDetailsPage', () => {
     }
     gameService.getNews.and.returnValue(of([]));
     questBoardService.getQuestsForGame.and.resolveTo([]);
+    questBoardService.createQuest.and.resolveTo({} as any);
+    questBoardService.updateQuest.and.resolveTo({} as any);
+    questBoardService.deleteQuest.and.resolveTo(undefined as any);
     sessionService.forecast.and.returnValue(of(null as any));
+    myGameService.updateLibraryEntry.and.returnValue(of(new MyGame(1)));
 
     TestBed.configureTestingModule({
       imports: [MyGameDetailsPage],
@@ -53,11 +81,15 @@ describe('MyGameDetailsPage', () => {
         { provide: GameService, useValue: gameService },
         { provide: QuestBoardService, useValue: questBoardService },
         { provide: GamingSessionService, useValue: sessionService },
+        { provide: MyGameService, useValue: myGameService },
         { provide: Router, useValue: router },
         { provide: Location, useValue: location },
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: convertToParamMap(gameId == null ? {} : { gameId }) } },
+          useValue: {
+            paramMap: of(convertToParamMap(gameId == null ? {} : { gameId })),
+            snapshot: { paramMap: convertToParamMap(gameId == null ? {} : { gameId }) },
+          },
         },
       ],
     });
@@ -78,8 +110,8 @@ describe('MyGameDetailsPage', () => {
     const game = makeGame({ id: 42, name: 'Hades', myGames: myGame });
     configure('42', game);
     questBoardService.getQuestsForGame.and.resolveTo([
-      { id: 1, title: 'Beat boss', completed: false, myGameId: 7 },
-      { id: 2, title: 'Side quest', completed: true, myGameId: 7 },
+      makeQuest({ id: 1, title: 'Beat boss', completed: false, myGameId: 7 }),
+      makeQuest({ id: 2, title: 'Side quest', completed: true, myGameId: 7 }),
     ]);
 
     await component.ngOnInit();
@@ -156,12 +188,6 @@ describe('MyGameDetailsPage', () => {
     const game = makeGame({ id: 42, name: 'Hades', myGames: myGame });
     configure('42', game);
 
-    questBoardService.getBoard.and.resolveTo({
-      xp: 0,
-      quests: { main: [], sub: [], faction: [] },
-      skills: [],
-    });
-    questBoardService.saveBoard.and.callFake((state) => Promise.resolve(state));
     questBoardService.getQuestsForGame.and.resolveTo([]);
 
     await component.ngOnInit();
@@ -170,12 +196,10 @@ describe('MyGameDetailsPage', () => {
     component.newQuestType = 'main';
     await component.addQuest();
 
-    const savedState = questBoardService.saveBoard.calls.mostRecent().args[0];
-    expect(savedState.quests.main.length).toBe(1);
-    expect(savedState.quests.main[0]).toEqual(jasmine.objectContaining({
+    expect(questBoardService.createQuest).toHaveBeenCalledOnceWith(jasmine.objectContaining({
       title: 'Kill Megaera',
       myGameId: 7,
-      completed: false,
+      type: 'main',
     }));
     expect(component.newQuestTitle).toBe('');
     expect(questBoardService.getQuestsForGame).toHaveBeenCalledTimes(2);
@@ -190,32 +214,50 @@ describe('MyGameDetailsPage', () => {
     component.newQuestTitle = '   ';
     await component.addQuest();
 
-    expect(questBoardService.getBoard).not.toHaveBeenCalled();
-    expect(questBoardService.saveBoard).not.toHaveBeenCalled();
+    expect(questBoardService.createQuest).not.toHaveBeenCalled();
   });
 
-  it('deleteQuest removes the quest from the board state on save', async () => {
+  it('deleteQuest removes the quest through the quest service', async () => {
     const myGame = makeMyGame(7, 42);
     const game = makeGame({ id: 42, name: 'Hades', myGames: myGame });
     configure('42', game);
 
-    questBoardService.getBoard.and.resolveTo({
-      xp: 0,
-      quests: {
-        main: [{ id: 99, title: 'Doomed', completed: false, myGameId: 7 }],
-        sub: [],
-        faction: [],
-      },
-      skills: [],
-    });
-    questBoardService.saveBoard.and.callFake((state) => Promise.resolve(state));
     questBoardService.getQuestsForGame.and.resolveTo([]);
 
     await component.ngOnInit();
-    await component.deleteQuest({ id: 99, title: 'Doomed', completed: false, myGameId: 7 });
+    await component.deleteQuest(makeQuest({ id: 99, title: 'Doomed', completed: false, myGameId: 7 }));
 
-    const savedState = questBoardService.saveBoard.calls.mostRecent().args[0];
-    expect(savedState.quests.main.find((q) => q.id === 99)).toBeUndefined();
+    expect(questBoardService.deleteQuest).toHaveBeenCalledOnceWith(99);
+  });
+
+  it('saves personal notes on the library entry', async () => {
+    const myGame = Object.assign(makeMyGame(7, 42), {
+      status: 2,
+      personalNotes: 'old note',
+    });
+    const game = makeGame({ id: 42, name: 'Hades', myGames: myGame });
+    configure('42', game);
+
+    await component.ngOnInit();
+    component.startEditingNotes();
+    component.notesDraft = '  # Build\n- Shield run\n\n**Heat 8**  ';
+    await component.savePersonalNotes();
+
+    expect(myGameService.updateLibraryEntry).toHaveBeenCalledOnceWith(7, 42, jasmine.objectContaining({
+      status: 2,
+      personalNotes: '# Build\n- Shield run\n\n**Heat 8**',
+    }));
+    expect(component.isEditingNotes).toBeFalse();
+  });
+
+  it('renders personal notes as escaped markdown', () => {
+    configure('42', makeGame({ id: 42, name: 'Hades' }));
+
+    const html = component.renderMarkdown('# Notes\n- **Win** `<script>`');
+
+    expect(html).toContain('<h3>Notes</h3>');
+    expect(html).toContain('<strong>Win</strong>');
+    expect(html).toContain('&lt;script&gt;');
   });
 
   it('goBack navigates to the library', () => {

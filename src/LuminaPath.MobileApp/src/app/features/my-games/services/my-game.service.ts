@@ -10,8 +10,9 @@ export type AddMyGameRequest = {
   status: number;
   timeSpend: number | null;
   rating?: number | null;
-  startDate?: string | null;
-  endDate?: string | null;
+  startDate?: Date | string | null;
+  endDate?: Date | string | null;
+  personalNotes?: string | null;
 };
 
 @Injectable({
