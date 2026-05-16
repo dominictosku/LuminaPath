@@ -1,4 +1,9 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { SkillTreeBranch, SkillTreeNode, SkillTreeNodeStatus, SkillTreePickedNode } from '../models/skill-tree.model';
 
 const SKILL_SPACING = 22;
@@ -57,8 +62,12 @@ export class SkillTreeScene {
   private canvas!: HTMLCanvasElement;
   private rafId: number | null = null;
   private lastTime = 0;
+  private composer: EffectComposer | null = null;
+  private bloomPass: UnrealBloomPass | null = null;
+  private caPass: ShaderPass | null = null;
+  private lineTimeUniform = { value: 0 };
   private resizeHandler = () => this.onResize();
-  private mouseMoveHandler = (e: MouseEvent) => this.onMouseMove(e);
+  private pointerMoveHandler = (e: PointerEvent) => this.onPointerMove(e);
   private clickHandler = () => this.onClick();
   private destroyed = false;
 
@@ -86,13 +95,59 @@ export class SkillTreeScene {
     this.buildStarfield();
     this.buildNebula(branches);
     this.buildConstellations(branches);
+    this.buildComposer();
 
     window.addEventListener('resize', this.resizeHandler);
-    canvas.addEventListener('mousemove', this.mouseMoveHandler);
+    canvas.addEventListener('pointermove', this.pointerMoveHandler);
     canvas.addEventListener('click', this.clickHandler);
 
     this.lastTime = performance.now();
     this.rafId = requestAnimationFrame(now => this.animate(now));
+  }
+
+  private buildComposer(): void {
+    const w = this.canvas.clientWidth || window.innerWidth;
+    const h = this.canvas.clientHeight || window.innerHeight;
+
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.composer.setSize(w, h);
+
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(w, h), 0.75, 0.55, 0.82);
+    this.composer.addPass(this.bloomPass);
+
+    this.caPass = new ShaderPass({
+      uniforms: {
+        tDiffuse: { value: null },
+        uAmount: { value: 0 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float uAmount;
+        varying vec2 vUv;
+        void main() {
+          vec2 dir = (vUv - 0.5);
+          vec2 offset = dir * uAmount;
+          float r = texture2D(tDiffuse, vUv - offset).r;
+          float g = texture2D(tDiffuse, vUv).g;
+          float b = texture2D(tDiffuse, vUv + offset).b;
+          float a = texture2D(tDiffuse, vUv).a;
+          gl_FragColor = vec4(r, g, b, a);
+        }
+      `,
+    });
+    this.composer.addPass(this.caPass);
+
+    this.composer.addPass(new OutputPass());
   }
 
   destroy(): void {
@@ -103,10 +158,14 @@ export class SkillTreeScene {
     }
     window.removeEventListener('resize', this.resizeHandler);
     if (this.canvas) {
-      this.canvas.removeEventListener('mousemove', this.mouseMoveHandler);
+      this.canvas.removeEventListener('pointermove', this.pointerMoveHandler);
       this.canvas.removeEventListener('click', this.clickHandler);
     }
     this.listeners = { hover: [], click: [], whoosh: [], hoverSound: [] };
+    if (this.composer) {
+      this.composer.dispose?.();
+      this.composer = null;
+    }
     if (this.renderer) {
       this.renderer.dispose?.();
     }
@@ -408,11 +467,47 @@ export class SkillTreeScene {
             new THREE.Vector3(node.position[0], node.position[1], node.position[2]),
           ];
           const geo = new THREE.BufferGeometry().setFromPoints(points);
-          const mat = new THREE.LineBasicMaterial({
-            color: dimColor.clone(),
+          geo.setAttribute('aProgress', new THREE.BufferAttribute(new Float32Array([0, 1]), 1));
+
+          const mat = new THREE.ShaderMaterial({
             transparent: true,
-            opacity: 0.35,
+            depthWrite: false,
             blending: THREE.AdditiveBlending,
+            uniforms: {
+              uTime: this.lineTimeUniform,
+              uColor: { value: dimColor.clone() },
+              uPulseColor: { value: baseColor.clone() },
+              uOpacity: { value: 0.25 },
+              uActive: { value: 0 },
+              uPulseSpeed: { value: 0.45 },
+              uPulseWidth: { value: 28.0 },
+            },
+            vertexShader: `
+              attribute float aProgress;
+              varying float vProgress;
+              void main() {
+                vProgress = aProgress;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              uniform float uTime;
+              uniform vec3 uColor;
+              uniform vec3 uPulseColor;
+              uniform float uOpacity;
+              uniform float uActive;
+              uniform float uPulseSpeed;
+              uniform float uPulseWidth;
+              varying float vProgress;
+              void main() {
+                float pulsePos = fract(uTime * uPulseSpeed);
+                float d = abs(vProgress - pulsePos);
+                float pulse = exp(-d * uPulseWidth) * uActive;
+                vec3 color = mix(uColor, uPulseColor, pulse);
+                float alpha = uOpacity + pulse * 0.9;
+                gl_FragColor = vec4(color * (1.0 + pulse * 1.8), alpha);
+              }
+            `,
           });
           const line = new THREE.Line(geo, mat);
           line.userData = {
@@ -486,15 +581,22 @@ export class SkillTreeScene {
     lineMeshes.forEach(line => {
       const fromUnlocked = this.unlockedIds.has(line.userData.from);
       const toUnlocked = this.unlockedIds.has(line.userData.to);
+      const u = line.material.uniforms;
       if (fromUnlocked && toUnlocked) {
-        line.material.color.copy(line.userData.baseColor);
-        line.material.opacity = 0.85;
+        u.uColor.value.copy(line.userData.baseColor);
+        u.uPulseColor.value.copy(line.userData.baseColor);
+        u.uOpacity.value = 0.75;
+        u.uActive.value = 0;
       } else if (fromUnlocked) {
-        line.material.color.copy(line.userData.baseColor).lerp(line.userData.dimColor, 0.4);
-        line.material.opacity = 0.55;
+        u.uColor.value.copy(line.userData.baseColor).lerp(line.userData.dimColor, 0.55);
+        u.uPulseColor.value.copy(line.userData.baseColor).multiplyScalar(1.4);
+        u.uOpacity.value = 0.45;
+        u.uActive.value = 1;
       } else {
-        line.material.color.copy(line.userData.dimColor);
-        line.material.opacity = 0.25;
+        u.uColor.value.copy(line.userData.dimColor);
+        u.uPulseColor.value.copy(line.userData.dimColor);
+        u.uOpacity.value = 0.2;
+        u.uActive.value = 0;
       }
     });
   }
@@ -525,12 +627,12 @@ export class SkillTreeScene {
     });
   }
 
-  private onMouseMove(e: MouseEvent): void {
+  private onPointerMove(e: PointerEvent): void {
     const rect = this.canvas.getBoundingClientRect();
     this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    this.cameraDriftX = this.mouse.x * 0.6;
-    this.cameraDriftY = this.mouse.y * 0.4;
+    this.cameraDriftX = this.mouse.x * 1.6;
+    this.cameraDriftY = this.mouse.y * 1.0;
   }
 
   private onClick(): void {
@@ -573,6 +675,13 @@ export class SkillTreeScene {
 
     if (this.starField) this.starField.material.uniforms.uTime.value = t;
     if (this.nebula) this.nebula.children.forEach((p: any) => p.userData['shaderMat'].uniforms.uTime.value = t);
+    this.lineTimeUniform.value = t;
+
+    if (this.caPass) {
+      const whoosh = this.camTransitionT < 1 ? Math.sin(this.camTransitionT * Math.PI) : 0;
+      const idle = 0.0008 * (0.5 + 0.5 * Math.sin(t * 0.4));
+      this.caPass.uniforms['uAmount'].value = whoosh * 0.018 + idle;
+    }
 
     if (this.camTransitionT < 1) {
       this.camTransitionT = Math.min(1, this.camTransitionT + dt / 1.6);
@@ -619,7 +728,11 @@ export class SkillTreeScene {
       if (this.animations[i].update()) this.animations.splice(i, 1);
     }
 
-    this.renderer.render(this.scene, this.camera);
+    if (this.composer) {
+      this.composer.render();
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   private onResize(): void {
@@ -628,5 +741,11 @@ export class SkillTreeScene {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
+    if (this.composer) {
+      this.composer.setSize(w, h);
+    }
+    if (this.bloomPass) {
+      this.bloomPass.setSize(w, h);
+    }
   }
 }
