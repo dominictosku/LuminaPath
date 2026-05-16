@@ -10,10 +10,21 @@ const SKILL_SPACING = 22;
 const NODE_RADIUS = 0.28;
 const CAPSTONE_RADIUS = 0.42;
 
+type BeaconData = {
+  phases: Float32Array;
+  radii: Float32Array;
+  heightOffsets: Float32Array;
+  speeds: Float32Array;
+  angles: Float32Array;
+};
+
 type NodeMeshes = {
   core: any;
   glow: any;
   ring: any;
+  veil?: any;
+  beacon?: any;
+  beaconData?: BeaconData;
   node: SkillTreeNode;
   status?: SkillTreeNodeStatus;
 };
@@ -23,6 +34,7 @@ type Constellation = {
   group: any;
   nodeMeshes: Map<string, NodeMeshes>;
   lineMeshes: any[];
+  outline?: any;
 };
 
 type SceneListeners = {
@@ -194,6 +206,7 @@ export class SkillTreeScene {
     if (!m) return;
 
     this.unlockedIds.add(nodeId);
+    this.updateOutline(skillIdx);
 
     const t0 = performance.now();
     const dur = 1600;
@@ -279,7 +292,10 @@ export class SkillTreeScene {
 
   setUnlocked(ids: string[]): void {
     this.unlockedIds = new Set(ids);
-    this.constellations.forEach((_, idx) => this.refreshSkillVisuals(idx));
+    this.constellations.forEach((_, idx) => {
+      this.updateOutline(idx);
+      this.refreshSkillVisuals(idx);
+    });
   }
 
   getCurrentSkillIdx(): number {
@@ -455,7 +471,13 @@ export class SkillTreeScene {
         ring.lookAt(this.camera.position);
         group.add(ring);
 
-        nodeMeshes.set(node.id, { core, glow, ring, node });
+        const veil = this.buildVeil(core.position, dimColor, isCapstone);
+        group.add(veil);
+
+        const { beacon, beaconData } = this.buildBeacon(core.position, baseColor);
+        group.add(beacon);
+
+        nodeMeshes.set(node.id, { core, glow, ring, veil, beacon, beaconData, node });
       });
 
       branch.nodes.forEach(node => {
@@ -522,10 +544,215 @@ export class SkillTreeScene {
         });
       });
 
+      const outline = this.buildOutline(baseColor);
+      group.add(outline);
+
       this.scene.add(group);
-      this.constellations.push({ branch, group, nodeMeshes, lineMeshes });
+      this.constellations.push({ branch, group, nodeMeshes, lineMeshes, outline });
+      this.updateOutline(i);
       this.refreshSkillVisuals(i);
     });
+  }
+
+  private buildVeil(at: any, dimColor: any, isCapstone: boolean): any {
+    const size = isCapstone ? 3.0 : 2.0;
+    const geo = new THREE.PlaneGeometry(size, size);
+    const mat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
+      uniforms: {
+        uTime: this.lineTimeUniform,
+        uColor: { value: dimColor.clone().multiplyScalar(0.55) },
+        uOpacity: { value: 0.6 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        uniform vec3 uColor;
+        uniform float uOpacity;
+        varying vec2 vUv;
+        float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float noise(vec2 p) {
+          vec2 i = floor(p), f = fract(p);
+          float a = hash(i), b = hash(i + vec2(1,0)), c = hash(i + vec2(0,1)), d = hash(i + vec2(1,1));
+          vec2 u = f * f * (3.0 - 2.0 * f);
+          return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+        }
+        void main() {
+          vec2 p = vUv * 3.4;
+          float n = noise(p + uTime * 0.13) * 0.65 + noise(p * 2.3 - uTime * 0.08) * 0.35;
+          float r = distance(vUv, vec2(0.5));
+          float falloff = smoothstep(0.5, 0.05, r);
+          float a = pow(n, 1.3) * falloff * uOpacity;
+          gl_FragColor = vec4(uColor * (0.6 + n * 0.35), a);
+        }
+      `,
+    });
+    const veil = new THREE.Mesh(geo, mat);
+    veil.position.copy(at);
+    veil.position.z -= 0.35;
+    veil.renderOrder = 0;
+    return veil;
+  }
+
+  private buildBeacon(at: any, baseColor: any): { beacon: any; beaconData: BeaconData } {
+    const N = 5;
+    const positions = new Float32Array(N * 3);
+    const alphas = new Float32Array(N);
+    const sizes = new Float32Array(N);
+    const phases = new Float32Array(N);
+    const radii = new Float32Array(N);
+    const heightOffsets = new Float32Array(N);
+    const speeds = new Float32Array(N);
+    const angles = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      phases[i] = Math.random();
+      radii[i] = 0.65 + Math.random() * 0.55;
+      heightOffsets[i] = (Math.random() - 0.5) * 0.5;
+      speeds[i] = 0.32 + Math.random() * 0.22;
+      angles[i] = Math.random() * Math.PI * 2;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('aAlpha', new THREE.BufferAttribute(alphas, 1));
+    geo.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
+    const mat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uColor: { value: baseColor.clone() },
+        uTexture: { value: this.getGlowTexture() },
+        uPixelRatio: { value: this.renderer.getPixelRatio() },
+      },
+      vertexShader: `
+        attribute float aAlpha;
+        attribute float aSize;
+        varying float vAlpha;
+        uniform float uPixelRatio;
+        void main() {
+          vAlpha = aAlpha;
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = aSize * (180.0 / -mv.z) * uPixelRatio;
+          gl_Position = projectionMatrix * mv;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform sampler2D uTexture;
+        varying float vAlpha;
+        void main() {
+          vec4 t = texture2D(uTexture, gl_PointCoord);
+          gl_FragColor = vec4(uColor, vAlpha * t.a);
+        }
+      `,
+    });
+    const beacon = new THREE.Points(geo, mat);
+    beacon.position.copy(at);
+    beacon.visible = false;
+    beacon.frustumCulled = false;
+    beacon.renderOrder = 2;
+    return { beacon, beaconData: { phases, radii, heightOffsets, speeds, angles } };
+  }
+
+  private buildOutline(baseColor: any): any {
+    const samples = 64;
+    const positions = new Float32Array(samples * 3);
+    const progress = new Float32Array(samples);
+    for (let i = 0; i < samples; i++) progress[i] = i / (samples - 1);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1));
+    geo.setDrawRange(0, 0);
+
+    const mat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uTime: this.lineTimeUniform,
+        uColor: { value: baseColor.clone().lerp(new THREE.Color(0xffffff), 0.4) },
+        uOpacity: { value: 0.55 },
+      },
+      vertexShader: `
+        attribute float aProgress;
+        varying float vProgress;
+        void main() {
+          vProgress = aProgress;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        uniform vec3 uColor;
+        uniform float uOpacity;
+        varying float vProgress;
+        void main() {
+          float shimmer = 0.55 + 0.45 * sin(uTime * 1.8 + vProgress * 10.0);
+          gl_FragColor = vec4(uColor * (0.6 + shimmer * 0.7), uOpacity * shimmer);
+        }
+      `,
+    });
+    const line = new THREE.Line(geo, mat);
+    line.frustumCulled = false;
+    line.renderOrder = 1;
+    return line;
+  }
+
+  private updateOutline(skillIdx: number): void {
+    const c = this.constellations[skillIdx];
+    if (!c || !c.outline) return;
+    const unlocked = c.branch.nodes.filter(n => this.unlockedIds.has(n.id));
+    const geo = c.outline.geometry;
+    if (unlocked.length < 2) {
+      geo.setDrawRange(0, 0);
+      return;
+    }
+    const points = unlocked.map(n => new THREE.Vector3(n.position[0], n.position[1], n.position[2]));
+    const curve = new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.35);
+    const sampleCount = 64;
+    const samples = curve.getSpacedPoints(sampleCount - 1);
+    const arr = geo.attributes.position.array as Float32Array;
+    for (let i = 0; i < sampleCount; i++) {
+      arr[i * 3] = samples[i].x;
+      arr[i * 3 + 1] = samples[i].y;
+      arr[i * 3 + 2] = samples[i].z;
+    }
+    geo.attributes.position.needsUpdate = true;
+    geo.setDrawRange(0, sampleCount);
+  }
+
+  private updateBeacon(m: NodeMeshes, dt: number): void {
+    if (!m.beacon || !m.beaconData) return;
+    const { phases, radii, heightOffsets, speeds, angles } = m.beaconData;
+    const posAttr = m.beacon.geometry.attributes.position;
+    const alphaAttr = m.beacon.geometry.attributes.aAlpha;
+    const sizeAttr = m.beacon.geometry.attributes.aSize;
+    const pos = posAttr.array as Float32Array;
+    const alpha = alphaAttr.array as Float32Array;
+    const sizes = sizeAttr.array as Float32Array;
+    for (let i = 0; i < phases.length; i++) {
+      phases[i] = (phases[i] + dt * speeds[i]) % 1.0;
+      const p = phases[i];
+      const inward = 1 - p;
+      const r = radii[i] * inward * 0.55 + 0.22;
+      const angle = angles[i] + p * Math.PI * 3.2;
+      pos[i * 3] = Math.cos(angle) * r;
+      pos[i * 3 + 1] = heightOffsets[i] * inward;
+      pos[i * 3 + 2] = Math.sin(angle) * r;
+      alpha[i] = Math.sin(p * Math.PI) * 0.95;
+      sizes[i] = 3 + Math.sin(p * Math.PI) * 4;
+    }
+    posAttr.needsUpdate = true;
+    alphaAttr.needsUpdate = true;
+    sizeAttr.needsUpdate = true;
   }
 
   private getGlowTexture(): any {
@@ -714,6 +941,24 @@ export class SkillTreeScene {
           m.core.scale.lerp(new THREE.Vector3(breath, breath, breath), 0.1);
         } else {
           m.core.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+        }
+
+        const isUnlocked = this.unlockedIds.has(m.node.id);
+        const prereqsMet = m.node.prereqIds.every(p => this.unlockedIds.has(p));
+        const isAvailable = !isUnlocked && prereqsMet;
+
+        if (m.veil) {
+          const target = isUnlocked || isAvailable ? 0 : 0.6;
+          const cur = m.veil.material.uniforms['uOpacity'].value;
+          const next = cur + (target - cur) * 0.06;
+          m.veil.material.uniforms['uOpacity'].value = next;
+          m.veil.visible = next > 0.01;
+          if (m.veil.visible) m.veil.lookAt(this.camera.position);
+        }
+
+        if (m.beacon) {
+          m.beacon.visible = isAvailable;
+          if (isAvailable) this.updateBeacon(m, dt);
         }
       });
     });
