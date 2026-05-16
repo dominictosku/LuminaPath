@@ -181,7 +181,7 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
         if (mediaFilter.From != null)
         {
             var from = UtcDateTime.Normalize(mediaFilter.From);
-            filter = filter.And(media => media.ReleaseDate > from);
+            filter = filter.And(media => media.ReleaseDate >= from);
         }
 
         if (mediaFilter.To != null)

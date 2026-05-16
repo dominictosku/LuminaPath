@@ -46,6 +46,7 @@ import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 
 type ViewMode = 'grid' | 'list';
 type OwnershipFilter = 'all' | 'mine' | 'catalog';
+type ReleaseDateFilter = 'all' | 'released' | 'upcoming' | 'this-year' | 'last-year' | 'custom';
 
 @Component({
   selector: 'app-library',
@@ -79,6 +80,9 @@ export class LibraryPage implements OnInit, OnDestroy {
   ownershipFilter: OwnershipFilter = 'all';
   statusFilter = 'all';
   platformFilter = 'all';
+  releaseDateFilter: ReleaseDateFilter = 'all';
+  releaseDateFrom = '';
+  releaseDateTo = '';
   viewMode: ViewMode = 'grid';
   isLoading = true;
   isLoadingMore = false;
@@ -225,13 +229,36 @@ export class LibraryPage implements OnInit, OnDestroy {
   }
 
   clearFilters(apply = true) {
+    const hadServerFilters = this.hasReleaseDateServerFilter();
     this.searchTerm = '';
     this.ownershipFilter = 'all';
     this.statusFilter = 'all';
     this.platformFilter = 'all';
+    this.releaseDateFilter = 'all';
+    this.releaseDateFrom = '';
+    this.releaseDateTo = '';
     if (apply) {
-      this.applyFilters();
+      if (hadServerFilters) {
+        this.loadGames();
+      } else {
+        this.applyFilters();
+      }
     }
+  }
+
+  onReleaseDateFilterChange(): void {
+    if (this.releaseDateFilter !== 'custom') {
+      this.releaseDateFrom = '';
+      this.releaseDateTo = '';
+    }
+    this.loadGames();
+  }
+
+  onCustomReleaseDateChange(): void {
+    if (this.releaseDateFilter !== 'custom') {
+      return;
+    }
+    this.loadGames();
   }
 
   openGameListDialog(game: MediaItem) {
@@ -449,7 +476,63 @@ export class LibraryPage implements OnInit, OnDestroy {
     const filter = new MediaFilter();
     filter.Paging.PageIndex = pageIndex;
     filter.Paging.Count = this.pageSize;
+    const range = this.releaseDateRange();
+    filter.From = range.from;
+    filter.To = range.to;
     return filter;
+  }
+
+  private hasReleaseDateServerFilter(): boolean {
+    return this.releaseDateFilter !== 'all' || !!this.releaseDateFrom || !!this.releaseDateTo;
+  }
+
+  private releaseDateRange(): { from: string | null; to: string | null } {
+    const today = new Date();
+    const year = today.getFullYear();
+
+    switch (this.releaseDateFilter) {
+      case 'released':
+        return { from: null, to: this.toDateParam(this.addDays(today, 1)) };
+      case 'upcoming':
+        return { from: this.toDateParam(this.startOfDay(today)), to: null };
+      case 'this-year':
+        return {
+          from: this.toDateParam(new Date(year, 0, 1)),
+          to: this.toDateParam(new Date(year + 1, 0, 1)),
+        };
+      case 'last-year':
+        return {
+          from: this.toDateParam(new Date(year - 1, 0, 1)),
+          to: this.toDateParam(new Date(year, 0, 1)),
+        };
+      case 'custom':
+        return {
+          from: this.releaseDateFrom ? this.toDateParam(this.parseDateInput(this.releaseDateFrom)) : null,
+          to: this.releaseDateTo ? this.toDateParam(this.addDays(this.parseDateInput(this.releaseDateTo), 1)) : null,
+        };
+      case 'all':
+      default:
+        return { from: null, to: null };
+    }
+  }
+
+  private parseDateInput(value: string): Date {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, (month || 1) - 1, day || 1);
+  }
+
+  private startOfDay(value: Date): Date {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }
+
+  private addDays(value: Date, days: number): Date {
+    const next = this.startOfDay(value);
+    next.setDate(next.getDate() + days);
+    return next;
+  }
+
+  private toDateParam(value: Date): string {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
   }
 
   private mergeGames(current: MediaItem[], next: MediaItem[]): MediaItem[] {

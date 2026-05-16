@@ -6,12 +6,16 @@ enum StatusOptions {
 
 export class MediaFilter {
   SearchString: string;
+  From: string | null;
+  To: string | null;
   MyMedia: boolean;
   Status: StatusOptions;
   Paging: Paging;
 
   constructor() {
     this.SearchString = "";
+    this.From = null;
+    this.To = null;
     this.MyMedia = false;
     this.Status = StatusOptions.Any;
     this.Paging = new Paging();

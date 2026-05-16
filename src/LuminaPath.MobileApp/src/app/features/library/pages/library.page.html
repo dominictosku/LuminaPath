@@ -35,13 +35,24 @@
     </section>
 
     <section class="toolbar-panel">
-      <ion-searchbar
-        class="library-search"
-        [(ngModel)]="searchTerm"
-        (ionInput)="applyFilters()"
-        debounce="120"
-        placeholder="Search title, genre, platform, status">
-      </ion-searchbar>
+      <div class="toolbar-top">
+        <ion-searchbar
+          class="library-search"
+          [(ngModel)]="searchTerm"
+          (ionInput)="applyFilters()"
+          debounce="120"
+          placeholder="Search title, genre, platform, status">
+        </ion-searchbar>
+
+        <ion-segment class="view-toggle" [(ngModel)]="viewMode">
+          <ion-segment-button value="grid">
+            <ion-icon name="grid-outline"></ion-icon>
+          </ion-segment-button>
+          <ion-segment-button value="list">
+            <ion-icon name="list-outline"></ion-icon>
+          </ion-segment-button>
+        </ion-segment>
+      </div>
 
       <div class="filter-grid">
         <ion-segment [(ngModel)]="ownershipFilter" (ionChange)="applyFilters()">
@@ -75,14 +86,30 @@
           </ion-select-option>
         </ion-select>
 
-        <ion-segment class="view-toggle" [(ngModel)]="viewMode">
-          <ion-segment-button value="grid">
-            <ion-icon name="grid-outline"></ion-icon>
-          </ion-segment-button>
-          <ion-segment-button value="list">
-            <ion-icon name="list-outline"></ion-icon>
-          </ion-segment-button>
-        </ion-segment>
+        <ion-select
+          interface="popover"
+          label="Release"
+          label-placement="stacked"
+          [(ngModel)]="releaseDateFilter"
+          (ionChange)="onReleaseDateFilterChange()">
+          <ion-select-option value="all">Any release date</ion-select-option>
+          <ion-select-option value="released">Released</ion-select-option>
+          <ion-select-option value="upcoming">Upcoming</ion-select-option>
+          <ion-select-option value="this-year">This year</ion-select-option>
+          <ion-select-option value="last-year">Last year</ion-select-option>
+          <ion-select-option value="custom">Custom range</ion-select-option>
+        </ion-select>
+      </div>
+
+      <div class="release-date-range" *ngIf="releaseDateFilter === 'custom'">
+        <label>
+          <span>From</span>
+          <input type="date" [(ngModel)]="releaseDateFrom" (change)="onCustomReleaseDateChange()" />
+        </label>
+        <label>
+          <span>To</span>
+          <input type="date" [(ngModel)]="releaseDateTo" (change)="onCustomReleaseDateChange()" />
+        </label>
       </div>
     </section>
 

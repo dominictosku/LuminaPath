@@ -60,6 +60,14 @@ export class ApiService<T> {
       params = params.set('searchString', mediaFilter.SearchString);
     }
 
+    if (mediaFilter.From) {
+      params = params.set('from', mediaFilter.From);
+    }
+
+    if (mediaFilter.To) {
+      params = params.set('to', mediaFilter.To);
+    }
+
     if (mediaFilter.Status !== undefined && mediaFilter.Status !== null) {
       params = params.set('status', String(mediaFilter.Status));
     }

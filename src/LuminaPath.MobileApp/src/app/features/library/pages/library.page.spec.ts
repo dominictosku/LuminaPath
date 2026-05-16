@@ -119,6 +119,33 @@ describe('LibraryPage', () => {
     expect(complete).toHaveBeenCalled();
   });
 
+  it('reloads from the first page with a custom release-date range', () => {
+    configure(of(pageOf([])));
+    fixture.detectChanges();
+
+    component.releaseDateFilter = 'custom';
+    component.releaseDateFrom = '2024-01-15';
+    component.releaseDateTo = '2024-02-20';
+    component.onCustomReleaseDateChange();
+
+    expect(mediaLibrary.getAll).toHaveBeenCalledTimes(2);
+    const filter = mediaLibrary.getAll.calls.mostRecent().args[0];
+    expect(filter?.Paging.PageIndex).toBe(1);
+    expect(filter?.From).toBe('2024-01-15');
+    expect(filter?.To).toBe('2024-02-21');
+  });
+
+  it('clearing filters reloads when a server-side release-date filter was active', () => {
+    configure(of(pageOf([])));
+    fixture.detectChanges();
+
+    component.releaseDateFilter = 'upcoming';
+    component.clearFilters();
+
+    expect(component.releaseDateFilter).toBe('all');
+    expect(mediaLibrary.getAll).toHaveBeenCalledTimes(2);
+  });
+
   it('shows an error message when the games request fails', () => {
     configure(throwError(() => new Error('boom')));
 

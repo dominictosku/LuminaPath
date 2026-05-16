@@ -61,6 +61,8 @@ describe('GameService', () => {
     const filter = new MediaFilter();
     filter.MyMedia = true;
     filter.SearchString = 'cele';
+    filter.From = '2026-01-01';
+    filter.To = '2027-01-01';
     filter.Paging.PageIndex = 2;
     filter.Paging.Count = 10;
 
@@ -69,6 +71,8 @@ describe('GameService', () => {
     const req = httpMock.expectOne((r) => r.url === endpoint);
     expect(req.request.params.get('myMedia')).toBe('true');
     expect(req.request.params.get('searchString')).toBe('cele');
+    expect(req.request.params.get('from')).toBe('2026-01-01');
+    expect(req.request.params.get('to')).toBe('2027-01-01');
     expect(req.request.params.get('paging.pageIndex')).toBe('2');
     expect(req.request.params.get('paging.count')).toBe('10');
     req.flush(new PaginateResult<Game>());
