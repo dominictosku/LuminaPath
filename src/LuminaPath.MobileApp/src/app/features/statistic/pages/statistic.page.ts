@@ -13,14 +13,24 @@ import { addIcons } from 'ionicons';
 import {
   alertCircleOutline,
   barChartOutline,
+  bookmarkOutline,
+  calendarOutline,
   checkmarkCircleOutline,
+  filmOutline,
   flameOutline,
   gameControllerOutline,
   hourglassOutline,
+  layersOutline,
+  pieChartOutline,
+  pricetagOutline,
   pulseOutline,
+  ribbonOutline,
   speedometerOutline,
+  starOutline,
   timeOutline,
+  trendingUpOutline,
   trophyOutline,
+  tvOutline,
 } from 'ionicons/icons';
 import { catchError, forkJoin, of } from 'rxjs';
 
@@ -49,6 +59,10 @@ type BacklogItem = {
   completed: boolean;
   active: boolean;
   dropped: boolean;
+  rating: number | null;
+  genre: string;
+  startDate: Date | null;
+  endDate: Date | null;
 };
 
 type StatMetric = {
@@ -64,7 +78,10 @@ type KindBreakdown = {
   active: number;
   completed: number;
   remainingHours: number;
+  consumedHours: number;
   completionRate: number;
+  color: string;
+  icon: string;
 };
 
 type HealthFlag = {
@@ -73,6 +90,79 @@ type HealthFlag = {
   icon: string;
   tone: HealthTone;
 };
+
+type DonutSegment = {
+  kind: StatisticKind;
+  value: number;
+  percent: number;
+  length: number;
+  gap: number;
+  offset: number;
+  color: string;
+};
+
+type RatingBucket = {
+  rating: number;
+  count: number;
+  height: number;
+  x: number;
+  y: number;
+};
+
+type TrendPoint = {
+  label: string;
+  shortLabel: string;
+  count: number;
+  x: number;
+  y: number;
+};
+
+type GenreSlice = {
+  name: string;
+  count: number;
+  percent: number;
+};
+
+type TimeBar = {
+  kind: StatisticKind;
+  color: string;
+  consumed: number;
+  remaining: number;
+  total: number;
+  consumedPercent: number;
+  remainingPercent: number;
+};
+
+type StatusSlice = {
+  label: string;
+  count: number;
+  percent: number;
+};
+
+const DONUT_RADIUS = 46;
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
+const TREND_MONTHS = 12;
+const TREND_WIDTH = 320;
+const TREND_HEIGHT = 110;
+const TREND_PADDING_X = 14;
+const TREND_PADDING_TOP = 14;
+const TREND_PADDING_BOTTOM = 22;
+
+const KIND_COLORS: Record<StatisticKind, string> = {
+  Games: '#60a5fa',
+  Anime: '#c084fc',
+  Movies: '#fbbf24',
+  Series: '#22d3ee',
+};
+
+const KIND_ICONS: Record<StatisticKind, string> = {
+  Games: 'game-controller-outline',
+  Anime: 'tv-outline',
+  Movies: 'film-outline',
+  Series: 'layers-outline',
+};
+
+const STATUS_ORDER = ['Planned', 'Active', 'On hold', 'Completed', 'Dropped'];
 
 @Component({
   selector: 'app-statistic',
@@ -97,6 +187,7 @@ export class StatisticPage implements OnInit {
   completedItems: BacklogItem[] = [];
   quickWins: BacklogItem[] = [];
   longCommitments: BacklogItem[] = [];
+  topRated: BacklogItem[] = [];
   metrics: StatMetric[] = [];
   breakdown: KindBreakdown[] = [];
   flags: HealthFlag[] = [];
@@ -104,6 +195,27 @@ export class StatisticPage implements OnInit {
   healthTone: HealthTone = 'good';
   isLoading = true;
   errorMessage = '';
+
+  donutSegments: DonutSegment[] = [];
+  donutTotal = 0;
+  ratingBuckets: RatingBucket[] = [];
+  ratedCount = 0;
+  averageRating = 0;
+  trendPoints: TrendPoint[] = [];
+  trendPolyline = '';
+  trendArea = '';
+  trendMax = 0;
+  trendTotal = 0;
+  trendThisMonth = 0;
+  topGenres: GenreSlice[] = [];
+  timeBars: TimeBar[] = [];
+  timeMax = 0;
+  statusSlices: StatusSlice[] = [];
+
+  readonly donutRadius = DONUT_RADIUS;
+  readonly donutCircumference = DONUT_CIRCUMFERENCE;
+  readonly trendWidth = TREND_WIDTH;
+  readonly trendHeight = TREND_HEIGHT;
 
   constructor(
     private readonly gameService: GameService,
@@ -114,14 +226,24 @@ export class StatisticPage implements OnInit {
     addIcons({
       alertCircleOutline,
       barChartOutline,
+      bookmarkOutline,
+      calendarOutline,
       checkmarkCircleOutline,
+      filmOutline,
       flameOutline,
       gameControllerOutline,
       hourglassOutline,
+      layersOutline,
+      pieChartOutline,
+      pricetagOutline,
       pulseOutline,
+      ribbonOutline,
       speedometerOutline,
+      starOutline,
       timeOutline,
+      trendingUpOutline,
       trophyOutline,
+      tvOutline,
     });
   }
 
@@ -177,6 +299,30 @@ export class StatisticPage implements OnInit {
     return item.title;
   }
 
+  trackBySegment(_: number, item: DonutSegment): string {
+    return item.kind;
+  }
+
+  trackByBucket(_: number, item: RatingBucket): number {
+    return item.rating;
+  }
+
+  trackByTrend(_: number, item: TrendPoint): string {
+    return item.label;
+  }
+
+  trackByGenre(_: number, item: GenreSlice): string {
+    return item.name;
+  }
+
+  trackByTimeBar(_: number, item: TimeBar): string {
+    return item.kind;
+  }
+
+  trackByStatus(_: number, item: StatusSlice): string {
+    return item.label;
+  }
+
   formatHours(value: number): string {
     return `${Math.round(value)}h`;
   }
@@ -193,6 +339,10 @@ export class StatisticPage implements OnInit {
     this.longCommitments = [...this.backlogItems]
       .sort((a, b) => b.remainingHours - a.remainingHours)
       .slice(0, 5);
+    this.topRated = [...this.ownedItems]
+      .filter((item) => item.rating != null && item.rating > 0)
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+      .slice(0, 5);
 
     const remainingHours = this.backlogItems.reduce((sum, item) => sum + item.remainingHours, 0);
     const estimatedHours = this.ownedItems.reduce((sum, item) => sum + item.estimatedHours, 0);
@@ -201,7 +351,22 @@ export class StatisticPage implements OnInit {
 
     this.healthScore = this.calculateHealthScore(remainingHours, completionRate);
     this.healthTone = this.healthScore >= 75 ? 'good' : this.healthScore >= 50 ? 'steady' : 'risk';
-    this.metrics = [
+
+    this.breakdown = this.createBreakdown();
+    this.donutSegments = this.createDonut();
+    this.ratingBuckets = this.createRatingBuckets();
+    this.computeTrend();
+    this.topGenres = this.createGenres();
+    this.timeBars = this.createTimeBars();
+    this.statusSlices = this.createStatusSlices();
+    this.averageRating = this.computeAverageRating();
+    this.metrics = this.createMetrics(remainingHours, consumedHours, estimatedHours, completionRate);
+    this.flags = this.createFlags(remainingHours, completionRate);
+  }
+
+  private createMetrics(remainingHours: number, consumedHours: number, estimatedHours: number, completionRate: number): StatMetric[] {
+    const topGenre = this.topGenres[0]?.name ?? '—';
+    return [
       {
         label: 'Health',
         value: String(this.healthScore),
@@ -232,9 +397,25 @@ export class StatisticPage implements OnInit {
         detail: `${this.formatHours(estimatedHours)} tracked estimate`,
         icon: 'time-outline',
       },
+      {
+        label: 'Avg Rating',
+        value: this.ratedCount ? this.averageRating.toFixed(1) : '—',
+        detail: this.ratedCount ? `${this.ratedCount} rated item${this.ratedCount === 1 ? '' : 's'}` : 'no ratings yet',
+        icon: 'star-outline',
+      },
+      {
+        label: 'Top Genre',
+        value: topGenre,
+        detail: this.topGenres[0] ? `${this.topGenres[0].count} item${this.topGenres[0].count === 1 ? '' : 's'}` : 'tag your library',
+        icon: 'pricetag-outline',
+      },
+      {
+        label: 'This Month',
+        value: String(this.trendThisMonth),
+        detail: this.trendThisMonth ? 'completed recently' : 'nothing wrapped yet',
+        icon: 'trending-up-outline',
+      },
     ];
-    this.breakdown = this.createBreakdown();
-    this.flags = this.createFlags(remainingHours, completionRate);
   }
 
   private calculateHealthScore(remainingHours: number, completionRate: number): number {
@@ -258,15 +439,210 @@ export class StatisticPage implements OnInit {
     return kinds.map((kind) => {
       const owned = this.ownedItems.filter((item) => item.kind === kind);
       const completed = owned.filter((item) => item.completed);
+      const remainingHours = owned.filter((item) => !item.completed && !item.dropped).reduce((sum, item) => sum + item.remainingHours, 0);
+      const consumedHours = owned.reduce((sum, item) => sum + item.consumedHours, 0);
       return {
         kind,
         owned: owned.length,
         active: owned.filter((item) => item.active).length,
         completed: completed.length,
-        remainingHours: owned.filter((item) => !item.completed && !item.dropped).reduce((sum, item) => sum + item.remainingHours, 0),
+        remainingHours,
+        consumedHours,
         completionRate: owned.length ? Math.round((completed.length / owned.length) * 100) : 0,
+        color: KIND_COLORS[kind],
+        icon: KIND_ICONS[kind],
       };
     });
+  }
+
+  private createDonut(): DonutSegment[] {
+    const total = this.ownedItems.length;
+    this.donutTotal = total;
+    if (!total) {
+      return [];
+    }
+    let cursor = 0;
+    return this.breakdown
+      .filter((row) => row.owned > 0)
+      .map((row) => {
+        const percent = row.owned / total;
+        const length = percent * DONUT_CIRCUMFERENCE;
+        const segment: DonutSegment = {
+          kind: row.kind,
+          value: row.owned,
+          percent: Math.round(percent * 100),
+          length,
+          gap: DONUT_CIRCUMFERENCE - length,
+          offset: -cursor,
+          color: row.color,
+        };
+        cursor += length;
+        return segment;
+      });
+  }
+
+  private createRatingBuckets(): RatingBucket[] {
+    const rated = this.ownedItems.filter((item) => item.rating != null && item.rating > 0);
+    this.ratedCount = rated.length;
+    const counts = new Array(10).fill(0);
+    for (const item of rated) {
+      const bucket = Math.min(10, Math.max(1, Math.round(item.rating ?? 0)));
+      counts[bucket - 1] += 1;
+    }
+    const max = Math.max(1, ...counts);
+    const chartHeight = 70;
+    const barWidth = 18;
+    const barGap = 6;
+    return counts.map((count, index) => {
+      const height = (count / max) * chartHeight;
+      return {
+        rating: index + 1,
+        count,
+        height,
+        x: index * (barWidth + barGap) + 4,
+        y: chartHeight + 4 - height,
+      };
+    });
+  }
+
+  private computeTrend(): void {
+    const now = new Date();
+    const months: TrendPoint[] = [];
+    const buckets = new Map<string, number>();
+    for (const item of this.completedItems) {
+      const date = item.endDate ?? item.startDate;
+      if (!date) {
+        continue;
+      }
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      buckets.set(key, (buckets.get(key) ?? 0) + 1);
+    }
+    for (let i = TREND_MONTHS - 1; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      const count = buckets.get(key) ?? 0;
+      months.push({
+        label: date.toLocaleString(undefined, { month: 'short', year: 'numeric' }),
+        shortLabel: date.toLocaleString(undefined, { month: 'short' }),
+        count,
+        x: 0,
+        y: 0,
+      });
+    }
+    const max = Math.max(1, ...months.map((m) => m.count));
+    const usableW = TREND_WIDTH - TREND_PADDING_X * 2;
+    const usableH = TREND_HEIGHT - TREND_PADDING_TOP - TREND_PADDING_BOTTOM;
+    const step = months.length > 1 ? usableW / (months.length - 1) : 0;
+    months.forEach((point, index) => {
+      point.x = TREND_PADDING_X + step * index;
+      point.y = TREND_PADDING_TOP + usableH - (point.count / max) * usableH;
+    });
+    this.trendPoints = months;
+    this.trendMax = max;
+    this.trendTotal = months.reduce((sum, p) => sum + p.count, 0);
+    this.trendThisMonth = months[months.length - 1]?.count ?? 0;
+    this.trendPolyline = months.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    if (months.length) {
+      const baseline = TREND_HEIGHT - TREND_PADDING_BOTTOM;
+      const first = months[0];
+      const last = months[months.length - 1];
+      const pathParts: string[] = [`M ${first.x.toFixed(1)} ${baseline.toFixed(1)}`];
+      months.forEach((p) => pathParts.push(`L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`));
+      pathParts.push(`L ${last.x.toFixed(1)} ${baseline.toFixed(1)}`);
+      pathParts.push('Z');
+      this.trendArea = pathParts.join(' ');
+    } else {
+      this.trendArea = '';
+    }
+  }
+
+  private createGenres(): GenreSlice[] {
+    const counts = new Map<string, number>();
+    for (const item of this.ownedItems) {
+      const tokens = (item.genre ?? '')
+        .split(/[,;|/]/)
+        .map((token) => token.trim())
+        .filter(Boolean);
+      for (const token of tokens) {
+        const key = token.toLowerCase();
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+    }
+    const entries = Array.from(counts.entries())
+      .map(([key, count]) => ({ name: this.toTitleCase(key), count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+    const max = entries[0]?.count ?? 1;
+    return entries.map((entry) => ({ ...entry, percent: Math.round((entry.count / max) * 100) }));
+  }
+
+  private createTimeBars(): TimeBar[] {
+    const bars = this.breakdown
+      .filter((row) => row.owned > 0)
+      .map((row) => {
+        const total = row.consumedHours + row.remainingHours;
+        return {
+          kind: row.kind,
+          color: row.color,
+          consumed: row.consumedHours,
+          remaining: row.remainingHours,
+          total,
+          consumedPercent: 0,
+          remainingPercent: 0,
+        };
+      });
+    const max = Math.max(1, ...bars.map((bar) => bar.total));
+    this.timeMax = max;
+    return bars.map((bar) => ({
+      ...bar,
+      consumedPercent: (bar.consumed / max) * 100,
+      remainingPercent: (bar.remaining / max) * 100,
+    }));
+  }
+
+  private createStatusSlices(): StatusSlice[] {
+    const counts = new Map<string, number>();
+    for (const item of this.ownedItems) {
+      const key = this.normalizeStatus(item.statusLabel);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const total = this.ownedItems.length;
+    return STATUS_ORDER
+      .filter((label) => (counts.get(label) ?? 0) > 0)
+      .map((label) => ({
+        label,
+        count: counts.get(label) ?? 0,
+        percent: total ? Math.round(((counts.get(label) ?? 0) / total) * 100) : 0,
+      }));
+  }
+
+  private normalizeStatus(raw: string): string {
+    if (raw === 'Playing' || raw === 'Watching') return 'Active';
+    if (raw === 'Story complete' || raw === 'Main game' || raw === 'Completed') return 'Completed';
+    if (raw === 'On hold') return 'On hold';
+    if (raw === 'Dropped') return 'Dropped';
+    if (raw === 'Planned') return 'Planned';
+    return raw;
+  }
+
+  private computeAverageRating(): number {
+    const rated = this.ownedItems.filter((item) => item.rating != null && item.rating > 0);
+    if (!rated.length) {
+      return 0;
+    }
+    const sum = rated.reduce((acc, item) => acc + (item.rating ?? 0), 0);
+    return sum / rated.length;
+  }
+
+  statusClass(label: string): string {
+    return label.toLowerCase().replace(/\s+/g, '-');
+  }
+
+  private toTitleCase(value: string): string {
+    return value
+      .split(' ')
+      .map((part) => (part.length ? part[0].toUpperCase() + part.slice(1) : part))
+      .join(' ');
   }
 
   private createFlags(remainingHours: number, completionRate: number): HealthFlag[] {
@@ -318,19 +694,56 @@ export class StatisticPage implements OnInit {
       activeStatus: 2,
       droppedStatus: null,
       statusLabel: this.gameStatusLabel(status),
+      rating: game.myGames?.rating ?? null,
+      genre: game.genre ?? '',
+      startDate: this.toDate(game.myGames?.startDate),
+      endDate: this.toDate(game.myGames?.endDate),
     });
   }
 
   private fromAnime(anime: Anime): BacklogItem {
-    return this.fromWatchItem('Anime', anime.id, anime.name, anime.myAnimes?.status, anime.expectedWatchTimeMinutes, anime.myAnimes?.currentWatchTimeMinutes);
+    return this.fromWatchItem(
+      'Anime',
+      anime.id,
+      anime.name,
+      anime.myAnimes?.status,
+      anime.expectedWatchTimeMinutes,
+      anime.myAnimes?.currentWatchTimeMinutes,
+      anime.myAnimes?.rating ?? null,
+      anime.genre ?? '',
+      this.toDate(anime.myAnimes?.startDate),
+      this.toDate(anime.myAnimes?.endDate),
+    );
   }
 
   private fromMovie(movie: Movie): BacklogItem {
-    return this.fromWatchItem('Movies', movie.id, movie.name, movie.myMovies?.status, movie.expectedWatchTimeMinutes, movie.myMovies?.currentWatchTimeMinutes);
+    return this.fromWatchItem(
+      'Movies',
+      movie.id,
+      movie.name,
+      movie.myMovies?.status,
+      movie.expectedWatchTimeMinutes,
+      movie.myMovies?.currentWatchTimeMinutes,
+      movie.myMovies?.rating ?? null,
+      movie.genre ?? '',
+      this.toDate(movie.myMovies?.startDate),
+      this.toDate(movie.myMovies?.endDate),
+    );
   }
 
   private fromSeries(series: Series): BacklogItem {
-    return this.fromWatchItem('Series', series.id, series.name, series.mySeries?.status, series.expectedWatchTimeMinutes, series.mySeries?.currentWatchTimeMinutes);
+    return this.fromWatchItem(
+      'Series',
+      series.id,
+      series.name,
+      series.mySeries?.status,
+      series.expectedWatchTimeMinutes,
+      series.mySeries?.currentWatchTimeMinutes,
+      series.mySeries?.rating ?? null,
+      series.genre ?? '',
+      this.toDate(series.mySeries?.startDate),
+      this.toDate(series.mySeries?.endDate),
+    );
   }
 
   private fromWatchItem(
@@ -340,6 +753,10 @@ export class StatisticPage implements OnInit {
     statusValue: number | null | undefined,
     expectedMinutes: number | null | undefined,
     watchedMinutes: number | null | undefined,
+    rating: number | null,
+    genre: string,
+    startDate: Date | null,
+    endDate: Date | null,
   ): BacklogItem {
     const status = Number(statusValue ?? -1);
     return this.createItem({
@@ -353,6 +770,10 @@ export class StatisticPage implements OnInit {
       activeStatus: 2,
       droppedStatus: 4,
       statusLabel: this.watchStatusLabel(status),
+      rating,
+      genre,
+      startDate,
+      endDate,
     });
   }
 
@@ -367,6 +788,10 @@ export class StatisticPage implements OnInit {
     activeStatus: number;
     droppedStatus: number | null;
     statusLabel: string;
+    rating: number | null;
+    genre: string;
+    startDate: Date | null;
+    endDate: Date | null;
   }): BacklogItem {
     return {
       id: input.id,
@@ -380,7 +805,19 @@ export class StatisticPage implements OnInit {
       completed: input.status === input.completedStatus,
       active: input.status === input.activeStatus,
       dropped: input.droppedStatus != null && input.status === input.droppedStatus,
+      rating: input.rating != null ? Number(input.rating) : null,
+      genre: input.genre ?? '',
+      startDate: input.startDate,
+      endDate: input.endDate,
     };
+  }
+
+  private toDate(value: Date | string | null | undefined): Date | null {
+    if (!value) {
+      return null;
+    }
+    const date = value instanceof Date ? value : new Date(value);
+    return isNaN(date.getTime()) ? null : date;
   }
 
   private gameStatusLabel(status: number): string {

@@ -42,13 +42,256 @@
 
     <ng-template #metricsLoading>
       <section class="metric-grid">
-        <article class="metric metric--loading" *ngFor="let item of [1, 2, 3, 4]">
+        <article class="metric metric--loading" *ngFor="let item of [1, 2, 3, 4, 5, 6, 7, 8]">
           <ion-skeleton-text animated></ion-skeleton-text>
         </article>
       </section>
     </ng-template>
 
-    <section class="section-block">
+    <section class="section-block chart-block" *ngIf="!isLoading">
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="pie-chart-outline"></ion-icon>
+            Library
+          </span>
+          <h2>Media Mix</h2>
+        </div>
+        <ion-badge>{{ donutTotal }}</ion-badge>
+      </header>
+
+      <div class="donut-wrap" *ngIf="donutSegments.length; else donutEmpty">
+        <svg class="donut" viewBox="0 0 120 120" role="img" aria-label="Distribution of items across media types">
+          <circle cx="60" cy="60" [attr.r]="donutRadius" fill="none" stroke="rgba(137, 180, 255, 0.12)" stroke-width="14"></circle>
+          <g transform="rotate(-90 60 60)">
+            <circle
+              *ngFor="let segment of donutSegments; trackBy: trackBySegment"
+              cx="60"
+              cy="60"
+              [attr.r]="donutRadius"
+              fill="none"
+              [attr.stroke]="segment.color"
+              stroke-width="14"
+              stroke-linecap="butt"
+              [attr.stroke-dasharray]="segment.length + ' ' + segment.gap"
+              [attr.stroke-dashoffset]="segment.offset"></circle>
+          </g>
+          <text x="60" y="58" text-anchor="middle" class="donut__total">{{ donutTotal }}</text>
+          <text x="60" y="74" text-anchor="middle" class="donut__sub">tracked</text>
+        </svg>
+
+        <ul class="legend">
+          <li *ngFor="let segment of donutSegments; trackBy: trackBySegment">
+            <span class="legend__swatch" [style.background]="segment.color"></span>
+            <span class="legend__label">{{ segment.kind }}</span>
+            <span class="legend__value">{{ segment.value }}</span>
+            <span class="legend__percent">{{ segment.percent }}%</span>
+          </li>
+        </ul>
+      </div>
+      <ng-template #donutEmpty>
+        <div class="empty-state">
+          <ion-icon name="bookmark-outline"></ion-icon>
+          <span>Track a few items to see your library mix.</span>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="section-block chart-block" *ngIf="!isLoading">
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="trending-up-outline"></ion-icon>
+            Momentum
+          </span>
+          <h2>Completion Trend</h2>
+        </div>
+        <ion-badge>{{ trendTotal }} / 12mo</ion-badge>
+      </header>
+
+      <ng-container *ngIf="trendTotal > 0; else trendEmpty">
+        <svg class="trend" [attr.viewBox]="'0 0 ' + trendWidth + ' ' + trendHeight" preserveAspectRatio="none" role="img" aria-label="Completions over the last twelve months">
+          <defs>
+            <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.45"></stop>
+              <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"></stop>
+            </linearGradient>
+          </defs>
+          <path *ngIf="trendArea" [attr.d]="trendArea" fill="url(#trendFill)"></path>
+          <polyline
+            [attr.points]="trendPolyline"
+            fill="none"
+            stroke="var(--accent-2)"
+            stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"></polyline>
+          <g>
+            <circle
+              *ngFor="let point of trendPoints; trackBy: trackByTrend"
+              [attr.cx]="point.x"
+              [attr.cy]="point.y"
+              r="2.6"
+              [attr.fill]="point.count > 0 ? 'var(--accent-2)' : 'rgba(137, 180, 255, 0.4)'"></circle>
+          </g>
+        </svg>
+        <div class="trend-axis">
+          <span *ngFor="let point of trendPoints; trackBy: trackByTrend">{{ point.shortLabel }}</span>
+        </div>
+        <p class="chart-note">
+          Peak month closed {{ trendMax }} item{{ trendMax === 1 ? '' : 's' }}.
+        </p>
+      </ng-container>
+      <ng-template #trendEmpty>
+        <div class="empty-state">
+          <ion-icon name="calendar-outline"></ion-icon>
+          <span>Mark items with an end date to chart your completion pace.</span>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="section-block chart-block" *ngIf="!isLoading">
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="star-outline"></ion-icon>
+            Taste
+          </span>
+          <h2>Rating Spread</h2>
+        </div>
+        <ion-badge>{{ ratedCount }}</ion-badge>
+      </header>
+
+      <ng-container *ngIf="ratedCount > 0; else noRatings">
+        <svg class="histogram" viewBox="0 0 240 86" role="img" aria-label="Distribution of personal ratings from one to ten">
+          <g>
+            <rect
+              *ngFor="let bucket of ratingBuckets; trackBy: trackByBucket"
+              [attr.x]="bucket.x"
+              [attr.y]="bucket.y"
+              width="18"
+              [attr.height]="bucket.height || 2"
+              rx="3"
+              [attr.fill]="bucket.count > 0 ? 'url(#histGradient)' : 'rgba(137, 180, 255, 0.16)'"></rect>
+          </g>
+          <defs>
+            <linearGradient id="histGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--accent-2)"></stop>
+              <stop offset="100%" stop-color="var(--accent)"></stop>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="histogram-axis">
+          <span *ngFor="let bucket of ratingBuckets; trackBy: trackByBucket">{{ bucket.rating }}</span>
+        </div>
+        <p class="chart-note">
+          Average rating
+          <strong>{{ averageRating | number:'1.1-1' }}</strong>
+          across {{ ratedCount }} rated item{{ ratedCount === 1 ? '' : 's' }}.
+        </p>
+      </ng-container>
+      <ng-template #noRatings>
+        <div class="empty-state">
+          <ion-icon name="ribbon-outline"></ion-icon>
+          <span>Rate completed items to grow this chart.</span>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="section-block chart-block" *ngIf="!isLoading">
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="time-outline"></ion-icon>
+            Investment
+          </span>
+          <h2>Time by Type</h2>
+        </div>
+      </header>
+
+      <div class="time-bars" *ngIf="timeBars.length; else timeEmpty">
+        <div class="time-bar" *ngFor="let bar of timeBars; trackBy: trackByTimeBar">
+          <div class="time-bar__head">
+            <span class="time-bar__dot" [style.background]="bar.color"></span>
+            <span class="time-bar__label">{{ bar.kind }}</span>
+            <strong>{{ formatHours(bar.total) }}</strong>
+          </div>
+          <div class="time-bar__track">
+            <div class="time-bar__consumed" [style.width.%]="bar.consumedPercent" [style.background]="bar.color"></div>
+            <div class="time-bar__remaining" [style.width.%]="bar.remainingPercent" [style.background]="bar.color + '40'"></div>
+          </div>
+          <div class="time-bar__meta">
+            <span>{{ formatHours(bar.consumed) }} logged</span>
+            <span>{{ formatHours(bar.remaining) }} left</span>
+          </div>
+        </div>
+      </div>
+      <ng-template #timeEmpty>
+        <div class="empty-state">
+          <ion-icon name="hourglass-outline"></ion-icon>
+          <span>Log some progress to compare time investment.</span>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="section-block chart-block" *ngIf="!isLoading">
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="pricetag-outline"></ion-icon>
+            Genres
+          </span>
+          <h2>Top Genres</h2>
+        </div>
+      </header>
+
+      <div class="genre-list" *ngIf="topGenres.length; else noGenres">
+        <div class="genre-row" *ngFor="let genre of topGenres; trackBy: trackByGenre">
+          <span class="genre-row__name">{{ genre.name }}</span>
+          <div class="genre-row__bar">
+            <div class="genre-row__fill" [style.width.%]="genre.percent"></div>
+          </div>
+          <strong class="genre-row__count">{{ genre.count }}</strong>
+        </div>
+      </div>
+      <ng-template #noGenres>
+        <div class="empty-state">
+          <ion-icon name="pricetag-outline"></ion-icon>
+          <span>Add a genre to your items to see this chart.</span>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="section-block chart-block" *ngIf="!isLoading && statusSlices.length">
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="layers-outline"></ion-icon>
+            Pipeline
+          </span>
+          <h2>Status Mix</h2>
+        </div>
+      </header>
+
+      <div class="status-bar" role="img" aria-label="Distribution of items across statuses">
+        <div
+          class="status-bar__slice"
+          [class]="'status-bar__slice status-bar__slice--' + statusClass(slice.label)"
+          *ngFor="let slice of statusSlices; trackBy: trackByStatus"
+          [style.flex-grow]="slice.percent || 0.5"
+          [title]="slice.label + ': ' + slice.count">
+        </div>
+      </div>
+      <ul class="status-legend">
+        <li *ngFor="let slice of statusSlices; trackBy: trackByStatus">
+          <span class="status-legend__swatch" [class]="'status-bar__slice--' + statusClass(slice.label)"></span>
+          <span class="status-legend__label">{{ slice.label }}</span>
+          <span class="status-legend__count">{{ slice.count }}</span>
+          <span class="status-legend__percent">{{ slice.percent }}%</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="section-block" *ngIf="!isLoading">
       <header class="section-heading">
         <div>
           <span class="eyebrow">
@@ -70,7 +313,7 @@
       </div>
     </section>
 
-    <section class="section-block">
+    <section class="section-block" *ngIf="!isLoading">
       <header class="section-heading">
         <div>
           <span class="eyebrow">
@@ -100,7 +343,7 @@
       </ng-template>
     </section>
 
-    <section class="section-block">
+    <section class="section-block" *ngIf="!isLoading">
       <header class="section-heading">
         <div>
           <span class="eyebrow">
@@ -130,7 +373,32 @@
       </ng-template>
     </section>
 
-    <section class="section-block section-block--wide">
+    <section class="section-block" *ngIf="!isLoading && topRated.length">
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="ribbon-outline"></ion-icon>
+            Favorites
+          </span>
+          <h2>Top Rated</h2>
+        </div>
+      </header>
+
+      <div class="item-list">
+        <article class="stat-item" *ngFor="let item of topRated; trackBy: trackByItem">
+          <div>
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.kind }} · {{ item.statusLabel }}</p>
+          </div>
+          <strong class="rating-badge">
+            <ion-icon name="star-outline"></ion-icon>
+            {{ item.rating }}
+          </strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-block section-block--wide" *ngIf="!isLoading">
       <header class="section-heading">
         <div>
           <span class="eyebrow">
@@ -143,10 +411,11 @@
 
       <div class="breakdown-grid">
         <article class="breakdown-card" *ngFor="let row of breakdown; trackBy: trackByBreakdown">
-          <div>
+          <div class="breakdown-card__head">
+            <span class="breakdown-card__dot" [style.background]="row.color"></span>
             <h3>{{ row.kind }}</h3>
-            <p>{{ row.owned }} owned · {{ row.active }} active</p>
           </div>
+          <p>{{ row.owned }} owned · {{ row.active }} active</p>
           <strong>{{ formatHours(row.remainingHours) }}</strong>
           <ion-progress-bar [value]="row.completionRate / 100"></ion-progress-bar>
           <span>{{ row.completionRate }}% complete</span>
