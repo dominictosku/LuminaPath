@@ -17,7 +17,7 @@ export function questSkillsToBranches(skills: QuestSkill[]): SkillTreeBranch[] {
 }
 
 export function questSkillToBranch(skill: QuestSkill): SkillTreeBranch {
-  const positions = generatePositions(skill.nodes.length);
+  const positions = generatePositions(skill.nodes.length, skill.id);
   const lastIndex = skill.nodes.length - 1;
 
   const nodes: SkillTreeNode[] = skill.nodes.map((nodeName, index) => {
@@ -72,14 +72,72 @@ export function unlockedNodeIdsFor(skills: QuestSkill[]): string[] {
   return ids;
 }
 
-function generatePositions(count: number): [number, number, number][] {
-  const xPattern = [0, -2.0, 2.0, -2.6, 2.6, -3.2, 3.2];
-  return Array.from({ length: count }, (_, i) => {
-    const y = i * 1.6;
-    const x = i === 0 ? 0 : xPattern[i % xPattern.length];
-    const z = ((i % 3) - 1) * 0.3;
-    return [x, y, z] as [number, number, number];
-  });
+function seededRng(seed: number): () => number {
+  let s = (seed * 2654435761) >>> 0 || 1;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function generatePositions(count: number, seed: number): [number, number, number][] {
+  const rng = seededRng(seed);
+  const style = Math.floor(rng() * 4);
+  const verticalStep = 1.5 + rng() * 0.3;
+  const amplitude = 2.1 + rng() * 1.1;
+  const phase = rng() * Math.PI * 2;
+  const twistDir = rng() < 0.5 ? -1 : 1;
+  const leanDir = rng() < 0.5 ? -1 : 1;
+  const freq = 0.7 + rng() * 0.5;
+
+  const out: [number, number, number][] = [];
+  for (let i = 0; i < count; i++) {
+    const y = i * verticalStep;
+    const jx = (rng() - 0.5) * 0.4;
+    const jz = (rng() - 0.5) * 0.3;
+
+    if (i === 0) {
+      out.push([jx * 0.3, y, jz * 0.3]);
+      continue;
+    }
+
+    let x = 0;
+    let z = 0;
+    switch (style) {
+      case 0: {
+        // seeded zigzag
+        const side = i % 2 === 0 ? 1 : -1;
+        x = side * twistDir * (amplitude - Math.min(i * 0.08, 0.9));
+        z = ((i % 3) - 1) * 0.35;
+        break;
+      }
+      case 1: {
+        // sine ribbon
+        x = Math.sin(phase + i * freq) * amplitude;
+        z = Math.cos(phase + i * freq * 0.6) * 0.7;
+        break;
+      }
+      case 2: {
+        // helix spiral
+        const angle = phase + i * (0.85 + freq * 0.1) * twistDir;
+        x = Math.cos(angle) * amplitude;
+        z = Math.sin(angle) * 0.95;
+        break;
+      }
+      default: {
+        // diagonal vine
+        const lean = leanDir * i * 0.42;
+        x = lean + Math.sin(phase + i * freq) * (amplitude * 0.45);
+        z = (((i + 1) % 3) - 1) * 0.55;
+        break;
+      }
+    }
+
+    out.push([x + jx, y, z + jz]);
+  }
+  return out;
 }
 
 function hexToHue(hex: string): number {

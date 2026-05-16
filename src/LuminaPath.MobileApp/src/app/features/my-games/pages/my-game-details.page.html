@@ -1,15 +1,22 @@
-<ion-header class="details-header" [translucent]="true">
+<ion-header class="details-header" [class.details-header--condensed]="headerCondensed" [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
       <ion-button fill="clear" class="back-button" aria-label="Go back" (click)="goBack()">
         <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
-    <ion-title>{{ game?.name || 'Game details' }}</ion-title>
+    <div class="condensed-title" *ngIf="game">
+      <img [src]="imageUrl()" [alt]="game.name" />
+      <div class="condensed-title__copy">
+        <strong>{{ game.name }}</strong>
+        <span>{{ statusLabel }}</span>
+      </div>
+    </div>
+    <ion-title class="default-title">{{ game?.name || 'Game details' }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true" class="details-shell">
+<ion-content [fullscreen]="true" [scrollEvents]="true" (ionScroll)="onScroll($any($event))" class="details-shell">
   <section class="details-state" *ngIf="isLoading">
     <ion-spinner name="crescent"></ion-spinner>
     <p>Loading game details...</p>
@@ -24,6 +31,8 @@
 
   <main class="details-page mt-8" *ngIf="!isLoading && !errorMessage && game">
     <section class="hero-card">
+      <div class="hero-backdrop" [style.background-image]="'url(' + imageUrl() + ')'"></div>
+      <div class="hero-inner">
       <div class="cover-wrap">
         <img [src]="imageUrl()" [alt]="game.name" class="cover" />
         <ion-badge class="library-badge" [class.library-badge--owned]="isInLibrary">
@@ -63,6 +72,38 @@
           </div>
         </div>
       </div>
+      </div>
+    </section>
+
+    <section class="quick-actions">
+      <ng-container *ngIf="!isInLibrary">
+        <ion-button
+          shape="round"
+          class="quick-action quick-action--primary"
+          [disabled]="isUpdatingLibrary"
+          (click)="addToLibrary()">
+          <ion-icon slot="start" name="add-outline"></ion-icon>
+          Add to library
+        </ion-button>
+      </ng-container>
+      <ng-container *ngIf="isInLibrary">
+        <ion-button
+          shape="round"
+          class="quick-action quick-action--primary"
+          [disabled]="isUpdatingLibrary"
+          (click)="advanceStatus()">
+          <ion-icon slot="start" [name]="primaryActionIcon"></ion-icon>
+          {{ primaryActionLabel }}
+        </ion-button>
+        <ion-button
+          shape="round"
+          fill="outline"
+          class="quick-action"
+          (click)="goToPlanning()">
+          <ion-icon slot="start" name="calendar-clear-outline"></ion-icon>
+          Plan sessions
+        </ion-button>
+      </ng-container>
     </section>
 
     <section class="library-card" [class.library-card--owned]="isInLibrary">

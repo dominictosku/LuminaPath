@@ -27,13 +27,16 @@ import {
   calendarClearOutline,
   checkmarkCircle,
   checkmarkCircleOutline,
+  checkmarkDoneOutline,
   cubeOutline,
+  flagOutline,
   gameControllerOutline,
   hourglassOutline,
   libraryOutline,
   linkOutline,
   newspaperOutline,
   openOutline,
+  playOutline,
   refreshOutline,
   returnUpBackOutline,
   trashOutline,
@@ -42,6 +45,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { GameService } from 'src/app/features/games/services/game.service';
 import { Game, GameNewsItem, GameSummary, Platforms } from 'src/app/features/games/models/games.model';
+import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
 import { Quest, QuestBoardService, QuestType } from 'src/app/features/quests/services/quest-board.service';
 import { GameForecast, GamingSessionService } from 'src/app/features/planing/services/gaming-session.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
@@ -107,11 +111,15 @@ export class MyGameDetailsPage implements OnInit {
   newQuestTitle = '';
   newQuestType: QuestType = 'sub';
 
+  isUpdatingLibrary = false;
+  headerCondensed = false;
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly location: Location,
     private readonly gameService: GameService,
+    private readonly myGameService: MyGameService,
     private readonly questBoardService: QuestBoardService,
     private readonly sessionService: GamingSessionService,
   ) {
@@ -121,13 +129,16 @@ export class MyGameDetailsPage implements OnInit {
       calendarClearOutline,
       checkmarkCircle,
       checkmarkCircleOutline,
+      checkmarkDoneOutline,
       cubeOutline,
+      flagOutline,
       gameControllerOutline,
       hourglassOutline,
       libraryOutline,
       linkOutline,
       newspaperOutline,
       openOutline,
+      playOutline,
       refreshOutline,
       returnUpBackOutline,
       trashOutline,
@@ -350,6 +361,86 @@ export class MyGameDetailsPage implements OnInit {
 
   providerLabel(item: GameNewsItem): string {
     return item.provider === 'GoogleNews' ? 'Google News' : item.provider;
+  }
+
+  onScroll(event: CustomEvent<{ scrollTop: number }>): void {
+    const scrollTop = event.detail?.scrollTop ?? 0;
+    const condensed = scrollTop > 140;
+    if (condensed !== this.headerCondensed) {
+      this.headerCondensed = condensed;
+    }
+  }
+
+  get primaryActionLabel(): string {
+    const status = Number(this.libraryEntry?.status ?? 1);
+    if (status === 1) return 'Start playing';
+    if (status === 2) return 'Mark story complete';
+    if (status === 3) return 'Mark completed';
+    if (status === 4) return 'Replay';
+    return 'Set as playing';
+  }
+
+  get primaryActionIcon(): string {
+    const status = Number(this.libraryEntry?.status ?? 1);
+    if (status === 2) return 'flag-outline';
+    if (status === 3) return 'checkmark-done-outline';
+    if (status === 4) return 'refresh-outline';
+    return 'play-outline';
+  }
+
+  async addToLibrary(): Promise<void> {
+    if (!this.game?.id || this.isUpdatingLibrary) return;
+    this.isUpdatingLibrary = true;
+    try {
+      await firstValueFrom(
+        this.myGameService.addToLibrary(this.game.id, {
+          status: 1,
+          timeSpend: null,
+          rating: null,
+          startDate: null,
+          endDate: null,
+        }),
+      );
+      await this.loadGameAndQuests(this.game.id);
+    } catch {
+      // silent — user can retry
+    } finally {
+      this.isUpdatingLibrary = false;
+    }
+  }
+
+  async advanceStatus(): Promise<void> {
+    const gameId = this.game?.id;
+    const myGameId = this.myGameId;
+    if (!gameId || myGameId == null || this.isUpdatingLibrary) return;
+
+    const current = Number(this.libraryEntry?.status ?? 1);
+    const next = current === 4 ? 1 : current === 1 ? 2 : current === 2 ? 3 : current === 3 ? 4 : 2;
+
+    const entry = (this.libraryEntry ?? {}) as {
+      timeSpend?: number | null;
+      rating?: number | null;
+      startDate?: string | null;
+      endDate?: string | null;
+    };
+
+    this.isUpdatingLibrary = true;
+    try {
+      await firstValueFrom(
+        this.myGameService.updateLibraryEntry(myGameId, gameId, {
+          status: next,
+          timeSpend: entry.timeSpend ?? null,
+          rating: entry.rating ?? null,
+          startDate: entry.startDate ?? null,
+          endDate: entry.endDate ?? null,
+        }),
+      );
+      await this.loadGameAndQuests(gameId);
+    } catch {
+      // silent
+    } finally {
+      this.isUpdatingLibrary = false;
+    }
   }
 
   goBack(): void {
