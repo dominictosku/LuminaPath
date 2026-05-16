@@ -1,6 +1,6 @@
 # C4 Level 2 — Containers
 
-This zoom level shows the **deployable units** that make up LuminaPath. Each box is a separate process / image in [`docker-compose.yml`](../../docker-compose.yml).
+This zoom level shows the **deployable units** that make up LuminaPath. Each box is a separate process / image in [`docker-compose.yml`](https://github.com/dominictosku/LuminaPath/blob/main/docker-compose.yml).
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
@@ -61,7 +61,7 @@ flowchart TB
     - The user-facing UI for everyday tracking (library, quests, planning, skill tree)
     - Talks to the API exclusively over REST
     - Capacitor wraps the same build for Android/iOS
-- **Theming**: per-media-mode tokens (games = blue, anime = pink, movies = green, series = yellow). See [global.scss](../../src/LuminaPath.MobileApp/src/global.scss).
+- **Theming**: per-media-mode tokens (games = blue, anime = pink, movies = green, series = yellow). See [global.scss](https://github.com/dominictosku/LuminaPath/blob/main/src/LuminaPath.MobileApp/src/global.scss).
 
 ### `postgres`
 

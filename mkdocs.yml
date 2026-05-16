@@ -70,9 +70,13 @@ nav:
       - 02-architecture/index.md
       - C4 — System Context: 02-architecture/c4-context.md
       - C4 — Containers: 02-architecture/c4-container.md
+      - API reference (Swagger): 02-architecture/api-reference.md
+      - Mobile component reference (Compodoc): 02-architecture/mobile-component-reference.md
       - Adding a media type: backend-media-types.md
   - Features:
       - 03-features/index.md
+      - Library: 03-features/library.md
+      - Quest board: 03-features/quest-board.md
   - Decisions:
       - 04-decisions/index.md
       - ADR template: 04-decisions/template.md

@@ -12,7 +12,7 @@ LuminaPath is a self-hosted "command center" for someone who wants to keep their
 
 A single home server (NUC, mini-PC, Raspberry Pi 5, NAS) running Docker. No SaaS dependency, no telemetry, full data ownership.
 
-See the [README](../../README.md) for the marketing-level pitch and feature list. This site is for everything that doesn't fit there.
+See the [README](https://github.com/dominictosku/LuminaPath/blob/main/README.md) for the marketing-level pitch and feature list. This site is for everything that doesn't fit there.
 
 ## Glossary
 

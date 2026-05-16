@@ -9,6 +9,11 @@ LuminaPath is documented using the [C4 model](https://c4model.com/) — four nes
 | **3. Components** | What's inside each container? | Per-feature pages under [Features](../03-features/index.md) |
 | **4. Code** | How are individual classes/files structured? | The code itself + IDE; we don't draw this level. |
 
+Generated references that complement the above:
+
+- [**API reference**](api-reference.md) — Swagger / OpenAPI at `/swagger`, the source of truth for endpoint shapes.
+- [**Mobile component reference**](mobile-component-reference.md) — Compodoc-generated docs for the Angular app.
+
 The why's behind each split live in the [Architecture Decision Records](../04-decisions/index.md).
 
 ## Tech inventory

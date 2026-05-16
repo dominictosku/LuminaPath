@@ -12,9 +12,8 @@ This section has one folder per user-facing feature. Each feature page should co
 
 | Feature | Status |
 |---|---|
-| Library (games / movies / series / anime) | TODO — owner: — |
-| Quest board | TODO |
-| Skill tree | TODO |
+| [Library](library.md) (games / movies / series / anime) | Documented |
+| [Quest board](quest-board.md) (incl. Skills + Skill Tree modes) | Documented |
 | Planning / forecasting | TODO |
 | Social feed | TODO |
 | Achievements | TODO |

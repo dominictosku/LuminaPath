@@ -9,7 +9,9 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:smoke": "ng test --watch=false --browsers=ChromeHeadlessNoSandbox",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "docs:compodoc": "compodoc -p tsconfig.app.json -d ../../docs/generated/mobile --theme material --name \"LuminaPath mobile components\" --hideGenerator",
+    "docs:compodoc:serve": "compodoc -p tsconfig.app.json -s -r 4567 --theme material --name \"LuminaPath mobile components\" --hideGenerator"
   },
   "private": true,
   "dependencies": {
@@ -50,6 +52,7 @@
     "@angular/language-service": "^21.2.11",
     "@capacitor/android": "^8.3.1",
     "@capacitor/cli": "8.3.1",
+    "@compodoc/compodoc": "^1.2.1",
     "@ionic/angular-toolkit": "^12.3.0",
     "@types/jasmine": "~6.0.0",
     "jasmine-core": "~6.2.0",

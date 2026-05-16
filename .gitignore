@@ -378,3 +378,7 @@ nginx/certs
 
 # other
 *.lscache
+
+# docs build artifacts
+docs/generated/
+site/
