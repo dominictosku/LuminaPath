@@ -65,7 +65,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             }
 
             var mappedEntities = _mapper.Map<IEnumerable<TEntity>, IEnumerable<Dto>>(paginatedEntities);
-            return CreatePaginatedList(mappedEntities, mediaFilter.Paging);
+            int pageSize = mediaFilter.Paging.Count > 0 ? mediaFilter.Paging.Count : 10;
+            return new PaginatedList<Dto>(
+                mappedEntities.ToList(),
+                paginatedEntities.TotalPages * pageSize,
+                paginatedEntities.PageIndex,
+                pageSize);
         }
 
         public virtual async Task<TEntity> GetById(int? id, IEnumerable<string>? includes = null)

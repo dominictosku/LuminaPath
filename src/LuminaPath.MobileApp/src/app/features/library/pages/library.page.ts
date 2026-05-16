@@ -6,6 +6,8 @@ import {
   IonButton,
   IonContent,
   IonIcon,
+  IonInfiniteScroll,
+  IonInfiniteScrollContent,
   IonModal,
   IonRefresher,
   IonRefresherContent,
@@ -40,6 +42,7 @@ import { MediaLibraryForm } from '../models/media-library-form.model';
 import { GameStatus, MediaLibraryViewService } from '../services/media-library-view.service';
 import { LibraryCardComponent } from '../components/library-card/library-card.component';
 import { LibraryListRowComponent } from '../components/library-list-row/library-list-row.component';
+import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 
 type ViewMode = 'grid' | 'list';
 type OwnershipFilter = 'all' | 'mine' | 'catalog';
@@ -54,6 +57,8 @@ type OwnershipFilter = 'all' | 'mine' | 'catalog';
     IonButton,
     IonContent,
     IonIcon,
+    IonInfiniteScroll,
+    IonInfiniteScrollContent,
     IonModal,
     IonRefresher,
     IonRefresherContent,
@@ -76,6 +81,7 @@ export class LibraryPage implements OnInit, OnDestroy {
   platformFilter = 'all';
   viewMode: ViewMode = 'grid';
   isLoading = true;
+  isLoadingMore = false;
   errorMessage = '';
   successMessage = '';
   addingGameIds = new Set<number>();
@@ -90,8 +96,11 @@ export class LibraryPage implements OnInit, OnDestroy {
     currentEpisode: null,
   };
   mediaMode: MediaModeOption;
+  currentPage = 1;
+  totalPages = 1;
 
   private mediaModeSub?: Subscription;
+  private readonly pageSize = 24;
 
   readonly platforms = Platforms;
 
@@ -134,11 +143,14 @@ export class LibraryPage implements OnInit, OnDestroy {
 
   loadGames(event?: CustomEvent) {
     this.isLoading = !event;
+    this.isLoadingMore = false;
     this.errorMessage = '';
 
-    this.mediaLibrary.getAll().subscribe({
+    this.mediaLibrary.getAll(this.createPageFilter(1)).subscribe({
       next: (result) => {
         this.games = result.data ?? [];
+        this.currentPage = result.pageIndex ?? 1;
+        this.totalPages = result.totalPages ?? 1;
         this.applyFilters();
         this.isLoading = false;
         this.completeRefresh(event);
@@ -151,7 +163,38 @@ export class LibraryPage implements OnInit, OnDestroy {
         this.filteredGames = [];
         this.errorMessage = `${this.mediaMode.label} could not be loaded.`;
         this.isLoading = false;
+        this.currentPage = 1;
+        this.totalPages = 1;
         this.completeRefresh(event);
+      },
+    });
+  }
+
+  loadMoreGames(event?: CustomEvent) {
+    if (this.isLoading || this.isLoadingMore || !this.hasMorePages) {
+      this.completeInfiniteScroll(event);
+      return;
+    }
+
+    this.isLoadingMore = true;
+    this.errorMessage = '';
+
+    this.mediaLibrary.getAll(this.createPageFilter(this.currentPage + 1)).subscribe({
+      next: (result) => {
+        this.games = this.mergeGames(this.games, result.data ?? []);
+        this.currentPage = result.pageIndex ?? this.currentPage + 1;
+        this.totalPages = result.totalPages ?? this.totalPages;
+        this.applyFilters();
+        this.isLoadingMore = false;
+        this.completeInfiniteScroll(event);
+        if (this.mediaMode.id === 'games') {
+          this.releaseNotifications.syncForGames(this.gamesForReleaseNotifications());
+        }
+      },
+      error: () => {
+        this.errorMessage = `More ${this.mediaMode.label.toLowerCase()} could not be loaded.`;
+        this.isLoadingMore = false;
+        this.completeInfiniteScroll(event);
       },
     });
   }
@@ -266,6 +309,10 @@ export class LibraryPage implements OnInit, OnDestroy {
 
   get totalGames() {
     return this.games.length;
+  }
+
+  get hasMorePages(): boolean {
+    return this.currentPage < this.totalPages;
   }
 
   get ownedGames() {
@@ -391,6 +438,26 @@ export class LibraryPage implements OnInit, OnDestroy {
   private completeRefresh(event?: CustomEvent) {
     const target = event?.target as HTMLIonRefresherElement | undefined;
     target?.complete();
+  }
+
+  private completeInfiniteScroll(event?: CustomEvent) {
+    const target = event?.target as HTMLIonInfiniteScrollElement | undefined;
+    target?.complete();
+  }
+
+  private createPageFilter(pageIndex: number): MediaFilter {
+    const filter = new MediaFilter();
+    filter.Paging.PageIndex = pageIndex;
+    filter.Paging.Count = this.pageSize;
+    return filter;
+  }
+
+  private mergeGames(current: MediaItem[], next: MediaItem[]): MediaItem[] {
+    const byId = new Map(current.map((game) => [game.id, game]));
+    for (const game of next) {
+      byId.set(game.id, game);
+    }
+    return Array.from(byId.values());
   }
 
   private triggerAddHaptic(): void {

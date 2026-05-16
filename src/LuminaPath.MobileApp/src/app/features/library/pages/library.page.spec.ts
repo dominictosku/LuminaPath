@@ -36,9 +36,11 @@ function makeEntry(overrides: Partial<UserMediaEntry> = {}): UserMediaEntry {
   };
 }
 
-function pageOf(games: MediaItem[]): PaginateResult<MediaItem> {
+function pageOf(games: MediaItem[], pageIndex = 1, totalPages = 1): PaginateResult<MediaItem> {
   const result = new PaginateResult<MediaItem>();
   result.data = games;
+  result.pageIndex = pageIndex;
+  result.totalPages = totalPages;
   return result;
 }
 
@@ -95,6 +97,26 @@ describe('LibraryPage', () => {
     expect(component.filteredGames.length).toBe(2);
     expect(component.isLoading).toBeFalse();
     expect(component.errorMessage).toBe('');
+  });
+
+  it('loads and appends the next page when infinite scroll fires', () => {
+    const pageOne = [makeGame({ id: 1, name: 'Apex Legends' })];
+    const pageTwo = [makeGame({ id: 2, name: 'Baldurs Gate' })];
+    configure(of(pageOf(pageOne, 1, 2)));
+    mediaLibrary.getAll.and.returnValues(
+      of(pageOf(pageOne, 1, 2)),
+      of(pageOf(pageTwo, 2, 2)),
+    );
+    fixture.detectChanges();
+
+    const complete = jasmine.createSpy('complete');
+    component.loadMoreGames({ target: { complete } } as unknown as CustomEvent);
+
+    expect(mediaLibrary.getAll).toHaveBeenCalledTimes(2);
+    expect(component.games.map((game) => game.id)).toEqual([1, 2]);
+    expect(component.filteredGames.map((game) => game.id)).toEqual([1, 2]);
+    expect(component.hasMorePages).toBeFalse();
+    expect(complete).toHaveBeenCalled();
   });
 
   it('shows an error message when the games request fails', () => {

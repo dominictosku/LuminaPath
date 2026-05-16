@@ -140,6 +140,16 @@
     </section>
   </main>
 
+  <ion-infinite-scroll
+    threshold="160px"
+    [disabled]="!hasMorePages || isLoading || isLoadingMore"
+    (ionInfinite)="loadMoreGames($event)">
+    <ion-infinite-scroll-content
+      loadingSpinner="crescent"
+      loadingText="Loading more">
+    </ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+
   <ion-modal
     class="add-game-modal"
     [isOpen]="isAddDialogOpen"
