@@ -1,4 +1,5 @@
 using LuminaPath.Core.Entities;
+using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Infrastructure.Identity;
@@ -94,7 +95,16 @@ namespace LuminaPath.Infrastructure.Controllers.Base
                 return LoginRequired();
             }
 
-            var entity = await _service.GetById(id);
+            TEntity entity;
+            try
+            {
+                entity = await _service.GetById(id);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new FailedResult("Entry not found"));
+            }
+
             if (entity.LuminaUserId != user.Id)
             {
                 return NotFound();

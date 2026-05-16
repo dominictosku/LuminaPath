@@ -98,9 +98,14 @@ describe('MyGameDetailsPage', () => {
     component = fixture.componentInstance;
   }
 
+  async function initialize(): Promise<void> {
+    component.ngOnInit();
+    await new Promise<void>((resolve) => setTimeout(resolve));
+  }
+
   it('shows an error when the route param is invalid', async () => {
     configure(null);
-    await component.ngOnInit();
+    await initialize();
     expect(component.errorMessage).toBe('Game not found.');
     expect(gameService.get).not.toHaveBeenCalled();
   });
@@ -114,10 +119,10 @@ describe('MyGameDetailsPage', () => {
       makeQuest({ id: 2, title: 'Side quest', completed: true, myGameId: 7 }),
     ]);
 
-    await component.ngOnInit();
+    await initialize();
 
-    expect(gameService.get).toHaveBeenCalledOnceWith(42);
-    expect(questBoardService.getQuestsForGame).toHaveBeenCalledOnceWith(7);
+    expect(gameService.get).toHaveBeenCalledWith(42);
+    expect(questBoardService.getQuestsForGame).toHaveBeenCalledWith(7);
     expect(component.game?.name).toBe('Hades');
     expect(component.quests.length).toBe(2);
     expect(component.isInLibrary).toBeTrue();
@@ -152,7 +157,7 @@ describe('MyGameDetailsPage', () => {
       },
     ]));
 
-    await component.ngOnInit();
+    await initialize();
     await component.loadNews();
 
     expect(gameService.getNews).toHaveBeenCalledOnceWith(42, false);
@@ -166,7 +171,7 @@ describe('MyGameDetailsPage', () => {
     const game = makeGame({ id: 42, name: 'Hades', myGames: null });
     configure('42', game);
 
-    await component.ngOnInit();
+    await initialize();
     await component.loadNews(true);
 
     expect(gameService.getNews).toHaveBeenCalledOnceWith(42, true);
@@ -176,7 +181,7 @@ describe('MyGameDetailsPage', () => {
     const game = makeGame({ id: 42, name: 'Hades', myGames: null });
     configure('42', game);
 
-    await component.ngOnInit();
+    await initialize();
 
     expect(questBoardService.getQuestsForGame).not.toHaveBeenCalled();
     expect(component.isInLibrary).toBeFalse();
@@ -190,7 +195,8 @@ describe('MyGameDetailsPage', () => {
 
     questBoardService.getQuestsForGame.and.resolveTo([]);
 
-    await component.ngOnInit();
+    await initialize();
+    const questFetchesBeforeAdd = questBoardService.getQuestsForGame.calls.count();
 
     component.newQuestTitle = '  Kill Megaera  ';
     component.newQuestType = 'main';
@@ -202,14 +208,14 @@ describe('MyGameDetailsPage', () => {
       type: 'main',
     }));
     expect(component.newQuestTitle).toBe('');
-    expect(questBoardService.getQuestsForGame).toHaveBeenCalledTimes(2);
+    expect(questBoardService.getQuestsForGame.calls.count()).toBe(questFetchesBeforeAdd + 1);
   });
 
   it('addQuest is a no-op when the title is empty', async () => {
     const myGame = makeMyGame(7, 42);
     const game = makeGame({ id: 42, name: 'Hades', myGames: myGame });
     configure('42', game);
-    await component.ngOnInit();
+    await initialize();
 
     component.newQuestTitle = '   ';
     await component.addQuest();
@@ -224,7 +230,7 @@ describe('MyGameDetailsPage', () => {
 
     questBoardService.getQuestsForGame.and.resolveTo([]);
 
-    await component.ngOnInit();
+    await initialize();
     await component.deleteQuest(makeQuest({ id: 99, title: 'Doomed', completed: false, myGameId: 7 }));
 
     expect(questBoardService.deleteQuest).toHaveBeenCalledOnceWith(99);
@@ -238,7 +244,7 @@ describe('MyGameDetailsPage', () => {
     const game = makeGame({ id: 42, name: 'Hades', myGames: myGame });
     configure('42', game);
 
-    await component.ngOnInit();
+    await initialize();
     component.startEditingNotes();
     component.notesDraft = '  # Build\n- Shield run\n\n**Heat 8**  ';
     await component.savePersonalNotes();

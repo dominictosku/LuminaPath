@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { Router } from '@angular/router';
+import { provideIonicAngular } from '@ionic/angular/standalone';
 import { Observable, of, throwError } from 'rxjs';
 
 import { LibraryPage } from './library.page';
@@ -78,6 +79,7 @@ describe('LibraryPage', () => {
     TestBed.configureTestingModule({
       imports: [LibraryPage],
       providers: [
+        provideIonicAngular(),
         { provide: MediaLibraryFacade, useValue: mediaLibrary },
         { provide: ReleaseNotificationService, useValue: releaseNotifications },
         { provide: Router, useValue: router },

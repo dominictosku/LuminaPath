@@ -1,4 +1,5 @@
 using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure;
@@ -12,21 +13,170 @@ namespace Test.Services
     public class QuestServiceTests
     {
         [Fact]
-        public async Task GetBoardAsync_ReturnsDefaultBoard_ForNewUser()
+        public async Task GetBoardAsync_ReturnsEmptyBoard_ForNewUser()
         {
             var options = Utilities.DbContext.TestDbContextOptions();
             var service = new QuestService(new TestDbContextFactory(options));
 
             var board = await service.GetBoardAsync("new-user");
 
-            Assert.Equal(5, board.Quests.Count);
-            Assert.Equal(3, board.Skills.Count);
-            Assert.All(board.Quests, quest => Assert.True(quest.Id < 0));
-            Assert.All(board.Skills, skill => Assert.True(skill.Id < 0));
+            Assert.Equal(0, board.Xp);
+            Assert.Empty(board.Quests);
+            Assert.Empty(board.Skills);
+            Assert.Empty(board.Achievements);
         }
 
         [Fact]
-        public async Task SaveBoardAsync_SanitizesAndPersistsUserBoard()
+        public async Task CreateAsync_SanitizesPersistsAndLinksOwnedGameAndSkill()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string userId = "user-1";
+            int myGameId;
+            int otherMyGameId;
+            int skillId;
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.AddRange(NewUser(userId), NewUser("other-user"));
+                var game = new Game { Name = "Hades", Description = "Roguelike" };
+                var otherGame = new Game { Name = "Celeste", Description = "Platformer" };
+                dbContext.Games.AddRange(game, otherGame);
+                var myGame = new MyGame { Game = game, LuminaUserId = userId, Status = GameStatus.Playing, Priority = 1 };
+                var otherMyGame = new MyGame { Game = otherGame, LuminaUserId = "other-user", Status = GameStatus.Playing, Priority = 1 };
+                var skill = new QuestSkill { LuminaUserId = userId, Name = "Programming", Icon = "code-slash-outline", Color = "#2563eb" };
+                dbContext.MyGames.AddRange(myGame, otherMyGame);
+                dbContext.QuestSkills.Add(skill);
+                await dbContext.SaveChangesAsync();
+                myGameId = myGame.Id;
+                otherMyGameId = otherMyGame.Id;
+                skillId = skill.Id;
+            }
+
+            var service = new QuestService(new TestDbContextFactory(options));
+            var created = Success(await service.CreateAsync(userId, new QuestCreateDto
+            {
+                Title = "  Beat boss  ",
+                Notes = "  Focus phase  ",
+                Type = QuestType.Main,
+                Priority = QuestPriority.High,
+                Tags = [" boss ", "Boss", "", "run"],
+                MyGameId = myGameId,
+                SkillId = skillId
+            }));
+
+            Assert.Equal("Beat boss", created.Quest.Title);
+            Assert.Equal("Focus phase", created.Quest.Notes);
+            Assert.Equal(150, created.Quest.RewardXp);
+            Assert.Equal(myGameId, created.Quest.MyGameId);
+            Assert.Equal("Hades", created.Quest.GameName);
+            Assert.Equal(skillId, created.Quest.SkillId);
+            Assert.Equal(["boss", "run"], created.Quest.Tags);
+
+            var injected = Success(await service.CreateAsync(userId, new QuestCreateDto
+            {
+                Title = "Try to inject",
+                MyGameId = otherMyGameId
+            }));
+            Assert.Null(injected.Quest.MyGameId);
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            Assert.Equal(2, await assertContext.Quests.CountAsync(quest => quest.LuminaUserId == userId));
+        }
+
+        [Fact]
+        public async Task UpdateAsync_CompletesQuestAwardsXpSkillXpAndSpawnsRecurringQuest()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string userId = "user-1";
+            int questId;
+            int skillId;
+            var dueDate = new DateTime(2026, 5, 16, 0, 0, 0, DateTimeKind.Utc);
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.Add(NewUser(userId));
+                var skill = new QuestSkill { LuminaUserId = userId, Name = "Programming", Icon = "code-slash-outline", Color = "#2563eb" };
+                var quest = new Quest
+                {
+                    LuminaUserId = userId,
+                    Title = "Practice",
+                    Type = QuestType.Sub,
+                    Priority = QuestPriority.Medium,
+                    Recurrence = QuestRecurrence.Daily,
+                    DueDate = dueDate,
+                    RewardXp = 75,
+                    Skill = skill,
+                    Tags = []
+                };
+                dbContext.Quests.Add(quest);
+                await dbContext.SaveChangesAsync();
+                questId = quest.Id;
+                skillId = skill.Id;
+            }
+
+            var service = new QuestService(new TestDbContextFactory(options));
+            var result = Success(await service.UpdateAsync(userId, questId, new QuestUpdateDto { Completed = true }));
+
+            Assert.True(result.Quest.Completed);
+            Assert.NotNull(result.Quest.CompletedAt);
+            Assert.Equal(75, result.TotalXp);
+            Assert.Equal(1, result.CurrentStreakDays);
+            Assert.Equal(15, result.AwardedSkillXp);
+            Assert.Equal(skillId, result.AwardedSkillId);
+            Assert.NotNull(result.SpawnedQuest);
+            Assert.False(result.SpawnedQuest!.Completed);
+            Assert.Equal(dueDate.AddDays(1), result.SpawnedQuest.DueDate);
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            var persistedSkill = await assertContext.QuestSkills.SingleAsync(s => s.Id == skillId);
+            Assert.Equal(15, persistedSkill.Xp);
+        }
+
+        [Fact]
+        public async Task ReorderAsync_UpdatesSortOrderAndTypeForOwnedQuestsOnly()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string userId = "user-1";
+            int firstId;
+            int secondId;
+            int otherId;
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.AddRange(NewUser(userId), NewUser("other-user"));
+                var first = NewQuest(userId, "First", QuestType.Sub, 0);
+                var second = NewQuest(userId, "Second", QuestType.Sub, 1);
+                var other = NewQuest("other-user", "Other", QuestType.Sub, 0);
+                dbContext.Quests.AddRange(first, second, other);
+                await dbContext.SaveChangesAsync();
+                firstId = first.Id;
+                secondId = second.Id;
+                otherId = other.Id;
+            }
+
+            var service = new QuestService(new TestDbContextFactory(options));
+            var count = Success(await service.ReorderAsync(userId,
+            [
+                new() { Id = secondId, SortOrder = 0, Type = QuestType.Main },
+                new() { Id = firstId, SortOrder = 1, Type = QuestType.Faction },
+                new() { Id = otherId, SortOrder = 99, Type = QuestType.Main }
+            ]));
+
+            Assert.Equal(3, count);
+            await using var assertContext = new LuminaPathDbContext(options);
+            var persistedFirst = await assertContext.Quests.SingleAsync(q => q.Id == firstId);
+            var persistedSecond = await assertContext.Quests.SingleAsync(q => q.Id == secondId);
+            var persistedOther = await assertContext.Quests.SingleAsync(q => q.Id == otherId);
+            Assert.Equal(1, persistedFirst.SortOrder);
+            Assert.Equal(QuestType.Faction, persistedFirst.Type);
+            Assert.Equal(0, persistedSecond.SortOrder);
+            Assert.Equal(QuestType.Main, persistedSecond.Type);
+            Assert.Equal(0, persistedOther.SortOrder);
+            Assert.Equal(QuestType.Sub, persistedOther.Type);
+        }
+
+        [Fact]
+        public async Task SaveSkillsAsync_SanitizesUpsertsNodesAndRemovesOmittedSkills()
         {
             var options = Utilities.DbContext.TestDbContextOptions();
             const string userId = "user-1";
@@ -38,14 +188,9 @@ namespace Test.Services
             }
 
             var service = new QuestService(new TestDbContextFactory(options));
-            var saved = await service.SaveBoardAsync(userId, new QuestBoardDto
+            var first = await service.SaveSkillsAsync(userId, new QuestBoardDto
             {
-                Xp = -50,
-                Quests =
-                [
-                    new() { Title = "  Ship tests  ", Type = QuestType.Main, RewardXp = 0, Completed = true },
-                    new() { Title = "   ", Type = QuestType.Sub, RewardXp = 75 }
-                ],
+                Xp = -10,
                 Skills =
                 [
                     new()
@@ -53,223 +198,93 @@ namespace Test.Services
                         Name = "  Stability  ",
                         Icon = " ",
                         Color = " ",
-                        Xp = -10,
+                        Xp = -5,
                         Nodes =
                         [
                             new() { Name = "  Service tests  ", Unlocked = true },
-                            new() { Name = "   ", Unlocked = true }
+                            new() { Name = " " }
                         ]
                     },
-                    new() { Name = "   " }
+                    new() { Name = "Drawing" }
                 ]
             });
 
-            Assert.Equal(0, saved.Xp);
-
-            var quest = Assert.Single(saved.Quests);
-            Assert.Equal("Ship tests", quest.Title);
-            Assert.Equal(150, quest.RewardXp);
-            Assert.True(quest.Completed);
-            Assert.NotNull(quest.CompletedAt);
-
-            var skill = Assert.Single(saved.Skills);
-            Assert.Equal("Stability", skill.Name);
-            Assert.Equal("code-slash-outline", skill.Icon);
-            Assert.Equal("#2563eb", skill.Color);
-            Assert.Equal(0, skill.Xp);
-
-            var node = Assert.Single(skill.Nodes);
+            Assert.Equal(0, first.Xp);
+            Assert.Equal(2, first.Skills.Count);
+            var stability = first.Skills.Single(skill => skill.Name == "Stability");
+            Assert.Equal("code-slash-outline", stability.Icon);
+            Assert.Equal("#2563eb", stability.Color);
+            Assert.Equal(0, stability.Xp);
+            var node = Assert.Single(stability.Nodes);
             Assert.Equal("Service tests", node.Name);
             Assert.True(node.Unlocked);
             Assert.NotNull(node.UnlockedAt);
 
+            var second = await service.SaveSkillsAsync(userId, new QuestBoardDto
+            {
+                Xp = 120,
+                Skills =
+                [
+                    new()
+                    {
+                        Id = stability.Id,
+                        Name = "Stability+",
+                        Icon = "book-outline",
+                        Color = "#0891b2",
+                        Xp = 30,
+                        Nodes = [new() { Id = node.Id, Name = "Regression tests", Unlocked = false }]
+                    }
+                ]
+            });
+
+            var updated = Assert.Single(second.Skills);
+            Assert.Equal("Stability+", updated.Name);
+            Assert.Equal(120, second.Xp);
+            Assert.Equal("Regression tests", Assert.Single(updated.Nodes).Name);
+
             await using var assertContext = new LuminaPathDbContext(options);
-            Assert.Equal(1, await assertContext.QuestProfiles.CountAsync(profile => profile.LuminaUserId == userId));
-            Assert.Equal(1, await assertContext.Quests.CountAsync(quest => quest.LuminaUserId == userId));
             Assert.Equal(1, await assertContext.QuestSkills.CountAsync(skill => skill.LuminaUserId == userId));
             Assert.Equal(1, await assertContext.QuestSkillNodes.CountAsync());
         }
 
         [Fact]
-        public async Task SaveBoardAsync_UpsertsByIdAndPreservesQuestRowsForUnchangedQuests()
+        public async Task SubtaskMethods_AddUpdateAndDeleteOwnedSubtasks()
         {
             var options = Utilities.DbContext.TestDbContextOptions();
             const string userId = "user-1";
+            int questId;
 
             await using (var dbContext = new LuminaPathDbContext(options))
             {
                 dbContext.Users.Add(NewUser(userId));
+                var quest = NewQuest(userId, "Ship", QuestType.Main, 0);
+                dbContext.Quests.Add(quest);
                 await dbContext.SaveChangesAsync();
+                questId = quest.Id;
             }
 
             var service = new QuestService(new TestDbContextFactory(options));
+            var added = Success(await service.AddSubtaskAsync(userId, questId, new QuestSubtaskCreateDto { Title = "  Write test  " }));
+            var subtask = Assert.Single(added.Quest.Subtasks);
+            Assert.Equal("Write test", subtask.Title);
+            Assert.False(subtask.Completed);
 
-            var first = await service.SaveBoardAsync(userId, new QuestBoardDto
+            var updated = Success(await service.UpdateSubtaskAsync(userId, questId, subtask.Id, new QuestSubtaskUpdateDto
             {
-                Xp = 100,
-                Quests =
-                [
-                    new() { Title = "Keep me", Type = QuestType.Main },
-                    new() { Title = "Edit me", Type = QuestType.Sub }
-                ]
-            });
+                Title = "Write regression test",
+                Completed = true,
+                SortOrder = 4
+            }));
+            var updatedSubtask = Assert.Single(updated.Quest.Subtasks);
+            Assert.True(updatedSubtask.Completed);
+            Assert.NotNull(updatedSubtask.CompletedAt);
+            Assert.Equal(4, updatedSubtask.SortOrder);
 
-            var keepId = first.Quests.Single(quest => quest.Title == "Keep me").Id;
-            var editId = first.Quests.Single(quest => quest.Title == "Edit me").Id;
-
-            var second = await service.SaveBoardAsync(userId, new QuestBoardDto
-            {
-                Xp = 175,
-                Quests =
-                [
-                    new() { Id = keepId, Title = "Keep me", Type = QuestType.Main, RewardXp = 150 },
-                    new() { Id = editId, Title = "Renamed", Type = QuestType.Sub, RewardXp = 75, Completed = true },
-                    new() { Title = "Brand new", Type = QuestType.Faction }
-                ]
-            });
-
-            Assert.Equal(175, second.Xp);
-            Assert.Equal(3, second.Quests.Count);
-
-            var keep = Assert.Single(second.Quests, quest => quest.Title == "Keep me");
-            Assert.Equal(keepId, keep.Id);
-
-            var edited = Assert.Single(second.Quests, quest => quest.Title == "Renamed");
-            Assert.Equal(editId, edited.Id);
-            Assert.True(edited.Completed);
-            Assert.NotNull(edited.CompletedAt);
-
-            var added = Assert.Single(second.Quests, quest => quest.Title == "Brand new");
-            Assert.True(added.Id > 0);
-            Assert.NotEqual(keepId, added.Id);
-            Assert.NotEqual(editId, added.Id);
-        }
-
-        [Fact]
-        public async Task SaveBoardAsync_RemovesQuestsThatAreOmittedFromTheNextSave()
-        {
-            var options = Utilities.DbContext.TestDbContextOptions();
-            const string userId = "user-1";
-
-            await using (var dbContext = new LuminaPathDbContext(options))
-            {
-                dbContext.Users.Add(NewUser(userId));
-                await dbContext.SaveChangesAsync();
-            }
-
-            var service = new QuestService(new TestDbContextFactory(options));
-
-            var first = await service.SaveBoardAsync(userId, new QuestBoardDto
-            {
-                Quests =
-                [
-                    new() { Title = "Stays", Type = QuestType.Main },
-                    new() { Title = "Goes away", Type = QuestType.Sub }
-                ]
-            });
-
-            var staysId = first.Quests.Single(quest => quest.Title == "Stays").Id;
-
-            await service.SaveBoardAsync(userId, new QuestBoardDto
-            {
-                Quests = [new() { Id = staysId, Title = "Stays", Type = QuestType.Main }]
-            });
+            var deletedId = Success(await service.DeleteSubtaskAsync(userId, questId, subtask.Id));
+            Assert.Equal(subtask.Id, deletedId);
 
             await using var assertContext = new LuminaPathDbContext(options);
-            var remaining = await assertContext.Quests.Where(quest => quest.LuminaUserId == userId).ToListAsync();
-            var only = Assert.Single(remaining);
-            Assert.Equal(staysId, only.Id);
-            Assert.Equal("Stays", only.Title);
-        }
-
-        [Fact]
-        public async Task SaveBoardAsync_LinksQuestToOwnedMyGame_AndDropsLinkToOthersGames()
-        {
-            var options = Utilities.DbContext.TestDbContextOptions();
-            const string userA = "user-a";
-            const string userB = "user-b";
-            int aMyGameId;
-            int bMyGameId;
-
-            await using (var dbContext = new LuminaPathDbContext(options))
-            {
-                dbContext.Users.AddRange(NewUser(userA), NewUser(userB));
-                var aGame = new Game { Name = "Hades", Description = "Roguelike" };
-                var bGame = new Game { Name = "Celeste", Description = "Platformer" };
-                dbContext.Games.AddRange(aGame, bGame);
-                var aMyGame = new MyGame { Game = aGame, LuminaUserId = userA, Status = GameStatus.Playing, Priority = 1 };
-                var bMyGame = new MyGame { Game = bGame, LuminaUserId = userB, Status = GameStatus.Playing, Priority = 1 };
-                dbContext.MyGames.AddRange(aMyGame, bMyGame);
-                await dbContext.SaveChangesAsync();
-                aMyGameId = aMyGame.Id;
-                bMyGameId = bMyGame.Id;
-            }
-
-            var service = new QuestService(new TestDbContextFactory(options));
-
-            var saved = await service.SaveBoardAsync(userA, new QuestBoardDto
-            {
-                Quests =
-                [
-                    new() { Title = "Beat boss", Type = QuestType.Main, MyGameId = aMyGameId },
-                    new() { Title = "Try to inject", Type = QuestType.Main, MyGameId = bMyGameId },
-                    new() { Title = "Real life todo", Type = QuestType.Sub }
-                ]
-            });
-
-            var linked = Assert.Single(saved.Quests, quest => quest.Title == "Beat boss");
-            Assert.Equal(aMyGameId, linked.MyGameId);
-            Assert.Equal("Hades", linked.GameName);
-
-            var stripped = Assert.Single(saved.Quests, quest => quest.Title == "Try to inject");
-            Assert.Null(stripped.MyGameId);
-
-            var lifeTodo = Assert.Single(saved.Quests, quest => quest.Title == "Real life todo");
-            Assert.Null(lifeTodo.MyGameId);
-        }
-
-        [Fact]
-        public async Task SaveBoardAsync_NullsLinkWhenMyGameIsRemovedAfterPreviousSave()
-        {
-            var options = Utilities.DbContext.TestDbContextOptions();
-            const string userId = "user-1";
-            int myGameId;
-
-            await using (var dbContext = new LuminaPathDbContext(options))
-            {
-                dbContext.Users.Add(NewUser(userId));
-                var game = new Game { Name = "Hades", Description = "Roguelike" };
-                dbContext.Games.Add(game);
-                var myGame = new MyGame { Game = game, LuminaUserId = userId, Status = GameStatus.Playing, Priority = 1 };
-                dbContext.MyGames.Add(myGame);
-                await dbContext.SaveChangesAsync();
-                myGameId = myGame.Id;
-            }
-
-            var service = new QuestService(new TestDbContextFactory(options));
-
-            var first = await service.SaveBoardAsync(userId, new QuestBoardDto
-            {
-                Quests = [new() { Title = "Beat boss", Type = QuestType.Main, MyGameId = myGameId }]
-            });
-            var questId = first.Quests.Single().Id;
-
-            await using (var dbContext = new LuminaPathDbContext(options))
-            {
-                var myGame = await dbContext.MyGames.SingleAsync(g => g.Id == myGameId);
-                dbContext.MyGames.Remove(myGame);
-                await dbContext.SaveChangesAsync();
-            }
-
-            var second = await service.SaveBoardAsync(userId, new QuestBoardDto
-            {
-                Quests = [new() { Id = questId, Title = "Beat boss", Type = QuestType.Main, MyGameId = myGameId }]
-            });
-
-            var quest = Assert.Single(second.Quests);
-            Assert.Equal(questId, quest.Id);
-            Assert.Null(quest.MyGameId);
-            Assert.Null(quest.GameName);
+            Assert.Empty(await assertContext.QuestSubtasks.ToListAsync());
         }
 
         [Fact]
@@ -283,25 +298,20 @@ namespace Test.Services
             await using (var dbContext = new LuminaPathDbContext(options))
             {
                 dbContext.Users.AddRange(NewUser(userA), NewUser(userB));
-                var aGame = new Game { Name = "Hades", Description = "Roguelike" };
-                dbContext.Games.Add(aGame);
-                var aMyGame = new MyGame { Game = aGame, LuminaUserId = userA, Status = GameStatus.Playing, Priority = 1 };
-                dbContext.MyGames.Add(aMyGame);
+                var game = new Game { Name = "Hades", Description = "Roguelike" };
+                dbContext.Games.Add(game);
+                var myGame = new MyGame { Game = game, LuminaUserId = userA, Status = GameStatus.Playing, Priority = 1 };
+                dbContext.MyGames.Add(myGame);
                 await dbContext.SaveChangesAsync();
-                aMyGameId = aMyGame.Id;
+                aMyGameId = myGame.Id;
+                dbContext.Quests.AddRange(
+                    NewQuest(userA, "Beat boss", QuestType.Main, 0, aMyGameId),
+                    NewQuest(userA, "Side quest", QuestType.Sub, 1, aMyGameId),
+                    NewQuest(userA, "Life todo", QuestType.Sub, 2));
+                await dbContext.SaveChangesAsync();
             }
 
             var service = new QuestService(new TestDbContextFactory(options));
-
-            await service.SaveBoardAsync(userA, new QuestBoardDto
-            {
-                Quests =
-                [
-                    new() { Title = "Beat boss", Type = QuestType.Main, MyGameId = aMyGameId },
-                    new() { Title = "Side quest", Type = QuestType.Sub, MyGameId = aMyGameId },
-                    new() { Title = "Life todo", Type = QuestType.Sub }
-                ]
-            });
 
             var ownerQuests = await service.GetQuestsForMyGameAsync(userA, aMyGameId);
             Assert.Equal(2, ownerQuests.Count);
@@ -311,6 +321,25 @@ namespace Test.Services
             var nonOwnerQuests = await service.GetQuestsForMyGameAsync(userB, aMyGameId);
             Assert.Empty(nonOwnerQuests);
         }
+
+        private static T Success<T>(Result<T, FailedResult> result)
+        {
+            Assert.True(result.IsSuccess, result.Match(_ => string.Empty, failure => string.Join("; ", failure.errorMessage)));
+            return result.Match(value => value, failure => throw new InvalidOperationException(string.Join("; ", failure.errorMessage)));
+        }
+
+        private static Quest NewQuest(string userId, string title, QuestType type, int sortOrder, int? myGameId = null) => new()
+        {
+            LuminaUserId = userId,
+            Title = title,
+            Type = type,
+            Priority = QuestPriority.Medium,
+            Recurrence = QuestRecurrence.None,
+            RewardXp = type == QuestType.Main ? 150 : type == QuestType.Faction ? 100 : 75,
+            SortOrder = sortOrder,
+            MyGameId = myGameId,
+            Tags = []
+        };
 
         private static LuminaUser NewUser(string id) => new()
         {

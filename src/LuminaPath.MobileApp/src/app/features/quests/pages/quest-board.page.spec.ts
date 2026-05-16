@@ -1,42 +1,144 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { AlertController } from '@ionic/angular/standalone';
 import { of } from 'rxjs';
 
 import { QuestBoardPage } from './quest-board.page';
-import { QuestBoardService } from '../services/quest-board.service';
+import {
+  Quest,
+  QuestBoardService,
+  QuestBoardState,
+  QuestMutationResult,
+  QuestSkill,
+  QuestSubtask,
+} from '../services/quest-board.service';
 import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
 
-describe('QuestBoardPage (linked-quest derivation)', () => {
+function isoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function addDays(date: Date, days: number): Date {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
+
+function makeQuest(overrides: Partial<Quest> = {}): Quest {
+  return {
+    id: 1,
+    title: 'Quest',
+    notes: null,
+    type: 'sub',
+    priority: 'medium',
+    recurrence: 'none',
+    dueDate: null,
+    tags: [],
+    completed: false,
+    rewardXp: 75,
+    sortOrder: 0,
+    myGameId: null,
+    gameName: null,
+    skillId: null,
+    skillName: null,
+    subtasks: [],
+    ...overrides,
+  };
+}
+
+function makeSkill(overrides: Partial<QuestSkill> = {}): QuestSkill {
+  return {
+    id: 9,
+    name: 'Programming',
+    icon: 'code-slash-outline',
+    color: '#2563eb',
+    xp: 0,
+    nodes: [],
+    unlockedNodes: [],
+    ...overrides,
+  };
+}
+
+function makeBoard(overrides: Partial<QuestBoardState> = {}): QuestBoardState {
+  return {
+    xp: 0,
+    currentStreakDays: 0,
+    longestStreakDays: 0,
+    lastCompletionDate: null,
+    quests: [],
+    skills: [],
+    achievements: [],
+    ...overrides,
+  };
+}
+
+function makeMutation(quest: Quest, overrides: Partial<QuestMutationResult> = {}): QuestMutationResult {
+  return {
+    quest,
+    spawnedQuest: null,
+    totalXp: 0,
+    currentStreakDays: 0,
+    longestStreakDays: 0,
+    awardedSkillXp: null,
+    awardedSkillId: null,
+    unlockedAchievements: [],
+    ...overrides,
+  };
+}
+
+describe('QuestBoardPage', () => {
   let fixture: ComponentFixture<QuestBoardPage>;
   let component: QuestBoardPage;
-
   let questBoardService: jasmine.SpyObj<QuestBoardService>;
   let myGameService: jasmine.SpyObj<MyGameService>;
-  let alertController: jasmine.SpyObj<AlertController>;
 
   beforeEach(() => {
+    localStorage.clear();
+
     questBoardService = jasmine.createSpyObj<QuestBoardService>('QuestBoardService', [
       'getBoard',
-      'saveBoard',
+      'createQuest',
+      'updateQuest',
+      'deleteQuest',
+      'reorderQuests',
+      'saveSkills',
       'getQuestsForGame',
+      'addSubtask',
+      'updateSubtask',
+      'deleteSubtask',
     ]);
     myGameService = jasmine.createSpyObj<MyGameService>('MyGameService', ['getAll']);
-    alertController = jasmine.createSpyObj<AlertController>('AlertController', ['create']);
 
-    questBoardService.getBoard.and.resolveTo({
-      xp: 0,
-      quests: { main: [], sub: [], faction: [] },
-      skills: [],
-    });
-    questBoardService.saveBoard.and.callFake((state) => Promise.resolve(state));
-    myGameService.getAll.and.returnValue(of({ data: [], pageIndex: 1, totalPages: 1 } as any));
+    questBoardService.getBoard.and.resolveTo(makeBoard());
+    questBoardService.createQuest.and.callFake(async (input) => makeMutation(makeQuest({ id: 20, title: input.title })));
+    questBoardService.updateQuest.and.callFake(async (id, input) => makeMutation(makeQuest({
+      id,
+      title: input.title ?? 'Updated',
+      completed: input.completed ?? false,
+      dueDate: input.clearDueDate ? null : input.dueDate ?? null,
+    })));
+    questBoardService.deleteQuest.and.resolveTo();
+    questBoardService.reorderQuests.and.resolveTo();
+    questBoardService.saveSkills.and.callFake(async (state) => state);
+    questBoardService.getQuestsForGame.and.resolveTo([]);
+    questBoardService.addSubtask.and.callFake(async (questId, title) => makeMutation(makeQuest({
+      id: questId,
+      subtasks: [{ id: 4, title, completed: false, sortOrder: 0 }],
+    })));
+    questBoardService.updateSubtask.and.callFake(async (questId, subtaskId, input) => makeMutation(makeQuest({
+      id: questId,
+      subtasks: [{ id: subtaskId, title: 'Prep', completed: input.completed ?? false, sortOrder: input.sortOrder ?? 0 }],
+    })));
+    questBoardService.deleteSubtask.and.resolveTo();
+    myGameService.getAll.and.returnValue(of({
+      data: [{ id: 42, game: { name: 'Hades' } }],
+      pageIndex: 1,
+      totalPages: 1,
+    } as any));
 
     TestBed.configureTestingModule({
       imports: [QuestBoardPage],
       providers: [
         { provide: QuestBoardService, useValue: questBoardService },
         { provide: MyGameService, useValue: myGameService },
-        { provide: AlertController, useValue: alertController },
       ],
     });
 
@@ -44,110 +146,159 @@ describe('QuestBoardPage (linked-quest derivation)', () => {
     component = fixture.componentInstance;
   });
 
-  it('lifeQuestsFor excludes quests linked to a game', () => {
-    component.quests = {
-      main: [
-        { id: 1, title: 'Life main', completed: false, myGameId: null },
-        { id: 2, title: 'Game main', completed: false, myGameId: 42 },
-      ],
-      sub: [
-        { id: 3, title: 'Life sub', completed: false, myGameId: null },
-      ],
-      faction: [],
-    };
+  it('loads the board and library on init', async () => {
+    questBoardService.getBoard.and.resolveTo(makeBoard({
+      xp: 240,
+      currentStreakDays: 3,
+      quests: [makeQuest({ id: 1, title: 'Ship tests' })],
+      skills: [makeSkill({ nodes: ['Basics'], unlockedNodes: [0] })],
+    }));
 
-    expect(component.lifeQuestsFor('main').map((q) => q.title)).toEqual(['Life main']);
-    expect(component.lifeQuestsFor('sub').map((q) => q.title)).toEqual(['Life sub']);
+    await component.ngOnInit();
+
+    expect(component.isLoading).toBeFalse();
+    expect(component.xp).toBe(240);
+    expect(component.level).toBe(2);
+    expect(component.quests.map((quest) => quest.title)).toEqual(['Ship tests']);
+    expect(component.library).toEqual([{ myGameId: 42, gameName: 'Hades' }]);
+    expect(component.unlockedNodeCount).toBe(1);
   });
 
-  it('linkedGroups groups quests by myGameId across all type columns', () => {
-    component.library = [
-      { myGameId: 42, gameName: 'Hades' },
-      { myGameId: 7, gameName: 'Celeste' },
+  it('filters visible quests by focus lane, search, and tags', () => {
+    const today = new Date();
+    component.quests = [
+      makeQuest({ id: 1, title: 'Today high', priority: 'high', dueDate: isoDate(today), tags: ['release'] }),
+      makeQuest({ id: 2, title: 'Inbox low', priority: 'low', dueDate: null, tags: ['later'] }),
+      makeQuest({ id: 3, title: 'Future', dueDate: isoDate(addDays(today, 5)), tags: ['release'] }),
+      makeQuest({ id: 4, title: 'Done', completed: true, completedAt: today.toISOString(), dueDate: isoDate(today) }),
     ];
-    component.quests = {
-      main: [
-        { id: 1, title: 'Beat boss', completed: false, myGameId: 42, gameName: 'Hades' },
-      ],
-      sub: [
-        { id: 2, title: 'Find collectible', completed: false, myGameId: 42, gameName: 'Hades' },
-        { id: 3, title: 'Reach summit', completed: false, myGameId: 7, gameName: 'Celeste' },
-        { id: 4, title: 'Life todo', completed: false, myGameId: null },
-      ],
-      faction: [],
-    };
 
-    const groups = component.linkedGroups;
-    expect(groups.length).toBe(2);
+    component.setFilter('today');
+    expect(component.visibleQuests.map((quest) => quest.id)).toEqual([1, 4]);
 
-    const celeste = groups.find((g) => g.myGameId === 7);
-    const hades = groups.find((g) => g.myGameId === 42);
-    expect(celeste?.gameName).toBe('Celeste');
-    expect(celeste?.quests.length).toBe(1);
-    expect(hades?.gameName).toBe('Hades');
-    expect(hades?.quests.length).toBe(2);
+    component.setFilter('inbox');
+    expect(component.visibleQuests.map((quest) => quest.id)).toEqual([2]);
 
-    expect(groups[0].gameName).toBe('Celeste');
-    expect(groups[1].gameName).toBe('Hades');
+    component.setFilter('all');
+    component.searchQuery = 'future';
+    expect(component.visibleQuests.map((quest) => quest.id)).toEqual([3]);
+
+    component.searchQuery = '';
+    component.selectTag('release');
+    expect(component.visibleQuests.map((quest) => quest.id)).toEqual([1, 3]);
   });
 
-  it('unlinkedLibrary excludes games that already have quests', () => {
-    component.library = [
-      { myGameId: 42, gameName: 'Hades' },
-      { myGameId: 7, gameName: 'Celeste' },
-    ];
-    component.quests = {
-      main: [{ id: 1, title: 'Beat boss', completed: false, myGameId: 42, gameName: 'Hades' }],
-      sub: [],
-      faction: [],
-    };
-
-    expect(component.unlinkedLibrary.map((g) => g.myGameId)).toEqual([7]);
-  });
-
-  it('addQuest creates a life quest with myGameId null', async () => {
-    component.newQuest.main = '  Big arc  ';
-    await component.addQuest('main');
-
-    expect(component.quests.main[0].title).toBe('Big arc');
-    expect(component.quests.main[0].myGameId).toBeNull();
-    expect(component.newQuest.main).toBe('');
-  });
-
-  it('addLinkedQuest creates a quest with the supplied myGameId', async () => {
+  it('submitQuickAdd creates a quest with current quick-add options and replaces the optimistic row', async () => {
     component.library = [{ myGameId: 42, gameName: 'Hades' }];
-    component.draftForGame(42).title = 'Beat boss';
-    component.draftForGame(42).type = 'main';
-    await component.addLinkedQuest(42);
+    component.skills = [makeSkill({ id: 9, name: 'Programming' })];
+    component.quickAddTitle = '  Beat boss  ';
+    component.quickAddType = 'main';
+    component.quickAddPriority = 'high';
+    component.quickAddGameId = 42;
+    component.quickAddSkillId = 9;
+    component.setQuickAddToday();
+    const savedQuest = makeQuest({
+      id: 77,
+      title: 'Beat boss',
+      type: 'main',
+      priority: 'high',
+      myGameId: 42,
+      gameName: 'Hades',
+      skillId: 9,
+      skillName: 'Programming',
+    });
+    questBoardService.createQuest.and.resolveTo(makeMutation(savedQuest, { totalXp: 25 }));
 
-    const created = component.quests.main.find((q) => q.title === 'Beat boss');
-    expect(created).toBeTruthy();
-    expect(created?.myGameId).toBe(42);
-    expect(created?.gameName).toBe('Hades');
-    expect(component.draftForGame(42).title).toBe('');
+    await component.submitQuickAdd();
+
+    expect(questBoardService.createQuest).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+      title: 'Beat boss',
+      type: 'main',
+      priority: 'high',
+      myGameId: 42,
+      skillId: 9,
+    }));
+    expect(component.quickAddTitle).toBe('');
+    expect(component.quests).toEqual([savedQuest]);
+    expect(component.xp).toBe(25);
   });
 
-  it('addQuestForNewGame is a no-op when no game is selected', async () => {
-    component.newLinkedGameTitle = 'Quest';
-    component.newLinkedGameId = null;
-    await component.addQuestForNewGame();
+  it('scheduleQuest updates due date and sends clearDueDate when moved to inbox', async () => {
+    const quest = makeQuest({ id: 5, title: 'Plan', dueDate: isoDate(new Date()) });
+    component.quests = [quest];
+    questBoardService.updateQuest.and.resolveTo(makeMutation(makeQuest({ ...quest, dueDate: null })));
 
-    const total = component.quests.main.length + component.quests.sub.length + component.quests.faction.length;
-    expect(total).toBe(0);
-    expect(questBoardService.saveBoard).not.toHaveBeenCalled();
+    await component.clearQuestDueDate(quest);
+
+    expect(questBoardService.updateQuest).toHaveBeenCalledOnceWith(5, {
+      dueDate: undefined,
+      clearDueDate: true,
+    });
+    expect(component.quests[0].dueDate).toBeNull();
+    expect(component.toastMessage).toBe('Moved to inbox');
   });
 
-  it('addQuestForNewGame creates a quest linked to the chosen game and resets the form', async () => {
-    component.library = [{ myGameId: 7, gameName: 'Celeste' }];
-    component.newLinkedGameId = 7;
-    component.newLinkedGameType = 'sub';
-    component.newLinkedGameTitle = 'Reach summit';
-    await component.addQuestForNewGame();
+  it('addSubtask, toggleSubtask, and deleteSubtask use the current subtask API', async () => {
+    const quest = makeQuest({ id: 6, title: 'Quest', subtasks: [] });
+    component.quests = [quest];
+    component.setSubtaskDraft(6, '  Prep  ');
 
-    const created = component.quests.sub.find((q) => q.title === 'Reach summit');
-    expect(created?.myGameId).toBe(7);
-    expect(component.newLinkedGameTitle).toBe('');
-    expect(component.newLinkedGameId).toBeNull();
-    expect(component.newLinkedGameType).toBe('sub');
+    await component.addSubtask(quest);
+    expect(questBoardService.addSubtask).toHaveBeenCalledOnceWith(6, 'Prep');
+    expect(component.quests[0].subtasks[0]).toEqual(jasmine.objectContaining({ id: 4, title: 'Prep' }));
+
+    const subtask = component.quests[0].subtasks[0];
+    questBoardService.updateSubtask.and.resolveTo(makeMutation(makeQuest({
+      id: 6,
+      subtasks: [{ ...subtask, completed: true }],
+    })));
+    await component.toggleSubtask(component.quests[0], subtask);
+    expect(questBoardService.updateSubtask).toHaveBeenCalledOnceWith(6, 4, { completed: true });
+
+    await component.deleteSubtask(component.quests[0], component.quests[0].subtasks[0]);
+    expect(questBoardService.deleteSubtask).toHaveBeenCalledOnceWith(6, 4);
+    expect(component.quests[0].subtasks).toEqual([]);
+  });
+
+  it('saveSkill creates a minimal skill without predefined nodes', async () => {
+    component.newSkill = {
+      name: 'Programming',
+      icon: 'code-slash-outline',
+      color: '#2563eb',
+    };
+    questBoardService.saveSkills.and.callFake(async (state) => ({
+      ...state,
+      skills: state.skills.map((skill, index) => ({ ...skill, id: index + 1 })),
+    }));
+
+    await component.saveSkill();
+
+    expect(questBoardService.saveSkills).toHaveBeenCalled();
+    const sent = questBoardService.saveSkills.calls.mostRecent().args[0];
+    expect(sent.skills[0]).toEqual(jasmine.objectContaining({
+      name: 'Programming',
+      nodes: [],
+      unlockedNodes: [],
+    }));
+    expect(component.skills[0].id).toBe(1);
+  });
+
+  it('handleReorder persists reordered quest ids and updates local order', async () => {
+    const first = makeQuest({ id: 1, title: 'First', sortOrder: 0 });
+    const second = makeQuest({ id: 2, title: 'Second', sortOrder: 1 });
+    component.filter = 'inbox';
+    component.quests = [first, second];
+    const complete = jasmine.createSpy('complete');
+
+    await component.handleReorder({
+      detail: { from: 1, to: 0, complete },
+    } as unknown as CustomEvent);
+
+    expect(complete).toHaveBeenCalled();
+    expect(component.quests.map((quest) => quest.id)).toEqual([2, 1]);
+    expect(questBoardService.reorderQuests).toHaveBeenCalledOnceWith([
+      { id: 2, sortOrder: 0, type: 'sub' },
+      { id: 1, sortOrder: 1, type: 'sub' },
+    ]);
   });
 });

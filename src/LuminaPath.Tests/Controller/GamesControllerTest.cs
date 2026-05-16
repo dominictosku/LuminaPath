@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Test.Utilities;
 using LuminaPath.Infrastructure.Controllers;
+using LuminaPath.Infrastructure.Services.Application;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.Third_Party;
@@ -55,7 +56,7 @@ namespace Test.Controller
 				db.Games.AddRange(games);
 				await db.SaveChangesAsync();
 
-				GamesController controller = new GamesController(gameService, mapper, gameNewsService);
+				GamesController controller = new GamesController(gameService, mapper, new NewsAggregationService(gameNewsService));
 				var expectedGames = await db.Games.ToListAsync();
 
 				// Act

@@ -57,6 +57,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
             return await dbContext.Quests
                 .AsNoTracking()
+                .Include(quest => quest.MyGame).ThenInclude(myGame => myGame!.Game)
+                .Include(quest => quest.Skill)
+                .Include(quest => quest.Subtasks)
                 .Where(quest => quest.LuminaUserId == userId && quest.MyGameId == myGameId)
                 .OrderBy(quest => quest.SortOrder)
                 .ThenBy(quest => quest.Id)
