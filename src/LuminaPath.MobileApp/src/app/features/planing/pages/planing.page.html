@@ -19,6 +19,10 @@
           <ion-icon name="time-outline"></ion-icon>
           <span>Sessions</span>
         </ion-segment-button>
+        <ion-segment-button value="calendar">
+          <ion-icon name="calendar-clear-outline"></ion-icon>
+          <span>Calendar</span>
+        </ion-segment-button>
         <ion-segment-button value="releases">
           <ion-icon name="rocket-outline"></ion-icon>
           <span>Releases</span>
@@ -156,6 +160,70 @@
             </article>
           </div>
         </article>
+      </section>
+    </ng-container>
+    <ng-container *ngIf="mode === 'calendar'">
+      <section class="loading-state" *ngIf="isLoading">
+        <ion-spinner name="crescent"></ion-spinner>
+      </section>
+
+      <section class="calendar-planner" *ngIf="!isLoading">
+        <header class="calendar-toolbar">
+          <div>
+            <span class="eyebrow">
+              <ion-icon name="calendar-clear-outline"></ion-icon>
+              Timeline
+            </span>
+            <h2>{{ calendarTitle }}</h2>
+          </div>
+
+          <div class="calendar-actions">
+            <button type="button" class="icon-action" aria-label="Previous" (click)="shiftCalendar(-1)">
+              <ion-icon name="chevron-back-outline"></ion-icon>
+            </button>
+            <ion-segment [ngModel]="calendarMode" (ngModelChange)="setCalendarMode($event)">
+              <ion-segment-button value="week">Week</ion-segment-button>
+              <ion-segment-button value="month">Month</ion-segment-button>
+            </ion-segment>
+            <button type="button" class="today-button" (click)="goToToday()">Today</button>
+            <button type="button" class="icon-action" aria-label="Next" (click)="shiftCalendar(1)">
+              <ion-icon name="chevron-forward-outline"></ion-icon>
+            </button>
+          </div>
+        </header>
+
+        <div class="calendar-grid" [class.calendar-grid--month]="calendarMode === 'month'">
+          <article
+            class="calendar-day"
+            *ngFor="let day of calendarDays; trackBy: trackByCalendarDay"
+            [class.calendar-day--today]="day.isToday"
+            [class.calendar-day--outside]="!day.isCurrentMonth">
+            <header>
+              <span>{{ day.label }}</span>
+              <strong>{{ day.number }}</strong>
+            </header>
+
+            <div class="timeline-events" *ngIf="day.events.length; else emptyCalendarDay">
+              <article
+                class="timeline-event"
+                *ngFor="let event of day.events; trackBy: trackByTimelineEvent"
+                [class.timeline-event--session]="event.kind === 'session'"
+                [class.timeline-event--release]="event.kind === 'release'"
+                [class.timeline-event--quest]="event.kind === 'quest'"
+                [class.timeline-event--done]="event.completed">
+                <ion-icon [name]="eventIcon(event.kind)"></ion-icon>
+                <div>
+                  <strong>{{ event.title }}</strong>
+                  <span>{{ event.timeLabel }} · {{ event.subtitle }}</span>
+                </div>
+              </article>
+            </div>
+
+            <ng-template #emptyCalendarDay>
+              <span class="calendar-empty">Open</span>
+            </ng-template>
+          </article>
+        </div>
       </section>
     </ng-container>
     <ng-container *ngIf="mode === 'releases'">

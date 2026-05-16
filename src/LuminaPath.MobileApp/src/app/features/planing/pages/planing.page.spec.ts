@@ -6,6 +6,7 @@ import { GameService } from '../../games/services/game.service';
 import { GamingSessionService, GamingSession, GameForecast } from '../services/gaming-session.service';
 import { Game, MyGame } from '../../games/models/games.model';
 import { PaginateResult } from 'src/app/core/entities/paginatedResult';
+import { Quest, QuestBoardService, QuestBoardState } from '../../quests/services/quest-board.service';
 
 function makeGame(overrides: Partial<Game> = {}): Game {
   return Object.assign(new Game(), overrides);
@@ -50,13 +51,48 @@ function makeForecast(overrides: Partial<GameForecast> = {}): GameForecast {
   };
 }
 
+function makeQuest(overrides: Partial<Quest> = {}): Quest {
+  return {
+    id: 1,
+    title: 'Quest',
+    notes: null,
+    type: 'sub',
+    priority: 'medium',
+    recurrence: 'none',
+    dueDate: null,
+    tags: [],
+    completed: false,
+    rewardXp: 20,
+    sortOrder: 0,
+    myGameId: null,
+    gameName: null,
+    skillId: null,
+    skillName: null,
+    subtasks: [],
+    ...overrides,
+  };
+}
+
+function boardOf(quests: Quest[] = []): QuestBoardState {
+  return {
+    xp: 0,
+    currentStreakDays: 0,
+    longestStreakDays: 0,
+    lastCompletionDate: null,
+    quests,
+    skills: [],
+    achievements: [],
+  };
+}
+
 describe('PlaningPage', () => {
   let component: PlaningPage;
   let fixture: ComponentFixture<PlaningPage>;
   let gameService: jasmine.SpyObj<GameService>;
   let sessionService: jasmine.SpyObj<GamingSessionService>;
+  let questBoardService: jasmine.SpyObj<QuestBoardService>;
 
-  function configure(opts: { games?: Game[]; sessions?: GamingSession[]; forecast?: GameForecast }) {
+  function configure(opts: { games?: Game[]; sessions?: GamingSession[]; forecast?: GameForecast; quests?: Quest[] }) {
     gameService = jasmine.createSpyObj<GameService>('GameService', ['getAll']);
     sessionService = jasmine.createSpyObj<GamingSessionService>('GamingSessionService', [
       'list',
@@ -65,16 +101,19 @@ describe('PlaningPage', () => {
       'remove',
       'forecast',
     ]);
+    questBoardService = jasmine.createSpyObj<QuestBoardService>('QuestBoardService', ['getBoard']);
 
     gameService.getAll.and.returnValue(of(pageOf(opts.games ?? [])));
     sessionService.list.and.returnValue(of(opts.sessions ?? []));
     sessionService.forecast.and.returnValue(of(opts.forecast ?? makeForecast()));
+    questBoardService.getBoard.and.resolveTo(boardOf(opts.quests ?? []));
 
     TestBed.configureTestingModule({
       imports: [PlaningPage],
       providers: [
         { provide: GameService, useValue: gameService },
         { provide: GamingSessionService, useValue: sessionService },
+        { provide: QuestBoardService, useValue: questBoardService },
       ],
     });
 
@@ -108,6 +147,30 @@ describe('PlaningPage', () => {
 
     expect(sessionService.forecast).toHaveBeenCalledOnceWith(5);
     expect(component.forecasts.length).toBe(1);
+  }));
+
+  it('builds calendar days with sessions, releases, and due quests', fakeAsync(() => {
+    const game = makeGame({
+      id: 8,
+      name: 'Silksong',
+      releaseDate: new Date('2026-06-04T00:00:00.000Z'),
+    });
+    const sessions = [
+      makeSession({ id: 1, scheduledAt: '2026-06-04T18:00:00.000Z', gameName: 'Hades' }),
+    ];
+    const quests = [
+      makeQuest({ id: 12, title: 'Finish boss route', dueDate: '2026-06-04T00:00:00.000Z', priority: 'high' }),
+    ];
+
+    configure({ games: [game], sessions, quests });
+    component.calendarAnchor = new Date(2026, 5, 4);
+    fixture.detectChanges();
+    tick();
+
+    const day = component.calendarDays.find((item) => item.key === '2026-06-04');
+    expect(day?.events.map((event) => event.kind)).toEqual(['session', 'quest', 'release']);
+    expect(day?.events.map((event) => event.title)).toContain('Finish boss route');
+    expect(day?.events.map((event) => event.title)).toContain('Silksong');
   }));
 
   it('addSession refuses to call create when duration is zero', fakeAsync(() => {
