@@ -7,6 +7,7 @@ import { ReleaseNotificationService } from 'src/app/shared/services/release-noti
 import { PaginateResult } from 'src/app/core/entities/paginatedResult';
 import { MediaLibraryFacade } from '../services/media-library.facade';
 import { MediaItem, UserMediaEntry } from '../models/media-item.model';
+import { GameStatus } from '../services/media-library-view.service';
 
 function makeGame(overrides: Partial<MediaItem> = {}): MediaItem {
   return {
@@ -51,6 +52,10 @@ describe('LibraryPage', () => {
   let mediaLibrary: jasmine.SpyObj<MediaLibraryFacade>;
   let releaseNotifications: jasmine.SpyObj<ReleaseNotificationService>;
   let router: jasmine.SpyObj<Router>;
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
 
   function configure(getAllResponse: Observable<PaginateResult<MediaItem>>) {
     mediaLibrary = jasmine.createSpyObj<MediaLibraryFacade>('MediaLibraryFacade', [
@@ -179,6 +184,88 @@ describe('LibraryPage', () => {
     component.searchTerm = 'catalog';
     component.applyFilters();
     expect(component.filteredGames.map((g) => g.id)).toEqual([2]);
+  });
+
+  it('applies smart filters for short and stalled games', () => {
+    const shortGame = makeGame({
+      id: 1,
+      name: 'Tiny Quest',
+      playtime: 8,
+      libraryEntry: makeEntry({ id: 11, status: GameStatus.Planned, timeSpend: 0 }),
+    });
+    const stalledGame = makeGame({
+      id: 2,
+      name: 'Old Epic',
+      playtime: 50,
+      libraryEntry: makeEntry({ id: 12, status: GameStatus.OnHold, timeSpend: 7 }),
+    });
+    const activeGame = makeGame({
+      id: 3,
+      name: 'Current Run',
+      playtime: 30,
+      libraryEntry: makeEntry({ id: 13, status: GameStatus.Playing, timeSpend: 6 }),
+    });
+    configure(of(pageOf([shortGame, stalledGame, activeGame])));
+    fixture.detectChanges();
+
+    component.setSmartFilter('short');
+    expect(component.filteredGames.map((game) => game.id)).toEqual([1]);
+
+    component.setSmartFilter('abandoned');
+    expect(component.filteredGames.map((game) => game.id)).toEqual([2]);
+  });
+
+  it('sorts games by remaining hours, rating, and release date', () => {
+    const shorter = makeGame({
+      id: 1,
+      name: 'Shorter',
+      releaseDate: '2024-01-01',
+      playtime: 8,
+      libraryEntry: makeEntry({ id: 11, rating: 6, status: GameStatus.Playing, timeSpend: 2 }),
+    });
+    const longer = makeGame({
+      id: 2,
+      name: 'Longer',
+      releaseDate: '2025-01-01',
+      playtime: 40,
+      libraryEntry: makeEntry({ id: 12, rating: 9, status: GameStatus.Playing, timeSpend: 5 }),
+    });
+    configure(of(pageOf([shorter, longer])));
+    fixture.detectChanges();
+
+    component.sortMode = 'remaining-asc';
+    component.applyFilters();
+    expect(component.filteredGames.map((game) => game.id)).toEqual([1, 2]);
+
+    component.sortMode = 'rating-desc';
+    component.applyFilters();
+    expect(component.filteredGames.map((game) => game.id)).toEqual([2, 1]);
+
+    component.sortMode = 'release-desc';
+    component.applyFilters();
+    expect(component.filteredGames.map((game) => game.id)).toEqual([2, 1]);
+  });
+
+  it('saves and applies library filter presets', () => {
+    configure(of(pageOf([])));
+    fixture.detectChanges();
+
+    component.searchTerm = 'metroidvania';
+    component.ownershipFilter = 'mine';
+    component.sortMode = 'rating-desc';
+    component.smartFilter = 'short';
+    component.presetName = 'Short gems';
+    component.saveCurrentPreset();
+
+    expect(component.savedPresets.length).toBe(1);
+    component.clearFilters(false);
+    component.applyPreset(component.savedPresets[0]);
+
+    expect(component.searchTerm).toBe('metroidvania');
+    expect(component.ownershipFilter).toBe('mine');
+    expect(component.sortMode).toBe('rating-desc');
+    expect(component.smartFilter).toBe('short');
+    expect(mediaLibrary.getAll).toHaveBeenCalledTimes(2);
   });
 
   it('submitAddGame calls addToLibrary for a catalog game and updates state on success', fakeAsync(() => {

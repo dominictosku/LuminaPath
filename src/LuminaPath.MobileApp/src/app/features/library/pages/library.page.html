@@ -101,6 +101,44 @@
         </ion-select>
       </div>
 
+      <div class="intelligence-grid">
+        <ion-select
+          interface="popover"
+          label="Sort"
+          label-placement="stacked"
+          [(ngModel)]="sortMode"
+          (ionChange)="applyFilters()">
+          <ion-select-option *ngFor="let option of sortOptions" [value]="option.value">
+            {{ option.label }}
+          </ion-select-option>
+        </ion-select>
+
+        <div class="smart-chips" aria-label="Smart library filters">
+          <button
+            type="button"
+            [class.smart-chip--active]="smartFilter === 'short'"
+            (click)="setSmartFilter(smartFilter === 'short' ? 'none' : 'short')">
+            Short under 10h
+            <span>{{ shortGameCount }}</span>
+          </button>
+          <button
+            type="button"
+            [class.smart-chip--active]="smartFilter === 'abandoned'"
+            (click)="setSmartFilter(smartFilter === 'abandoned' ? 'none' : 'abandoned')">
+            Started, stalled
+            <span>{{ abandonedGameCount }}</span>
+          </button>
+          <button
+            type="button"
+            [class.smart-chip--active]="smartFilter === 'best'"
+            [disabled]="!nextBestGame"
+            (click)="setSmartFilter(smartFilter === 'best' ? 'none' : 'best')">
+            Best finish
+            <ion-icon name="flash-outline"></ion-icon>
+          </button>
+        </div>
+      </div>
+
       <div class="release-date-range" *ngIf="releaseDateFilter === 'custom'">
         <label>
           <span>From</span>
@@ -111,6 +149,37 @@
           <input type="date" [(ngModel)]="releaseDateTo" (change)="onCustomReleaseDateChange()" />
         </label>
       </div>
+
+      <div class="preset-strip">
+        <label class="preset-name">
+          <span>Preset</span>
+          <input type="text" [(ngModel)]="presetName" placeholder="Save this view" />
+        </label>
+        <ion-button size="small" fill="outline" (click)="saveCurrentPreset()">
+          <ion-icon slot="start" name="bookmark-outline"></ion-icon>
+          Save
+        </ion-button>
+        <button
+          *ngFor="let preset of savedPresets"
+          type="button"
+          class="preset-pill"
+          (click)="applyPreset(preset)">
+          {{ preset.name }}
+          <span (click)="deletePreset(preset, $event)" aria-label="Delete preset">&times;</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="finish-pick" *ngIf="!isLoading && nextBestGame as best">
+      <div>
+        <span class="eyebrow">
+          <ion-icon name="flash-outline"></ion-icon>
+          Next best finish
+        </span>
+        <h2>{{ best.name }}</h2>
+        <p>{{ remainingLabel(best) }} · {{ progressOf(best) }}% complete · {{ statusLabel(best) }}</p>
+      </div>
+      <ion-button size="small" (click)="setSmartFilter('best')">Focus</ion-button>
     </section>
 
     <section class="notice" *ngIf="errorMessage">

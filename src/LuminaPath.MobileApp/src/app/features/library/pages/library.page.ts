@@ -22,8 +22,10 @@ import { addIcons } from 'ionicons';
 import {
   albumsOutline,
   addOutline,
+  bookmarkOutline,
   checkmarkCircleOutline,
   closeOutline,
+  flashOutline,
   gameControllerOutline,
   gridOutline,
   hourglassOutline,
@@ -47,6 +49,23 @@ import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 type ViewMode = 'grid' | 'list';
 type OwnershipFilter = 'all' | 'mine' | 'catalog';
 type ReleaseDateFilter = 'all' | 'released' | 'upcoming' | 'this-year' | 'last-year' | 'custom';
+type SortMode = 'title' | 'release-desc' | 'release-asc' | 'rating-desc' | 'remaining-asc' | 'recently-added' | 'best-finish';
+type SmartFilter = 'none' | 'short' | 'abandoned' | 'best';
+
+type LibraryFilterPreset = {
+  id: string;
+  name: string;
+  mediaModeId: string;
+  searchTerm: string;
+  ownershipFilter: OwnershipFilter;
+  statusFilter: string;
+  platformFilter: string;
+  releaseDateFilter: ReleaseDateFilter;
+  releaseDateFrom: string;
+  releaseDateTo: string;
+  sortMode: SortMode;
+  smartFilter: SmartFilter;
+};
 
 @Component({
   selector: 'app-library',
@@ -83,6 +102,17 @@ export class LibraryPage implements OnInit, OnDestroy {
   releaseDateFilter: ReleaseDateFilter = 'all';
   releaseDateFrom = '';
   releaseDateTo = '';
+  sortMode: SortMode = 'title';
+  smartFilter: SmartFilter = 'none';
+  presetName = '';
+  savedPresets: LibraryFilterPreset[] = [];
+  totalGames = 0;
+  ownedGames = 0;
+  playingGames = 0;
+  remainingHours = 0;
+  shortGameCount = 0;
+  abandonedGameCount = 0;
+  nextBestGame: MediaItem | null = null;
   viewMode: ViewMode = 'grid';
   isLoading = true;
   isLoadingMore = false;
@@ -105,8 +135,18 @@ export class LibraryPage implements OnInit, OnDestroy {
 
   private mediaModeSub?: Subscription;
   private readonly pageSize = 24;
+  private readonly presetStoragePrefix = 'luminapath.library.presets.v1';
 
   readonly platforms = Platforms;
+  readonly sortOptions: { label: string; value: SortMode }[] = [
+    { label: 'Title A-Z', value: 'title' },
+    { label: 'Newest release', value: 'release-desc' },
+    { label: 'Oldest release', value: 'release-asc' },
+    { label: 'Highest rating', value: 'rating-desc' },
+    { label: 'Least remaining', value: 'remaining-asc' },
+    { label: 'Recently added', value: 'recently-added' },
+    { label: 'Best to finish', value: 'best-finish' },
+  ];
 
   constructor(
     private mediaLibrary: MediaLibraryFacade,
@@ -119,8 +159,10 @@ export class LibraryPage implements OnInit, OnDestroy {
     addIcons({
       addOutline,
       albumsOutline,
+      bookmarkOutline,
       checkmarkCircleOutline,
       closeOutline,
+      flashOutline,
       gameControllerOutline,
       gridOutline,
       hourglassOutline,
@@ -130,11 +172,13 @@ export class LibraryPage implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.loadSavedPresets();
     this.mediaModeSub = this.mediaModeService.mode$.subscribe((mode) => {
       const changed = mode.id !== this.mediaMode.id;
       this.mediaMode = mode;
       if (changed) {
         this.clearFilters(false);
+        this.loadSavedPresets();
         this.loadGames();
       }
     });
@@ -165,6 +209,7 @@ export class LibraryPage implements OnInit, OnDestroy {
       error: () => {
         this.games = [];
         this.filteredGames = [];
+        this.refreshLibraryIntelligence();
         this.errorMessage = `${this.mediaMode.label} could not be loaded.`;
         this.isLoading = false;
         this.currentPage = 1;
@@ -205,11 +250,13 @@ export class LibraryPage implements OnInit, OnDestroy {
 
   applyFilters() {
     const normalizedSearch = this.searchTerm.trim().toLowerCase();
+    this.refreshLibraryIntelligence();
 
     this.filteredGames = this.games
       .filter((game) => this.matchesOwnership(game))
       .filter((game) => this.matchesStatus(game))
       .filter((game) => this.matchesPlatform(game))
+      .filter((game) => this.matchesSmartFilter(game))
       .filter((game) => {
         if (!normalizedSearch) {
           return true;
@@ -225,7 +272,7 @@ export class LibraryPage implements OnInit, OnDestroy {
           .filter(Boolean)
           .some((value) => String(value).toLowerCase().includes(normalizedSearch));
       })
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => this.compareGames(a, b));
   }
 
   clearFilters(apply = true) {
@@ -237,6 +284,9 @@ export class LibraryPage implements OnInit, OnDestroy {
     this.releaseDateFilter = 'all';
     this.releaseDateFrom = '';
     this.releaseDateTo = '';
+    this.sortMode = 'title';
+    this.smartFilter = 'none';
+    this.presetName = '';
     if (apply) {
       if (hadServerFilters) {
         this.loadGames();
@@ -252,6 +302,59 @@ export class LibraryPage implements OnInit, OnDestroy {
       this.releaseDateTo = '';
     }
     this.loadGames();
+  }
+
+  setSmartFilter(filter: SmartFilter): void {
+    this.smartFilter = filter;
+    if (filter === 'best') {
+      this.ownershipFilter = 'mine';
+      this.statusFilter = 'all';
+      this.platformFilter = 'all';
+      this.searchTerm = '';
+      this.sortMode = 'best-finish';
+    }
+    this.applyFilters();
+  }
+
+  saveCurrentPreset(): void {
+    const name = this.presetName.trim() || `${this.mediaMode.label} view ${this.savedPresets.length + 1}`;
+    const preset: LibraryFilterPreset = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name,
+      mediaModeId: this.mediaMode.id,
+      searchTerm: this.searchTerm,
+      ownershipFilter: this.ownershipFilter,
+      statusFilter: this.statusFilter,
+      platformFilter: this.platformFilter,
+      releaseDateFilter: this.releaseDateFilter,
+      releaseDateFrom: this.releaseDateFrom,
+      releaseDateTo: this.releaseDateTo,
+      sortMode: this.sortMode,
+      smartFilter: this.smartFilter,
+    };
+
+    this.savedPresets = [preset, ...this.savedPresets.filter((item) => item.name !== name)].slice(0, 8);
+    this.presetName = '';
+    this.persistSavedPresets();
+  }
+
+  applyPreset(preset: LibraryFilterPreset): void {
+    this.searchTerm = preset.searchTerm ?? '';
+    this.ownershipFilter = preset.ownershipFilter ?? 'all';
+    this.statusFilter = preset.statusFilter ?? 'all';
+    this.platformFilter = preset.platformFilter ?? 'all';
+    this.releaseDateFilter = preset.releaseDateFilter ?? 'all';
+    this.releaseDateFrom = preset.releaseDateFrom ?? '';
+    this.releaseDateTo = preset.releaseDateTo ?? '';
+    this.sortMode = preset.sortMode ?? 'title';
+    this.smartFilter = preset.smartFilter ?? 'none';
+    this.loadGames();
+  }
+
+  deletePreset(preset: LibraryFilterPreset, event?: Event): void {
+    event?.stopPropagation();
+    this.savedPresets = this.savedPresets.filter((item) => item.id !== preset.id);
+    this.persistSavedPresets();
   }
 
   onCustomReleaseDateChange(): void {
@@ -334,20 +437,8 @@ export class LibraryPage implements OnInit, OnDestroy {
     return !!(this.selectedGame && this.libraryEntry(this.selectedGame));
   }
 
-  get totalGames() {
-    return this.games.length;
-  }
-
   get hasMorePages(): boolean {
     return this.currentPage < this.totalPages;
-  }
-
-  get ownedGames() {
-    return this.games.filter((game) => !!this.libraryEntry(game)).length;
-  }
-
-  get playingGames() {
-    return this.games.filter((game) => this.statusOf(game) === GameStatus.Playing).length;
   }
 
   get isGamesMode(): boolean {
@@ -378,12 +469,19 @@ export class LibraryPage implements OnInit, OnDestroy {
     return this.mediaView.emptyTitle(this.mediaMode);
   }
 
-  get remainingHours() {
-    return Math.round(
-      this.games
-        .filter((game) => !!this.libraryEntry(game))
-        .reduce((sum, game) => sum + this.remainingOf(game), 0)
-    );
+  private refreshLibraryIntelligence(): void {
+    const ownedGames = this.games.filter((game) => !!this.libraryEntry(game));
+    this.totalGames = this.games.length;
+    this.ownedGames = ownedGames.length;
+    this.playingGames = this.games.filter((game) => this.isActive(game)).length;
+    this.remainingHours = Math.round(ownedGames.reduce((sum, game) => sum + this.remainingOf(game), 0));
+    this.shortGameCount = this.games.filter((game) => this.isShortBacklog(game)).length;
+    this.abandonedGameCount = this.games.filter((game) => this.isStartedButAbandoned(game)).length;
+    const candidates = this.games
+      .filter((game) => this.isFinishCandidate(game))
+      .sort((a, b) => this.bestFinishScore(a) - this.bestFinishScore(b) || this.compareTitle(a, b));
+
+    this.nextBestGame = candidates[0] ?? null;
   }
 
   imageFor(game: MediaItem): string {
@@ -452,6 +550,140 @@ export class LibraryPage implements OnInit, OnDestroy {
 
   private matchesPlatform(game: MediaItem): boolean {
     return !this.isGamesMode || this.platformFilter === 'all' || Number(game.platforms) === Number(this.platformFilter);
+  }
+
+  private matchesSmartFilter(game: MediaItem): boolean {
+    switch (this.smartFilter) {
+      case 'short':
+        return this.isShortBacklog(game);
+      case 'abandoned':
+        return this.isStartedButAbandoned(game);
+      case 'best':
+        return game.id === this.nextBestGame?.id;
+      case 'none':
+      default:
+        return true;
+    }
+  }
+
+  private compareGames(a: MediaItem, b: MediaItem): number {
+    switch (this.sortMode) {
+      case 'release-desc':
+        return this.compareReleaseDate(a, b, true);
+      case 'release-asc':
+        return this.compareReleaseDate(a, b, false);
+      case 'rating-desc':
+        return this.compareNumber(this.ratingOf(b), this.ratingOf(a)) || this.compareTitle(a, b);
+      case 'remaining-asc':
+        return this.compareNumber(this.remainingOf(a), this.remainingOf(b)) || this.compareTitle(a, b);
+      case 'recently-added':
+        return this.compareNumber(this.addedOrderOf(b), this.addedOrderOf(a)) || this.compareTitle(a, b);
+      case 'best-finish':
+        return this.bestFinishScore(a) - this.bestFinishScore(b) || this.compareTitle(a, b);
+      case 'title':
+      default:
+        return this.compareTitle(a, b);
+    }
+  }
+
+  private isShortBacklog(game: MediaItem): boolean {
+    return this.isFinishCandidate(game) && this.remainingOf(game) > 0 && this.remainingOf(game) <= 10;
+  }
+
+  private isStartedButAbandoned(game: MediaItem): boolean {
+    return this.isFinishCandidate(game)
+      && this.playedOf(game) > 0
+      && !this.isActive(game);
+  }
+
+  private isFinishCandidate(game: MediaItem): boolean {
+    return !!this.libraryEntry(game)
+      && !this.isCompleted(game)
+      && !this.isDropped(game)
+      && this.remainingOf(game) > 0;
+  }
+
+  private bestFinishScore(game: MediaItem): number {
+    if (!this.isFinishCandidate(game)) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    const remaining = this.remainingOf(game);
+    const progressBonus = this.progressOf(game) / 20;
+    const activeBonus = this.isActive(game) ? 5 : 0;
+    const startedBonus = this.playedOf(game) > 0 ? 3 : 0;
+    const ratingBonus = (this.ratingOf(game) ?? 0) / 3;
+    return remaining - progressBonus - activeBonus - startedBonus - ratingBonus;
+  }
+
+  private compareReleaseDate(a: MediaItem, b: MediaItem, newestFirst: boolean): number {
+    const aTime = this.releaseTimeOf(a);
+    const bTime = this.releaseTimeOf(b);
+
+    if (aTime === null && bTime === null) {
+      return this.compareTitle(a, b);
+    }
+
+    if (aTime === null) {
+      return 1;
+    }
+
+    if (bTime === null) {
+      return -1;
+    }
+
+    return newestFirst ? bTime - aTime || this.compareTitle(a, b) : aTime - bTime || this.compareTitle(a, b);
+  }
+
+  private compareTitle(a: MediaItem, b: MediaItem): number {
+    return a.name.localeCompare(b.name);
+  }
+
+  private compareNumber(a: number, b: number): number {
+    if (!Number.isFinite(a) && !Number.isFinite(b)) {
+      return 0;
+    }
+    if (!Number.isFinite(a)) {
+      return 1;
+    }
+    if (!Number.isFinite(b)) {
+      return -1;
+    }
+    return a - b;
+  }
+
+  private ratingOf(game: MediaItem): number {
+    return Number(this.libraryEntry(game)?.rating ?? -1);
+  }
+
+  private addedOrderOf(game: MediaItem): number {
+    return Number(this.libraryEntry(game)?.id ?? -1);
+  }
+
+  private releaseTimeOf(game: MediaItem): number | null {
+    const date = game.releaseDate ? new Date(game.releaseDate) : null;
+    const time = date?.getTime();
+    return time !== undefined && Number.isFinite(time) ? time : null;
+  }
+
+  private playedOf(game: MediaItem): number {
+    const entry = this.libraryEntry(game);
+    if (!this.isGamesMode) {
+      return (Number(entry?.currentWatchTimeMinutes) || 0) / 60;
+    }
+    return (Number(entry?.timeSpend) || 0) + (Number(entry?.myGameInfo?.trackedHours) || 0);
+  }
+
+  private isActive(game: MediaItem): boolean {
+    return this.isGamesMode ? this.statusOf(game) === GameStatus.Playing : this.statusOf(game) === 2;
+  }
+
+  private isCompleted(game: MediaItem): boolean {
+    return this.isGamesMode ? this.statusOf(game) === GameStatus.Completed : this.statusOf(game) === 3;
+  }
+
+  private isDropped(game: MediaItem): boolean {
+    return !this.isGamesMode && this.statusOf(game) === 4;
   }
 
   private remainingOf(game: MediaItem): number {
@@ -554,6 +786,27 @@ export class LibraryPage implements OnInit, OnDestroy {
 
   private libraryEntry(game: MediaItem) {
     return this.mediaView.libraryEntry(game);
+  }
+
+  private loadSavedPresets(): void {
+    try {
+      const raw = localStorage.getItem(this.presetStorageKey);
+      const parsed = raw ? JSON.parse(raw) : [];
+      this.savedPresets = Array.isArray(parsed) ? parsed.filter((item) => item && typeof item.name === 'string') : [];
+    } catch {
+      this.savedPresets = [];
+    }
+  }
+
+  private persistSavedPresets(): void {
+    try {
+      localStorage.setItem(this.presetStorageKey, JSON.stringify(this.savedPresets));
+    } catch {
+    }
+  }
+
+  private get presetStorageKey(): string {
+    return `${this.presetStoragePrefix}.${this.mediaMode.id}`;
   }
 
   private addGameErrorMessage(error: unknown): string {
