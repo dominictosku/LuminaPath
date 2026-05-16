@@ -3,6 +3,7 @@ import { IonIcon, IonHeader } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   calendarClearOutline,
+  barChartOutline,
   chevronDownOutline,
   checkmarkCircleOutline,
   filmOutline,
@@ -56,6 +57,7 @@ export class NavBarComponent implements OnInit, OnDestroy {
     this.mediaModes = this.mediaModeService.options;
     addIcons({
       calendarClearOutline,
+      barChartOutline,
       chevronDownOutline,
       checkmarkCircleOutline,
       filmOutline,

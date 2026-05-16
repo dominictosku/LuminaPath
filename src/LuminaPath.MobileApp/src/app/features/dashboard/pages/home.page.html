@@ -65,6 +65,61 @@
       </div>
     </section>
 
+    <section class="section-block section-block--wide">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="sparkles-outline"></ion-icon>
+            Next up
+          </span>
+          <h2>Today’s Focus</h2>
+        </div>
+      </div>
+
+      <div class="focus-grid">
+        <article class="focus-card focus-card--{{ item.tone }}" *ngFor="let item of focusItems; trackBy: trackByFocus">
+          <div class="focus-card__icon">
+            <ion-icon [name]="item.icon"></ion-icon>
+          </div>
+          <div>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.detail }}</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-block section-block--activity">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="time-outline"></ion-icon>
+            Activity
+          </span>
+          <h2>Pulse</h2>
+        </div>
+      </div>
+
+      <div class="activity-list" *ngIf="activityItems.length; else noActivity">
+        <article class="activity-item" *ngFor="let item of activityItems; trackBy: trackByActivity">
+          <div class="activity-item__icon">
+            <ion-icon [name]="item.icon"></ion-icon>
+          </div>
+          <div>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.detail }}</p>
+          </div>
+        </article>
+      </div>
+
+      <ng-template #noActivity>
+        <div class="empty-state">
+          <ion-icon name="time-outline"></ion-icon>
+          <span>No activity yet.</span>
+        </div>
+      </ng-template>
+    </section>
+
     <section class="section-block">
       <div class="section-heading">
         <div>

@@ -23,6 +23,10 @@
         <ion-icon name="calendar-clear-outline"></ion-icon>
         <span>Plan</span>
       </a>
+      <a [routerLink]="['/statistic']" [class.active]="isActive('/statistic')">
+        <ion-icon name="bar-chart-outline"></ion-icon>
+        <span>Stats</span>
+      </a>
       <a [routerLink]="['/quests']" [class.active]="isActive('/quests')">
         <ion-icon name="sparkles-outline"></ion-icon>
         <span>Quests</span>

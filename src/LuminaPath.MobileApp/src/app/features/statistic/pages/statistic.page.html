@@ -1,0 +1,157 @@
+<ion-content [fullscreen]="true" class="statistic-shell">
+  <ion-refresher slot="fixed" (ionRefresh)="loadStatistic($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <main class="statistic-page">
+    <section class="hero">
+      <span class="eyebrow">
+        <ion-icon name="bar-chart-outline"></ion-icon>
+        Statistic
+      </span>
+      <h1>Backlog Health</h1>
+      <p>See whether your library is balanced, overloaded, or ready for a satisfying clean-up run.</p>
+
+      <div
+        class="health-orbit health-orbit--{{ healthTone }}"
+        [style.--score]="healthScore"
+        *ngIf="!isLoading; else healthLoading">
+        <strong>{{ healthScore }}</strong>
+        <span>health score</span>
+      </div>
+      <ng-template #healthLoading>
+        <ion-skeleton-text animated class="health-skeleton"></ion-skeleton-text>
+      </ng-template>
+    </section>
+
+    <section class="notice" *ngIf="errorMessage">
+      <ion-icon name="alert-circle-outline"></ion-icon>
+      <span>{{ errorMessage }}</span>
+    </section>
+
+    <section class="metric-grid" *ngIf="!isLoading; else metricsLoading">
+      <article class="metric" *ngFor="let metric of metrics; trackBy: trackByMetric">
+        <div class="metric__icon">
+          <ion-icon [name]="metric.icon"></ion-icon>
+        </div>
+        <span>{{ metric.label }}</span>
+        <strong>{{ metric.value }}</strong>
+        <small>{{ metric.detail }}</small>
+      </article>
+    </section>
+
+    <ng-template #metricsLoading>
+      <section class="metric-grid">
+        <article class="metric metric--loading" *ngFor="let item of [1, 2, 3, 4]">
+          <ion-skeleton-text animated></ion-skeleton-text>
+        </article>
+      </section>
+    </ng-template>
+
+    <section class="section-block">
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="pulse-outline"></ion-icon>
+            Signals
+          </span>
+          <h2>Health Flags</h2>
+        </div>
+      </header>
+
+      <div class="flag-list">
+        <article class="flag flag--{{ flag.tone }}" *ngFor="let flag of flags; trackBy: trackByFlag">
+          <ion-icon [name]="flag.icon"></ion-icon>
+          <div>
+            <h3>{{ flag.title }}</h3>
+            <p>{{ flag.detail }}</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-block">
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="time-outline"></ion-icon>
+            Finishable
+          </span>
+          <h2>Quick Wins</h2>
+        </div>
+        <ion-badge>{{ quickWins.length }}</ion-badge>
+      </header>
+
+      <div class="item-list" *ngIf="quickWins.length; else noQuickWins">
+        <article class="stat-item" *ngFor="let item of quickWins; trackBy: trackByItem">
+          <div>
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.kind }} · {{ item.statusLabel }}</p>
+          </div>
+          <strong>{{ formatHours(item.remainingHours) }}</strong>
+        </article>
+      </div>
+
+      <ng-template #noQuickWins>
+        <div class="empty-state">
+          <ion-icon name="hourglass-outline"></ion-icon>
+          <span>No short backlog wins under 12h.</span>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="section-block">
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="flame-outline"></ion-icon>
+            Pressure
+          </span>
+          <h2>Longest Commitments</h2>
+        </div>
+      </header>
+
+      <div class="item-list" *ngIf="longCommitments.length; else noCommitments">
+        <article class="stat-item" *ngFor="let item of longCommitments; trackBy: trackByItem">
+          <div>
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.kind }} · {{ item.statusLabel }}</p>
+            <ion-progress-bar [value]="item.estimatedHours ? item.consumedHours / item.estimatedHours : 0"></ion-progress-bar>
+          </div>
+          <strong>{{ formatHours(item.remainingHours) }}</strong>
+        </article>
+      </div>
+
+      <ng-template #noCommitments>
+        <div class="empty-state">
+          <ion-icon name="checkmark-circle-outline"></ion-icon>
+          <span>No large open commitments found.</span>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="section-block section-block--wide">
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="game-controller-outline"></ion-icon>
+            Library
+          </span>
+          <h2>By Media Type</h2>
+        </div>
+      </header>
+
+      <div class="breakdown-grid">
+        <article class="breakdown-card" *ngFor="let row of breakdown; trackBy: trackByBreakdown">
+          <div>
+            <h3>{{ row.kind }}</h3>
+            <p>{{ row.owned }} owned · {{ row.active }} active</p>
+          </div>
+          <strong>{{ formatHours(row.remainingHours) }}</strong>
+          <ion-progress-bar [value]="row.completionRate / 100"></ion-progress-bar>
+          <span>{{ row.completionRate }}% complete</span>
+        </article>
+      </div>
+    </section>
+  </main>
+</ion-content>

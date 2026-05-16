@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, from, of } from 'rxjs';
 import {
   IonBadge,
   IonContent,
@@ -11,8 +11,10 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
+  alertCircleOutline,
   calendarClearOutline,
   checkmarkDoneOutline,
+  checkboxOutline,
   flameOutline,
   gameControllerOutline,
   hourglassOutline,
@@ -34,6 +36,8 @@ import { MovieService } from '../../movies/services/movie.service';
 import { Series } from '../../series/models/series.model';
 import { SeriesService } from '../../series/services/series.service';
 import { MediaFile } from '../../library/models/mediaFile.model';
+import { GamingSession, GamingSessionService } from '../../planing/services/gaming-session.service';
+import { Quest, QuestBoardService, QuestBoardState } from '../../quests/services/quest-board.service';
 
 enum GameStatus {
   OnHold = 0,
@@ -69,6 +73,19 @@ type DashboardMediaItem = {
   context: string;
 };
 
+type DashboardFocusItem = {
+  title: string;
+  detail: string;
+  icon: string;
+  tone: 'blue' | 'green' | 'amber' | 'rose';
+};
+
+type DashboardActivityItem = {
+  title: string;
+  detail: string;
+  icon: string;
+};
+
 @Component({
   selector: 'app-home',
   templateUrl: './home.page.html',
@@ -88,8 +105,12 @@ export class HomePage implements OnInit {
   animes: Anime[] = [];
   movies: Movie[] = [];
   series: Series[] = [];
+  sessions: GamingSession[] = [];
+  questBoard: QuestBoardState | null = null;
   mediaItems: DashboardMediaItem[] = [];
   metrics: DashboardMetric[] = [];
+  focusItems: DashboardFocusItem[] = [];
+  activityItems: DashboardActivityItem[] = [];
   ownedItems: DashboardMediaItem[] = [];
   playingItems: DashboardMediaItem[] = [];
   upcomingReleases: DashboardMediaItem[] = [];
@@ -108,10 +129,14 @@ export class HomePage implements OnInit {
     private animeService: AnimeService,
     private movieService: MovieService,
     private seriesService: SeriesService,
+    private sessionService: GamingSessionService,
+    private questBoardService: QuestBoardService,
   ) {
     addIcons({
+      alertCircleOutline,
       calendarClearOutline,
       checkmarkDoneOutline,
+      checkboxOutline,
       flameOutline,
       gameControllerOutline,
       hourglassOutline,
@@ -132,18 +157,23 @@ export class HomePage implements OnInit {
   loadDashboard(event?: CustomEvent) {
     this.isLoading = !event;
     this.errorMessage = '';
+    const today = this.startOfToday();
 
     forkJoin({
       games: this.gameService.getAll(),
       animes: this.animeService.getAll(),
       movies: this.movieService.getAll(),
       series: this.seriesService.getAll(),
+      sessions: this.sessionService.list({ from: today, to: this.addDays(today, 14) }).pipe(catchError(() => of([]))),
+      board: from(this.questBoardService.getBoard()).pipe(catchError(() => of(null))),
     }).subscribe({
       next: (result) => {
         this.games = result.games.data ?? [];
         this.animes = result.animes.data ?? [];
         this.movies = result.movies.data ?? [];
         this.series = result.series.data ?? [];
+        this.sessions = result.sessions ?? [];
+        this.questBoard = result.board;
         this.buildDashboard();
         this.isLoading = false;
         this.completeRefresh(event);
@@ -153,6 +183,8 @@ export class HomePage implements OnInit {
         this.animes = [];
         this.movies = [];
         this.series = [];
+        this.sessions = [];
+        this.questBoard = null;
         this.buildDashboard();
         this.errorMessage = 'Dashboard data could not be loaded.';
         this.isLoading = false;
@@ -192,6 +224,8 @@ export class HomePage implements OnInit {
       : Math.round((completedItems / this.ownedItems.length) * 100);
     this.heroProgress = this.featuredItem ? this.progressOf(this.featuredItem) : 0;
     this.metrics = this.createMetrics(completedItems);
+    this.focusItems = this.createFocusItems();
+    this.activityItems = this.createActivityItems();
   }
 
   private createMetrics(completedItems: number): DashboardMetric[] {
@@ -247,6 +281,83 @@ export class HomePage implements OnInit {
       })
       .sort((a, b) => b.remainingHours - a.remainingHours)
       .slice(0, 4);
+  }
+
+  private createFocusItems(): DashboardFocusItem[] {
+    const nextSession = this.nextSession();
+    const dueQuests = this.openQuests()
+      .filter((quest) => quest.dueDate && new Date(quest.dueDate) <= this.addDays(this.startOfToday(), 1))
+      .length;
+    const nextRelease = this.upcomingReleases[0] ?? null;
+    const backlogPick = this.backlogItems[0] ?? null;
+
+    return [
+      {
+        title: nextSession?.gameName ?? 'Plan a session',
+        detail: nextSession
+          ? `${this.shortDateTime(nextSession.scheduledAt)} · ${Math.round(nextSession.durationMinutes / 60 * 10) / 10}h`
+          : 'No gaming session scheduled in the next two weeks',
+        icon: 'calendar-clear-outline',
+        tone: 'blue',
+      },
+      {
+        title: dueQuests ? `${dueQuests} quest${dueQuests === 1 ? '' : 's'} need attention` : 'Quest board is calm',
+        detail: dueQuests ? 'Due today or already waiting' : `${this.openQuests().length} open quest${this.openQuests().length === 1 ? '' : 's'}`,
+        icon: dueQuests ? 'alert-circle-outline' : 'checkbox-outline',
+        tone: dueQuests ? 'amber' : 'green',
+      },
+      {
+        title: nextRelease?.name ?? 'No upcoming release',
+        detail: nextRelease ? `${this.daysUntil(nextRelease)} · ${nextRelease.kind}` : 'Nothing dated in the loaded catalog',
+        icon: 'sparkles-outline',
+        tone: 'rose',
+      },
+      {
+        title: backlogPick?.name ?? 'Backlog is clear',
+        detail: backlogPick ? `${this.remainingLabel(backlogPick)} · ${this.statusLabel(backlogPick)}` : 'No planned commitment found',
+        icon: 'hourglass-outline',
+        tone: 'blue',
+      },
+    ];
+  }
+
+  private createActivityItems(): DashboardActivityItem[] {
+    const items: DashboardActivityItem[] = [];
+
+    const nextSession = this.nextSession();
+    if (nextSession) {
+      items.push({
+        title: nextSession.gameName ?? 'Generic gaming time',
+        detail: `Session ${this.shortDateTime(nextSession.scheduledAt)}`,
+        icon: 'time-outline',
+      });
+    }
+
+    for (const quest of this.completedQuests().slice(0, 3)) {
+      items.push({
+        title: quest.title,
+        detail: `Quest completed${quest.gameName ? ' · ' + quest.gameName : ''}`,
+        icon: 'checkmark-done-outline',
+      });
+    }
+
+    for (const release of this.upcomingReleases.slice(0, 2)) {
+      items.push({
+        title: release.name,
+        detail: `Releases ${this.daysUntil(release)} · ${release.kind}`,
+        icon: 'calendar-clear-outline',
+      });
+    }
+
+    for (const item of this.recentItems.slice(0, 3)) {
+      items.push({
+        title: item.name,
+        detail: `Recently added · ${item.kind}`,
+        icon: 'library-outline',
+      });
+    }
+
+    return items.slice(0, 8);
   }
 
   imageFor(item: DashboardMediaItem | null): string {
@@ -318,6 +429,14 @@ export class HomePage implements OnInit {
     return `${item.kind}-${item.id}`;
   }
 
+  trackByFocus(_: number, item: DashboardFocusItem): string {
+    return `${item.icon}-${item.title}`;
+  }
+
+  trackByActivity(_: number, item: DashboardActivityItem): string {
+    return `${item.icon}-${item.title}-${item.detail}`;
+  }
+
   private fromGame(game: Game): DashboardMediaItem {
     const manual = Number(game.myGames?.timeSpend) || 0;
     const tracked = Number(game.myGames?.myGameInfo?.trackedHours) || 0;
@@ -382,10 +501,42 @@ export class HomePage implements OnInit {
     return item.releaseDate ? new Date(item.releaseDate) : new Date(Number.NaN);
   }
 
+  private nextSession(): GamingSession | null {
+    const now = new Date();
+    return [...this.sessions]
+      .filter((session) => !session.completed && new Date(session.scheduledAt) >= now)
+      .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())[0] ?? null;
+  }
+
+  private openQuests(): Quest[] {
+    return this.questBoard?.quests.filter((quest) => !quest.completed) ?? [];
+  }
+
+  private completedQuests(): Quest[] {
+    return [...(this.questBoard?.quests ?? [])]
+      .filter((quest) => quest.completed)
+      .sort((a, b) => new Date(b.completedAt ?? b.updatedAt ?? '').getTime() - new Date(a.completedAt ?? a.updatedAt ?? '').getTime());
+  }
+
+  private shortDateTime(value: string): string {
+    return new Intl.DateTimeFormat('en', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(value));
+  }
+
   private startOfToday(): Date {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return today;
+  }
+
+  private addDays(value: Date, days: number): Date {
+    const next = new Date(value);
+    next.setDate(next.getDate() + days);
+    return next;
   }
 
   private completeRefresh(event?: CustomEvent) {
