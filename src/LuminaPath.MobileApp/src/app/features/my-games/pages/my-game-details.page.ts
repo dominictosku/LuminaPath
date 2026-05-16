@@ -28,6 +28,8 @@ import {
   checkmarkCircle,
   checkmarkCircleOutline,
   checkmarkDoneOutline,
+  chevronDownOutline,
+  chevronUpOutline,
   cubeOutline,
   flagOutline,
   gameControllerOutline,
@@ -100,6 +102,7 @@ export class MyGameDetailsPage implements OnInit {
   errorMessage = '';
   newsErrorMessage = '';
   selectedTab: 'overview' | 'news' = 'overview';
+  selectedNewsProvider: string | null = null;
   readonly newsSkeletonRows = [1, 2, 3];
 
   readonly questTypeOptions: { type: QuestType; label: string }[] = [
@@ -113,6 +116,14 @@ export class MyGameDetailsPage implements OnInit {
 
   isUpdatingLibrary = false;
   headerCondensed = false;
+  completedExpanded = false;
+  isAddingStarter = false;
+
+  readonly questStarters: { title: string; type: QuestType }[] = [
+    { title: 'Finish the main story', type: 'main' },
+    { title: 'Reach max level', type: 'sub' },
+    { title: '100% achievements', type: 'sub' },
+  ];
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -130,6 +141,8 @@ export class MyGameDetailsPage implements OnInit {
       checkmarkCircle,
       checkmarkCircleOutline,
       checkmarkDoneOutline,
+      chevronDownOutline,
+      chevronUpOutline,
       cubeOutline,
       flagOutline,
       gameControllerOutline,
@@ -155,6 +168,7 @@ export class MyGameDetailsPage implements OnInit {
 
       this.newsLoaded = false;
       this.newsItems = [];
+      this.selectedNewsProvider = null;
       this.selectedTab = 'overview';
       await this.loadGameAndQuests(gameId);
     });
@@ -188,6 +202,11 @@ export class MyGameDetailsPage implements OnInit {
 
   get platformLabel(): string {
     return Platforms.find((platform) => platform.value === Number(this.game?.platforms))?.label ?? 'Unknown platform';
+  }
+
+  get genreLabel(): string {
+    const genre = (this.game?.genre ?? '').trim();
+    return genre.length ? genre : 'Unspecified';
   }
 
   get releaseLabel(): string {
@@ -244,6 +263,39 @@ export class MyGameDetailsPage implements OnInit {
 
   get completedQuestCount(): number {
     return this.quests.filter((quest) => quest.completed).length;
+  }
+
+  get activeQuests(): Quest[] {
+    return this.quests.filter((quest) => !quest.completed);
+  }
+
+  get completedQuests(): Quest[] {
+    return this.quests.filter((quest) => quest.completed);
+  }
+
+  toggleCompletedQuests(): void {
+    this.completedExpanded = !this.completedExpanded;
+  }
+
+  async addStarterQuest(suggestion: { title: string; type: QuestType }): Promise<void> {
+    const myGameId = this.myGameId;
+    if (myGameId == null || this.isAddingStarter) {
+      return;
+    }
+
+    this.isAddingStarter = true;
+    try {
+      await this.questBoardService.createQuest({
+        title: suggestion.title,
+        type: suggestion.type,
+        myGameId,
+      });
+      await this.refreshQuests();
+    } catch {
+      // silent
+    } finally {
+      this.isAddingStarter = false;
+    }
   }
 
   get questSummaryLabel(): string {
@@ -333,6 +385,7 @@ export class MyGameDetailsPage implements OnInit {
     try {
       this.newsItems = await firstValueFrom(this.gameService.getNews(this.game.id, refresh));
       this.newsLoaded = true;
+      this.selectedNewsProvider = null;
     } catch {
       this.newsErrorMessage = 'News could not be loaded right now.';
       this.newsItems = [];
@@ -361,6 +414,31 @@ export class MyGameDetailsPage implements OnInit {
 
   providerLabel(item: GameNewsItem): string {
     return item.provider === 'GoogleNews' ? 'Google News' : item.provider;
+  }
+
+  get newsProviderFilters(): { value: string; label: string; count: number }[] {
+    const counts = new Map<string, { label: string; count: number }>();
+    for (const item of this.newsItems) {
+      const value = item.provider || 'Unknown';
+      const label = this.providerLabel(item) || value;
+      const current = counts.get(value);
+      if (current) {
+        current.count += 1;
+      } else {
+        counts.set(value, { label, count: 1 });
+      }
+    }
+    return Array.from(counts, ([value, info]) => ({ value, label: info.label, count: info.count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  get filteredNewsItems(): GameNewsItem[] {
+    if (!this.selectedNewsProvider) return this.newsItems;
+    return this.newsItems.filter((item) => (item.provider || 'Unknown') === this.selectedNewsProvider);
+  }
+
+  setNewsProvider(value: string | null): void {
+    this.selectedNewsProvider = value;
   }
 
   onScroll(event: CustomEvent<{ scrollTop: number }>): void {
@@ -404,6 +482,27 @@ export class MyGameDetailsPage implements OnInit {
       await this.loadGameAndQuests(this.game.id);
     } catch {
       // silent — user can retry
+    } finally {
+      this.isUpdatingLibrary = false;
+    }
+  }
+
+  async removeFromLibrary(): Promise<void> {
+    const gameId = this.game?.id;
+    const myGameId = this.myGameId;
+    if (!gameId || myGameId == null || this.isUpdatingLibrary) return;
+
+    const confirmed = window.confirm(
+      `Remove "${this.game?.name ?? 'this game'}" from your library? Linked quests and sessions will be removed too.`,
+    );
+    if (!confirmed) return;
+
+    this.isUpdatingLibrary = true;
+    try {
+      await firstValueFrom(this.myGameService.delete(myGameId));
+      await this.loadGameAndQuests(gameId);
+    } catch {
+      // silent
     } finally {
       this.isUpdatingLibrary = false;
     }
@@ -508,6 +607,28 @@ export class MyGameDetailsPage implements OnInit {
   forecastProgress(): number {
     if (!this.forecast?.playtimeEstimateHours || this.forecast.playtimeEstimateHours <= 0) return 0;
     return Math.min(1, this.forecast.playedHours / this.forecast.playtimeEstimateHours);
+  }
+
+  get forecastBarParts(): { played: number; scheduled: number; remaining: number; total: number } {
+    const f = this.forecast;
+    if (!f) return { played: 0, scheduled: 0, remaining: 0, total: 0 };
+
+    const played = Math.max(0, f.playedHours ?? 0);
+    const remainingTotal = f.remainingHours != null
+      ? Math.max(0, f.remainingHours)
+      : Math.max(0, (f.playtimeEstimateHours ?? 0) - played);
+    const scheduled = Math.min(Math.max(0, f.scheduledHours ?? 0), remainingTotal);
+    const remaining = Math.max(0, remainingTotal - scheduled);
+
+    return { played, scheduled, remaining, total: played + scheduled + remaining };
+  }
+
+  forecastWidth(segment: 'played' | 'scheduled' | 'remaining'): number {
+    const parts = this.forecastBarParts;
+    if (parts.total <= 0) return 0;
+    const value =
+      segment === 'played' ? parts.played : segment === 'scheduled' ? parts.scheduled : parts.remaining;
+    return Math.round((value / parts.total) * 1000) / 10;
   }
 
   goToPlanning(): void {

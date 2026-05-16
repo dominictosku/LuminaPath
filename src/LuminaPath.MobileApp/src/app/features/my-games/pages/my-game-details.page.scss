@@ -1,25 +1,28 @@
 :host {
-  --page-bg: #061329;
-  --page-bg-soft: #0a1f42;
-  --card-bg: rgba(12, 31, 64, 0.84);
-  --card-bg-strong: rgba(18, 43, 86, 0.94);
-  --card-border: rgba(137, 180, 255, 0.18);
-  --text: #edf5ff;
-  --muted: #a9bdd8;
-  --accent: #48a7ff;
-  --accent-strong: #75c7ff;
+  --page-bg: #03081a;
+  --page-bg-soft: #081935;
+  --card-bg: var(--app-chrome-bg, rgba(8, 22, 48, 0.86));
+  --card-bg-strong: var(--app-chrome-bg-strong, rgba(12, 31, 64, 0.94));
+  --card-border: var(--app-chrome-border, rgba(137, 180, 255, 0.16));
+  --text: var(--app-chrome-text, #eef6ff);
+  --muted: var(--app-chrome-muted, #9fb6d4);
+  --accent: var(--app-theme-accent, #60a5fa);
+  --accent-strong: var(--app-theme-accent-2, #22d3ee);
+  --accent-soft: var(--app-theme-accent-soft, rgba(96, 165, 250, 0.14));
+  --accent-border: var(--app-theme-accent-border, rgba(96, 165, 250, 0.32));
   --success: #4ade80;
   color: var(--text);
 }
 
 .details-shell {
   --background:
-    radial-gradient(circle at 20% 0%, rgba(38, 121, 255, 0.28), transparent 34%),
-    linear-gradient(180deg, var(--page-bg-soft), var(--page-bg) 48%, #030914);
+    radial-gradient(circle at 18% -8%, var(--accent-soft), transparent 38%),
+    radial-gradient(circle at 92% 110%, var(--accent-soft), transparent 42%),
+    linear-gradient(180deg, var(--page-bg-soft), var(--page-bg) 52%, #02060f);
 }
 
 .details-header ion-toolbar {
-  --background: rgba(6, 19, 41, 0.4);
+  --background: var(--app-chrome-bg, rgba(8, 22, 48, 0.4));
   --border-width: 0;
   --color: var(--text);
   backdrop-filter: blur(18px);
@@ -294,13 +297,25 @@
   .quick-action--primary {
     --background: linear-gradient(135deg, var(--accent), var(--accent-strong));
     --color: #04111f;
-    --box-shadow: 0 14px 28px rgba(72, 167, 255, 0.32);
+    --box-shadow: 0 14px 28px rgba(96, 165, 250, 0.32);
   }
 
   ion-button[fill='outline'].quick-action {
     --border-color: rgba(137, 180, 255, 0.4);
     --color: var(--text);
     --background: rgba(255, 255, 255, 0.04);
+  }
+
+  .quick-action--danger {
+    flex: 0 0 auto;
+    min-width: 0;
+    --color: #fca5a5;
+    --background: rgba(248, 113, 113, 0.08);
+    --background-hover: rgba(248, 113, 113, 0.18);
+
+    &:hover {
+      --color: #fecaca;
+    }
   }
 }
 
@@ -327,7 +342,7 @@
 
   ion-badge {
     flex: 0 0 auto;
-    --background: rgba(72, 167, 255, 0.16);
+    --background: rgba(96, 165, 250, 0.16);
     --color: var(--accent-strong);
   }
 
@@ -355,7 +370,7 @@
     --border-radius: 14px;
     --color: var(--muted);
     --color-checked: var(--text);
-    --indicator-color: rgba(72, 167, 255, 0.28);
+    --indicator-color: rgba(96, 165, 250, 0.28);
     min-height: 38px;
     font-weight: 800;
   }
@@ -367,36 +382,96 @@
   font-size: 14px;
 }
 
-.forecast-metrics {
+.forecast-bar {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
+}
 
-  div {
-    padding: 8px 10px;
-    border: 1px solid rgba(137, 180, 255, 0.14);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    text-align: center;
+.forecast-bar__track {
+  display: flex;
+  width: 100%;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--card-border);
+}
+
+.forecast-bar__seg {
+  display: block;
+  height: 100%;
+  transition: width 0.3s ease;
+
+  &--played {
+    background: linear-gradient(90deg, var(--accent), var(--accent-strong));
   }
 
-  span {
-    display: block;
-    color: var(--muted);
-    font-size: 11px;
+  &--scheduled {
+    background: repeating-linear-gradient(
+      45deg,
+      var(--accent-soft),
+      var(--accent-soft) 6px,
+      rgba(96, 165, 250, 0.32) 6px,
+      rgba(96, 165, 250, 0.32) 12px
+    );
   }
+
+  &--remaining {
+    background: transparent;
+  }
+}
+
+.forecast-bar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.forecast-bar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 
   strong {
-    display: block;
-    margin-top: 2px;
     color: var(--text);
+    font-weight: 700;
+  }
+
+  ion-icon {
+    color: var(--accent-strong);
     font-size: 14px;
   }
 }
 
-@media (max-width: 540px) {
-  .forecast-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.forecast-bar__chip--pace {
+  margin-left: auto;
+}
+
+.forecast-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  display: inline-block;
+
+  &--played {
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  }
+
+  &--scheduled {
+    background: repeating-linear-gradient(
+      45deg,
+      var(--accent-soft),
+      var(--accent-soft) 2px,
+      rgba(96, 165, 250, 0.5) 2px,
+      rgba(96, 165, 250, 0.5) 4px
+    );
+  }
+
+  &--remaining {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--card-border);
   }
 }
 
@@ -484,6 +559,88 @@
   }
 }
 
+.completed-toggle {
+  display: grid;
+  gap: 10px;
+}
+
+.completed-toggle__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  width: fit-content;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+
+  ion-icon {
+    font-size: 16px;
+    color: var(--accent-strong);
+  }
+
+  &:hover {
+    color: var(--text);
+    border-color: var(--accent-border);
+  }
+}
+
+.completed-toggle__count {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.quest-list--completed .quest-card {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.quest-starter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.quest-starter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+
+  ion-icon {
+    font-size: 16px;
+    color: var(--accent-strong);
+  }
+
+  &:hover {
+    background: rgba(96, 165, 250, 0.24);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: progress;
+  }
+}
+
 .news-panel {
   align-content: start;
 }
@@ -493,6 +650,53 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.news-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.news-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    color: var(--text);
+    border-color: var(--accent-border);
+  }
+
+  &--active {
+    background: var(--accent-soft);
+    border-color: var(--accent-border);
+    color: var(--text);
+  }
+}
+
+.news-filter__count {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+
+  .news-filter--active & {
+    background: var(--accent);
+    color: #04111f;
+  }
 }
 
 .news-list {
@@ -546,7 +750,7 @@
   font-size: 12px;
 
   ion-badge {
-    --background: rgba(72, 167, 255, 0.16);
+    --background: rgba(96, 165, 250, 0.16);
     --color: var(--accent-strong);
   }
 }
@@ -622,7 +826,7 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(72, 167, 255, 0.18);
+  background: rgba(96, 165, 250, 0.18);
   color: var(--accent-strong);
   font-size: 13px;
   font-weight: 600;
@@ -634,7 +838,7 @@
   }
 
   &:hover {
-    background: rgba(72, 167, 255, 0.28);
+    background: rgba(96, 165, 250, 0.28);
   }
 }
 

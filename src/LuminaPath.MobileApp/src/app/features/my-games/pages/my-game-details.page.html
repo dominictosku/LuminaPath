@@ -29,7 +29,7 @@
     <ion-button shape="round" (click)="goBack()">Back</ion-button>
   </section>
 
-  <main class="details-page mt-8" *ngIf="!isLoading && !errorMessage && game">
+  <main class="details-page" *ngIf="!isLoading && !errorMessage && game">
     <section class="hero-card">
       <div class="hero-backdrop" [style.background-image]="'url(' + imageUrl() + ')'"></div>
       <div class="hero-inner">
@@ -55,8 +55,8 @@
 
         <div class="meta-grid">
           <div class="meta-item">
-            <span>Status</span>
-            <strong>{{ statusLabel }}</strong>
+            <span>Genre</span>
+            <strong>{{ genreLabel }}</strong>
           </div>
           <div class="meta-item">
             <span>Platform</span>
@@ -103,21 +103,16 @@
           <ion-icon slot="start" name="calendar-clear-outline"></ion-icon>
           Plan sessions
         </ion-button>
+        <ion-button
+          shape="round"
+          fill="clear"
+          class="quick-action quick-action--danger"
+          aria-label="Remove from library"
+          [disabled]="isUpdatingLibrary"
+          (click)="removeFromLibrary()">
+          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+        </ion-button>
       </ng-container>
-    </section>
-
-    <section class="library-card" [class.library-card--owned]="isInLibrary">
-      <div>
-        <span class="eyebrow">
-          <ion-icon name="library-outline"></ion-icon>
-          Library
-        </span>
-        <h2>{{ isInLibrary ? 'This game is already in your library' : 'This game is not in your library yet' }}</h2>
-        <p>
-          {{ isInLibrary ? questSummaryLabel : 'Add it to your library first to track quests and progress here.' }}
-        </p>
-      </div>
-      <ion-badge>{{ statusLabel }}</ion-badge>
     </section>
 
     <ion-segment class="detail-tabs" [value]="selectedTab" (ionChange)="setDetailTab($any($event).detail.value)">
@@ -167,27 +162,45 @@
         <ion-button fill="clear" size="small" (click)="goToPlanning()">Plan sessions</ion-button>
       </header>
 
-      <ion-progress-bar [value]="forecastProgress()"></ion-progress-bar>
-      <p class="forecast-summary">{{ forecastSummary() }}</p>
-
-      <div class="forecast-metrics">
-        <div>
-          <span>Played</span>
-          <strong>{{ forecastHours(forecast.playedHours) }}</strong>
+      <div class="forecast-bar" *ngIf="forecastBarParts.total > 0; else forecastEmpty">
+        <div class="forecast-bar__track">
+          <span
+            class="forecast-bar__seg forecast-bar__seg--played"
+            [style.width.%]="forecastWidth('played')"
+            [attr.aria-label]="'Played ' + forecastHours(forecast.playedHours)"></span>
+          <span
+            class="forecast-bar__seg forecast-bar__seg--scheduled"
+            [style.width.%]="forecastWidth('scheduled')"
+            [attr.aria-label]="'Scheduled ' + forecastHours(forecast.scheduledHours)"></span>
+          <span
+            class="forecast-bar__seg forecast-bar__seg--remaining"
+            [style.width.%]="forecastWidth('remaining')"></span>
         </div>
-        <div>
-          <span>Remaining</span>
-          <strong>{{ forecast.remainingHours == null ? '—' : forecastHours(forecast.remainingHours) }}</strong>
-        </div>
-        <div>
-          <span>Scheduled</span>
-          <strong>{{ forecastHours(forecast.scheduledHours) }}</strong>
-        </div>
-        <div>
-          <span>Per week</span>
-          <strong>{{ forecastHours(forecast.weeklyHours) }}</strong>
+        <div class="forecast-bar__legend">
+          <span class="forecast-bar__chip">
+            <i class="forecast-dot forecast-dot--played"></i>
+            Played <strong>{{ forecastHours(forecast.playedHours) }}</strong>
+          </span>
+          <span class="forecast-bar__chip">
+            <i class="forecast-dot forecast-dot--scheduled"></i>
+            Scheduled <strong>{{ forecastHours(forecast.scheduledHours) }}</strong>
+          </span>
+          <span class="forecast-bar__chip">
+            <i class="forecast-dot forecast-dot--remaining"></i>
+            Remaining <strong>{{ forecast.remainingHours == null ? '—' : forecastHours(forecast.remainingHours) }}</strong>
+          </span>
+          <span class="forecast-bar__chip forecast-bar__chip--pace">
+            <ion-icon name="hourglass-outline"></ion-icon>
+            <strong>{{ forecastHours(forecast.weeklyHours) }}</strong> / wk
+          </span>
         </div>
       </div>
+
+      <ng-template #forecastEmpty>
+        <ion-progress-bar [value]="forecastProgress()"></ion-progress-bar>
+      </ng-template>
+
+      <p class="forecast-summary">{{ forecastSummary() }}</p>
     </section>
 
     <section class="quest-panel">
@@ -202,34 +215,81 @@
       </header>
 
       <ng-container *ngIf="isInLibrary; else notInLibrary">
-        <div class="quest-list" *ngIf="quests.length; else emptyQuests">
-          <article
-            class="quest-card"
-            *ngFor="let quest of quests; trackBy: trackByQuest"
-            [class.quest-card--done]="quest.completed">
-            <button type="button" class="icon-action icon-action--complete" (click)="toggleQuest(quest)">
-              <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
+        <ng-container *ngIf="activeQuests.length || completedQuests.length; else emptyQuests">
+          <div class="quest-list" *ngIf="activeQuests.length">
+            <article
+              class="quest-card"
+              *ngFor="let quest of activeQuests; trackBy: trackByQuest">
+              <button type="button" class="icon-action icon-action--complete" (click)="toggleQuest(quest)">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+              </button>
+
+              <div class="quest-body">
+                <h3>{{ quest.title }}</h3>
+                <p>
+                  <ion-badge>{{ questTypeLabel(questTypeFor(quest)) }}</ion-badge>
+                  <span>Ready to complete</span>
+                </p>
+              </div>
+
+              <button type="button" class="icon-action" aria-label="Delete quest" (click)="deleteQuest(quest)">
+                <ion-icon name="trash-outline"></ion-icon>
+              </button>
+            </article>
+          </div>
+
+          <div class="completed-toggle" *ngIf="completedQuests.length">
+            <button
+              type="button"
+              class="completed-toggle__button"
+              [attr.aria-expanded]="completedExpanded"
+              (click)="toggleCompletedQuests()">
+              <ion-icon [name]="completedExpanded ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+              Completed
+              <span class="completed-toggle__count">{{ completedQuests.length }}</span>
             </button>
 
-            <div class="quest-body">
-              <h3>{{ quest.title }}</h3>
-              <p>
-                <ion-badge>{{ questTypeLabel(questTypeFor(quest)) }}</ion-badge>
-                <span>{{ quest.completed ? 'Completed' : 'Ready to complete' }}</span>
-              </p>
+            <div class="quest-list quest-list--completed" *ngIf="completedExpanded">
+              <article
+                class="quest-card quest-card--done"
+                *ngFor="let quest of completedQuests; trackBy: trackByQuest">
+                <button type="button" class="icon-action icon-action--complete" (click)="toggleQuest(quest)">
+                  <ion-icon name="checkmark-circle"></ion-icon>
+                </button>
+
+                <div class="quest-body">
+                  <h3>{{ quest.title }}</h3>
+                  <p>
+                    <ion-badge>{{ questTypeLabel(questTypeFor(quest)) }}</ion-badge>
+                    <span>Completed</span>
+                  </p>
+                </div>
+
+                <button type="button" class="icon-action" aria-label="Delete quest" (click)="deleteQuest(quest)">
+                  <ion-icon name="trash-outline"></ion-icon>
+                </button>
+              </article>
             </div>
-
-            <button type="button" class="icon-action" aria-label="Delete quest" (click)="deleteQuest(quest)">
-              <ion-icon name="trash-outline"></ion-icon>
-            </button>
-          </article>
-        </div>
+          </div>
+        </ng-container>
 
         <ng-template #emptyQuests>
-          <div class="empty-state">
+          <div class="empty-state empty-state--quest-starter">
             <ion-icon name="link-outline"></ion-icon>
             <strong>No quests yet</strong>
-            <span>Add your first quest for {{ game.name }}.</span>
+            <span>Pick a starter or write your own below.</span>
+
+            <div class="quest-starter-row">
+              <button
+                type="button"
+                class="quest-starter"
+                *ngFor="let suggestion of questStarters"
+                [disabled]="isAddingStarter"
+                (click)="addStarterQuest(suggestion)">
+                <ion-icon name="add-outline"></ion-icon>
+                {{ suggestion.title }}
+              </button>
+            </div>
           </div>
         </ng-template>
 
@@ -295,8 +355,32 @@
         <span>There are no recent updates for {{ game.name }} yet.</span>
       </div>
 
-      <div class="news-list" *ngIf="!isNewsLoading && newsItems.length">
-        <article class="news-card" *ngFor="let item of newsItems; trackBy: trackByNews">
+      <div class="news-filters" *ngIf="!isNewsLoading && newsProviderFilters.length > 1">
+        <button
+          type="button"
+          class="news-filter"
+          [class.news-filter--active]="!selectedNewsProvider"
+          (click)="setNewsProvider(null)">
+          All <span class="news-filter__count">{{ newsItems.length }}</span>
+        </button>
+        <button
+          type="button"
+          *ngFor="let filter of newsProviderFilters"
+          class="news-filter"
+          [class.news-filter--active]="selectedNewsProvider === filter.value"
+          (click)="setNewsProvider(filter.value)">
+          {{ filter.label }} <span class="news-filter__count">{{ filter.count }}</span>
+        </button>
+      </div>
+
+      <div class="empty-state" *ngIf="!isNewsLoading && newsItems.length && !filteredNewsItems.length">
+        <ion-icon name="newspaper-outline"></ion-icon>
+        <strong>No matches</strong>
+        <span>Nothing from this source — try another filter.</span>
+      </div>
+
+      <div class="news-list" *ngIf="!isNewsLoading && filteredNewsItems.length">
+        <article class="news-card" *ngFor="let item of filteredNewsItems; trackBy: trackByNews">
           <div class="news-card__meta">
             <ion-badge>{{ item.source || providerLabel(item) }}</ion-badge>
             <span>{{ newsDateLabel(item) }}</span>
