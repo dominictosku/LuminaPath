@@ -1,12 +1,14 @@
 @page "/quests"
 @using LuminaPath.Core.Dtos
 @using LuminaPath.Core.Enums
+@using LuminaPath.Core.Models
 @using LuminaPath.Features.Auth
 @using LuminaPath.Infrastructure.Services.ModelServices
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inherits BaseAuth
 @inject QuestService QuestService
+@inject MyGameService MyGameService
 @inject ISnackbar Snackbar
 
 <PageTitle>Quest Board</PageTitle>
@@ -38,10 +40,24 @@
                     <div class="progress-fill" style="width: @(XpProgress)%"></div>
                 </div>
                 <div class="stat-row">
-                    <span>@ActiveQuestCount active</span>
+                    <span>@TodayCount today</span>
+                    <span>@OverdueCount overdue</span>
                     <span>@CompletedQuestCount complete</span>
-                    <span>@UnlockedNodeCount nodes</span>
                 </div>
+                @if (_board.CurrentStreakDays > 0 || _board.LongestStreakDays > 0)
+                {
+                    <div class="stat-row">
+                        <span>@_board.CurrentStreakDays-day streak</span>
+                        <span>best @_board.LongestStreakDays</span>
+                    </div>
+                }
+                @if (_board.Achievements.Count > 0)
+                {
+                    <div class="achievement-pulse">
+                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" />
+                        <span>@_board.Achievements.Count achievements unlocked</span>
+                    </div>
+                }
             </div>
         </section>
 
@@ -54,54 +70,312 @@
 
         @if (_mode == PageMode.Quests)
         {
-            <section class="quest-grid">
-                @foreach (var column in Columns)
+            <section class="quick-add-card">
+                <div class="quest-input quick-add-row">
+                    <input placeholder="Capture a quest" @bind="_quickAddTitle" @bind:event="oninput" @onkeydown="OnQuickAddKeyDown" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="AddQuest" />
+                </div>
+
+                <div class="quick-date-row">
+                    <button type="button" class="quick-date @(IsQuickAddDueToday ? "active" : "")" @onclick="SetQuickAddToday">Today</button>
+                    <button type="button" class="quick-date @(IsQuickAddDueTomorrow ? "active" : "")" @onclick="SetQuickAddTomorrow">Tomorrow</button>
+                    <button type="button" class="quick-date @(_quickAddDue is null ? "active" : "")" @onclick="ResetQuickAddDue">Inbox</button>
+                    <button type="button" class="quick-date tools" @onclick="@(() => _quickAddAdvancedOpen = !_quickAddAdvancedOpen)">
+                        <MudIcon Icon="@Icons.Material.Filled.Tune" />
+                        More
+                    </button>
+                </div>
+
+                @if (_quickAddAdvancedOpen)
                 {
-                    <article class="quest-column">
-                        <header class="column-header">
-                            <MudIcon Icon="@column.Icon" />
+                    <div class="quick-add-meta">
+                        <label>
+                            <span>Type</span>
+                            <select @bind="_quickAddType">
+                                @foreach (var type in Enum.GetValues<QuestType>())
+                                {
+                                    <option value="@type">@TypeLabel(type)</option>
+                                }
+                            </select>
+                        </label>
+                        <label>
+                            <span>Priority</span>
+                            <select @bind="_quickAddPriority">
+                                @foreach (var priority in Enum.GetValues<QuestPriority>())
+                                {
+                                    <option value="@priority">@PriorityLabel(priority)</option>
+                                }
+                            </select>
+                        </label>
+                        <label>
+                            <span>Repeat</span>
+                            <select @bind="_quickAddRecurrence">
+                                @foreach (var recurrence in Enum.GetValues<QuestRecurrence>())
+                                {
+                                    <option value="@recurrence">@RecurrenceLabel(recurrence)</option>
+                                }
+                            </select>
+                        </label>
+                        <label>
+                            <span>Due</span>
+                            <input type="date" @bind="_quickAddDue" />
+                        </label>
+                        @if (_library.Count > 0)
+                        {
+                            <label>
+                                <span>Game</span>
+                                <select @bind="_quickAddGameId">
+                                    <option value="">No game</option>
+                                    @foreach (var game in _library)
+                                    {
+                                        <option value="@game.Id">@game.Game?.Name</option>
+                                    }
+                                </select>
+                            </label>
+                        }
+                        @if (_board.Skills.Count > 0)
+                        {
+                            <label>
+                                <span>Skill</span>
+                                <select @bind="_quickAddSkillId">
+                                    <option value="">No skill</option>
+                                    @foreach (var skill in _board.Skills)
+                                    {
+                                        <option value="@skill.Id">@skill.Name</option>
+                                    }
+                                </select>
+                            </label>
+                        }
+                    </div>
+                }
+            </section>
+
+            <section class="board-toolbar">
+                <div class="lane-tabs">
+                    @foreach (var filter in Enum.GetValues<QuestFilter>())
+                    {
+                        <button type="button" class="@(_filter == filter ? "active" : "")" @onclick="@(() => _filter = filter)">
+                            <MudIcon Icon="@FilterIcon(filter)" />
+                            <span>@FilterLabel(filter)</span>
+                            <strong>@FilterCount(filter)</strong>
+                        </button>
+                    }
+                </div>
+
+                <label class="search-field">
+                    <MudIcon Icon="@Icons.Material.Filled.Search" />
+                    <input placeholder="Search quests, notes, tags" @bind="_searchQuery" @bind:event="oninput" />
+                    @if (!string.IsNullOrWhiteSpace(_searchQuery))
+                    {
+                        <button type="button" @onclick="@(() => _searchQuery = string.Empty)">
+                            <MudIcon Icon="@Icons.Material.Filled.Close" />
+                        </button>
+                    }
+                </label>
+
+                @if (AvailableTags.Count > 0)
+                {
+                    <div class="tag-filter-strip">
+                        @foreach (var tag in AvailableTags)
+                        {
+                            <button type="button" class="@(_tagFilter == tag ? "active" : "")" @onclick="@(() => ToggleTag(tag))">#@tag</button>
+                        }
+                        @if (_tagFilter is not null)
+                        {
+                            <button type="button" class="clear" @onclick="@(() => _tagFilter = null)">Clear</button>
+                        }
+                    </div>
+                }
+            </section>
+
+            <section class="quest-board">
+                @if (!VisibleQuests.Any())
+                {
+                    <div class="empty-state empty-state-wide">
+                        <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" />
+                        <strong>Nothing needs your attention here</strong>
+                        <span>Capture a quest above, or switch lanes to see what is scheduled elsewhere.</span>
+                        @if (NextQueuedQuest is not null)
+                        {
+                            <button type="button" class="inline-action" @onclick="PullNextQuestToToday">Pull "@NextQueuedQuest.Title" into today</button>
+                        }
+                    </div>
+                }
+
+                @foreach (var questSection in QuestSections)
+                {
+                    <article class="quest-section @questSection.Tone">
+                        <header class="section-header">
+                            <MudIcon Icon="@questSection.Icon" />
                             <div>
-                                <span>@column.Label</span>
-                                <h2>@column.Title</h2>
-                                <p>@column.Description</p>
+                                <h2>@questSection.Title</h2>
+                                <p>@questSection.Subtitle</p>
                             </div>
+                            <span>@questSection.Quests.Count</span>
                         </header>
 
-                        <div class="quest-input">
-                            <input placeholder="Add @column.Title.ToLowerInvariant()" @bind="column.Input" @bind:event="oninput" @onkeydown="@(e => OnQuestKeyDown(e, column))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="@(() => AddQuest(column))" />
-                        </div>
-
-                        <div class="column-progress">
-                            <div class="progress-track small">
-                                <div class="progress-fill" style="width: @(QuestProgress(column.Type))%"></div>
-                            </div>
-                            <span>+@RewardFor(column.Type) XP</span>
-                        </div>
-
                         <div class="quest-list">
-                            @foreach (var quest in QuestsFor(column.Type))
+                            @foreach (var quest in questSection.Quests)
                             {
-                                <article class="quest-card @(quest.Completed ? "done" : "")">
+                                <article class="quest-card @(quest.Completed ? "done" : "") @(quest.Id == _expandedQuestId ? "selected" : "")">
                                     <button type="button" class="icon-button" @onclick="@(() => ToggleQuest(quest))">
                                         <MudIcon Icon="@(quest.Completed ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.CheckCircle)" />
                                     </button>
-                                    <div>
+                                    <button type="button" class="quest-body" @onclick="@(() => ToggleExpand(quest))">
+                                        <span class="quest-kicker">
+                                            <MudIcon Icon="@TypeIcon(quest.Type)" />
+                                            @TypeLabel(quest.Type)
+                                            <span class="dot"></span>
+                                            @PriorityLabel(quest.Priority)
+                                        </span>
                                         <h3>@quest.Title</h3>
-                                        <p>@(quest.Completed ? "Reward claimed" : "Ready to complete")</p>
-                                    </div>
+                                        @if (!string.IsNullOrWhiteSpace(quest.Notes))
+                                        {
+                                            <p>@quest.Notes</p>
+                                        }
+                                        <div class="quest-meta">
+                                            <span class="@($"meta-pill {DueState(quest)}")"><MudIcon Icon="@Icons.Material.Filled.Event" /> @DueDateLabel(quest)</span>
+                                            @if (quest.Recurrence != QuestRecurrence.None)
+                                            {
+                                                <span class="meta-pill"><MudIcon Icon="@Icons.Material.Filled.Autorenew" /> @RecurrenceLabel(quest.Recurrence)</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(quest.GameName))
+                                            {
+                                                <span class="meta-pill"><MudIcon Icon="@Icons.Material.Filled.SportsEsports" /> @quest.GameName</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(quest.SkillName))
+                                            {
+                                                <span class="meta-pill"><MudIcon Icon="@Icons.Material.Filled.EmojiEvents" /> @quest.SkillName</span>
+                                            }
+                                            @if (quest.Subtasks.Count > 0)
+                                            {
+                                                <span class="meta-pill"><MudIcon Icon="@Icons.Material.Filled.Checklist" /> @SubtaskCompletedCount(quest)/@quest.Subtasks.Count</span>
+                                            }
+                                        </div>
+                                        @if (quest.Tags.Count > 0)
+                                        {
+                                            <div class="quest-tags">
+                                                @foreach (var tag in quest.Tags)
+                                                {
+                                                    <span>#@tag</span>
+                                                }
+                                            </div>
+                                        }
+                                        @if (quest.Subtasks.Count > 0)
+                                        {
+                                            <div class="progress-track small">
+                                                <div class="progress-fill" style="width: @(SubtaskProgress(quest))%"></div>
+                                            </div>
+                                        }
+                                    </button>
                                     <button type="button" class="delete-button" @onclick="@(() => DeleteQuest(quest))">
                                         <MudIcon Icon="@Icons.Material.Filled.DeleteOutline" />
                                     </button>
-                                </article>
-                            }
 
-                            @if (!QuestsFor(column.Type).Any())
-                            {
-                                <div class="empty-state">
-                                    <MudIcon Icon="@Icons.Material.Filled.LibraryBooks" />
-                                    <span>No quests here yet.</span>
-                                </div>
+                                    @if (quest.Id == _expandedQuestId && _editDraft is not null)
+                                    {
+                                        <div class="quest-editor">
+                                            <label class="wide">
+                                                <span>Title</span>
+                                                <input @bind="_editDraft.Title" @bind:event="oninput" />
+                                            </label>
+                                            <label class="wide">
+                                                <span>Notes</span>
+                                                <textarea @bind="_editDraft.Notes" @bind:event="oninput"></textarea>
+                                            </label>
+                                            <label>
+                                                <span>Type</span>
+                                                <select @bind="_editDraft.Type">
+                                                    @foreach (var type in Enum.GetValues<QuestType>())
+                                                    {
+                                                        <option value="@type">@TypeLabel(type)</option>
+                                                    }
+                                                </select>
+                                            </label>
+                                            <label>
+                                                <span>Priority</span>
+                                                <select @bind="_editDraft.Priority">
+                                                    @foreach (var priority in Enum.GetValues<QuestPriority>())
+                                                    {
+                                                        <option value="@priority">@PriorityLabel(priority)</option>
+                                                    }
+                                                </select>
+                                            </label>
+                                            <label>
+                                                <span>Repeat</span>
+                                                <select @bind="_editDraft.Recurrence">
+                                                    @foreach (var recurrence in Enum.GetValues<QuestRecurrence>())
+                                                    {
+                                                        <option value="@recurrence">@RecurrenceLabel(recurrence)</option>
+                                                    }
+                                                </select>
+                                            </label>
+                                            <label>
+                                                <span>Due</span>
+                                                <input type="date" @bind="_editDraft.DueDate" />
+                                            </label>
+                                            @if (_library.Count > 0)
+                                            {
+                                                <label>
+                                                    <span>Game</span>
+                                                    <select @bind="_editDraft.MyGameId">
+                                                        <option value="">No game</option>
+                                                        @foreach (var game in _library)
+                                                        {
+                                                            <option value="@game.Id">@game.Game?.Name</option>
+                                                        }
+                                                    </select>
+                                                </label>
+                                            }
+                                            @if (_board.Skills.Count > 0)
+                                            {
+                                                <label>
+                                                    <span>Skill</span>
+                                                    <select @bind="_editDraft.SkillId">
+                                                        <option value="">No skill</option>
+                                                        @foreach (var skill in _board.Skills)
+                                                        {
+                                                            <option value="@skill.Id">@skill.Name</option>
+                                                        }
+                                                    </select>
+                                                </label>
+                                            }
+                                            <label class="wide">
+                                                <span>Tags</span>
+                                                <input placeholder="errand, focus, deep-work" @bind="_editDraft.Tags" @bind:event="oninput" />
+                                            </label>
+
+                                            <div class="subtask-editor wide">
+                                                <span>Subtasks</span>
+                                                @foreach (var subtask in quest.Subtasks.OrderBy(s => s.SortOrder))
+                                                {
+                                                    <div class="subtask @(subtask.Completed ? "done" : "")">
+                                                        <button type="button" @onclick="@(() => ToggleSubtask(quest, subtask))">
+                                                            <MudIcon Icon="@(subtask.Completed ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.CheckCircle)" />
+                                                        </button>
+                                                        <span>@subtask.Title</span>
+                                                        <button type="button" @onclick="@(() => DeleteSubtask(quest, subtask))">
+                                                            <MudIcon Icon="@Icons.Material.Filled.Close" />
+                                                        </button>
+                                                    </div>
+                                                }
+                                                <div class="subtask-add">
+                                                    <input placeholder="Add a subtask" value="@SubtaskDraft(quest.Id)" @oninput="@(e => SetSubtaskDraft(quest.Id, e.Value?.ToString() ?? string.Empty))" @onkeydown="@(e => OnSubtaskKeyDown(e, quest))" />
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="@(() => AddSubtask(quest))" />
+                                                </div>
+                                            </div>
+
+                                            <div class="editor-actions wide">
+                                                <button type="button" @onclick="@(() => ScheduleToday(quest))">Today</button>
+                                                <button type="button" @onclick="@(() => ScheduleTomorrow(quest))">Tomorrow</button>
+                                                <button type="button" @onclick="@(() => ClearDueDate(quest))">Inbox</button>
+                                                <span></span>
+                                                <button type="button" @onclick="CancelEdit">Cancel</button>
+                                                <button type="button" class="primary" @onclick="@(() => SaveEdit(quest))">Save</button>
+                                            </div>
+                                        </div>
+                                    }
+                                </article>
                             }
                         </div>
                     </article>
@@ -301,6 +575,9 @@
 
     .mode-panel,
     .quest-column,
+    .quick-add-card,
+    .board-toolbar,
+    .quest-section,
     .skill-card {
         padding: 16px;
         border: 1px solid rgba(255, 255, 255, .08);
@@ -320,6 +597,157 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 16px;
         align-items: start;
+    }
+
+    .quick-add-card,
+    .board-toolbar,
+    .quest-board,
+    .quest-section {
+        display: grid;
+        gap: 12px;
+    }
+
+    .quick-add-row input {
+        height: 54px;
+        font-size: 1.03rem;
+        font-weight: 700;
+    }
+
+    .quick-date-row,
+    .tag-filter-strip,
+    .quest-meta,
+    .quest-tags,
+    .editor-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .quick-date,
+    .lane-tabs button,
+    .tag-filter-strip button,
+    .inline-action,
+    .editor-actions button {
+        min-height: 38px;
+        padding: 0 13px;
+        border: 1px solid rgba(117, 167, 255, .18);
+        border-radius: 8px;
+        color: var(--mud-palette-text-primary);
+        background: rgba(117, 167, 255, .07);
+        cursor: pointer;
+        font: inherit;
+        font-weight: 800;
+    }
+
+    .quick-date.active,
+    .lane-tabs button.active,
+    .tag-filter-strip button.active,
+    .editor-actions button.primary {
+        color: #06101f;
+        background: #75a7ff;
+        border-color: #75a7ff;
+    }
+
+    .quick-date.tools,
+    .lane-tabs button {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .quick-add-meta,
+    .quest-editor {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .quick-add-meta label,
+    .quest-editor label,
+    .subtask-editor {
+        display: grid;
+        gap: 6px;
+        color: var(--mud-palette-text-secondary);
+        font-size: .78rem;
+        font-weight: 800;
+    }
+
+    .quick-add-meta label span,
+    .quest-editor label span,
+    .subtask-editor > span {
+        text-transform: uppercase;
+    }
+
+    .lane-tabs {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .lane-tabs button {
+        justify-content: center;
+        min-height: 58px;
+    }
+
+    .lane-tabs strong {
+        color: #76e4c4;
+    }
+
+    .search-field {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 8px;
+        align-items: center;
+        padding: 0 12px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .04);
+    }
+
+    .search-field input {
+        border: 0;
+        background: transparent;
+    }
+
+    .search-field button {
+        border: 0;
+        color: var(--mud-palette-text-secondary);
+        background: transparent;
+        cursor: pointer;
+    }
+
+    .section-header {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .section-header > .mud-icon-root {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border-radius: 8px;
+        color: #75a7ff;
+        background: rgba(117, 167, 255, .12);
+    }
+
+    .section-header h2 {
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    .section-header p {
+        margin: 2px 0 0;
+        color: var(--mud-palette-text-secondary);
+        font-size: .84rem;
+    }
+
+    .section-header > span {
+        color: #76e4c4;
+        font-weight: 900;
     }
 
     .column-header,
@@ -406,6 +834,147 @@
         border: 1px solid rgba(255, 255, 255, .08);
         border-radius: 8px;
         background: rgba(255, 255, 255, .025);
+    }
+
+    .quest-card.selected {
+        border-color: rgba(117, 167, 255, .35);
+        background: rgba(117, 167, 255, .06);
+    }
+
+    .quest-body {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        color: inherit;
+        background: transparent;
+        text-align: left;
+        cursor: pointer;
+        font: inherit;
+    }
+
+    .quest-kicker {
+        display: inline-flex;
+        gap: 7px;
+        align-items: center;
+        color: #76e4c4;
+        font-size: .74rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .32);
+    }
+
+    .meta-pill,
+    .quest-tags span {
+        display: inline-flex;
+        gap: 5px;
+        align-items: center;
+        min-height: 26px;
+        padding: 0 8px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        color: var(--mud-palette-text-secondary);
+        background: rgba(255, 255, 255, .035);
+        font-size: .76rem;
+        font-weight: 800;
+    }
+
+    .meta-pill.overdue {
+        color: #fecaca;
+        background: rgba(239, 68, 68, .12);
+    }
+
+    .meta-pill.today {
+        color: #bfdbfe;
+        background: rgba(59, 130, 246, .14);
+    }
+
+    .meta-pill.soon {
+        color: #fde68a;
+        background: rgba(245, 158, 11, .12);
+    }
+
+    .quest-editor {
+        grid-column: 1 / -1;
+        padding: 12px;
+        border: 1px solid rgba(117, 167, 255, .16);
+        border-radius: 8px;
+        background: rgba(4, 10, 24, .28);
+    }
+
+    .quest-editor .wide,
+    .subtask-editor.wide,
+    .editor-actions.wide {
+        grid-column: 1 / -1;
+    }
+
+    textarea {
+        min-height: 82px;
+        resize: vertical;
+        padding: 10px 12px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        outline: 0;
+        color: var(--mud-palette-text-primary);
+        background: rgba(255, 255, 255, .04);
+    }
+
+    .editor-actions {
+        display: grid;
+        grid-template-columns: repeat(3, auto) 1fr auto auto;
+    }
+
+    .subtask,
+    .subtask-add {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .subtask {
+        padding: 7px 9px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        color: var(--mud-palette-text-primary);
+        background: rgba(255, 255, 255, .035);
+    }
+
+    .subtask.done {
+        opacity: .62;
+    }
+
+    .subtask.done span {
+        text-decoration: line-through;
+    }
+
+    .subtask button {
+        border: 0;
+        color: #75a7ff;
+        background: transparent;
+        cursor: pointer;
+    }
+
+    .empty-state-wide {
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: var(--mud-palette-surface);
+    }
+
+    .achievement-pulse {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        color: #fde68a;
+        font-size: .84rem;
+        font-weight: 800;
     }
 
     .quest-card h3,
@@ -511,6 +1080,9 @@
     }
 
     @@media (max-width: 720px) {
+        .quick-add-meta,
+        .quest-editor,
+        .lane-tabs,
         .skill-create,
         .skill-actions {
             align-items: stretch;
@@ -527,16 +1099,32 @@
         Skills
     }
 
-    private readonly List<QuestColumn> Columns =
-    [
-        new(QuestType.Main, "Main Quests", "Big arcs", "Important life missions that deserve focus.", Icons.Material.Filled.Map),
-        new(QuestType.Sub, "Sub Quests", "Small wins", "Useful tasks that keep the day moving.", Icons.Material.Filled.Flag),
-        new(QuestType.Faction, "Faction Quests", "People and teams", "Social, family, work, or community commitments.", Icons.Material.Filled.Groups)
-    ];
+    private enum QuestFilter
+    {
+        Today,
+        Upcoming,
+        Inbox,
+        All
+    }
 
     private QuestBoardDto _board = new();
     private PageMode _mode = PageMode.Quests;
+    private QuestFilter _filter = QuestFilter.Today;
     private bool _loading = true;
+    private string _quickAddTitle = string.Empty;
+    private QuestType _quickAddType = QuestType.Sub;
+    private QuestPriority _quickAddPriority = QuestPriority.Medium;
+    private QuestRecurrence _quickAddRecurrence = QuestRecurrence.None;
+    private DateTime? _quickAddDue;
+    private int? _quickAddGameId;
+    private int? _quickAddSkillId;
+    private bool _quickAddAdvancedOpen;
+    private string _searchQuery = string.Empty;
+    private string? _tagFilter;
+    private int? _expandedQuestId;
+    private QuestEditDraft? _editDraft;
+    private readonly Dictionary<int, string> _subtaskDrafts = new();
+    private List<MyGame> _library = [];
     private string _newSkillName = string.Empty;
     private string _newSkillIcon = Icons.Material.Filled.Code;
     private string _newSkillColor = "#2563eb";
@@ -551,6 +1139,25 @@
     private int ActiveQuestCount => _board.Quests.Count(quest => !quest.Completed);
     private int CompletedQuestCount => _board.Quests.Count(quest => quest.Completed);
     private int UnlockedNodeCount => _board.Skills.Sum(skill => skill.Nodes.Count(node => node.Unlocked));
+    private int TodayCount => _board.Quests.Count(quest => !quest.Completed && IsToday(quest.DueDate));
+    private int OverdueCount => _board.Quests.Count(quest => !quest.Completed && IsOverdue(quest.DueDate));
+    private bool IsQuickAddDueToday => IsToday(_quickAddDue);
+    private bool IsQuickAddDueTomorrow => IsSameDay(_quickAddDue, DateTime.Today.AddDays(1));
+    private QuestDto? NextQueuedQuest => _board.Quests
+        .Where(quest => !quest.Completed && !IsToday(quest.DueDate) && !IsOverdue(quest.DueDate))
+        .OrderBy(quest => quest.DueDate is null)
+        .ThenBy(quest => quest.DueDate)
+        .ThenByDescending(quest => quest.Priority)
+        .ThenBy(quest => quest.SortOrder)
+        .FirstOrDefault();
+    private List<string> AvailableTags => _board.Quests
+        .SelectMany(quest => quest.Tags)
+        .Where(tag => !string.IsNullOrWhiteSpace(tag))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(tag => tag)
+        .ToList();
+    private List<QuestDto> VisibleQuests => ApplySearchAndTag(FilterBaseQuests(_filter)).ToList();
+    private List<QuestSection> QuestSections => BuildQuestSections();
 
     protected override async Task OnInitializedAsync()
     {
@@ -559,22 +1166,23 @@
         if (!string.IsNullOrWhiteSpace(UserId))
         {
             _board = await QuestService.GetBoardAsync(UserId);
+            _library = await MyGameService.GetMyMedia(UserId);
         }
 
         _loading = false;
     }
 
-    private async Task OnQuestKeyDown(KeyboardEventArgs args, QuestColumn column)
+    private async Task OnQuickAddKeyDown(KeyboardEventArgs args)
     {
         if (args.Key == "Enter")
         {
-            await AddQuest(column);
+            await AddQuest();
         }
     }
 
-    private async Task AddQuest(QuestColumn column)
+    private async Task AddQuest()
     {
-        var title = column.Input.Trim();
+        var title = _quickAddTitle.Trim();
         if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(UserId))
         {
             return;
@@ -583,15 +1191,20 @@
         var result = await QuestService.CreateAsync(UserId, new QuestCreateDto
         {
             Title = title,
-            Type = column.Type
+            Type = _quickAddType,
+            Priority = _quickAddPriority,
+            Recurrence = _quickAddRecurrence,
+            DueDate = _quickAddDue,
+            MyGameId = _quickAddGameId,
+            SkillId = _quickAddSkillId
         });
 
         result.Match(
             mutation =>
             {
                 _board.Quests.Insert(0, mutation.Quest);
-                _board.Xp = mutation.TotalXp;
-                column.Input = string.Empty;
+                ApplyMutationMeta(mutation);
+                _quickAddTitle = string.Empty;
                 Snackbar.Add("Quest added", Severity.Success);
                 return 0;
             },
@@ -601,6 +1214,10 @@
                 return 0;
             });
     }
+
+    private void SetQuickAddToday() => _quickAddDue = DateTime.Today;
+    private void SetQuickAddTomorrow() => _quickAddDue = DateTime.Today.AddDays(1);
+    private void ResetQuickAddDue() => _quickAddDue = null;
 
     private async Task ToggleQuest(QuestDto quest)
     {
@@ -618,13 +1235,114 @@
         result.Match(
             mutation =>
             {
-                var index = _board.Quests.FindIndex(q => q.Id == quest.Id);
-                if (index >= 0)
+                ApplyMutation(quest.Id, mutation.Quest);
+                if (mutation.SpawnedQuest is not null)
                 {
-                    _board.Quests[index] = mutation.Quest;
+                    _board.Quests.Insert(0, mutation.SpawnedQuest);
                 }
-                _board.Xp = mutation.TotalXp;
-                Snackbar.Add(newCompleted ? $"+{mutation.Quest.RewardXp} XP earned" : "Quest reopened", Severity.Success);
+                ApplyMutationMeta(mutation);
+                Snackbar.Add(newCompleted ? CompletionMessage(mutation) : "Quest reopened", Severity.Success);
+                return 0;
+            },
+            failed =>
+            {
+                Snackbar.Add(string.Join("; ", failed.errorMessage), Severity.Error);
+                return 0;
+            });
+    }
+
+    private void ToggleExpand(QuestDto quest)
+    {
+        if (_expandedQuestId == quest.Id)
+        {
+            CancelEdit();
+            return;
+        }
+
+        _expandedQuestId = quest.Id;
+        _editDraft = QuestEditDraft.From(quest);
+    }
+
+    private void CancelEdit()
+    {
+        _expandedQuestId = null;
+        _editDraft = null;
+    }
+
+    private async Task SaveEdit(QuestDto quest)
+    {
+        if (_editDraft is null || string.IsNullOrWhiteSpace(UserId))
+        {
+            return;
+        }
+
+        var result = await QuestService.UpdateAsync(UserId, quest.Id, new QuestUpdateDto
+        {
+            Title = _editDraft.Title,
+            Notes = _editDraft.Notes,
+            Type = _editDraft.Type,
+            Priority = _editDraft.Priority,
+            Recurrence = _editDraft.Recurrence,
+            DueDate = _editDraft.DueDate,
+            ClearDueDate = _editDraft.DueDate is null,
+            Tags = ParseTags(_editDraft.Tags),
+            MyGameId = _editDraft.MyGameId,
+            ClearMyGame = _editDraft.MyGameId is null,
+            SkillId = _editDraft.SkillId,
+            ClearSkill = _editDraft.SkillId is null
+        });
+
+        result.Match(
+            mutation =>
+            {
+                ApplyMutation(quest.Id, mutation.Quest);
+                ApplyMutationMeta(mutation);
+                CancelEdit();
+                Snackbar.Add("Quest updated", Severity.Success);
+                return 0;
+            },
+            failed =>
+            {
+                Snackbar.Add(string.Join("; ", failed.errorMessage), Severity.Error);
+                return 0;
+            });
+    }
+
+    private Task ScheduleToday(QuestDto quest) => UpdateQuestDate(quest, DateTime.Today, "Scheduled for today");
+    private Task ScheduleTomorrow(QuestDto quest) => UpdateQuestDate(quest, DateTime.Today.AddDays(1), "Scheduled for tomorrow");
+    private Task ClearDueDate(QuestDto quest) => UpdateQuestDate(quest, null, "Moved to inbox");
+
+    private async Task PullNextQuestToToday()
+    {
+        if (NextQueuedQuest is not null)
+        {
+            await ScheduleToday(NextQueuedQuest);
+        }
+    }
+
+    private async Task UpdateQuestDate(QuestDto quest, DateTime? dueDate, string message)
+    {
+        if (string.IsNullOrWhiteSpace(UserId))
+        {
+            return;
+        }
+
+        var result = await QuestService.UpdateAsync(UserId, quest.Id, new QuestUpdateDto
+        {
+            DueDate = dueDate,
+            ClearDueDate = dueDate is null
+        });
+
+        result.Match(
+            mutation =>
+            {
+                ApplyMutation(quest.Id, mutation.Quest);
+                ApplyMutationMeta(mutation);
+                if (_expandedQuestId == quest.Id && _editDraft is not null)
+                {
+                    _editDraft.DueDate = dueDate;
+                }
+                Snackbar.Add(message, Severity.Success);
                 return 0;
             },
             failed =>
@@ -646,7 +1364,89 @@
             _ =>
             {
                 _board.Quests.RemoveAll(q => q.Id == quest.Id);
+                if (_expandedQuestId == quest.Id)
+                {
+                    CancelEdit();
+                }
                 Snackbar.Add("Quest deleted", Severity.Success);
+                return 0;
+            },
+            failed =>
+            {
+                Snackbar.Add(string.Join("; ", failed.errorMessage), Severity.Error);
+                return 0;
+            });
+    }
+
+    private async Task OnSubtaskKeyDown(KeyboardEventArgs args, QuestDto quest)
+    {
+        if (args.Key == "Enter")
+        {
+            await AddSubtask(quest);
+        }
+    }
+
+    private async Task AddSubtask(QuestDto quest)
+    {
+        var title = SubtaskDraft(quest.Id).Trim();
+        if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(UserId))
+        {
+            return;
+        }
+
+        var result = await QuestService.AddSubtaskAsync(UserId, quest.Id, new QuestSubtaskCreateDto { Title = title });
+        result.Match(
+            mutation =>
+            {
+                ApplyMutation(quest.Id, mutation.Quest);
+                ApplyMutationMeta(mutation);
+                _subtaskDrafts[quest.Id] = string.Empty;
+                return 0;
+            },
+            failed =>
+            {
+                Snackbar.Add(string.Join("; ", failed.errorMessage), Severity.Error);
+                return 0;
+            });
+    }
+
+    private async Task ToggleSubtask(QuestDto quest, QuestSubtaskDto subtask)
+    {
+        if (string.IsNullOrWhiteSpace(UserId))
+        {
+            return;
+        }
+
+        var result = await QuestService.UpdateSubtaskAsync(UserId, quest.Id, subtask.Id, new QuestSubtaskUpdateDto
+        {
+            Completed = !subtask.Completed
+        });
+        result.Match(
+            mutation =>
+            {
+                ApplyMutation(quest.Id, mutation.Quest);
+                ApplyMutationMeta(mutation);
+                return 0;
+            },
+            failed =>
+            {
+                Snackbar.Add(string.Join("; ", failed.errorMessage), Severity.Error);
+                return 0;
+            });
+    }
+
+    private async Task DeleteSubtask(QuestDto quest, QuestSubtaskDto subtask)
+    {
+        if (string.IsNullOrWhiteSpace(UserId))
+        {
+            return;
+        }
+
+        var result = await QuestService.DeleteSubtaskAsync(UserId, quest.Id, subtask.Id);
+        result.Match(
+            _ =>
+            {
+                quest.Subtasks.RemoveAll(s => s.Id == subtask.Id);
                 return 0;
             },
             failed =>
@@ -777,31 +1577,221 @@
         Snackbar.Add(message, Severity.Success);
     }
 
-    private List<QuestDto> QuestsFor(QuestType type)
+    private IEnumerable<QuestDto> FilterBaseQuests(QuestFilter filter)
     {
-        return _board.Quests
-            .Where(quest => quest.Type == type)
+        return filter switch
+        {
+            QuestFilter.Today => _board.Quests.Where(quest => !quest.Completed && (IsToday(quest.DueDate) || IsOverdue(quest.DueDate))),
+            QuestFilter.Upcoming => _board.Quests.Where(quest => !quest.Completed && quest.DueDate.HasValue && quest.DueDate.Value.Date > DateTime.Today),
+            QuestFilter.Inbox => _board.Quests.Where(quest => !quest.Completed && quest.DueDate is null),
+            _ => _board.Quests
+        };
+    }
+
+    private IEnumerable<QuestDto> ApplySearchAndTag(IEnumerable<QuestDto> quests)
+    {
+        var query = quests;
+        if (!string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            var term = _searchQuery.Trim();
+            query = query.Where(quest =>
+                quest.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                (quest.Notes?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                quest.Tags.Any(tag => tag.Contains(term, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(_tagFilter))
+        {
+            query = query.Where(quest => quest.Tags.Any(tag => string.Equals(tag, _tagFilter, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        return query
             .OrderBy(quest => quest.Completed)
+            .ThenBy(quest => quest.DueDate is null)
+            .ThenBy(quest => quest.DueDate)
+            .ThenByDescending(quest => quest.Priority)
             .ThenBy(quest => quest.SortOrder)
-            .ThenBy(quest => quest.Id)
+            .ThenBy(quest => quest.Id);
+    }
+
+    private List<QuestSection> BuildQuestSections()
+    {
+        var quests = VisibleQuests;
+        List<QuestSection> sections = _filter switch
+        {
+            QuestFilter.Today =>
+            [
+                new("Overdue", "Needs a decision or a quick win.", Icons.Material.Filled.WarningAmber, "danger", quests.Where(q => IsOverdue(q.DueDate)).ToList()),
+                new("Today", "The quests competing for attention now.", Icons.Material.Filled.Today, "accent", quests.Where(q => IsToday(q.DueDate)).ToList())
+            ],
+            QuestFilter.Upcoming =>
+            [
+                new("Next", "Scheduled quests coming up soon.", Icons.Material.Filled.Event, "accent", quests.Where(q => q.DueDate.HasValue && q.DueDate.Value.Date <= DateTime.Today.AddDays(7)).ToList()),
+                new("Later", "Useful, but not for today.", Icons.Material.Filled.CalendarMonth, "muted", quests.Where(q => q.DueDate.HasValue && q.DueDate.Value.Date > DateTime.Today.AddDays(7)).ToList())
+            ],
+            QuestFilter.Inbox =>
+            [
+                new("Inbox", "Captured quests waiting for a date.", Icons.Material.Filled.LibraryBooks, "muted", quests.ToList())
+            ],
+            _ =>
+            [
+                new("Active", "Open quests across every lane.", Icons.Material.Filled.Bolt, "accent", quests.Where(q => !q.Completed).ToList()),
+                new("Completed", "Finished quests and claimed rewards.", Icons.Material.Filled.CheckCircle, "success", quests.Where(q => q.Completed).ToList())
+            ]
+        };
+
+        return sections.Where(section => section.Quests.Count > 0).ToList();
+    }
+
+    private int FilterCount(QuestFilter filter) => FilterBaseQuests(filter).Count();
+
+    private void ToggleTag(string tag)
+    {
+        _tagFilter = _tagFilter == tag ? null : tag;
+    }
+
+    private string SubtaskDraft(int questId) => _subtaskDrafts.TryGetValue(questId, out var draft) ? draft : string.Empty;
+
+    private void SetSubtaskDraft(int questId, string value) => _subtaskDrafts[questId] = value;
+
+    private static int SubtaskCompletedCount(QuestDto quest) => quest.Subtasks.Count(subtask => subtask.Completed);
+
+    private static int SubtaskProgress(QuestDto quest) =>
+        quest.Subtasks.Count == 0 ? 0 : SubtaskCompletedCount(quest) * 100 / quest.Subtasks.Count;
+
+    private void ApplyMutation(int questId, QuestDto quest)
+    {
+        var index = _board.Quests.FindIndex(q => q.Id == questId);
+        if (index >= 0)
+        {
+            _board.Quests[index] = quest;
+        }
+        else
+        {
+            _board.Quests.Insert(0, quest);
+        }
+    }
+
+    private void ApplyMutationMeta(QuestMutationResultDto mutation)
+    {
+        _board.Xp = mutation.TotalXp;
+        _board.CurrentStreakDays = mutation.CurrentStreakDays;
+        _board.LongestStreakDays = mutation.LongestStreakDays;
+
+        if (mutation.AwardedSkillId is int skillId && mutation.AwardedSkillXp is int skillXp)
+        {
+            var skill = _board.Skills.FirstOrDefault(skill => skill.Id == skillId);
+            if (skill is not null)
+            {
+                skill.Xp += skillXp;
+            }
+        }
+
+        foreach (var achievement in mutation.UnlockedAchievements)
+        {
+            if (_board.Achievements.All(a => a.Code != achievement.Code))
+            {
+                _board.Achievements.Insert(0, achievement);
+                Snackbar.Add($"Achievement unlocked: {achievement.Title}", Severity.Success);
+            }
+        }
+    }
+
+    private static string CompletionMessage(QuestMutationResultDto mutation)
+    {
+        var message = $"+{mutation.Quest.RewardXp} XP earned";
+        if (mutation.AwardedSkillXp is int skillXp)
+        {
+            message += $" · +{skillXp} skill XP";
+        }
+        if (mutation.SpawnedQuest is not null)
+        {
+            message += " · next recurrence created";
+        }
+        return message;
+    }
+
+    private static List<string> ParseTags(string tags)
+    {
+        return tags
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(8)
             .ToList();
     }
 
-    private int QuestProgress(QuestType type)
+    private static bool IsToday(DateTime? value) => IsSameDay(value, DateTime.Today);
+
+    private static bool IsOverdue(DateTime? value) => value.HasValue && value.Value.Date < DateTime.Today;
+
+    private static bool IsSameDay(DateTime? value, DateTime day) => value.HasValue && value.Value.Date == day.Date;
+
+    private static string DueState(QuestDto quest)
     {
-        var quests = QuestsFor(type);
-        return quests.Count == 0 ? 0 : quests.Count(quest => quest.Completed) * 100 / quests.Count;
+        if (quest.DueDate is null) return "inbox";
+        if (IsOverdue(quest.DueDate)) return "overdue";
+        if (IsToday(quest.DueDate)) return "today";
+        return quest.DueDate.Value.Date <= DateTime.Today.AddDays(3) ? "soon" : "later";
     }
 
-    private static int RewardFor(QuestType type)
+    private static string DueDateLabel(QuestDto quest)
     {
-        return type switch
-        {
-            QuestType.Main => 150,
-            QuestType.Faction => 100,
-            _ => 75
-        };
+        if (quest.DueDate is null) return "Inbox";
+        var date = quest.DueDate.Value.Date;
+        var today = DateTime.Today;
+        if (date == today) return "Today";
+        if (date == today.AddDays(1)) return "Tomorrow";
+        if (date == today.AddDays(-1)) return "Yesterday";
+        var diff = (date - today).Days;
+        if (diff < -1 && diff >= -7) return $"{Math.Abs(diff)}d overdue";
+        if (diff > 1 && diff <= 7) return $"In {diff}d";
+        return date.ToString("MMM d");
     }
+
+    private static string TypeLabel(QuestType type) => type switch
+    {
+        QuestType.Main => "Main",
+        QuestType.Faction => "Faction",
+        _ => "Sub"
+    };
+
+    private static string PriorityLabel(QuestPriority priority) => priority switch
+    {
+        QuestPriority.High => "High",
+        QuestPriority.Low => "Low",
+        _ => "Medium"
+    };
+
+    private static string RecurrenceLabel(QuestRecurrence recurrence) => recurrence switch
+    {
+        QuestRecurrence.Daily => "Daily",
+        QuestRecurrence.Weekly => "Weekly",
+        QuestRecurrence.Monthly => "Monthly",
+        _ => "No repeat"
+    };
+
+    private static string FilterLabel(QuestFilter filter) => filter switch
+    {
+        QuestFilter.Today => "Focus",
+        QuestFilter.Upcoming => "Upcoming",
+        QuestFilter.Inbox => "Inbox",
+        _ => "All"
+    };
+
+    private static string FilterIcon(QuestFilter filter) => filter switch
+    {
+        QuestFilter.Today => Icons.Material.Filled.Today,
+        QuestFilter.Upcoming => Icons.Material.Filled.Event,
+        QuestFilter.Inbox => Icons.Material.Filled.LibraryBooks,
+        _ => Icons.Material.Filled.FilterList
+    };
+
+    private static string TypeIcon(QuestType type) => type switch
+    {
+        QuestType.Main => Icons.Material.Filled.Map,
+        QuestType.Faction => Icons.Material.Filled.Groups,
+        _ => Icons.Material.Filled.Flag
+    };
 
     private static int SkillLevel(QuestSkillDto skill)
     {
@@ -833,22 +1823,34 @@
         return ToMudIcon(icon);
     }
 
-    private sealed class QuestColumn
-    {
-        public QuestColumn(QuestType type, string title, string label, string description, string icon)
-        {
-            Type = type;
-            Title = title;
-            Label = label;
-            Description = description;
-            Icon = icon;
-        }
+    private sealed record QuestSection(string Title, string Subtitle, string Icon, string Tone, List<QuestDto> Quests);
 
-        public QuestType Type { get; }
-        public string Title { get; }
-        public string Label { get; }
-        public string Description { get; }
-        public string Icon { get; }
-        public string Input { get; set; } = string.Empty;
+    private sealed class QuestEditDraft
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
+        public QuestType Type { get; set; }
+        public QuestPriority Priority { get; set; }
+        public QuestRecurrence Recurrence { get; set; }
+        public DateTime? DueDate { get; set; }
+        public string Tags { get; set; } = string.Empty;
+        public int? MyGameId { get; set; }
+        public int? SkillId { get; set; }
+
+        public static QuestEditDraft From(QuestDto quest)
+        {
+            return new QuestEditDraft
+            {
+                Title = quest.Title,
+                Notes = quest.Notes ?? string.Empty,
+                Type = quest.Type,
+                Priority = quest.Priority,
+                Recurrence = quest.Recurrence,
+                DueDate = quest.DueDate?.Date,
+                Tags = string.Join(", ", quest.Tags),
+                MyGameId = quest.MyGameId,
+                SkillId = quest.SkillId
+            };
+        }
     }
 }
