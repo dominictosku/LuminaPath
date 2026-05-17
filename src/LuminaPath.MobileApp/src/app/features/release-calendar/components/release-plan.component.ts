@@ -24,7 +24,14 @@ import {
 } from 'ionicons/icons';
 import { Game, Platforms } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
-import { GameStatus } from '../../library/models/library-status.model';
+import { GameStatus, gameStatusLabel, isGameBacklogStatus } from '../../library/models/library-status.model';
+import {
+  gameStatusOf,
+  playedHoursOfGame,
+  progressRatioOfGame,
+  releaseDateOfGame,
+  remainingHoursOfGame,
+} from '../../games/domain/game-library-metrics';
 
 type ReleaseMode = 'week' | 'release' | 'backlog';
 
@@ -106,16 +113,7 @@ export class ReleasePlanComponent implements OnChanges {
   }
 
   statusLabel(game: Game): string {
-    const labels: Record<number, string> = {
-      [GameStatus.OnHold]: 'On hold',
-      [GameStatus.Planned]: 'Planned',
-      [GameStatus.Playing]: 'Playing',
-      [GameStatus.StoryComplete]: 'Story complete',
-      [GameStatus.Completed]: 'Completed',
-      [GameStatus.MainGame]: 'Main game',
-    };
-
-    return labels[this.statusOf(game)] ?? 'Catalog';
+    return gameStatusLabel(this.statusOf(game));
   }
 
   releaseLabel(game: Game): string {
@@ -137,13 +135,7 @@ export class ReleasePlanComponent implements OnChanges {
   }
 
   progressOf(game: Game): number {
-    const estimated = Number(game.playtime) || 0;
-
-    if (estimated <= 0) {
-      return this.statusOf(game) === GameStatus.Completed ? 1 : 0;
-    }
-
-    return Math.min(1, this.playedOf(game) / estimated);
+    return progressRatioOfGame(game);
   }
 
   weeksFor(game: Game): number {
@@ -167,7 +159,7 @@ export class ReleasePlanComponent implements OnChanges {
     this.backlogGames = this.games
       .filter((game) => {
         const status = this.statusOf(game);
-        return !!game.myGames && (status === GameStatus.Planned || status === GameStatus.MainGame || status === GameStatus.OnHold);
+        return !!game.myGames && isGameBacklogStatus(status);
       })
       .sort((a, b) => this.remainingOf(b) - this.remainingOf(a))
       .slice(0, 8);
@@ -245,21 +237,19 @@ export class ReleasePlanComponent implements OnChanges {
   }
 
   private playedOf(game: Game): number {
-    const manual = Number(game.myGames?.timeSpend) || 0;
-    const tracked = Number(game.myGames?.myGameInfo?.trackedHours) || 0;
-    return manual + tracked;
+    return playedHoursOfGame(game);
   }
 
   private remainingOf(game: Game): number {
-    return Math.max(0, (Number(game.playtime) || 0) - this.playedOf(game));
+    return remainingHoursOfGame(game);
   }
 
   private statusOf(game: Game): number {
-    return Number(game.myGames?.status ?? -1);
+    return gameStatusOf(game);
   }
 
   private releaseDateOf(game: Game): Date {
-    return game.releaseDate ? new Date(game.releaseDate) : new Date(Number.NaN);
+    return releaseDateOfGame(game);
   }
 
   private sameDay(a: Date, b: Date): boolean {

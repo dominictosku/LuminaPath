@@ -36,9 +36,16 @@ import { MovieService } from '../../movies/services/movie.service';
 import { Series } from '../../series/models/series.model';
 import { SeriesService } from '../../series/services/series.service';
 import { MediaFile } from '../../library/models/mediaFile.model';
-import { GameStatus } from '../../library/models/library-status.model';
+import { GameStatus, gameStatusLabel, isGameBacklogStatus } from '../../library/models/library-status.model';
 import { GamingSession, GamingSessionService } from '../../planing/services/gaming-session.service';
 import { Quest, QuestBoardService, QuestBoardState } from '../../quests/services/quest-board.service';
+import {
+  estimatedHoursOfGame,
+  gameStatusOf,
+  playedHoursOfGame,
+  releaseDateOfGame,
+  remainingHoursOfGame,
+} from '../../games/domain/game-library-metrics';
 
 type DashboardMetric = {
   label: string;
@@ -267,10 +274,7 @@ export class HomePage implements OnInit {
 
   private getBacklogItems(): DashboardMediaItem[] {
     return this.ownedItems
-      .filter((item) => {
-        const status = item.status;
-        return status === GameStatus.Planned || status === GameStatus.OnHold || status === GameStatus.MainGame;
-      })
+      .filter((item) => isGameBacklogStatus(item.status))
       .sort((a, b) => b.remainingHours - a.remainingHours)
       .slice(0, 4);
   }
@@ -357,16 +361,7 @@ export class HomePage implements OnInit {
   }
 
   statusLabel(item: DashboardMediaItem): string {
-    const labels: Record<number, string> = {
-      [GameStatus.OnHold]: 'On hold',
-      [GameStatus.Planned]: 'Planned',
-      [GameStatus.Playing]: 'Playing',
-      [GameStatus.StoryComplete]: 'Story complete',
-      [GameStatus.Completed]: 'Completed',
-      [GameStatus.MainGame]: 'Main game',
-    };
-
-    return labels[item.status] ?? 'Not started';
+    return gameStatusLabel(item.status, 'Not started');
   }
 
   releaseLabel(item: DashboardMediaItem): string {
@@ -430,10 +425,8 @@ export class HomePage implements OnInit {
   }
 
   private fromGame(game: Game): DashboardMediaItem {
-    const manual = Number(game.myGames?.timeSpend) || 0;
-    const tracked = Number(game.myGames?.myGameInfo?.trackedHours) || 0;
-    const playedHours = manual + tracked;
-    const estimatedHours = Number(game.playtime) || 0;
+    const playedHours = playedHoursOfGame(game);
+    const estimatedHours = estimatedHoursOfGame(game);
 
     return {
       id: game.id,
@@ -443,10 +436,10 @@ export class HomePage implements OnInit {
       genre: game.genre,
       releaseDate: game.releaseDate,
       image: game.image,
-      status: Number(game.myGames?.status ?? -1),
+      status: gameStatusOf(game),
       estimatedHours,
       playedHours,
-      remainingHours: Math.max(0, estimatedHours - playedHours),
+      remainingHours: remainingHoursOfGame(game),
       context: Platforms.find((platform) => platform.value === game.platforms)?.label ?? 'Game',
     };
   }
@@ -490,7 +483,7 @@ export class HomePage implements OnInit {
   }
 
   private releaseDateOf(item: DashboardMediaItem): Date {
-    return item.releaseDate ? new Date(item.releaseDate) : new Date(Number.NaN);
+    return releaseDateOfGame(item);
   }
 
   private nextSession(): GamingSession | null {
