@@ -85,6 +85,8 @@ nav:
   - Runbooks:
       - 05-runbooks/index.md
       - Local setup: 05-runbooks/local-setup.md
+      - Database migrations: 05-runbooks/migrations.md
+      - Updating the app: 05-runbooks/updating-the-app.md
   - Contributing to docs: contributing.md
 
 extra:

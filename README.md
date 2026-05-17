@@ -536,3 +536,9 @@ dotnet ef migrations add BackgroundJobs --project src/LuminaPath.Infrastructure/
 ```
 
 See the full runbook: [`docs/05-runbooks/migrations.md`](docs/05-runbooks/migrations.md).
+
+## Upgrades
+
+For major dependency upgrades such as .NET 10 to 11 or Angular 21 to 22, use the upgrade checklist:
+
+[`docs/05-runbooks/updating-the-app.md`](docs/05-runbooks/updating-the-app.md)
