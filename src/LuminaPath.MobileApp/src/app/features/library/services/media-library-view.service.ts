@@ -198,7 +198,7 @@ export class MediaLibraryViewService {
     return item.libraryEntry;
   }
 
-  private playedOf(item: MediaItem, mode: MediaModeOption): number {
+  playedOf(item: MediaItem, mode: MediaModeOption): number {
     const entry = this.libraryEntry(item);
     if (!this.isGamesMode(mode)) {
       return (Number(entry?.currentWatchTimeMinutes) || 0) / 60;

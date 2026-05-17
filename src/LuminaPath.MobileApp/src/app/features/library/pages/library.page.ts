@@ -45,27 +45,16 @@ import { GameStatus, MediaLibraryViewService } from '../services/media-library-v
 import { LibraryCardComponent } from '../components/library-card/library-card.component';
 import { LibraryListRowComponent } from '../components/library-list-row/library-list-row.component';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
-
-type ViewMode = 'grid' | 'list';
-type OwnershipFilter = 'all' | 'mine' | 'catalog';
-type ReleaseDateFilter = 'all' | 'released' | 'upcoming' | 'this-year' | 'last-year' | 'custom';
-type SortMode = 'title' | 'release-desc' | 'release-asc' | 'rating-desc' | 'remaining-asc' | 'recently-added' | 'best-finish';
-type SmartFilter = 'none' | 'short' | 'abandoned' | 'best';
-
-type LibraryFilterPreset = {
-  id: string;
-  name: string;
-  mediaModeId: string;
-  searchTerm: string;
-  ownershipFilter: OwnershipFilter;
-  statusFilter: string;
-  platformFilter: string;
-  releaseDateFilter: ReleaseDateFilter;
-  releaseDateFrom: string;
-  releaseDateTo: string;
-  sortMode: SortMode;
-  smartFilter: SmartFilter;
-};
+import { LibraryIntelligenceService } from '../services/library-intelligence.service';
+import {
+  LibraryFilterPreset,
+  OwnershipFilter,
+  ReleaseDateFilter,
+  SmartFilter,
+  SortMode,
+  ViewMode,
+} from '../models/library-filter.model';
+import { LibraryFilterPresetService } from '../services/library-filter-preset.service';
 
 @Component({
   selector: 'app-library',
@@ -135,7 +124,6 @@ export class LibraryPage implements OnInit, OnDestroy {
 
   private mediaModeSub?: Subscription;
   private readonly pageSize = 24;
-  private readonly presetStoragePrefix = 'luminapath.library.presets.v1';
 
   readonly platforms = Platforms;
   readonly sortOptions: { label: string; value: SortMode }[] = [
@@ -154,6 +142,8 @@ export class LibraryPage implements OnInit, OnDestroy {
     private router: Router,
     private mediaModeService: MediaModeService,
     public readonly mediaView: MediaLibraryViewService,
+    private libraryIntelligence: LibraryIntelligenceService,
+    private libraryFilterPresets: LibraryFilterPresetService,
   ) {
     this.mediaMode = this.mediaModeService.current;
     addIcons({
@@ -447,18 +437,14 @@ export class LibraryPage implements OnInit, OnDestroy {
   }
 
   private refreshLibraryIntelligence(): void {
-    const ownedGames = this.games.filter((game) => !!this.libraryEntry(game));
-    this.totalGames = this.games.length;
-    this.ownedGames = ownedGames.length;
-    this.playingGames = this.games.filter((game) => this.isActive(game)).length;
-    this.remainingHours = Math.round(ownedGames.reduce((sum, game) => sum + this.remainingOf(game), 0));
-    this.shortGameCount = this.games.filter((game) => this.isShortBacklog(game)).length;
-    this.abandonedGameCount = this.games.filter((game) => this.isStartedButAbandoned(game)).length;
-    const candidates = this.games
-      .filter((game) => this.isFinishCandidate(game))
-      .sort((a, b) => this.bestFinishScore(a) - this.bestFinishScore(b) || this.compareTitle(a, b));
-
-    this.nextBestGame = candidates[0] ?? null;
+    const summary = this.libraryIntelligence.summarize(this.games, this.mediaMode);
+    this.totalGames = summary.totalGames;
+    this.ownedGames = summary.ownedGames;
+    this.playingGames = summary.playingGames;
+    this.remainingHours = summary.remainingHours;
+    this.shortGameCount = summary.shortGameCount;
+    this.abandonedGameCount = summary.abandonedGameCount;
+    this.nextBestGame = summary.nextBestGame;
   }
 
   imageFor(game: MediaItem): string {
@@ -507,72 +493,6 @@ export class LibraryPage implements OnInit, OnDestroy {
 
   trackByGameId(_: number, game: MediaItem): number {
     return game.id;
-  }
-
-  private isShortBacklog(game: MediaItem): boolean {
-    return this.isFinishCandidate(game) && this.remainingOf(game) > 0 && this.remainingOf(game) <= 10;
-  }
-
-  private isStartedButAbandoned(game: MediaItem): boolean {
-    return this.isFinishCandidate(game)
-      && this.playedOf(game) > 0
-      && !this.isActive(game);
-  }
-
-  private isFinishCandidate(game: MediaItem): boolean {
-    return !!this.libraryEntry(game)
-      && !this.isCompleted(game)
-      && !this.isDropped(game)
-      && this.remainingOf(game) > 0;
-  }
-
-  private bestFinishScore(game: MediaItem): number {
-    if (!this.isFinishCandidate(game)) {
-      return Number.MAX_SAFE_INTEGER;
-    }
-
-    const remaining = this.remainingOf(game);
-    const progressBonus = this.progressOf(game) / 20;
-    const activeBonus = this.isActive(game) ? 5 : 0;
-    const startedBonus = this.playedOf(game) > 0 ? 3 : 0;
-    const ratingBonus = (this.ratingOf(game) ?? 0) / 3;
-    return remaining - progressBonus - activeBonus - startedBonus - ratingBonus;
-  }
-
-  private compareTitle(a: MediaItem, b: MediaItem): number {
-    return a.name.localeCompare(b.name);
-  }
-
-  private ratingOf(game: MediaItem): number {
-    return Number(this.libraryEntry(game)?.rating ?? -1);
-  }
-
-  private playedOf(game: MediaItem): number {
-    const entry = this.libraryEntry(game);
-    if (!this.isGamesMode) {
-      return (Number(entry?.currentWatchTimeMinutes) || 0) / 60;
-    }
-    return (Number(entry?.timeSpend) || 0) + (Number(entry?.myGameInfo?.trackedHours) || 0);
-  }
-
-  private isActive(game: MediaItem): boolean {
-    return this.isGamesMode ? this.statusOf(game) === GameStatus.Playing : this.statusOf(game) === 2;
-  }
-
-  private isCompleted(game: MediaItem): boolean {
-    return this.isGamesMode ? this.statusOf(game) === GameStatus.Completed : this.statusOf(game) === 3;
-  }
-
-  private isDropped(game: MediaItem): boolean {
-    return !this.isGamesMode && this.statusOf(game) === 4;
-  }
-
-  private remainingOf(game: MediaItem): number {
-    return this.mediaView.remainingOf(game, this.mediaMode);
-  }
-
-  private statusOf(game: MediaItem): number {
-    return this.mediaView.statusOf(game);
   }
 
   private completeRefresh(event?: CustomEvent) {
@@ -680,24 +600,11 @@ export class LibraryPage implements OnInit, OnDestroy {
   }
 
   private loadSavedPresets(): void {
-    try {
-      const raw = localStorage.getItem(this.presetStorageKey);
-      const parsed = raw ? JSON.parse(raw) : [];
-      this.savedPresets = Array.isArray(parsed) ? parsed.filter((item) => item && typeof item.name === 'string') : [];
-    } catch {
-      this.savedPresets = [];
-    }
+    this.savedPresets = this.libraryFilterPresets.load(this.mediaMode.id);
   }
 
   private persistSavedPresets(): void {
-    try {
-      localStorage.setItem(this.presetStorageKey, JSON.stringify(this.savedPresets));
-    } catch {
-    }
-  }
-
-  private get presetStorageKey(): string {
-    return `${this.presetStoragePrefix}.${this.mediaMode.id}`;
+    this.libraryFilterPresets.save(this.mediaMode.id, this.savedPresets);
   }
 
   private addGameErrorMessage(error: unknown): string {
