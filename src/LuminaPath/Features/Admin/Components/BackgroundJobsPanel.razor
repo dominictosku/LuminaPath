@@ -57,48 +57,52 @@
 		}
 		else
 		{
-			<MudTable Items="jobs" Dense="true" Hover="true">
-				<HeaderContent>
-					<MudTh>Job</MudTh>
-					<MudTh>Status</MudTh>
-					<MudTh>Created</MudTh>
-					<MudTh>Finished</MudTh>
-					<MudTh>Message</MudTh>
-					<MudTh>Actions</MudTh>
-				</HeaderContent>
-				<RowTemplate>
-					<MudTd DataLabel="Job">
-						<div class="job-title">
-							<strong>@context.DisplayName</strong>
-							<span>#@context.Id · @context.JobType</span>
-						</div>
-					</MudTd>
-					<MudTd DataLabel="Status">
-						<MudChip T="string" Size="Size.Small" Color="@StatusColor(context.Status)">@context.Status</MudChip>
-					</MudTd>
-					<MudTd DataLabel="Created">@FormatDate(context.CreatedAt)</MudTd>
-					<MudTd DataLabel="Finished">@FormatDate(context.CompletedAt)</MudTd>
-					<MudTd DataLabel="Message">@Message(context)</MudTd>
-					<MudTd DataLabel="Actions">
-						<div class="job-actions">
-							<MudIconButton Icon="@Icons.Material.Filled.Info"
-										   Color="Color.Primary"
-										   Size="Size.Small"
-										   OnClick="@(async () => await ShowJobDetails(context))" />
-							<MudIconButton Icon="@Icons.Material.Filled.Replay"
-										   Color="Color.Secondary"
-										   Size="Size.Small"
-										   Disabled="@(!CanRetry(context))"
-										   OnClick="@(async () => await RetryJob(context))" />
-							<MudIconButton Icon="@Icons.Material.Filled.Close"
-										   Color="Color.Warning"
-										   Size="Size.Small"
-										   Disabled="@(!CanCancel(context))"
-										   OnClick="@(async () => await CancelJob(context))" />
-						</div>
-					</MudTd>
-				</RowTemplate>
-			</MudTable>
+			<div class="job-table-shell">
+				<MudTable Items="jobs" Dense="true" Hover="true" Class="job-table">
+					<HeaderContent>
+						<MudTh>Job</MudTh>
+						<MudTh>Status</MudTh>
+						<MudTh>Created</MudTh>
+						<MudTh>Finished</MudTh>
+						<MudTh>Message</MudTh>
+						<MudTh>Actions</MudTh>
+					</HeaderContent>
+					<RowTemplate>
+						<MudTd DataLabel="Job">
+							<div class="job-title">
+								<strong>@context.DisplayName</strong>
+								<span>#@context.Id · @FormatJobType(context.JobType)</span>
+							</div>
+						</MudTd>
+						<MudTd DataLabel="Status">
+							<MudChip T="string" Size="Size.Small" Color="@StatusColor(context.Status)">@context.Status</MudChip>
+						</MudTd>
+						<MudTd DataLabel="Created">@FormatDate(context.CreatedAt)</MudTd>
+						<MudTd DataLabel="Finished">@FormatDate(context.CompletedAt)</MudTd>
+						<MudTd DataLabel="Message">
+							<span class="job-message">@Message(context)</span>
+						</MudTd>
+						<MudTd DataLabel="Actions">
+							<div class="job-actions">
+								<MudIconButton Icon="@Icons.Material.Filled.Info"
+											   Color="Color.Primary"
+											   Size="Size.Small"
+											   OnClick="@(async () => await ShowJobDetails(context))" />
+								<MudIconButton Icon="@Icons.Material.Filled.Replay"
+											   Color="Color.Secondary"
+											   Size="Size.Small"
+											   Disabled="@(!CanRetry(context))"
+											   OnClick="@(async () => await RetryJob(context))" />
+								<MudIconButton Icon="@Icons.Material.Filled.Close"
+											   Color="Color.Warning"
+											   Size="Size.Small"
+											   Disabled="@(!CanCancel(context))"
+											   OnClick="@(async () => await CancelJob(context))" />
+							</div>
+						</MudTd>
+					</RowTemplate>
+				</MudTable>
+			</div>
 		}
 	</div>
 </section>
@@ -142,9 +146,53 @@
 		gap: 4px;
 	}
 
+	.job-table-shell {
+		width: 100%;
+		overflow-x: auto;
+		border-radius: 10px;
+	}
+
+	::deep .job-table table {
+		min-width: 980px;
+		table-layout: fixed;
+	}
+
+	::deep .job-table th:nth-child(1),
+	::deep .job-table td:nth-child(1) {
+		width: 240px;
+	}
+
+	::deep .job-table th:nth-child(2),
+	::deep .job-table td:nth-child(2) {
+		width: 150px;
+	}
+
+	::deep .job-table th:nth-child(3),
+	::deep .job-table td:nth-child(3),
+	::deep .job-table th:nth-child(4),
+	::deep .job-table td:nth-child(4) {
+		width: 150px;
+	}
+
+	::deep .job-table th:nth-child(6),
+	::deep .job-table td:nth-child(6) {
+		width: 150px;
+		text-align: right;
+	}
+
+	.job-message {
+		display: -webkit-box;
+		overflow: hidden;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-height: 1.35;
+	}
+
 	.job-actions {
 		display: inline-flex;
 		gap: 4px;
+		justify-content: flex-end;
+		min-width: 132px;
 	}
 </style>
 
@@ -198,6 +246,12 @@
 		return !string.IsNullOrWhiteSpace(job.ErrorMessage)
 			? job.ErrorMessage
 			: job.ResultMessage ?? "-";
+	}
+
+	private static string FormatJobType(string jobType)
+	{
+		return string.Concat(jobType.Select((character, index) =>
+			index > 0 && char.IsUpper(character) ? $" {character}" : character.ToString()));
 	}
 
 	private static bool CanRetry(BackgroundJobRecord job)
