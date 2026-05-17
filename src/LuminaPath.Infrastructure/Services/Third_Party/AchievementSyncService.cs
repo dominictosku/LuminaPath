@@ -19,6 +19,7 @@ public sealed class AchievementSyncService
     private readonly PSNService _psnService;
     private readonly ApplicationSettingsService _settings;
     private readonly ILogger<AchievementSyncService> _logger;
+    private readonly Func<DateTime> _utcNow;
 
     public AchievementSyncService(
         IDbContextFactory<LuminaPathDbContext> dbContextFactory,
@@ -26,13 +27,27 @@ public sealed class AchievementSyncService
         PSNService psnService,
         ApplicationSettingsService settings,
         ILogger<AchievementSyncService> logger)
+        : this(dbContextFactory, steamService, psnService, settings, logger, () => DateTime.UtcNow)
+    {
+    }
+
+    public AchievementSyncService(
+        IDbContextFactory<LuminaPathDbContext> dbContextFactory,
+        SteamService steamService,
+        PSNService psnService,
+        ApplicationSettingsService settings,
+        ILogger<AchievementSyncService> logger,
+        Func<DateTime> utcNow)
     {
         _dbContextFactory = dbContextFactory;
         _steamService = steamService;
         _psnService = psnService;
         _settings = settings;
         _logger = logger;
+        _utcNow = utcNow;
     }
+
+    private DateTime UtcNow => _utcNow();
 
     public async Task<AchievementSyncResult> SyncSteamAsync(LuminaUser user, CancellationToken cancellationToken = default)
     {
@@ -82,6 +97,7 @@ public sealed class AchievementSyncService
                     definition.Description,
                     definition.IconUrl,
                     definition.Hidden,
+                    UtcNow,
                     result);
 
                 achievement.SteamApiName = definition.ApiName;
@@ -95,6 +111,7 @@ public sealed class AchievementSyncService
                         ExternalMediaProvider.Steam,
                         definition.ApiName,
                         playerAchievement.UnlockTime,
+                        UtcNow,
                         result);
                 }
             }
@@ -169,6 +186,7 @@ public sealed class AchievementSyncService
                     trophy.TrophyDetail,
                     trophy.TrophyIconUrl,
                     trophy.TrophyHidden,
+                    UtcNow,
                     result);
 
                 achievement.PsnTrophyId = trophy.TrophyId;
@@ -184,6 +202,7 @@ public sealed class AchievementSyncService
                         ExternalMediaProvider.Psn,
                         sourceId,
                         userTrophy.EarnedDateTime,
+                        UtcNow,
                         result);
                 }
             }
@@ -218,6 +237,7 @@ public sealed class AchievementSyncService
         string? description,
         string? iconUrl,
         bool hidden,
+        DateTime now,
         AchievementSyncResult result)
     {
         game.Achievements ??= new List<GameAchievement>();
@@ -234,7 +254,7 @@ public sealed class AchievementSyncService
                 Description = description,
                 IconUrl = iconUrl,
                 IsHidden = hidden,
-                LastSyncedAt = DateTime.UtcNow,
+                LastSyncedAt = now,
             };
             game.Achievements.Add(achievement);
             context.GameAchievements.Add(achievement);
@@ -246,7 +266,7 @@ public sealed class AchievementSyncService
         achievement.Description = BestText(achievement.Description, description);
         achievement.IconUrl = BestText(achievement.IconUrl, iconUrl);
         achievement.IsHidden = achievement.IsHidden && hidden;
-        achievement.LastSyncedAt = DateTime.UtcNow;
+        achievement.LastSyncedAt = now;
         result.DefinitionsUpdated++;
         return achievement;
     }
@@ -257,6 +277,7 @@ public sealed class AchievementSyncService
         ExternalMediaProvider provider,
         string sourceAchievementId,
         DateTime? unlockedAt,
+        DateTime now,
         AchievementSyncResult result)
     {
         achievement.UserAchievements ??= new List<UserGameAchievement>();
@@ -267,7 +288,7 @@ public sealed class AchievementSyncService
         if (existing is not null)
         {
             existing.UnlockedAt = unlockedAt ?? existing.UnlockedAt;
-            existing.SyncedAt = DateTime.UtcNow;
+            existing.SyncedAt = now;
             return;
         }
 
@@ -277,7 +298,7 @@ public sealed class AchievementSyncService
             Provider = provider,
             SourceAchievementId = sourceAchievementId,
             UnlockedAt = unlockedAt,
-            SyncedAt = DateTime.UtcNow,
+            SyncedAt = now,
         });
         result.UnlocksAdded++;
     }

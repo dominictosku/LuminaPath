@@ -92,7 +92,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
         public virtual async Task<TEntity> GetById(int? id, IEnumerable<string>? includes = null)
         {
             if (id == null)
-                throw new Exception("No id given");
+                throw new ArgumentNullException(nameof(id), "No id given");
 
             await using (var dbContext = await GetDbContextAsync())
             {

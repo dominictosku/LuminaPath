@@ -146,7 +146,7 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
     {
         if (id is null)
         {
-            throw new Exception("No id given");
+            throw new ArgumentNullException(nameof(id), "No id given");
         }
 
         await using var context = await GetDbContextAsync();

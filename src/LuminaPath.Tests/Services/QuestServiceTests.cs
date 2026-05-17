@@ -114,11 +114,12 @@ namespace Test.Services
                 skillId = skill.Id;
             }
 
-            var service = new QuestService(new TestDbContextFactory(options));
+            var now = new DateTime(2026, 5, 17, 12, 30, 0, DateTimeKind.Utc);
+            var service = new QuestService(new TestDbContextFactory(options), () => now);
             var result = Success(await service.UpdateAsync(userId, questId, new QuestUpdateDto { Completed = true }));
 
             Assert.True(result.Quest.Completed);
-            Assert.NotNull(result.Quest.CompletedAt);
+            Assert.Equal(now, result.Quest.CompletedAt);
             Assert.Equal(75, result.TotalXp);
             Assert.Equal(1, result.CurrentStreakDays);
             Assert.Equal(15, result.AwardedSkillXp);

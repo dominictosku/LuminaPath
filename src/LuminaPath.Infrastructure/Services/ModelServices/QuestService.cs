@@ -9,11 +9,20 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
     public class QuestService
     {
         private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
+        private readonly Func<DateTime> _utcNow;
 
         public QuestService(IDbContextFactory<LuminaPathDbContext> dbContextFactory)
+            : this(dbContextFactory, () => DateTime.UtcNow)
+        {
+        }
+
+        public QuestService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, Func<DateTime> utcNow)
         {
             _dbContextFactory = dbContextFactory;
+            _utcNow = utcNow;
         }
+
+        private DateTime UtcNow => _utcNow();
 
         public async Task<QuestBoardDto> GetBoardAsync(string userId)
         {
@@ -105,6 +114,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 .Where(q => q.LuminaUserId == userId && q.Type == dto.Type)
                 .Select(q => (int?)q.SortOrder)
                 .MaxAsync() ?? -1;
+            var now = UtcNow;
 
             var quest = new Quest
             {
@@ -118,8 +128,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 Tags = NormalizeTags(dto.Tags),
                 RewardXp = RewardFor(dto.Type),
                 Completed = false,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
+                CreatedAt = now,
+                UpdatedAt = now,
                 SortOrder = nextSort + 1,
                 MyGameId = myGameId,
                 SkillId = skillId
@@ -143,7 +153,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 return new FailedResult("Quest not found");
             }
 
-            var profile = await GetOrCreateProfileAsync(dbContext, userId);
+            var now = UtcNow;
+            var profile = await GetOrCreateProfileAsync(dbContext, userId, now);
 
             if (dto.Title is not null)
             {
@@ -238,7 +249,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 if (dto.Completed.Value)
                 {
                     quest.Completed = true;
-                    quest.CompletedAt = DateTime.UtcNow;
+                    quest.CompletedAt = now;
                     profile.TotalXp = Math.Max(0, profile.TotalXp + quest.RewardXp);
 
                     if (quest.SkillId.HasValue)
@@ -254,14 +265,14 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                         }
                     }
 
-                    UpdateStreakOnCompletion(profile);
+                    UpdateStreakOnCompletion(profile, now);
 
                     if (quest.Recurrence != QuestRecurrence.None)
                     {
-                        spawned = await SpawnNextRecurrenceAsync(dbContext, userId, quest);
+                        spawned = await SpawnNextRecurrenceAsync(dbContext, userId, quest, now);
                     }
 
-                    unlockedAchievements = await EvaluateAchievementsAsync(dbContext, userId, profile, quest);
+                    unlockedAchievements = await EvaluateAchievementsAsync(dbContext, userId, profile, quest, now);
                 }
                 else
                 {
@@ -281,8 +292,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 }
             }
 
-            quest.UpdatedAt = DateTime.UtcNow;
-            profile.UpdatedAt = DateTime.UtcNow;
+            quest.UpdatedAt = now;
+            profile.UpdatedAt = now;
 
             await dbContext.SaveChangesAsync();
             var result = await BuildMutationResultAsync(dbContext, userId, quest.Id, spawned?.Id);
@@ -332,7 +343,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 }
                 quest.SortOrder = item.SortOrder;
                 quest.Type = item.Type;
-                quest.UpdatedAt = DateTime.UtcNow;
+                quest.UpdatedAt = UtcNow;
             }
 
             await dbContext.SaveChangesAsync();
@@ -343,11 +354,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
 
-            var profile = await GetOrCreateProfileAsync(dbContext, userId);
+            var now = UtcNow;
+            var profile = await GetOrCreateProfileAsync(dbContext, userId, now);
             profile.TotalXp = Math.Max(0, board.Xp);
-            profile.UpdatedAt = DateTime.UtcNow;
+            profile.UpdatedAt = now;
 
-            await UpsertSkillsAsync(dbContext, userId, board.Skills);
+            await UpsertSkillsAsync(dbContext, userId, board.Skills, now);
             await dbContext.SaveChangesAsync();
 
             return await GetBoardAsync(userId);
@@ -393,9 +405,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             };
         }
 
-        private static async Task<Quest> SpawnNextRecurrenceAsync(LuminaPathDbContext dbContext, string userId, Quest source)
+        private static async Task<Quest> SpawnNextRecurrenceAsync(LuminaPathDbContext dbContext, string userId, Quest source, DateTime now)
         {
-            var anchor = source.DueDate ?? source.CompletedAt ?? DateTime.UtcNow;
+            var anchor = source.DueDate ?? source.CompletedAt ?? now;
             var nextDue = source.Recurrence switch
             {
                 QuestRecurrence.Daily => anchor.AddDays(1),
@@ -421,8 +433,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 Tags = new List<string>(source.Tags ?? new List<string>()),
                 RewardXp = source.RewardXp,
                 Completed = false,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
+                CreatedAt = now,
+                UpdatedAt = now,
                 SortOrder = nextSort + 1,
                 MyGameId = source.MyGameId,
                 SkillId = source.SkillId
@@ -432,7 +444,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return clone;
         }
 
-        private static async Task<QuestProfile> GetOrCreateProfileAsync(LuminaPathDbContext dbContext, string userId)
+        private static async Task<QuestProfile> GetOrCreateProfileAsync(LuminaPathDbContext dbContext, string userId, DateTime now)
         {
             var profile = await dbContext.QuestProfiles
                 .FirstOrDefaultAsync(p => p.LuminaUserId == userId);
@@ -445,8 +457,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             profile = new QuestProfile
             {
                 LuminaUserId = userId,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = now,
+                UpdatedAt = now
             };
             await dbContext.QuestProfiles.AddAsync(profile);
             return profile;
@@ -576,7 +588,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         private static async Task UpsertSkillsAsync(
             LuminaPathDbContext dbContext,
             string userId,
-            List<QuestSkillDto> incoming)
+            List<QuestSkillDto> incoming,
+            DateTime now)
         {
             var existing = await dbContext.QuestSkills
                 .Include(skill => skill.Nodes)
@@ -596,7 +609,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 if (dto.Id > 0 && existingById.TryGetValue(dto.Id, out var existingSkill))
                 {
                     ApplySkill(existingSkill, dto, skillIndex, name);
-                    UpsertNodes(dbContext, existingSkill, dto.Nodes);
+                    UpsertNodes(dbContext, existingSkill, dto.Nodes, now);
                     keepSkillIds.Add(existingSkill.Id);
                 }
                 else
@@ -614,7 +627,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                         {
                             continue;
                         }
-                        newSkill.Nodes.Add(BuildNewNode(nodeDto, nodeIndex, nodeName));
+                        newSkill.Nodes.Add(BuildNewNode(nodeDto, nodeIndex, nodeName, now));
                     }
                     await dbContext.QuestSkills.AddAsync(newSkill);
                 }
@@ -636,7 +649,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             skill.SortOrder = dto.SortOrder == 0 ? fallbackSortOrder : dto.SortOrder;
         }
 
-        private static void UpsertNodes(LuminaPathDbContext dbContext, QuestSkill skill, List<QuestSkillNodeDto> nodeDtos)
+        private static void UpsertNodes(LuminaPathDbContext dbContext, QuestSkill skill, List<QuestSkillNodeDto> nodeDtos, DateTime now)
         {
             var nodesById = skill.Nodes.ToDictionary(node => node.Id);
             var keepNodeIds = new HashSet<int>();
@@ -653,13 +666,13 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 {
                     existingNode.Name = nodeName;
                     existingNode.Unlocked = nodeDto.Unlocked;
-                    existingNode.UnlockedAt = nodeDto.Unlocked ? nodeDto.UnlockedAt ?? DateTime.UtcNow : null;
+                    existingNode.UnlockedAt = nodeDto.Unlocked ? nodeDto.UnlockedAt ?? now : null;
                     existingNode.SortOrder = nodeDto.SortOrder == 0 ? nodeIndex : nodeDto.SortOrder;
                     keepNodeIds.Add(existingNode.Id);
                 }
                 else
                 {
-                    skill.Nodes.Add(BuildNewNode(nodeDto, nodeIndex, nodeName));
+                    skill.Nodes.Add(BuildNewNode(nodeDto, nodeIndex, nodeName, now));
                 }
             }
 
@@ -676,13 +689,13 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
         }
 
-        private static QuestSkillNode BuildNewNode(QuestSkillNodeDto dto, int fallbackSortOrder, string name)
+        private static QuestSkillNode BuildNewNode(QuestSkillNodeDto dto, int fallbackSortOrder, string name, DateTime now)
         {
             return new QuestSkillNode
             {
                 Name = name,
                 Unlocked = dto.Unlocked,
-                UnlockedAt = dto.Unlocked ? dto.UnlockedAt ?? DateTime.UtcNow : null,
+                UnlockedAt = dto.Unlocked ? dto.UnlockedAt ?? now : null,
                 SortOrder = dto.SortOrder == 0 ? fallbackSortOrder : dto.SortOrder
             };
         }
@@ -707,9 +720,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             };
         }
 
-        private static void UpdateStreakOnCompletion(QuestProfile profile)
+        private static void UpdateStreakOnCompletion(QuestProfile profile, DateTime now)
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = DateOnly.FromDateTime(now);
             var last = profile.LastCompletionDate;
 
             if (last == today)
@@ -753,15 +766,16 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
 
             var nextSort = quest.Subtasks.Count == 0 ? 0 : quest.Subtasks.Max(s => s.SortOrder) + 1;
+            var now = UtcNow;
             var subtask = new QuestSubtask
             {
                 QuestId = quest.Id,
                 Title = title,
                 SortOrder = nextSort,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = now
             };
             quest.Subtasks.Add(subtask);
-            quest.UpdatedAt = DateTime.UtcNow;
+            quest.UpdatedAt = now;
             await dbContext.SaveChangesAsync();
 
             return await BuildMutationResultAsync(dbContext, userId, quest.Id);
@@ -796,10 +810,11 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
             if (dto.Completed.HasValue)
             {
+                var now = UtcNow;
                 if (dto.Completed.Value && !subtask.Completed)
                 {
                     subtask.Completed = true;
-                    subtask.CompletedAt = DateTime.UtcNow;
+                    subtask.CompletedAt = now;
                 }
                 else if (!dto.Completed.Value && subtask.Completed)
                 {
@@ -813,7 +828,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 subtask.SortOrder = dto.SortOrder.Value;
             }
 
-            quest.UpdatedAt = DateTime.UtcNow;
+            quest.UpdatedAt = UtcNow;
             await dbContext.SaveChangesAsync();
 
             return await BuildMutationResultAsync(dbContext, userId, quest.Id);
@@ -837,7 +852,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         // -------- Achievements --------
 
-        private static async Task<List<Achievement>> EvaluateAchievementsAsync(LuminaPathDbContext dbContext, string userId, QuestProfile profile, Quest justCompleted)
+        private static async Task<List<Achievement>> EvaluateAchievementsAsync(LuminaPathDbContext dbContext, string userId, QuestProfile profile, Quest justCompleted, DateTime now)
         {
             var already = await dbContext.Achievements
                 .AsNoTracking()
@@ -858,7 +873,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     newlyUnlocked.Add(new Achievement
                     {
                         Code = code,
-                        UnlockedAt = DateTime.UtcNow,
+                        UnlockedAt = now,
                         QuestProfileId = profile.Id
                     });
                     alreadySet.Add(code);

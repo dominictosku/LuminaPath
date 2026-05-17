@@ -93,7 +93,7 @@ namespace LuminaPath.Infrastructure
         [DbFunction("pg_trgm", IsBuiltIn = true)]
         public static double pg_trgm(string a, string b)
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException($"{nameof(pg_trgm)} can only be used inside Entity Framework queries.");
         }
 
         public DbSet<Document> Documents { get; set; }
