@@ -32,6 +32,7 @@ internal static class ApplicationServiceCollectionExtensions
         services.AddScoped<BrowseLibraryService>();
         services.AddScoped<MediaImportService>();
         services.AddScoped<NewsAggregationService>();
+        services.AddScoped<GameMetadataRefreshService>();
         services.AddScoped<ApplicationSettingsService>();
         return services;
     }

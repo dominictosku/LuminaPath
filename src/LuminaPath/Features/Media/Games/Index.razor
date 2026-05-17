@@ -3,10 +3,12 @@
 @using LuminaPath.Features.Media.Components
 @using LuminaPath.Features.Media.Games.Components
 @using LuminaPath.Features.Media.Games.ViewModel
+@using LuminaPath.Infrastructure.Services.Application
 @using LuminaPath.Infrastructure.Services.ModelServices
 @using LuminaPath.Pages.Media
 @using LuminaPath.Pages.Media.Components
 @inject GameService GameService
+@inject GameMetadataRefreshService MetadataRefreshService
 @inherits MediaGridActions<Game, GameViewModel, GameFormDialog>
 
 <PageTitle>Games</PageTitle>
@@ -72,6 +74,7 @@
 				<CellTemplate>
 					<MudMenu Icon="@Icons.Material.Filled.MoreVert" Variant="Variant.Filled" DropShadow="false" Size="Size.Small"
 							 Dense="true" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+						<MudMenuItem OnClick="@(async () => await RefreshMetadata(context.Item))">Refresh metadata</MudMenuItem>
 						<MudMenuItem OnClick="@(async () => await OnUpdate(context.Item))">Edit</MudMenuItem>
 						<MudMenuItem OnClick="@(async () => await Delete(context.Item))">Delete</MudMenuItem>
 					</MudMenu>
@@ -119,6 +122,7 @@ else
 					</div>
 				</div>
 				<div class="game-card-actions">
+					<MudButton OnClick="@(async () => await RefreshMetadata(game))" Variant="Variant.Text" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Sync">Metadata</MudButton>
 					<MudButton OnClick="@(() => OnUpdate(game))" Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit">Edit</MudButton>
 					<MudButton OnClick="@(async () => await Delete(game))" Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete">Delete</MudButton>
 				</div>
@@ -268,6 +272,8 @@ else
 
 	.game-card-actions {
 		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
 		justify-content: space-between;
 		padding: 8px 10px 10px;
 		border-top: 1px solid rgba(255, 255, 255, .08);
@@ -311,6 +317,56 @@ else
 	{
 		IsGrid = !IsGrid;
 		await ReloadData();
+	}
+
+	private async Task RefreshMetadata(GameViewModel game)
+	{
+		if (!CanUserEdit)
+		{
+			Snackbar.Add("No permission to edit", Severity.Info);
+			return;
+		}
+
+		loading = true;
+		await InvokeAsync(StateHasChanged);
+		try
+		{
+			var result = await MetadataRefreshService.RefreshGameAsync(game.Id);
+			result.Match(
+				success =>
+				{
+					var parts = new List<string>();
+					if (success.UpdatedReleaseDate)
+					{
+						parts.Add("release date");
+					}
+
+					if (success.UpdatedCover)
+					{
+						parts.Add("cover");
+					}
+
+					var applied = parts.Count == 0 ? success.Message : $"Updated {string.Join(" and ", parts)} from {success.Provider}.";
+					Snackbar.Add(applied, parts.Count == 0 ? Severity.Info : Severity.Success);
+					return true;
+				},
+				failure =>
+				{
+					Snackbar.Add(string.Join("; ", failure.errorMessage), Severity.Error);
+					return false;
+				});
+
+			await ReloadData();
+		}
+		catch (Exception)
+		{
+			Snackbar.Add("Failed to refresh metadata", Severity.Error);
+		}
+		finally
+		{
+			loading = false;
+			await InvokeAsync(StateHasChanged);
+		}
 	}
 
 	private async Task<List<GameViewModel>> GetData()

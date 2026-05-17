@@ -8,5 +8,6 @@ public enum ExternalMediaProvider
     Anilist = 4,
     Mal = 5,
     Igdb = 6,
-    Excel = 7
+    Excel = 7,
+    Rawg = 8
 }

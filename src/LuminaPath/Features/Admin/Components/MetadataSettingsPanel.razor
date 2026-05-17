@@ -1,0 +1,130 @@
+@using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.Third_Party
+@using Microsoft.Extensions.Options
+@inject ApplicationSettingsService ApplicationSettingsService
+@inject IOptions<GameMetadataOptions> MetadataOptions
+@inject ISnackbar Snackbar
+
+<section class="settings-panel settings-panel--primary">
+	<div class="settings-panel__header">
+		<div>
+			<MudText Typo="Typo.overline">Game metadata</MudText>
+			<MudText Typo="Typo.h5">IGDB and RAWG providers</MudText>
+			<MudText Typo="Typo.body2">
+				Refresh missing release dates and covers without replacing manually saved values.
+			</MudText>
+		</div>
+		<div class="settings-panel__icon settings-panel__icon--green">
+			<MudIcon Icon="@Icons.Material.Filled.TravelExplore" />
+		</div>
+	</div>
+
+	<div class="settings-form">
+		<MudSelect @bind-Value="provider"
+				   Label="Provider order"
+				   Variant="MudBlazor.Variant.Outlined">
+			<MudSelectItem Value="@GameMetadataProviderModes.IgdbThenRawg">IGDB, then RAWG</MudSelectItem>
+			<MudSelectItem Value="@GameMetadataProviderModes.RawgThenIgdb">RAWG, then IGDB</MudSelectItem>
+			<MudSelectItem Value="@GameMetadataProviderModes.Igdb">IGDB only</MudSelectItem>
+			<MudSelectItem Value="@GameMetadataProviderModes.Rawg">RAWG only</MudSelectItem>
+		</MudSelect>
+
+		<MudTextField @bind-Value="igdbClientId"
+					  Label="IGDB / Twitch client ID"
+					  Variant="MudBlazor.Variant.Outlined"
+					  HelperText="IGDB uses Twitch OAuth client credentials."
+					  Immediate="true" />
+
+		<MudTextField @bind-Value="igdbClientSecret"
+					  Label="IGDB / Twitch client secret"
+					  Variant="MudBlazor.Variant.Outlined"
+					  InputType="@igdbSecretInputType"
+					  Adornment="Adornment.End"
+					  AdornmentIcon="@IgdbSecretVisibilityIcon"
+					  OnAdornmentClick="ToggleIgdbSecretVisibility"
+					  Immediate="true" />
+
+		<MudTextField @bind-Value="rawgApiKey"
+					  Label="RAWG API key"
+					  Variant="MudBlazor.Variant.Outlined"
+					  InputType="@rawgKeyInputType"
+					  Adornment="Adornment.End"
+					  AdornmentIcon="@RawgKeyVisibilityIcon"
+					  OnAdornmentClick="ToggleRawgKeyVisibility"
+					  Immediate="true" />
+
+		<div class="settings-action-row">
+			<MudButton OnClick="Save"
+					   Variant="MudBlazor.Variant.Filled"
+					   Color="Color.Secondary"
+					   StartIcon="@Icons.Material.Filled.Save"
+					   Disabled="@saving">
+				Save Metadata Settings
+			</MudButton>
+		</div>
+	</div>
+</section>
+
+<section class="settings-panel settings-help-panel">
+	<MudIcon Icon="@Icons.Material.Filled.Info" />
+	<div>
+		<MudText Typo="Typo.h6">Refresh behavior</MudText>
+		<MudText Typo="Typo.body2">
+			LuminaPath only applies provider values when the game has no release date or no saved cover image. Your manually curated fields always win.
+		</MudText>
+	</div>
+</section>
+
+@code {
+	private string provider = GameMetadataProviderModes.IgdbThenRawg;
+	private string igdbClientId = string.Empty;
+	private string igdbClientSecret = string.Empty;
+	private string rawgApiKey = string.Empty;
+	private bool showIgdbSecret;
+	private bool showRawgKey;
+	private bool saving;
+
+	private InputType igdbSecretInputType => showIgdbSecret ? InputType.Text : InputType.Password;
+	private InputType rawgKeyInputType => showRawgKey ? InputType.Text : InputType.Password;
+	private string IgdbSecretVisibilityIcon => showIgdbSecret ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
+	private string RawgKeyVisibilityIcon => showRawgKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
+
+	protected override async Task OnInitializedAsync()
+	{
+		var settings = await ApplicationSettingsService.GetGameMetadataSettingsAsync();
+		provider = string.IsNullOrWhiteSpace(settings.Provider)
+			? MetadataOptions.Value.Provider
+			: settings.Provider;
+		igdbClientId = string.IsNullOrWhiteSpace(settings.IgdbClientId) ? MetadataOptions.Value.IgdbClientId : settings.IgdbClientId;
+		igdbClientSecret = string.IsNullOrWhiteSpace(settings.IgdbClientSecret) ? MetadataOptions.Value.IgdbClientSecret : settings.IgdbClientSecret;
+		rawgApiKey = string.IsNullOrWhiteSpace(settings.RawgApiKey) ? MetadataOptions.Value.RawgApiKey : settings.RawgApiKey;
+	}
+
+	private async Task Save()
+	{
+		saving = true;
+		try
+		{
+			await ApplicationSettingsService.SaveGameMetadataSettingsAsync(new GameMetadataSettings(
+				provider,
+				igdbClientId,
+				igdbClientSecret,
+				rawgApiKey));
+			Snackbar.Add("Saved metadata provider settings", Severity.Success);
+		}
+		finally
+		{
+			saving = false;
+		}
+	}
+
+	private void ToggleIgdbSecretVisibility()
+	{
+		showIgdbSecret = !showIgdbSecret;
+	}
+
+	private void ToggleRawgKeyVisibility()
+	{
+		showRawgKey = !showRawgKey;
+	}
+}

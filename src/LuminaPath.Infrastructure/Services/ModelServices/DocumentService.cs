@@ -80,6 +80,41 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
         }
 
+        public async Task<Result<MediaDocument, FailedResult>> CreateDocument(Stream stream, string fileName, string? contentType, IMedia<MediaDocument>? media = null)
+        {
+            try
+            {
+                if (media is not null)
+                {
+                    await DeleteDocument(media.Image);
+                }
+
+                var displayName = GetDisplayFileName(fileName);
+                var storageName = CreateStorageFileName(displayName, contentType);
+                var result = await _storage.UploadAsync(stream, storageName, contentType);
+                if (result.Error)
+                {
+                    _logger.LogError("Could not upload file, error: {Status}", result.Status);
+                    return new FailedResult("Could not upload file");
+                }
+
+                return new MediaDocument
+                {
+                    Name = displayName,
+                    StorageName = result.Blob.Name,
+                    Description = string.Empty,
+                    Path = string.Empty,
+                    ContentType = result.Blob.ContentType,
+                    DocumentType = InferDocumentType(displayName, result.Blob.ContentType)
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Could not upload file from stream");
+                return new FailedResult("Could not upload file");
+            }
+        }
+
         public async Task<MediaDocument> CreateMediaDocument(MediaDocument document)
         {
             ValidateDocument(document);

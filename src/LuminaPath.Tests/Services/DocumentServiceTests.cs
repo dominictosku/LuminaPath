@@ -49,6 +49,40 @@ namespace Test.Services
         }
 
         [Fact]
+        public async Task CreateDocument_FromStream_PreservesDisplayName_AndUsesUniqueStorageName()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            var storage = new Mock<IStorageService>();
+            storage
+                .Setup(service => service.UploadAsync(
+                    It.IsAny<Stream>(),
+                    It.Is<string>(name => name.EndsWith(".jpg") && name != "provider cover.jpg"),
+                    "image/jpeg"))
+                .ReturnsAsync((Stream _, string storageName, string? _) => new BlobResponseDto
+                {
+                    Blob = new BlobDto
+                    {
+                        Name = storageName,
+                        ContentType = "image/jpeg"
+                    }
+                });
+
+            var service = CreateService(options, storage);
+            await using var stream = new MemoryStream([1, 2, 3]);
+
+            var result = await service.CreateDocument(stream, "provider cover.jpg", "image/jpeg");
+            var document = result.Match<MediaDocument?>(success => success, failure => null);
+
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(document);
+            Assert.Equal("provider cover.jpg", document!.Name);
+            Assert.NotEqual(document.Name, document.StorageName);
+            Assert.EndsWith(".jpg", document.StorageName);
+            Assert.Equal(DocumentType.Image, document.DocumentType);
+            storage.VerifyAll();
+        }
+
+        [Fact]
         public async Task CreateMediaDocument_RejectsDocumentsWithoutFileOrExternalPath()
         {
             var options = Utilities.DbContext.TestDbContextOptions();
