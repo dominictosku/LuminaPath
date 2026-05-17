@@ -1,4 +1,6 @@
 @using LuminaPath.Infrastructure.Services.Application
+@using LuminaPath.Infrastructure.Services.Application.BackgroundJobs
+@inject BackgroundJobService BackgroundJobService
 @inject DatabaseBackupService DatabaseBackupService
 @inject ISnackbar Snackbar
 
@@ -34,7 +36,7 @@
 					   Color="Color.Secondary"
 					   StartIcon="@Icons.Material.Filled.Backup"
 					   Disabled="@creating">
-				@(creating ? "Creating Backup" : "Create Backup")
+				@(creating ? "Queueing Backup" : "Queue Backup")
 			</MudButton>
 			<MudButton OnClick="LoadBackups"
 					   Variant="MudBlazor.Variant.Outlined"
@@ -143,19 +145,8 @@
 		creating = true;
 		try
 		{
-			var result = await DatabaseBackupService.CreateBackupAsync();
-			result.Match(
-				success =>
-				{
-					Snackbar.Add($"Created database backup {success.FileName}", Severity.Success);
-					return true;
-				},
-				failure =>
-				{
-					Snackbar.Add(string.Join("; ", failure.errorMessage), Severity.Error);
-					return false;
-				});
-
+			var job = await BackgroundJobService.EnqueueDatabaseBackupAsync();
+			Snackbar.Add($"Queued database backup job #{job.Id}", Severity.Success);
 			await LoadBackups();
 		}
 		finally

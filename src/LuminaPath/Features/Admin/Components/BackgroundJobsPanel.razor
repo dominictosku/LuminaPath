@@ -1,0 +1,176 @@
+@using LuminaPath.Core.Enums
+@using LuminaPath.Core.Models
+@using LuminaPath.Infrastructure.Services.Application.BackgroundJobs
+@inject BackgroundJobService BackgroundJobService
+
+<section class="settings-panel settings-panel--primary">
+	<div class="settings-panel__header">
+		<div>
+			<MudText Typo="Typo.overline">Background jobs</MudText>
+			<MudText Typo="Typo.h5">Job history</MudText>
+			<MudText Typo="Typo.body2">
+				Review recent app-maintenance work such as database backups.
+			</MudText>
+		</div>
+		<div class="settings-panel__icon settings-panel__icon--purple">
+			<MudIcon Icon="@Icons.Material.Filled.ManageHistory" />
+		</div>
+	</div>
+
+	<div class="settings-form">
+		<div class="job-summary">
+			<div>
+				<span>Recent jobs</span>
+				<strong>@jobs.Count</strong>
+			</div>
+			<div>
+				<span>Running</span>
+				<strong>@Count(BackgroundJobStatus.Running)</strong>
+			</div>
+			<div>
+				<span>Failed</span>
+				<strong>@Count(BackgroundJobStatus.Failed)</strong>
+			</div>
+		</div>
+
+		<div class="settings-action-row">
+			<MudButton OnClick="LoadJobs"
+					   Variant="MudBlazor.Variant.Outlined"
+					   Color="Color.Primary"
+					   StartIcon="@Icons.Material.Filled.Refresh"
+					   Disabled="@loading">
+				Refresh History
+			</MudButton>
+		</div>
+
+		@if (loading)
+		{
+			<MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+		}
+		else if (jobs.Count == 0)
+		{
+			<MudAlert Severity="Severity.Info" Variant="MudBlazor.Variant.Outlined">
+				No background jobs have been queued yet.
+			</MudAlert>
+		}
+		else
+		{
+			<MudTable Items="jobs" Dense="true" Hover="true">
+				<HeaderContent>
+					<MudTh>Job</MudTh>
+					<MudTh>Status</MudTh>
+					<MudTh>Created</MudTh>
+					<MudTh>Finished</MudTh>
+					<MudTh>Message</MudTh>
+				</HeaderContent>
+				<RowTemplate>
+					<MudTd DataLabel="Job">
+						<div class="job-title">
+							<strong>@context.DisplayName</strong>
+							<span>#@context.Id · @context.JobType</span>
+						</div>
+					</MudTd>
+					<MudTd DataLabel="Status">
+						<MudChip T="string" Size="Size.Small" Color="@StatusColor(context.Status)">@context.Status</MudChip>
+					</MudTd>
+					<MudTd DataLabel="Created">@FormatDate(context.CreatedAt)</MudTd>
+					<MudTd DataLabel="Finished">@FormatDate(context.CompletedAt)</MudTd>
+					<MudTd DataLabel="Message">@Message(context)</MudTd>
+				</RowTemplate>
+			</MudTable>
+		}
+	</div>
+</section>
+
+<section class="settings-panel settings-help-panel">
+	<MudIcon Icon="@Icons.Material.Filled.Info" />
+	<div>
+		<MudText Typo="Typo.h6">Scope</MudText>
+		<MudText Typo="Typo.body2">
+			This internal job runner is for app-maintenance tasks only. Third-party sync work stays out until it has its own scheduling and retry policy.
+		</MudText>
+	</div>
+</section>
+
+<style>
+	.job-summary {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+		gap: 12px;
+	}
+
+	.job-summary > div {
+		display: grid;
+		gap: 6px;
+		padding: 14px;
+		border: 1px solid rgba(59, 130, 246, .18);
+		border-radius: 12px;
+		background: rgba(255, 255, 255, .04);
+	}
+
+	.job-summary span,
+	.job-title span {
+		color: var(--mud-palette-text-secondary);
+		font-size: .78rem;
+		font-weight: 800;
+		text-transform: uppercase;
+	}
+
+	.job-title {
+		display: grid;
+		gap: 4px;
+	}
+</style>
+
+@code {
+	private List<BackgroundJobRecord> jobs = new();
+	private bool loading = true;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadJobs();
+	}
+
+	private async Task LoadJobs()
+	{
+		loading = true;
+		try
+		{
+			jobs = await BackgroundJobService.GetHistoryAsync();
+		}
+		finally
+		{
+			loading = false;
+		}
+	}
+
+	private int Count(BackgroundJobStatus status)
+	{
+		return jobs.Count(job => job.Status == status);
+	}
+
+	private static Color StatusColor(BackgroundJobStatus status)
+	{
+		return status switch
+		{
+			BackgroundJobStatus.Pending => Color.Info,
+			BackgroundJobStatus.Running => Color.Primary,
+			BackgroundJobStatus.Succeeded => Color.Success,
+			BackgroundJobStatus.Failed => Color.Error,
+			BackgroundJobStatus.Canceled => Color.Warning,
+			_ => Color.Default
+		};
+	}
+
+	private static string FormatDate(DateTime? date)
+	{
+		return date?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "-";
+	}
+
+	private static string Message(BackgroundJobRecord job)
+	{
+		return !string.IsNullOrWhiteSpace(job.ErrorMessage)
+			? job.ErrorMessage
+			: job.ResultMessage ?? "-";
+	}
+}

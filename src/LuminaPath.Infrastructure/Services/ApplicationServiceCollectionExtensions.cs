@@ -1,6 +1,7 @@
 using LuminaPath.Infrastructure.Services.ModelServices;
 using LuminaPath.Infrastructure.Services.Imports;
 using LuminaPath.Infrastructure.Services.Application;
+using LuminaPath.Infrastructure.Services.Application.BackgroundJobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -35,6 +36,10 @@ internal static class ApplicationServiceCollectionExtensions
         services.AddScoped<NewsAggregationService>();
         services.AddScoped<GameMetadataRefreshService>();
         services.AddScoped<DatabaseBackupService>();
+        services.AddSingleton<IBackgroundJobQueue, BackgroundJobQueue>();
+        services.AddScoped<BackgroundJobService>();
+        services.AddScoped<IBackgroundJobRunner, DatabaseBackupJobRunner>();
+        services.AddHostedService<QueuedBackgroundJobService>();
         services.AddScoped<ApplicationSettingsService>();
         return services;
     }
