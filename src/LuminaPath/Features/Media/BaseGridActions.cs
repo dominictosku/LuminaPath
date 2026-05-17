@@ -89,7 +89,11 @@ namespace LuminaPath.Pages.Media
                 return;
             }
 
-            var confirmed = await ConfirmDelete($"Delete {ids.Length} selected {EntityLabel.ToLowerInvariant()}{(ids.Length == 1 ? string.Empty : " items")}? This cannot be undone.");
+            var confirmed = await ConfirmDelete(
+                GetBulkDeleteTitle(ids.Length),
+                GetBulkDeleteMessage(ids.Length),
+                GetBulkDeleteDetail(ids.Length),
+                GetDeleteConfirmText(ids.Length));
             if (!confirmed)
             {
                 return;
@@ -189,8 +193,14 @@ namespace LuminaPath.Pages.Media
                 return;
             }
 
-            if (!await ConfirmDelete($"Delete {EntityLabel.ToLowerInvariant()}? This cannot be undone."))
+            if (!await ConfirmDelete(
+                    GetDeleteTitle(g),
+                    GetDeleteMessage(g),
+                    GetDeleteDetail(g),
+                    GetDeleteConfirmText(1)))
+            {
                 return;
+            }
 
             loading = true;
             await InvokeAsync(StateHasChanged);
@@ -221,13 +231,34 @@ namespace LuminaPath.Pages.Media
         protected abstract DialogParameters<TForm> CreateDialogParameters(TEntity command, Func<TEntity, Task> OnSubmit);
         #endregion
 
-        protected async Task<bool> ConfirmDelete(string message)
+        protected virtual string GetDeleteTitle(TEntity entity) => $"Delete {EntityLabel.ToLowerInvariant()}?";
+
+        protected virtual string GetDeleteMessage(TEntity entity) => $"Are you sure you want to delete this {EntityLabel.ToLowerInvariant()}?";
+
+        protected virtual string? GetDeleteDetail(TEntity entity) => "This cannot be undone.";
+
+        protected virtual string GetBulkDeleteTitle(int count) => $"Delete selected {EntityLabel.ToLowerInvariant()} items?";
+
+        protected virtual string GetBulkDeleteMessage(int count) => $"Are you sure you want to delete {count} selected {EntityLabel.ToLowerInvariant()}{(count == 1 ? string.Empty : " items")}?";
+
+        protected virtual string? GetBulkDeleteDetail(int count) => "This cannot be undone.";
+
+        protected virtual string GetDeleteConfirmText(int count) => count == 1 ? "Delete" : $"Delete {count}";
+
+        protected async Task<bool> ConfirmDelete(string title, string message, string? detail = null, string confirmText = "Delete")
         {
             var parameters = new DialogParameters<ConfirmationDialog>
             {
-                { x => x.ContentText, message }
+                { x => x.TitleText, title },
+                { x => x.SubtitleText, "Please confirm before continuing." },
+                { x => x.ContentText, message },
+                { x => x.DetailText, detail },
+                { x => x.ConfirmText, confirmText },
+                { x => x.ConfirmIcon, Icons.Material.Filled.Delete },
+                { x => x.ConfirmColor, Color.Error },
+                { x => x.Severity, Severity.Error }
             };
-            var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+            var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
             var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm delete", parameters, options);
             var result = await dialog.Result;
             return result is { Canceled: false };

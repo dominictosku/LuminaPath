@@ -493,6 +493,27 @@ else
 		await ModelService.DeleteAsync(entity.Id);
 	}
 
+	protected override string GetDeleteTitle(MyGame myGame) => $"Remove \"{myGame.Game?.Name ?? "this game"}\" from your library?";
+
+	protected override string GetDeleteMessage(MyGame myGame)
+	{
+		return "Are you sure you want to remove this game from your personal library?";
+	}
+
+	protected override string? GetDeleteDetail(MyGame myGame)
+	{
+		return "This deletes your personal tracking data for this game, including status, priority, rating, played time, notes, linked quests, and sessions that depend on this library entry. The shared game catalog record stays available.";
+	}
+
+	protected override string GetBulkDeleteTitle(int count) => $"Remove {count} selected game{(count == 1 ? string.Empty : "s")} from your library?";
+
+	protected override string GetBulkDeleteMessage(int count) => $"Are you sure you want to remove {count} selected game{(count == 1 ? string.Empty : "s")} from your personal library?";
+
+	protected override string? GetBulkDeleteDetail(int count)
+	{
+		return "This deletes the selected personal tracking entries. Shared catalog games remain available, but your library-specific progress data cannot be restored from this action.";
+	}
+
 	private string Cover(MyGame? myGame)
 	{
 		return string.IsNullOrWhiteSpace(myGame?.Game?.Image?.Url)

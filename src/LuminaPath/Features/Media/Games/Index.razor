@@ -369,6 +369,32 @@ else
 		}
 	}
 
+	protected override string GetDeleteTitle(GameViewModel game) => $"Delete \"{game.Name}\"?";
+
+	protected override string GetDeleteMessage(GameViewModel game)
+	{
+		var libraryCount = game.MyGames?.Count ?? 0;
+		var libraryWarning = libraryCount > 0
+			? $" It is currently referenced by {libraryCount} personal librar{(libraryCount == 1 ? "y entry" : "y entries")}."
+			: string.Empty;
+
+		return $"Are you sure you want to delete this catalog game?{libraryWarning}";
+	}
+
+	protected override string? GetDeleteDetail(GameViewModel game)
+	{
+		return "This removes the shared game record, including its metadata, cover link, achievements, and any dependent records configured to cascade. This action cannot be undone.";
+	}
+
+	protected override string GetBulkDeleteTitle(int count) => $"Delete {count} selected catalog game{(count == 1 ? string.Empty : "s")}?";
+
+	protected override string GetBulkDeleteMessage(int count) => $"Are you sure you want to delete {count} selected catalog game{(count == 1 ? string.Empty : "s")}?";
+
+	protected override string? GetBulkDeleteDetail(int count)
+	{
+		return "Catalog deletion can affect personal library entries and related game data. Review the selection carefully before continuing.";
+	}
+
 	private async Task<List<GameViewModel>> GetData()
 	{
 		var result = await GameService.GetAll();
