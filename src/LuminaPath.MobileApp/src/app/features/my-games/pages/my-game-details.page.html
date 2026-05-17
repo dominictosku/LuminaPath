@@ -120,13 +120,15 @@
       <ion-segment-button value="overview">
         <ion-label>Overview</ion-label>
       </ion-segment-button>
+      <ion-segment-button value="progress">
+        <ion-label>Progress</ion-label>
+      </ion-segment-button>
       <ion-segment-button value="news">
         <ion-label>News</ion-label>
       </ion-segment-button>
     </ion-segment>
 
-    <ng-container *ngIf="selectedTab === 'overview'">
-    <section class="quest-panel dlc-panel" *ngIf="dlcs.length">
+    <section class="quest-panel dlc-panel" *ngIf="selectedTab === 'overview' && dlcs.length">
       <header class="section-header">
         <div>
           <span class="eyebrow">
@@ -151,7 +153,7 @@
       </div>
     </section>
 
-    <section class="quest-panel forecast-panel" *ngIf="forecast">
+    <section class="quest-panel forecast-panel" *ngIf="selectedTab === 'overview' && forecast">
       <header class="section-header">
         <div>
           <span class="eyebrow">
@@ -204,7 +206,7 @@
       <p class="forecast-summary">{{ forecastSummary() }}</p>
     </section>
 
-    <section class="quest-panel trophies-panel" *ngIf="isInLibrary">
+    <section class="quest-panel trophies-panel" *ngIf="selectedTab === 'progress' && isInLibrary">
       <header class="section-header trophies-header">
         <div>
           <span class="eyebrow">
@@ -258,7 +260,7 @@
       </div>
     </section>
 
-    <section class="quest-panel notes-panel">
+    <section class="quest-panel notes-panel" *ngIf="selectedTab === 'overview'">
       <header class="section-header notes-header">
         <div>
           <span class="eyebrow">
@@ -334,7 +336,7 @@
       </ng-template>
     </section>
 
-    <section class="quest-panel">
+    <section class="quest-panel" *ngIf="selectedTab === 'progress'">
       <header class="section-header">
         <div>
           <span class="eyebrow">
@@ -449,7 +451,6 @@
         </div>
       </ng-template>
     </section>
-    </ng-container>
 
     <section class="quest-panel news-panel" *ngIf="selectedTab === 'news'">
       <header class="section-header news-header">

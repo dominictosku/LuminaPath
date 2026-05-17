@@ -56,7 +56,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 
 import { GameService } from 'src/app/features/games/services/game.service';
-import { Game, GameNewsItem, GameSummary, Platforms } from 'src/app/features/games/models/games.model';
+import { Game, GameNewsItem, GameSummary, platformLabelFromValue } from 'src/app/features/games/models/games.model';
 import { MyGameService, UserGameAchievement } from 'src/app/features/my-games/services/my-game.service';
 import { Quest, QuestBoardService, QuestType } from 'src/app/features/quests/services/quest-board.service';
 import { GameForecast, GamingSessionService } from 'src/app/features/planing/services/gaming-session.service';
@@ -124,7 +124,7 @@ export class MyGameDetailsPage implements OnInit {
   errorMessage = '';
   achievementsErrorMessage = '';
   newsErrorMessage = '';
-  selectedTab: 'overview' | 'news' = 'overview';
+  selectedTab: 'overview' | 'progress' | 'news' = 'overview';
   selectedNewsProvider: string | null = null;
   readonly newsSkeletonRows = [1, 2, 3];
 
@@ -237,7 +237,7 @@ export class MyGameDetailsPage implements OnInit {
   }
 
   get platformLabel(): string {
-    return Platforms.find((platform) => platform.value === Number(this.game?.platforms))?.label ?? 'Unknown platform';
+    return platformLabelFromValue(this.game?.platforms);
   }
 
   get genreLabel(): string {
@@ -453,7 +453,7 @@ export class MyGameDetailsPage implements OnInit {
   }
 
   setDetailTab(value: unknown): void {
-    this.selectedTab = value === 'news' ? 'news' : 'overview';
+    this.selectedTab = value === 'news' ? 'news' : value === 'progress' ? 'progress' : 'overview';
     if (this.selectedTab === 'news' && !this.newsLoaded && !this.isNewsLoading) {
       void this.loadNews();
     }

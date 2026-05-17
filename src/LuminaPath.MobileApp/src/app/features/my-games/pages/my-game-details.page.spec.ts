@@ -175,6 +175,15 @@ describe('MyGameDetailsPage', () => {
     expect(component.isLoading).toBeFalse();
   });
 
+  it('switches trophies and quests into the progress tab without loading news', () => {
+    configure('42', makeGame({ id: 42, name: 'Hades', myGames: makeMyGame(7, 42) }));
+
+    component.setDetailTab('progress');
+
+    expect(component.selectedTab).toBe('progress');
+    expect(gameService.getNews).not.toHaveBeenCalled();
+  });
+
   it('loads game news on demand for the news tab', async () => {
     const game = makeGame({ id: 42, name: 'Hades', myGames: null });
     configure('42', game);
