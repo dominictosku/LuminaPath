@@ -529,5 +529,5 @@ dotnet test Test/Test.csproj -p:OutDir=.\artifacts\test-out\
 Apply Migrations
 
 ```powershell
-dotnet ef migrations --project src/LuminaPath.Infrastructure/LuminaPath.Infrastructure.csproj --startup-project src/LuminaPath/LuminaPath.csproj add FixQuestMigration
+dotnet ef migrations --project src/LuminaPath.Infrastructure/LuminaPath.Infrastructure.csproj --startup-project src/LuminaPath/LuminaPath.csproj add <MigrationName>
 ```
