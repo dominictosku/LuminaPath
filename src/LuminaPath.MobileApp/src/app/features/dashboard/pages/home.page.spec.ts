@@ -14,6 +14,13 @@ import { PaginateResult } from 'src/app/core/entities/paginatedResult';
 function pageOf<T>(items: T[]): PaginateResult<T> {
   const page = new PaginateResult<T>();
   page.data = items;
+  page.totalCount = items.length;
+  return page;
+}
+
+function pageWithTotal<T>(items: T[], totalCount: number): PaginateResult<T> {
+  const page = pageOf(items);
+  page.totalCount = totalCount;
   return page;
 }
 
@@ -135,5 +142,36 @@ describe('HomePage', () => {
 
     expect(component.focusItems.some((item) => item.title === 'Hades')).toBeTrue();
     expect(component.activityItems.some((item) => item.title === 'Beat boss')).toBeTrue();
+  }));
+
+  it('uses server-side library totals instead of the first page length', fakeAsync(() => {
+    gameService.getAll.and.returnValue(of(pageWithTotal([
+      {
+        id: 1,
+        name: 'Loaded Game',
+        description: '',
+        releaseDate: new Date(),
+        genre: 'Action',
+        platforms: 2,
+        playtime: 10,
+        parentGameId: null,
+        parentGameName: null,
+        dlcs: null,
+        image: null,
+        myGames: { status: 2, timeSpend: 1, myGameInfo: { trackedHours: 2 } },
+      } as never,
+    ], 123)));
+    animeService.getAll.and.returnValue(of(pageWithTotal([], 4)));
+    movieService.getAll.and.returnValue(of(pageWithTotal([], 3)));
+    seriesService.getAll.and.returnValue(of(pageWithTotal([], 2)));
+
+    fixture.detectChanges();
+    tick();
+
+    const gameFilter = gameService.getAll.calls.mostRecent().args[0];
+    expect(gameFilter?.MyMedia).toBeTrue();
+    expect(gameFilter?.Paging.Count).toBe(1000);
+    expect(component.libraryTotal).toBe(132);
+    expect(component.metrics.find((metric) => metric.label === 'Library')?.value).toBe('132');
   }));
 });

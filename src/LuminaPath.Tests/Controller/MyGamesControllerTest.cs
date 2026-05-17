@@ -1,4 +1,5 @@
 using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Entities;
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
@@ -147,6 +148,45 @@ namespace Test.Controller
         }
 
         [Fact]
+        public async Task Get_IncludesThirdPartyTrackedHours()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string userId = "user-1";
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.Add(NewUser(userId));
+                var game = new Game { Name = "Death Stranding", Description = "Delivery" };
+                dbContext.Games.Add(game);
+                dbContext.MyGames.Add(new MyGame
+                {
+                    Game = game,
+                    LuminaUserId = userId,
+                    Status = GameStatus.Playing,
+                    Priority = 1,
+                    TimeSpend = 3,
+                    MyGameInfo = new LuminaPath.Core.Models.Third_Party.MyGameInfo
+                    {
+                        TrackedHours = 12.5,
+                        FirstPlayed = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                        LastPlayed = new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc)
+                    }
+                });
+                await dbContext.SaveChangesAsync();
+            }
+
+            var (controller, _) = CreateController(options, userId);
+
+            var result = await controller.Get(new MediaFilter());
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var page = Assert.IsType<PaginatedResult<MyGameDto>>(ok.Value);
+            var dto = Assert.Single(page.Data);
+            Assert.NotNull(dto.MyGameInfo);
+            Assert.Equal(12.5, dto.MyGameInfo!.TrackedHours);
+        }
+
+        [Fact]
         public async Task DeleteAsync_ReturnsOk_WhenEntryIsDeleted()
         {
             var options = Utilities.DbContext.TestDbContextOptions();
@@ -189,6 +229,57 @@ namespace Test.Controller
             var result = await controller.DeleteAsync(9999);
 
             Assert.IsType<NotFoundObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task GetAchievements_ReturnsEarnedTrophiesForOwnedGame()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string userId = "user-1";
+            int myGameId;
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.Add(NewUser(userId));
+                var game = new Game { Name = "Gran Turismo", Description = "Racing" };
+                dbContext.Games.Add(game);
+                var myGame = new MyGame
+                {
+                    Game = game,
+                    LuminaUserId = userId,
+                    Status = GameStatus.Playing,
+                    Priority = 1
+                };
+                var trophy = new GameAchievement
+                {
+                    Game = game,
+                    CanonicalKey = "license-a",
+                    Title = "License A",
+                    Description = "Earn the license",
+                    PsnTrophyType = "silver"
+                };
+                dbContext.MyGames.Add(myGame);
+                dbContext.GameAchievements.Add(trophy);
+                dbContext.UserGameAchievements.Add(new UserGameAchievement
+                {
+                    GameAchievement = trophy,
+                    LuminaUserId = userId,
+                    Provider = ExternalMediaProvider.Psn,
+                    SourceAchievementId = "default:4"
+                });
+                await dbContext.SaveChangesAsync();
+                myGameId = myGame.Id;
+            }
+
+            var (controller, _) = CreateController(options, userId);
+
+            var result = await controller.GetAchievements(myGameId);
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var achievements = Assert.IsType<List<UserGameAchievementDto>>(ok.Value);
+            var trophyDto = Assert.Single(achievements);
+            Assert.Equal("License A", trophyDto.Title);
+            Assert.Equal("PlayStation", trophyDto.ProviderName);
         }
 
         private static (MyGamesController controller, MyGameService service) CreateController(

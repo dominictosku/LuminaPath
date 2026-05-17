@@ -51,12 +51,13 @@ import {
   returnUpBackOutline,
   saveOutline,
   trashOutline,
+  trophyOutline,
 } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 
 import { GameService } from 'src/app/features/games/services/game.service';
 import { Game, GameNewsItem, GameSummary, Platforms } from 'src/app/features/games/models/games.model';
-import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
+import { MyGameService, UserGameAchievement } from 'src/app/features/my-games/services/my-game.service';
 import { Quest, QuestBoardService, QuestType } from 'src/app/features/quests/services/quest-board.service';
 import { GameForecast, GamingSessionService } from 'src/app/features/planing/services/gaming-session.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
@@ -114,11 +115,14 @@ export class MyGameDetailsPage implements OnInit {
   game: GameWithFlexibleLibrary | null = null;
   quests: Quest[] = [];
   forecast: GameForecast | null = null;
+  achievements: UserGameAchievement[] = [];
   newsItems: GameNewsItem[] = [];
   isLoading = true;
+  isAchievementsLoading = false;
   isNewsLoading = false;
   newsLoaded = false;
   errorMessage = '';
+  achievementsErrorMessage = '';
   newsErrorMessage = '';
   selectedTab: 'overview' | 'news' = 'overview';
   selectedNewsProvider: string | null = null;
@@ -186,6 +190,7 @@ export class MyGameDetailsPage implements OnInit {
       returnUpBackOutline,
       saveOutline,
       trashOutline,
+      trophyOutline,
     });
   }
 
@@ -404,6 +409,43 @@ export class MyGameDetailsPage implements OnInit {
 
   trackByQuest(_: number, quest: Quest): number {
     return quest.id;
+  }
+
+  trackByAchievement(_: number, achievement: UserGameAchievement): number {
+    return achievement.id;
+  }
+
+  get achievementSummaryLabel(): string {
+    if (this.isAchievementsLoading) {
+      return 'Syncing';
+    }
+    if (!this.achievements.length) {
+      return 'None earned yet';
+    }
+    return `${this.achievements.length} earned`;
+  }
+
+  achievementDateLabel(achievement: UserGameAchievement): string {
+    const dateValue = achievement.unlockedAt ?? achievement.syncedAt;
+    const date = dateValue ? new Date(dateValue) : null;
+    if (!date || Number.isNaN(date.getTime())) {
+      return 'Synced recently';
+    }
+
+    return new Intl.DateTimeFormat('en', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  trophyTypeLabel(value?: string | null): string {
+    const trophyType = value?.trim();
+    if (!trophyType) {
+      return 'Achievement';
+    }
+
+    return trophyType.charAt(0).toUpperCase() + trophyType.slice(1);
   }
 
   trackByNews(_: number, item: GameNewsItem): string {
@@ -680,15 +722,30 @@ export class MyGameDetailsPage implements OnInit {
     if (myGameId == null) {
       this.quests = [];
       this.forecast = null;
+      this.achievements = [];
+      this.achievementsErrorMessage = '';
+      this.isAchievementsLoading = false;
       return;
     }
 
-    const [quests, forecast] = await Promise.all([
-      this.questBoardService.getQuestsForGame(myGameId),
-      firstValueFrom(this.sessionService.forecast(myGameId)).catch(() => null),
-    ]);
-    this.quests = quests;
-    this.forecast = forecast;
+    this.isAchievementsLoading = true;
+    this.achievementsErrorMessage = '';
+
+    try {
+      const [quests, forecast, achievements] = await Promise.all([
+        this.questBoardService.getQuestsForGame(myGameId),
+        firstValueFrom(this.sessionService.forecast(myGameId)).catch(() => null),
+        firstValueFrom(this.myGameService.getAchievements(myGameId)).catch(() => {
+          this.achievementsErrorMessage = 'Trophies could not be loaded right now.';
+          return [];
+        }),
+      ]);
+      this.quests = quests;
+      this.forecast = forecast;
+      this.achievements = achievements;
+    } finally {
+      this.isAchievementsLoading = false;
+    }
   }
 
   forecastSummary(): string {

@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { playedHoursOfGame } from 'src/app/features/games/domain/game-library-metrics';
 import { Game } from 'src/app/features/games/models/games.model';
 
 @Component({
@@ -12,5 +13,9 @@ export class MyGamesComponent {
   media = new Game()
   openModal(object: any, id: any) {
 
+  }
+
+  playedHoursLabel(game: Game): string {
+    return `${Math.round(playedHoursOfGame(game) * 10) / 10}h`;
   }
 }

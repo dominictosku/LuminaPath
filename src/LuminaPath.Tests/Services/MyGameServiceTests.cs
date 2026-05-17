@@ -389,6 +389,125 @@ namespace Test.Services
             Assert.DoesNotContain("Bastion", csv);
         }
 
+        [Fact]
+        public async Task GetEarnedAchievementsAsync_ReturnsOnlyCallingUsersEarnedAchievementsForGame()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string userA = "user-a";
+            const string userB = "user-b";
+            int myGameId;
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.AddRange(NewUser(userA), NewUser(userB));
+                var game = new Game { Name = "Astro Bot", Description = "Platformer" };
+                var otherGame = new Game { Name = "Returnal", Description = "Shooter" };
+                dbContext.Games.AddRange(game, otherGame);
+                var myGame = new MyGame
+                {
+                    Game = game,
+                    LuminaUserId = userA,
+                    Status = GameStatus.Playing,
+                    Priority = 1
+                };
+                dbContext.MyGames.Add(myGame);
+
+                var earned = new GameAchievement
+                {
+                    Game = game,
+                    CanonicalKey = "first-jump",
+                    Title = "First jump",
+                    Description = "Jump once",
+                    IconUrl = "https://example.test/trophy.png",
+                    PsnTrophyType = "bronze"
+                };
+                var otherUserEarned = new GameAchievement
+                {
+                    Game = game,
+                    CanonicalKey = "other-user",
+                    Title = "Other user",
+                    Description = "Not yours"
+                };
+                var otherGameEarned = new GameAchievement
+                {
+                    Game = otherGame,
+                    CanonicalKey = "other-game",
+                    Title = "Other game",
+                    Description = "Wrong game"
+                };
+                dbContext.GameAchievements.AddRange(earned, otherUserEarned, otherGameEarned);
+                dbContext.UserGameAchievements.AddRange(
+                    new UserGameAchievement
+                    {
+                        GameAchievement = earned,
+                        LuminaUserId = userA,
+                        Provider = ExternalMediaProvider.Psn,
+                        SourceAchievementId = "default:1",
+                        UnlockedAt = new DateTime(2026, 5, 10, 12, 0, 0, DateTimeKind.Utc),
+                        SyncedAt = new DateTime(2026, 5, 11, 12, 0, 0, DateTimeKind.Utc)
+                    },
+                    new UserGameAchievement
+                    {
+                        GameAchievement = otherUserEarned,
+                        LuminaUserId = userB,
+                        Provider = ExternalMediaProvider.Psn,
+                        SourceAchievementId = "default:2"
+                    },
+                    new UserGameAchievement
+                    {
+                        GameAchievement = otherGameEarned,
+                        LuminaUserId = userA,
+                        Provider = ExternalMediaProvider.Steam,
+                        SourceAchievementId = "ACH_WIN"
+                    });
+
+                await dbContext.SaveChangesAsync();
+                myGameId = myGame.Id;
+            }
+
+            var service = new MyGameService(new TestDbContextFactory(options), new ObjectMapper());
+
+            var achievements = await service.GetEarnedAchievementsAsync(myGameId, userA);
+
+            var only = Assert.Single(achievements!);
+            Assert.Equal("First jump", only.Title);
+            Assert.Equal("PlayStation", only.ProviderName);
+            Assert.Equal("bronze", only.TrophyType);
+            Assert.Equal("default:1", only.SourceAchievementId);
+        }
+
+        [Fact]
+        public async Task GetEarnedAchievementsAsync_ReturnsNull_WhenLibraryEntryDoesNotBelongToUser()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string userA = "user-a";
+            const string userB = "user-b";
+            int myGameId;
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.AddRange(NewUser(userA), NewUser(userB));
+                var game = new Game { Name = "Journey", Description = "Adventure" };
+                dbContext.Games.Add(game);
+                var myGame = new MyGame
+                {
+                    Game = game,
+                    LuminaUserId = userA,
+                    Status = GameStatus.Playing,
+                    Priority = 1
+                };
+                dbContext.MyGames.Add(myGame);
+                await dbContext.SaveChangesAsync();
+                myGameId = myGame.Id;
+            }
+
+            var service = new MyGameService(new TestDbContextFactory(options), new ObjectMapper());
+
+            var achievements = await service.GetEarnedAchievementsAsync(myGameId, userB);
+
+            Assert.Null(achievements);
+        }
+
         private static LuminaUser NewUser(string id) => new()
         {
             Id = id,

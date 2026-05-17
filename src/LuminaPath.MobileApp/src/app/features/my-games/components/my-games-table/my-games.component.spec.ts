@@ -19,4 +19,27 @@ describe('MyGamesComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('shows manual and third-party tracked hours together', () => {
+    component.media.myGames = {
+      id: 1,
+      rating: null,
+      startDate: null,
+      endDate: null,
+      status: 2,
+      timeSpend: 3,
+      gameId: 1,
+      personalNotes: null,
+      game: null,
+      myGameInfo: {
+        id: 1,
+        myGameId: 1,
+        trackedHours: 4.25,
+        firstPlayed: null,
+        lastPlayed: null,
+      },
+    };
+
+    expect(component.playedHoursLabel(component.media)).toBe('7.3h');
+  });
 });

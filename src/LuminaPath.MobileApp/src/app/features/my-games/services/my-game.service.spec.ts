@@ -92,6 +92,34 @@ describe('MyGameService', () => {
     req.flush({ id: 7, gameId: 42, status: 2 });
   });
 
+  it('getAchievements fetches earned trophies for a library entry', () => {
+    service.getAchievements(7).subscribe((achievements) => {
+      expect(achievements[0].title).toBe('First jump');
+      expect(achievements[0].providerName).toBe('PlayStation');
+    });
+
+    const req = httpMock.expectOne(`${endpoint}/7/achievements`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.withCredentials).toBeTrue();
+
+    req.flush([
+      {
+        id: 1,
+        gameAchievementId: 2,
+        provider: 2,
+        providerName: 'PlayStation',
+        sourceAchievementId: 'default:1',
+        title: 'First jump',
+        description: 'Jump once',
+        iconUrl: null,
+        isHidden: false,
+        trophyType: 'bronze',
+        unlockedAt: '2026-05-10T00:00:00.000Z',
+        syncedAt: '2026-05-11T00:00:00.000Z',
+      },
+    ]);
+  });
+
   it('does not issue a request until subscribed', () => {
     service.addToLibrary(1, { status: 1, timeSpend: 0 });
     httpMock.expectNone(endpoint);

@@ -20,7 +20,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         protected override IQueryable<Game> IncludeUserLibrary(IQueryable<Game> query, string userId)
         {
-            return query.Include(g => g.MyGames!.Where(p => p.LuminaUserId == userId));
+            return query
+                .Include(g => g.MyGames!.Where(p => p.LuminaUserId == userId))
+                    .ThenInclude(myGame => myGame.MyGameInfo);
         }
 
         protected override Expression<Func<Game, bool>> IsInUserLibrary(string userId)

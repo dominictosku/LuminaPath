@@ -46,6 +46,7 @@ import {
   releaseDateOfGame,
   remainingHoursOfGame,
 } from '../../games/domain/game-library-metrics';
+import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 
 type DashboardMetric = {
   label: string;
@@ -120,6 +121,7 @@ export class HomePage implements OnInit {
   playedHours = 0;
   completionRate = 0;
   heroProgress = 0;
+  libraryTotal = 0;
   isLoading = true;
   errorMessage = '';
 
@@ -157,12 +159,16 @@ export class HomePage implements OnInit {
     this.isLoading = !event;
     this.errorMessage = '';
     const today = this.startOfToday();
+    const gamesFilter = this.dashboardLibraryFilter();
+    const animesFilter = this.dashboardLibraryFilter();
+    const moviesFilter = this.dashboardLibraryFilter();
+    const seriesFilter = this.dashboardLibraryFilter();
 
     forkJoin({
-      games: this.gameService.getAll(),
-      animes: this.animeService.getAll(),
-      movies: this.movieService.getAll(),
-      series: this.seriesService.getAll(),
+      games: this.gameService.getAll(gamesFilter),
+      animes: this.animeService.getAll(animesFilter),
+      movies: this.movieService.getAll(moviesFilter),
+      series: this.seriesService.getAll(seriesFilter),
       sessions: this.sessionService.list({ from: today, to: this.addDays(today, 14) }).pipe(catchError(() => of([]))),
       board: from(this.questBoardService.getBoard()).pipe(catchError(() => of(null))),
     }).subscribe({
@@ -171,6 +177,7 @@ export class HomePage implements OnInit {
         this.animes = result.animes.data ?? [];
         this.movies = result.movies.data ?? [];
         this.series = result.series.data ?? [];
+        this.libraryTotal = this.totalOf(result.games) + this.totalOf(result.animes) + this.totalOf(result.movies) + this.totalOf(result.series);
         this.sessions = result.sessions ?? [];
         this.questBoard = result.board;
         this.buildDashboard();
@@ -182,6 +189,7 @@ export class HomePage implements OnInit {
         this.animes = [];
         this.movies = [];
         this.series = [];
+        this.libraryTotal = 0;
         this.sessions = [];
         this.questBoard = null;
         this.buildDashboard();
@@ -228,13 +236,13 @@ export class HomePage implements OnInit {
   }
 
   private createMetrics(completedItems: number): DashboardMetric[] {
-    const ownedItems = this.ownedItems.length;
+    const ownedItems = this.libraryTotal || this.ownedItems.length;
     const activeItems = this.playingItems.length;
 
     return [
       {
         label: 'Library',
-        value: String(this.mediaItems.length),
+        value: String(ownedItems),
         detail: `${ownedItems} in your collection`,
         icon: 'library-outline',
         tone: 'blue',
@@ -522,6 +530,19 @@ export class HomePage implements OnInit {
     const next = new Date(value);
     next.setDate(next.getDate() + days);
     return next;
+  }
+
+  private dashboardLibraryFilter(): MediaFilter {
+    const filter = new MediaFilter();
+    filter.MyMedia = true;
+    filter.Ownership = 'mine';
+    filter.SortBy = 'recently-added';
+    filter.setCount(1000);
+    return filter;
+  }
+
+  private totalOf<T>(page: { data?: T[] | null; totalCount?: number | null }): number {
+    return Number(page.totalCount ?? page.data?.length ?? 0);
   }
 
   private completeRefresh(event?: CustomEvent) {
