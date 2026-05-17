@@ -1,0 +1,100 @@
+@using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.Application.BackgroundJobs
+@using Microsoft.Extensions.Options
+@inject ApplicationSettingsService ApplicationSettingsService
+@inject IOptions<BackgroundJobOptions> Options
+@inject ISnackbar Snackbar
+
+<section class="settings-panel">
+	<div class="settings-panel__header">
+		<div>
+			<MudText Typo="Typo.overline">Scheduling</MudText>
+			<MudText Typo="Typo.h5">Internal job options</MudText>
+			<MudText Typo="Typo.body2">
+				Control automatic database backups and retention for internal maintenance jobs.
+			</MudText>
+		</div>
+		<div class="settings-panel__icon">
+			<MudIcon Icon="@Icons.Material.Filled.EventRepeat" />
+		</div>
+	</div>
+
+	<div class="settings-form">
+		<MudSwitch @bind-Value="scheduledBackupsEnabled"
+				   Color="Color.Primary"
+				   Label="Enable scheduled database backups" />
+
+		<MudNumericField @bind-Value="backupIntervalHours"
+						 Label="Backup interval hours"
+						 Variant="MudBlazor.Variant.Outlined"
+						 Min="1"
+						 Max="720" />
+
+		<MudNumericField @bind-Value="backupRetentionCount"
+						 Label="Backups to keep"
+						 Variant="MudBlazor.Variant.Outlined"
+						 Min="1"
+						 Max="500" />
+
+		<MudNumericField @bind-Value="jobHistoryRetentionDays"
+						 Label="Job history retention days"
+						 Variant="MudBlazor.Variant.Outlined"
+						 Min="1"
+						 Max="3650" />
+
+		<div class="settings-action-row">
+			<MudButton OnClick="Save"
+					   Variant="MudBlazor.Variant.Filled"
+					   Color="Color.Secondary"
+					   StartIcon="@Icons.Material.Filled.Save"
+					   Disabled="@saving">
+				Save Job Settings
+			</MudButton>
+		</div>
+	</div>
+</section>
+
+@code {
+	private bool scheduledBackupsEnabled;
+	private int backupIntervalHours;
+	private int backupRetentionCount;
+	private int jobHistoryRetentionDays;
+	private bool saving;
+
+	protected override async Task OnInitializedAsync()
+	{
+		var stored = await ApplicationSettingsService.GetBackgroundJobSettingsAsync();
+		scheduledBackupsEnabled = ParseBool(stored.ScheduledBackupsEnabled, Options.Value.ScheduledBackupsEnabled);
+		backupIntervalHours = ParseInt(stored.BackupIntervalHours, Options.Value.BackupIntervalHours, 1, 720);
+		backupRetentionCount = ParseInt(stored.BackupRetentionCount, Options.Value.BackupRetentionCount, 1, 500);
+		jobHistoryRetentionDays = ParseInt(stored.JobHistoryRetentionDays, Options.Value.JobHistoryRetentionDays, 1, 3650);
+	}
+
+	private async Task Save()
+	{
+		saving = true;
+		try
+		{
+			await ApplicationSettingsService.SaveBackgroundJobSettingsAsync(new BackgroundJobStoredSettings(
+				scheduledBackupsEnabled.ToString(),
+				Math.Clamp(backupIntervalHours, 1, 720).ToString(),
+				Math.Clamp(backupRetentionCount, 1, 500).ToString(),
+				Math.Clamp(jobHistoryRetentionDays, 1, 3650).ToString()));
+			Snackbar.Add("Saved background job settings", Severity.Success);
+		}
+		finally
+		{
+			saving = false;
+		}
+	}
+
+	private static bool ParseBool(string value, bool fallback)
+	{
+		return bool.TryParse(value, out var parsed) ? parsed : fallback;
+	}
+
+	private static int ParseInt(string value, int fallback, int min, int max)
+	{
+		return int.TryParse(value, out var parsed) ? Math.Clamp(parsed, min, max) : Math.Clamp(fallback, min, max);
+	}
+}

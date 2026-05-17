@@ -11,6 +11,10 @@ public sealed class ApplicationSettingsService
     public const string MetadataIgdbClientId = "Metadata.IgdbClientId";
     public const string MetadataIgdbClientSecret = "Metadata.IgdbClientSecret";
     public const string MetadataRawgApiKey = "Metadata.RawgApiKey";
+    public const string BackgroundJobsScheduledBackupsEnabled = "BackgroundJobs.ScheduledBackupsEnabled";
+    public const string BackgroundJobsBackupIntervalHours = "BackgroundJobs.BackupIntervalHours";
+    public const string BackgroundJobsBackupRetentionCount = "BackgroundJobs.BackupRetentionCount";
+    public const string BackgroundJobsJobHistoryRetentionDays = "BackgroundJobs.JobHistoryRetentionDays";
     public const string NewsEnabled = "News.Enabled";
     public const string NewsCustomRssUrl = "News.CustomRssUrl";
 
@@ -99,6 +103,32 @@ public sealed class ApplicationSettingsService
         return string.IsNullOrWhiteSpace(value) || bool.TryParse(value, out var enabled) && enabled;
     }
 
+    public async Task<BackgroundJobStoredSettings> GetBackgroundJobSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var settings = await context.ApplicationSettings
+            .AsNoTracking()
+            .Where(setting => setting.Key == BackgroundJobsScheduledBackupsEnabled
+                || setting.Key == BackgroundJobsBackupIntervalHours
+                || setting.Key == BackgroundJobsBackupRetentionCount
+                || setting.Key == BackgroundJobsJobHistoryRetentionDays)
+            .ToDictionaryAsync(setting => setting.Key, setting => setting.Value, cancellationToken);
+
+        return new BackgroundJobStoredSettings(
+            settings.GetValueOrDefault(BackgroundJobsScheduledBackupsEnabled) ?? string.Empty,
+            settings.GetValueOrDefault(BackgroundJobsBackupIntervalHours) ?? string.Empty,
+            settings.GetValueOrDefault(BackgroundJobsBackupRetentionCount) ?? string.Empty,
+            settings.GetValueOrDefault(BackgroundJobsJobHistoryRetentionDays) ?? string.Empty);
+    }
+
+    public async Task SaveBackgroundJobSettingsAsync(BackgroundJobStoredSettings settings, CancellationToken cancellationToken = default)
+    {
+        await SaveValueAsync(BackgroundJobsScheduledBackupsEnabled, settings.ScheduledBackupsEnabled.Trim(), cancellationToken);
+        await SaveValueAsync(BackgroundJobsBackupIntervalHours, settings.BackupIntervalHours.Trim(), cancellationToken);
+        await SaveValueAsync(BackgroundJobsBackupRetentionCount, settings.BackupRetentionCount.Trim(), cancellationToken);
+        await SaveValueAsync(BackgroundJobsJobHistoryRetentionDays, settings.JobHistoryRetentionDays.Trim(), cancellationToken);
+    }
+
     public Task SaveNewsEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {
         return SaveValueAsync(NewsEnabled, enabled.ToString(), cancellationToken);
@@ -155,3 +185,9 @@ public sealed record GameMetadataSettings(
     string IgdbClientId,
     string IgdbClientSecret,
     string RawgApiKey);
+
+public sealed record BackgroundJobStoredSettings(
+    string ScheduledBackupsEnabled,
+    string BackupIntervalHours,
+    string BackupRetentionCount,
+    string JobHistoryRetentionDays);

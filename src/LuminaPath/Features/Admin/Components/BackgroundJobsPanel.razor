@@ -2,6 +2,7 @@
 @using LuminaPath.Core.Models
 @using LuminaPath.Infrastructure.Services.Application.BackgroundJobs
 @inject BackgroundJobService BackgroundJobService
+@inject ISnackbar Snackbar
 
 <section class="settings-panel settings-panel--primary">
 	<div class="settings-panel__header">
@@ -62,6 +63,7 @@
 					<MudTh>Created</MudTh>
 					<MudTh>Finished</MudTh>
 					<MudTh>Message</MudTh>
+					<MudTh>Actions</MudTh>
 				</HeaderContent>
 				<RowTemplate>
 					<MudTd DataLabel="Job">
@@ -76,8 +78,62 @@
 					<MudTd DataLabel="Created">@FormatDate(context.CreatedAt)</MudTd>
 					<MudTd DataLabel="Finished">@FormatDate(context.CompletedAt)</MudTd>
 					<MudTd DataLabel="Message">@Message(context)</MudTd>
+					<MudTd DataLabel="Actions">
+						<div class="job-actions">
+							<MudIconButton Icon="@Icons.Material.Filled.Info"
+										   Color="Color.Primary"
+										   Size="Size.Small"
+										   OnClick="@(() => SelectJob(context))" />
+							<MudIconButton Icon="@Icons.Material.Filled.Replay"
+										   Color="Color.Secondary"
+										   Size="Size.Small"
+										   Disabled="@(!CanRetry(context))"
+										   OnClick="@(async () => await RetryJob(context))" />
+							<MudIconButton Icon="@Icons.Material.Filled.Close"
+										   Color="Color.Warning"
+										   Size="Size.Small"
+										   Disabled="@(context.Status != BackgroundJobStatus.Pending)"
+										   OnClick="@(async () => await CancelJob(context))" />
+						</div>
+					</MudTd>
 				</RowTemplate>
 			</MudTable>
+
+			@if (selectedJob is not null)
+			{
+				<section class="job-detail">
+					<div class="job-detail__header">
+						<div>
+							<MudText Typo="Typo.overline">Job #@selectedJob.Id</MudText>
+							<MudText Typo="Typo.h6">@selectedJob.DisplayName</MudText>
+						</div>
+						<MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="@(() => selectedJob = null)" />
+					</div>
+					<div class="job-detail__grid">
+						<div><span>Type</span><strong>@selectedJob.JobType</strong></div>
+						<div><span>Status</span><strong>@selectedJob.Status</strong></div>
+						<div><span>Created</span><strong>@FormatDate(selectedJob.CreatedAt)</strong></div>
+						<div><span>Started</span><strong>@FormatDate(selectedJob.StartedAt)</strong></div>
+						<div><span>Completed</span><strong>@FormatDate(selectedJob.CompletedAt)</strong></div>
+						<div><span>Duration</span><strong>@Duration(selectedJob)</strong></div>
+					</div>
+					@if (!string.IsNullOrWhiteSpace(selectedJob.Payload))
+					{
+						<MudText Typo="Typo.overline">Payload</MudText>
+						<pre>@selectedJob.Payload</pre>
+					}
+					@if (!string.IsNullOrWhiteSpace(selectedJob.ResultMessage))
+					{
+						<MudText Typo="Typo.overline">Result</MudText>
+						<pre>@selectedJob.ResultMessage</pre>
+					}
+					@if (!string.IsNullOrWhiteSpace(selectedJob.ErrorMessage))
+					{
+						<MudText Typo="Typo.overline">Error</MudText>
+						<pre>@selectedJob.ErrorMessage</pre>
+					}
+				</section>
+			}
 		}
 	</div>
 </section>
@@ -120,10 +176,61 @@
 		display: grid;
 		gap: 4px;
 	}
+
+	.job-actions {
+		display: inline-flex;
+		gap: 4px;
+	}
+
+	.job-detail {
+		display: grid;
+		gap: 12px;
+		margin-top: 16px;
+		padding: 16px;
+		border: 1px solid rgba(59, 130, 246, .18);
+		border-radius: 12px;
+		background: rgba(255, 255, 255, .04);
+	}
+
+	.job-detail__header {
+		display: flex;
+		align-items: start;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.job-detail__grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+		gap: 10px;
+	}
+
+	.job-detail__grid > div {
+		display: grid;
+		gap: 4px;
+	}
+
+	.job-detail__grid span {
+		color: var(--mud-palette-text-secondary);
+		font-size: .75rem;
+		font-weight: 800;
+		text-transform: uppercase;
+	}
+
+	.job-detail pre {
+		max-height: 220px;
+		margin: 0;
+		padding: 12px;
+		overflow: auto;
+		border-radius: 8px;
+		background: rgba(0, 0, 0, .22);
+		white-space: pre-wrap;
+	}
 </style>
 
 @code {
 	private List<BackgroundJobRecord> jobs = new();
+	private BackgroundJobRecord? selectedJob;
 	private bool loading = true;
 
 	protected override async Task OnInitializedAsync()
@@ -137,6 +244,10 @@
 		try
 		{
 			jobs = await BackgroundJobService.GetHistoryAsync();
+			if (selectedJob is not null)
+			{
+				selectedJob = jobs.FirstOrDefault(job => job.Id == selectedJob.Id);
+			}
 		}
 		finally
 		{
@@ -172,5 +283,61 @@
 		return !string.IsNullOrWhiteSpace(job.ErrorMessage)
 			? job.ErrorMessage
 			: job.ResultMessage ?? "-";
+	}
+
+	private static bool CanRetry(BackgroundJobRecord job)
+	{
+		return job.Status is BackgroundJobStatus.Failed or BackgroundJobStatus.Canceled;
+	}
+
+	private void SelectJob(BackgroundJobRecord job)
+	{
+		selectedJob = job;
+	}
+
+	private async Task RetryJob(BackgroundJobRecord job)
+	{
+		var result = await BackgroundJobService.RetryAsync(job.Id);
+		result.Match(
+			success =>
+			{
+				Snackbar.Add($"Queued retry job #{success.Id}", Severity.Success);
+				return true;
+			},
+			failure =>
+			{
+				Snackbar.Add(string.Join("; ", failure.errorMessage), Severity.Warning);
+				return false;
+			});
+		await LoadJobs();
+	}
+
+	private async Task CancelJob(BackgroundJobRecord job)
+	{
+		var result = await BackgroundJobService.CancelPendingAsync(job.Id);
+		result.Match(
+			success =>
+			{
+				Snackbar.Add($"Canceled job #{success.Id}", Severity.Info);
+				return true;
+			},
+			failure =>
+			{
+				Snackbar.Add(string.Join("; ", failure.errorMessage), Severity.Warning);
+				return false;
+			});
+		await LoadJobs();
+	}
+
+	private static string Duration(BackgroundJobRecord job)
+	{
+		var start = job.StartedAt ?? job.CreatedAt;
+		var end = job.CompletedAt ?? (job.Status == BackgroundJobStatus.Running ? DateTime.UtcNow : start);
+		var duration = end - start;
+		return duration.TotalSeconds < 1
+			? "<1s"
+			: duration.TotalMinutes < 1
+				? $"{duration.TotalSeconds:0}s"
+				: $"{duration.TotalMinutes:0.#}m";
 	}
 }

@@ -53,6 +53,39 @@ public sealed class DatabaseBackupService
         return Task.FromResult<IReadOnlyList<DatabaseBackupInfo>>(backups);
     }
 
+    public Task<int> DeleteOldBackupsAsync(int keepCount, CancellationToken cancellationToken = default)
+    {
+        var directory = GetBackupDirectory();
+        if (!Directory.Exists(directory))
+        {
+            return Task.FromResult(0);
+        }
+
+        var backupsToDelete = Directory
+            .EnumerateFiles(directory, "*.dump", SearchOption.TopDirectoryOnly)
+            .Select(CreateBackupInfo)
+            .OrderByDescending(backup => backup.LastModifiedAt)
+            .Skip(Math.Max(keepCount, 0))
+            .ToList();
+
+        var deleted = 0;
+        foreach (var backup in backupsToDelete)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                File.Delete(backup.FullPath);
+                deleted++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not delete old database backup {BackupFile}.", backup.FileName);
+            }
+        }
+
+        return Task.FromResult(deleted);
+    }
+
     public async Task<Result<DatabaseBackupInfo, FailedResult>> CreateBackupAsync(CancellationToken cancellationToken = default)
     {
         var connectionString = ConfigurationValues.FirstNonEmpty(

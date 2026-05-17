@@ -36,10 +36,13 @@ internal static class ApplicationServiceCollectionExtensions
         services.AddScoped<NewsAggregationService>();
         services.AddScoped<GameMetadataRefreshService>();
         services.AddScoped<DatabaseBackupService>();
+        services.Configure<BackgroundJobOptions>(config.GetSection(BackgroundJobOptions.SectionName));
         services.AddSingleton<IBackgroundJobQueue, BackgroundJobQueue>();
+        services.AddScoped<BackgroundJobSettingsResolver>();
         services.AddScoped<BackgroundJobService>();
         services.AddScoped<IBackgroundJobRunner, DatabaseBackupJobRunner>();
         services.AddHostedService<QueuedBackgroundJobService>();
+        services.AddHostedService<BackgroundJobSchedulerService>();
         services.AddScoped<ApplicationSettingsService>();
         return services;
     }

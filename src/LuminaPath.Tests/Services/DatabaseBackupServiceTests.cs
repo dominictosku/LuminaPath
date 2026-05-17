@@ -64,6 +64,32 @@ public class DatabaseBackupServiceTests : IDisposable
             : Array.Empty<string>());
     }
 
+    [Fact]
+    public async Task DeleteOldBackupsAsync_KeepsNewestBackups()
+    {
+        Directory.CreateDirectory(_backupDirectory);
+        var oldest = Path.Combine(_backupDirectory, "oldest.dump");
+        var middle = Path.Combine(_backupDirectory, "middle.dump");
+        var newest = Path.Combine(_backupDirectory, "newest.dump");
+
+        await File.WriteAllTextAsync(oldest, "oldest");
+        await File.WriteAllTextAsync(middle, "middle");
+        await File.WriteAllTextAsync(newest, "newest");
+
+        File.SetLastWriteTimeUtc(oldest, new DateTime(2026, 1, 1, 8, 0, 0, DateTimeKind.Utc));
+        File.SetLastWriteTimeUtc(middle, new DateTime(2026, 1, 2, 8, 0, 0, DateTimeKind.Utc));
+        File.SetLastWriteTimeUtc(newest, new DateTime(2026, 1, 3, 8, 0, 0, DateTimeKind.Utc));
+
+        var service = CreateService(CreateConfiguration("Host=localhost;Database=luminapath;Username=user;Password=password"));
+
+        var deleted = await service.DeleteOldBackupsAsync(2);
+
+        Assert.Equal(1, deleted);
+        Assert.False(File.Exists(oldest));
+        Assert.True(File.Exists(middle));
+        Assert.True(File.Exists(newest));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_backupDirectory))

@@ -66,6 +66,143 @@ public class BackgroundJobServiceTests
             job => Assert.Equal("Old", job.JobType));
     }
 
+    [Fact]
+    public async Task EnqueueDatabaseBackupAsync_ReturnsExistingActiveJob()
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        await using (var context = new LuminaPathDbContext(options))
+        {
+            context.BackgroundJobs.Add(new BackgroundJobRecord
+            {
+                JobType = BackgroundJobTypes.DatabaseBackup,
+                DisplayName = "Database backup",
+                Status = BackgroundJobStatus.Running,
+                CreatedAt = new DateTime(2026, 5, 17, 9, 0, 0, DateTimeKind.Utc)
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var queue = new CapturingBackgroundJobQueue();
+        var service = new BackgroundJobService(new TestDbContextFactory(options), queue);
+
+        var job = await service.EnqueueDatabaseBackupAsync();
+
+        Assert.Equal(1, job.Id);
+        Assert.Equal(BackgroundJobStatus.Running, job.Status);
+        Assert.Empty(queue.QueuedJobIds);
+    }
+
+    [Fact]
+    public async Task RetryAsync_CreatesPendingCopy_ForFailedJob()
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        await using (var context = new LuminaPathDbContext(options))
+        {
+            context.BackgroundJobs.Add(new BackgroundJobRecord
+            {
+                JobType = BackgroundJobTypes.DatabaseBackup,
+                DisplayName = "Database backup",
+                Status = BackgroundJobStatus.Failed,
+                Payload = "{\"mode\":\"test\"}",
+                CreatedAt = new DateTime(2026, 5, 17, 9, 0, 0, DateTimeKind.Utc),
+                ErrorMessage = "failed"
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var queue = new CapturingBackgroundJobQueue();
+        var service = new BackgroundJobService(
+            new TestDbContextFactory(options),
+            queue,
+            () => new DateTime(2026, 5, 17, 10, 0, 0, DateTimeKind.Utc));
+
+        var result = await service.RetryAsync(1);
+        var retry = result.Match(job => job, failure => throw new InvalidOperationException(string.Join("; ", failure.errorMessage)));
+
+        Assert.Equal(2, retry.Id);
+        Assert.Equal(BackgroundJobStatus.Pending, retry.Status);
+        Assert.Equal("{\"mode\":\"test\"}", retry.Payload);
+        Assert.Equal([2], queue.QueuedJobIds);
+    }
+
+    [Fact]
+    public async Task CancelPendingAsync_MarksJobCanceled()
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        await using (var context = new LuminaPathDbContext(options))
+        {
+            context.BackgroundJobs.Add(new BackgroundJobRecord
+            {
+                JobType = BackgroundJobTypes.DatabaseBackup,
+                DisplayName = "Database backup",
+                Status = BackgroundJobStatus.Pending,
+                CreatedAt = new DateTime(2026, 5, 17, 9, 0, 0, DateTimeKind.Utc)
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var service = new BackgroundJobService(
+            new TestDbContextFactory(options),
+            new CapturingBackgroundJobQueue(),
+            () => new DateTime(2026, 5, 17, 10, 0, 0, DateTimeKind.Utc));
+
+        var result = await service.CancelPendingAsync(1);
+        var canceled = result.Match(job => job, failure => throw new InvalidOperationException(string.Join("; ", failure.errorMessage)));
+
+        Assert.Equal(BackgroundJobStatus.Canceled, canceled.Status);
+        Assert.Equal("Canceled by administrator.", canceled.ErrorMessage);
+        Assert.Equal(new DateTime(2026, 5, 17, 10, 0, 0, DateTimeKind.Utc), canceled.CompletedAt);
+    }
+
+    [Fact]
+    public async Task CleanupHistoryAsync_RemovesOnlyCompletedJobsOlderThanRetention()
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        await using (var context = new LuminaPathDbContext(options))
+        {
+            context.BackgroundJobs.AddRange(
+                new BackgroundJobRecord
+                {
+                    JobType = "Old",
+                    DisplayName = "Old done",
+                    Status = BackgroundJobStatus.Succeeded,
+                    CreatedAt = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc),
+                    CompletedAt = new DateTime(2026, 5, 1, 10, 1, 0, DateTimeKind.Utc)
+                },
+                new BackgroundJobRecord
+                {
+                    JobType = "Recent",
+                    DisplayName = "Recent done",
+                    Status = BackgroundJobStatus.Succeeded,
+                    CreatedAt = new DateTime(2026, 5, 16, 10, 0, 0, DateTimeKind.Utc),
+                    CompletedAt = new DateTime(2026, 5, 16, 10, 1, 0, DateTimeKind.Utc)
+                },
+                new BackgroundJobRecord
+                {
+                    JobType = "Pending",
+                    DisplayName = "Old pending",
+                    Status = BackgroundJobStatus.Pending,
+                    CreatedAt = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc)
+                });
+            await context.SaveChangesAsync();
+        }
+
+        var service = new BackgroundJobService(
+            new TestDbContextFactory(options),
+            new CapturingBackgroundJobQueue(),
+            () => new DateTime(2026, 5, 17, 10, 0, 0, DateTimeKind.Utc));
+
+        var deleted = await service.CleanupHistoryAsync(7);
+
+        Assert.Equal(1, deleted);
+        await using var assertContext = new LuminaPathDbContext(options);
+        var remaining = await assertContext.BackgroundJobs.OrderBy(job => job.JobType).ToListAsync();
+        Assert.Collection(
+            remaining,
+            job => Assert.Equal("Pending", job.JobType),
+            job => Assert.Equal("Recent", job.JobType));
+    }
+
     private sealed class CapturingBackgroundJobQueue : IBackgroundJobQueue
     {
         public List<int> QueuedJobIds { get; } = new();

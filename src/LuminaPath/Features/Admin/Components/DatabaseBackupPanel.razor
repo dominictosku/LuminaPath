@@ -146,7 +146,7 @@
 		try
 		{
 			var job = await BackgroundJobService.EnqueueDatabaseBackupAsync();
-			Snackbar.Add($"Queued database backup job #{job.Id}", Severity.Success);
+			Snackbar.Add($"Database backup job #{job.Id} is {job.Status.ToString().ToLowerInvariant()}", Severity.Success);
 			await LoadBackups();
 		}
 		finally
