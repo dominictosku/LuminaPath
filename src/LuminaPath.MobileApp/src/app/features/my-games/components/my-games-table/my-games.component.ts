@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { Game } from 'src/app/features/games/models/games.model';
 
 @Component({
@@ -7,11 +7,7 @@ import { Game } from 'src/app/features/games/models/games.model';
   styleUrls: ['./my-games.component.scss'],
   standalone: true,
 })
-export class MyGamesComponent implements OnInit {
-
-  constructor() { }
-
-  ngOnInit() { }
+export class MyGamesComponent {
   modalProps = { game: "mygames", form: "myMedia", id: 1 }
   media = new Game()
   openModal(object: any, id: any) {

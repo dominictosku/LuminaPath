@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle } from "@ionic/angular/standalone";
 
 @Component({
@@ -7,10 +7,4 @@ import { IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle } from "@ion
     styleUrls: ['./go-back.component.scss'],
     imports: [IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle]
 })
-export class GoBackComponent implements OnInit {
-
-  constructor() { }
-
-  ngOnInit() { }
-
-}
+export class GoBackComponent {}

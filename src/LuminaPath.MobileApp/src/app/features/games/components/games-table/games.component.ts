@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { Game } from '../../models/games.model';
 
 @Component({
@@ -7,12 +7,9 @@ import { Game } from '../../models/games.model';
   styleUrls: ['./games.component.scss'],
   standalone: true,
 })
-export class GamesComponent implements OnInit {
+export class GamesComponent {
+  @Input() media = new Game();
 
-  constructor() { }
-
-  ngOnInit() { }
-  @Input('media') media = new Game();
   route() {
   }
 }

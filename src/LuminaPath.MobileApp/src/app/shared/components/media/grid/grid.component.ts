@@ -1,5 +1,4 @@
-import { Component, OnInit } from '@angular/core';
-import { addIcons } from "ionicons";
+import { Component } from '@angular/core';
 import { GridGameDataComponent } from "src/app/features/games/components/grid-game-data/grid-game-data.component";
 
 @Component({
@@ -8,10 +7,4 @@ import { GridGameDataComponent } from "src/app/features/games/components/grid-ga
     styleUrls: ['./grid.component.scss'],
     imports: [GridGameDataComponent]
 })
-export class GridComponent implements OnInit {
-
-  constructor() { }
-
-  ngOnInit() { }
-
-}
+export class GridComponent {}

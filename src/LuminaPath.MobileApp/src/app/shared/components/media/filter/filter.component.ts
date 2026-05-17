@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { gridOutline, listOutline, add } from 'ionicons/icons';
 import { addIcons } from 'ionicons';
 import { IonIcon, IonFab, IonFabButton } from "@ionic/angular/standalone";
@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
     styleUrls: ['./filter.component.scss'],
     imports: [IonFabButton, IonFab, IonIcon, FormsModule]
 })
-export class FilterComponent implements OnInit {
+export class FilterComponent {
 
   constructor() {
     addIcons({ gridOutline, listOutline, add });
@@ -22,8 +22,6 @@ export class FilterComponent implements OnInit {
   searchString = ""
 
   modalProps = { form: "media" }
-
-  ngOnInit() { }
 
   filterMedia() {
 

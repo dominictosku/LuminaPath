@@ -188,7 +188,7 @@
           </span>
           <span class="forecast-bar__chip">
             <i class="forecast-dot forecast-dot--remaining"></i>
-            Remaining <strong>{{ forecast.remainingHours == null ? '—' : forecastHours(forecast.remainingHours) }}</strong>
+            Remaining <strong>{{ forecast.remainingHours === null ? '—' : forecastHours(forecast.remainingHours) }}</strong>
           </span>
           <span class="forecast-bar__chip forecast-bar__chip--pace">
             <ion-icon name="hourglass-outline"></ion-icon>

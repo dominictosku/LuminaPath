@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -8,10 +8,4 @@ import { RouterLink } from '@angular/router';
   standalone: true,
   imports: [RouterLink],
 })
-export class SelectorComponent  implements OnInit {
-
-  constructor() { }
-
-  ngOnInit() {}
-
-}
+export class SelectorComponent {}

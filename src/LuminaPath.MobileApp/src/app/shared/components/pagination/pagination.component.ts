@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-pagination',
@@ -6,12 +6,7 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./pagination.component.scss'],
   standalone: true,
 })
-export class PaginationComponent implements OnInit {
-
-  constructor() { }
-
-  ngOnInit() { }
-
+export class PaginationComponent {
   PageIndex = 1;
   totalPages = 10;
   async getPaginatedMedia(page: number) {

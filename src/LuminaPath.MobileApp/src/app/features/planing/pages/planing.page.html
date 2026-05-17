@@ -92,7 +92,7 @@
             <h3>{{ forecast.gameName }}</h3>
             <ion-badge>
               <ion-icon name="hourglass-outline"></ion-icon>
-              {{ forecast.remainingHours == null ? '—' : formatHours(forecast.remainingHours) }} left
+              {{ forecast.remainingHours === null ? '—' : formatHours(forecast.remainingHours) }} left
             </ion-badge>
           </header>
 

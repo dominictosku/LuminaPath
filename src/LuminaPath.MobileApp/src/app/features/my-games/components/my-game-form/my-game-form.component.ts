@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 
 @Component({
     selector: 'app-my-game-form',
@@ -6,10 +6,4 @@ import { Component, OnInit } from '@angular/core';
     styleUrls: ['./my-game-form.component.scss'],
     standalone: false
 })
-export class MyGameFormComponent  implements OnInit {
-
-  constructor() { }
-
-  ngOnInit() {}
-
-}
+export class MyGameFormComponent {}

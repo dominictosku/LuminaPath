@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { IonProgressBar, IonSkeletonText } from "@ionic/angular/standalone";
 
 @Component({
@@ -7,10 +7,4 @@ import { IonProgressBar, IonSkeletonText } from "@ionic/angular/standalone";
     styleUrls: ['./loading.component.scss'],
     imports: [IonSkeletonText, IonProgressBar]
 })
-export class LoadingComponent implements OnInit {
-
-  constructor() { }
-
-  ngOnInit() { }
-
-}
+export class LoadingComponent {}
