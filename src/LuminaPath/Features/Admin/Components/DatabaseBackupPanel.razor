@@ -1,0 +1,185 @@
+@using LuminaPath.Infrastructure.Services.Application
+@inject DatabaseBackupService DatabaseBackupService
+@inject ISnackbar Snackbar
+
+<section class="settings-panel settings-panel--primary">
+	<div class="settings-panel__header">
+		<div>
+			<MudText Typo="Typo.overline">Database backups</MudText>
+			<MudText Typo="Typo.h5">PostgreSQL snapshots</MudText>
+			<MudText Typo="Typo.body2">
+				Create an on-demand pg_dump backup and review the most recent backup files.
+			</MudText>
+		</div>
+		<div class="settings-panel__icon">
+			<MudIcon Icon="@Icons.Material.Filled.Storage" />
+		</div>
+	</div>
+
+	<div class="settings-form">
+		<div class="backup-summary">
+			<div>
+				<span>Last backup</span>
+				<strong>@LastBackupText</strong>
+			</div>
+			<div>
+				<span>Known backups</span>
+				<strong>@backups.Count</strong>
+			</div>
+		</div>
+
+		<div class="settings-action-row">
+			<MudButton OnClick="CreateBackup"
+					   Variant="MudBlazor.Variant.Filled"
+					   Color="Color.Secondary"
+					   StartIcon="@Icons.Material.Filled.Backup"
+					   Disabled="@creating">
+				@(creating ? "Creating Backup" : "Create Backup")
+			</MudButton>
+			<MudButton OnClick="LoadBackups"
+					   Variant="MudBlazor.Variant.Outlined"
+					   Color="Color.Primary"
+					   StartIcon="@Icons.Material.Filled.Refresh"
+					   Disabled="@creating">
+				Refresh List
+			</MudButton>
+		</div>
+
+		@if (loading)
+		{
+			<MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+		}
+		else if (backups.Count == 0)
+		{
+			<MudAlert Severity="Severity.Info" Variant="MudBlazor.Variant.Outlined">
+				No database backup has been created yet.
+			</MudAlert>
+		}
+		else
+		{
+			<MudTable Items="backups" Dense="true" Hover="true">
+				<HeaderContent>
+					<MudTh>File</MudTh>
+					<MudTh>Created</MudTh>
+					<MudTh>Size</MudTh>
+				</HeaderContent>
+				<RowTemplate>
+					<MudTd DataLabel="File">@context.FileName</MudTd>
+					<MudTd DataLabel="Created">@FormatDate(context.LastModifiedAt)</MudTd>
+					<MudTd DataLabel="Size">@FormatBytes(context.SizeBytes)</MudTd>
+				</RowTemplate>
+			</MudTable>
+		}
+	</div>
+</section>
+
+<section class="settings-panel settings-help-panel">
+	<MudIcon Icon="@Icons.Material.Filled.Info" />
+	<div>
+		<MudText Typo="Typo.h6">Operational note</MudText>
+		<MudText Typo="Typo.body2">
+			Backups are stored on the server in the configured DatabaseBackup directory. The Docker image includes PostgreSQL client tools so pg_dump is available in production containers.
+		</MudText>
+	</div>
+</section>
+
+<style>
+	.backup-summary {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 12px;
+	}
+
+	.backup-summary > div {
+		display: grid;
+		gap: 6px;
+		padding: 14px;
+		border: 1px solid rgba(59, 130, 246, .18);
+		border-radius: 12px;
+		background: rgba(255, 255, 255, .04);
+	}
+
+	.backup-summary span {
+		color: var(--mud-palette-text-secondary);
+		font-size: .78rem;
+		font-weight: 800;
+		text-transform: uppercase;
+	}
+
+	.backup-summary strong {
+		font-size: 1.1rem;
+	}
+</style>
+
+@code {
+	private IReadOnlyList<DatabaseBackupInfo> backups = Array.Empty<DatabaseBackupInfo>();
+	private bool loading = true;
+	private bool creating;
+
+	private string LastBackupText => backups.FirstOrDefault() is { } backup
+		? FormatDate(backup.LastModifiedAt)
+		: "Never";
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadBackups();
+	}
+
+	private async Task LoadBackups()
+	{
+		loading = true;
+		try
+		{
+			backups = await DatabaseBackupService.GetBackupsAsync();
+		}
+		finally
+		{
+			loading = false;
+		}
+	}
+
+	private async Task CreateBackup()
+	{
+		creating = true;
+		try
+		{
+			var result = await DatabaseBackupService.CreateBackupAsync();
+			result.Match(
+				success =>
+				{
+					Snackbar.Add($"Created database backup {success.FileName}", Severity.Success);
+					return true;
+				},
+				failure =>
+				{
+					Snackbar.Add(string.Join("; ", failure.errorMessage), Severity.Error);
+					return false;
+				});
+
+			await LoadBackups();
+		}
+		finally
+		{
+			creating = false;
+		}
+	}
+
+	private static string FormatDate(DateTime date)
+	{
+		return date.ToLocalTime().ToString("dd.MM.yyyy HH:mm");
+	}
+
+	private static string FormatBytes(long bytes)
+	{
+		string[] units = ["B", "KB", "MB", "GB"];
+		var size = (double)Math.Max(bytes, 0);
+		var unit = 0;
+		while (size >= 1024 && unit < units.Length - 1)
+		{
+			size /= 1024;
+			unit++;
+		}
+
+		return $"{size:0.#} {units[unit]}";
+	}
+}

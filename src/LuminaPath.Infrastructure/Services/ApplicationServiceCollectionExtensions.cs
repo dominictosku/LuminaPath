@@ -11,6 +11,7 @@ internal static class ApplicationServiceCollectionExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration config)
     {
         services.AddStorageServices(config);
+        services.Configure<DatabaseBackupOptions>(config.GetSection(DatabaseBackupOptions.SectionName));
 
         services.AddScoped<GameService>();
         services.AddScoped<MyGameService>();
@@ -33,6 +34,7 @@ internal static class ApplicationServiceCollectionExtensions
         services.AddScoped<MediaImportService>();
         services.AddScoped<NewsAggregationService>();
         services.AddScoped<GameMetadataRefreshService>();
+        services.AddScoped<DatabaseBackupService>();
         services.AddScoped<ApplicationSettingsService>();
         return services;
     }
