@@ -3,6 +3,7 @@
 @using LuminaPath.Core.Models.Third_Party
 @using LuminaPath.Features.Auth
 @using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.Imports
 @using LuminaPath.Infrastructure.Services.ModelServices
 @using LuminaPath.Infrastructure.Services.Third_Party
 @using Microsoft.AspNetCore.Authorization
@@ -173,6 +174,19 @@
 								<Columns>
 									<RadzenDataGridColumn Width="80px" Property="@nameof(MyGameDto.Id)" Title="ID" />
 									<RadzenDataGridColumn Width="260px" Property="@nameInclude" Title="Title" />
+									<RadzenDataGridColumn Width="130px" Title="Change">
+										<Template Context="game">
+											@{
+												var change = GetPsnChangeType(game);
+											}
+											<MudChip T="string"
+													 Size="Size.Small"
+													 Variant="MudBlazor.Variant.Outlined"
+													 Color="@GetImportChangeColor(change)">
+												@change
+											</MudChip>
+										</Template>
+									</RadzenDataGridColumn>
 									<RadzenDataGridColumn Width="160px" Property="@include1" Title="First played" />
 									<RadzenDataGridColumn Width="160px" Property="@include2" Title="Last played" />
 									<RadzenDataGridColumn Width="150px" Property="@include3" Title="Tracked hours" />
@@ -341,7 +355,7 @@
 						<div>
 							<MudText Typo="Typo.overline">Step 1</MudText>
 							<MudText Typo="Typo.h5">Load workbook</MudText>
-							<MudText Typo="Typo.body2">Upload an .xlsx export to preview which games and library entries will be created or updated.</MudText>
+							<MudText Typo="Typo.body2">Upload an .xlsx or .ods export to preview which games and library entries will be created, updated, or skipped as duplicates.</MudText>
 						</div>
 						<div class="excel-emblem">
 							<MudIcon Icon="@Icons.Material.Filled.TableView" />
@@ -357,7 +371,7 @@
 						</MudButton>
 
 						<MudFileUpload T="IBrowserFile"
-									   Accept=".xlsx"
+									   Accept=".xlsx,.ods"
 									   FilesChanged="PreviewExcel">
 							<CustomContent Context="fileUpload">
 								<MudButton OnClick="@fileUpload.OpenFilePickerAsync"
@@ -415,6 +429,7 @@
 						<MudAlert Severity="@(_excelPreview.Errors.Any() ? Severity.Warning : Severity.Info)" Variant="MudBlazor.Variant.Outlined" Class="steam-alert">
 							Detected @_excelPreview.RowsDetected rows. Games: @_excelPreview.CreatedGames created, @_excelPreview.UpdatedGames updated.
 							My games: @_excelPreview.CreatedMyGames created, @_excelPreview.UpdatedMyGames updated.
+							Duplicates skipped: @_excelPreview.DuplicateRows.
 						</MudAlert>
 					}
 
@@ -444,6 +459,16 @@
 									<RadzenDataGridColumn Width="260px" Property="@nameof(ExcelService.GameExcelPreviewRow.Name)" Title="Title" />
 									<RadzenDataGridColumn Width="130px" Property="@nameof(ExcelService.GameExcelPreviewRow.GameAction)" Title="Game" />
 									<RadzenDataGridColumn Width="130px" Property="@nameof(ExcelService.GameExcelPreviewRow.LibraryAction)" Title="Library" />
+									<RadzenDataGridColumn Width="130px" Title="Change">
+										<Template Context="row">
+											<MudChip T="string"
+													 Size="Size.Small"
+													 Variant="MudBlazor.Variant.Outlined"
+													 Color="@GetImportChangeColor(row.ChangeType)">
+												@row.ChangeType
+											</MudChip>
+										</Template>
+									</RadzenDataGridColumn>
 									<RadzenDataGridColumn Width="140px" Property="@nameof(ExcelService.GameExcelPreviewRow.Status)" Title="Status" />
 									<RadzenDataGridColumn Width="140px" Property="@nameof(ExcelService.GameExcelPreviewRow.Platform)" Title="Platform" />
 									<RadzenDataGridColumn Width="150px" Property="@nameof(ExcelService.GameExcelPreviewRow.TrackedHours)" Title="Tracked hours" />
@@ -499,6 +524,7 @@
 	SteamImportResult? steamImportResult;
 	AchievementSyncResult? steamAchievementSyncResult;
 	AchievementSyncResult? psnAchievementSyncResult;
+	GameImportPreviewResult? psnPreview;
 	ExcelService.GameExcelImportResult? _excelResult;
 	ExcelService.GameExcelPreviewResult? _excelPreview;
 	byte[]? _excelImportBytes;
@@ -526,6 +552,10 @@
 		? steamPreview.Profile.AvatarUrl!
 		: model.SteamAvatarUrl;
 	IEnumerable<SteamOwnedGame> SteamPreviewGames => steamPreview?.Games ?? Enumerable.Empty<SteamOwnedGame>();
+	Dictionary<string, GameImportPreviewItem> PsnPreviewByExternalId => psnPreview?.Rows
+		.Where(row => !string.IsNullOrWhiteSpace(row.ExternalId))
+		.GroupBy(row => row.ExternalId, StringComparer.OrdinalIgnoreCase)
+		.ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase) ?? new();
 	bool CanImportSteam => steamConfigured
 		&& !steamImporting
 		&& !steamPreviewing
@@ -613,6 +643,7 @@
 			var gameData = await GetGameData();
 			var result = psnService.ConvertPSNTitles(gameData);
 			games = result.AsQueryable();
+			psnPreview = User is null ? null : await psnService.PreviewGames(User, result);
 
 		}catch
 		{
@@ -870,7 +901,7 @@
 			using var importStream = await CopyToMemoryStream(file);
 			_excelImportBytes = importStream.ToArray();
 			importStream.Position = 0;
-			_excelPreview = await excelService.PreviewGamesAsync(importStream, User);
+			_excelPreview = await excelService.PreviewGamesAsync(importStream, User, file.Name);
 			ShowExcelPreviewResult(_excelPreview);
 		}
 		catch (Exception ex)
@@ -911,7 +942,7 @@
 		try
 		{
 			using var importStream = new MemoryStream(_excelImportBytes);
-			_excelResult = await excelService.ImportGamesAsync(importStream, User);
+			_excelResult = await excelService.ImportGamesAsync(importStream, User, _excelFileName);
 			ShowExcelImportResult(_excelResult);
 		}
 		catch (Exception ex)
@@ -931,6 +962,30 @@
 		await uploadStream.CopyToAsync(importStream);
 		importStream.Position = 0;
 		return importStream;
+	}
+
+	string GetPsnChangeType(MyGameDto game)
+	{
+		var psnId = game.Game?.PsnId;
+		if (!string.IsNullOrWhiteSpace(psnId)
+			&& PsnPreviewByExternalId.TryGetValue(psnId, out var preview))
+		{
+			return string.IsNullOrWhiteSpace(preview.ChangeType) ? preview.GameAction : preview.ChangeType;
+		}
+
+		return "New";
+	}
+
+	Color GetImportChangeColor(string? changeType)
+	{
+		return (changeType ?? string.Empty).ToLowerInvariant() switch
+		{
+			"new" or "create" => Color.Success,
+			"updated" or "update" => Color.Info,
+			"duplicate" => Color.Warning,
+			"error" => Color.Error,
+			_ => Color.Default
+		};
 	}
 
 	void ShowExcelImportResult(ExcelService.GameExcelImportResult result)

@@ -28,6 +28,7 @@ public sealed class GameImportPipeline
 
         var result = new GameImportPreviewResult();
         var sequence = 1;
+        var seenRows = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var item in items)
         {
@@ -51,17 +52,31 @@ public sealed class GameImportPipeline
                     continue;
                 }
 
+                var importKey = GetImportKey(item);
+                if (!seenRows.Add(importKey))
+                {
+                    preview.GameAction = "Duplicate";
+                    preview.LibraryAction = "Skip";
+                    preview.ChangeType = "Duplicate";
+                    result.DuplicateRows++;
+                    result.RowsDetected++;
+                    result.Rows.Add(preview);
+                    continue;
+                }
+
                 var game = FindGame(games, item);
                 if (game is null)
                 {
                     preview.GameAction = "Create";
                     preview.LibraryAction = "Create";
+                    preview.ChangeType = "New";
                     result.CreatedGames++;
                     result.CreatedMyGames++;
                 }
                 else
                 {
                     preview.GameAction = "Update";
+                    preview.ChangeType = "Updated";
                     result.UpdatedGames++;
 
                     if (game.MyGames?.Any(myGame => myGame.LuminaUserId == user.Id) == true)
@@ -81,6 +96,7 @@ public sealed class GameImportPipeline
             catch (Exception ex)
             {
                 preview.Error = ex.Message;
+                preview.ChangeType = "Error";
                 result.Errors.Add($"Row {rowNumber}: {ex.Message}");
             }
 
@@ -100,6 +116,7 @@ public sealed class GameImportPipeline
         var names = new HashSet<string>(games.Select(game => game.Name), StringComparer.OrdinalIgnoreCase);
         var result = new GameImportResult();
         var sequence = 1;
+        var seenRows = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var item in items)
         {
@@ -113,6 +130,12 @@ public sealed class GameImportPipeline
 
             try
             {
+                if (!seenRows.Add(GetImportKey(item)))
+                {
+                    result.Errors.Add($"Row {rowNumber}: duplicate import row skipped.");
+                    continue;
+                }
+
                 var game = FindGame(games, item);
                 if (game is null)
                 {
@@ -276,6 +299,17 @@ public sealed class GameImportPipeline
 
     private static string? NormalizeExternalId(string? externalId)
         => string.IsNullOrWhiteSpace(externalId) ? null : externalId.Trim();
+
+    private static string GetImportKey(GameImportItem item)
+    {
+        var externalId = NormalizeExternalId(item.ExternalId);
+        if (item.ExternalProvider is not null && !string.IsNullOrWhiteSpace(externalId))
+        {
+            return $"{item.ExternalProvider}:{externalId}";
+        }
+
+        return $"name:{item.Name.Trim()}";
+    }
 
     private static string ResolveUniqueName(
         string desired,

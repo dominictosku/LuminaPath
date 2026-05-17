@@ -7,6 +7,8 @@ using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.Imports;
 using Microsoft.EntityFrameworkCore;
+using System.IO.Compression;
+using System.Text;
 
 namespace Test.Services
 {
@@ -53,6 +55,55 @@ namespace Test.Services
             Assert.Equal(DateTimeKind.Utc, myGame.MyGameInfo.LastPlayed.Kind);
         }
 
+        [Fact]
+        public async Task PreviewGamesAsync_MarksDuplicateRows_FromWorkbook()
+        {
+            var options = CreateOptions();
+            var user = await SeedUser(options);
+            var service = CreateService(options);
+            using var stream = CreateWorkbookStream(includeDuplicate: true);
+
+            var preview = await service.PreviewGamesAsync(stream, user, "games.xlsx");
+
+            Assert.Equal(2, preview.RowsDetected);
+            Assert.Equal(1, preview.DuplicateRows);
+            Assert.Contains(preview.Rows, row => row.ChangeType == "New");
+            Assert.Contains(preview.Rows, row => row.ChangeType == "Duplicate");
+        }
+
+        [Fact]
+        public async Task ImportGamesAsync_SkipsDuplicateRows_FromWorkbook()
+        {
+            var options = CreateOptions();
+            var user = await SeedUser(options);
+            var service = CreateService(options);
+            using var stream = CreateWorkbookStream(includeDuplicate: true);
+
+            var result = await service.ImportGamesAsync(stream, user, "games.xlsx");
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            Assert.Equal(1, result.RowsImported);
+            Assert.Single(await assertContext.Games.ToListAsync());
+            Assert.Contains(result.Errors, error => error.Contains("duplicate import row skipped", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public async Task PreviewGamesAsync_ReadsOdsWorkbook()
+        {
+            var options = CreateOptions();
+            var user = await SeedUser(options);
+            var service = CreateService(options);
+            using var stream = CreateOdsStream();
+
+            var preview = await service.PreviewGamesAsync(stream, user, "games.ods");
+
+            var row = Assert.Single(preview.Rows);
+            Assert.Equal("ODS Game", row.Name);
+            Assert.Equal("New", row.ChangeType);
+            Assert.Equal("PSN-ODS", row.PsnId);
+            Assert.Equal(3.25, row.TrackedHours);
+        }
+
         private static DbContextOptions<LuminaPathDbContext> CreateOptions()
         {
             return new DbContextOptionsBuilder<LuminaPathDbContext>()
@@ -60,7 +111,28 @@ namespace Test.Services
                 .Options;
         }
 
-        private static MemoryStream CreateWorkbookStream()
+        private static ExcelService CreateService(DbContextOptions<LuminaPathDbContext> options)
+        {
+            var dbContextFactory = new TestDbContextFactory(options);
+            return new ExcelService(dbContextFactory, new GameImportPipeline(dbContextFactory));
+        }
+
+        private static async Task<LuminaUser> SeedUser(DbContextOptions<LuminaPathDbContext> options)
+        {
+            var user = new LuminaUser
+            {
+                Id = "user-1",
+                UserName = "test@example.com",
+                FullName = "Test User"
+            };
+
+            await using var context = new LuminaPathDbContext(options);
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
+            return user;
+        }
+
+        private static MemoryStream CreateWorkbookStream(bool includeDuplicate = false)
         {
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Games");
@@ -91,8 +163,62 @@ namespace Test.Services
             worksheet.Cell(2, 7).Value = new DateTime(2024, 1, 8);
             worksheet.Cell(2, 8).Value = 4.5;
 
+            if (includeDuplicate)
+            {
+                worksheet.Cell(3, 1).Value = "Test Game Duplicate";
+                worksheet.Cell(3, 2).Value = "Planned";
+                worksheet.Cell(3, 4).Value = "PSN-123";
+            }
+
             var stream = new MemoryStream();
             workbook.SaveAs(stream);
+            stream.Position = 0;
+            return stream;
+        }
+
+        private static MemoryStream CreateOdsStream()
+        {
+            const string content = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <office:document-content
+                    xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+                    xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0"
+                    xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0">
+                    <office:body>
+                        <office:spreadsheet>
+                            <table:table table:name="Games">
+                                <table:table-row>
+                                    <table:table-cell><text:p>Name</text:p></table:table-cell>
+                                    <table:table-cell><text:p>Status</text:p></table:table-cell>
+                                    <table:table-cell><text:p>PSNId</text:p></table:table-cell>
+                                    <table:table-cell><text:p>Tracked Hours</text:p></table:table-cell>
+                                </table:table-row>
+                                <table:table-row>
+                                    <table:table-cell><text:p>ODS Game</text:p></table:table-cell>
+                                    <table:table-cell><text:p>Playing</text:p></table:table-cell>
+                                    <table:table-cell><text:p>PSN-ODS</text:p></table:table-cell>
+                                    <table:table-cell office:value-type="float" office:value="3.25"><text:p>3.25</text:p></table:table-cell>
+                                </table:table-row>
+                            </table:table>
+                        </office:spreadsheet>
+                    </office:body>
+                </office:document-content>
+                """;
+
+            var stream = new MemoryStream();
+            using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var mimetype = archive.CreateEntry("mimetype");
+                using (var writer = new StreamWriter(mimetype.Open(), Encoding.UTF8))
+                {
+                    writer.Write("application/vnd.oasis.opendocument.spreadsheet");
+                }
+
+                var contentEntry = archive.CreateEntry("content.xml");
+                using var contentWriter = new StreamWriter(contentEntry.Open(), Encoding.UTF8);
+                contentWriter.Write(content);
+            }
+
             stream.Position = 0;
             return stream;
         }

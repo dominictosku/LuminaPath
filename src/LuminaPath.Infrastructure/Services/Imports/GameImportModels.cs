@@ -62,6 +62,8 @@ public sealed class GameImportPreviewResult
 {
     public int RowsDetected { get; set; }
 
+    public int DuplicateRows { get; set; }
+
     public int CreatedGames { get; set; }
 
     public int UpdatedGames { get; set; }
@@ -88,6 +90,8 @@ public sealed class GameImportPreviewItem
     public string GameAction { get; set; } = string.Empty;
 
     public string LibraryAction { get; set; } = string.Empty;
+
+    public string ChangeType { get; set; } = string.Empty;
 
     public string Error { get; set; } = string.Empty;
 }

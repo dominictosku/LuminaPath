@@ -260,6 +260,16 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
             await _importPipeline.ImportAsync(user, gamesToImport.Select(ToImportItem));
         }
 
+        public async Task<GameImportPreviewResult> PreviewGames(LuminaUser user, List<MyGameDto> gamesToImport)
+        {
+            return await _importPipeline.PreviewAsync(user, gamesToImport.Select((game, index) =>
+            {
+                var item = ToImportItem(game);
+                item.RowNumber = index + 1;
+                return item;
+            }));
+        }
+
         private static GameImportItem ToImportItem(MyGameDto gameToImport)
         {
             var game = gameToImport.Game;
