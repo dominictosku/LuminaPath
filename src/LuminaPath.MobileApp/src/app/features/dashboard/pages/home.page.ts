@@ -26,7 +26,7 @@ import {
   bookOutline,
   tvOutline,
 } from 'ionicons/icons';
-import { Game, Platforms } from '../../games/models/games.model';
+import { Game, platformLabelFromValue } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { Anime } from '../../animes/models/animes.model';
@@ -448,7 +448,7 @@ export class HomePage implements OnInit {
       estimatedHours,
       playedHours,
       remainingHours: remainingHoursOfGame(game),
-      context: Platforms.find((platform) => platform.value === game.platforms)?.label ?? 'Game',
+      context: platformLabelFromValue(game.platforms),
     };
   }
 

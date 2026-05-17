@@ -51,6 +51,15 @@ describe('MediaLibraryViewService', () => {
     expect(service.remainingLabel(item, mode('series'))).toBe('175m left');
   });
 
+  it('uses backend platform flag values for game labels', () => {
+    expect(service.platformLabel(1)).toBe('PlayStation 4');
+    expect(service.platformLabel(2)).toBe('PlayStation 5');
+    expect(service.platformLabel(4)).toBe('Switch');
+    expect(service.platformLabel(8)).toBe('PC');
+    expect(service.platformLabel(16)).toBe('XBOX');
+    expect(service.platformLabel(3)).toBe('PlayStation 4, PlayStation 5');
+  });
+
   it('only sends currentEpisode for episode-based media', () => {
     const details = service.toLibraryEntryDetails({
       status: 2,

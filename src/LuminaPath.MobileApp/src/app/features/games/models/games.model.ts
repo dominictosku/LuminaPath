@@ -102,8 +102,27 @@ export interface GameNewsItem {
 }
 
 export const Platforms = [
-  { label: "Playstation", value: 0 },
-  { label: "Switch", value: 1 },
-  { label: "PC", value: 2 },
-  { label: "XBOX", value: 3 },
+  { label: "PlayStation 4", value: 1 },
+  { label: "PlayStation 5", value: 2 },
+  { label: "Switch", value: 4 },
+  { label: "PC", value: 8 },
+  { label: "XBOX", value: 16 },
 ];
+
+export function platformLabelFromValue(value: number | null | undefined): string {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return 'Unknown';
+  }
+
+  const exact = Platforms.find((platform) => platform.value === numericValue);
+  if (exact) {
+    return exact.label;
+  }
+
+  const labels = Platforms
+    .filter((platform) => (numericValue & platform.value) === platform.value)
+    .map((platform) => platform.label);
+
+  return labels.length ? labels.join(', ') : 'Unknown';
+}

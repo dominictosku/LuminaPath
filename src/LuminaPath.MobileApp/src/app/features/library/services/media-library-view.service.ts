@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Platforms } from '../../games/models/games.model';
+import { platformLabelFromValue } from '../../games/models/games.model';
 import { LibraryEntryDetails, MediaItem, UserMediaEntry } from '../models/media-item.model';
 import { MediaLibraryForm, MediaStatusOption } from '../models/media-library-form.model';
 import { MediaModeOption } from 'src/app/shared/services/media-mode.service';
@@ -75,7 +75,7 @@ export class MediaLibraryViewService {
   }
 
   platformLabel(value: number | null | undefined): string {
-    return Platforms.find((platform) => platform.value === Number(value))?.label ?? 'Unknown';
+    return platformLabelFromValue(value);
   }
 
   statusLabel(item: MediaItem, mode: MediaModeOption): string {

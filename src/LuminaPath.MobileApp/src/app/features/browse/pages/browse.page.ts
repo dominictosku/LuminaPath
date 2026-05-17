@@ -27,7 +27,7 @@ import {
   timeOutline,
 } from 'ionicons/icons';
 import { forkJoin } from 'rxjs';
-import { Platforms } from '../../games/models/games.model';
+import { platformLabelFromValue } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
 import { MediaItem } from '../../library/models/media-item.model';
@@ -343,7 +343,7 @@ export class BrowsePage implements OnInit {
 
   detailsLabel(item: BrowseItem): string {
     if (item.kind === 'games') {
-      const platform = Platforms.find((candidate) => candidate.value === Number(item.platforms))?.label ?? 'Unknown';
+      const platform = platformLabelFromValue(item.platforms);
       const playtime = Number(item.playtime) || 0;
       return playtime > 0 ? `${platform} · ${playtime}h` : platform;
     }

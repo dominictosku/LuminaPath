@@ -22,7 +22,7 @@ import {
   sparklesOutline,
   timeOutline,
 } from 'ionicons/icons';
-import { Game, Platforms } from '../../games/models/games.model';
+import { Game, platformLabelFromValue } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { GameStatus, gameStatusLabel, isGameBacklogStatus } from '../../library/models/library-status.model';
 import {
@@ -109,7 +109,7 @@ export class ReleasePlanComponent implements OnChanges {
   }
 
   platformLabel(value: number | null | undefined): string {
-    return Platforms.find((platform) => platform.value === Number(value))?.label ?? 'Unknown';
+    return platformLabelFromValue(value);
   }
 
   statusLabel(game: Game): string {
