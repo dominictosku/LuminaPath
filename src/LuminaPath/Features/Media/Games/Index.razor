@@ -26,71 +26,118 @@
 
 @if (IsGrid)
 {
-	<LuminaGrid GetData="@(GetData)"
-		T="GameViewModel"
-		Loading="@loading"
-		@bind-SelectedItems="selectedItems"
-		@ref="_table"
-		SortMode="SortMode.Single">
-		<ToolBarContent>
-			<TableActions TItem="GameViewModel" Page="this" loading="loading" selectedItems="selectedItems" />
-		</ToolBarContent>
-		<Columns>
-			<SelectColumn ShowInFooter="false"></SelectColumn>
-			<TemplateColumn CellStyle="width:72px" Title="" Sortable="false">
-				<CellTemplate>
-					<div class="table-cover" style="background-image: url('@Cover(context.Item)');"></div>
-				</CellTemplate>
-			</TemplateColumn>
-			<TemplateColumn Title="Game" SortBy="@((GameViewModel x) => x == null ? "" : x.Name)" Sortable="true">
-				<CellTemplate>
-					<div class="title-cell">
-						<MudText Typo="Typo.body1">@context.Item.Name</MudText>
-						<MudText Typo="Typo.body2" Class="mud-text-secondary">@Summary(context.Item)</MudText>
-						<div class="chip-row">
-							@foreach (var genre in context.Item.Genres.Take(3))
-							{
-								<span class="soft-chip">@genre</span>
-							}
+	<section class="games-table-frame">
+		<LuminaGrid GetData="@(GetData)"
+			T="GameViewModel"
+			Loading="@loading"
+			@bind-SelectedItems="selectedItems"
+			@ref="_table"
+			SortMode="SortMode.Single"
+			Class="games-data-grid">
+			<ToolBarContent>
+				<TableActions TItem="GameViewModel" Page="this" loading="loading" selectedItems="selectedItems" />
+			</ToolBarContent>
+			<Columns>
+				<SelectColumn ShowInFooter="false"></SelectColumn>
+				<TemplateColumn CellStyle="width:84px" Title="" Sortable="false">
+					<CellTemplate>
+						<div class="table-cover-frame">
+							<div class="table-cover" style="background-image: url('@Cover(context.Item)');"></div>
 						</div>
-					</div>
-				</CellTemplate>
-			</TemplateColumn>
-			<TemplateColumn Title="Details" SortBy="@((GameViewModel x) => x.ReleaseDate)" Sortable="true">
-				<CellTemplate>
-					<div class="detail-stack">
-						<span><MudIcon Icon="@Icons.Material.Filled.VideogameAsset" Size="Size.Small" /> @context.Item.Platforms</span>
-						<span><MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" /> @Playtime(context.Item)</span>
-						<span><MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" /> @ReleaseDate(context.Item)</span>
-					</div>
-				</CellTemplate>
-			</TemplateColumn>
-			<TemplateColumn Title="Source">
-				<CellTemplate>
-					<span class="source-pill">@context.Item.Source</span>
-				</CellTemplate>
-			</TemplateColumn>
-			<TemplateColumn CellStyle="width:76px" Title="Actions" Sortable="false">
-				<CellTemplate>
-					<MudMenu Icon="@Icons.Material.Filled.MoreVert" Variant="Variant.Filled" DropShadow="false" Size="Size.Small"
-							 Dense="true" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-						<MudMenuItem OnClick="@(async () => await RefreshMetadata(context.Item))">Refresh metadata</MudMenuItem>
-						<MudMenuItem OnClick="@(async () => await OnUpdate(context.Item))">Edit</MudMenuItem>
-						<MudMenuItem OnClick="@(async () => await Delete(context.Item))">Delete</MudMenuItem>
-					</MudMenu>
-				</CellTemplate>
-			</TemplateColumn>
-		</Columns>
-		<NoRecordsContent>
-			<MudText>No games found</MudText>
-		</NoRecordsContent>
-		<LoadingContent>
-			<MudText>Loading games</MudText>
-		</LoadingContent>
-		<PagerContent>
-			<MudDataGridPager />
-		</PagerContent>
-	</LuminaGrid>
+					</CellTemplate>
+				</TemplateColumn>
+				<TemplateColumn Title="Game" SortBy="@((GameViewModel x) => x == null ? "" : x.Name)" Sortable="true">
+					<CellTemplate>
+						<div class="title-cell">
+							<div class="title-row">
+								<MudText Typo="Typo.body1">@context.Item.Name</MudText>
+								@if (LibraryEntryCount(context.Item) > 0)
+								{
+									<span class="library-chip">@LibraryEntryCount(context.Item) in library</span>
+								}
+							</div>
+							<MudText Typo="Typo.body2" Class="game-summary">@Summary(context.Item)</MudText>
+							<div class="chip-row">
+								@foreach (var genre in context.Item.Genres.Take(3))
+								{
+									<span class="soft-chip">@genre</span>
+								}
+							</div>
+						</div>
+					</CellTemplate>
+				</TemplateColumn>
+				<TemplateColumn Title="Release" SortBy="@((GameViewModel x) => x.ReleaseDate)" Sortable="true">
+					<CellTemplate>
+						<div class="release-cell">
+							<span class="release-year">@ReleaseYear(context.Item)</span>
+							<span class="release-date">@ReleaseDate(context.Item)</span>
+						</div>
+					</CellTemplate>
+				</TemplateColumn>
+				<TemplateColumn Title="Details">
+					<CellTemplate>
+						<div class="detail-pill-grid">
+							<span><MudIcon Icon="@Icons.Material.Filled.VideogameAsset" Size="Size.Small" /> @PlatformLabel(context.Item)</span>
+							<span><MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" /> @Playtime(context.Item)</span>
+						</div>
+					</CellTemplate>
+				</TemplateColumn>
+				<TemplateColumn Title="Source">
+					<CellTemplate>
+						<div class="source-cell">
+							<span class="source-pill @SourceClass(context.Item.Source)">@context.Item.Source</span>
+						</div>
+					</CellTemplate>
+				</TemplateColumn>
+				<TemplateColumn CellStyle="width:132px" Title="Actions" Sortable="false">
+					<CellTemplate>
+						<div class="table-action-icons">
+							<MudTooltip Text="Refresh metadata">
+								<MudIconButton Icon="@Icons.Material.Filled.Sync"
+											   Variant="Variant.Text"
+											   Color="Color.Secondary"
+											   Size="Size.Small"
+											   DropShadow="false"
+											   OnClick="@(async () => await RefreshMetadata(context.Item))" />
+							</MudTooltip>
+							<MudTooltip Text="Edit game">
+								<MudIconButton Icon="@Icons.Material.Filled.Edit"
+											   Variant="Variant.Text"
+											   Color="Color.Primary"
+											   Size="Size.Small"
+											   DropShadow="false"
+											   OnClick="@(async () => await OnUpdate(context.Item))" />
+							</MudTooltip>
+							<MudTooltip Text="Delete game">
+								<MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+											   Variant="Variant.Text"
+											   Color="Color.Error"
+											   Size="Size.Small"
+											   DropShadow="false"
+											   OnClick="@(async () => await Delete(context.Item))" />
+							</MudTooltip>
+						</div>
+					</CellTemplate>
+				</TemplateColumn>
+			</Columns>
+			<NoRecordsContent>
+				<div class="grid-state">
+					<MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" />
+					<MudText Typo="Typo.subtitle1">No games found</MudText>
+					<MudText Typo="Typo.body2" Class="mud-text-secondary">Try a different search or filter.</MudText>
+				</div>
+			</NoRecordsContent>
+			<LoadingContent>
+				<div class="grid-state">
+					<MudProgressCircular Indeterminate="true" Size="Size.Medium" Color="Color.Primary" />
+					<MudText Typo="Typo.body2">Loading games</MudText>
+				</div>
+			</LoadingContent>
+			<PagerContent>
+				<MudDataGridPager />
+			</PagerContent>
+		</LuminaGrid>
+	</section>
 }
 else
 {
@@ -155,19 +202,96 @@ else
 	}
 
 	.table-cover {
-		width: 52px;
-		height: 64px;
-		border-radius: 6px;
+		width: 54px;
+		height: 72px;
+		border-radius: 7px;
 		background-color: #263346;
 		background-position: center;
 		background-size: cover;
 		box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
 	}
 
+	.table-cover-frame {
+		display: inline-grid;
+		place-items: center;
+		padding: 4px;
+		border: 1px solid rgba(117, 167, 255, .18);
+		border-radius: 10px;
+		background: linear-gradient(180deg, rgba(117, 167, 255, .12), rgba(118, 228, 196, .05));
+	}
+
+	.games-table-frame {
+		border: 1px solid rgba(117, 167, 255, .16);
+		border-radius: 12px;
+		background:
+			linear-gradient(180deg, rgba(117, 167, 255, .08), rgba(9, 15, 26, .02)),
+			var(--mud-palette-surface);
+		box-shadow: 0 18px 48px rgba(0, 0, 0, .2);
+		overflow: hidden;
+	}
+
+	.games-data-grid {
+		border: 0;
+		background: transparent;
+	}
+
+	.games-data-grid .mud-table-toolbar {
+		min-height: 72px;
+		padding: 12px 16px;
+		border-bottom: 1px solid rgba(255, 255, 255, .08);
+		background: rgba(12, 20, 35, .72);
+	}
+
+	.games-data-grid .mud-table-head .mud-table-cell {
+		border-bottom: 1px solid rgba(117, 167, 255, .16);
+		color: var(--mud-palette-text-secondary);
+		font-size: .76rem;
+		font-weight: 800;
+		letter-spacing: 0;
+		text-transform: uppercase;
+	}
+
+	.games-data-grid .mud-table-row {
+		background: rgba(15, 24, 40, .62);
+		transition: background .16s ease, transform .16s ease;
+	}
+
+	.games-data-grid .mud-table-row:hover {
+		background: rgba(30, 48, 78, .72);
+	}
+
+	.games-data-grid .mud-table-cell {
+		border-bottom: 1px solid rgba(255, 255, 255, .07);
+		padding-top: 12px;
+		padding-bottom: 12px;
+	}
+
 	.title-cell {
 		display: grid;
-		gap: 4px;
-		min-width: 240px;
+		gap: 7px;
+		min-width: min(420px, 42vw);
+	}
+
+	.title-row {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.title-row .mud-typography {
+		font-weight: 800;
+		line-height: 1.2;
+	}
+
+	.game-summary {
+		display: -webkit-box;
+		max-width: 620px;
+		overflow: hidden;
+		color: var(--mud-palette-text-secondary);
+		line-height: 1.35;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
 	}
 
 	.chip-row {
@@ -177,21 +301,33 @@ else
 	}
 
 	.soft-chip,
-	.source-pill {
+	.source-pill,
+	.library-chip {
 		display: inline-flex;
 		align-items: center;
 		min-height: 24px;
 		padding: 3px 9px;
-		border-radius: 999px;
+		border: 1px solid rgba(255, 255, 255, .08);
+		border-radius: 6px;
 		background: rgba(118, 228, 196, .12);
 		color: var(--mud-palette-text-primary);
 		font-size: .78rem;
 		font-weight: 700;
 	}
 
+	.library-chip {
+		background: rgba(94, 220, 143, .12);
+		color: #8df3b1;
+	}
+
 	.source-pill {
 		background: rgba(117, 167, 255, .14);
 	}
+
+	.source-steam { background: rgba(91, 151, 255, .16); color: #9ec4ff; }
+	.source-psn,
+	.source-playstation { background: rgba(83, 115, 255, .18); color: #9fb0ff; }
+	.source-lumina { background: rgba(118, 228, 196, .12); color: #8deacb; }
 
 	.source-pill.overlay {
 		position: absolute;
@@ -214,6 +350,71 @@ else
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
+	}
+
+	.release-cell {
+		display: grid;
+		gap: 2px;
+		width: 112px;
+	}
+
+	.release-year {
+		color: var(--mud-palette-text-primary);
+		font-size: 1.18rem;
+		font-weight: 900;
+		line-height: 1;
+	}
+
+	.release-date {
+		color: var(--mud-palette-text-secondary);
+		font-size: .82rem;
+	}
+
+	.detail-pill-grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 7px;
+		min-width: 210px;
+		max-width: 360px;
+	}
+
+	.detail-pill-grid span {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		min-height: 30px;
+		padding: 5px 9px;
+		border: 1px solid rgba(117, 167, 255, .13);
+		border-radius: 7px;
+		background: rgba(255, 255, 255, .04);
+		color: var(--mud-palette-text-secondary);
+		font-size: .82rem;
+		font-weight: 700;
+	}
+
+	.source-cell {
+		min-width: 96px;
+	}
+
+	.table-action-icons {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		justify-content: flex-end;
+	}
+
+	.table-action-icons .mud-icon-button {
+		border-radius: 7px;
+		background: rgba(255, 255, 255, .035);
+	}
+
+	.grid-state {
+		display: grid;
+		place-items: center;
+		gap: 8px;
+		min-height: 220px;
+		color: var(--mud-palette-text-secondary);
+		text-align: center;
 	}
 
 	.card-toolbar {
@@ -283,6 +484,14 @@ else
 		.media-page-header {
 			align-items: stretch;
 			flex-direction: column;
+		}
+
+		.title-cell {
+			min-width: 260px;
+		}
+
+		.games-data-grid .mud-table-toolbar {
+			padding: 10px;
 		}
 	}
 </style>
@@ -488,6 +697,33 @@ else
 	private static string ReleaseDate(Game game)
 	{
 		return game.ReleaseDate?.ToString("dd.MM.yyyy") ?? "No date";
+	}
+
+	private static string ReleaseYear(Game game)
+	{
+		return game.ReleaseDate?.ToString("yyyy") ?? "TBA";
+	}
+
+	private static string PlatformLabel(Game game)
+	{
+		return game.Platforms == 0 ? "No platform" : game.Platforms.ToString();
+	}
+
+	private static int LibraryEntryCount(GameViewModel game)
+	{
+		return game.MyGames?.Count ?? 0;
+	}
+
+	private static string SourceClass(string? source)
+	{
+		return source?.Trim().ToLowerInvariant() switch
+		{
+			"steam" => "source-steam",
+			"psn" => "source-psn",
+			"playstation" => "source-playstation",
+			"lumina" => "source-lumina",
+			_ => string.Empty
+		};
 	}
 
 	private static bool Contains(string? value, string search)

@@ -27,83 +27,124 @@
 
 @if (IsGrid)
 {
-	<LuminaGrid T="MyGame" GetData="@(GetData)"
-				Loading="@loading"
-				@bind-SelectedItems="selectedItems"
-				@ref="_table"
-				SortMode="SortMode.Single">
-		<ToolBarContent>
-			<TableActions TItem="MyGame" Page="this" loading="loading" selectedItems="selectedItems" />
-		</ToolBarContent>
-		<Columns>
-			<SelectColumn ShowInFooter="false"></SelectColumn>
-			<TemplateColumn CellStyle="width:72px" Title="" Sortable="false">
-				<CellTemplate>
-					<div class="table-cover" style="background-image: url('@Cover(context.Item)');"></div>
-				</CellTemplate>
-			</TemplateColumn>
-			<TemplateColumn Title="Game" SortBy="@((MyGame x) => x.Game == null ? "" : x.Game.Name)" Sortable="true">
-				<CellTemplate>
-					<div class="title-cell">
-						<MudText Typo="Typo.body1">@context.Item.Game?.Name</MudText>
-						<MudText Typo="Typo.body2" Class="mud-text-secondary">@Summary(context.Item)</MudText>
-						<div class="chip-row">
-							@foreach (var genre in context.Item.Game?.Genres?.Take(3) ?? [])
-							{
-								<span class="soft-chip">@genre</span>
-							}
+	<section class="my-games-table-frame">
+		<LuminaGrid T="MyGame" GetData="@(GetData)"
+					Loading="@loading"
+					@bind-SelectedItems="selectedItems"
+					@ref="_table"
+					SortMode="SortMode.Single"
+					Class="my-games-data-grid">
+			<ToolBarContent>
+				<TableActions TItem="MyGame" Page="this" loading="loading" selectedItems="selectedItems" />
+			</ToolBarContent>
+			<Columns>
+				<SelectColumn ShowInFooter="false"></SelectColumn>
+				<TemplateColumn CellStyle="width:84px" Title="" Sortable="false">
+					<CellTemplate>
+						<div class="table-cover-frame">
+							<div class="table-cover" style="background-image: url('@Cover(context.Item)');"></div>
 						</div>
-					</div>
-				</CellTemplate>
-			</TemplateColumn>
-			
-			<TemplateColumn Title="Status" SortBy="@((MyGame x) => x.Status)" Sortable="true">
-				<CellTemplate>
-					<div class="status-stack">
-						<span class="status-pill @StatusClass(context.Item.Status)">@context.Item.Status</span>
-						<span class="muted-line">Priority @context.Item.Priority · @Rating(context.Item)</span>
-					</div>
-				</CellTemplate>
-			</TemplateColumn>
-			
-			<TemplateColumn Title="Played Time" SortBy="@((MyGame x) => TotalHours(x))" Sortable="true">
-				<CellTemplate>
-					<div class="time-stack">
-						<strong>@FormatHours(TotalHours(context.Item))h total</strong>
-						<span>@FormatHours(ManualHours(context.Item))h manual</span>
-						<span>@FormatHours(ThirdPartyHours(context.Item))h tracked</span>
-					</div>
-				</CellTemplate>
-			</TemplateColumn>
-			
-			<TemplateColumn Title="Dates" SortBy="@((MyGame x) => x.StartDate)" Sortable="true">
-				<CellTemplate>
-					<div class="detail-stack">
-						<span><MudIcon Icon="@Icons.Material.Filled.PlayArrow" Size="Size.Small" /> @DateText(context.Item.StartDate)</span>
-						<span><MudIcon Icon="@Icons.Material.Filled.Flag" Size="Size.Small" /> @DateText(context.Item.EndDate)</span>
-					</div>
-				</CellTemplate>
-			</TemplateColumn>
-			<TemplateColumn CellStyle="width:76px" Title="Actions" Sortable="false">
-				<CellTemplate>
-					<MudMenu Icon="@Icons.Material.Filled.MoreVert" Variant="Variant.Filled" DropShadow="false" Size="Size.Small"
-							 Dense="true" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-						<MudMenuItem OnClick="@(async () => await OnUpdate(context.Item))">Edit</MudMenuItem>
-						<MudMenuItem OnClick="@(async () => await Delete(context.Item))">Delete</MudMenuItem>
-					</MudMenu>
-				</CellTemplate>
-			</TemplateColumn>
-		</Columns>
-		<NoRecordsContent>
-			<MudText>No games found</MudText>
-		</NoRecordsContent>
-		<LoadingContent>
-			<MudText>Loading games</MudText>
-		</LoadingContent>
-		<PagerContent>
-			<MudDataGridPager />
-		</PagerContent>
-	</LuminaGrid>
+					</CellTemplate>
+				</TemplateColumn>
+				<TemplateColumn Title="Game" SortBy="@((MyGame x) => x.Game == null ? "" : x.Game.Name)" Sortable="true">
+					<CellTemplate>
+						<div class="title-cell">
+							<div class="title-row">
+								<MudText Typo="Typo.body1">@context.Item.Game?.Name</MudText>
+								<span class="platform-chip">@PlatformLabel(context.Item)</span>
+							</div>
+							<MudText Typo="Typo.body2" Class="game-summary">@Summary(context.Item)</MudText>
+							<div class="chip-row">
+								@foreach (var genre in context.Item.Game?.Genres?.Take(3) ?? [])
+								{
+									<span class="soft-chip">@genre</span>
+								}
+							</div>
+						</div>
+					</CellTemplate>
+				</TemplateColumn>
+				<TemplateColumn Title="Status" SortBy="@((MyGame x) => x.Status)" Sortable="true">
+					<CellTemplate>
+						<div class="status-stack">
+							<span class="status-pill @StatusClass(context.Item.Status)">@context.Item.Status</span>
+							<div class="meta-row">
+								<span><MudIcon Icon="@Icons.Material.Filled.LowPriority" Size="Size.Small" /> Priority @context.Item.Priority</span>
+								<span><MudIcon Icon="@Icons.Material.Filled.Star" Size="Size.Small" /> @Rating(context.Item)</span>
+							</div>
+						</div>
+					</CellTemplate>
+				</TemplateColumn>
+				<TemplateColumn Title="Progress" SortBy="@((MyGame x) => TotalHours(x))" Sortable="true">
+					<CellTemplate>
+						<div class="progress-cell">
+							<div class="progress-header">
+								<strong>@ProgressPercent(context.Item)%</strong>
+								<span>@RemainingText(context.Item)</span>
+							</div>
+							<div class="progress-track">
+								<div class="progress-fill @StatusClass(context.Item.Status)" style="width: @ProgressWidth(context.Item);"></div>
+							</div>
+						</div>
+					</CellTemplate>
+				</TemplateColumn>
+				<TemplateColumn Title="Played Time" SortBy="@((MyGame x) => TotalHours(x))" Sortable="true">
+					<CellTemplate>
+						<div class="time-pill-grid">
+							<span><strong>@FormatHours(TotalHours(context.Item))h</strong> total</span>
+							<span>@FormatHours(ManualHours(context.Item))h manual</span>
+							<span>@FormatHours(ThirdPartyHours(context.Item))h tracked</span>
+						</div>
+					</CellTemplate>
+				</TemplateColumn>
+				<TemplateColumn Title="Dates" SortBy="@((MyGame x) => x.StartDate)" Sortable="true">
+					<CellTemplate>
+						<div class="date-pill-grid">
+							<span><MudIcon Icon="@Icons.Material.Filled.PlayArrow" Size="Size.Small" /> @DateText(context.Item.StartDate)</span>
+							<span><MudIcon Icon="@Icons.Material.Filled.Flag" Size="Size.Small" /> @DateText(context.Item.EndDate)</span>
+						</div>
+					</CellTemplate>
+				</TemplateColumn>
+				<TemplateColumn CellStyle="width:96px" Title="Actions" Sortable="false">
+					<CellTemplate>
+						<div class="table-action-icons">
+							<MudTooltip Text="Edit library entry">
+								<MudIconButton Icon="@Icons.Material.Filled.Edit"
+											   Variant="Variant.Text"
+											   Color="Color.Primary"
+											   Size="Size.Small"
+											   DropShadow="false"
+											   OnClick="@(async () => await OnUpdate(context.Item))" />
+							</MudTooltip>
+							<MudTooltip Text="Remove from library">
+								<MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+											   Variant="Variant.Text"
+											   Color="Color.Error"
+											   Size="Size.Small"
+											   DropShadow="false"
+											   OnClick="@(async () => await Delete(context.Item))" />
+							</MudTooltip>
+						</div>
+					</CellTemplate>
+				</TemplateColumn>
+			</Columns>
+			<NoRecordsContent>
+				<div class="grid-state">
+					<MudIcon Icon="@Icons.Material.Filled.SportsEsports" Size="Size.Large" />
+					<MudText Typo="Typo.subtitle1">No games in this view</MudText>
+					<MudText Typo="Typo.body2" Class="mud-text-secondary">Add a game or adjust your filters.</MudText>
+				</div>
+			</NoRecordsContent>
+			<LoadingContent>
+				<div class="grid-state">
+					<MudProgressCircular Indeterminate="true" Size="Size.Medium" Color="Color.Primary" />
+					<MudText Typo="Typo.body2">Loading your games</MudText>
+				</div>
+			</LoadingContent>
+			<PagerContent>
+				<MudDataGridPager />
+			</PagerContent>
+		</LuminaGrid>
+	</section>
 }
 else
 {
@@ -181,13 +222,68 @@ else
 	}
 
 	.table-cover {
-		width: 52px;
-		height: 64px;
-		border-radius: 6px;
+		width: 54px;
+		height: 72px;
+		border-radius: 7px;
 		background-color: #263346;
 		background-position: center;
 		background-size: cover;
 		box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
+	}
+
+	.table-cover-frame {
+		display: inline-grid;
+		place-items: center;
+		padding: 4px;
+		border: 1px solid rgba(117, 167, 255, .18);
+		border-radius: 10px;
+		background: linear-gradient(180deg, rgba(117, 167, 255, .12), rgba(118, 228, 196, .05));
+	}
+
+	.my-games-table-frame {
+		border: 1px solid rgba(117, 167, 255, .16);
+		border-radius: 12px;
+		background:
+			linear-gradient(180deg, rgba(117, 167, 255, .08), rgba(9, 15, 26, .02)),
+			var(--mud-palette-surface);
+		box-shadow: 0 18px 48px rgba(0, 0, 0, .2);
+		overflow: hidden;
+	}
+
+	.my-games-data-grid {
+		border: 0;
+		background: transparent;
+	}
+
+	.my-games-data-grid .mud-table-toolbar {
+		min-height: 72px;
+		padding: 12px 16px;
+		border-bottom: 1px solid rgba(255, 255, 255, .08);
+		background: rgba(12, 20, 35, .72);
+	}
+
+	.my-games-data-grid .mud-table-head .mud-table-cell {
+		border-bottom: 1px solid rgba(117, 167, 255, .16);
+		color: var(--mud-palette-text-secondary);
+		font-size: .76rem;
+		font-weight: 800;
+		letter-spacing: 0;
+		text-transform: uppercase;
+	}
+
+	.my-games-data-grid .mud-table-row {
+		background: rgba(15, 24, 40, .62);
+		transition: background .16s ease;
+	}
+
+	.my-games-data-grid .mud-table-row:hover {
+		background: rgba(30, 48, 78, .72);
+	}
+
+	.my-games-data-grid .mud-table-cell {
+		border-bottom: 1px solid rgba(255, 255, 255, .07);
+		padding-top: 12px;
+		padding-bottom: 12px;
 	}
 
 	.title-cell,
@@ -195,11 +291,33 @@ else
 	.time-stack,
 	.detail-stack {
 		display: grid;
-		gap: 4px;
+		gap: 7px;
 	}
 
 	.title-cell {
-		min-width: 240px;
+		min-width: min(420px, 40vw);
+	}
+
+	.title-row {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.title-row .mud-typography {
+		font-weight: 800;
+		line-height: 1.2;
+	}
+
+	.game-summary {
+		display: -webkit-box;
+		max-width: 620px;
+		overflow: hidden;
+		color: var(--mud-palette-text-secondary);
+		line-height: 1.35;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
 	}
 
 	.chip-row {
@@ -209,17 +327,24 @@ else
 	}
 
 	.soft-chip,
-	.status-pill {
+	.status-pill,
+	.platform-chip {
 		display: inline-flex;
 		align-items: center;
 		width: fit-content;
 		min-height: 24px;
 		padding: 3px 9px;
-		border-radius: 999px;
+		border: 1px solid rgba(255, 255, 255, .08);
+		border-radius: 6px;
 		background: rgba(118, 228, 196, .12);
 		color: var(--mud-palette-text-primary);
 		font-size: .78rem;
 		font-weight: 700;
+	}
+
+	.platform-chip {
+		background: rgba(117, 167, 255, .14);
+		color: #a9c8ff;
 	}
 
 	.status-playing { background: rgba(94, 220, 143, .18); }
@@ -248,11 +373,111 @@ else
 		color: var(--mud-palette-text-primary);
 	}
 
+	.meta-row,
 	.detail-stack span,
 	.card-metrics span {
 		display: inline-flex;
 		align-items: center;
+		flex-wrap: wrap;
 		gap: 6px;
+	}
+
+	.meta-row {
+		color: var(--mud-palette-text-secondary);
+		font-size: .82rem;
+	}
+
+	.progress-cell {
+		display: grid;
+		gap: 8px;
+		min-width: 168px;
+	}
+
+	.progress-header {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 10px;
+	}
+
+	.progress-header strong {
+		color: var(--mud-palette-text-primary);
+		font-size: 1.04rem;
+	}
+
+	.progress-header span {
+		color: var(--mud-palette-text-secondary);
+		font-size: .78rem;
+		font-weight: 700;
+	}
+
+	.progress-track {
+		height: 9px;
+		overflow: hidden;
+		border: 1px solid rgba(117, 167, 255, .16);
+		border-radius: 999px;
+		background: rgba(255, 255, 255, .06);
+	}
+
+	.progress-fill {
+		height: 100%;
+		min-width: 3px;
+		border-radius: inherit;
+		background: rgba(117, 167, 255, .72);
+	}
+
+	.progress-fill.status-playing { background: rgba(94, 220, 143, .82); }
+	.progress-fill.status-main { background: rgba(244, 201, 93, .86); }
+	.progress-fill.status-complete { background: rgba(117, 167, 255, .9); }
+	.progress-fill.status-planned { background: rgba(188, 154, 255, .8); }
+
+	.time-pill-grid,
+	.date-pill-grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 7px;
+		min-width: 190px;
+		max-width: 340px;
+	}
+
+	.time-pill-grid span,
+	.date-pill-grid span {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		min-height: 30px;
+		padding: 5px 9px;
+		border: 1px solid rgba(117, 167, 255, .13);
+		border-radius: 7px;
+		background: rgba(255, 255, 255, .04);
+		color: var(--mud-palette-text-secondary);
+		font-size: .82rem;
+		font-weight: 700;
+	}
+
+	.time-pill-grid strong {
+		color: var(--mud-palette-text-primary);
+	}
+
+	.table-action-icons {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		justify-content: flex-end;
+	}
+
+	.table-action-icons .mud-icon-button {
+		border-radius: 7px;
+		background: rgba(255, 255, 255, .035);
+	}
+
+	.grid-state {
+		display: grid;
+		place-items: center;
+		gap: 8px;
+		min-height: 220px;
+		color: var(--mud-palette-text-secondary);
+		text-align: center;
 	}
 
 	.card-toolbar {
@@ -345,6 +570,14 @@ else
 		.media-page-header {
 			align-items: stretch;
 			flex-direction: column;
+		}
+
+		.title-cell {
+			min-width: 260px;
+		}
+
+		.my-games-data-grid .mud-table-toolbar {
+			padding: 10px;
 		}
 	}
 </style>
@@ -502,7 +735,7 @@ else
 
 	protected override string? GetDeleteDetail(MyGame myGame)
 	{
-		return "This deletes your personal tracking data for this game, including status, priority, rating, played time, notes, linked quests, and sessions that depend on this library entry. The shared game catalog record stays available.";
+		return "This deletes your personal tracking data for this game, including status, priority, rating, played time, and notes. Linked quests and sessions are kept, but they will no longer point to this library entry. The shared game catalog record stays available.";
 	}
 
 	protected override string GetBulkDeleteTitle(int count) => $"Remove {count} selected game{(count == 1 ? string.Empty : "s")} from your library?";
@@ -511,7 +744,7 @@ else
 
 	protected override string? GetBulkDeleteDetail(int count)
 	{
-		return "This deletes the selected personal tracking entries. Shared catalog games remain available, but your library-specific progress data cannot be restored from this action.";
+		return "This deletes the selected personal tracking entries. Shared catalog games remain available, and linked quests or sessions are detached instead of deleted.";
 	}
 
 	private string Cover(MyGame? myGame)
@@ -588,6 +821,41 @@ else
 		}
 
 		return $"{DateText(myGame.StartDate)} - {DateText(myGame.EndDate)}";
+	}
+
+	private static string PlatformLabel(MyGame myGame)
+	{
+		return myGame.Game?.Platforms == 0 || myGame.Game?.Platforms is null
+			? "No platform"
+			: myGame.Game.Platforms.ToString();
+	}
+
+	private static int ProgressPercent(MyGame myGame)
+	{
+		var estimate = myGame.Game?.Playtime ?? 0;
+		if (estimate <= 0)
+		{
+			return TotalHours(myGame) > 0 ? 100 : 0;
+		}
+
+		return Math.Clamp((int)Math.Round(TotalHours(myGame) / estimate * 100), 0, 100);
+	}
+
+	private static string ProgressWidth(MyGame myGame)
+	{
+		return $"{ProgressPercent(myGame)}%";
+	}
+
+	private static string RemainingText(MyGame myGame)
+	{
+		var estimate = myGame.Game?.Playtime ?? 0;
+		if (estimate <= 0)
+		{
+			return TotalHours(myGame) > 0 ? "No estimate" : "Not started";
+		}
+
+		var remaining = RemainingFor(myGame);
+		return remaining <= 0 ? "Done" : $"{FormatHours(remaining)}h left";
 	}
 
 	private static string StatusClass(GameStatus status)
