@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LuminaPath.Infrastructure.Migrations
 {
     [DbContext(typeof(LuminaPathDbContext))]
-    [Migration("20260516130318_MyGamesPersonalNotes")]
-    partial class MyGamesPersonalNotes
+    [Migration("20260517070356_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -106,6 +106,9 @@ namespace LuminaPath.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Path")
+                        .HasColumnType("text");
+
+                    b.Property<string>("StorageName")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -226,6 +229,75 @@ namespace LuminaPath.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Friendships");
+                });
+
+            modelBuilder.Entity("LuminaPath.Core.Models.GameAchievement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CanonicalKey")
+                        .IsRequired()
+                        .HasMaxLength(180)
+                        .HasColumnType("character varying(180)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1200)
+                        .HasColumnType("character varying(1200)");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("IconUrl")
+                        .HasMaxLength(800)
+                        .HasColumnType("character varying(800)");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("LastSyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("PrimaryProvider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PsnGroupId")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<int?>("PsnTrophyId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PsnTrophyType")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("SteamApiName")
+                        .HasMaxLength(180)
+                        .HasColumnType("character varying(180)");
+
+                    b.Property<string>("SteamDisplayName")
+                        .HasMaxLength(240)
+                        .HasColumnType("character varying(240)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(240)
+                        .HasColumnType("character varying(240)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SteamApiName");
+
+                    b.HasIndex("GameId", "CanonicalKey")
+                        .IsUnique();
+
+                    b.HasIndex("GameId", "PsnTrophyId", "PsnGroupId");
+
+                    b.ToTable("GameAchievements");
                 });
 
             modelBuilder.Entity("LuminaPath.Core.Models.GamingSession", b =>
@@ -789,6 +861,47 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.ToTable("MyGameInfo");
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.UserGameAchievement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GameAchievementId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LuminaUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceAchievementId")
+                        .IsRequired()
+                        .HasMaxLength(180)
+                        .HasColumnType("character varying(180)");
+
+                    b.Property<DateTime>("SyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UnlockedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameAchievementId");
+
+                    b.HasIndex("LuminaUserId", "GameAchievementId");
+
+                    b.HasIndex("LuminaUserId", "GameAchievementId", "Provider", "SourceAchievementId")
+                        .IsUnique();
+
+                    b.ToTable("UserGameAchievements");
+                });
+
             modelBuilder.Entity("LuminaPath.Infrastructure.Identity.LuminaUser", b =>
                 {
                     b.Property<string>("Id")
@@ -1145,6 +1258,17 @@ namespace LuminaPath.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.GameAchievement", b =>
+                {
+                    b.HasOne("LuminaPath.Core.Models.Game", "Game")
+                        .WithMany("Achievements")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.GamingSession", b =>
                 {
                     b.HasOne("LuminaPath.Infrastructure.Identity.LuminaUser", null)
@@ -1323,6 +1447,17 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Navigation("Game");
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.UserGameAchievement", b =>
+                {
+                    b.HasOne("LuminaPath.Core.Models.GameAchievement", "GameAchievement")
+                        .WithMany("UserAchievements")
+                        .HasForeignKey("GameAchievementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GameAchievement");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1429,6 +1564,11 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Navigation("Image");
                 });
 
+            modelBuilder.Entity("LuminaPath.Core.Models.GameAchievement", b =>
+                {
+                    b.Navigation("UserAchievements");
+                });
+
             modelBuilder.Entity("LuminaPath.Core.Models.MyGame", b =>
                 {
                     b.Navigation("GamingSessions");
@@ -1471,6 +1611,8 @@ namespace LuminaPath.Infrastructure.Migrations
 
             modelBuilder.Entity("LuminaPath.Core.Models.Game", b =>
                 {
+                    b.Navigation("Achievements");
+
                     b.Navigation("Dlcs");
 
                     b.Navigation("MyGames");
