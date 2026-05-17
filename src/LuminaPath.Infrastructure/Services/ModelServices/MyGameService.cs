@@ -1,6 +1,7 @@
 using CsvHelper;
 using CsvHelper.Configuration;
 using CsvHelper.TypeConversion;
+using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Enums;
@@ -33,6 +34,59 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         protected override Expression<Func<MyGame, bool>> HasMediaId(int mediaId)
         {
             return myGame => myGame.GameId == mediaId;
+        }
+
+        public async Task<List<UserGameAchievementDto>?> GetEarnedAchievementsAsync(int myGameId, string userId)
+        {
+            using var context = await GetDbContextAsync();
+            var gameId = await context.MyGames
+                .AsNoTracking()
+                .Where(myGame => myGame.Id == myGameId && myGame.LuminaUserId == userId)
+                .Select(myGame => (int?)myGame.GameId)
+                .SingleOrDefaultAsync();
+
+            if (gameId is null)
+            {
+                return null;
+            }
+
+            var achievements = await (
+                    from unlock in context.UserGameAchievements.AsNoTracking()
+                    join achievement in context.GameAchievements.AsNoTracking()
+                        on unlock.GameAchievementId equals achievement.Id
+                    where unlock.LuminaUserId == userId && achievement.GameId == gameId.Value
+                    orderby unlock.UnlockedAt ?? unlock.SyncedAt descending, achievement.Title
+                    select new UserGameAchievementDto
+                    {
+                        Id = unlock.Id,
+                        GameAchievementId = achievement.Id,
+                        Provider = unlock.Provider,
+                        SourceAchievementId = unlock.SourceAchievementId,
+                        Title = achievement.Title,
+                        Description = achievement.Description,
+                        IconUrl = achievement.IconUrl,
+                        IsHidden = achievement.IsHidden,
+                        TrophyType = achievement.PsnTrophyType,
+                        UnlockedAt = unlock.UnlockedAt,
+                        SyncedAt = unlock.SyncedAt
+                    })
+                .ToListAsync();
+
+            foreach (var achievement in achievements)
+            {
+                achievement.ProviderName = ProviderLabel(achievement.Provider);
+            }
+
+            return achievements;
+        }
+
+        private static string ProviderLabel(ExternalMediaProvider provider)
+        {
+            return provider switch
+            {
+                ExternalMediaProvider.Psn => "PlayStation",
+                _ => provider.ToString()
+            };
         }
 
         public async Task<byte[]> ExportAsCSV(LuminaUser user)

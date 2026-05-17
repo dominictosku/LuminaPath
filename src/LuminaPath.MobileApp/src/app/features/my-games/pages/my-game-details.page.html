@@ -204,6 +204,60 @@
       <p class="forecast-summary">{{ forecastSummary() }}</p>
     </section>
 
+    <section class="quest-panel trophies-panel" *ngIf="isInLibrary">
+      <header class="section-header trophies-header">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="trophy-outline"></ion-icon>
+            Trophies
+          </span>
+          <h2>Unlocked by you</h2>
+        </div>
+        <ion-badge>{{ achievementSummaryLabel }}</ion-badge>
+      </header>
+
+      <div class="empty-state empty-state--locked" *ngIf="isAchievementsLoading">
+        <ion-spinner name="crescent"></ion-spinner>
+        <strong>Loading trophies</strong>
+        <span>Checking the achievements synced for this game.</span>
+      </div>
+
+      <div class="empty-state empty-state--locked" *ngIf="!isAchievementsLoading && achievementsErrorMessage">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <strong>Trophies unavailable</strong>
+        <span>{{ achievementsErrorMessage }}</span>
+      </div>
+
+      <div class="empty-state" *ngIf="!isAchievementsLoading && !achievementsErrorMessage && !achievements.length">
+        <ion-icon name="trophy-outline"></ion-icon>
+        <strong>No trophies synced yet</strong>
+        <span>Run a Steam or PSN sync to fill this shelf.</span>
+      </div>
+
+      <div class="trophy-grid" *ngIf="!isAchievementsLoading && !achievementsErrorMessage && achievements.length">
+        <article
+          class="trophy-card"
+          *ngFor="let achievement of achievements; trackBy: trackByAchievement">
+          <div class="trophy-card__icon">
+            <img *ngIf="achievement.iconUrl; else trophyFallback" [src]="achievement.iconUrl" [alt]="achievement.title" />
+            <ng-template #trophyFallback>
+              <ion-icon name="trophy-outline"></ion-icon>
+            </ng-template>
+          </div>
+
+          <div class="trophy-card__body">
+            <div class="trophy-card__meta">
+              <span>{{ achievement.providerName }}</span>
+              <span>{{ trophyTypeLabel(achievement.trophyType) }}</span>
+            </div>
+            <h3>{{ achievement.title }}</h3>
+            <p *ngIf="achievement.description">{{ achievement.description }}</p>
+            <time>{{ achievementDateLabel(achievement) }}</time>
+          </div>
+        </article>
+      </div>
+    </section>
+
     <section class="quest-panel notes-panel">
       <header class="section-header notes-header">
         <div>

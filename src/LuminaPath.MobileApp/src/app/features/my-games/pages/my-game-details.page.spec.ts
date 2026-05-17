@@ -58,6 +58,7 @@ describe('MyGameDetailsPage', () => {
     myGameService = jasmine.createSpyObj<MyGameService>('MyGameService', [
       'addToLibrary',
       'updateLibraryEntry',
+      'getAchievements',
       'delete',
     ]);
     router = jasmine.createSpyObj<Router>('Router', ['navigate', 'navigateByUrl']);
@@ -73,6 +74,7 @@ describe('MyGameDetailsPage', () => {
     questBoardService.deleteQuest.and.resolveTo(undefined as any);
     sessionService.forecast.and.returnValue(of(null as any));
     myGameService.updateLibraryEntry.and.returnValue(of(new MyGame(1)));
+    myGameService.getAchievements.and.returnValue(of([]));
 
     TestBed.configureTestingModule({
       imports: [MyGameDetailsPage],
@@ -123,10 +125,40 @@ describe('MyGameDetailsPage', () => {
 
     expect(gameService.get).toHaveBeenCalledWith(42);
     expect(questBoardService.getQuestsForGame).toHaveBeenCalledWith(7);
+    expect(myGameService.getAchievements).toHaveBeenCalledWith(7);
     expect(component.game?.name).toBe('Hades');
     expect(component.quests.length).toBe(2);
     expect(component.isInLibrary).toBeTrue();
     expect(component.errorMessage).toBe('');
+  });
+
+  it('loads earned trophies when the user owns the game', async () => {
+    const myGame = makeMyGame(7, 42);
+    const game = makeGame({ id: 42, name: 'Astro Bot', myGames: myGame });
+    configure('42', game);
+    myGameService.getAchievements.and.returnValue(of([
+      {
+        id: 9,
+        gameAchievementId: 3,
+        provider: 2,
+        providerName: 'PlayStation',
+        sourceAchievementId: 'default:1',
+        title: 'First jump',
+        description: 'Jump once',
+        iconUrl: 'https://example.test/trophy.png',
+        isHidden: false,
+        trophyType: 'bronze',
+        unlockedAt: '2026-05-10T00:00:00.000Z',
+        syncedAt: '2026-05-11T00:00:00.000Z',
+      },
+    ]));
+
+    await initialize();
+
+    expect(component.achievements.length).toBe(1);
+    expect(component.achievements[0].title).toBe('First jump');
+    expect(component.achievementSummaryLabel).toBe('1 earned');
+    expect(component.trophyTypeLabel(component.achievements[0].trophyType)).toBe('Bronze');
   });
 
   it('smoke-checks the details tab state without a backend', () => {
@@ -184,8 +216,10 @@ describe('MyGameDetailsPage', () => {
     await initialize();
 
     expect(questBoardService.getQuestsForGame).not.toHaveBeenCalled();
+    expect(myGameService.getAchievements).not.toHaveBeenCalled();
     expect(component.isInLibrary).toBeFalse();
     expect(component.quests).toEqual([]);
+    expect(component.achievements).toEqual([]);
   });
 
   it('addQuest writes the new quest into the right type column and refetches', async () => {

@@ -15,6 +15,21 @@ export type AddMyGameRequest = {
   personalNotes?: string | null;
 };
 
+export type UserGameAchievement = {
+  id: number;
+  gameAchievementId: number;
+  provider: number;
+  providerName: string;
+  sourceAchievementId: string;
+  title: string;
+  description?: string | null;
+  iconUrl?: string | null;
+  isHidden: boolean;
+  trophyType?: string | null;
+  unlockedAt?: string | null;
+  syncedAt: string;
+};
+
 @Injectable({
   providedIn: 'root',
 })
@@ -44,5 +59,11 @@ export class MyGameService extends ApiService<MyGame> {
     };
 
     return this.put(myGameId, request as MyGame);
+  }
+
+  getAchievements(myGameId: number) {
+    return this.http.get<UserGameAchievement[]>(`${this.apiUrl}/${myGameId}/achievements`, {
+      withCredentials: true,
+    });
   }
 }
