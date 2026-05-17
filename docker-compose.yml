@@ -13,7 +13,7 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Default: Host=db;Port=5432;Database=${POSTGRES_DB:-luminapath};Username=${POSTGRES_USER:-luminapath};Password=${POSTGRES_PASSWORD:-change-me};
       ConnectionStrings__Redis: redis:6379
-      Database__RunMigrationsOnStartup: ${RUN_MIGRATIONS_ON_STARTUP:-true}
+      Database__RunMigrationsOnStartup: ${RUN_MIGRATIONS_ON_STARTUP:-false}
       Https__Redirect: ${HTTPS_REDIRECT:-false}
       Storage__Provider: ${STORAGE_PROVIDER:-FileSystem}
       Storage__Path: ${STORAGE_PATH:-/app/App_Data/storage}

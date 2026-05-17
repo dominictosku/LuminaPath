@@ -15,6 +15,12 @@ After this you will have the API, PostgreSQL, Redis and the Angular app running 
 
 ## Option A — everything in Docker
 
+For a local throwaway database, enable startup migrations in `.env` before the first run:
+
+```text
+RUN_MIGRATIONS_ON_STARTUP=true
+```
+
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.frontend.yml up --build
 ```
@@ -44,7 +50,7 @@ npm run start
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `relation "X" does not exist` on API startup | Migrations didn't run | Confirm `RUN_MIGRATIONS_ON_STARTUP=true` in `.env`, restart `api` |
+| `relation "X" does not exist` on API startup | Migrations didn't run | For local only, confirm `RUN_MIGRATIONS_ON_STARTUP=true` in `.env`, restart `api` |
 | `connection refused` from API to `db` | Postgres still starting | API has a healthcheck; wait ~10s and it'll retry |
 | Angular app shows CORS errors | Frontend origin not in `Cors__AllowedOrigins__*` | Add the origin in `.env` and restart `api` |
 | Cover images don't appear | Storage volume not writable | `docker volume inspect luminapath_luminapath-storage`, check permissions |

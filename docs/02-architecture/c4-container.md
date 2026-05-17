@@ -50,7 +50,7 @@ flowchart TB
     - Blazor admin UI (`/admin/*`)
     - Auth (cookie-based)
     - Integration with external catalog / news sources
-    - Database migrations (run on startup, controlled by `RUN_MIGRATIONS_ON_STARTUP`)
+    - Database migrations (automatic in development; production should use reviewed SQL scripts)
 - **State**: stateless beyond the request scope; persistence in Postgres / Redis / filesystem volume.
 
 ### `luminapath-frontend`
@@ -67,7 +67,8 @@ flowchart TB
 
 - **Tech**: PostgreSQL 17
 - **Schema**: managed by EF Core migrations in [`src/LuminaPath.Infrastructure/Migrations/`](../../src/LuminaPath.Infrastructure/)
-- **Backup**: out of scope of this doc — see [runbooks](../05-runbooks/index.md).
+- **Migration operations**: see the [database migrations runbook](../05-runbooks/migrations.md).
+- **Backup**: managed through the Blazor Settings background jobs tab.
 
 ### `redis`
 

@@ -182,7 +182,7 @@ Backend variables:
 ```text
 ASPNETCORE_ENVIRONMENT=Production
 ConnectionStrings__Default=Host=db;Port=5432;Database=luminapath;Username=luminapath;Password=change-me;
-RUN_MIGRATIONS_ON_STARTUP=true
+RUN_MIGRATIONS_ON_STARTUP=false
 HTTPS_REDIRECT=false
 Storage__Provider=FileSystem
 Storage__Path=/app/App_Data/storage
@@ -526,8 +526,13 @@ dotnet test Test/Test.csproj -p:OutDir=.\artifacts\test-out\
 
 ## Migrations
 
-Apply Migrations
+Development applies migrations automatically when the backend runs with `ASPNETCORE_ENVIRONMENT=Development`.
+Production should keep `RUN_MIGRATIONS_ON_STARTUP=false`, generate an idempotent SQL script, review it, and apply it manually.
+
+Create a migration:
 
 ```powershell
-dotnet ef migrations --project src/LuminaPath.Infrastructure/LuminaPath.Infrastructure.csproj --startup-project src/LuminaPath/LuminaPath.csproj add <MigrationName>
+dotnet ef migrations add BackgroundJobs --project src/LuminaPath.Infrastructure/LuminaPath.Infrastructure.csproj --startup-project src/LuminaPath/LuminaPath.csproj --output-dir Migrations
 ```
+
+See the full runbook: [`docs/05-runbooks/migrations.md`](docs/05-runbooks/migrations.md).
