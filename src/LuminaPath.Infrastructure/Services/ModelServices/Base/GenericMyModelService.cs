@@ -84,7 +84,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             int pageSize = mediaFilter.Paging.Count > 0 ? mediaFilter.Paging.Count : 10;
             return new PaginatedList<Dto>(
                 mappedEntities.ToList(),
-                paginatedEntities.TotalPages * pageSize,
+                paginatedEntities.TotalCount,
                 paginatedEntities.PageIndex,
                 pageSize);
         }
@@ -256,12 +256,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
         protected virtual async Task<bool> IsMediaAlreadyAdded(int id, int myId, string userId)
         {
             await using var context = await GetDbContextAsync();
-            var entities = GetEntities(context);
-            var userEntities = await entities.AsNoTracking()
-                .Where(e => e.Id != myId && e.LuminaUserId == userId)
-                .ToListAsync();
-
-            return userEntities.Any(e => e.MediaId == id);
+            return await GetEntities(context)
+                .AsNoTracking()
+                .AnyAsync(e => e.Id != myId && e.LuminaUserId == userId && e.MediaId == id);
         }
 
         protected bool EntityExists(int id, LuminaPathDbContext dbContext)

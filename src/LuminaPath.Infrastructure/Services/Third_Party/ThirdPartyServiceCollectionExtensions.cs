@@ -7,7 +7,7 @@ internal static class ThirdPartyServiceCollectionExtensions
 {
     public static IServiceCollection AddThirdPartyIntegrations(this IServiceCollection services, IConfiguration config)
     {
-        services.AddScoped<PSNService>();
+        services.AddHttpClient<PSNService>();
 
         services.Configure<GameNewsOptions>(config.GetSection(GameNewsOptions.SectionName));
         services.AddHttpClient<GameNewsService>();

@@ -68,7 +68,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             int pageSize = mediaFilter.Paging.Count > 0 ? mediaFilter.Paging.Count : 10;
             return new PaginatedList<Dto>(
                 mappedEntities.ToList(),
-                paginatedEntities.TotalPages * pageSize,
+                paginatedEntities.TotalCount,
                 paginatedEntities.PageIndex,
                 pageSize);
         }

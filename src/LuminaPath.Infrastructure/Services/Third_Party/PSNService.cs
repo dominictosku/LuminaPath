@@ -16,9 +16,11 @@ using static LuminaPath.Core.Entities.PSN.PSNTrophy;
 namespace LuminaPath.Infrastructure.Services.Third_Party
 {
     public class PSNService(
+        HttpClient httpClient,
         GameImportPipeline importPipeline,
         ILogger<PSNService> logger)
     {
+        private readonly HttpClient _httpClient = httpClient;
         private readonly GameImportPipeline _importPipeline = importPipeline;
         private readonly ILogger<PSNService> _logger = logger;
         string bearerToken = string.Empty;
@@ -36,7 +38,6 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
 
             string authorizationUrl = "https://ca.account.sony.com/api/authz/v3/oauth/authorize";
             string tokenUrl = "https://ca.account.sony.com/api/authz/v3/oauth/token";
-            using HttpClient httpClient = new HttpClient();
 
             var queryParams = new Dictionary<string, string>
             {
@@ -54,7 +55,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
                 var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
                 request.Headers.Add("Cookie", $"npsso={npsso}");
 
-                var response = await httpClient.SendAsync(request);
+                using var response = await _httpClient.SendAsync(request);
 
                 var location = response.Headers.Location;
                 if (location?.Query.StartsWith("?code=v3") != true)
@@ -86,7 +87,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
 
                 tokenRequest.Headers.Add("Authorization", "Basic MDk1MTUxNTktNzIzNy00MzcwLTliNDAtMzgwNmU2N2MwODkxOnVjUGprYTV0bnRCMktxc1A=");
 
-                var tokenResponse = await httpClient.SendAsync(tokenRequest);
+                using var tokenResponse = await _httpClient.SendAsync(tokenRequest);
 
                 if (!tokenResponse.IsSuccessStatusCode)
                 {
@@ -207,26 +208,19 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
         {
             try
             {
-                using (HttpClient client = new HttpClient())
+                using var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+                using HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
                 {
-                    // Add the Authorization header with the bearer token
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
-
-                    // Send GET request
-                    HttpResponseMessage response = await client.GetAsync(apiUrl);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        string responseData = await response.Content.ReadAsStringAsync();
-                        return responseData;
-                    }
-                    else
-                    {
-                        string errorData = await response.Content.ReadAsStringAsync();
-                        _logger.LogWarning("PlayStation request failed. Status code: {StatusCode}. Details: {Details}", response.StatusCode, errorData);
-                        return "";
-                    }
+                    string responseData = await response.Content.ReadAsStringAsync();
+                    return responseData;
                 }
+
+                string errorData = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("PlayStation request failed. Status code: {StatusCode}. Details: {Details}", response.StatusCode, errorData);
+                return "";
             }
             catch (Exception ex)
             {

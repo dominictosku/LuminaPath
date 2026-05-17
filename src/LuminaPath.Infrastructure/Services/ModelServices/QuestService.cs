@@ -527,7 +527,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         private static async Task<List<QuestDto>> LoadQuestDtos(LuminaPathDbContext dbContext, string userId)
         {
-            return await dbContext.Quests
+            var quests = await dbContext.Quests
                 .AsNoTracking()
                 .Include(q => q.MyGame).ThenInclude(g => g!.Game)
                 .Include(q => q.Skill)
@@ -535,8 +535,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 .Where(quest => quest.LuminaUserId == userId)
                 .OrderBy(quest => quest.SortOrder)
                 .ThenBy(quest => quest.Id)
-                .ToListAsync()
-                .ContinueWith(t => t.Result.Select(ProjectQuestDto).ToList());
+                .ToListAsync();
+
+            return quests.Select(ProjectQuestDto).ToList();
         }
 
         private static async Task<List<QuestSkillDto>> LoadSkillDtos(LuminaPathDbContext dbContext, string userId)

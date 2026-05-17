@@ -4,10 +4,12 @@
     {
         public int PageIndex { get; private set; }
         public int TotalPages { get; private set; }
+        public int TotalCount { get; private set; }
 
         public PaginatedList(List<T> items, int count, int pageIndex, int pageSize)
         {
             PageIndex = pageIndex;
+            TotalCount = count;
             TotalPages = (int)Math.Ceiling(count / (double)pageSize);
 
             AddRange(items);
@@ -38,10 +40,12 @@
             Data = list;
             PageIndex = list.PageIndex;
             TotalPages = list.TotalPages;
+            TotalCount = list.TotalCount;
         }
 
         public IEnumerable<T> Data { get; set; }
         public int PageIndex { get; set; }
         public int TotalPages { get; set; }
+        public int TotalCount { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 using LuminaPath.Core.Entities;
+using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure;
@@ -49,7 +50,35 @@ namespace Test.Infrastructure
 
             Assert.Equal(2, page.PageIndex);
             Assert.Equal(3, page.TotalPages);
+            Assert.Equal(5, page.TotalCount);
             Assert.Equal(["Celeste", "Doom"], page.Select(game => game.Name));
+        }
+
+        [Fact]
+        public async Task MediaModelService_PreservesTotalCount_WhenMappingPaginatedDtos()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Games.AddRange(
+                    CreateGame("Apex"),
+                    CreateGame("Baldur"),
+                    CreateGame("Celeste"),
+                    CreateGame("Doom"),
+                    CreateGame("Elden Ring"));
+                await dbContext.SaveChangesAsync();
+            }
+
+            var service = CreateGameService(options);
+            var mediaFilter = new MediaFilter { Paging = new Paging(pageIndex: 3, count: 2) };
+
+            var page = await service.GetAndMapEntities<GamesDto>(mediaFilter, includes: [], userId: null);
+
+            Assert.Equal(3, page.PageIndex);
+            Assert.Equal(3, page.TotalPages);
+            Assert.Equal(5, page.TotalCount);
+            Assert.Equal(["Elden Ring"], page.Select(game => game.Name));
         }
 
         private static GameService CreateGameService(DbContextOptions<LuminaPathDbContext> options)

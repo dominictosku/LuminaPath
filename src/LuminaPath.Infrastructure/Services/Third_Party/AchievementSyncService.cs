@@ -3,6 +3,7 @@ using LuminaPath.Core.Enums;
 using LuminaPath.Core.Extensions;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Identity;
+using LuminaPath.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using static LuminaPath.Core.Entities.PSN.PSNTrophy;
@@ -16,17 +17,20 @@ public sealed class AchievementSyncService
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
     private readonly SteamService _steamService;
     private readonly PSNService _psnService;
+    private readonly ApplicationSettingsService _settings;
     private readonly ILogger<AchievementSyncService> _logger;
 
     public AchievementSyncService(
         IDbContextFactory<LuminaPathDbContext> dbContextFactory,
         SteamService steamService,
         PSNService psnService,
+        ApplicationSettingsService settings,
         ILogger<AchievementSyncService> logger)
     {
         _dbContextFactory = dbContextFactory;
         _steamService = steamService;
         _psnService = psnService;
+        _settings = settings;
         _logger = logger;
     }
 
@@ -109,6 +113,15 @@ public sealed class AchievementSyncService
             result.Warnings.Add("PSN profile is not connected.");
             return result;
         }
+
+        var bearerToken = await _settings.GetPsnBearerTokenAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(bearerToken))
+        {
+            result.Warnings.Add("PSN bearer token is not configured.");
+            return result;
+        }
+
+        _psnService.SetBearer(bearerToken);
 
         var trophyTitles = await _psnService.GetUserTrophyTitles(accountId);
         if (trophyTitles.TrophyTitles.Count == 0)

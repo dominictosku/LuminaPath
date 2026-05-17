@@ -137,7 +137,7 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
         var pageSize = mediaFilter.Paging.Count > 0 ? mediaFilter.Paging.Count : 10;
         return new PaginatedList<TDto>(
             entitiesDto.ToList(),
-            entities.TotalPages * pageSize,
+            entities.TotalCount,
             entities.PageIndex,
             pageSize);
     }
