@@ -18,7 +18,7 @@ namespace LuminaPath.Infrastructure.Services.Third_Party
     public class PSNService(
         HttpClient httpClient,
         GameImportPipeline importPipeline,
-        ILogger<PSNService> logger)
+        ILogger<PSNService> logger) : IPsnTrophyClient
     {
         private readonly HttpClient _httpClient = httpClient;
         private readonly GameImportPipeline _importPipeline = importPipeline;

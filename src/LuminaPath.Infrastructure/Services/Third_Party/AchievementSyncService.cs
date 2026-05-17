@@ -15,33 +15,33 @@ public sealed class AchievementSyncService
     private static readonly Regex NonWordRegex = new(@"[^\p{L}\p{N}]+", RegexOptions.Compiled);
 
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
-    private readonly SteamService _steamService;
-    private readonly PSNService _psnService;
+    private readonly ISteamAchievementClient _steamAchievements;
+    private readonly IPsnTrophyClient _psnTrophies;
     private readonly ApplicationSettingsService _settings;
     private readonly ILogger<AchievementSyncService> _logger;
     private readonly Func<DateTime> _utcNow;
 
     public AchievementSyncService(
         IDbContextFactory<LuminaPathDbContext> dbContextFactory,
-        SteamService steamService,
-        PSNService psnService,
+        ISteamAchievementClient steamAchievements,
+        IPsnTrophyClient psnTrophies,
         ApplicationSettingsService settings,
         ILogger<AchievementSyncService> logger)
-        : this(dbContextFactory, steamService, psnService, settings, logger, () => DateTime.UtcNow)
+        : this(dbContextFactory, steamAchievements, psnTrophies, settings, logger, () => DateTime.UtcNow)
     {
     }
 
     public AchievementSyncService(
         IDbContextFactory<LuminaPathDbContext> dbContextFactory,
-        SteamService steamService,
-        PSNService psnService,
+        ISteamAchievementClient steamAchievements,
+        IPsnTrophyClient psnTrophies,
         ApplicationSettingsService settings,
         ILogger<AchievementSyncService> logger,
         Func<DateTime> utcNow)
     {
         _dbContextFactory = dbContextFactory;
-        _steamService = steamService;
-        _psnService = psnService;
+        _steamAchievements = steamAchievements;
+        _psnTrophies = psnTrophies;
         _settings = settings;
         _logger = logger;
         _utcNow = utcNow;
@@ -76,13 +76,13 @@ public sealed class AchievementSyncService
             }
 
             result.GamesScanned++;
-            var definitions = await _steamService.GetAchievementSchemaAsync(appId, cancellationToken);
+            var definitions = await _steamAchievements.GetAchievementSchemaAsync(appId, cancellationToken);
             if (definitions.Count == 0)
             {
                 continue;
             }
 
-            var earned = (await _steamService.GetPlayerAchievementsAsync(steamId, appId, cancellationToken))
+            var earned = (await _steamAchievements.GetPlayerAchievementsAsync(steamId, appId, cancellationToken))
                 .Where(achievement => achievement.Achieved)
                 .ToDictionary(achievement => achievement.ApiName, StringComparer.OrdinalIgnoreCase);
 
@@ -138,9 +138,9 @@ public sealed class AchievementSyncService
             return result;
         }
 
-        _psnService.SetBearer(bearerToken);
+        _psnTrophies.SetBearer(bearerToken);
 
-        var trophyTitles = await _psnService.GetUserTrophyTitles(accountId);
+        var trophyTitles = await _psnTrophies.GetUserTrophyTitles(accountId);
         if (trophyTitles.TrophyTitles.Count == 0)
         {
             result.Warnings.Add("No PSN trophy titles were returned.");
@@ -164,13 +164,13 @@ public sealed class AchievementSyncService
             }
 
             result.GamesScanned++;
-            var definitions = await _psnService.GetTitleTrophies(title.NpCommunicationId, title.NpServiceName);
+            var definitions = await _psnTrophies.GetTitleTrophies(title.NpCommunicationId, title.NpServiceName);
             if (definitions.Trophies.Count == 0)
             {
                 continue;
             }
 
-            var earned = (await _psnService.GetUserTrophiesEarnedForTitle(accountId, title.NpCommunicationId, title.NpServiceName))
+            var earned = (await _psnTrophies.GetUserTrophiesEarnedForTitle(accountId, title.NpCommunicationId, title.NpServiceName))
                 .Trophies
                 .Where(trophy => trophy.Earned)
                 .ToDictionary(trophy => PsnSourceId(trophy.TrophyId, trophy.TrophyGroupId), StringComparer.OrdinalIgnoreCase);

@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace LuminaPath.Infrastructure.Services.Third_Party;
 
-public sealed class SteamService
+public sealed class SteamService : ISteamAchievementClient
 {
     private static readonly Regex ProfileUrlRegex = new(
         @"steamcommunity\.com/(?:id|profiles)/([^/?#]+)",

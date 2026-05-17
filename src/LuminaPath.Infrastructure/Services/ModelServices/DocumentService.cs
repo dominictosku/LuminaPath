@@ -37,7 +37,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             Func<IQueryable<MediaDocument>, IOrderedQueryable<MediaDocument>>? orderBy = null,
             IEnumerable<string>? includes = null)
         {
-            using var context = await GetDbContextAsync();
+            await using var context = await GetDbContextAsync();
             IQueryable<MediaDocument> entities = context.MediaDocuments;
             entities = PrepareEntity(entities, filter, orderBy, includes);
             return await CreatePaginatedList(entities, paging);
@@ -80,16 +80,6 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
         }
 
-        public Task RenameMediaImage(Media media)
-        {
-            return Task.CompletedTask;
-        }
-
-        public async Task RenameDocument(string oldName, string newName)
-        {
-            await _storage.RenameAsync(oldName, newName);
-        }
-
         public async Task<MediaDocument> CreateMediaDocument(MediaDocument document)
         {
             ValidateDocument(document);
@@ -106,7 +96,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
             await using var context = await GetDbContextAsync();
             var existingDocument = await context.MediaDocuments.FirstOrDefaultAsync(d => d.Id == document.Id)
-                ?? throw new Exception("Document not found");
+                ?? throw new KeyNotFoundException("Document not found");
 
             existingDocument.Name = document.Name;
             existingDocument.StorageName = string.IsNullOrWhiteSpace(document.StorageName)
@@ -132,28 +122,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             try
             {
                 await using var context = await GetDbContextAsync();
-                var existingDocument = context.MediaDocuments.SingleOrDefault(d => d.Id == document.Id);
-                if (existingDocument is null)
-                {
-                    _logger.LogError("Could not find file, document: {0}", document.Name);
-                    return;
-                }
-
-                await DeleteStoredFileIfUnreferenced(context, existingDocument);
-
-                if (existingDocument.MediaId != null)
-                {
-                    var media = await context.Set<Media>()
-                        .FirstOrDefaultAsync(item => item.Id == existingDocument.MediaId);
-                    if (media != null)
-                    {
-                        media.Image = null;
-                        context.Update(media);
-                    }
-                }
-
-                context.Documents.Remove(existingDocument);
-                await context.SaveChangesAsync();
+                await DeleteDocument(document, context);
             }
             catch (Exception ex)
             {
@@ -178,7 +147,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 entity.Image = null;
                 context.Update(entity);
                 await context.SaveChangesAsync();
-                await DeleteDocument(image);
+                await DeleteDocument(image, context);
             }
             finally
             {
@@ -187,6 +156,32 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     await context.DisposeAsync();
                 }
             }
+        }
+
+        private async Task DeleteDocument(MediaDocument document, LuminaPathDbContext context)
+        {
+            var existingDocument = await context.MediaDocuments.SingleOrDefaultAsync(d => d.Id == document.Id);
+            if (existingDocument is null)
+            {
+                _logger.LogError("Could not find file, document: {0}", document.Name);
+                return;
+            }
+
+            await DeleteStoredFileIfUnreferenced(context, existingDocument);
+
+            if (existingDocument.MediaId != null)
+            {
+                var media = await context.Set<Media>()
+                    .FirstOrDefaultAsync(item => item.Id == existingDocument.MediaId);
+                if (media != null)
+                {
+                    media.Image = null;
+                    context.Update(media);
+                }
+            }
+
+            context.Documents.Remove(existingDocument);
+            await context.SaveChangesAsync();
         }
 
         private async Task DeleteStoredFileIfUnreferenced(LuminaPathDbContext context, MediaDocument document)

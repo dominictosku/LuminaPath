@@ -9,11 +9,20 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
     public class FriendsService
     {
         private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
+        private readonly Func<DateTime> _utcNow;
 
         public FriendsService(IDbContextFactory<LuminaPathDbContext> dbContextFactory)
+            : this(dbContextFactory, () => DateTime.UtcNow)
+        {
+        }
+
+        public FriendsService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, Func<DateTime> utcNow)
         {
             _dbContextFactory = dbContextFactory;
+            _utcNow = utcNow;
         }
+
+        private DateTime UtcNow => _utcNow();
 
         public async Task<List<FriendshipDto>> GetForUserAsync(string userId)
         {
@@ -85,7 +94,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     if (existing.AddresseeId == requesterId)
                     {
                         existing.Status = FriendshipStatus.Accepted;
-                        existing.RespondedAt = DateTime.UtcNow;
+                        existing.RespondedAt = UtcNow;
                         await dbContext.SaveChangesAsync();
                         return await LoadDto(dbContext, existing.Id, requesterId);
                     }
@@ -94,7 +103,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 existing.Status = FriendshipStatus.Pending;
                 existing.RequesterId = requesterId;
                 existing.AddresseeId = addresseeId;
-                existing.CreatedAt = DateTime.UtcNow;
+                existing.CreatedAt = UtcNow;
                 existing.RespondedAt = null;
                 await dbContext.SaveChangesAsync();
                 return await LoadDto(dbContext, existing.Id, requesterId);
@@ -105,7 +114,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 RequesterId = requesterId,
                 AddresseeId = addresseeId,
                 Status = FriendshipStatus.Pending,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = UtcNow
             };
             await dbContext.Friendships.AddAsync(friendship);
             await dbContext.SaveChangesAsync();
@@ -128,7 +137,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
 
             friendship.Status = accept ? FriendshipStatus.Accepted : FriendshipStatus.Declined;
-            friendship.RespondedAt = DateTime.UtcNow;
+            friendship.RespondedAt = UtcNow;
             await dbContext.SaveChangesAsync();
             return await LoadDto(dbContext, friendship.Id, userId);
         }

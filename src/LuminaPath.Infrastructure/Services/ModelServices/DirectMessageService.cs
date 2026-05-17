@@ -9,14 +9,26 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
     {
         private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
         private readonly FriendsService _friendsService;
+        private readonly Func<DateTime> _utcNow;
 
         public DirectMessageService(
             IDbContextFactory<LuminaPathDbContext> dbContextFactory,
             FriendsService friendsService)
+            : this(dbContextFactory, friendsService, () => DateTime.UtcNow)
+        {
+        }
+
+        public DirectMessageService(
+            IDbContextFactory<LuminaPathDbContext> dbContextFactory,
+            FriendsService friendsService,
+            Func<DateTime> utcNow)
         {
             _dbContextFactory = dbContextFactory;
             _friendsService = friendsService;
+            _utcNow = utcNow;
         }
+
+        private DateTime UtcNow => _utcNow();
 
         public async Task<Result<List<DirectMessageDto>, FailedResult>> GetConversationAsync(
             string userId,
@@ -74,7 +86,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 SenderId = senderId,
                 RecipientId = recipientId,
                 Content = content.Trim(),
-                SentAt = DateTime.UtcNow
+                SentAt = UtcNow
             };
             await dbContext.DirectMessages.AddAsync(message);
             await dbContext.SaveChangesAsync();
@@ -89,7 +101,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     && message.SenderId == otherUserId
                     && message.ReadAt == null)
                 .ToListAsync();
-            var now = DateTime.UtcNow;
+            var now = UtcNow;
             foreach (var message in unread)
             {
                 message.ReadAt = now;
