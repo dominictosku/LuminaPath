@@ -2,19 +2,51 @@
 @using LuminaPath.Core.Enums
 
 <MudExpansionPanels Class="filter-shell mb-3" Elevation="0">
-    <MudExpansionPanel @bind-Expanded="_advancedSearchExpanded">
+    <MudExpansionPanel @bind-Expanded="_advancedSearchExpanded" Class="filter-panel">
         <TitleContent>
             <div class="filter-title">
-                <MudIcon Icon="@Icons.Material.Filled.FilterAlt" Color="Color.Primary" />
-                <div>
-                    <MudText Typo="Typo.subtitle1">Filters</MudText>
-                    <MudText Typo="Typo.body2" Class="mud-text-secondary">@ActiveFilterText</MudText>
+                <div class="filter-title-main">
+                    <span class="filter-icon">
+                        <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" />
+                    </span>
+                    <div>
+                        <MudText Typo="Typo.subtitle1">Filters</MudText>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@ActiveFilterText</MudText>
+                    </div>
+                </div>
+
+                <div class="filter-summary">
+                    @if (ActiveFilterCount > 0)
+                    {
+                        <span class="active-filter-badge">@ActiveFilterCount active</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.SearchString))
+                    {
+                        <span class="summary-pill"><MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" /> @Model.SearchString</span>
+                    }
+                    @if (Model.Platform is not null)
+                    {
+                        <span class="summary-pill"><MudIcon Icon="@Icons.Material.Filled.VideogameAsset" Size="Size.Small" /> @Model.Platform</span>
+                    }
+                    @if (Model.Status is not null)
+                    {
+                        <span class="summary-pill"><MudIcon Icon="@Icons.Material.Filled.Flag" Size="Size.Small" /> @Model.Status</span>
+                    }
+                    @if (Model.MediaStatus is not null)
+                    {
+                        <span class="summary-pill"><MudIcon Icon="@Icons.Material.Filled.Flag" Size="Size.Small" /> @Model.MediaStatus</span>
+                    }
                 </div>
             </div>
         </TitleContent>
         <ChildContent>
             <MudGrid Spacing="2" Class="filter-grid">
-                <MudItem xs="12" md="4">
+                <MudItem xs="12" Class="filter-section-label">
+                    <MudIcon Icon="@Icons.Material.Filled.TravelExplore" Size="Size.Small" />
+                    <span>Discover</span>
+                </MudItem>
+
+                <MudItem xs="12" md="5">
                     <MudTextField @bind-Value="Model.SearchString"
                                   Label="Search"
                                   Placeholder="Title, description, genre, source"
@@ -23,29 +55,32 @@
                                   Variant="Variant.Outlined"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Class="filter-control"
                                   TextChanged="Search" />
                 </MudItem>
 
-                <MudItem xs="12" sm="6" md="4">
+                <MudItem xs="12" sm="6" md="3">
                     <MudDatePicker Clearable="true"
                                    Label="Release from"
                                    DateFormat="dd.MM.yyyy"
                                    Variant="Variant.Outlined"
+                                   Class="filter-control"
                                    PickerClosed="Search"
                                    @bind-Date="@Model.From" />
                 </MudItem>
 
-                <MudItem xs="12" sm="6" md="4">
+                <MudItem xs="12" sm="6" md="3">
                     <MudDatePicker Clearable="true"
                                    Label="Release to"
                                    DateFormat="dd.MM.yyyy"
                                    Variant="Variant.Outlined"
+                                   Class="filter-control"
                                    PickerClosed="Search"
                                    @bind-Date="@Model.To" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6" md="3">
-                    <MudSelect T="Platforms?" @bind-Value="Model.Platform" Label="Platform" Clearable="true" Variant="Variant.Outlined">
+                    <MudSelect T="Platforms?" @bind-Value="Model.Platform" Label="Platform" Clearable="true" Variant="Variant.Outlined" Class="filter-control">
                         @foreach (var platform in Enum.GetValues<Platforms>())
                         {
                             <MudSelectItem T="Platforms?" Value="@((Platforms?)platform)">@platform</MudSelectItem>
@@ -59,6 +94,7 @@
                                   Clearable="true"
                                   Immediate="true"
                                   Variant="Variant.Outlined"
+                                  Class="filter-control"
                                   TextChanged="Search" />
                 </MudItem>
 
@@ -68,23 +104,29 @@
                                   Clearable="true"
                                   Immediate="true"
                                   Variant="Variant.Outlined"
+                                  Class="filter-control"
                                   TextChanged="Search" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6" md="3">
-                    <MudNumericField T="int?" @bind-Value="Model.MinPlaytime" Label="Min estimate" Min="@((int?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" />
+                    <MudNumericField T="int?" @bind-Value="Model.MinPlaytime" Label="Min estimate" Min="@((int?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" Class="filter-control" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6" md="3">
-                    <MudNumericField T="int?" @bind-Value="Model.MaxPlaytime" Label="Max estimate" Min="@((int?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" />
+                    <MudNumericField T="int?" @bind-Value="Model.MaxPlaytime" Label="Max estimate" Min="@((int?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" Class="filter-control" />
                 </MudItem>
 
                 @if (ShowPersonalFilters)
                 {
+                    <MudItem xs="12" Class="filter-section-label filter-section-label--personal">
+                        <MudIcon Icon="@Icons.Material.Filled.Bookmark" Size="Size.Small" />
+                        <span>Personal tracking</span>
+                    </MudItem>
+
                     <MudItem xs="12" sm="6" md="3">
                         @if (UseMediaStatus)
                         {
-                            <MudSelect T="MediaStatus?" @bind-Value="Model.MediaStatus" Label="Status" Clearable="true" Variant="Variant.Outlined">
+                            <MudSelect T="MediaStatus?" @bind-Value="Model.MediaStatus" Label="Status" Clearable="true" Variant="Variant.Outlined" Class="filter-control">
                                 @foreach (var status in Enum.GetValues<MediaStatus>())
                                 {
                                     <MudSelectItem T="MediaStatus?" Value="@((MediaStatus?)status)">@status</MudSelectItem>
@@ -93,7 +135,7 @@
                         }
                         else
                         {
-                            <MudSelect T="GameStatus?" @bind-Value="Model.Status" Label="Status" Clearable="true" Variant="Variant.Outlined">
+                            <MudSelect T="GameStatus?" @bind-Value="Model.Status" Label="Status" Clearable="true" Variant="Variant.Outlined" Class="filter-control">
                                 @foreach (var status in Enum.GetValues<GameStatus>())
                                 {
                                     <MudSelectItem T="GameStatus?" Value="@((GameStatus?)status)">@status</MudSelectItem>
@@ -103,7 +145,7 @@
                     </MudItem>
 
                     <MudItem xs="12" sm="6" md="3">
-                        <MudSelect T="int?" @bind-Value="Model.Priority" Label="Priority" Clearable="true" Variant="Variant.Outlined">
+                        <MudSelect T="int?" @bind-Value="Model.Priority" Label="Priority" Clearable="true" Variant="Variant.Outlined" Class="filter-control">
                             @foreach (var priority in Enumerable.Range(1, 4))
                             {
                                 <MudSelectItem T="int?" Value="@((int?)priority)">@priority</MudSelectItem>
@@ -112,15 +154,17 @@
                     </MudItem>
 
                     <MudItem xs="12" sm="6" md="3">
-                        <MudNumericField T="short?" @bind-Value="Model.MinRating" Label="Min rating" Min="@((short?)1)" Max="@((short?)10)" Variant="Variant.Outlined" />
+                        <MudNumericField T="short?" @bind-Value="Model.MinRating" Label="Min rating" Min="@((short?)1)" Max="@((short?)10)" Variant="Variant.Outlined" Class="filter-control" />
                     </MudItem>
 
                     <MudItem xs="12" sm="6" md="3">
-                        <MudNumericField T="double?" @bind-Value="Model.MinPlayedHours" Label="Min played" Min="@((double?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" />
+                        <MudNumericField T="double?" @bind-Value="Model.MinPlayedHours" Label="Min played" Min="@((double?)0)" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentText="h" Class="filter-control" />
                     </MudItem>
 
                     <MudItem xs="12" md="3" Class="d-flex align-center">
-                        <MudCheckBox @bind-Value="Model.OnlyWithRemainingHours" Label="Only remaining hours" Color="Color.Primary" />
+                        <div class="filter-checkbox-card">
+                            <MudCheckBox @bind-Value="Model.OnlyWithRemainingHours" Label="Only remaining hours" Color="Color.Primary" />
+                        </div>
                     </MudItem>
                 }
 
@@ -137,21 +181,126 @@
 
 <style>
     .filter-shell {
-        border: 1px solid rgba(255, 255, 255, .08);
-        border-radius: 8px;
-        background: var(--mud-palette-surface);
-        box-shadow: 0 12px 30px rgba(0, 0, 0, .12);
+        border: 1px solid rgba(117, 167, 255, .16);
+        border-radius: 12px;
+        background:
+            linear-gradient(180deg, rgba(117, 167, 255, .08), rgba(9, 15, 26, .02)),
+            var(--mud-palette-surface);
+        box-shadow: 0 16px 42px rgba(0, 0, 0, .18);
         overflow: hidden;
+    }
+
+    .filter-panel {
+        background: transparent;
     }
 
     .filter-title {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 12px;
+        width: 100%;
+        min-height: 48px;
+    }
+
+    .filter-title-main {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 220px;
+    }
+
+    .filter-icon {
+        display: inline-grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border: 1px solid rgba(117, 167, 255, .2);
+        border-radius: 9px;
+        background: rgba(117, 167, 255, .12);
+        color: var(--mud-palette-primary);
+    }
+
+    .filter-summary {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 7px;
+        min-width: 0;
     }
 
     .filter-grid {
-        padding-top: 4px;
+        padding: 4px 4px 8px;
+    }
+
+    .filter-section-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+        color: var(--mud-palette-text-secondary);
+        font-size: .76rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+    }
+
+    .filter-section-label--personal {
+        margin-top: 10px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255, 255, 255, .08);
+    }
+
+    .filter-control {
+        width: 100%;
+    }
+
+    .filter-control .mud-input,
+    .filter-checkbox-card {
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .035);
+    }
+
+    .filter-control .mud-input-outlined-border {
+        border-color: rgba(117, 167, 255, .16);
+    }
+
+    .filter-control:hover .mud-input-outlined-border {
+        border-color: rgba(117, 167, 255, .34);
+    }
+
+    .filter-checkbox-card {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        min-height: 56px;
+        padding: 0 10px;
+        border: 1px solid rgba(117, 167, 255, .16);
+    }
+
+    .active-filter-badge,
+    .summary-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 28px;
+        padding: 4px 9px;
+        border: 1px solid rgba(117, 167, 255, .18);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, .045);
+        color: var(--mud-palette-text-secondary);
+        font-size: .78rem;
+        font-weight: 800;
+        max-width: 240px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .active-filter-badge {
+        background: rgba(94, 220, 143, .12);
+        color: #8df3b1;
     }
 
     .filter-actions {
@@ -159,7 +308,33 @@
         justify-content: flex-end;
         gap: 10px;
         flex-wrap: wrap;
-        padding-top: 4px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255, 255, 255, .08);
+    }
+
+    .filter-actions .mud-button {
+        border-radius: 7px;
+        font-weight: 800;
+        letter-spacing: 0;
+    }
+
+    @@media (max-width: 760px) {
+        .filter-title {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .filter-summary {
+            justify-content: flex-start;
+        }
+
+        .filter-actions {
+            justify-content: stretch;
+        }
+
+        .filter-actions .mud-button {
+            flex: 1 1 150px;
+        }
     }
 </style>
 
