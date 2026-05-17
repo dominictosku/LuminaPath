@@ -43,7 +43,7 @@ public sealed class BackgroundJobSchedulerService : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var settingsResolver = scope.ServiceProvider.GetRequiredService<BackgroundJobSettingsResolver>();
         var jobService = scope.ServiceProvider.GetRequiredService<BackgroundJobService>();
-        var backupService = scope.ServiceProvider.GetRequiredService<DatabaseBackupService>();
+        var maintenanceService = scope.ServiceProvider.GetRequiredService<BackgroundJobMaintenanceService>();
         var settings = await settingsResolver.GetAsync(cancellationToken);
 
         if (settings.ScheduledBackupsEnabled && await ShouldRunBackupAsync(jobService, settings, cancellationToken))
@@ -52,12 +52,11 @@ public sealed class BackgroundJobSchedulerService : BackgroundService
             _logger.LogInformation("Scheduled database backup job {JobId} is {Status}.", job.Id, job.Status);
         }
 
-        var deletedJobs = await jobService.CleanupHistoryAsync(settings.JobHistoryRetentionDays, cancellationToken);
-        var deletedBackups = await backupService.DeleteOldBackupsAsync(settings.BackupRetentionCount, cancellationToken);
+        var cleanup = await maintenanceService.RunCleanupAsync(cancellationToken);
 
-        if (deletedJobs > 0 || deletedBackups > 0)
+        if (cleanup.DeletedJobs > 0 || cleanup.DeletedBackups > 0)
         {
-            _logger.LogInformation("Background maintenance removed {JobCount} old jobs and {BackupCount} old backups.", deletedJobs, deletedBackups);
+            _logger.LogInformation("Background maintenance removed {JobCount} old jobs and {BackupCount} old backups.", cleanup.DeletedJobs, cleanup.DeletedBackups);
         }
 
         return TimeSpan.FromHours(settings.MaintenanceIntervalHours);

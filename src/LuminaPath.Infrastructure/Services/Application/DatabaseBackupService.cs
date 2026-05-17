@@ -127,6 +127,21 @@ public sealed class DatabaseBackupService
                 return new FailedResult("Could not start pg_dump.");
             }
 
+            using var cancellationRegistration = cancellationToken.Register(() =>
+            {
+                try
+                {
+                    if (!process.HasExited)
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Could not kill pg_dump after cancellation.");
+                }
+            });
+
             var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
             var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
             await process.WaitForExitAsync(cancellationToken);

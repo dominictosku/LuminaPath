@@ -38,9 +38,12 @@ internal static class ApplicationServiceCollectionExtensions
         services.AddScoped<DatabaseBackupService>();
         services.Configure<BackgroundJobOptions>(config.GetSection(BackgroundJobOptions.SectionName));
         services.AddSingleton<IBackgroundJobQueue, BackgroundJobQueue>();
+        services.AddSingleton<IBackgroundJobCancellationRegistry, BackgroundJobCancellationRegistry>();
         services.AddScoped<BackgroundJobSettingsResolver>();
+        services.AddScoped<BackgroundJobMaintenanceService>();
         services.AddScoped<BackgroundJobService>();
         services.AddScoped<IBackgroundJobRunner, DatabaseBackupJobRunner>();
+        services.AddScoped<IBackgroundJobRunner, MaintenanceCleanupJobRunner>();
         services.AddHostedService<QueuedBackgroundJobService>();
         services.AddHostedService<BackgroundJobSchedulerService>();
         services.AddScoped<ApplicationSettingsService>();

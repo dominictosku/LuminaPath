@@ -79,6 +79,7 @@ public sealed class QueuedBackgroundJobService : BackgroundService
     {
         using var scope = _scopeFactory.CreateScope();
         var dbContextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<LuminaPathDbContext>>();
+        var cancellationRegistry = scope.ServiceProvider.GetRequiredService<IBackgroundJobCancellationRegistry>();
 
         await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var job = await context.BackgroundJobs.FirstOrDefaultAsync(item => item.Id == jobId, cancellationToken);
@@ -105,19 +106,24 @@ public sealed class QueuedBackgroundJobService : BackgroundService
         job.StartedAt = DateTime.UtcNow;
         await context.SaveChangesAsync(cancellationToken);
 
+        using var jobCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var registration = cancellationRegistry.Register(job.Id, jobCancellation);
+
         try
         {
-            var message = await runner.RunAsync(job.Payload, cancellationToken);
+            var message = await runner.RunAsync(job.Payload, jobCancellation.Token);
             job.Status = BackgroundJobStatus.Succeeded;
             job.CompletedAt = DateTime.UtcNow;
             job.ResultMessage = Truncate(message, 1024);
             job.ErrorMessage = null;
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (jobCancellation.IsCancellationRequested)
         {
             job.Status = BackgroundJobStatus.Canceled;
             job.CompletedAt = DateTime.UtcNow;
-            job.ErrorMessage = "Application shutdown canceled the job.";
+            job.ErrorMessage = cancellationToken.IsCancellationRequested
+                ? "Application shutdown canceled the job."
+                : "Canceled by administrator.";
         }
         catch (Exception ex)
         {

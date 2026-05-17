@@ -155,6 +155,57 @@ public class BackgroundJobServiceTests
     }
 
     [Fact]
+    public async Task CancelAsync_RequestsCancellation_ForRunningJob()
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        await using (var context = new LuminaPathDbContext(options))
+        {
+            context.BackgroundJobs.Add(new BackgroundJobRecord
+            {
+                JobType = BackgroundJobTypes.DatabaseBackup,
+                DisplayName = "Database backup",
+                Status = BackgroundJobStatus.Running,
+                CreatedAt = new DateTime(2026, 5, 17, 9, 0, 0, DateTimeKind.Utc),
+                StartedAt = new DateTime(2026, 5, 17, 9, 1, 0, DateTimeKind.Utc)
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var registry = new BackgroundJobCancellationRegistry();
+        using var cts = new CancellationTokenSource();
+        using var registration = registry.Register(1, cts);
+        var service = new BackgroundJobService(
+            new TestDbContextFactory(options),
+            new CapturingBackgroundJobQueue(),
+            registry);
+
+        var result = await service.CancelAsync(1);
+        var running = result.Match(job => job, failure => throw new InvalidOperationException(string.Join("; ", failure.errorMessage)));
+
+        Assert.Equal(BackgroundJobStatus.Running, running.Status);
+        Assert.True(cts.IsCancellationRequested);
+        Assert.Equal("Cancellation requested by administrator.", running.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task EnqueueMaintenanceCleanupAsync_PersistsPendingCleanupJob()
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        var queue = new CapturingBackgroundJobQueue();
+        var service = new BackgroundJobService(
+            new TestDbContextFactory(options),
+            queue,
+            () => new DateTime(2026, 5, 17, 10, 0, 0, DateTimeKind.Utc));
+
+        var job = await service.EnqueueMaintenanceCleanupAsync();
+
+        Assert.Equal(BackgroundJobTypes.MaintenanceCleanup, job.JobType);
+        Assert.Equal("Maintenance cleanup", job.DisplayName);
+        Assert.Equal(BackgroundJobStatus.Pending, job.Status);
+        Assert.Equal([job.Id], queue.QueuedJobIds);
+    }
+
+    [Fact]
     public async Task CleanupHistoryAsync_RemovesOnlyCompletedJobsOlderThanRetention()
     {
         var options = Utilities.DbContext.TestDbContextOptions();

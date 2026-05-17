@@ -1,0 +1,109 @@
+@using LuminaPath.Core.Enums
+@using LuminaPath.Core.Models
+
+<MudDialog>
+	<DialogContent>
+		<div class="job-detail-dialog">
+			<div class="job-detail-dialog__grid">
+				<div><span>Job</span><strong>#@Job.Id · @Job.DisplayName</strong></div>
+				<div><span>Type</span><strong>@Job.JobType</strong></div>
+				<div><span>Status</span><strong>@Job.Status</strong></div>
+				<div><span>Created</span><strong>@FormatDate(Job.CreatedAt)</strong></div>
+				<div><span>Started</span><strong>@FormatDate(Job.StartedAt)</strong></div>
+				<div><span>Completed</span><strong>@FormatDate(Job.CompletedAt)</strong></div>
+				<div><span>Duration</span><strong>@Duration(Job)</strong></div>
+			</div>
+
+			@if (!string.IsNullOrWhiteSpace(Job.Payload))
+			{
+				<MudText Typo="Typo.overline">Payload</MudText>
+				<pre>@Job.Payload</pre>
+			}
+
+			@if (!string.IsNullOrWhiteSpace(Job.ResultMessage))
+			{
+				<MudText Typo="Typo.overline">Result</MudText>
+				<pre>@Job.ResultMessage</pre>
+			}
+
+			@if (!string.IsNullOrWhiteSpace(Job.ErrorMessage))
+			{
+				<MudText Typo="Typo.overline">Error</MudText>
+				<pre>@Job.ErrorMessage</pre>
+			}
+		</div>
+	</DialogContent>
+	<DialogActions>
+		<MudButton OnClick="Close" Color="Color.Primary">Close</MudButton>
+	</DialogActions>
+</MudDialog>
+
+<style>
+	.job-detail-dialog {
+		display: grid;
+		gap: 14px;
+		min-width: min(720px, 78vw);
+	}
+
+	.job-detail-dialog__grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+		gap: 10px;
+	}
+
+	.job-detail-dialog__grid > div {
+		display: grid;
+		gap: 4px;
+		padding: 12px;
+		border: 1px solid rgba(59, 130, 246, .18);
+		border-radius: 10px;
+		background: rgba(255, 255, 255, .04);
+	}
+
+	.job-detail-dialog__grid span {
+		color: var(--mud-palette-text-secondary);
+		font-size: .75rem;
+		font-weight: 800;
+		text-transform: uppercase;
+	}
+
+	.job-detail-dialog pre {
+		max-height: 260px;
+		margin: 0;
+		padding: 12px;
+		overflow: auto;
+		border-radius: 8px;
+		background: rgba(0, 0, 0, .22);
+		white-space: pre-wrap;
+	}
+</style>
+
+@code {
+	[CascadingParameter]
+	private IMudDialogInstance MudDialog { get; set; } = default!;
+
+	[Parameter]
+	public BackgroundJobRecord Job { get; set; } = default!;
+
+	private void Close()
+	{
+		MudDialog.Close();
+	}
+
+	private static string FormatDate(DateTime? date)
+	{
+		return date?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "-";
+	}
+
+	private static string Duration(BackgroundJobRecord job)
+	{
+		var start = job.StartedAt ?? job.CreatedAt;
+		var end = job.CompletedAt ?? (job.Status == BackgroundJobStatus.Running ? DateTime.UtcNow : start);
+		var duration = end - start;
+		return duration.TotalSeconds < 1
+			? "<1s"
+			: duration.TotalMinutes < 1
+				? $"{duration.TotalSeconds:0}s"
+				: $"{duration.TotalMinutes:0.#}m";
+	}
+}

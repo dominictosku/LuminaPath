@@ -9,21 +9,40 @@ public sealed class BackgroundJobService
 {
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
     private readonly IBackgroundJobQueue _queue;
+    private readonly IBackgroundJobCancellationRegistry _cancellationRegistry;
     private readonly Func<DateTime> _now;
 
     public BackgroundJobService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IBackgroundJobQueue queue)
-        : this(dbContextFactory, queue, () => DateTime.UtcNow)
+        : this(dbContextFactory, queue, new BackgroundJobCancellationRegistry(), () => DateTime.UtcNow)
     {
     }
 
     public BackgroundJobService(
         IDbContextFactory<LuminaPathDbContext> dbContextFactory,
         IBackgroundJobQueue queue,
+        IBackgroundJobCancellationRegistry cancellationRegistry)
+        : this(dbContextFactory, queue, cancellationRegistry, () => DateTime.UtcNow)
+    {
+    }
+
+    public BackgroundJobService(
+        IDbContextFactory<LuminaPathDbContext> dbContextFactory,
+        IBackgroundJobQueue queue,
+        IBackgroundJobCancellationRegistry cancellationRegistry,
         Func<DateTime> now)
     {
         _dbContextFactory = dbContextFactory;
         _queue = queue;
+        _cancellationRegistry = cancellationRegistry;
         _now = now;
+    }
+
+    public BackgroundJobService(
+        IDbContextFactory<LuminaPathDbContext> dbContextFactory,
+        IBackgroundJobQueue queue,
+        Func<DateTime> now)
+        : this(dbContextFactory, queue, new BackgroundJobCancellationRegistry(), now)
+    {
     }
 
     public async Task<BackgroundJobRecord> EnqueueAsync(
@@ -147,7 +166,7 @@ public sealed class BackgroundJobService
         return retry;
     }
 
-    public async Task<Result<BackgroundJobRecord, FailedResult>> CancelPendingAsync(int jobId, CancellationToken cancellationToken = default)
+    public async Task<Result<BackgroundJobRecord, FailedResult>> CancelAsync(int jobId, CancellationToken cancellationToken = default)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
         var job = await context.BackgroundJobs
@@ -158,17 +177,43 @@ public sealed class BackgroundJobService
             return new FailedResult("Background job not found.");
         }
 
-        if (job.Status != BackgroundJobStatus.Pending)
+        if (job.Status == BackgroundJobStatus.Pending)
         {
-            return new FailedResult("Only pending jobs can be canceled.");
+            job.Status = BackgroundJobStatus.Canceled;
+            job.CompletedAt = _now();
+            job.ErrorMessage = "Canceled by administrator.";
+            await context.SaveChangesAsync(cancellationToken);
+
+            return job;
         }
 
-        job.Status = BackgroundJobStatus.Canceled;
-        job.CompletedAt = _now();
-        job.ErrorMessage = "Canceled by administrator.";
-        await context.SaveChangesAsync(cancellationToken);
+        if (job.Status == BackgroundJobStatus.Running)
+        {
+            if (!_cancellationRegistry.RequestCancellation(job.Id))
+            {
+                return new FailedResult("Running job could not be canceled because it is not active on this app instance.");
+            }
 
-        return job;
+            job.ErrorMessage = "Cancellation requested by administrator.";
+            await context.SaveChangesAsync(cancellationToken);
+
+            return job;
+        }
+
+        return new FailedResult("Only pending or running jobs can be canceled.");
+    }
+
+    public Task<Result<BackgroundJobRecord, FailedResult>> CancelPendingAsync(int jobId, CancellationToken cancellationToken = default)
+    {
+        return CancelAsync(jobId, cancellationToken);
+    }
+
+    public async Task<BackgroundJobRecord> EnqueueMaintenanceCleanupAsync(CancellationToken cancellationToken = default)
+    {
+        return await EnqueueAsync(
+            BackgroundJobTypes.MaintenanceCleanup,
+            "Maintenance cleanup",
+            cancellationToken: cancellationToken);
     }
 
     private static async Task<bool> HasActiveJobAsync(LuminaPathDbContext context, string jobType, CancellationToken cancellationToken)
