@@ -13,11 +13,11 @@
   <div class="">
     <div class="flex">
       <div class="tab">
-        <button #refEl id="defaultOpen" class="tablinks active" (click)="changeView(refEl)">
-          <ion-icon name="grid-Outline" size="large" aria-hidden="true"></ion-icon>
+        <button id="defaultOpen" class="tablinks" [class.active]="viewMode === 'grid'" (click)="changeView('grid')">
+          <ion-icon name="grid-outline" size="large" aria-hidden="true"></ion-icon>
         </button>
-        <button #refEl2 class="tablinks" (click)="changeView(refEl2)">
-          <ion-icon name="list-Outline" size="large" aria-hidden="true"></ion-icon>
+        <button class="tablinks" [class.active]="viewMode === 'list'" (click)="changeView('list')">
+          <ion-icon name="list-outline" size="large" aria-hidden="true"></ion-icon>
         </button>
       </div>
     </div>

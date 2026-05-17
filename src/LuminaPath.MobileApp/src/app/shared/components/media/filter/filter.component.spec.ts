@@ -19,4 +19,13 @@ describe('FilterComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('tracks the selected view mode and emits it', () => {
+    spyOn(component.toggleGrid, 'emit');
+
+    component.changeView('list');
+
+    expect(component.viewMode).toBe('list');
+    expect(component.toggleGrid.emit).toHaveBeenCalledOnceWith('list');
+  });
 });

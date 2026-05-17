@@ -38,10 +38,16 @@ import { Quest, QuestBoardService } from '../../quests/services/quest-board.serv
 import { ReleasePlanComponent } from '../../release-calendar/components/release-plan.component';
 import { GameForecast, GamingSession, GamingSessionService } from '../services/gaming-session.service';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
+import {
+  CalendarMode,
+  DayBucket,
+  PlanningCalendarDay,
+  PlanningCalendarService,
+  TimelineEvent,
+  TimelineEventKind,
+} from '../services/planning-calendar.service';
 
 type PlanMode = 'sessions' | 'calendar' | 'releases';
-type CalendarMode = 'week' | 'month';
-type TimelineEventKind = 'session' | 'release' | 'quest';
 
 type DraftSession = {
   myGameId: number | null;
@@ -49,31 +55,6 @@ type DraftSession = {
   scheduledTime: string;
   durationMinutes: number;
   notes: string;
-};
-
-type DayBucket = {
-  key: string;
-  label: string;
-  sessions: GamingSession[];
-};
-
-type TimelineEvent = {
-  id: string;
-  kind: TimelineEventKind;
-  title: string;
-  subtitle: string;
-  timeLabel: string;
-  completed: boolean;
-};
-
-type PlanningCalendarDay = {
-  key: string;
-  date: Date;
-  number: number;
-  label: string;
-  isToday: boolean;
-  isCurrentMonth: boolean;
-  events: TimelineEvent[];
 };
 
 @Component({
@@ -107,19 +88,23 @@ export class PlaningPage implements OnInit {
   forecasts: GameForecast[] = [];
   quests: Quest[] = [];
   calendarMode: CalendarMode = 'week';
-  calendarAnchor = this.startOfToday();
+  calendarAnchor: Date;
   calendarDays: PlanningCalendarDay[] = [];
   calendarTitle = '';
   libraryGames: { myGameId: number; gameName: string; playtime: number | null }[] = [];
   allGames: Game[] = [];
 
-  draft: DraftSession = this.emptyDraft();
+  draft: DraftSession;
 
   constructor(
     private gameService: GameService,
     private sessionService: GamingSessionService,
     private questBoardService: QuestBoardService,
+    private planningCalendar: PlanningCalendarService,
   ) {
+    this.calendarAnchor = this.planningCalendar.startOfToday();
+    this.draft = this.emptyDraft();
+
     addIcons({
       addOutline,
       calendarClearOutline,
@@ -164,7 +149,7 @@ export class PlaningPage implements OnInit {
       this.sessions = await firstValueFrom(
         this.sessionService.list({ from: horizon, to: future }),
       );
-      this.buckets = this.groupByDay(this.sessions);
+      this.buckets = this.planningCalendar.groupSessionsByDay(this.sessions);
       try {
         this.quests = (await this.questBoardService.getBoard()).quests ?? [];
       } catch {
@@ -261,18 +246,12 @@ export class PlaningPage implements OnInit {
   }
 
   shiftCalendar(direction: -1 | 1): void {
-    const next = new Date(this.calendarAnchor);
-    if (this.calendarMode === 'week') {
-      next.setDate(next.getDate() + direction * 7);
-    } else {
-      next.setMonth(next.getMonth() + direction);
-    }
-    this.calendarAnchor = this.startOfDay(next);
+    this.calendarAnchor = this.planningCalendar.shiftAnchor(this.calendarAnchor, this.calendarMode, direction);
     this.buildCalendarDays();
   }
 
   goToToday(): void {
-    this.calendarAnchor = this.startOfToday();
+    this.calendarAnchor = this.planningCalendar.startOfToday();
     this.buildCalendarDays();
   }
 
@@ -356,7 +335,7 @@ export class PlaningPage implements OnInit {
   }
 
   private todayIso(): string {
-    return this.dateKey(this.startOfToday());
+    return this.planningCalendar.dateKey(this.planningCalendar.startOfToday());
   }
 
   private combineDateTime(dateString: string, timeString: string): Date | null {
@@ -367,27 +346,6 @@ export class PlaningPage implements OnInit {
     return new Date(year, month - 1, day, hours, minutes, 0, 0);
   }
 
-  private groupByDay(sessions: GamingSession[]): DayBucket[] {
-    const map = new Map<string, DayBucket>();
-
-    for (const session of sessions) {
-      const date = new Date(session.scheduledAt);
-      const key = date.toISOString().slice(0, 10);
-      let bucket = map.get(key);
-      if (!bucket) {
-        bucket = {
-          key,
-          label: new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric' }).format(date),
-          sessions: [],
-        };
-        map.set(key, bucket);
-      }
-      bucket.sessions.push(session);
-    }
-
-    return Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key));
-  }
-
   private createPlanFilter(): MediaFilter {
     const filter = new MediaFilter();
     filter.Paging.Count = 500;
@@ -395,137 +353,15 @@ export class PlaningPage implements OnInit {
   }
 
   private buildCalendarDays(): void {
-    const today = this.startOfToday();
-    const start = this.calendarMode === 'week'
-      ? this.startOfWeek(this.calendarAnchor)
-      : this.startOfCalendarMonth(this.calendarAnchor);
-    const dayCount = this.calendarMode === 'week' ? 7 : 42;
-    const currentMonth = this.calendarAnchor.getMonth();
-
-    this.calendarTitle = this.calendarMode === 'week'
-      ? this.weekRangeLabel(start)
-      : new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(this.calendarAnchor);
-
-    this.calendarDays = Array.from({ length: dayCount }, (_, index) => {
-      const date = new Date(start);
-      date.setDate(start.getDate() + index);
-      return {
-        key: this.dateKey(date),
-        date,
-        number: date.getDate(),
-        label: new Intl.DateTimeFormat('en', { weekday: 'short' }).format(date),
-        isToday: this.sameDay(date, today),
-        isCurrentMonth: date.getMonth() === currentMonth,
-        events: this.eventsForDay(date),
-      };
+    const calendar = this.planningCalendar.build({
+      mode: this.calendarMode,
+      anchor: this.calendarAnchor,
+      sessions: this.sessions,
+      games: this.allGames,
+      quests: this.quests,
     });
-  }
-
-  private eventsForDay(date: Date): TimelineEvent[] {
-    const events: TimelineEvent[] = [];
-
-    for (const session of this.sessions) {
-      const scheduledAt = new Date(session.scheduledAt);
-      if (!this.sameDay(scheduledAt, date)) {
-        continue;
-      }
-      events.push({
-        id: `session-${session.id}`,
-        kind: 'session',
-        title: session.gameName ?? 'Gaming session',
-        subtitle: session.notes || this.formatDuration(session.durationMinutes),
-        timeLabel: this.formatTime(session.scheduledAt),
-        completed: session.completed,
-      });
-    }
-
-    for (const game of this.allGames) {
-      const releaseDate = this.validDate(game.releaseDate);
-      if (!releaseDate || !this.sameDay(releaseDate, date)) {
-        continue;
-      }
-      events.push({
-        id: `release-${game.id}`,
-        kind: 'release',
-        title: game.name,
-        subtitle: 'Release',
-        timeLabel: 'Release',
-        completed: releaseDate < this.startOfToday(),
-      });
-    }
-
-    for (const quest of this.quests) {
-      const dueDate = this.validDate(quest.dueDate);
-      if (!dueDate || !this.sameDay(dueDate, date)) {
-        continue;
-      }
-      events.push({
-        id: `quest-${quest.id}`,
-        kind: 'quest',
-        title: quest.title,
-        subtitle: quest.gameName ?? quest.skillName ?? this.questPriorityLabel(quest.priority),
-        timeLabel: quest.completed ? 'Done' : this.questPriorityLabel(quest.priority),
-        completed: quest.completed,
-      });
-    }
-
-    return events.sort((a, b) => this.eventRank(a) - this.eventRank(b) || a.title.localeCompare(b.title));
-  }
-
-  private eventRank(event: TimelineEvent): number {
-    if (event.kind === 'session') return 0;
-    if (event.kind === 'quest') return 1;
-    return 2;
-  }
-
-  private questPriorityLabel(priority: Quest['priority']): string {
-    return priority === 'high' ? 'High priority' : priority === 'low' ? 'Low priority' : 'Medium priority';
-  }
-
-  private weekRangeLabel(start: Date): string {
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    const formatter = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' });
-    return `${formatter.format(start)} - ${formatter.format(end)}`;
-  }
-
-  private startOfCalendarMonth(date: Date): Date {
-    const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-    const start = new Date(monthStart);
-    start.setDate(monthStart.getDate() - ((monthStart.getDay() + 6) % 7));
-    return this.startOfDay(start);
-  }
-
-  private startOfWeek(date: Date): Date {
-    const start = this.startOfDay(date);
-    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
-    return start;
-  }
-
-  private startOfToday(): Date {
-    return this.startOfDay(new Date());
-  }
-
-  private startOfDay(value: Date): Date {
-    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
-  }
-
-  private sameDay(a: Date, b: Date): boolean {
-    return a.getFullYear() === b.getFullYear()
-      && a.getMonth() === b.getMonth()
-      && a.getDate() === b.getDate();
-  }
-
-  private dateKey(value: Date): string {
-    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
-  }
-
-  private validDate(value: Date | string | null | undefined): Date | null {
-    if (!value) {
-      return null;
-    }
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? null : date;
+    this.calendarTitle = calendar.title;
+    this.calendarDays = calendar.days;
   }
 
   private errorTextFrom(error: unknown): string | null {

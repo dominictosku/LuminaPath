@@ -4,6 +4,8 @@ import { addIcons } from 'ionicons';
 import { IonIcon, IonFab, IonFabButton } from "@ionic/angular/standalone";
 import { FormsModule } from '@angular/forms';
 
+type MediaViewMode = 'grid' | 'list';
+
 @Component({
     selector: 'app-filter',
     templateUrl: './filter.component.html',
@@ -17,11 +19,13 @@ export class FilterComponent {
   }
 
   @Output()
-  toggleGrid = new EventEmitter();
+  toggleGrid = new EventEmitter<MediaViewMode>();
 
   searchString = ""
 
   modalProps = { form: "media" }
+
+  viewMode: MediaViewMode = 'grid';
 
   filterMedia() {
 
@@ -31,13 +35,8 @@ export class FilterComponent {
 
   }
 
-  changeView(evt: HTMLElement) {
-    const tablinks: any = document.getElementsByClassName("tablinks");
-
-    for (let i = 0; i < tablinks.length; i++) {
-      tablinks[i].className = tablinks[i].className.replace(" active", "");
-    }
-    evt.className += " active";
-    this.toggleGrid.emit();
+  changeView(mode: MediaViewMode) {
+    this.viewMode = mode;
+    this.toggleGrid.emit(mode);
   }
 }
