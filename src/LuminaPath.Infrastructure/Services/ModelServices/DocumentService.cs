@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
-using System.Text.RegularExpressions;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices
 {
@@ -46,20 +45,17 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         public async Task<Result<MediaDocument, FailedResult>> CreateDocument(IBrowserFile file, IMedia<MediaDocument>? media = null)
         {
-            Stream fs = file.OpenReadStream(MaxAllowedSize);
+            await using Stream fs = file.OpenReadStream(MaxAllowedSize);
             try
             {
-                string imageName = string.Empty;
                 if (media is not null)
                 {
                     await DeleteDocument(media.Image);
-                    imageName = $"{media.Name}-{Guid.NewGuid()}";
                 }
-                else
-                {
-                    imageName = SanitizeFileName(file.Name);
-                }
-                var result = await _storage.UploadAsync(fs, imageName, file.ContentType);
+
+                var displayName = GetDisplayFileName(file.Name);
+                var storageName = CreateStorageFileName(displayName, file.ContentType);
+                var result = await _storage.UploadAsync(fs, storageName, file.ContentType);
                 if (result.Error)
                 {
                     _logger.LogError("Could not Upload file, error: {0}", result.Status);
@@ -68,7 +64,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
                 return new MediaDocument()
                 {
-                    Name = result.Blob.Name,
+                    Name = displayName,
+                    StorageName = result.Blob.Name,
                     Description = string.Empty,
                     Path = string.Empty,
                     ContentType = result.Blob.ContentType,
@@ -83,20 +80,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
         }
 
-        public async Task RenameMediaImage(Media media)
+        public Task RenameMediaImage(Media media)
         {
-            if (media.Image is null)
-            {
-                return;
-            }
-
-            var imageName = media.Image.Name;
-            if (string.IsNullOrWhiteSpace(imageName))
-            {
-                return;
-            }
-
-            await _storage.RenameAsync(imageName, $"{media.Id}-{media.Name}");
+            return Task.CompletedTask;
         }
 
         public async Task RenameDocument(string oldName, string newName)
@@ -122,21 +108,15 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             var existingDocument = await context.MediaDocuments.FirstOrDefaultAsync(d => d.Id == document.Id)
                 ?? throw new Exception("Document not found");
 
-            var oldName = existingDocument.Name;
             existingDocument.Name = document.Name;
+            existingDocument.StorageName = string.IsNullOrWhiteSpace(document.StorageName)
+                ? existingDocument.StorageName
+                : document.StorageName;
             existingDocument.Description = document.Description;
             existingDocument.Path = document.Path;
             existingDocument.ContentType = document.ContentType;
             existingDocument.DocumentType = document.DocumentType;
             existingDocument.MediaId = document.MediaId;
-
-            if (!string.IsNullOrWhiteSpace(oldName)
-                && !string.IsNullOrWhiteSpace(document.Name)
-                && !string.Equals(oldName, document.Name, StringComparison.Ordinal)
-                && string.IsNullOrWhiteSpace(document.Path))
-            {
-                await RenameDocument(oldName, document.Name);
-            }
 
             await context.SaveChangesAsync();
             return existingDocument;
@@ -151,7 +131,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
             try
             {
-                using var context = await GetDbContextAsync();
+                await using var context = await GetDbContextAsync();
                 var existingDocument = context.MediaDocuments.SingleOrDefault(d => d.Id == document.Id);
                 if (existingDocument is null)
                 {
@@ -159,17 +139,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(document.Name))
-                {
-                    return;
-                }
-
-                var result = await _storage.DeleteAsync(document.Name);
-                if (result.Error)
-                {
-                    _logger.LogError("Could not delete file, error: {0}", result.Status);
-                    return;
-                }
+                await DeleteStoredFileIfUnreferenced(context, existingDocument);
 
                 if (existingDocument.MediaId != null)
                 {
@@ -187,7 +157,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
             catch (Exception ex)
             {
-                _logger.LogError("Could not Upload File. error: {ex}", ex);
+                _logger.LogError("Could not delete file. error: {ex}", ex);
             }
         }
 
@@ -219,18 +189,87 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
         }
 
-        private string SanitizeFileName(string fileName)
+        private async Task DeleteStoredFileIfUnreferenced(LuminaPathDbContext context, MediaDocument document)
         {
-            // Remove any invalid characters from the file name
-            return Regex.Replace(fileName, @"[^a-zA-Z0-9_\.-]", "_");
+            var storageName = GetStorageName(document);
+            if (string.IsNullOrWhiteSpace(storageName))
+            {
+                return;
+            }
+
+            var isReferenced = await context.Documents
+                .AsNoTracking()
+                .AnyAsync(item => item.Id != document.Id
+                    && (item.StorageName == storageName || item.StorageName == null && item.Name == storageName));
+
+            if (isReferenced)
+            {
+                return;
+            }
+
+            var result = await _storage.DeleteAsync(storageName);
+            if (result.Error)
+            {
+                _logger.LogWarning("Could not delete stored file {FileName}, removing database document anyway. Error: {Status}", storageName, result.Status);
+            }
+        }
+
+        private static string GetStorageName(MediaDocument document)
+        {
+            return document.StorageName ?? document.Name ?? string.Empty;
+        }
+
+        private static string GetDisplayFileName(string fileName)
+        {
+            var displayName = Path.GetFileName(fileName);
+            return string.IsNullOrWhiteSpace(displayName)
+                ? "upload"
+                : displayName.Trim();
+        }
+
+        private static string CreateStorageFileName(string fileName, string? contentType)
+        {
+            var displayName = GetDisplayFileName(fileName);
+            var extension = Path.GetExtension(displayName);
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                extension = GetExtensionFromContentType(contentType);
+            }
+
+            return $"{Guid.NewGuid():N}{extension}";
         }
 
         private static void ValidateDocument(MediaDocument document)
         {
-            if (string.IsNullOrWhiteSpace(document.Name) && string.IsNullOrWhiteSpace(document.Path))
+            if (string.IsNullOrWhiteSpace(document.Name)
+                && string.IsNullOrWhiteSpace(document.StorageName)
+                && string.IsNullOrWhiteSpace(document.Path))
             {
                 throw new InvalidOperationException("Document needs a file name or path.");
             }
+        }
+
+        private static string GetExtensionFromContentType(string? contentType)
+        {
+            if (string.IsNullOrWhiteSpace(contentType))
+            {
+                return string.Empty;
+            }
+
+            return contentType.ToLowerInvariant() switch
+            {
+                "image/apng" => ".apng",
+                "image/avif" => ".avif",
+                "image/bmp" => ".bmp",
+                "image/gif" => ".gif",
+                "image/jpeg" => ".jpg",
+                "image/png" => ".png",
+                "image/svg+xml" => ".svg",
+                "image/webp" => ".webp",
+                "application/pdf" => ".pdf",
+                "text/plain" => ".txt",
+                _ => string.Empty
+            };
         }
 
         private static DocumentType InferDocumentType(string fileName, string? contentType)

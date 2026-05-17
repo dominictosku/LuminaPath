@@ -15,20 +15,20 @@ namespace Test.Services
     public class DocumentServiceTests
     {
         [Fact]
-        public async Task CreateDocument_SanitizesFileName_AndInfersDocumentType()
+        public async Task CreateDocument_PreservesDisplayName_UsesUniqueStorageName_AndInfersDocumentType()
         {
             var options = Utilities.DbContext.TestDbContextOptions();
             var storage = new Mock<IStorageService>();
             storage
                 .Setup(service => service.UploadAsync(
                     It.IsAny<Stream>(),
-                    "cover_art.png",
+                    It.Is<string>(name => name.EndsWith(".png") && name != "cover art.png"),
                     "image/png"))
-                .ReturnsAsync(new BlobResponseDto
+                .ReturnsAsync((Stream _, string storageName, string? _) => new BlobResponseDto
                 {
                     Blob = new BlobDto
                     {
-                        Name = "cover_art.png",
+                        Name = storageName,
                         ContentType = "image/png"
                     }
                 });
@@ -41,7 +41,9 @@ namespace Test.Services
 
             Assert.True(result.IsSuccess);
             Assert.NotNull(document);
-            Assert.Equal("cover_art.png", document!.Name);
+            Assert.Equal("cover art.png", document!.Name);
+            Assert.NotEqual(document.Name, document.StorageName);
+            Assert.EndsWith(".png", document.StorageName);
             Assert.Equal(DocumentType.Image, document.DocumentType);
             storage.VerifyAll();
         }
@@ -59,7 +61,7 @@ namespace Test.Services
         }
 
         [Fact]
-        public async Task UpdateMediaDocument_RenamesStoredFile_WhenNameChanges()
+        public async Task UpdateMediaDocument_UpdatesDisplayNameWithoutRenamingStoredFile()
         {
             var options = Utilities.DbContext.TestDbContextOptions();
             await using (var dbContext = new LuminaPathDbContext(options))
@@ -67,6 +69,7 @@ namespace Test.Services
                 dbContext.MediaDocuments.Add(new MediaDocument
                 {
                     Name = "old.pdf",
+                    StorageName = "stored.pdf",
                     ContentType = "application/pdf",
                     DocumentType = DocumentType.PDF
                 });
@@ -74,22 +77,20 @@ namespace Test.Services
             }
 
             var storage = new Mock<IStorageService>();
-            storage
-                .Setup(service => service.RenameAsync("old.pdf", "new.pdf"))
-                .ReturnsAsync(true);
-
             var service = CreateService(options, storage);
 
             var updated = await service.UpdateMediaDocument(new MediaDocument
             {
                 Id = 1,
                 Name = "new.pdf",
+                StorageName = "stored.pdf",
                 ContentType = "application/pdf",
                 DocumentType = DocumentType.PDF
             });
 
             Assert.Equal("new.pdf", updated.Name);
-            storage.Verify(service => service.RenameAsync("old.pdf", "new.pdf"), Times.Once);
+            Assert.Equal("stored.pdf", updated.StorageName);
+            storage.Verify(service => service.RenameAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
@@ -119,6 +120,74 @@ namespace Test.Services
             });
 
             storage.Verify(service => service.RenameAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task DeleteDocument_RemovesDatabaseDocument_WhenStoredFileIsAlreadyMissing()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            int documentId;
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                var document = new MediaDocument
+                {
+                    Name = "cover.png",
+                    StorageName = "stored-cover.png",
+                    ContentType = "image/png",
+                    DocumentType = DocumentType.Image
+                };
+                dbContext.MediaDocuments.Add(document);
+                await dbContext.SaveChangesAsync();
+                documentId = document.Id;
+            }
+
+            var storage = new Mock<IStorageService>();
+            storage
+                .Setup(service => service.DeleteAsync("stored-cover.png"))
+                .ReturnsAsync(new BlobResponseDto { Error = true, Status = "missing" });
+
+            var service = CreateService(options, storage);
+            await service.DeleteDocument(new MediaDocument { Id = documentId });
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            Assert.Empty(await assertContext.MediaDocuments.ToListAsync());
+            storage.Verify(service => service.DeleteAsync("stored-cover.png"), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteDocument_DoesNotDeleteStoredFile_WhenAnotherDocumentReferencesIt()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            int documentId;
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                var first = new MediaDocument
+                {
+                    Name = "cover.png",
+                    StorageName = "shared.png",
+                    ContentType = "image/png",
+                    DocumentType = DocumentType.Image
+                };
+                var second = new MediaDocument
+                {
+                    Name = "cover copy.png",
+                    StorageName = "shared.png",
+                    ContentType = "image/png",
+                    DocumentType = DocumentType.Image
+                };
+                dbContext.MediaDocuments.AddRange(first, second);
+                await dbContext.SaveChangesAsync();
+                documentId = first.Id;
+            }
+
+            var storage = new Mock<IStorageService>();
+            var service = CreateService(options, storage);
+            await service.DeleteDocument(new MediaDocument { Id = documentId });
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            var remaining = Assert.Single(await assertContext.MediaDocuments.ToListAsync());
+            Assert.Equal("shared.png", remaining.StorageName);
+            storage.Verify(service => service.DeleteAsync(It.IsAny<string>()), Times.Never);
         }
 
         private static DocumentService CreateService(

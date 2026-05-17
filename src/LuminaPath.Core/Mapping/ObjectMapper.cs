@@ -635,6 +635,7 @@ namespace LuminaPath.Core.Mapping
             {
                 Id = source.Id,
                 Name = source.Name,
+                StorageName = source.StorageName,
                 Description = source.Description,
                 Path = source.Path,
                 ContentType = source.ContentType,

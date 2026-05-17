@@ -252,6 +252,7 @@
     private void ApplyUploadedDocument(MediaDocument document)
     {
         Model.Name = document.Name;
+        Model.StorageName = document.StorageName;
         Model.ContentType = document.ContentType;
         Model.DocumentType = document.DocumentType;
         Model.Path = document.Path;
@@ -272,7 +273,8 @@
                 : $"/{Model.Path}";
         }
 
-        return !string.IsNullOrWhiteSpace(Model.Name) ? $"/api/files/{Model.Name}" : string.Empty;
+        var storageName = Model.StorageName ?? Model.Name;
+        return !string.IsNullOrWhiteSpace(storageName) ? $"/api/files/{storageName}" : string.Empty;
     }
 
     private void Cancel()

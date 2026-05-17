@@ -105,6 +105,9 @@ namespace LuminaPath.Infrastructure.Migrations
                     b.Property<string>("Path")
                         .HasColumnType("text");
 
+                    b.Property<string>("StorageName")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.ToTable("Documents");
