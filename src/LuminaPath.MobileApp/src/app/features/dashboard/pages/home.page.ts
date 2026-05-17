@@ -36,17 +36,9 @@ import { MovieService } from '../../movies/services/movie.service';
 import { Series } from '../../series/models/series.model';
 import { SeriesService } from '../../series/services/series.service';
 import { MediaFile } from '../../library/models/mediaFile.model';
+import { GameStatus } from '../../library/models/library-status.model';
 import { GamingSession, GamingSessionService } from '../../planing/services/gaming-session.service';
 import { Quest, QuestBoardService, QuestBoardState } from '../../quests/services/quest-board.service';
-
-enum GameStatus {
-  OnHold = 0,
-  Planned = 1,
-  Playing = 2,
-  StoryComplete = 3,
-  Completed = 4,
-  MainGame = 5,
-}
 
 type DashboardMetric = {
   label: string;

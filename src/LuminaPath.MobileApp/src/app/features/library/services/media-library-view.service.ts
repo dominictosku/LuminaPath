@@ -3,15 +3,17 @@ import { Platforms } from '../../games/models/games.model';
 import { LibraryEntryDetails, MediaItem, UserMediaEntry } from '../models/media-item.model';
 import { MediaLibraryForm, MediaStatusOption } from '../models/media-library-form.model';
 import { MediaModeOption } from 'src/app/shared/services/media-mode.service';
-
-export enum GameStatus {
-  OnHold = 0,
-  Planned = 1,
-  Playing = 2,
-  StoryComplete = 3,
-  Completed = 4,
-  MainGame = 5,
-}
+import { GameStatus } from '../models/library-status.model';
+import {
+  expectedHoursOf,
+  isEpisodeMode,
+  isGamesMode,
+  libraryEntry,
+  playedOf,
+  progressOf,
+  remainingOf,
+  statusOf,
+} from '../domain/media-library-metrics';
 
 @Injectable({
   providedIn: 'root',
@@ -35,11 +37,11 @@ export class MediaLibraryViewService {
   ];
 
   isGamesMode(mode: MediaModeOption): boolean {
-    return mode.id === 'games';
+    return isGamesMode(mode);
   }
 
   isEpisodeMode(mode: MediaModeOption): boolean {
-    return mode.id === 'animes' || mode.id === 'series';
+    return isEpisodeMode(mode);
   }
 
   statusOptions(mode: MediaModeOption): MediaStatusOption[] {
@@ -96,13 +98,7 @@ export class MediaLibraryViewService {
   }
 
   progressOf(item: MediaItem, mode: MediaModeOption): number {
-    const estimated = this.expectedHoursOf(item, mode);
-
-    if (estimated <= 0) {
-      return this.statusOf(item) === GameStatus.Completed ? 100 : 0;
-    }
-
-    return Math.min(100, Math.round((this.playedOf(item, mode) / estimated) * 100));
+    return progressOf(item, mode);
   }
 
   playedLabel(item: MediaItem, mode: MediaModeOption): string {
@@ -163,11 +159,11 @@ export class MediaLibraryViewService {
   }
 
   remainingOf(item: MediaItem, mode: MediaModeOption): number {
-    return Math.max(0, this.expectedHoursOf(item, mode) - this.playedOf(item, mode));
+    return remainingOf(item, mode);
   }
 
   statusOf(item: MediaItem): number {
-    return Number(item.libraryEntry?.status ?? -1);
+    return statusOf(item);
   }
 
   createLibraryForm(item: MediaItem | null, mode: MediaModeOption): MediaLibraryForm {
@@ -195,30 +191,15 @@ export class MediaLibraryViewService {
   }
 
   libraryEntry(item: MediaItem): UserMediaEntry | null {
-    return item.libraryEntry;
+    return libraryEntry(item);
   }
 
   playedOf(item: MediaItem, mode: MediaModeOption): number {
-    const entry = this.libraryEntry(item);
-    if (!this.isGamesMode(mode)) {
-      return (Number(entry?.currentWatchTimeMinutes) || 0) / 60;
-    }
-
-    const manual = Number(entry?.timeSpend) || 0;
-    const tracked = Number(entry?.myGameInfo?.trackedHours) || 0;
-    return manual + tracked;
+    return playedOf(item, mode);
   }
 
   private expectedHoursOf(item: MediaItem, mode: MediaModeOption): number {
-    if (this.isGamesMode(mode)) {
-      return Number(item.playtime) || 0;
-    }
-
-    if (item.expectedWatchTimeMinutes != null) {
-      return Number(item.expectedWatchTimeMinutes) / 60;
-    }
-
-    return Number(item.playtime) || 0;
+    return expectedHoursOf(item, mode);
   }
 
   private dateInputValue(value: Date | string | null | undefined): string {

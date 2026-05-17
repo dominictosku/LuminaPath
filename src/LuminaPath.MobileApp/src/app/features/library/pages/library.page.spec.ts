@@ -8,7 +8,7 @@ import { ReleaseNotificationService } from 'src/app/shared/services/release-noti
 import { PaginateResult } from 'src/app/core/entities/paginatedResult';
 import { MediaLibraryFacade } from '../services/media-library.facade';
 import { MediaItem, UserMediaEntry } from '../models/media-item.model';
-import { GameStatus } from '../services/media-library-view.service';
+import { GameStatus } from '../models/library-status.model';
 
 function makeGame(overrides: Partial<MediaItem> = {}): MediaItem {
   return {

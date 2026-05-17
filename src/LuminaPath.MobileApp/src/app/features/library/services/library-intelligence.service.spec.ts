@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { MEDIA_MODE_OPTIONS } from 'src/app/shared/services/media-mode.service';
 import { MediaItem, UserMediaEntry } from '../models/media-item.model';
-import { GameStatus } from './media-library-view.service';
+import { GameStatus } from '../models/library-status.model';
 import { LibraryIntelligenceService } from './library-intelligence.service';
 
 function makeItem(overrides: Partial<MediaItem> = {}): MediaItem {

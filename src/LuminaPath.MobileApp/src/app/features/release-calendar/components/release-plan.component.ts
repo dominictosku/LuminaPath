@@ -24,15 +24,7 @@ import {
 } from 'ionicons/icons';
 import { Game, Platforms } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
-
-enum GameStatus {
-  OnHold = 0,
-  Planned = 1,
-  Playing = 2,
-  StoryComplete = 3,
-  Completed = 4,
-  MainGame = 5,
-}
+import { GameStatus } from '../../library/models/library-status.model';
 
 type ReleaseMode = 'week' | 'release' | 'backlog';
 
