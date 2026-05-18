@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace LuminaPath.Infrastructure.Services.Third_Party;
+namespace LuminaPath.Infrastructure.Services.ThirdParty;
 
 internal static class ThirdPartyServiceCollectionExtensions
 {

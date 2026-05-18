@@ -133,7 +133,7 @@ namespace Test.Controller
                 Id = myGameId,
                 GameId = gameId,
                 Status = GameStatus.Playing,
-                MyGameInfo = new LuminaPath.Core.Models.Third_Party.MyGameInfo
+                MyGameInfo = new LuminaPath.Core.Models.ThirdParty.MyGameInfo
                 {
                     TrackedHours = 999,
                     FirstPlayed = new DateTime(1999, 1, 1),
@@ -165,7 +165,7 @@ namespace Test.Controller
                     Status = GameStatus.Playing,
                     Priority = 1,
                     TimeSpend = 3,
-                    MyGameInfo = new LuminaPath.Core.Models.Third_Party.MyGameInfo
+                    MyGameInfo = new LuminaPath.Core.Models.ThirdParty.MyGameInfo
                     {
                         TrackedHours = 12.5,
                         FirstPlayed = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),

@@ -2,7 +2,7 @@ using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Base;
 using LuminaPath.Infrastructure.Services.ModelServices;
-using LuminaPath.Infrastructure.Services.Third_Party;
+using LuminaPath.Infrastructure.Services.ThirdParty;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

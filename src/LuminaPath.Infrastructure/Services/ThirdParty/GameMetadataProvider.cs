@@ -1,6 +1,6 @@
 using LuminaPath.Core.Models;
 
-namespace LuminaPath.Infrastructure.Services.Third_Party;
+namespace LuminaPath.Infrastructure.Services.ThirdParty;
 
 public interface IGameMetadataProvider
 {

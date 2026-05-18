@@ -1,6 +1,6 @@
 using static LuminaPath.Core.Entities.PSN.PSNTrophy;
 
-namespace LuminaPath.Infrastructure.Services.Third_Party;
+namespace LuminaPath.Infrastructure.Services.ThirdParty;
 
 public interface IPsnTrophyClient
 {

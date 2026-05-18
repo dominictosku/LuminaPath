@@ -56,24 +56,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return GetDropdownMedia(searchName);
         }
 
-        public async Task<List<Series>> GetDropdownParentSeries(string? searchName = null, int? excludeId = null)
+        public Task<List<Series>> GetDropdownParentSeries(string? searchName = null, int? excludeId = null)
         {
-            await using var context = await GetDbContextAsync();
-            IQueryable<Series> query = context.Series
-                .Include(series => series.Image)
-                .Where(series => series.ParentSeriesId == null);
-
-            if (!string.IsNullOrWhiteSpace(searchName))
-            {
-                query = query.Where(series => series.Name.Contains(searchName));
-            }
-
-            if (excludeId is int id && id > 0)
-            {
-                query = query.Where(series => series.Id != id);
-            }
-
-            return await query.OrderBy(series => series.Name).ToListAsync();
+            return GetDropdownParentMedia(series => series.ParentSeriesId == null, searchName, excludeId);
         }
 
         public override Task<Result<Series, FailedResult>> PostAsync(Series entity)
@@ -88,16 +73,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return base.PutAsync(entity);
         }
 
-        public async Task<List<Series>> GetSeasonsAsync(int parentSeriesId, CancellationToken cancellationToken = default)
+        public Task<List<Series>> GetSeasonsAsync(int parentSeriesId, CancellationToken cancellationToken = default)
         {
-            await using var context = await GetDbContextAsync();
-            return await context.Series
-                .AsNoTracking()
-                .Include(series => series.Image)
-                .Where(series => series.ParentSeriesId == parentSeriesId)
-                .OrderBy(series => series.ReleaseDate)
-                .ThenBy(series => series.Name)
-                .ToListAsync(cancellationToken);
+            return GetChildMediaAsync(series => series.ParentSeriesId == parentSeriesId, cancellationToken);
         }
 
         private static void RecalculateUserEntries(Series series)

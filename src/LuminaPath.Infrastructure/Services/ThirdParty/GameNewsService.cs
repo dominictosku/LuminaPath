@@ -15,7 +15,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace LuminaPath.Infrastructure.Services.Third_Party;
+namespace LuminaPath.Infrastructure.Services.ThirdParty;
 
 public sealed class GameNewsService
 {

@@ -4,7 +4,7 @@ using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.Application;
 using LuminaPath.Infrastructure.Services.ModelServices;
-using LuminaPath.Infrastructure.Services.Third_Party;
+using LuminaPath.Infrastructure.Services.ThirdParty;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

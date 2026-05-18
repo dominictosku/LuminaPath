@@ -1,7 +1,7 @@
 using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
-using LuminaPath.Core.Models.Third_Party;
+using LuminaPath.Core.Models.ThirdParty;
 using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices;

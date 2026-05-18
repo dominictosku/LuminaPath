@@ -135,36 +135,14 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return GetDropdownMedia(searchName);
         }
 
-        public async Task<List<Game>> GetDropdownParentGames(string? searchName = null, int? excludeId = null)
+        public Task<List<Game>> GetDropdownParentGames(string? searchName = null, int? excludeId = null)
         {
-            await using var context = await GetDbContextAsync();
-            IQueryable<Game> query = context.Games
-                .Include(game => game.Image)
-                .Where(game => game.ParentGameId == null);
-
-            if (!string.IsNullOrWhiteSpace(searchName))
-            {
-                query = query.Where(game => game.Name.Contains(searchName));
-            }
-
-            if (excludeId is int id && id > 0)
-            {
-                query = query.Where(game => game.Id != id);
-            }
-
-            return await query.OrderBy(game => game.Name).ToListAsync();
+            return GetDropdownParentMedia(game => game.ParentGameId == null, searchName, excludeId);
         }
 
-        public async Task<List<Game>> GetDlcsAsync(int parentGameId, CancellationToken cancellationToken = default)
+        public Task<List<Game>> GetDlcsAsync(int parentGameId, CancellationToken cancellationToken = default)
         {
-            await using var context = await GetDbContextAsync();
-            return await context.Games
-                .AsNoTracking()
-                .Include(game => game.Image)
-                .Where(game => game.ParentGameId == parentGameId)
-                .OrderByDescending(game => game.ReleaseDate)
-                .ThenBy(game => game.Name)
-                .ToListAsync(cancellationToken);
+            return GetChildMediaAsync(game => game.ParentGameId == parentGameId, cancellationToken, newestFirst: true);
         }
     }
 }

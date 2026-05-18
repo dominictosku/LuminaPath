@@ -166,6 +166,47 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
             .ToListAsync();
     }
 
+    protected async Task<List<TMedia>> GetDropdownParentMedia(
+        Expression<Func<TMedia, bool>> parentFilter,
+        string? searchName = null,
+        int? excludeId = null)
+    {
+        await using var context = await GetDbContextAsync();
+        IQueryable<TMedia> query = context.Set<TMedia>()
+            .Include(media => media.Image)
+            .Where(parentFilter);
+
+        if (!string.IsNullOrWhiteSpace(searchName))
+        {
+            query = query.Where(media => media.Name.Contains(searchName));
+        }
+
+        if (excludeId is int id && id > 0)
+        {
+            query = query.Where(media => media.Id != id);
+        }
+
+        return await query.OrderBy(media => media.Name).ToListAsync();
+    }
+
+    protected async Task<List<TMedia>> GetChildMediaAsync(
+        Expression<Func<TMedia, bool>> childFilter,
+        CancellationToken cancellationToken = default,
+        bool newestFirst = false)
+    {
+        await using var context = await GetDbContextAsync();
+        var query = context.Set<TMedia>()
+            .AsNoTracking()
+            .Include(media => media.Image)
+            .Where(childFilter);
+
+        var ordered = newestFirst
+            ? query.OrderByDescending(media => media.ReleaseDate).ThenBy(media => media.Name)
+            : query.OrderBy(media => media.ReleaseDate).ThenBy(media => media.Name);
+
+        return await ordered.ToListAsync(cancellationToken);
+    }
+
     public virtual async Task<PaginatedList<TMedia>> GetAllPaginated(
         MediaFilter mediaFilter,
         string userId,

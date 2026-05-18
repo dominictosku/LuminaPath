@@ -2,7 +2,7 @@ using ClosedXML.Excel;
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Extensions;
-using LuminaPath.Core.Models.Third_Party;
+using LuminaPath.Core.Models.ThirdParty;
 using LuminaPath.Infrastructure.Helper;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.Imports;

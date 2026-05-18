@@ -1,6 +1,6 @@
-using LuminaPath.Core.Models.Third_Party;
+using LuminaPath.Core.Models.ThirdParty;
 
-namespace LuminaPath.Infrastructure.Services.Third_Party;
+namespace LuminaPath.Infrastructure.Services.ThirdParty;
 
 public interface ISteamAchievementClient
 {

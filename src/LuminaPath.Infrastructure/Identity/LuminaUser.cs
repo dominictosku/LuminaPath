@@ -1,6 +1,6 @@
-﻿using LuminaPath.Core.Interfaces;
+using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models;
-using LuminaPath.Core.Models.Third_Party;
+using LuminaPath.Core.Models.ThirdParty;
 using Microsoft.AspNetCore.Identity;
 
 namespace LuminaPath.Infrastructure.Identity

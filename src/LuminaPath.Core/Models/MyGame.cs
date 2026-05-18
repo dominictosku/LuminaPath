@@ -1,7 +1,7 @@
-﻿using LuminaPath.Core.Enums;
+using LuminaPath.Core.Enums;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models.Base;
-using LuminaPath.Core.Models.Third_Party;
+using LuminaPath.Core.Models.ThirdParty;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

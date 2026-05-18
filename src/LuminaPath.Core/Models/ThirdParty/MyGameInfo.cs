@@ -1,4 +1,4 @@
-﻿namespace LuminaPath.Core.Models.Third_Party
+namespace LuminaPath.Core.Models.ThirdParty
 {
     public class MyGameInfo
     {

@@ -5,7 +5,7 @@ using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.Imports;
-using LuminaPath.Infrastructure.Services.Third_Party;
+using LuminaPath.Infrastructure.Services.ThirdParty;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;

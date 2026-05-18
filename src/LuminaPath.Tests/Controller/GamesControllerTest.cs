@@ -13,7 +13,7 @@ using LuminaPath.Infrastructure.Controllers;
 using LuminaPath.Infrastructure.Services.Application;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using LuminaPath.Infrastructure.Services;
-using LuminaPath.Infrastructure.Services.Third_Party;
+using LuminaPath.Infrastructure.Services.ThirdParty;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Entities;
 using Microsoft.Extensions.Caching.Memory;
@@ -95,7 +95,7 @@ namespace Test.Controller
 					Status = GameStatus.Playing,
 					TimeSpend = 5,
 					Priority = 1,
-					MyGameInfo = new LuminaPath.Core.Models.Third_Party.MyGameInfo
+					MyGameInfo = new LuminaPath.Core.Models.ThirdParty.MyGameInfo
 					{
 						TrackedHours = 7.5
 					}

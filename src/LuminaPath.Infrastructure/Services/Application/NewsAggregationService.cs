@@ -1,5 +1,5 @@
 using LuminaPath.Core.Dtos;
-using LuminaPath.Infrastructure.Services.Third_Party;
+using LuminaPath.Infrastructure.Services.ThirdParty;
 
 namespace LuminaPath.Infrastructure.Services.Application;
 

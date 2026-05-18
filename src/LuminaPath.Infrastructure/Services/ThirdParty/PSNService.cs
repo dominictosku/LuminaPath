@@ -1,6 +1,6 @@
 using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Enums;
-using LuminaPath.Core.Models.Third_Party;
+using LuminaPath.Core.Models.ThirdParty;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.Imports;
 using Microsoft.Extensions.Logging;
@@ -13,7 +13,7 @@ using static LuminaPath.Core.Entities.PSN.PSNProfile;
 using static LuminaPath.Core.Entities.PSN.PSNTitles;
 using static LuminaPath.Core.Entities.PSN.PSNTrophy;
 
-namespace LuminaPath.Infrastructure.Services.Third_Party
+namespace LuminaPath.Infrastructure.Services.ThirdParty
 {
     public class PSNService(
         HttpClient httpClient,

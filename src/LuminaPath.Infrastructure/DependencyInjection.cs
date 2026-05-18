@@ -7,7 +7,7 @@ using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.AiChat;
 using LuminaPath.Infrastructure.Services.Auditing;
-using LuminaPath.Infrastructure.Services.Third_Party;
+using LuminaPath.Infrastructure.Services.ThirdParty;
 using LuminaPath.Infrastructure.Validators;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
