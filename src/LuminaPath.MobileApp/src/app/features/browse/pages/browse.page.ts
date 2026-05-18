@@ -1,5 +1,5 @@
 
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, effect, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonButton,
@@ -91,6 +91,19 @@ export class BrowsePage implements OnInit {
 
   constructor() {
     this.mediaMode = this.mediaModeService.mode();
+    // Resync from the global mode when it changes (e.g., the user switches
+    // tabs in the nav bar). Browse only supports 'games' and 'animes', so
+    // other modes are ignored.
+    let lastSyncedKind: BrowseKind = this.selectedKind;
+    effect(() => {
+      const mode = this.mediaModeService.mode();
+      this.mediaMode = mode;
+      if ((mode.id === 'games' || mode.id === 'animes') && mode.id !== lastSyncedKind) {
+        lastSyncedKind = mode.id;
+        this.selectedKind = mode.id;
+        this.load();
+      }
+    });
     addIcons({
       addOutline,
       calendarClearOutline,

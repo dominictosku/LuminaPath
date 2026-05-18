@@ -1,0 +1,87 @@
+<section class="quest-panel news-panel">
+  <header class="section-header news-header">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="newspaper-outline"></ion-icon>
+        Game news
+      </span>
+      <h2>Latest updates</h2>
+    </div>
+    <ion-button fill="clear" size="small" [disabled]="isLoading" (click)="load(true)">
+      <ion-icon slot="start" name="refresh-outline"></ion-icon>
+      Refresh
+    </ion-button>
+  </header>
+  @if (isLoading) {
+    <div class="news-list">
+      @for (row of skeletonRows; track row) {
+        <article class="news-card news-card--loading">
+          <ion-skeleton-text animated class="news-skeleton-title"></ion-skeleton-text>
+          <ion-skeleton-text animated></ion-skeleton-text>
+          <ion-skeleton-text animated></ion-skeleton-text>
+        </article>
+      }
+    </div>
+  }
+  @if (!isLoading && errorMessage) {
+    <div class="empty-state empty-state--locked">
+      <ion-icon name="newspaper-outline"></ion-icon>
+      <strong>News unavailable</strong>
+      <span>{{ errorMessage }}</span>
+    </div>
+  }
+  @if (!isLoading && !errorMessage && loaded && !newsItems.length) {
+    <div class="empty-state">
+      <ion-icon name="newspaper-outline"></ion-icon>
+      <strong>No news found</strong>
+      <span>There are no recent updates for {{ gameName() }} yet.</span>
+    </div>
+  }
+  @if (!isLoading && newsProviderFilters.length > 1) {
+    <div class="news-filters">
+      <button
+        type="button"
+        class="news-filter"
+        [class.news-filter--active]="!selectedProvider"
+        (click)="setProvider(null)">
+        All <span class="news-filter__count">{{ newsItems.length }}</span>
+      </button>
+      @for (filter of newsProviderFilters; track filter.value) {
+        <button
+          type="button"
+          class="news-filter"
+          [class.news-filter--active]="selectedProvider === filter.value"
+          (click)="setProvider(filter.value)">
+          {{ filter.label }} <span class="news-filter__count">{{ filter.count }}</span>
+        </button>
+      }
+    </div>
+  }
+  @if (!isLoading && newsItems.length && !filteredNewsItems.length) {
+    <div class="empty-state">
+      <ion-icon name="newspaper-outline"></ion-icon>
+      <strong>No matches</strong>
+      <span>Nothing from this source — try another filter.</span>
+    </div>
+  }
+  @if (!isLoading && filteredNewsItems.length) {
+    <div class="news-list">
+      @for (item of filteredNewsItems; track trackByNews($index, item)) {
+        <article class="news-card">
+          <div class="news-card__meta">
+            <ion-badge>{{ item.source || providerLabel(item) }}</ion-badge>
+            <span>{{ newsDateLabel(item) }}</span>
+          </div>
+          <h3>{{ item.title }}</h3>
+          @if (item.summary) {
+            <p>{{ item.summary }}</p>
+          }
+          <ion-button fill="clear" size="small" [href]="item.url" target="_blank" rel="noopener noreferrer">
+            Read on {{ providerLabel(item) }}
+            <ion-icon slot="end" name="open-outline"></ion-icon>
+          </ion-button>
+        </article>
+      }
+    </div>
+  }
+</section>

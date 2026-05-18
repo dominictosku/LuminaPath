@@ -1,12 +1,24 @@
 import { HttpHandler, HttpRequest } from '@angular/common/http';
+import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { CookieInterceptor } from './CookieInterceptor.service';
 
+function setup() {
+  const router = jasmine.createSpyObj<Router>('Router', ['navigate']);
+  TestBed.configureTestingModule({
+    providers: [
+      CookieInterceptor,
+      { provide: Router, useValue: router },
+    ],
+  });
+  const interceptor = TestBed.inject(CookieInterceptor);
+  return { router, interceptor };
+}
+
 describe('CookieInterceptor', () => {
   it('adds credentials to outgoing requests', (done) => {
-    const router = createRouter();
-    const interceptor = new CookieInterceptor(router);
+    const { interceptor } = setup();
     const request = new HttpRequest('GET', '/api/games');
     const next: HttpHandler = {
       handle: jasmine.createSpy('handle').and.callFake((handledRequest: HttpRequest<unknown>) => {
@@ -22,8 +34,7 @@ describe('CookieInterceptor', () => {
   });
 
   it('redirects to login on protected 401 responses', (done) => {
-    const router = createRouter();
-    const interceptor = new CookieInterceptor(router);
+    const { router, interceptor } = setup();
     const request = new HttpRequest('GET', '/api/games');
     const next: HttpHandler = {
       handle: jasmine.createSpy('handle').and.returnValue(throwError(() => ({ status: 401 }))),
@@ -38,8 +49,7 @@ describe('CookieInterceptor', () => {
   });
 
   it('does not redirect failed login requests', (done) => {
-    const router = createRouter();
-    const interceptor = new CookieInterceptor(router);
+    const { router, interceptor } = setup();
     const request = new HttpRequest('POST', '/api/login?useCookies=true', {});
     const next: HttpHandler = {
       handle: jasmine.createSpy('handle').and.returnValue(throwError(() => ({ status: 401 }))),
@@ -53,7 +63,3 @@ describe('CookieInterceptor', () => {
     });
   });
 });
-
-function createRouter(): jasmine.SpyObj<Router> {
-  return jasmine.createSpyObj<Router>('Router', ['navigate']);
-}

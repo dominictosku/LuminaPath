@@ -1,0 +1,111 @@
+<section class="quest-panel">
+  <header class="section-header">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="link-outline"></ion-icon>
+        Linked quests
+      </span>
+      <h2>Game Quests</h2>
+    </div>
+  </header>
+  @if (isInLibrary()) {
+    @if (activeQuests.length || completedQuests.length) {
+      @if (activeQuests.length) {
+        <div class="quest-list">
+          @for (quest of activeQuests; track trackByQuest($index, quest)) {
+            <article class="quest-card">
+              <button type="button" class="icon-action icon-action--complete" (click)="toggleQuest(quest)">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+              </button>
+              <div class="quest-body">
+                <h3>{{ quest.title }}</h3>
+                <p>
+                  <ion-badge>{{ questTypeLabel(questTypeFor(quest)) }}</ion-badge>
+                  <span>Ready to complete</span>
+                </p>
+              </div>
+              <button type="button" class="icon-action" aria-label="Delete quest" (click)="deleteQuest(quest)">
+                <ion-icon name="trash-outline"></ion-icon>
+              </button>
+            </article>
+          }
+        </div>
+      }
+      @if (completedQuests.length) {
+        <div class="completed-toggle">
+          <button
+            type="button"
+            class="completed-toggle__button"
+            [attr.aria-expanded]="completedExpanded"
+            (click)="toggleCompletedQuests()">
+            <ion-icon [name]="completedExpanded ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+            Completed
+            <span class="completed-toggle__count">{{ completedQuests.length }}</span>
+          </button>
+          @if (completedExpanded) {
+            <div class="quest-list quest-list--completed">
+              @for (quest of completedQuests; track trackByQuest($index, quest)) {
+                <article class="quest-card quest-card--done">
+                  <button type="button" class="icon-action icon-action--complete" (click)="toggleQuest(quest)">
+                    <ion-icon name="checkmark-circle"></ion-icon>
+                  </button>
+                  <div class="quest-body">
+                    <h3>{{ quest.title }}</h3>
+                    <p>
+                      <ion-badge>{{ questTypeLabel(questTypeFor(quest)) }}</ion-badge>
+                      <span>Completed</span>
+                    </p>
+                  </div>
+                  <button type="button" class="icon-action" aria-label="Delete quest" (click)="deleteQuest(quest)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </button>
+                </article>
+              }
+            </div>
+          }
+        </div>
+      }
+    } @else {
+      <div class="empty-state empty-state--quest-starter">
+        <ion-icon name="link-outline"></ion-icon>
+        <strong>No quests yet</strong>
+        <span>Pick a starter or write your own below.</span>
+        <div class="quest-starter-row">
+          @for (suggestion of questStarters; track suggestion.title) {
+            <button
+              type="button"
+              class="quest-starter"
+              [disabled]="isAddingStarter"
+              (click)="addStarterQuest(suggestion)">
+              <ion-icon name="add-outline"></ion-icon>
+              {{ suggestion.title }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+    <div class="quest-input">
+      <input
+        type="text"
+        placeholder="Add a quest for this game"
+        [(ngModel)]="newQuestTitle"
+        (keydown.enter)="addQuest()" />
+      <ion-select interface="popover" [(ngModel)]="newQuestType" aria-label="Quest type">
+        @for (option of questTypeOptions; track option.type) {
+          <ion-select-option [value]="option.type">
+            {{ option.label }}
+          </ion-select-option>
+        }
+      </ion-select>
+      <ion-button shape="round" aria-label="Add quest" (click)="addQuest()">
+        <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+      </ion-button>
+    </div>
+  } @else {
+    <div class="empty-state empty-state--locked">
+      <ion-icon name="game-controller-outline"></ion-icon>
+      <strong>Quest tracking is locked</strong>
+      <span>This game needs to be in your library before quests can be attached.</span>
+    </div>
+  }
+</section>

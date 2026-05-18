@@ -1,6 +1,5 @@
 import { Location } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   ActionSheetController,
@@ -13,11 +12,8 @@ import {
   IonIcon,
   IonLabel,
   IonProgressBar,
-  IonSelect,
-  IonSelectOption,
   IonSegment,
   IonSegmentButton,
-  IonSkeletonText,
   IonSpinner,
   IonTitle,
   IonToolbar,
@@ -28,40 +24,30 @@ import {
   alertCircleOutline,
   arrowBackOutline,
   calendarClearOutline,
-  ellipsisVertical,
-  checkmarkCircle,
-  checkmarkCircleOutline,
   checkmarkDoneOutline,
-  chevronDownOutline,
-  chevronUpOutline,
-  closeOutline,
-  createOutline,
   cubeOutline,
-  documentTextOutline,
-  eyeOutline,
+  ellipsisVertical,
   flagOutline,
   gameControllerOutline,
   hourglassOutline,
   libraryOutline,
-  linkOutline,
-  newspaperOutline,
-  openOutline,
   playOutline,
   refreshOutline,
   returnUpBackOutline,
-  saveOutline,
   trashOutline,
   trophyOutline,
 } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 
 import { GameService } from 'src/app/features/games/services/game.service';
-import { Game, GameNewsItem, GameSummary, platformLabelFromValue } from 'src/app/features/games/models/games.model';
+import { Game, GameSummary, platformLabelFromValue } from 'src/app/features/games/models/games.model';
 import { MyGameService, UserGameAchievement } from 'src/app/features/my-games/services/my-game.service';
-import { Quest, QuestBoardService, QuestType } from 'src/app/features/quests/services/quest-board.service';
 import { GameForecast, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
 import { MediaStore } from 'src/app/features/library/state/media.store';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
+import { GameNewsComponent } from '../components/game-news/game-news.component';
+import { GameNotesComponent } from '../components/game-notes/game-notes.component';
+import { GameQuestsComponent } from '../components/game-quests/game-quests.component';
 
 const STATUS_LABELS: Record<number, string> = {
   0: 'On hold',
@@ -91,7 +77,6 @@ type GameLibraryEntry = {
   templateUrl: './my-game-details.page.html',
   styleUrls: ['./my-game-details.page.scss'],
   imports: [
-    FormsModule,
     RouterLink,
     IonBadge,
     IonButton,
@@ -101,66 +86,40 @@ type GameLibraryEntry = {
     IonIcon,
     IonLabel,
     IonProgressBar,
-    IonSelect,
-    IonSelectOption,
     IonSegment,
     IonSegmentButton,
-    IonSkeletonText,
     IonSpinner,
     IonTitle,
-    IonToolbar
-],
+    IonToolbar,
+    GameNewsComponent,
+    GameNotesComponent,
+    GameQuestsComponent,
+  ],
 })
 export class MyGameDetailsPage implements OnInit {
+  @ViewChild(GameNotesComponent) notesComponent?: GameNotesComponent;
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly gameService = inject(GameService);
   private readonly myGameService = inject(MyGameService);
-  private readonly questBoardService = inject(QuestBoardService);
   private readonly sessionService = inject(GamingSessionService);
   private readonly alertController = inject(AlertController);
   private readonly actionSheetController = inject(ActionSheetController);
   private readonly mediaStore = inject(MediaStore);
 
   game: GameWithFlexibleLibrary | null = null;
-  quests: Quest[] = [];
   forecast: GameForecast | null = null;
   achievements: UserGameAchievement[] = [];
-  newsItems: GameNewsItem[] = [];
   isLoading = true;
   isAchievementsLoading = false;
-  isNewsLoading = false;
-  newsLoaded = false;
   errorMessage = '';
   achievementsErrorMessage = '';
-  newsErrorMessage = '';
   selectedTab: 'overview' | 'progress' | 'news' = 'overview';
-  selectedNewsProvider: string | null = null;
-  readonly newsSkeletonRows = [1, 2, 3];
-
-  readonly questTypeOptions: { type: QuestType; label: string }[] = [
-    { type: 'main', label: 'Main' },
-    { type: 'sub', label: 'Sub' },
-    { type: 'faction', label: 'Faction' },
-  ];
-
-  newQuestTitle = '';
-  newQuestType: QuestType = 'sub';
-
   isUpdatingLibrary = false;
-  isEditingNotes = false;
   isSavingNotes = false;
-  notesDraft = '';
   headerCondensed = false;
-  completedExpanded = false;
-  isAddingStarter = false;
-
-  readonly questStarters: { title: string; type: QuestType }[] = [
-    { title: 'Finish the main story', type: 'main' },
-    { title: 'Reach max level', type: 'sub' },
-    { title: '100% achievements', type: 'sub' },
-  ];
 
   constructor() {
     addIcons({
@@ -168,28 +127,16 @@ export class MyGameDetailsPage implements OnInit {
       alertCircleOutline,
       arrowBackOutline,
       calendarClearOutline,
-      checkmarkCircle,
-      checkmarkCircleOutline,
       checkmarkDoneOutline,
-      chevronDownOutline,
-      chevronUpOutline,
-      closeOutline,
-      createOutline,
       cubeOutline,
-      documentTextOutline,
       ellipsisVertical,
-      eyeOutline,
       flagOutline,
       gameControllerOutline,
       hourglassOutline,
       libraryOutline,
-      linkOutline,
-      newspaperOutline,
-      openOutline,
       playOutline,
       refreshOutline,
       returnUpBackOutline,
-      saveOutline,
       trashOutline,
       trophyOutline,
     });
@@ -203,9 +150,6 @@ export class MyGameDetailsPage implements OnInit {
         return;
       }
 
-      this.newsLoaded = false;
-      this.newsItems = [];
-      this.selectedNewsProvider = null;
       this.selectedTab = 'overview';
       await this.loadGameAndQuests(gameId);
     });
@@ -267,18 +211,6 @@ export class MyGameDetailsPage implements OnInit {
     return this.game?.playtime ? `${this.game.playtime}h estimated` : 'No estimate';
   }
 
-  get personalNotes(): string {
-    return this.libraryEntry?.personalNotes?.trim() ?? '';
-  }
-
-  get hasPersonalNotes(): boolean {
-    return this.personalNotes.length > 0;
-  }
-
-  get renderedPersonalNotes(): string {
-    return this.renderMarkdown(this.personalNotes);
-  }
-
   get dlcs(): GameSummary[] {
     return this.game?.dlcs ?? [];
   }
@@ -308,108 +240,6 @@ export class MyGameDetailsPage implements OnInit {
 
   trackByDlc(_: number, dlc: GameSummary): number {
     return dlc.id;
-  }
-
-  get completedQuestCount(): number {
-    return this.quests.filter((quest) => quest.completed).length;
-  }
-
-  get activeQuests(): Quest[] {
-    return this.quests.filter((quest) => !quest.completed);
-  }
-
-  get completedQuests(): Quest[] {
-    return this.quests.filter((quest) => quest.completed);
-  }
-
-  toggleCompletedQuests(): void {
-    this.completedExpanded = !this.completedExpanded;
-  }
-
-  async addStarterQuest(suggestion: { title: string; type: QuestType }): Promise<void> {
-    const myGameId = this.myGameId;
-    if (myGameId == null || this.isAddingStarter) {
-      return;
-    }
-
-    this.isAddingStarter = true;
-    try {
-      await this.questBoardService.createQuest({
-        title: suggestion.title,
-        type: suggestion.type,
-        myGameId,
-      });
-      await this.refreshQuests();
-    } catch {
-      // silent
-    } finally {
-      this.isAddingStarter = false;
-    }
-  }
-
-  get questSummaryLabel(): string {
-    if (!this.quests.length) {
-      return 'No quests linked yet';
-    }
-    return `${this.completedQuestCount}/${this.quests.length} quests complete`;
-  }
-
-  imageUrl(): string {
-    return mediaImageUrl(this.game?.image);
-  }
-
-  async addQuest(): Promise<void> {
-    const title = this.newQuestTitle.trim();
-    const myGameId = this.myGameId;
-
-    if (!title || myGameId == null) {
-      return;
-    }
-
-    try {
-      await this.questBoardService.createQuest({
-        title,
-        type: this.newQuestType,
-        myGameId,
-      });
-      this.newQuestTitle = '';
-      await this.refreshQuests();
-    } catch {
-      // swallow; user-visible feedback can be added later
-    }
-  }
-
-  async toggleQuest(quest: Quest): Promise<void> {
-    const previous = quest.completed;
-    quest.completed = !previous;
-    try {
-      await this.questBoardService.updateQuest(quest.id, { completed: !previous });
-      await this.refreshQuests();
-    } catch {
-      quest.completed = previous;
-    }
-  }
-
-  async deleteQuest(quest: Quest): Promise<void> {
-    const id = quest.id;
-    this.quests = this.quests.filter((item) => item.id !== id);
-    try {
-      await this.questBoardService.deleteQuest(id);
-    } catch {
-      await this.refreshQuests();
-    }
-  }
-
-  questTypeFor(quest: Quest): QuestType {
-    return quest.type;
-  }
-
-  questTypeLabel(type: QuestType): string {
-    return this.questTypeOptions.find((option) => option.type === type)?.label ?? type;
-  }
-
-  trackByQuest(_: number, quest: Quest): number {
-    return quest.id;
   }
 
   trackByAchievement(_: number, achievement: UserGameAchievement): number {
@@ -449,95 +279,23 @@ export class MyGameDetailsPage implements OnInit {
     return trophyType.charAt(0).toUpperCase() + trophyType.slice(1);
   }
 
-  trackByNews(_: number, item: GameNewsItem): string {
-    return item.url || item.title;
+  imageUrl(): string {
+    return mediaImageUrl(this.game?.image);
   }
 
   setDetailTab(value: unknown): void {
     this.selectedTab = value === 'news' ? 'news' : value === 'progress' ? 'progress' : 'overview';
-    if (this.selectedTab === 'news' && !this.newsLoaded && !this.isNewsLoading) {
-      void this.loadNews();
+  }
+
+  onScroll(event: CustomEvent<{ scrollTop: number }>): void {
+    const scrollTop = event.detail?.scrollTop ?? 0;
+    const condensed = scrollTop > 140;
+    if (condensed !== this.headerCondensed) {
+      this.headerCondensed = condensed;
     }
   }
 
-  async loadNews(refresh = false): Promise<void> {
-    if (!this.game?.id) {
-      return;
-    }
-
-    this.isNewsLoading = true;
-    this.newsErrorMessage = '';
-
-    try {
-      this.newsItems = await firstValueFrom(this.gameService.getNews(this.game.id, refresh));
-      this.newsLoaded = true;
-      this.selectedNewsProvider = null;
-    } catch {
-      this.newsErrorMessage = 'News could not be loaded right now.';
-      this.newsItems = [];
-      this.newsLoaded = true;
-    } finally {
-      this.isNewsLoading = false;
-    }
-  }
-
-  newsDateLabel(item: GameNewsItem): string {
-    if (!item.publishedAt) {
-      return 'Recent';
-    }
-
-    const date = new Date(item.publishedAt);
-    if (Number.isNaN(date.getTime())) {
-      return 'Recent';
-    }
-
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
-  }
-
-  providerLabel(item: GameNewsItem): string {
-    return item.provider === 'GoogleNews' ? 'Google News' : item.provider;
-  }
-
-  get newsProviderFilters(): { value: string; label: string; count: number }[] {
-    const counts = new Map<string, { label: string; count: number }>();
-    for (const item of this.newsItems) {
-      const value = item.provider || 'Unknown';
-      const label = this.providerLabel(item) || value;
-      const current = counts.get(value);
-      if (current) {
-        current.count += 1;
-      } else {
-        counts.set(value, { label, count: 1 });
-      }
-    }
-    return Array.from(counts, ([value, info]) => ({ value, label: info.label, count: info.count }))
-      .sort((a, b) => b.count - a.count);
-  }
-
-  get filteredNewsItems(): GameNewsItem[] {
-    if (!this.selectedNewsProvider) return this.newsItems;
-    return this.newsItems.filter((item) => (item.provider || 'Unknown') === this.selectedNewsProvider);
-  }
-
-  setNewsProvider(value: string | null): void {
-    this.selectedNewsProvider = value;
-  }
-
-  startEditingNotes(): void {
-    this.notesDraft = this.libraryEntry?.personalNotes ?? '';
-    this.isEditingNotes = true;
-  }
-
-  cancelEditingNotes(): void {
-    this.notesDraft = '';
-    this.isEditingNotes = false;
-  }
-
-  async savePersonalNotes(): Promise<void> {
+  async onNotesSave(notes: string | null): Promise<void> {
     const gameId = this.game?.id;
     const myGameId = this.myGameId;
     if (!gameId || myGameId == null || this.isSavingNotes) {
@@ -548,24 +306,15 @@ export class MyGameDetailsPage implements OnInit {
     try {
       await firstValueFrom(
         this.myGameService.updateLibraryEntry(myGameId, gameId, this.libraryUpdateDetails({
-          personalNotes: this.normalizeNotes(this.notesDraft),
+          personalNotes: notes,
         })),
       );
-      this.isEditingNotes = false;
-      this.notesDraft = '';
+      this.notesComponent?.resetEditor();
       await this.loadGameAndQuests(gameId);
     } catch {
       // silent; the draft stays in place so the note is not lost
     } finally {
       this.isSavingNotes = false;
-    }
-  }
-
-  onScroll(event: CustomEvent<{ scrollTop: number }>): void {
-    const scrollTop = event.detail?.scrollTop ?? 0;
-    const condensed = scrollTop > 140;
-    if (condensed !== this.headerCondensed) {
-      this.headerCondensed = condensed;
     }
   }
 
@@ -711,7 +460,7 @@ export class MyGameDetailsPage implements OnInit {
     try {
       this.game = await firstValueFrom(this.gameService.get(gameId));
       this.syncMediaStore(gameId);
-      await this.refreshQuests();
+      await this.refreshSideData();
     } catch {
       this.showError('Game could not be loaded.');
     } finally {
@@ -732,10 +481,10 @@ export class MyGameDetailsPage implements OnInit {
     } : null);
   }
 
-  private async refreshQuests(): Promise<void> {
+  /** Loads forecast + achievements. Quests are owned by GameQuestsComponent. */
+  private async refreshSideData(): Promise<void> {
     const myGameId = this.myGameId;
     if (myGameId == null) {
-      this.quests = [];
       this.forecast = null;
       this.achievements = [];
       this.achievementsErrorMessage = '';
@@ -747,15 +496,13 @@ export class MyGameDetailsPage implements OnInit {
     this.achievementsErrorMessage = '';
 
     try {
-      const [quests, forecast, achievements] = await Promise.all([
-        this.questBoardService.getQuestsForGame(myGameId),
+      const [forecast, achievements] = await Promise.all([
         firstValueFrom(this.sessionService.forecast(myGameId)).catch(() => null),
         firstValueFrom(this.myGameService.getAchievements(myGameId)).catch(() => {
           this.achievementsErrorMessage = 'Trophies could not be loaded right now.';
           return [];
         }),
       ]);
-      this.quests = quests;
       this.forecast = forecast;
       this.achievements = achievements;
     } finally {
@@ -837,106 +584,11 @@ export class MyGameDetailsPage implements OnInit {
     };
   }
 
-  private normalizeNotes(value: string): string | null {
-    const normalized = value.replace(/\r\n/g, '\n').trim();
-    return normalized.length ? normalized : null;
-  }
-
   private serializeDate(value: Date | string | null | undefined): string | null {
     if (!value) {
       return null;
     }
     return value instanceof Date ? value.toISOString() : value;
-  }
-
-  renderMarkdown(markdown: string): string {
-    const lines = this.escapeHtml(markdown).split('\n');
-    const html: string[] = [];
-    let paragraph: string[] = [];
-    let listItems: string[] = [];
-    let codeLines: string[] | null = null;
-
-    const flushParagraph = () => {
-      if (!paragraph.length) return;
-      html.push(`<p>${this.renderInline(paragraph.join(' '))}</p>`);
-      paragraph = [];
-    };
-
-    const flushList = () => {
-      if (!listItems.length) return;
-      html.push(`<ul>${listItems.map((item) => `<li>${this.renderInline(item)}</li>`).join('')}</ul>`);
-      listItems = [];
-    };
-
-    for (const line of lines) {
-      if (line.trim().startsWith('```')) {
-        flushParagraph();
-        flushList();
-        if (codeLines) {
-          html.push(`<pre><code>${codeLines.join('\n')}</code></pre>`);
-          codeLines = null;
-        } else {
-          codeLines = [];
-        }
-        continue;
-      }
-
-      if (codeLines) {
-        codeLines.push(line);
-        continue;
-      }
-
-      const trimmed = line.trim();
-      if (!trimmed) {
-        flushParagraph();
-        flushList();
-        continue;
-      }
-
-      const heading = trimmed.match(/^(#{1,3})\s+(.+)$/);
-      if (heading) {
-        flushParagraph();
-        flushList();
-        const level = heading[1].length + 2;
-        html.push(`<h${level}>${this.renderInline(heading[2])}</h${level}>`);
-        continue;
-      }
-
-      const listItem = trimmed.match(/^[-*]\s+(.+)$/);
-      if (listItem) {
-        flushParagraph();
-        listItems.push(listItem[1]);
-        continue;
-      }
-
-      flushList();
-      paragraph.push(trimmed);
-    }
-
-    flushParagraph();
-    flushList();
-    if (codeLines) {
-      html.push(`<pre><code>${codeLines.join('\n')}</code></pre>`);
-    }
-
-    return html.join('');
-  }
-
-  private renderInline(value: string): string {
-    return value
-      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
-  }
-
-  private escapeHtml(value: string): string {
-    return value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
   }
 
   private showError(message: string): void {

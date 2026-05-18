@@ -1,0 +1,72 @@
+<section class="quest-panel notes-panel">
+  <header class="section-header notes-header">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="document-text-outline"></ion-icon>
+        Personal notes
+      </span>
+      <h2>Your Game Journal</h2>
+    </div>
+    @if (isInLibrary) {
+      <div class="notes-actions">
+        @if (!isEditing) {
+          <ion-button fill="clear" size="small" (click)="startEditing()">
+            <ion-icon slot="start" name="create-outline"></ion-icon>
+            {{ hasPersonalNotes ? 'Edit' : 'Add note' }}
+          </ion-button>
+        } @else {
+          <ion-button fill="clear" size="small" [disabled]="isSaving" (click)="cancelEditing()">
+            <ion-icon slot="start" name="close-outline"></ion-icon>
+            Cancel
+          </ion-button>
+          <ion-button fill="clear" size="small" [disabled]="isSaving" (click)="submit()">
+            <ion-icon slot="start" name="save-outline"></ion-icon>
+            Save
+          </ion-button>
+        }
+      </div>
+    }
+  </header>
+  @if (isInLibrary) {
+    @if (!isEditing) {
+      @if (hasPersonalNotes) {
+        <div class="notes-preview">
+          <div class="notes-preview__label">
+            <ion-icon name="eye-outline"></ion-icon>
+            Preview
+          </div>
+          <div class="markdown-body" [innerHTML]="renderedPersonalNotes"></div>
+        </div>
+      } @else {
+        <div class="empty-state empty-state--notes">
+          <ion-icon name="document-text-outline"></ion-icon>
+          <strong>No notes yet</strong>
+          <span>Keep builds, memories, route ideas, or post-game thoughts here.</span>
+        </div>
+      }
+    } @else {
+      <div class="notes-editor">
+        <textarea
+          [(ngModel)]="notesDraft"
+          maxlength="5000"
+          placeholder="Write a note..."
+          [disabled]="isSaving"></textarea>
+        @if (notesDraft.trim().length) {
+          <div class="notes-editor__preview">
+            <span class="notes-preview__label">
+              <ion-icon name="eye-outline"></ion-icon>
+              Preview
+            </span>
+            <div class="markdown-body" [innerHTML]="renderMarkdown(notesDraft)"></div>
+          </div>
+        }
+      </div>
+    }
+  } @else {
+    <div class="empty-state empty-state--locked">
+      <ion-icon name="library-outline"></ion-icon>
+      <strong>Notes are locked</strong>
+      <span>Add this game to your library to keep personal notes.</span>
+    </div>
+  }
+</section>
