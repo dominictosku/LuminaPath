@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Runtime.CompilerServices;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.Application;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LuminaPath.Infrastructure.Services.Auditing;
 
@@ -58,10 +60,15 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
     };
 
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly ConditionalWeakTable<DbContext, PendingAuditEntries> _pendingAudits = new();
 
-    public AuditSaveChangesInterceptor(IHttpContextAccessor httpContextAccessor)
+    public AuditSaveChangesInterceptor(
+        IHttpContextAccessor httpContextAccessor,
+        IServiceScopeFactory serviceScopeFactory)
     {
         _httpContextAccessor = httpContextAccessor;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
@@ -79,6 +86,33 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
+    public override int SavedChanges(SaveChangesCompletedEventData eventData, int result)
+    {
+        SavePendingAuditEntries(eventData.Context);
+        return base.SavedChanges(eventData, result);
+    }
+
+    public override async ValueTask<int> SavedChangesAsync(
+        SaveChangesCompletedEventData eventData,
+        int result,
+        CancellationToken cancellationToken = default)
+    {
+        await SavePendingAuditEntriesAsync(eventData.Context, cancellationToken);
+        return await base.SavedChangesAsync(eventData, result, cancellationToken);
+    }
+
+    public override void SaveChangesFailed(DbContextErrorEventData eventData)
+    {
+        RemovePendingAuditEntries(eventData.Context);
+        base.SaveChangesFailed(eventData);
+    }
+
+    public override Task SaveChangesFailedAsync(DbContextErrorEventData eventData, CancellationToken cancellationToken = default)
+    {
+        RemovePendingAuditEntries(eventData.Context);
+        return base.SaveChangesFailedAsync(eventData, cancellationToken);
+    }
+
     private void AddAuditEntries(DbContext? context)
     {
         if (context is not LuminaPathDbContext dbContext)
@@ -87,11 +121,6 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         }
 
         dbContext.ChangeTracker.DetectChanges();
-        if (HasPendingInterceptorAudit(dbContext))
-        {
-            return;
-        }
-
         var auditLogs = dbContext.ChangeTracker
             .Entries()
             .Where(entry => entry.Entity is not AuditLog)
@@ -102,15 +131,70 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
 
         if (auditLogs.Count == 0)
         {
+            _pendingAudits.Remove(dbContext);
             return;
         }
 
-        dbContext.AuditLogs.AddRange(auditLogs!);
+        _pendingAudits.Remove(dbContext);
+        _pendingAudits.Add(dbContext, new PendingAuditEntries(auditLogs));
+    }
+
+    private void SavePendingAuditEntries(DbContext? context)
+    {
+        if (context is null || !_pendingAudits.TryGetValue(context, out var pending))
+        {
+            return;
+        }
+
+        _pendingAudits.Remove(context);
+        try
+        {
+            using var scope = _serviceScopeFactory.CreateScope();
+            var dbContextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<LuminaPathDbContext>>();
+            using var auditContext = dbContextFactory.CreateDbContext();
+            auditContext.AuditLogs.AddRange(pending.Entries);
+            auditContext.SaveChanges();
+        }
+        catch
+        {
+        }
+    }
+
+    private async Task SavePendingAuditEntriesAsync(DbContext? context, CancellationToken cancellationToken)
+    {
+        if (context is null || !_pendingAudits.TryGetValue(context, out var pending))
+        {
+            return;
+        }
+
+        _pendingAudits.Remove(context);
+        try
+        {
+            using var scope = _serviceScopeFactory.CreateScope();
+            var dbContextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<LuminaPathDbContext>>();
+            await using var auditContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            auditContext.AuditLogs.AddRange(pending.Entries);
+            await auditContext.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+        }
+    }
+
+    private void RemovePendingAuditEntries(DbContext? context)
+    {
+        if (context is null)
+        {
+            return;
+        }
+
+        _pendingAudits.Remove(context);
     }
 
     private AuditLog? CreateAuditLog(EntityEntry entry)
     {
-        if (!TrackedProperties.TryGetValue(entry.Entity.GetType(), out var trackedProperties))
+        var trackedProperties = GetTrackedProperties(entry);
+        if (trackedProperties is null)
         {
             return null;
         }
@@ -156,11 +240,6 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         var changes = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var property in entry.Properties.Where(property => trackedProperties.Contains(property.Metadata.Name)))
         {
-            if (entry.State == EntityState.Modified && !property.IsModified)
-            {
-                continue;
-            }
-
             var oldValue = entry.State == EntityState.Added
                 ? null
                 : SanitizeValue(entry, property.Metadata.Name, property.OriginalValue);
@@ -168,7 +247,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
                 ? null
                 : SanitizeValue(entry, property.Metadata.Name, property.CurrentValue);
 
-            if (Equals(oldValue, newValue))
+            if (entry.State == EntityState.Modified && !property.IsModified && Equals(oldValue, newValue))
             {
                 continue;
             }
@@ -177,6 +256,18 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         }
 
         return changes;
+    }
+
+    private static HashSet<string>? GetTrackedProperties(EntityEntry entry)
+    {
+        return entry.Entity switch
+        {
+            ApplicationSetting => TrackedProperties[typeof(ApplicationSetting)],
+            BackgroundJobRecord => TrackedProperties[typeof(BackgroundJobRecord)],
+            LuminaUser => TrackedProperties[typeof(LuminaUser)],
+            IdentityUserRole<string> => TrackedProperties[typeof(IdentityUserRole<string>)],
+            _ => null
+        };
     }
 
     private static object? SanitizeValue(EntityEntry entry, string propertyName, object? value)
@@ -229,11 +320,14 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         };
     }
 
-    private static bool HasPendingInterceptorAudit(LuminaPathDbContext dbContext)
+    private sealed class PendingAuditEntries
     {
-        return dbContext.ChangeTracker.Entries<AuditLog>()
-            .Any(entry => entry.State == EntityState.Added
-                && entry.Entity.MetadataJson?.Contains("SaveChangesInterceptor", StringComparison.Ordinal) == true);
+        public PendingAuditEntries(IReadOnlyList<AuditLog> entries)
+        {
+            Entries = entries;
+        }
+
+        public IReadOnlyList<AuditLog> Entries { get; }
     }
 
     private static string? TrimOrNull(string? value, int maxLength)

@@ -65,6 +65,40 @@ public class DatabaseBackupServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetBackupAsync_ReturnsBackup_WhenFileExistsInBackupDirectory()
+    {
+        Directory.CreateDirectory(_backupDirectory);
+        var filePath = Path.Combine(_backupDirectory, "luminapath.dump");
+        await File.WriteAllTextAsync(filePath, "backup");
+
+        var service = CreateService(CreateConfiguration("Host=localhost;Database=luminapath;Username=user;Password=password"));
+
+        var backup = await service.GetBackupAsync("luminapath.dump");
+
+        Assert.NotNull(backup);
+        Assert.Equal("luminapath.dump", backup.FileName);
+        Assert.Equal(filePath, backup.FullPath);
+        Assert.Equal(6, backup.SizeBytes);
+    }
+
+    [Theory]
+    [InlineData("../outside.dump")]
+    [InlineData("nested/outside.dump")]
+    [InlineData("notes.txt")]
+    [InlineData("")]
+    public async Task GetBackupAsync_ReturnsNull_ForInvalidOrUnsafeFileName(string fileName)
+    {
+        Directory.CreateDirectory(_backupDirectory);
+        await File.WriteAllTextAsync(Path.Combine(_backupDirectory, "notes.txt"), "not a backup");
+
+        var service = CreateService(CreateConfiguration("Host=localhost;Database=luminapath;Username=user;Password=password"));
+
+        var backup = await service.GetBackupAsync(fileName);
+
+        Assert.Null(backup);
+    }
+
+    [Fact]
     public async Task DeleteOldBackupsAsync_KeepsNewestBackups()
     {
         Directory.CreateDirectory(_backupDirectory);

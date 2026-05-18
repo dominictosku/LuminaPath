@@ -1,6 +1,7 @@
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Services.Auditing;
 using LuminaPath.Infrastructure.Services.Application.BackgroundJobs;
 using Microsoft.EntityFrameworkCore;
 using Test.Utilities;
@@ -203,6 +204,52 @@ public class BackgroundJobServiceTests
         Assert.Equal("Maintenance cleanup", job.DisplayName);
         Assert.Equal(BackgroundJobStatus.Pending, job.Status);
         Assert.Equal([job.Id], queue.QueuedJobIds);
+    }
+
+    [Fact]
+    public async Task EnqueueAsync_WritesAuditLog_WhenAuditServiceIsProvided()
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        var factory = new TestDbContextFactory(options);
+        var service = new BackgroundJobService(
+            factory,
+            new CapturingBackgroundJobQueue(),
+            new BackgroundJobCancellationRegistry(),
+            new AuditLogService(factory));
+
+        var job = await service.EnqueueMaintenanceCleanupAsync();
+
+        await using var context = new LuminaPathDbContext(options);
+        var auditLog = await context.AuditLogs.SingleAsync();
+        Assert.Equal(AuditCategories.Admin, auditLog.Category);
+        Assert.Equal(AuditActions.BackgroundJobQueued, auditLog.Action);
+        Assert.Equal(AuditOutcomes.Success, auditLog.Outcome);
+        Assert.Equal("BackgroundJob", auditLog.TargetType);
+        Assert.Equal(job.Id.ToString(), auditLog.TargetId);
+        Assert.Equal("Maintenance cleanup", auditLog.TargetName);
+        Assert.Contains(BackgroundJobTypes.MaintenanceCleanup, auditLog.MetadataJson);
+    }
+
+    [Fact]
+    public async Task CancelAsync_WritesFailureAudit_WhenJobDoesNotExist()
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        var factory = new TestDbContextFactory(options);
+        var service = new BackgroundJobService(
+            factory,
+            new CapturingBackgroundJobQueue(),
+            new BackgroundJobCancellationRegistry(),
+            new AuditLogService(factory));
+
+        var result = await service.CancelAsync(404);
+
+        Assert.True(result.IsError);
+        await using var context = new LuminaPathDbContext(options);
+        var auditLog = await context.AuditLogs.SingleAsync();
+        Assert.Equal(AuditActions.BackgroundJobCanceled, auditLog.Action);
+        Assert.Equal(AuditOutcomes.Failure, auditLog.Outcome);
+        Assert.Equal("404", auditLog.TargetId);
+        Assert.Equal("Background job not found.", auditLog.ErrorMessage);
     }
 
     [Fact]
