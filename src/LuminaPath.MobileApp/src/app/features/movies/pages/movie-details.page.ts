@@ -23,6 +23,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { Movie } from '../models/movies.model';
 import { MovieService } from '../services/movie.service';
+import { MediaStore } from 'src/app/features/library/state/media.store';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 
 const WATCH_STATUS_LABELS: Record<number, string> = {
@@ -54,6 +55,7 @@ export class MovieDetailsPage implements OnInit {
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly movieService = inject(MovieService);
+  private readonly mediaStore = inject(MediaStore);
 
   movie: Movie | null = null;
   isLoading = true;
@@ -126,11 +128,25 @@ export class MovieDetailsPage implements OnInit {
   private async loadMovie(movieId: number): Promise<void> {
     try {
       this.movie = await firstValueFrom(this.movieService.get(movieId));
+      this.syncMediaStore(movieId);
     } catch {
       this.showError('Movie could not be loaded.');
     } finally {
       this.isLoading = false;
     }
+  }
+
+  private syncMediaStore(movieId: number): void {
+    const entry = this.movie?.myMovies ?? null;
+    this.mediaStore.setLibraryEntry(movieId, entry ? {
+      id: entry.id,
+      rating: entry.rating,
+      startDate: entry.startDate,
+      endDate: entry.endDate,
+      status: Number(entry.status ?? 1),
+      timeSpend: entry.timeSpend,
+      currentWatchTimeMinutes: entry.currentWatchTimeMinutes,
+    } : null);
   }
 
   private formatDate(value: Date | string | null | undefined): string {

@@ -36,6 +36,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { LibraryEntryDetails } from '../../models/media-item.model';
+import { MediaStore } from '../../state/media.store';
 import { EPISODIC_MEDIA_ADAPTER, EPISODIC_MEDIA_CONFIG } from './episodic-media.tokens';
 import {
   EpisodicLibraryEntry,
@@ -77,6 +78,7 @@ export class EpisodicMediaDetailsPage implements OnInit {
   private readonly location = inject(Location);
   private readonly alertController = inject(AlertController);
   private readonly actionSheetController = inject(ActionSheetController);
+  private readonly mediaStore = inject(MediaStore);
 
   media: EpisodicMediaView | null = null;
   isLoading = true;
@@ -400,11 +402,25 @@ export class EpisodicMediaDetailsPage implements OnInit {
   private async loadMedia(mediaId: number): Promise<void> {
     try {
       this.media = await firstValueFrom(this.adapter.load(mediaId));
+      this.syncMediaStore(mediaId);
     } catch {
       this.showError(this.config.loadErrorLabel);
     } finally {
       this.isLoading = false;
     }
+  }
+
+  private syncMediaStore(mediaId: number): void {
+    const entry = this.libraryEntry;
+    this.mediaStore.setLibraryEntry(mediaId, entry ? {
+      id: entry.id,
+      rating: entry.rating,
+      startDate: entry.startDate,
+      endDate: entry.endDate,
+      status: Number(entry.status ?? 1),
+      timeSpend: entry.timeSpend,
+      currentEpisode: entry.currentEpisode,
+    } : null);
   }
 
   private formatDate(value: Date | string | null | undefined): string {

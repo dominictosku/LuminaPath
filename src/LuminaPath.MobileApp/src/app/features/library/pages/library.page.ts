@@ -38,6 +38,7 @@ import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
 import { MediaMode, MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
 import { MediaLibraryFacade } from '../services/media-library.facade';
+import { MediaStore } from '../state/media.store';
 import { MediaItem } from '../models/media-item.model';
 import { MediaLibraryForm } from '../models/media-library-form.model';
 import { MediaLibraryViewService } from '../services/media-library-view.service';
@@ -82,6 +83,7 @@ import { LibraryFilterPresetService } from '../services/library-filter-preset.se
 })
 export class LibraryPage implements OnInit {
   private mediaLibrary = inject(MediaLibraryFacade);
+  private mediaStore = inject(MediaStore);
   private releaseNotifications = inject(ReleaseNotificationService);
   private router = inject(Router);
   private mediaModeService = inject(MediaModeService);
@@ -155,6 +157,19 @@ export class LibraryPage implements OnInit {
         this.loadGames();
       }
     });
+    // Mirror store state into local fields. Fires on initial load AND when
+    // any consumer (e.g., a detail page) upserts/patches a cached item, so
+    // the library view stays consistent with mutations that happen elsewhere.
+    effect(() => {
+      this.games = this.mediaStore.items();
+      this.currentPage = this.mediaStore.page();
+      this.totalPages = this.mediaStore.totalPages();
+      const storeError = this.mediaStore.error();
+      if (storeError) {
+        this.errorMessage = storeError;
+      }
+      this.applyLoadedGames();
+    });
     addIcons({
       addOutline,
       albumsOutline,
@@ -180,28 +195,12 @@ export class LibraryPage implements OnInit {
     this.isLoadingMore = false;
     this.errorMessage = '';
 
-    this.mediaLibrary.getAll(this.createPageFilter(1)).subscribe({
-      next: (result) => {
-        this.games = result.data ?? [];
-        this.currentPage = result.pageIndex ?? 1;
-        this.totalPages = result.totalPages ?? 1;
-        this.applyLoadedGames();
-        this.isLoading = false;
-        this.completeRefresh(event);
-        if (this.mediaMode.id === 'games') {
-          this.releaseNotifications.syncForGames(this.gamesForReleaseNotifications());
-        }
-      },
-      error: () => {
-        this.games = [];
-        this.filteredGames = [];
-        this.refreshLibraryIntelligence();
-        this.errorMessage = `${this.mediaMode.label} could not be loaded.`;
-        this.isLoading = false;
-        this.currentPage = 1;
-        this.totalPages = 1;
-        this.completeRefresh(event);
-      },
+    void this.mediaStore.loadCatalog(this.createPageFilter(1)).then(() => {
+      this.isLoading = false;
+      this.completeRefresh(event);
+      if (this.mediaMode.id === 'games') {
+        this.releaseNotifications.syncForGames(this.gamesForReleaseNotifications());
+      }
     });
   }
 
@@ -214,23 +213,12 @@ export class LibraryPage implements OnInit {
     this.isLoadingMore = true;
     this.errorMessage = '';
 
-    this.mediaLibrary.getAll(this.createPageFilter(this.currentPage + 1)).subscribe({
-      next: (result) => {
-        this.games = this.mergeGames(this.games, result.data ?? []);
-        this.currentPage = result.pageIndex ?? this.currentPage + 1;
-        this.totalPages = result.totalPages ?? this.totalPages;
-        this.applyLoadedGames();
-        this.isLoadingMore = false;
-        this.completeInfiniteScroll(event);
-        if (this.mediaMode.id === 'games') {
-          this.releaseNotifications.syncForGames(this.gamesForReleaseNotifications());
-        }
-      },
-      error: () => {
-        this.errorMessage = `More ${this.mediaMode.label.toLowerCase()} could not be loaded.`;
-        this.isLoadingMore = false;
-        this.completeInfiniteScroll(event);
-      },
+    void this.mediaStore.loadNextPage(this.createPageFilter(this.currentPage + 1)).then(() => {
+      this.isLoadingMore = false;
+      this.completeInfiniteScroll(event);
+      if (this.mediaMode.id === 'games') {
+        this.releaseNotifications.syncForGames(this.gamesForReleaseNotifications());
+      }
     });
   }
 
@@ -348,7 +336,7 @@ export class LibraryPage implements OnInit {
     this.selectedGame = null;
   }
 
-  submitAddGame() {
+  async submitAddGame(): Promise<void> {
     const game = this.selectedGame;
 
     if (!game || this.addingGameIds.has(game.id)) {
@@ -360,32 +348,27 @@ export class LibraryPage implements OnInit {
     this.addingGameIds.add(game.id);
 
     const details = this.mediaView.toLibraryEntryDetails(this.addGameForm, this.mediaMode);
-
     const existingMyGame = this.libraryEntry(game);
-    const request = existingMyGame
-      ? this.mediaLibrary.updateLibraryEntry(existingMyGame.id, game.id, details)
-      : this.mediaLibrary.addToLibrary(game.id, details);
 
-    request.subscribe({
-      next: (myGame) => {
-        game.libraryEntry = myGame;
-        this.loadGames();
-        this.successMessage = existingMyGame
-          ? `${game.name} was saved.`
-          : `${game.name} was added to your ${this.mediaMode.singular} list.`;
-        this.addingGameIds.delete(game.id);
-        this.isAddDialogOpen = false;
-        this.selectedGame = null;
-        this.triggerAddHaptic();
-        if (this.mediaMode.id === 'games') {
-          this.releaseNotifications.syncForGames(this.gamesForReleaseNotifications());
-        }
-      },
-      error: (error) => {
-        this.errorMessage = this.addGameErrorMessage(error);
-        this.addingGameIds.delete(game.id);
-      },
-    });
+    try {
+      if (existingMyGame) {
+        await this.mediaStore.updateLibraryEntry(existingMyGame.id, game.id, details);
+        this.successMessage = `${game.name} was saved.`;
+      } else {
+        await this.mediaStore.addToLibrary(game.id, details);
+        this.successMessage = `${game.name} was added to your ${this.mediaMode.singular} list.`;
+      }
+      this.isAddDialogOpen = false;
+      this.selectedGame = null;
+      this.triggerAddHaptic();
+      if (this.mediaMode.id === 'games') {
+        this.releaseNotifications.syncForGames(this.gamesForReleaseNotifications());
+      }
+    } catch (error) {
+      this.errorMessage = this.addGameErrorMessage(error);
+    } finally {
+      this.addingGameIds.delete(game.id);
+    }
   }
 
   isAdding(game: MediaItem): boolean {

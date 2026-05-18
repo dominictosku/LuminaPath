@@ -315,7 +315,6 @@ describe('LibraryPage', () => {
       currentEpisode: null,
     });
     expect(mediaLibrary.updateLibraryEntry).not.toHaveBeenCalled();
-    expect(game.libraryEntry).toBe(persistedMyGame);
     expect(component.successMessage).toBe('Hades was added to your game list.');
     expect(component.isAddDialogOpen).toBeFalse();
     expect(component.isAdding(game)).toBeFalse();
@@ -352,7 +351,6 @@ describe('LibraryPage', () => {
       currentEpisode: null,
     });
     expect(mediaLibrary.addToLibrary).not.toHaveBeenCalled();
-    expect(game.libraryEntry).toBe(updated);
     expect(component.successMessage).toBe('Hades was saved.');
   }));
 

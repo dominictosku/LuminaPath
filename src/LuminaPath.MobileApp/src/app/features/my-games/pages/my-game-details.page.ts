@@ -60,6 +60,7 @@ import { Game, GameNewsItem, GameSummary, platformLabelFromValue } from 'src/app
 import { MyGameService, UserGameAchievement } from 'src/app/features/my-games/services/my-game.service';
 import { Quest, QuestBoardService, QuestType } from 'src/app/features/quests/services/quest-board.service';
 import { GameForecast, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
+import { MediaStore } from 'src/app/features/library/state/media.store';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 
 const STATUS_LABELS: Record<number, string> = {
@@ -120,6 +121,7 @@ export class MyGameDetailsPage implements OnInit {
   private readonly sessionService = inject(GamingSessionService);
   private readonly alertController = inject(AlertController);
   private readonly actionSheetController = inject(ActionSheetController);
+  private readonly mediaStore = inject(MediaStore);
 
   game: GameWithFlexibleLibrary | null = null;
   quests: Quest[] = [];
@@ -708,12 +710,26 @@ export class MyGameDetailsPage implements OnInit {
 
     try {
       this.game = await firstValueFrom(this.gameService.get(gameId));
+      this.syncMediaStore(gameId);
       await this.refreshQuests();
     } catch {
       this.showError('Game could not be loaded.');
     } finally {
       this.isLoading = false;
     }
+  }
+
+  private syncMediaStore(gameId: number): void {
+    const entry = this.libraryEntry;
+    this.mediaStore.setLibraryEntry(gameId, entry ? {
+      id: entry.id ?? 0,
+      rating: entry.rating ?? null,
+      startDate: entry.startDate ?? null,
+      endDate: entry.endDate ?? null,
+      status: Number(entry.status ?? 1),
+      timeSpend: entry.timeSpend ?? null,
+      personalNotes: entry.personalNotes ?? null,
+    } : null);
   }
 
   private async refreshQuests(): Promise<void> {
