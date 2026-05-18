@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { ApiService } from 'src/app/shared/services/api.service';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 import { MyGame } from '../../games/models/games.model';
+import { UserGameAchievement } from '../models/my-game.model';
 
 export type AddMyGameRequest = {
   id: number;
@@ -13,21 +14,6 @@ export type AddMyGameRequest = {
   startDate?: Date | string | null;
   endDate?: Date | string | null;
   personalNotes?: string | null;
-};
-
-export type UserGameAchievement = {
-  id: number;
-  gameAchievementId: number;
-  provider: number;
-  providerName: string;
-  sourceAchievementId: string;
-  title: string;
-  description?: string | null;
-  iconUrl?: string | null;
-  isHidden: boolean;
-  trophyType?: string | null;
-  unlockedAt?: string | null;
-  syncedAt: string;
 };
 
 @Injectable({

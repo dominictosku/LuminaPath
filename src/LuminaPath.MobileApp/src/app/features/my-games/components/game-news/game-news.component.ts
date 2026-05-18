@@ -5,6 +5,7 @@ import {
   IonIcon,
   IonSkeletonText,
 } from '@ionic/angular/standalone';
+import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
 import { addIcons } from 'ionicons';
 import { newspaperOutline, openOutline, refreshOutline } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
@@ -17,7 +18,7 @@ import { formatShortDate } from 'src/app/shared/utils/format';
   selector: 'app-game-news',
   templateUrl: './game-news.component.html',
   styleUrls: ['../../pages/my-game-details.page.scss'],
-  imports: [IonBadge, IonButton, IonIcon, IonSkeletonText],
+  imports: [IonBadge, IonButton, IonIcon, IonSkeletonText, EmptyStateComponent],
 })
 export class GameNewsComponent implements OnChanges {
   private readonly gameService = inject(GameService);

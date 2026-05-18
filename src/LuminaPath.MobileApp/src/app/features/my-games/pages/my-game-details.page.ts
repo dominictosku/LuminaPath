@@ -40,8 +40,13 @@ import {
 import { firstValueFrom } from 'rxjs';
 
 import { GameService } from 'src/app/features/games/services/game.service';
-import { Game, GameSummary, platformLabelFromValue } from 'src/app/features/games/models/games.model';
-import { MyGameService, UserGameAchievement } from 'src/app/features/my-games/services/my-game.service';
+import { GameSummary, platformLabelFromValue } from 'src/app/features/games/models/games.model';
+import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
+import {
+  GameLibraryEntry,
+  GameWithFlexibleLibrary,
+  UserGameAchievement,
+} from 'src/app/features/my-games/models/my-game.model';
 import { GameForecast, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
 import { gameStatusLabel } from 'src/app/features/library/models/library-status.model';
 import { MediaStore } from 'src/app/features/library/state/media.store';
@@ -50,20 +55,7 @@ import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { GameNewsComponent } from '../components/game-news/game-news.component';
 import { GameNotesComponent } from '../components/game-notes/game-notes.component';
 import { GameQuestsComponent } from '../components/game-quests/game-quests.component';
-
-type GameWithFlexibleLibrary = Game & {
-  myGames?: GameLibraryEntry | GameLibraryEntry[] | null;
-};
-
-type GameLibraryEntry = {
-  id?: number;
-  status?: number;
-  timeSpend?: number | null;
-  rating?: number | null;
-  startDate?: Date | string | null;
-  endDate?: Date | string | null;
-  personalNotes?: string | null;
-};
+import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-my-game-details',
@@ -87,6 +79,7 @@ type GameLibraryEntry = {
     GameNewsComponent,
     GameNotesComponent,
     GameQuestsComponent,
+    EmptyStateComponent,
   ],
 })
 export class MyGameDetailsPage implements OnInit {

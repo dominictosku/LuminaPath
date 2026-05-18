@@ -38,11 +38,11 @@
           <div class="markdown-body" [innerHTML]="renderedPersonalNotes"></div>
         </div>
       } @else {
-        <div class="empty-state empty-state--notes">
-          <ion-icon name="document-text-outline"></ion-icon>
-          <strong>No notes yet</strong>
-          <span>Keep builds, memories, route ideas, or post-game thoughts here.</span>
-        </div>
+        <app-empty-state
+          variant="notes"
+          icon="document-text-outline"
+          title="No notes yet"
+          message="Keep builds, memories, route ideas, or post-game thoughts here." />
       }
     } @else {
       <div class="notes-editor">
@@ -63,10 +63,10 @@
       </div>
     }
   } @else {
-    <div class="empty-state empty-state--locked">
-      <ion-icon name="library-outline"></ion-icon>
-      <strong>Notes are locked</strong>
-      <span>Add this game to your library to keep personal notes.</span>
-    </div>
+    <app-empty-state
+      variant="locked"
+      icon="library-outline"
+      title="Notes are locked"
+      message="Add this game to your library to keep personal notes." />
   }
 </section>

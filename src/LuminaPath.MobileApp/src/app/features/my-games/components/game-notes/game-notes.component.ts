@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonButton, IonIcon } from '@ionic/angular/standalone';
+import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
 import { addIcons } from 'ionicons';
 import {
   closeOutline,
@@ -15,7 +16,7 @@ import {
   selector: 'app-game-notes',
   templateUrl: './game-notes.component.html',
   styleUrls: ['../../pages/my-game-details.page.scss'],
-  imports: [FormsModule, IonButton, IonIcon],
+  imports: [FormsModule, IonButton, IonIcon, EmptyStateComponent],
 })
 export class GameNotesComponent {
   @Input({ required: true }) isInLibrary = false;

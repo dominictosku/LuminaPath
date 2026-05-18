@@ -7,6 +7,7 @@ import {
   IonSelect,
   IonSelectOption,
 } from '@ionic/angular/standalone';
+import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
 import { addIcons } from 'ionicons';
 import {
   addOutline,
@@ -25,7 +26,7 @@ import { Quest, QuestBoardService, QuestType } from 'src/app/features/quests/ser
   selector: 'app-game-quests',
   templateUrl: './game-quests.component.html',
   styleUrls: ['../../pages/my-game-details.page.scss'],
-  imports: [FormsModule, IonBadge, IonButton, IonIcon, IonSelect, IonSelectOption],
+  imports: [FormsModule, IonBadge, IonButton, IonIcon, IonSelect, IonSelectOption, EmptyStateComponent],
 })
 export class GameQuestsComponent implements OnChanges {
   private readonly questBoardService = inject(QuestBoardService);

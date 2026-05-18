@@ -66,10 +66,11 @@
         </div>
       }
     } @else {
-      <div class="empty-state empty-state--quest-starter">
-        <ion-icon name="link-outline"></ion-icon>
-        <strong>No quests yet</strong>
-        <span>Pick a starter or write your own below.</span>
+      <app-empty-state
+        variant="quest-starter"
+        icon="link-outline"
+        title="No quests yet"
+        message="Pick a starter or write your own below.">
         <div class="quest-starter-row">
           @for (suggestion of questStarters; track suggestion.title) {
             <button
@@ -82,7 +83,7 @@
             </button>
           }
         </div>
-      </div>
+      </app-empty-state>
     }
     <div class="quest-input">
       <input
@@ -102,10 +103,10 @@
       </ion-button>
     </div>
   } @else {
-    <div class="empty-state empty-state--locked">
-      <ion-icon name="game-controller-outline"></ion-icon>
-      <strong>Quest tracking is locked</strong>
-      <span>This game needs to be in your library before quests can be attached.</span>
-    </div>
+    <app-empty-state
+      variant="locked"
+      icon="game-controller-outline"
+      title="Quest tracking is locked"
+      message="This game needs to be in your library before quests can be attached." />
   }
 </section>

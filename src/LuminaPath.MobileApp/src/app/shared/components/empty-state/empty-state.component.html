@@ -1,0 +1,16 @@
+<div
+  class="empty-state"
+  [class.empty-state--locked]="variant() === 'locked'"
+  [class.empty-state--notes]="variant() === 'notes'"
+  [class.empty-state--quest-starter]="variant() === 'quest-starter'">
+  @if (loading()) {
+    <ion-spinner name="crescent"></ion-spinner>
+  } @else if (icon()) {
+    <ion-icon [name]="icon()!"></ion-icon>
+  }
+  <strong>{{ title() }}</strong>
+  @if (message()) {
+    <span>{{ message() }}</span>
+  }
+  <ng-content />
+</div>

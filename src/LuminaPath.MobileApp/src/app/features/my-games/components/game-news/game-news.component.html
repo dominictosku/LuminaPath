@@ -24,18 +24,17 @@
     </div>
   }
   @if (!isLoading && errorMessage) {
-    <div class="empty-state empty-state--locked">
-      <ion-icon name="newspaper-outline"></ion-icon>
-      <strong>News unavailable</strong>
-      <span>{{ errorMessage }}</span>
-    </div>
+    <app-empty-state
+      variant="locked"
+      icon="newspaper-outline"
+      title="News unavailable"
+      [message]="errorMessage" />
   }
   @if (!isLoading && !errorMessage && loaded && !newsItems.length) {
-    <div class="empty-state">
-      <ion-icon name="newspaper-outline"></ion-icon>
-      <strong>No news found</strong>
-      <span>There are no recent updates for {{ gameName() }} yet.</span>
-    </div>
+    <app-empty-state
+      icon="newspaper-outline"
+      title="No news found"
+      [message]="'There are no recent updates for ' + gameName() + ' yet.'" />
   }
   @if (!isLoading && newsProviderFilters.length > 1) {
     <div class="news-filters">
@@ -58,11 +57,10 @@
     </div>
   }
   @if (!isLoading && newsItems.length && !filteredNewsItems.length) {
-    <div class="empty-state">
-      <ion-icon name="newspaper-outline"></ion-icon>
-      <strong>No matches</strong>
-      <span>Nothing from this source — try another filter.</span>
-    </div>
+    <app-empty-state
+      icon="newspaper-outline"
+      title="No matches"
+      message="Nothing from this source — try another filter." />
   }
   @if (!isLoading && filteredNewsItems.length) {
     <div class="news-list">

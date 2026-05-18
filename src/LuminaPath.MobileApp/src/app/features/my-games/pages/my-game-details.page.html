@@ -228,25 +228,24 @@
             <ion-badge>{{ achievementSummaryLabel }}</ion-badge>
           </header>
           @if (isAchievementsLoading) {
-            <div class="empty-state empty-state--locked">
-              <ion-spinner name="crescent"></ion-spinner>
-              <strong>Loading trophies</strong>
-              <span>Checking the achievements synced for this game.</span>
-            </div>
+            <app-empty-state
+              variant="locked"
+              [loading]="true"
+              title="Loading trophies"
+              message="Checking the achievements synced for this game." />
           }
           @if (!isAchievementsLoading && achievementsErrorMessage) {
-            <div class="empty-state empty-state--locked">
-              <ion-icon name="alert-circle-outline"></ion-icon>
-              <strong>Trophies unavailable</strong>
-              <span>{{ achievementsErrorMessage }}</span>
-            </div>
+            <app-empty-state
+              variant="locked"
+              icon="alert-circle-outline"
+              title="Trophies unavailable"
+              [message]="achievementsErrorMessage" />
           }
           @if (!isAchievementsLoading && !achievementsErrorMessage && !achievements.length) {
-            <div class="empty-state">
-              <ion-icon name="trophy-outline"></ion-icon>
-              <strong>No trophies synced yet</strong>
-              <span>Run a Steam or PSN sync to fill this shelf.</span>
-            </div>
+            <app-empty-state
+              icon="trophy-outline"
+              title="No trophies synced yet"
+              message="Run a Steam or PSN sync to fill this shelf." />
           }
           @if (!isAchievementsLoading && !achievementsErrorMessage && achievements.length) {
             <div class="trophy-grid">

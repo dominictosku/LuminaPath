@@ -47,44 +47,13 @@ import {
   remainingHoursOfGame,
 } from '../../games/domain/game-library-metrics';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
-
-type DashboardMetric = {
-  label: string;
-  value: string;
-  detail: string;
-  icon: string;
-  tone: 'blue' | 'green' | 'amber' | 'rose';
-};
-
-type MediaKind = 'Game' | 'Anime' | 'Movie' | 'Series';
-
-type DashboardMediaItem = {
-  id: number;
-  kind: MediaKind;
-  name: string;
-  description?: string | null;
-  genre?: string | null;
-  releaseDate: Date | string | null;
-  image: MediaFile | null;
-  status: number;
-  estimatedHours: number;
-  playedHours: number;
-  remainingHours: number;
-  context: string;
-};
-
-type DashboardFocusItem = {
-  title: string;
-  detail: string;
-  icon: string;
-  tone: 'blue' | 'green' | 'amber' | 'rose';
-};
-
-type DashboardActivityItem = {
-  title: string;
-  detail: string;
-  icon: string;
-};
+import {
+  DashboardActivityItem,
+  DashboardFocusItem,
+  DashboardMediaItem,
+  DashboardMediaKind,
+  DashboardMetric,
+} from '../models/dashboard.model';
 
 @Component({
   selector: 'app-home',
@@ -464,7 +433,7 @@ export class HomePage implements OnInit {
   }
 
   private fromWatchMedia(
-    kind: MediaKind,
+    kind: DashboardMediaKind,
     media: Anime | Movie | Series,
     status: number | null | undefined,
     expectedMinutes: number | null | undefined,

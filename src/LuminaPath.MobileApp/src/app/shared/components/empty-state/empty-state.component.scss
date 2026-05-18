@@ -1,0 +1,26 @@
+/* Mirrors the .empty-state styles in my-game-details.page.scss so pages
+   can adopt the shared component without depending on page-level SCSS.
+   Once all sites migrate, the duplicates in page SCSS can be removed. */
+.empty-state {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  padding: 26px 18px;
+  border: 1px dashed rgba(137, 180, 255, 0.26);
+  border-radius: 20px;
+  color: var(--muted);
+  text-align: center;
+
+  ion-icon {
+    color: var(--accent-strong);
+    font-size: 34px;
+  }
+
+  ion-spinner {
+    color: var(--accent-strong);
+  }
+
+  strong {
+    color: var(--text);
+  }
+}
