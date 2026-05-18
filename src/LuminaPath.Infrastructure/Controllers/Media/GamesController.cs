@@ -5,7 +5,6 @@ using LuminaPath.Infrastructure.Controllers.Base;
 using LuminaPath.Infrastructure.Services.Application;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace LuminaPath.Infrastructure.Controllers
 {
@@ -21,10 +20,7 @@ namespace LuminaPath.Infrastructure.Controllers
 
         public override async Task<ActionResult<GamesDto>> GetById(int? id)
         {
-            var userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var detailIncludes = Includes.Concat(new[] { nameof(Game.ParentGame), nameof(Game.Dlcs) });
-            var result = await MediaService.GetByIdAndMap<GamesDto>(id, detailIncludes, userId);
-            return Ok(result);
+            return await GetByIdWithIncludes(id, nameof(Game.ParentGame), nameof(Game.Dlcs));
         }
 
         [HttpGet("{id:int}/news")]

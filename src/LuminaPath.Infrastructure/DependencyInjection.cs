@@ -5,7 +5,6 @@ using LuminaPath.Infrastructure.Configuration;
 using LuminaPath.Infrastructure.Hubs;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services;
-using LuminaPath.Infrastructure.Services.Application;
 using LuminaPath.Infrastructure.Services.AiChat;
 using LuminaPath.Infrastructure.Services.Auditing;
 using LuminaPath.Infrastructure.Services.Third_Party;
@@ -14,9 +13,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,8 +27,8 @@ namespace LuminaPath.Infrastructure
 
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
         {
-            AddDatabase(services, config);
-            AddDefaultIdentity(services, config);
+            services.AddPersistence(config);
+            services.AddLuminaIdentity(config);
             services.AddApplicationServices(config);
             services.AddThirdPartyIntegrations(config);
             services.AddAiChatServices(config);
@@ -92,18 +89,6 @@ namespace LuminaPath.Infrastructure
             }
         }
 
-        private static void AddDatabase(IServiceCollection services, IConfiguration config)
-        {
-            var connectionString = ConfigurationValues.FirstNonEmpty(config.GetConnectionString("Default"), config["POSTGRESQL_DB"])
-                ?? throw new InvalidOperationException("Missing database connection string. Set ConnectionStrings__Default.");
-
-            services.AddDbContextFactory<LuminaPathDbContext>((serviceProvider, options) =>
-                options
-                    .UseNpgsql(connectionString)
-                    .AddInterceptors(serviceProvider.GetRequiredService<AuditSaveChangesInterceptor>()));
-            services.AddScoped<ILuminaPathDbContext, LuminaPathDbContext>();
-        }
-
         private static void AddCache(IServiceCollection services, IConfiguration config)
         {
             var redisConnection = ConfigurationValues.FirstNonEmpty(
@@ -117,52 +102,6 @@ namespace LuminaPath.Infrastructure
                 options.Configuration = redisConnection;
                 options.InstanceName = "LuminaPath:";
             });
-        }
-
-        private static void AddDefaultIdentity(IServiceCollection services, IConfiguration config)
-        {
-            services.AddAuthorization();
-            services.AddIdentityApiEndpoints<LuminaUser>(options =>
-            {
-                options.Password.RequireDigit = true;
-                options.Password.RequireLowercase = false;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequireUppercase = false;
-                options.Password.RequiredLength = 6;
-                options.Password.RequiredUniqueChars = 1;
-
-                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(120);
-                options.Lockout.MaxFailedAccessAttempts = 10;
-
-                options.SignIn.RequireConfirmedAccount = false;
-                options.User.AllowedUserNameCharacters =
-                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
-                options.User.RequireUniqueEmail = true;
-            })
-                .AddRoles<IdentityRole>()
-                .AddEntityFrameworkStores<LuminaPathDbContext>()
-                .AddSignInManager()
-                .AddDefaultTokenProviders();
-
-            services.ConfigureApplicationCookie(options =>
-            {
-                options.Cookie.SameSite = ParseSameSiteMode(config["Auth:CookieSameSite"], SameSiteMode.None);
-                options.Cookie.SecurePolicy = ParseCookieSecurePolicy(config["Auth:CookieSecurePolicy"], CookieSecurePolicy.Always);
-            });
-        }
-
-        private static SameSiteMode ParseSameSiteMode(string? value, SameSiteMode fallback)
-        {
-            return Enum.TryParse<SameSiteMode>(value, ignoreCase: true, out var parsed)
-                ? parsed
-                : fallback;
-        }
-
-        private static CookieSecurePolicy ParseCookieSecurePolicy(string? value, CookieSecurePolicy fallback)
-        {
-            return Enum.TryParse<CookieSecurePolicy>(value, ignoreCase: true, out var parsed)
-                ? parsed
-                : fallback;
         }
 
         private static async Task ConfigureEnvironment(WebApplication app)
@@ -223,79 +162,6 @@ namespace LuminaPath.Infrastructure
                 options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider());
                 options.Filters.Add<FluentValidationActionFilter>();
             });
-        }
-
-        public static void ConfigureServer(this WebApplication app)
-        {
-            app.MapControllers();
-            app.MapHub<DirectMessageHub>("/hubs/messages");
-            app.MapGroup("/api")
-                .MapIdentityApi<LuminaUser>();
-            app.MapPost("/api/logout", async (SignInManager<LuminaUser> signInManager, [FromBody] object empty) =>
-                {
-                    if (empty != null)
-                    {
-                        await signInManager.SignOutAsync();
-                        return Results.Ok();
-                    }
-
-                    return Results.Unauthorized();
-                })
-                .RequireAuthorization();
-
-            app.MapGet("/api/admin/database-backups/{fileName}/download", DownloadDatabaseBackupAsync)
-                .RequireAuthorization(policy => policy.RequireRole("Administrator"));
-
-            app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "LuminaPath" }))
-                .AllowAnonymous();
-        }
-
-        private static async Task<IResult> DownloadDatabaseBackupAsync(
-            HttpContext context,
-            string fileName,
-            DatabaseBackupService backupService,
-            AuditLogService auditLog,
-            CancellationToken cancellationToken)
-        {
-            var actor = AuditLogService.ActorFromPrincipal(context.User);
-            var backup = await backupService.GetBackupAsync(fileName, cancellationToken);
-            if (backup is null)
-            {
-                await auditLog.RecordAsync(new AuditLogEntry
-                {
-                    Category = AuditCategories.Admin,
-                    Action = AuditActions.DatabaseBackupDownloaded,
-                    Outcome = AuditOutcomes.Failure,
-                    Actor = actor,
-                    TargetType = "DatabaseBackup",
-                    TargetId = fileName,
-                    TargetName = fileName,
-                    ErrorMessage = "Database backup was not found."
-                }, cancellationToken);
-
-                return Results.NotFound();
-            }
-
-            await auditLog.RecordAsync(new AuditLogEntry
-            {
-                Category = AuditCategories.Admin,
-                Action = AuditActions.DatabaseBackupDownloaded,
-                Outcome = AuditOutcomes.Success,
-                Actor = actor,
-                TargetType = "DatabaseBackup",
-                TargetId = backup.FileName,
-                TargetName = backup.FileName,
-                Metadata = new
-                {
-                    sizeBytes = backup.SizeBytes,
-                    createdAt = backup.CreatedAt
-                }
-            }, cancellationToken);
-
-            return Results.File(
-                backup.FullPath,
-                contentType: "application/octet-stream",
-                fileDownloadName: backup.FileName);
         }
     }
 }

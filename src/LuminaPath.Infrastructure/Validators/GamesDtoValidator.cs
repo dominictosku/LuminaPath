@@ -1,5 +1,6 @@
 using FluentValidation;
 using LuminaPath.Core.Dtos;
+using LuminaPath.Infrastructure.Validators.Rules;
 
 namespace LuminaPath.Infrastructure.Validators
 {
@@ -7,9 +8,7 @@ namespace LuminaPath.Infrastructure.Validators
     {
         public GamesDtoValidator()
         {
-            RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("Title is required")
-                .Length(2, 50);
+            this.AddTitleRules(x => x.Name);
         }
     }
 }

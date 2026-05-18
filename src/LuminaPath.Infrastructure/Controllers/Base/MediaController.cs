@@ -33,8 +33,16 @@ public abstract class MediaController<TMedia, TMediaDto, TService, TUserMedia> :
     [HttpGet("{id}")]
     public override async Task<ActionResult<TMediaDto>> GetById(int? id)
     {
+        return await GetByIdWithIncludes(id);
+    }
+
+    protected async Task<ActionResult<TMediaDto>> GetByIdWithIncludes(int? id, params string[] extraIncludes)
+    {
         var userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var result = await MediaService.GetByIdAndMap<TMediaDto>(id, Includes, userId);
+        var includes = extraIncludes.Length == 0
+            ? Includes
+            : Includes.Concat(extraIncludes);
+        var result = await MediaService.GetByIdAndMap<TMediaDto>(id, includes, userId);
         return Ok(result);
     }
 }
