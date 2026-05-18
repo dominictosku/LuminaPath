@@ -11,6 +11,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { GameNewsItem } from 'src/app/features/games/models/games.model';
 import { GameService } from 'src/app/features/games/services/game.service';
+import { formatShortDate } from 'src/app/shared/utils/format';
 
 @Component({
   selector: 'app-game-news',
@@ -66,18 +67,7 @@ export class GameNewsComponent implements OnChanges {
   }
 
   newsDateLabel(item: GameNewsItem): string {
-    if (!item.publishedAt) {
-      return 'Recent';
-    }
-    const date = new Date(item.publishedAt);
-    if (Number.isNaN(date.getTime())) {
-      return 'Recent';
-    }
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
+    return formatShortDate(item.publishedAt, 'Recent');
   }
 
   providerLabel(item: GameNewsItem): string {

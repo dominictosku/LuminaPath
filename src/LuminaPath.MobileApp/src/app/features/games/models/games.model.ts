@@ -1,4 +1,4 @@
-import { type IBasicInfo } from "src/app/core/interfaces/iBasicInfo";
+import { type IBasicInfo } from "src/app/core/entities/iBasicInfo";
 import { type IGame } from "../interfaces/iGames";
 import { MediaFile } from "../../library/models/mediaFile.model";
 

@@ -1,7 +1,7 @@
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 import { PaginateResult } from 'src/app/core/entities/paginatedResult';
 import { Credentials } from 'src/app/core/auth/models/user.model';
-import { IBasicInfo } from 'src/app/core/interfaces/iBasicInfo';
+import { IBasicInfo } from 'src/app/core/entities/iBasicInfo';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiEndpointService } from './api-endpoint.service';

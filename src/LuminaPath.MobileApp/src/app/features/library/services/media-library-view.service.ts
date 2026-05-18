@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { formatHoursMinutes } from 'src/app/shared/utils/format';
 import { platformLabelFromValue } from '../../games/models/games.model';
 import { LibraryEntryDetails, MediaItem, UserMediaEntry } from '../models/media-item.model';
 import { MediaLibraryForm, MediaStatusOption } from '../models/media-library-form.model';
@@ -119,17 +120,7 @@ export class MediaLibraryViewService {
     }
 
     const minutes = Number(item.expectedWatchTimeMinutes) || Math.round((Number(item.playtime) || 0) * 60);
-    if (minutes <= 0) {
-      return 'No estimate';
-    }
-
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return hours > 0 && remainingMinutes > 0
-      ? `${hours}h ${remainingMinutes}m`
-      : hours > 0
-        ? `${hours}h`
-        : `${remainingMinutes}m`;
+    return formatHoursMinutes(minutes);
   }
 
   episodeLabel(item: MediaItem, mode: MediaModeOption): string {

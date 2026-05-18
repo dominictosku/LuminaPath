@@ -24,6 +24,7 @@ import { firstValueFrom } from 'rxjs';
 import { Movie } from '../models/movies.model';
 import { MovieService } from '../services/movie.service';
 import { MediaStore } from 'src/app/features/library/state/media.store';
+import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 
 const WATCH_STATUS_LABELS: Record<number, string> = {
@@ -95,15 +96,15 @@ export class MovieDetailsPage implements OnInit {
   }
 
   get releaseLabel(): string {
-    return this.formatDate(this.movie?.releaseDate);
+    return formatShortDate(this.movie?.releaseDate);
   }
 
   get watchTimeLabel(): string {
-    return this.formatMinutes(this.movie?.expectedWatchTimeMinutes);
+    return formatHoursMinutes(this.movie?.expectedWatchTimeMinutes);
   }
 
   get watchedLabel(): string {
-    return this.formatMinutes(this.movie?.myMovies?.currentWatchTimeMinutes);
+    return formatHoursMinutes(this.movie?.myMovies?.currentWatchTimeMinutes);
   }
 
   get progress(): number {
@@ -147,33 +148,6 @@ export class MovieDetailsPage implements OnInit {
       timeSpend: entry.timeSpend,
       currentWatchTimeMinutes: entry.currentWatchTimeMinutes,
     } : null);
-  }
-
-  private formatDate(value: Date | string | null | undefined): string {
-    if (!value) {
-      return 'No release date';
-    }
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return 'No release date';
-    }
-
-    return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
-  }
-
-  private formatMinutes(value: number | null | undefined): string {
-    const minutes = Number(value) || 0;
-    if (minutes <= 0) {
-      return 'No estimate';
-    }
-
-    const hours = Math.floor(minutes / 60);
-    const remaining = minutes % 60;
-    if (hours > 0 && remaining > 0) {
-      return `${hours}h ${remaining}m`;
-    }
-    return hours > 0 ? `${hours}h` : `${remaining}m`;
   }
 
   private showError(message: string): void {

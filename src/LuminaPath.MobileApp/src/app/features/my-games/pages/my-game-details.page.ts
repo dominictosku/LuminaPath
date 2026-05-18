@@ -43,20 +43,13 @@ import { GameService } from 'src/app/features/games/services/game.service';
 import { Game, GameSummary, platformLabelFromValue } from 'src/app/features/games/models/games.model';
 import { MyGameService, UserGameAchievement } from 'src/app/features/my-games/services/my-game.service';
 import { GameForecast, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
+import { gameStatusLabel } from 'src/app/features/library/models/library-status.model';
 import { MediaStore } from 'src/app/features/library/state/media.store';
+import { formatShortDate } from 'src/app/shared/utils/format';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { GameNewsComponent } from '../components/game-news/game-news.component';
 import { GameNotesComponent } from '../components/game-notes/game-notes.component';
 import { GameQuestsComponent } from '../components/game-quests/game-quests.component';
-
-const STATUS_LABELS: Record<number, string> = {
-  0: 'On hold',
-  1: 'Planned',
-  2: 'Playing',
-  3: 'Story complete',
-  4: 'Completed',
-  5: 'Main game',
-};
 
 type GameWithFlexibleLibrary = Game & {
   myGames?: GameLibraryEntry | GameLibraryEntry[] | null;
@@ -178,7 +171,7 @@ export class MyGameDetailsPage implements OnInit {
 
   get statusLabel(): string {
     const status = this.libraryEntry?.status;
-    return status == null ? 'Catalog' : STATUS_LABELS[Number(status)] ?? 'Catalog';
+    return status == null ? 'Catalog' : gameStatusLabel(Number(status));
   }
 
   get platformLabel(): string {
@@ -191,20 +184,7 @@ export class MyGameDetailsPage implements OnInit {
   }
 
   get releaseLabel(): string {
-    if (!this.game?.releaseDate) {
-      return 'No release date';
-    }
-
-    const date = new Date(this.game.releaseDate);
-    if (Number.isNaN(date.getTime())) {
-      return 'No release date';
-    }
-
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
+    return formatShortDate(this.game?.releaseDate);
   }
 
   get playtimeLabel(): string {
@@ -220,18 +200,7 @@ export class MyGameDetailsPage implements OnInit {
   }
 
   dlcReleaseLabel(dlc: GameSummary): string {
-    if (!dlc.releaseDate) {
-      return 'No release date';
-    }
-    const date = new Date(dlc.releaseDate);
-    if (Number.isNaN(date.getTime())) {
-      return 'No release date';
-    }
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
+    return formatShortDate(dlc.releaseDate);
   }
 
   dlcImageUrl(dlc: GameSummary): string {
@@ -258,16 +227,7 @@ export class MyGameDetailsPage implements OnInit {
 
   achievementDateLabel(achievement: UserGameAchievement): string {
     const dateValue = achievement.unlockedAt ?? achievement.syncedAt;
-    const date = dateValue ? new Date(dateValue) : null;
-    if (!date || Number.isNaN(date.getTime())) {
-      return 'Synced recently';
-    }
-
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
+    return formatShortDate(dateValue, 'Synced recently');
   }
 
   trophyTypeLabel(value?: string | null): string {
@@ -520,7 +480,7 @@ export class MyGameDetailsPage implements OnInit {
     }
     if (this.forecast.projectedCompletionDate) {
       const sessions = this.forecast.sessionsToCompletion ?? 0;
-      const date = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(this.forecast.projectedCompletionDate));
+      const date = formatShortDate(this.forecast.projectedCompletionDate);
       return `${sessions} session${sessions === 1 ? '' : 's'} to finish · ETA ${date}`;
     }
     if (this.forecast.weeksAtCurrentPace != null) {

@@ -37,6 +37,7 @@ import { GameStatus } from '../../library/models/library-status.model';
 import { MediaLibraryFacade } from '../../library/services/media-library.facade';
 import { BrowseGroup, BrowseItem, BrowseKind } from '../models/browse.model';
 import { BrowseService } from '../services/browse.service';
+import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
 
 const SEASONS = [
   { name: 'Winter', startMonth: 0 },
@@ -341,16 +342,7 @@ export class BrowsePage implements OnInit {
   }
 
   releaseLabel(item: BrowseItem): string {
-    const date = this.releaseDate(item);
-    if (!date) {
-      return 'No date';
-    }
-
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
+    return formatShortDate(this.releaseDate(item), 'No date');
   }
 
   detailsLabel(item: BrowseItem): string {
@@ -361,7 +353,7 @@ export class BrowsePage implements OnInit {
     }
 
     const episodes = Number(item.episodeCount) || 0;
-    const watchTime = this.formatMinutes(item.expectedWatchTimeMinutes);
+    const watchTime = formatHoursMinutes(item.expectedWatchTimeMinutes, '');
     if (episodes > 0 && watchTime) {
       return `${episodes} episodes · ${watchTime}`;
     }
@@ -526,18 +518,4 @@ export class BrowsePage implements OnInit {
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
-  private formatMinutes(value: number | null | undefined): string {
-    const minutes = Number(value) || 0;
-    if (minutes <= 0) {
-      return '';
-    }
-
-    const hours = Math.floor(minutes / 60);
-    const remaining = minutes % 60;
-    if (hours > 0 && remaining > 0) {
-      return `${hours}h ${remaining}m`;
-    }
-
-    return hours > 0 ? `${hours}h` : `${remaining}m`;
-  }
 }

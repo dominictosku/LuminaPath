@@ -35,6 +35,7 @@ import {
 } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
+import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
 import { LibraryEntryDetails } from '../../models/media-item.model';
 import { MediaStore } from '../../state/media.store';
 import { EPISODIC_MEDIA_ADAPTER, EPISODIC_MEDIA_CONFIG } from './episodic-media.tokens';
@@ -143,12 +144,12 @@ export class EpisodicMediaDetailsPage implements OnInit {
   }
 
   get releaseLabel(): string {
-    return this.formatDate(this.media?.releaseDate);
+    return formatShortDate(this.media?.releaseDate);
   }
 
   get fourthMetaLabel(): string {
     const value = this.media?.[this.config.fourthMetaSource] ?? null;
-    const formatted = this.formatMinutes(value);
+    const formatted = formatHoursMinutes(value);
     if (this.config.perEpisodeSuffix && value != null && Number(value) > 0) {
       return `${formatted} ${this.config.perEpisodeSuffix}`;
     }
@@ -231,7 +232,7 @@ export class EpisodicMediaDetailsPage implements OnInit {
   }
 
   seasonReleaseLabel(season: EpisodicMediaSummary): string {
-    return this.formatDate(season.releaseDate);
+    return formatShortDate(season.releaseDate);
   }
 
   onScroll(event: CustomEvent<{ scrollTop: number }>): void {
@@ -421,33 +422,6 @@ export class EpisodicMediaDetailsPage implements OnInit {
       timeSpend: entry.timeSpend,
       currentEpisode: entry.currentEpisode,
     } : null);
-  }
-
-  private formatDate(value: Date | string | null | undefined): string {
-    if (!value) {
-      return 'No release date';
-    }
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return 'No release date';
-    }
-
-    return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
-  }
-
-  private formatMinutes(value: number | null | undefined): string {
-    const minutes = Number(value) || 0;
-    if (minutes <= 0) {
-      return 'No estimate';
-    }
-
-    const hours = Math.floor(minutes / 60);
-    const remaining = minutes % 60;
-    if (hours > 0 && remaining > 0) {
-      return `${hours}h ${remaining}m`;
-    }
-    return hours > 0 ? `${hours}h` : `${remaining}m`;
   }
 
   private toIsoString(value: Date | string | null | undefined): string | null {
