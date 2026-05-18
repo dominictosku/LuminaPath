@@ -1,9 +1,8 @@
 using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Interfaces;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-namespace LuminaPath.Infrastructure.Services
+namespace LuminaPath.Infrastructure.Services.Storage
 {
     public class FileSystemStorage : IStorageService
     {
@@ -26,7 +25,7 @@ namespace LuminaPath.Infrastructure.Services
                 {
                     Uri = filePath,
                     Name = Path.GetFileName(filePath),
-                    ContentType = GetStoredContentType(filePath)
+                    ContentType = StorageContentTypes.GetContentType(filePath)
                 })
                 .ToList();
 
@@ -47,7 +46,7 @@ namespace LuminaPath.Infrastructure.Services
             {
                 Content = File.OpenRead(filePath),
                 Name = Path.GetFileName(filePath),
-                ContentType = GetStoredContentType(filePath)
+                ContentType = StorageContentTypes.GetContentType(filePath)
             };
 
             return Task.FromResult<BlobDto?>(blob);
@@ -56,7 +55,7 @@ namespace LuminaPath.Infrastructure.Services
         public async Task<BlobResponseDto> UploadAsync(Stream blob, string fileName, string? contentType = null)
         {
             BlobResponseDto response = new();
-            var filePath = GetStorageFilePath(GetFileNameWithExtension(fileName, contentType));
+            var filePath = GetStorageFilePath(StorageFileNames.WithExtensionFromContentType(fileName, contentType));
             var storedFileName = Path.GetFileName(filePath);
 
             if (File.Exists(filePath))
@@ -75,7 +74,7 @@ namespace LuminaPath.Infrastructure.Services
                 response.Error = false;
                 response.Blob.Uri = filePath;
                 response.Blob.Name = storedFileName;
-                response.Blob.ContentType = GetContentType(filePath);
+                response.Blob.ContentType = StorageContentTypes.GetContentType(filePath);
             }
             catch (Exception ex)
             {
@@ -115,7 +114,7 @@ namespace LuminaPath.Infrastructure.Services
         public Task<bool> RenameAsync(string oldName, string newName)
         {
             var oldPath = GetStorageFilePath(oldName);
-            var newPath = GetStorageFilePath(GetFileNameForRename(oldPath, newName));
+            var newPath = GetStorageFilePath(StorageFileNames.ForRename(oldPath, newName));
 
             if (!File.Exists(oldPath))
             {
@@ -136,12 +135,7 @@ namespace LuminaPath.Infrastructure.Services
 
         private string GetStorageFilePath(string fileName)
         {
-            var safeFileName = Path.GetFileName(fileName);
-
-            if (string.IsNullOrWhiteSpace(safeFileName))
-            {
-                throw new InvalidOperationException("File name is required.");
-            }
+            var safeFileName = StorageFileNames.GetSafeName(fileName);
 
             var fullPath = Path.GetFullPath(Path.Combine(_storagePath, safeFileName));
 
@@ -152,123 +146,6 @@ namespace LuminaPath.Infrastructure.Services
             }
 
             return fullPath;
-        }
-
-        private static string GetFileNameWithExtension(string fileName, string? contentType)
-        {
-            var safeFileName = Path.GetFileName(fileName);
-
-            if (!string.IsNullOrWhiteSpace(Path.GetExtension(safeFileName)))
-            {
-                return safeFileName;
-            }
-
-            var extension = GetExtensionFromContentType(contentType);
-            return extension is null
-                ? safeFileName
-                : $"{safeFileName}{extension}";
-        }
-
-        private static string GetFileNameForRename(string oldPath, string newName)
-        {
-            var safeNewName = Path.GetFileName(newName);
-
-            if (!string.IsNullOrWhiteSpace(Path.GetExtension(safeNewName)))
-            {
-                return safeNewName;
-            }
-
-            return $"{safeNewName}{Path.GetExtension(oldPath)}";
-        }
-
-        private static string GetContentType(string filePath)
-        {
-            return Path.GetExtension(filePath).ToLowerInvariant() switch
-            {
-                ".apng" => "image/apng",
-                ".avif" => "image/avif",
-                ".bmp" => "image/bmp",
-                ".gif" => "image/gif",
-                ".jpg" or ".jpeg" => "image/jpeg",
-                ".png" => "image/png",
-                ".svg" => "image/svg+xml",
-                ".webp" => "image/webp",
-                ".pdf" => "application/pdf",
-                ".txt" => "text/plain",
-                _ => "application/octet-stream"
-            };
-        }
-
-        private static string? GetExtensionFromContentType(string? contentType)
-        {
-            if (string.IsNullOrWhiteSpace(contentType))
-            {
-                return null;
-            }
-
-            var value = contentType.ToLowerInvariant();
-
-            if (value.Contains(".apng") || value.Contains("apng"))
-            {
-                return ".apng";
-            }
-
-            if (value.Contains(".jpeg") || value.Contains("jpeg"))
-            {
-                return ".jpeg";
-            }
-
-            if (value.Contains(".jpg") || value.Contains("jpg"))
-            {
-                return ".jpg";
-            }
-
-            if (value.Contains(".png") || value.Contains("png"))
-            {
-                return ".png";
-            }
-
-            if (value.Contains(".webp") || value.Contains("webp"))
-            {
-                return ".webp";
-            }
-
-            if (value.Contains(".gif") || value.Contains("gif"))
-            {
-                return ".gif";
-            }
-
-            if (value.Contains(".bmp") || value.Contains("bmp"))
-            {
-                return ".bmp";
-            }
-
-            if (value.Contains(".avif") || value.Contains("avif"))
-            {
-                return ".avif";
-            }
-
-            if (value.Contains(".svg") || value.Contains("svg"))
-            {
-                return ".svg";
-            }
-
-            if (value.Contains(".pdf") || value.Contains("pdf"))
-            {
-                return ".pdf";
-            }
-
-            if (value.Contains(".txt") || value.Contains("text/plain"))
-            {
-                return ".txt";
-            }
-
-            return null;
-        }
-
-        private static string GetStoredContentType(string filePath)
-        {
-            return GetContentType(filePath);
         }
 
         private static void DeleteContentType(string filePath)
