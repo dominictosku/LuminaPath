@@ -1,8 +1,7 @@
-using LuminaPath.Infrastructure.Services.ModelServices;
 using LuminaPath.Infrastructure.Services.Imports;
 using LuminaPath.Infrastructure.Services.Application;
 using LuminaPath.Infrastructure.Services.Application.BackgroundJobs;
-using LuminaPath.Infrastructure.Services.Auditing;
+using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,41 +12,10 @@ internal static class ApplicationServiceCollectionExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration config)
     {
         services.AddStorageServices(config);
-        services.Configure<DatabaseBackupOptions>(config.GetSection(DatabaseBackupOptions.SectionName));
-
-        services.AddScoped<GameService>();
-        services.AddScoped<MyGameService>();
-        services.AddScoped<AnimeService>();
-        services.AddScoped<MyAnimeService>();
-        services.AddScoped<MovieService>();
-        services.AddScoped<MyMovieService>();
-        services.AddScoped<SeriesService>();
-        services.AddScoped<MySeriesService>();
-        services.AddScoped<QuestService>();
-        services.AddScoped<GamingSessionService>();
-        services.AddScoped<DocumentService>();
-        services.AddScoped<LuminaUserService>();
-        services.AddScoped<FriendsService>();
-        services.AddScoped<DirectMessageService>();
-        services.AddScoped<AuditLogService>();
-
-        services.AddScoped<ExcelService>();
-        services.AddScoped<GameImportPipeline>();
-        services.AddScoped<BrowseLibraryService>();
-        services.AddScoped<MediaImportService>();
-        services.AddScoped<NewsAggregationService>();
-        services.AddScoped<GameMetadataRefreshService>();
-        services.AddScoped<DatabaseBackupService>();
-        services.Configure<BackgroundJobOptions>(config.GetSection(BackgroundJobOptions.SectionName));
-        services.AddSingleton<IBackgroundJobQueue, BackgroundJobQueue>();
-        services.AddSingleton<IBackgroundJobCancellationRegistry, BackgroundJobCancellationRegistry>();
-        services.AddScoped<BackgroundJobSettingsResolver>();
-        services.AddScoped<BackgroundJobMaintenanceService>();
-        services.AddScoped<BackgroundJobService>();
-        services.AddScoped<IBackgroundJobRunner, DatabaseBackupJobRunner>();
-        services.AddScoped<IBackgroundJobRunner, MaintenanceCleanupJobRunner>();
-        services.AddHostedService<QueuedBackgroundJobService>();
-        services.AddHostedService<BackgroundJobSchedulerService>();
+        services.AddModelServices();
+        services.AddImportServices();
+        services.AddApplicationFeatureServices(config);
+        services.AddBackgroundJobServices(config);
         services.AddScoped<ApplicationSettingsService>();
         return services;
     }

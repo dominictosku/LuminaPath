@@ -27,13 +27,13 @@ namespace LuminaPath.Infrastructure
 
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
         {
+            services.AddHttpContextAccessor();
+            services.AddAuditingServices();
             services.AddPersistence(config);
             services.AddLuminaIdentity(config);
             services.AddApplicationServices(config);
             services.AddThirdPartyIntegrations(config);
             services.AddAiChatServices(config);
-            services.AddHttpContextAccessor();
-            services.AddSingleton<AuditSaveChangesInterceptor>();
             AddCache(services, config);
             AddCors(services, config);
             services.AddSignalR();
