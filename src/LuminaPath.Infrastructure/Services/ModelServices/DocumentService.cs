@@ -56,42 +56,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             try
             {
                 await using Stream fs = file.OpenReadStream(MaxAllowedSize);
-                if (media is not null)
-                {
-                    await DeleteDocument(media.Image);
-                }
-
-                var storageName = CreateStorageFileName(displayName, file.ContentType);
-                var result = await _storage.UploadAsync(fs, storageName, file.ContentType);
-                if (result.Error)
-                {
-                    _logger.LogError("Could not Upload file, error: {0}", result.Status);
-                    await AuditDocumentFileUploadAsync(
-                        displayName,
-                        storageName,
-                        file.ContentType,
-                        AuditOutcomes.Failure,
-                        result.Status);
-                    return new FailedResult("Could not upload file");
-                }
-
-                var document = new MediaDocument()
-                {
-                    Name = displayName,
-                    StorageName = result.Blob.Name,
-                    Description = string.Empty,
-                    Path = string.Empty,
-                    ContentType = result.Blob.ContentType,
-                    DocumentType = InferDocumentType(file.Name, result.Blob.ContentType)
-                };
-                await AuditDocumentFileUploadAsync(
-                    document.Name,
-                    document.StorageName,
-                    document.ContentType,
-                    AuditOutcomes.Success,
-                    documentType: document.DocumentType);
-                return document;
-
+                return await UploadDocumentStreamAsync(fs, displayName, file.ContentType, media);
             }
             catch (Exception ex)
             {
@@ -110,41 +75,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             var displayName = GetDisplayFileName(fileName);
             try
             {
-                if (media is not null)
-                {
-                    await DeleteDocument(media.Image);
-                }
-
-                var storageName = CreateStorageFileName(displayName, contentType);
-                var result = await _storage.UploadAsync(stream, storageName, contentType);
-                if (result.Error)
-                {
-                    _logger.LogError("Could not upload file, error: {Status}", result.Status);
-                    await AuditDocumentFileUploadAsync(
-                        displayName,
-                        storageName,
-                        contentType,
-                        AuditOutcomes.Failure,
-                        result.Status);
-                    return new FailedResult("Could not upload file");
-                }
-
-                var document = new MediaDocument
-                {
-                    Name = displayName,
-                    StorageName = result.Blob.Name,
-                    Description = string.Empty,
-                    Path = string.Empty,
-                    ContentType = result.Blob.ContentType,
-                    DocumentType = InferDocumentType(displayName, result.Blob.ContentType)
-                };
-                await AuditDocumentFileUploadAsync(
-                    document.Name,
-                    document.StorageName,
-                    document.ContentType,
-                    AuditOutcomes.Success,
-                    documentType: document.DocumentType);
-                return document;
+                return await UploadDocumentStreamAsync(stream, displayName, contentType, media);
             }
             catch (Exception ex)
             {
@@ -156,6 +87,49 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     errorMessage: ex.Message);
                 return new FailedResult("Could not upload file");
             }
+        }
+
+        private async Task<Result<MediaDocument, FailedResult>> UploadDocumentStreamAsync(
+            Stream stream,
+            string displayName,
+            string? contentType,
+            IMedia<MediaDocument>? media)
+        {
+            if (media is not null)
+            {
+                await DeleteDocument(media.Image);
+            }
+
+            var storageName = CreateStorageFileName(displayName, contentType);
+            var result = await _storage.UploadAsync(stream, storageName, contentType);
+            if (result.Error)
+            {
+                _logger.LogError("Could not upload file, error: {Status}", result.Status);
+                await AuditDocumentFileUploadAsync(
+                    displayName,
+                    storageName,
+                    contentType,
+                    AuditOutcomes.Failure,
+                    result.Status);
+                return new FailedResult("Could not upload file");
+            }
+
+            var document = new MediaDocument
+            {
+                Name = displayName,
+                StorageName = result.Blob.Name,
+                Description = string.Empty,
+                Path = string.Empty,
+                ContentType = result.Blob.ContentType,
+                DocumentType = InferDocumentType(displayName, result.Blob.ContentType)
+            };
+            await AuditDocumentFileUploadAsync(
+                document.Name,
+                document.StorageName,
+                document.ContentType,
+                AuditOutcomes.Success,
+                documentType: document.DocumentType);
+            return document;
         }
 
         public async Task<MediaDocument> CreateMediaDocument(MediaDocument document)

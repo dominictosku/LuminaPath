@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices
 {
-    public class QuestService
+    public partial class QuestService
     {
         private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
         private readonly Func<DateTime> _utcNow;
@@ -55,25 +55,18 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
 
-            var ownsGame = await dbContext.MyGames
-                .AsNoTracking()
-                .AnyAsync(myGame => myGame.Id == myGameId && myGame.LuminaUserId == userId);
-
-            if (!ownsGame)
+            if (await ResolveOwnedMyGameIdAsync(dbContext, userId, myGameId) is null)
             {
                 return [];
             }
 
-            return await dbContext.Quests
-                .AsNoTracking()
-                .Include(quest => quest.MyGame).ThenInclude(myGame => myGame!.Game)
-                .Include(quest => quest.Skill)
-                .Include(quest => quest.Subtasks)
-                .Where(quest => quest.LuminaUserId == userId && quest.MyGameId == myGameId)
+            var quests = await QueryQuestDetails(dbContext, userId)
+                .Where(quest => quest.MyGameId == myGameId)
                 .OrderBy(quest => quest.SortOrder)
                 .ThenBy(quest => quest.Id)
-                .Select(quest => ProjectQuestDto(quest))
                 .ToListAsync();
+
+            return quests.Select(ProjectQuestDto).ToList();
         }
 
         public async Task<Result<QuestMutationResultDto, FailedResult>> CreateAsync(string userId, QuestCreateDto dto)
@@ -86,29 +79,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
 
-            int? myGameId = null;
-            if (dto.MyGameId.HasValue)
-            {
-                var ownsGame = await dbContext.MyGames
-                    .AsNoTracking()
-                    .AnyAsync(myGame => myGame.Id == dto.MyGameId.Value && myGame.LuminaUserId == userId);
-                if (ownsGame)
-                {
-                    myGameId = dto.MyGameId.Value;
-                }
-            }
-
-            int? skillId = null;
-            if (dto.SkillId.HasValue)
-            {
-                var ownsSkill = await dbContext.QuestSkills
-                    .AsNoTracking()
-                    .AnyAsync(skill => skill.Id == dto.SkillId.Value && skill.LuminaUserId == userId);
-                if (ownsSkill)
-                {
-                    skillId = dto.SkillId.Value;
-                }
-            }
+            var myGameId = await ResolveOwnedMyGameIdAsync(dbContext, userId, dto.MyGameId);
+            var skillId = await ResolveOwnedSkillIdAsync(dbContext, userId, dto.SkillId);
 
             var nextSort = await dbContext.Quests
                 .Where(q => q.LuminaUserId == userId && q.Type == dto.Type)
@@ -210,13 +182,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
             else if (dto.MyGameId.HasValue)
             {
-                var ownsGame = await dbContext.MyGames
-                    .AsNoTracking()
-                    .AnyAsync(myGame => myGame.Id == dto.MyGameId.Value && myGame.LuminaUserId == userId);
-                if (ownsGame)
-                {
-                    quest.MyGameId = dto.MyGameId.Value;
-                }
+                quest.MyGameId = await ResolveOwnedMyGameIdAsync(dbContext, userId, dto.MyGameId) ?? quest.MyGameId;
             }
 
             if (dto.ClearSkill == true)
@@ -225,13 +191,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
             else if (dto.SkillId.HasValue)
             {
-                var ownsSkill = await dbContext.QuestSkills
-                    .AsNoTracking()
-                    .AnyAsync(skill => skill.Id == dto.SkillId.Value && skill.LuminaUserId == userId);
-                if (ownsSkill)
-                {
-                    quest.SkillId = dto.SkillId.Value;
-                }
+                quest.SkillId = await ResolveOwnedSkillIdAsync(dbContext, userId, dto.SkillId) ?? quest.SkillId;
             }
 
             if (dto.SortOrder.HasValue)
@@ -365,26 +325,54 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return await GetBoardAsync(userId);
         }
 
-        private static async Task<QuestMutationResultDto> BuildMutationResultAsync(LuminaPathDbContext dbContext, string userId, int questId, int? spawnedId = null)
+        private static async Task<int?> ResolveOwnedMyGameIdAsync(LuminaPathDbContext dbContext, string userId, int? myGameId)
         {
-            var quest = await dbContext.Quests
+            if (!myGameId.HasValue)
+            {
+                return null;
+            }
+
+            var ownsGame = await dbContext.MyGames
                 .AsNoTracking()
-                .Include(q => q.MyGame).ThenInclude(g => g!.Game)
+                .AnyAsync(myGame => myGame.Id == myGameId.Value && myGame.LuminaUserId == userId);
+
+            return ownsGame ? myGameId.Value : null;
+        }
+
+        private static async Task<int?> ResolveOwnedSkillIdAsync(LuminaPathDbContext dbContext, string userId, int? skillId)
+        {
+            if (!skillId.HasValue)
+            {
+                return null;
+            }
+
+            var ownsSkill = await dbContext.QuestSkills
+                .AsNoTracking()
+                .AnyAsync(skill => skill.Id == skillId.Value && skill.LuminaUserId == userId);
+
+            return ownsSkill ? skillId.Value : null;
+        }
+
+        private static IQueryable<Quest> QueryQuestDetails(LuminaPathDbContext dbContext, string userId)
+        {
+            return dbContext.Quests
+                .AsNoTracking()
+                .Include(q => q.MyGame).ThenInclude(myGame => myGame!.Game)
                 .Include(q => q.Skill)
                 .Include(q => q.Subtasks)
-                .Where(q => q.Id == questId && q.LuminaUserId == userId)
-                .FirstAsync();
+                .Where(q => q.LuminaUserId == userId);
+        }
+
+        private static async Task<QuestMutationResultDto> BuildMutationResultAsync(LuminaPathDbContext dbContext, string userId, int questId, int? spawnedId = null)
+        {
+            var quest = await QueryQuestDetails(dbContext, userId)
+                .FirstAsync(q => q.Id == questId);
 
             QuestDto? spawned = null;
             if (spawnedId is int sid)
             {
-                var spawnedEntity = await dbContext.Quests
-                    .AsNoTracking()
-                    .Include(q => q.MyGame).ThenInclude(g => g!.Game)
-                    .Include(q => q.Skill)
-                    .Include(q => q.Subtasks)
-                    .Where(q => q.Id == sid && q.LuminaUserId == userId)
-                    .FirstOrDefaultAsync();
+                var spawnedEntity = await QueryQuestDetails(dbContext, userId)
+                    .FirstOrDefaultAsync(q => q.Id == sid);
                 if (spawnedEntity != null)
                 {
                     spawned = ProjectQuestDto(spawnedEntity);
@@ -539,12 +527,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         private static async Task<List<QuestDto>> LoadQuestDtos(LuminaPathDbContext dbContext, string userId)
         {
-            var quests = await dbContext.Quests
-                .AsNoTracking()
-                .Include(q => q.MyGame).ThenInclude(g => g!.Game)
-                .Include(q => q.Skill)
-                .Include(q => q.Subtasks)
-                .Where(quest => quest.LuminaUserId == userId)
+            var quests = await QueryQuestDetails(dbContext, userId)
                 .OrderBy(quest => quest.SortOrder)
                 .ThenBy(quest => quest.Id)
                 .ToListAsync();
@@ -912,34 +895,4 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         }
     }
 
-    internal static class AchievementCatalog
-    {
-        public const string FirstQuest = "first_quest";
-        public const string TenQuests = "ten_quests";
-        public const string HundredQuests = "hundred_quests";
-        public const string FirstMainQuest = "first_main_quest";
-        public const string DailyDiscipline = "daily_discipline";
-        public const string Completionist = "completionist";
-        public const string SevenDayStreak = "seven_day_streak";
-        public const string ThirtyDayStreak = "thirty_day_streak";
-
-        private static readonly Dictionary<string, AchievementDefinition> Definitions = new(StringComparer.OrdinalIgnoreCase)
-        {
-            [FirstQuest] = new("First Steps", "Complete your first quest.", "footsteps-outline"),
-            [TenQuests] = new("Apprentice", "Complete 10 quests.", "ribbon-outline"),
-            [HundredQuests] = new("Centurion", "Complete 100 quests.", "trophy-outline"),
-            [FirstMainQuest] = new("Main Story", "Complete your first main quest.", "map-outline"),
-            [DailyDiscipline] = new("Daily Discipline", "Complete a recurring quest.", "refresh-outline"),
-            [Completionist] = new("Completionist", "Finish every subtask on a boss quest.", "checkmark-done-outline"),
-            [SevenDayStreak] = new("Week One", "Maintain a 7-day quest streak.", "flame-outline"),
-            [ThirtyDayStreak] = new("Unbroken", "Maintain a 30-day quest streak.", "flame")
-        };
-
-        public static AchievementDefinition? TryGet(string code)
-        {
-            return Definitions.TryGetValue(code, out var def) ? def : null;
-        }
-    }
-
-    internal sealed record AchievementDefinition(string Title, string Description, string Icon);
 }

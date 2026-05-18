@@ -250,11 +250,11 @@ namespace LuminaPath.Core.Mapping
             return new MyGameDto
             {
                 Id = source.Id,
-                Rating = source.Rating.HasValue ? Convert.ToByte(source.Rating.Value) : null,
+                Rating = ToDtoRating(source.Rating),
                 StartDate = source.StartDate,
                 EndDate = source.EndDate,
                 Status = source.Status,
-                TimeSpend = source.TimeSpend.HasValue ? Convert.ToInt32(source.TimeSpend.Value) : null,
+                TimeSpend = ToDtoTimeSpend(source.TimeSpend),
                 GameId = source.GameId,
                 PersonalNotes = source.PersonalNotes,
                 Game = source.Game == null ? null : Map<GamesNoIncludeDto>(source.Game),
@@ -374,11 +374,11 @@ namespace LuminaPath.Core.Mapping
             return new MyAnimeDto
             {
                 Id = source.Id,
-                Rating = source.Rating.HasValue ? Convert.ToByte(source.Rating.Value) : null,
+                Rating = ToDtoRating(source.Rating),
                 StartDate = source.StartDate,
                 EndDate = source.EndDate,
                 Status = source.Status,
-                TimeSpend = source.TimeSpend.HasValue ? Convert.ToInt32(source.TimeSpend.Value) : null,
+                TimeSpend = ToDtoTimeSpend(source.TimeSpend),
                 AnimeId = source.AnimeId,
                 Anime = source.Anime == null ? null : Map<AnimesNoIncludeDto>(source.Anime),
                 CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes,
@@ -484,11 +484,11 @@ namespace LuminaPath.Core.Mapping
             return new MyMovieDto
             {
                 Id = source.Id,
-                Rating = source.Rating.HasValue ? Convert.ToByte(source.Rating.Value) : null,
+                Rating = ToDtoRating(source.Rating),
                 StartDate = source.StartDate,
                 EndDate = source.EndDate,
                 Status = source.Status,
-                TimeSpend = source.TimeSpend.HasValue ? Convert.ToInt32(source.TimeSpend.Value) : null,
+                TimeSpend = ToDtoTimeSpend(source.TimeSpend),
                 MovieId = source.MovieId,
                 Movie = source.Movie == null ? null : Map<MoviesNoIncludeDto>(source.Movie),
                 CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes
@@ -607,11 +607,11 @@ namespace LuminaPath.Core.Mapping
             return new MySeriesDto
             {
                 Id = source.Id,
-                Rating = source.Rating.HasValue ? Convert.ToByte(source.Rating.Value) : null,
+                Rating = ToDtoRating(source.Rating),
                 StartDate = source.StartDate,
                 EndDate = source.EndDate,
                 Status = source.Status,
-                TimeSpend = source.TimeSpend.HasValue ? Convert.ToInt32(source.TimeSpend.Value) : null,
+                TimeSpend = ToDtoTimeSpend(source.TimeSpend),
                 SeriesId = source.SeriesId,
                 Series = source.Series == null ? null : Map<SeriesNoIncludeDto>(source.Series),
                 CurrentWatchTimeMinutes = source.CurrentWatchTimeMinutes,
@@ -853,6 +853,16 @@ namespace LuminaPath.Core.Mapping
             return genres == null ? string.Empty : string.Join(", ", genres);
         }
 
+        private static byte? ToDtoRating(short? rating)
+        {
+            return rating.HasValue ? Convert.ToByte(rating.Value) : null;
+        }
+
+        private static int? ToDtoTimeSpend(double? timeSpend)
+        {
+            return timeSpend.HasValue ? Convert.ToInt32(timeSpend.Value) : null;
+        }
+
         private static int? ResolveAnimePerEpisodeMinutes(int? perEpisodeMinutes, int? totalMinutes, int? episodeCount)
         {
             if (perEpisodeMinutes is not null)
@@ -866,21 +876,6 @@ namespace LuminaPath.Core.Mapping
             }
 
             return Math.Max(1, (int)Math.Round(totalMinutes.Value / (double)episodeCount.Value));
-        }
-    }
-
-    internal static class AnimeWatchTimeMappingExtensions
-    {
-        public static MyAnime WithCalculatedAnimeWatchTime(this MyAnime myAnime, Anime? anime = null)
-        {
-            myAnime.RecalculateWatchTime(anime);
-            return myAnime;
-        }
-
-        public static MySeries WithCalculatedSeriesWatchTime(this MySeries mySeries, Series? series = null)
-        {
-            mySeries.RecalculateWatchTime(series);
-            return mySeries;
         }
     }
 }
