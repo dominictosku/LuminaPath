@@ -19,30 +19,33 @@
 		</div>
 	</div>
 
-	<div class="settings-form">
-		<div class="job-summary">
-			<div>
-				<span>Recent jobs</span>
-				<strong>@jobs.Count</strong>
+	<div class="settings-form job-history-layout">
+		<div class="job-toolbar">
+			<div class="job-summary" aria-label="Background job summary">
+				<div class="job-summary-card job-summary-card--total">
+					<span>Recent jobs</span>
+					<strong>@jobs.Count</strong>
+				</div>
+				<div class="job-summary-card job-summary-card--running">
+					<span>Running</span>
+					<strong>@Count(BackgroundJobStatus.Running)</strong>
+				</div>
+				<div class="job-summary-card job-summary-card--failed">
+					<span>Failed</span>
+					<strong>@Count(BackgroundJobStatus.Failed)</strong>
+				</div>
 			</div>
-			<div>
-				<span>Running</span>
-				<strong>@Count(BackgroundJobStatus.Running)</strong>
-			</div>
-			<div>
-				<span>Failed</span>
-				<strong>@Count(BackgroundJobStatus.Failed)</strong>
-			</div>
-		</div>
 
-		<div class="settings-action-row">
-			<MudButton OnClick="LoadJobs"
-					   Variant="MudBlazor.Variant.Outlined"
-					   Color="Color.Primary"
-					   StartIcon="@Icons.Material.Filled.Refresh"
-					   Disabled="@loading">
-				Refresh History
-			</MudButton>
+			<div class="job-history-actions">
+				<MudButton OnClick="LoadJobs"
+						   Class="job-refresh-button"
+						   Variant="MudBlazor.Variant.Outlined"
+						   Color="Color.Primary"
+						   StartIcon="@Icons.Material.Filled.Refresh"
+						   Disabled="@loading">
+					Refresh
+				</MudButton>
+			</div>
 		</div>
 
 		@if (loading)
@@ -84,20 +87,26 @@
 						</MudTd>
 						<MudTd DataLabel="Actions">
 							<div class="job-actions">
-								<MudIconButton Icon="@Icons.Material.Filled.Info"
-											   Color="Color.Primary"
-											   Size="Size.Small"
-											   OnClick="@(async () => await ShowJobDetails(context))" />
-								<MudIconButton Icon="@Icons.Material.Filled.Replay"
-											   Color="Color.Secondary"
-											   Size="Size.Small"
-											   Disabled="@(!CanRetry(context))"
-											   OnClick="@(async () => await RetryJob(context))" />
-								<MudIconButton Icon="@Icons.Material.Filled.Close"
-											   Color="Color.Warning"
-											   Size="Size.Small"
-											   Disabled="@(!CanCancel(context))"
-											   OnClick="@(async () => await CancelJob(context))" />
+								<MudTooltip Text="View details">
+									<MudIconButton Icon="@Icons.Material.Filled.Info"
+												   Color="Color.Primary"
+												   Size="Size.Small"
+												   OnClick="@(async () => await ShowJobDetails(context))" />
+								</MudTooltip>
+								<MudTooltip Text="Retry job">
+									<MudIconButton Icon="@Icons.Material.Filled.Replay"
+												   Color="Color.Secondary"
+												   Size="Size.Small"
+												   Disabled="@(!CanRetry(context))"
+												   OnClick="@(async () => await RetryJob(context))" />
+								</MudTooltip>
+								<MudTooltip Text="Cancel job">
+									<MudIconButton Icon="@Icons.Material.Filled.Close"
+												   Color="Color.Warning"
+												   Size="Size.Small"
+												   Disabled="@(!CanCancel(context))"
+												   OnClick="@(async () => await CancelJob(context))" />
+								</MudTooltip>
 							</div>
 						</MudTd>
 					</RowTemplate>
@@ -107,30 +116,116 @@
 	</div>
 </section>
 
-<section class="settings-panel settings-help-panel">
-	<MudIcon Icon="@Icons.Material.Filled.Info" />
-	<div>
-		<MudText Typo="Typo.h6">Scope</MudText>
-		<MudText Typo="Typo.body2">
-			This internal job runner is for app-maintenance tasks only. Third-party sync work stays out until it has its own scheduling and retry policy.
-		</MudText>
-	</div>
-</section>
+@if (ShowHelp)
+{
+	<section class="settings-panel settings-help-panel">
+		<MudIcon Icon="@Icons.Material.Filled.Info" />
+		<div>
+			<MudText Typo="Typo.h6">Scope</MudText>
+			<MudText Typo="Typo.body2">
+				This internal job runner is for app-maintenance tasks only. Third-party sync work stays out until it has its own scheduling and retry policy.
+			</MudText>
+		</div>
+	</section>
+}
 
 <style>
-	.job-summary {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-		gap: 12px;
+	.settings-panel {
+		min-width: 0;
+		padding: 20px;
+		border: 1px solid rgba(59, 130, 246, .18);
+		border-radius: 18px;
+		background:
+			linear-gradient(180deg, rgba(18, 30, 45, .98), rgba(14, 24, 36, .96));
+		box-shadow: 0 16px 46px rgba(15, 23, 42, .18);
 	}
 
-	.job-summary > div {
+	.settings-panel + .settings-panel {
+		margin-top: 18px;
+	}
+
+	.settings-panel__header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 18px;
+		margin-bottom: 18px;
+	}
+
+	.settings-panel__header .mud-typography-overline {
+		color: var(--mud-palette-primary);
+		font-weight: 900;
+	}
+
+	.settings-panel__header .mud-typography-h5 {
+		font-weight: 900;
+	}
+
+	.settings-panel__header .mud-typography-body2 {
+		max-width: 620px;
+		margin-top: 4px;
+		color: var(--mud-palette-text-secondary);
+	}
+
+	.settings-panel__icon {
+		display: grid;
+		flex: 0 0 auto;
+		width: 52px;
+		height: 52px;
+		place-items: center;
+		border-radius: 10px;
+		color: #fff;
+		background: linear-gradient(135deg, #2563eb, #06b6d4);
+		box-shadow: 0 16px 36px rgba(37, 99, 235, .28);
+	}
+
+	.settings-panel__icon--purple {
+		background: linear-gradient(135deg, #7c3aed, #06b6d4);
+		box-shadow: 0 16px 36px rgba(124, 58, 237, .24);
+	}
+
+	.settings-panel__icon .mud-icon-root {
+		font-size: 30px;
+	}
+
+	.settings-form,
+	.job-history-layout {
+		display: grid;
+		gap: 16px;
+	}
+
+	.job-toolbar {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 14px;
+		align-items: stretch;
+	}
+
+	.job-summary {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(120px, 1fr));
+		gap: 12px;
+		min-width: 0;
+	}
+
+	.job-summary-card {
 		display: grid;
 		gap: 6px;
-		padding: 14px;
+		min-height: 84px;
+		padding: 14px 16px;
 		border: 1px solid rgba(59, 130, 246, .18);
 		border-radius: 12px;
 		background: rgba(255, 255, 255, .04);
+	}
+
+	.job-summary-card--running {
+		border-color: rgba(14, 165, 233, .26);
+		background: rgba(14, 165, 233, .08);
+	}
+
+	.job-summary-card--failed {
+		border-color: rgba(248, 113, 113, .34);
+		background: rgba(248, 113, 113, .08);
 	}
 
 	.job-summary span,
@@ -141,6 +236,21 @@
 		text-transform: uppercase;
 	}
 
+	.job-summary strong {
+		color: var(--mud-palette-text-primary);
+		font-size: 1.5rem;
+		line-height: 1;
+	}
+
+	.job-history-actions {
+		display: flex;
+	}
+
+	.job-refresh-button {
+		min-width: 148px;
+		height: 100%;
+	}
+
 	.job-title {
 		display: grid;
 		gap: 4px;
@@ -149,33 +259,35 @@
 	.job-table-shell {
 		width: 100%;
 		overflow-x: auto;
-		border-radius: 10px;
+		border: 1px solid rgba(59, 130, 246, .14);
+		border-radius: 12px;
+		background: rgba(15, 23, 42, .18);
 	}
 
-	::deep .job-table table {
+	.job-table table {
 		min-width: 980px;
 		table-layout: fixed;
 	}
 
-	::deep .job-table th:nth-child(1),
-	::deep .job-table td:nth-child(1) {
+	.job-table th:nth-child(1),
+	.job-table td:nth-child(1) {
 		width: 240px;
 	}
 
-	::deep .job-table th:nth-child(2),
-	::deep .job-table td:nth-child(2) {
+	.job-table th:nth-child(2),
+	.job-table td:nth-child(2) {
 		width: 150px;
 	}
 
-	::deep .job-table th:nth-child(3),
-	::deep .job-table td:nth-child(3),
-	::deep .job-table th:nth-child(4),
-	::deep .job-table td:nth-child(4) {
+	.job-table th:nth-child(3),
+	.job-table td:nth-child(3),
+	.job-table th:nth-child(4),
+	.job-table td:nth-child(4) {
 		width: 150px;
 	}
 
-	::deep .job-table th:nth-child(6),
-	::deep .job-table td:nth-child(6) {
+	.job-table th:nth-child(6),
+	.job-table td:nth-child(6) {
 		width: 150px;
 		text-align: right;
 	}
@@ -191,12 +303,60 @@
 	.job-actions {
 		display: inline-flex;
 		gap: 4px;
+		align-items: center;
 		justify-content: flex-end;
 		min-width: 132px;
+	}
+
+	.settings-help-panel {
+		display: flex;
+		align-items: flex-start;
+		gap: 14px;
+		color: var(--mud-palette-text-secondary);
+	}
+
+	.settings-help-panel .mud-icon-root {
+		flex: 0 0 auto;
+		color: var(--mud-palette-primary);
+		font-size: 34px;
+	}
+
+	.settings-help-panel .mud-typography-h6 {
+		color: var(--mud-palette-text-primary);
+		font-weight: 900;
+	}
+
+	@@media (max-width: 900px) {
+		.job-toolbar {
+			grid-template-columns: 1fr;
+		}
+
+		.job-refresh-button {
+			width: 100%;
+			height: auto;
+		}
+	}
+
+	@@media (max-width: 680px) {
+		.settings-panel {
+			padding: 16px;
+			border-radius: 16px;
+		}
+
+		.settings-panel__header {
+			display: grid;
+		}
+
+		.job-summary {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>
 
 @code {
+	[Parameter]
+	public bool ShowHelp { get; set; } = true;
+
 	private List<BackgroundJobRecord> jobs = new();
 	private bool loading = true;
 

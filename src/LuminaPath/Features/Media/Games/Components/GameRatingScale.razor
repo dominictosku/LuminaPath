@@ -1,0 +1,138 @@
+@using Color = MudBlazor.Color
+
+<div class="game-rating-scale">
+    <div class="game-rating-scale__header">
+        <div>
+            <MudIcon Icon="@Icons.Material.Filled.StarRate" Color="Color.Warning" />
+            <span>@Label</span>
+        </div>
+        <strong>@RatingText</strong>
+    </div>
+
+    <div class="game-rating-scale__buttons" role="radiogroup" aria-label="@Label">
+        @foreach (var rating in Ratings)
+        {
+            <button type="button"
+                    class="@RatingClass(rating)"
+                    aria-pressed="@(Value == rating)"
+                    @onclick="@(() => SetRating(rating))">
+                @rating
+            </button>
+        }
+    </div>
+
+    @if (AllowClear && Value is not null)
+    {
+        <MudButton OnClick="Clear"
+                   Variant="Variant.Text"
+                   Color="Color.Default"
+                   Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.Close">
+            Clear rating
+        </MudButton>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public short? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<short?> ValueChanged { get; set; }
+
+    [Parameter]
+    public string Label { get; set; } = "Rating";
+
+    [Parameter]
+    public bool AllowClear { get; set; } = true;
+
+    private static readonly short[] Ratings = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+    private string RatingText => Value is null ? "Not rated" : $"{Value}/10";
+
+    private Task SetRating(short rating)
+    {
+        return ValueChanged.InvokeAsync(rating);
+    }
+
+    private Task Clear()
+    {
+        return ValueChanged.InvokeAsync(null);
+    }
+
+    private string RatingClass(short rating)
+    {
+        return Value == rating
+            ? "game-rating-scale__button game-rating-scale__button--selected"
+            : "game-rating-scale__button";
+    }
+}
+
+<style>
+    .game-rating-scale {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .035);
+    }
+
+    .game-rating-scale__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .game-rating-scale__header div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        color: var(--mud-palette-text-secondary);
+        font-weight: 800;
+    }
+
+    .game-rating-scale__header strong {
+        color: var(--mud-palette-text-primary);
+        white-space: nowrap;
+    }
+
+    .game-rating-scale__buttons {
+        display: grid;
+        grid-template-columns: repeat(10, minmax(34px, 1fr));
+        gap: 6px;
+    }
+
+    .game-rating-scale__button {
+        min-width: 0;
+        min-height: 38px;
+        border: 1px solid rgba(255, 255, 255, .1);
+        border-radius: 8px;
+        color: var(--mud-palette-text-primary);
+        background: rgba(255, 255, 255, .045);
+        font-weight: 900;
+        cursor: pointer;
+        transition: background .16s ease, border-color .16s ease, transform .16s ease;
+    }
+
+    .game-rating-scale__button:hover {
+        border-color: rgba(56, 189, 248, .5);
+        background: rgba(56, 189, 248, .12);
+        transform: translateY(-1px);
+    }
+
+    .game-rating-scale__button--selected {
+        border-color: rgba(250, 204, 21, .8);
+        color: #111827;
+        background: linear-gradient(135deg, #facc15, #22c55e);
+        box-shadow: 0 10px 26px rgba(250, 204, 21, .18);
+    }
+
+    @@media (max-width: 560px) {
+        .game-rating-scale__buttons {
+            grid-template-columns: repeat(5, minmax(38px, 1fr));
+        }
+    }
+</style>

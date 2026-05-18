@@ -5,10 +5,10 @@ namespace LuminaPath.Core.Enums
     [Flags]
     public enum Platforms
     {
-        [Display(Name = "Playstation 4")]
+        [Display(Name = "PlayStation 4")]
         Playstation4 = 1,
 
-        [Display(Name = "Playstation 5")]
+        [Display(Name = "PlayStation 5")]
         Playstation5 = 2,
 
         [Display(Name = "Switch")]
@@ -17,7 +17,7 @@ namespace LuminaPath.Core.Enums
         [Display(Name = "PC")]
         PC = 8,
 
-        [Display(Name = "XBOX")]
+        [Display(Name = "Xbox")]
         XBOX = 16
     }
 }

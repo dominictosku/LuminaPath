@@ -1,0 +1,68 @@
+@page "/Admin/Overview"
+@using LuminaPath.Features.Admin.Components
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrator")]
+
+<PageTitle>Admin Overview</PageTitle>
+
+<section class="overview-page">
+	<div class="overview-hero">
+		<div class="overview-hero__copy">
+			<MudText Typo="Typo.overline" Class="overview-eyebrow">Admin console</MudText>
+			<MudText Typo="Typo.h3" Class="overview-title">Overview</MudText>
+			<MudText Typo="Typo.body1" Class="overview-subtitle">
+				Monitor operational work, database backups and the security audit trail from one place.
+			</MudText>
+		</div>
+
+		<div class="overview-hero__status">
+			<div class="overview-status-card">
+				<MudIcon Icon="@Icons.Material.Filled.Backup" />
+				<span>Backups</span>
+				<strong>Snapshots</strong>
+			</div>
+			<div class="overview-status-card">
+				<MudIcon Icon="@Icons.Material.Filled.ManageHistory" />
+				<span>Jobs</span>
+				<strong>History</strong>
+			</div>
+			<div class="overview-status-card">
+				<MudIcon Icon="@Icons.Material.Filled.ManageSearch" />
+				<span>Audit</span>
+				<strong>Trail</strong>
+			</div>
+		</div>
+	</div>
+
+	<MudTabs Class="overview-tabs" Rounded="true">
+		<MudTabPanel Text="Backups" Icon="@Icons.Material.Filled.Backup">
+			<div class="overview-grid">
+				<DatabaseBackupPanel />
+			</div>
+		</MudTabPanel>
+
+		<MudTabPanel Text="Jobs" Icon="@Icons.Material.Filled.ManageHistory">
+			<div class="jobs-tab-layout">
+				<div class="jobs-tab-layout__history">
+					<BackgroundJobsPanel ShowHelp="false" />
+				</div>
+				<div class="jobs-tab-layout__side">
+					<BackgroundJobSettingsPanel />
+					<section class="overview-side-note">
+						<MudIcon Icon="@Icons.Material.Filled.Info" />
+						<div>
+							<MudText Typo="Typo.h6">Scope</MudText>
+							<MudText Typo="Typo.body2">
+								This internal job runner is for app-maintenance tasks only. Third-party sync work stays out until it has its own scheduling and retry policy.
+							</MudText>
+						</div>
+					</section>
+				</div>
+			</div>
+		</MudTabPanel>
+
+		<MudTabPanel Text="Audit Log" Icon="@Icons.Material.Filled.ManageSearch">
+			<AuditLogPanel />
+		</MudTabPanel>
+	</MudTabs>
+</section>

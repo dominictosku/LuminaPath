@@ -5,6 +5,8 @@
 @using LuminaPath.Infrastructure.Services.ModelServices
 @using LuminaPath.Pages.Media.Components
 @using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
 @using System.Security.Claims
 @using Color = MudBlazor.Color
 @inherits MediaFormDialog<GameViewModel, MediaDocument>
@@ -37,7 +39,7 @@
                             <MudText Typo="Typo.subtitle1">@PreviewTitle</MudText>
                             <MudText Typo="Typo.body2" Class="mud-text-secondary">@PreviewDetail</MudText>
                             <div class="preview-meta">
-                                <span>@Model.Platforms</span>
+                                <span>@PlatformsLabel(Model.Platforms)</span>
                                 <span>@PlaytimeText</span>
                                 <span>@ReleaseDateText</span>
                             </div>
@@ -87,7 +89,12 @@
                                            Variant="Variant.Outlined">
                                     @foreach (var platform in Enum.GetValues<Platforms>())
                                     {
-                                        <MudSelectItem Value="@platform">@platform</MudSelectItem>
+                                        <MudSelectItem T="Platforms" Value="@platform">
+                                            <div class="platform-option">
+                                                <MudIcon Icon="@PlatformIcon(platform)" />
+                                                <span>@PlatformLabel(platform)</span>
+                                            </div>
+                                        </MudSelectItem>
                                     }
                                 </MudSelect>
                             </MudItem>
@@ -247,27 +254,17 @@
                                                Variant="Variant.Outlined">
                                         @foreach (var status in Enum.GetValues<GameStatus>())
                                         {
-                                            <MudSelectItem Value="@status">@status</MudSelectItem>
+                                            <MudSelectItem T="GameStatus" Value="@status">@EnumLabel(status)</MudSelectItem>
                                         }
                                     </MudSelect>
                                 </MudItem>
 
-                                <MudItem xs="12" sm="4">
-                                    <MudNumericField T="int"
-                                                     Label="Priority"
-                                                     @bind-Value="_myGame.Priority"
-                                                     Min="1"
-                                                     Max="4"
-                                                     Variant="Variant.Outlined" />
+                                <MudItem xs="12" sm="6">
+                                    <GamePrioritySelect @bind-Value="_myGame.Priority" />
                                 </MudItem>
 
-                                <MudItem xs="12" sm="4">
-                                    <MudNumericField T="short?"
-                                                     Label="Rating"
-                                                     @bind-Value="_myGame.Rating"
-                                                     Min="@((short?)1)"
-                                                     Max="@((short?)10)"
-                                                     Variant="Variant.Outlined" />
+                                <MudItem xs="12">
+                                    <GameRatingScale @bind-Value="_myGame.Rating" />
                                 </MudItem>
 
                                 <MudItem xs="12">
@@ -325,7 +322,8 @@
 
     private MyGame _myGame = new()
     {
-        StartDate = DateTime.Today
+        StartDate = DateTime.Today,
+        Priority = 3
     };
 
     private string? newGenre;
@@ -348,6 +346,7 @@
         {
             _createMyGame = true;
             _myGame = Model.MyGames.First();
+            EnsurePriority();
         }
 
         if (Model.ParentGameId is int parentId && parentId > 0)
@@ -457,6 +456,14 @@
         Model.ParentGame = null;
     }
 
+    private void EnsurePriority()
+    {
+        if (_myGame.Priority is < 1 or > 4)
+        {
+            _myGame.Priority = 3;
+        }
+    }
+
     private IEnumerable<string> Validate(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -481,6 +488,69 @@
         return url.StartsWith("http", StringComparison.OrdinalIgnoreCase) || url.StartsWith("/")
             ? url
             : $"/{url}";
+    }
+
+    private static string PlatformsLabel(Platforms platforms)
+    {
+        if (platforms == 0)
+        {
+            return "No platform";
+        }
+
+        var selected = Enum.GetValues<Platforms>()
+            .Where(platform => platforms.HasFlag(platform))
+            .Select(PlatformLabel)
+            .ToList();
+
+        return selected.Count == 0 ? EnumLabel(platforms) : string.Join(", ", selected);
+    }
+
+    private static string PlatformLabel(Platforms platform)
+    {
+        return EnumLabel(platform);
+    }
+
+    private static string EnumLabel<TEnum>(TEnum value) where TEnum : struct, Enum
+    {
+        var member = typeof(TEnum).GetMember(value.ToString()).FirstOrDefault();
+        var display = member?.GetCustomAttribute<DisplayAttribute>()?.Name;
+        return string.IsNullOrWhiteSpace(display) ? SplitPascalCase(value.ToString()) : display;
+    }
+
+    private static string SplitPascalCase(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return value;
+        }
+
+        var result = new List<char>(value.Length + 4);
+        for (var i = 0; i < value.Length; i++)
+        {
+            var character = value[i];
+            if (i > 0
+                && char.IsUpper(character)
+                && (char.IsLower(value[i - 1]) || i + 1 < value.Length && char.IsLower(value[i + 1])))
+            {
+                result.Add(' ');
+            }
+
+            result.Add(character);
+        }
+
+        return new string(result.ToArray());
+    }
+
+    private static string PlatformIcon(Platforms platform)
+    {
+        return platform switch
+        {
+            Platforms.PC => Icons.Material.Filled.Computer,
+            Platforms.Switch => Icons.Material.Filled.VideogameAsset,
+            Platforms.Playstation4 or Platforms.Playstation5 => Icons.Material.Filled.SportsEsports,
+            Platforms.XBOX => Icons.Material.Filled.SportsEsports,
+            _ => Icons.Material.Filled.Devices
+        };
     }
 }
 
@@ -541,6 +611,18 @@
         color: var(--mud-palette-text-primary);
         font-size: .82rem;
         font-weight: 700;
+    }
+
+    .platform-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 30px;
+    }
+
+    .platform-option .mud-icon-root {
+        color: var(--mud-palette-primary);
+        font-size: 20px;
     }
 
     .form-section {

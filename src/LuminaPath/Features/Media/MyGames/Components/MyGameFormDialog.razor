@@ -1,10 +1,13 @@
 @using LuminaPath.Core.Enums
 @using LuminaPath.Core.Models
+@using LuminaPath.Features.Media.Games.Components
 @using LuminaPath.Pages.Media.Components
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
 @using Severity = MudBlazor.Severity
 @using Color = MudBlazor.Color
 @inherits BaseFormDialog<MyGame>
@@ -19,6 +22,11 @@
 						<div>
 							<MudText Typo="Typo.subtitle1">@SelectedGameName</MudText>
 							<MudText Typo="Typo.body2" Class="mud-text-secondary">@SelectedGameDetail</MudText>
+							<div class="selected-game-meta">
+								<span>@EnumLabel(Model.Status)</span>
+								<span>Priority @PriorityText</span>
+								<span>@RatingText</span>
+							</div>
 						</div>
 					</div>
 				</MudItem>
@@ -34,15 +42,15 @@
 					<MudSelect @bind-Value="Model.Status" Label="Status" Variant="Variant.Outlined">
 						@foreach (var status in Enum.GetValues(typeof(GameStatus)).Cast<GameStatus>())
 						{
-							<MudSelectItem Value="status">@status</MudSelectItem>
+							<MudSelectItem T="GameStatus" Value="@status">@EnumLabel(status)</MudSelectItem>
 						}
 					</MudSelect>
 				</MudItem>
-				<MudItem xs="12" sm="3">
-					<MudNumericField T="int" @bind-Value="Model.Priority" Label="Priority" Min="1" Max="4" Variant="Variant.Outlined" />
+				<MudItem xs="12" sm="6">
+					<GamePrioritySelect @bind-Value="Model.Priority" />
 				</MudItem>
-				<MudItem xs="12" sm="3">
-					<MudNumericField T="short?" @bind-Value="Model.Rating" Label="Rating" Min="@((short?)1)" Max="@((short?)10)" Variant="Variant.Outlined" />
+				<MudItem xs="12">
+					<GameRatingScale @bind-Value="Model.Rating" />
 				</MudItem>
 				<MudItem xs="12" sm="6">
 					<MudDatePicker Label="Started On" @bind-Date="Model.StartDate" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" Clearable="true" />
@@ -105,16 +113,26 @@
 		: SelectedGame?.Description ?? "Choose the game this entry belongs to";
 	private string SelectedGameCover => string.IsNullOrWhiteSpace(SelectedGame?.Image?.Url)
 		? "/Images/Placeholder.png"
-		: $"/{SelectedGame.Image.Url}";
+		: NormalizeUrl(SelectedGame.Image.Url);
 	private double ManualHours => Model.TimeSpend ?? 0;
 	private double ThirdPartyHours => Model.MyGameInfo?.TrackedHours ?? 0;
 	private double TotalPlayedHours => ManualHours + ThirdPartyHours;
+	private string PriorityText => Model.Priority is >= 1 and <= 4 ? Model.Priority.ToString() : "3";
+	private string RatingText => Model.Rating is null ? "Not rated" : $"{Model.Rating}/10";
 	private bool HasThirdPartyPlayData => Model.MyGameInfo is not null
 		&& (Model.MyGameInfo.TrackedHours > 0
 			|| Model.MyGameInfo.FirstPlayed != default
 			|| Model.MyGameInfo.LastPlayed != default);
 
 	private MudForm? _form;
+
+	protected override void OnInitialized()
+	{
+		if (Model.Priority is < 1 or > 4)
+		{
+			Model.Priority = 3;
+		}
+	}
 
 	private static string FormatHours(double hours)
 	{
@@ -124,6 +142,44 @@
 	private static string FormatTrackedDate(DateTime? date)
 	{
 		return date is null || date == default ? "Not tracked" : date.Value.ToString("dd.MM.yyyy");
+	}
+
+	private static string EnumLabel<TEnum>(TEnum value) where TEnum : struct, Enum
+	{
+		var member = typeof(TEnum).GetMember(value.ToString()).FirstOrDefault();
+		var display = member?.GetCustomAttribute<DisplayAttribute>()?.Name;
+		return string.IsNullOrWhiteSpace(display) ? SplitPascalCase(value.ToString()) : display;
+	}
+
+	private static string SplitPascalCase(string value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+		{
+			return value;
+		}
+
+		var result = new List<char>(value.Length + 4);
+		for (var i = 0; i < value.Length; i++)
+		{
+			var character = value[i];
+			if (i > 0
+				&& char.IsUpper(character)
+				&& (char.IsLower(value[i - 1]) || i + 1 < value.Length && char.IsLower(value[i + 1])))
+			{
+				result.Add(' ');
+			}
+
+			result.Add(character);
+		}
+
+		return new string(result.ToArray());
+	}
+
+	private static string NormalizeUrl(string url)
+	{
+		return url.StartsWith("http", StringComparison.OrdinalIgnoreCase) || url.StartsWith("/", StringComparison.Ordinal)
+			? url
+			: $"/{url}";
 	}
 }
 
@@ -147,6 +203,25 @@
 		background-color: #263346;
 		background-size: cover;
 		background-position: center;
+	}
+
+	.selected-game-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 8px;
+	}
+
+	.selected-game-meta span {
+		display: inline-flex;
+		align-items: center;
+		min-height: 24px;
+		padding: 3px 9px;
+		border-radius: 8px;
+		background: rgba(118, 228, 196, .1);
+		color: var(--mud-palette-text-primary);
+		font-size: .78rem;
+		font-weight: 800;
 	}
 
 	.time-summary {

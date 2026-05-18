@@ -1,0 +1,85 @@
+<MudSelect T="int"
+           Label="@Label"
+           Value="@NormalizedValue"
+           ValueChanged="SetValue"
+           Variant="Variant.Outlined">
+    @foreach (var option in Options)
+    {
+        <MudSelectItem T="int" Value="@option.Value">
+            <div class="@($"game-priority-option game-priority-option--{option.Tone}")">
+                <span>@option.Value</span>
+                <strong>@option.Label</strong>
+            </div>
+        </MudSelectItem>
+    }
+</MudSelect>
+
+@code {
+    [Parameter]
+    public int Value { get; set; }
+
+    [Parameter]
+    public EventCallback<int> ValueChanged { get; set; }
+
+    [Parameter]
+    public string Label { get; set; } = "Priority";
+
+    private int NormalizedValue => Value is >= 1 and <= 4 ? Value : 3;
+
+    private static readonly PriorityOption[] Options =
+    [
+        new(1, "Critical", "red"),
+        new(2, "High", "yellow"),
+        new(3, "Normal", "blue"),
+        new(4, "Low", "green")
+    ];
+
+    private Task SetValue(int value)
+    {
+        return ValueChanged.InvokeAsync(value);
+    }
+
+    private sealed record PriorityOption(int Value, string Label, string Tone);
+}
+
+<style>
+    .game-priority-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 118px;
+        min-height: 28px;
+    }
+
+    .game-priority-option span {
+        display: inline-grid;
+        width: 24px;
+        height: 24px;
+        place-items: center;
+        border-radius: 8px;
+        color: #fff;
+        font-size: .82rem;
+        font-weight: 900;
+    }
+
+    .game-priority-option strong {
+        font-weight: 800;
+    }
+
+    .game-priority-option--red span {
+        background: #dc2626;
+    }
+
+    .game-priority-option--yellow span {
+        color: #111827;
+        background: #facc15;
+    }
+
+    .game-priority-option--blue span {
+        background: #2563eb;
+    }
+
+    .game-priority-option--green span {
+        background: #16a34a;
+    }
+</style>
