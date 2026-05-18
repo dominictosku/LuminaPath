@@ -1,0 +1,287 @@
+@page "/Admin/AuditLog"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrator")]
+@inject AuditLogService AuditLogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Audit Log</PageTitle>
+
+<section class="audit-shell">
+    <div class="audit-hero">
+        <div>
+            <MudText Typo="Typo.overline">Administration</MudText>
+            <MudText Typo="Typo.h3">Audit Log</MudText>
+            <MudText Typo="Typo.body1">Review security-sensitive account and operator actions.</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" OnClick="Load">
+            Refresh
+        </MudButton>
+    </div>
+
+    <MudPaper Class="audit-filters" Elevation="0">
+        <MudSelect T="string" @bind-Value="category" Label="Category" Clearable="true" Dense="true" Variant="Variant.Outlined">
+            @foreach (var option in Categories)
+            {
+                <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+            }
+        </MudSelect>
+        <MudSelect T="string" @bind-Value="action" Label="Action" Clearable="true" Dense="true" Variant="Variant.Outlined">
+            @foreach (var option in Actions)
+            {
+                <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+            }
+        </MudSelect>
+        <MudSelect T="string" @bind-Value="outcome" Label="Outcome" Clearable="true" Dense="true" Variant="Variant.Outlined">
+            <MudSelectItem T="string" Value="@AuditOutcomes.Success">@AuditOutcomes.Success</MudSelectItem>
+            <MudSelectItem T="string" Value="@AuditOutcomes.Failure">@AuditOutcomes.Failure</MudSelectItem>
+        </MudSelect>
+        <MudDatePicker @bind-Date="fromDate" Label="From" Variant="Variant.Outlined" />
+        <MudDatePicker @bind-Date="toDate" Label="To" Variant="Variant.Outlined" />
+        <MudTextField T="string" @bind-Value="search" Label="Search" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="ApplyFilters">Apply</MudButton>
+    </MudPaper>
+
+    <MudTable Items="logs" Dense="true" Hover="true" Loading="loading" Class="audit-table">
+        <HeaderContent>
+            <MudTh>Time</MudTh>
+            <MudTh>Event</MudTh>
+            <MudTh>Actor</MudTh>
+            <MudTh>Target</MudTh>
+            <MudTh>Outcome</MudTh>
+            <MudTh>Request</MudTh>
+            <MudTh>Details</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Time">@context.TimestampUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</MudTd>
+            <MudTd DataLabel="Event">
+                <strong>@context.Action</strong>
+                <div class="audit-muted">@context.Category</div>
+            </MudTd>
+            <MudTd DataLabel="Actor">@ActorLabel(context)</MudTd>
+            <MudTd DataLabel="Target">
+                <strong>@(context.TargetName ?? context.TargetId ?? "-")</strong>
+                <div class="audit-muted">@context.TargetType</div>
+            </MudTd>
+            <MudTd DataLabel="Outcome">
+                <MudChip T="string" Size="Size.Small" Color="@OutcomeColor(context.Outcome)" Variant="Variant.Filled">@context.Outcome</MudChip>
+            </MudTd>
+            <MudTd DataLabel="Request">
+                <div>@context.HttpMethod @context.RequestPath</div>
+                <div class="audit-muted">@context.IpAddress</div>
+            </MudTd>
+            <MudTd DataLabel="Details">
+                @if (!string.IsNullOrWhiteSpace(context.ErrorMessage))
+                {
+                    <div class="audit-error">@context.ErrorMessage</div>
+                }
+                @if (!string.IsNullOrWhiteSpace(context.ChangesJson))
+                {
+                    <details>
+                        <summary>Changes</summary>
+                        <pre>@context.ChangesJson</pre>
+                    </details>
+                }
+                @if (!string.IsNullOrWhiteSpace(context.MetadataJson))
+                {
+                    <details>
+                        <summary>Metadata</summary>
+                        <pre>@context.MetadataJson</pre>
+                    </details>
+                }
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="pa-4">No audit events found.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+
+    <div class="audit-pager">
+        <MudText Typo="Typo.body2">@PagerText</MudText>
+        <div>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@(page == 0 || loading)" OnClick="PreviousPage">Previous</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@(!HasNextPage || loading)" OnClick="NextPage">Next</MudButton>
+        </div>
+    </div>
+</section>
+
+<style>
+    .audit-shell {
+        display: grid;
+        gap: 18px;
+    }
+
+    .audit-hero,
+    .audit-filters,
+    .audit-pager {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .audit-filters {
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: 8px;
+    }
+
+    .audit-filters > * {
+        min-width: 170px;
+    }
+
+    .audit-muted {
+        color: var(--mud-palette-text-secondary);
+        font-size: .8rem;
+    }
+
+    .audit-error {
+        color: var(--mud-palette-error);
+        max-width: 420px;
+    }
+
+    pre {
+        max-width: 520px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin: 8px 0 0;
+        padding: 10px;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, .18);
+    }
+</style>
+
+@code {
+    private static readonly string[] Categories =
+    [
+        AuditCategories.Account,
+        AuditCategories.Admin,
+        AuditCategories.System
+    ];
+
+    private static readonly string[] Actions =
+    [
+        AuditActions.Login,
+        AuditActions.Logout,
+        AuditActions.Registration,
+        AuditActions.PasswordChanged,
+        AuditActions.PasswordSet,
+        AuditActions.PasswordReset,
+        AuditActions.EmailChangeRequested,
+        AuditActions.EmailChanged,
+        AuditActions.UserCreated,
+        AuditActions.UserUpdated,
+        AuditActions.UserDeleted,
+        AuditActions.UserActivated,
+        AuditActions.UserLocked,
+        AuditActions.RoleChanged,
+        AuditActions.ApplicationSettingChanged,
+        AuditActions.BackgroundJobQueued,
+        AuditActions.BackgroundJobStarted,
+        AuditActions.BackgroundJobRetried,
+        AuditActions.BackgroundJobCanceled,
+        AuditActions.DatabaseBackupCreated,
+        AuditActions.DatabaseBackupDownloaded,
+        AuditActions.EntityChanged
+    ];
+
+    private List<LuminaPath.Core.Models.AuditLog> logs = [];
+    private string? category;
+    private string? action;
+    private string? outcome;
+    private string? search;
+    private DateTime? fromDate;
+    private DateTime? toDate;
+    private int page;
+    private int total;
+    private bool loading;
+    private const int PageSize = 50;
+
+    private bool HasNextPage => (page + 1) * PageSize < total;
+    private string PagerText => total == 0
+        ? "No events"
+        : $"{page * PageSize + 1}-{Math.Min((page + 1) * PageSize, total)} of {total}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task ApplyFilters()
+    {
+        page = 0;
+        await Load();
+    }
+
+    private async Task PreviousPage()
+    {
+        page = Math.Max(0, page - 1);
+        await Load();
+    }
+
+    private async Task NextPage()
+    {
+        if (!HasNextPage)
+        {
+            return;
+        }
+
+        page++;
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        loading = true;
+        try
+        {
+            var result = await AuditLogService.SearchAsync(new AuditLogQuery(
+                EmptyToNull(category),
+                EmptyToNull(action),
+                EmptyToNull(outcome),
+                EmptyToNull(search),
+                ToUtcStart(fromDate),
+                ToUtcExclusiveEnd(toDate),
+                page,
+                PageSize));
+
+            logs = result.Items.ToList();
+            total = result.Total;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not load audit log: {ex.Message}", Severity.Error);
+            logs = [];
+            total = 0;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private static string ActorLabel(LuminaPath.Core.Models.AuditLog log)
+    {
+        return log.ActorEmail ?? log.ActorUserId ?? "Anonymous";
+    }
+
+    private static Color OutcomeColor(string outcome)
+    {
+        return outcome == AuditOutcomes.Success ? Color.Success : Color.Error;
+    }
+
+    private static string? EmptyToNull(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static DateTime? ToUtcStart(DateTime? value)
+    {
+        return value?.Date.ToUniversalTime();
+    }
+
+    private static DateTime? ToUtcExclusiveEnd(DateTime? value)
+    {
+        return value?.Date.AddDays(1).ToUniversalTime();
+    }
+}

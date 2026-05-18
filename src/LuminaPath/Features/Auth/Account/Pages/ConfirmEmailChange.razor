@@ -8,6 +8,7 @@
 @inject UserManager<LuminaUser> UserManager
 @inject SignInManager<LuminaUser> SignInManager
 @inject IdentityRedirectManager RedirectManager
+@inject AuditLogService AuditLog
 
 <PageTitle>Confirm email change</PageTitle>
 
@@ -42,14 +43,39 @@
         var user = await UserManager.FindByIdAsync(UserId);
         if (user is null)
         {
+            await AuditLog.RecordAsync(new AuditLogEntry
+            {
+                Category = AuditCategories.Account,
+                Action = AuditActions.EmailChanged,
+                Outcome = AuditOutcomes.Failure,
+                TargetType = "User",
+                TargetId = UserId,
+                TargetName = Email,
+                Metadata = new { source = "Blazor", reason = "Unknown user" },
+                ErrorMessage = "User was not found."
+            });
             message = "Unable to find user with Id '{userId}'";
             return;
         }
 
+        var previousEmail = user.Email;
         var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
         var result = await UserManager.ChangeEmailAsync(user, Email, code);
         if (!result.Succeeded)
         {
+            await AuditLog.RecordAsync(new AuditLogEntry
+            {
+                Category = AuditCategories.Account,
+                Action = AuditActions.EmailChanged,
+                Outcome = AuditOutcomes.Failure,
+                Actor = new AuditActor(user.Id, user.Email),
+                TargetType = "User",
+                TargetId = user.Id,
+                TargetName = previousEmail,
+                Changes = AuditLogService.Changes(("Email", previousEmail, Email)),
+                Metadata = new { source = "Blazor" },
+                ErrorMessage = "Error changing email."
+            });
             message = "Error changing email.";
             return;
         }
@@ -59,11 +85,36 @@
         var setUserNameResult = await UserManager.SetUserNameAsync(user, Email);
         if (!setUserNameResult.Succeeded)
         {
+            await AuditLog.RecordAsync(new AuditLogEntry
+            {
+                Category = AuditCategories.Account,
+                Action = AuditActions.EmailChanged,
+                Outcome = AuditOutcomes.Failure,
+                Actor = new AuditActor(user.Id, user.Email),
+                TargetType = "User",
+                TargetId = user.Id,
+                TargetName = Email,
+                Changes = AuditLogService.Changes(("Email", previousEmail, Email)),
+                Metadata = new { source = "Blazor", reason = "Username update failed" },
+                ErrorMessage = "Error changing user name."
+            });
             message = "Error changing user name.";
             return;
         }
 
         await SignInManager.RefreshSignInAsync(user);
+        await AuditLog.RecordAsync(new AuditLogEntry
+        {
+            Category = AuditCategories.Account,
+            Action = AuditActions.EmailChanged,
+            Outcome = AuditOutcomes.Success,
+            Actor = new AuditActor(user.Id, Email),
+            TargetType = "User",
+            TargetId = user.Id,
+            TargetName = Email,
+            Changes = AuditLogService.Changes(("Email", previousEmail, Email)),
+            Metadata = new { source = "Blazor" }
+        });
         message = "Thank you for confirming your email change.";
     }
 }

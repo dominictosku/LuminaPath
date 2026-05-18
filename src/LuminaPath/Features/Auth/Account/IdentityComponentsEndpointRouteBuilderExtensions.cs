@@ -1,6 +1,7 @@
 using LuminaPath.Features.Auth.Account.Pages;
 using LuminaPath.Features.Auth.Account.Pages.Manage;
 using LuminaPath.Infrastructure.Identity;
+using LuminaPath.Infrastructure.Services.Auditing;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
@@ -43,9 +44,22 @@ namespace LuminaPath.Features.Auth.Account
             accountGroup.MapPost("/Logout", async (
                 ClaimsPrincipal user,
                 SignInManager<LuminaUser> signInManager,
+                [FromServices] AuditLogService auditLog,
                 [FromForm] string returnUrl) =>
             {
+                var actor = AuditLogService.ActorFromPrincipal(user);
                 await signInManager.SignOutAsync();
+                await auditLog.RecordAsync(new AuditLogEntry
+                {
+                    Category = AuditCategories.Account,
+                    Action = AuditActions.Logout,
+                    Outcome = AuditOutcomes.Success,
+                    Actor = actor,
+                    TargetType = "User",
+                    TargetId = actor.UserId,
+                    TargetName = actor.Email,
+                    Metadata = new { source = "Blazor" }
+                });
                 return TypedResults.LocalRedirect($"~/{returnUrl}");
             });
 

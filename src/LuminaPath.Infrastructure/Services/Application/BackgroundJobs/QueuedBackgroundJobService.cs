@@ -1,4 +1,5 @@
 using LuminaPath.Core.Enums;
+using LuminaPath.Infrastructure.Services.Auditing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -80,6 +81,7 @@ public sealed class QueuedBackgroundJobService : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var dbContextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<LuminaPathDbContext>>();
         var cancellationRegistry = scope.ServiceProvider.GetRequiredService<IBackgroundJobCancellationRegistry>();
+        var auditLog = scope.ServiceProvider.GetService<AuditLogService>();
 
         await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var job = await context.BackgroundJobs.FirstOrDefaultAsync(item => item.Id == jobId, cancellationToken);
@@ -99,12 +101,25 @@ public sealed class QueuedBackgroundJobService : BackgroundService
         if (runner is null)
         {
             await MarkFailedAsync(context, job, $"No runner registered for job type {job.JobType}.", cancellationToken);
+            await RecordJobAuditAsync(
+                auditLog,
+                AuditActions.BackgroundJobStarted,
+                AuditOutcomes.Failure,
+                job,
+                "No runner registered for this job type.",
+                cancellationToken);
             return;
         }
 
         job.Status = BackgroundJobStatus.Running;
         job.StartedAt = DateTime.UtcNow;
         await context.SaveChangesAsync(cancellationToken);
+        await RecordJobAuditAsync(
+            auditLog,
+            AuditActions.BackgroundJobStarted,
+            AuditOutcomes.Success,
+            job,
+            cancellationToken: cancellationToken);
 
         using var jobCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         using var registration = cancellationRegistry.Register(job.Id, jobCancellation);
@@ -150,5 +165,36 @@ public sealed class QueuedBackgroundJobService : BackgroundService
         return string.IsNullOrWhiteSpace(value) || value.Length <= maxLength
             ? value
             : value[..maxLength];
+    }
+
+    private static Task RecordJobAuditAsync(
+        AuditLogService? auditLog,
+        string action,
+        string outcome,
+        Core.Models.BackgroundJobRecord job,
+        string? errorMessage = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (auditLog is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return auditLog.RecordAsync(new AuditLogEntry
+        {
+            Category = AuditCategories.Admin,
+            Action = action,
+            Outcome = outcome,
+            Actor = AuditActor.System,
+            TargetType = "BackgroundJob",
+            TargetId = job.Id.ToString(),
+            TargetName = job.DisplayName,
+            Metadata = new
+            {
+                jobType = job.JobType,
+                status = job.Status.ToString()
+            },
+            ErrorMessage = errorMessage
+        }, cancellationToken);
     }
 }

@@ -1,6 +1,7 @@
-﻿using LuminaPath.Core.Dtos;
+using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Models.Third_Party;
 using LuminaPath.Infrastructure.Identity;
+using LuminaPath.Infrastructure.Services.Auditing;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -12,10 +13,16 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         public static readonly string[] Roles = ["Administrator", "Editor"];
         private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
         private readonly UserManager<LuminaUser> _userManager;
-        public LuminaUserService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, UserManager<LuminaUser> userManager)
+        private readonly AuditLogService _auditLog;
+
+        public LuminaUserService(
+            IDbContextFactory<LuminaPathDbContext> dbContextFactory,
+            UserManager<LuminaUser> userManager,
+            AuditLogService auditLog)
         {
             _dbContextFactory = dbContextFactory;
             _userManager = userManager;
+            _auditLog = auditLog;
         }
 
         protected async Task<LuminaPathDbContext> GetDbContextAsync()
@@ -102,7 +109,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             if (string.IsNullOrWhiteSpace(model.Password))
             {
-                return IdentityResult.Failed(new IdentityError { Description = "Password is required." });
+                var failure = IdentityResult.Failed(new IdentityError { Description = "Password is required." });
+                await AuditUserCreateFailure(model, failure);
+                return failure;
             }
 
             var lockedOut = !model.Active;
@@ -124,7 +133,27 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 if (user is not null)
                 {
                     await SetUserRole(user, model.Role);
+                    await _auditLog.RecordAsync(new AuditLogEntry
+                    {
+                        Category = AuditCategories.Admin,
+                        Action = AuditActions.UserCreated,
+                        Outcome = AuditOutcomes.Success,
+                        TargetType = "User",
+                        TargetId = user.Id,
+                        TargetName = user.Email,
+                        Changes = AuditLogService.Changes(
+                            ("Email", null, user.Email),
+                            ("FullName", null, user.FullName),
+                            ("PhoneNumber", null, user.PhoneNumber),
+                            ("Role", null, await GetUserRole(user)),
+                            ("Active", null, !lockedOut)),
+                        Metadata = new { source = "AdminUsers" }
+                    });
                 }
+            }
+            else
+            {
+                await AuditUserCreateFailure(model, state);
             }
             return state;
         }
@@ -133,6 +162,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             var lockedOut = !model.Active;
             var user = await _userManager.FindByIdAsync(model.Id!) ?? throw new Exception($"The application user [{model.Id}] was not found.");
+            var oldEmail = user.Email;
+            var oldFullName = user.FullName;
+            var oldPhone = user.PhoneNumber;
+            var oldActive = !(user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd >= DateTimeOffset.UtcNow);
+            var oldRole = await GetUserRole(user);
+
             user.FullName = model.UserName;
             user.Email = model.Email;
             user.PhoneNumber = model.PhoneNumber;
@@ -140,7 +175,28 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             user.LockoutEnabled = lockedOut;
             user.LockoutEnd = lockedOut ? DateTimeOffset.UtcNow.AddDays(60) : null;
             await SetUserRole(user, model.Role);
-            return await _userManager.UpdateAsync(user);
+            var result = await _userManager.UpdateAsync(user);
+            var newRole = await GetUserRole(user);
+
+            await _auditLog.RecordAsync(new AuditLogEntry
+            {
+                Category = AuditCategories.Admin,
+                Action = oldRole != newRole ? AuditActions.RoleChanged : AuditActions.UserUpdated,
+                Outcome = result.Succeeded ? AuditOutcomes.Success : AuditOutcomes.Failure,
+                TargetType = "User",
+                TargetId = user.Id,
+                TargetName = user.Email,
+                Changes = AuditLogService.Changes(
+                    ("Email", oldEmail, user.Email),
+                    ("FullName", oldFullName, user.FullName),
+                    ("PhoneNumber", oldPhone, user.PhoneNumber),
+                    ("Role", oldRole, newRole),
+                    ("Active", oldActive, model.Active)),
+                Metadata = new { source = "AdminUsers" },
+                ErrorMessage = result.Succeeded ? null : string.Join(", ", result.Errors.Select(error => error.Description))
+            });
+
+            return result;
         }
 
         public async Task<IdentityResult> UpdateThirdParty(string userId, LuminaUserInfo model)
@@ -173,15 +229,78 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         {
             bool lockedOut = !active;
             var user = await _userManager.FindByIdAsync(userId!) ?? throw new Exception($"Application user not found {userId}.");
+            var oldActive = !(user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd >= DateTimeOffset.UtcNow);
             user.LockoutEnd = lockedOut ? DateTimeOffset.UtcNow.AddDays(60) : null;
             user.LockoutEnabled = lockedOut;
-            return await _userManager.UpdateAsync(user);
+            var result = await _userManager.UpdateAsync(user);
+            await _auditLog.RecordAsync(new AuditLogEntry
+            {
+                Category = AuditCategories.Admin,
+                Action = active ? AuditActions.UserActivated : AuditActions.UserLocked,
+                Outcome = result.Succeeded ? AuditOutcomes.Success : AuditOutcomes.Failure,
+                TargetType = "User",
+                TargetId = user.Id,
+                TargetName = user.Email,
+                Changes = AuditLogService.Changes(("Active", oldActive, active)),
+                Metadata = new { source = "AdminUsers" },
+                ErrorMessage = result.Succeeded ? null : string.Join(", ", result.Errors.Select(error => error.Description))
+            });
+            return result;
         }
 
         public async Task<IdentityResult> DeleteUser(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId) ?? throw new Exception("User not found");
-            return await _userManager.DeleteAsync(user);
+            var role = await GetUserRole(user);
+            var result = await _userManager.DeleteAsync(user);
+            await _auditLog.RecordAsync(new AuditLogEntry
+            {
+                Category = AuditCategories.Admin,
+                Action = AuditActions.UserDeleted,
+                Outcome = result.Succeeded ? AuditOutcomes.Success : AuditOutcomes.Failure,
+                TargetType = "User",
+                TargetId = user.Id,
+                TargetName = user.Email,
+                Metadata = new
+                {
+                    source = "AdminUsers",
+                    role,
+                    fullName = user.FullName
+                },
+                ErrorMessage = result.Succeeded ? null : string.Join(", ", result.Errors.Select(error => error.Description))
+            });
+            return result;
+        }
+
+        private async Task AuditUserCreateFailure(UserDto model, IdentityResult result)
+        {
+            await _auditLog.RecordAsync(new AuditLogEntry
+            {
+                Category = AuditCategories.Admin,
+                Action = AuditActions.UserCreated,
+                Outcome = AuditOutcomes.Failure,
+                TargetType = "User",
+                TargetName = model.Email,
+                Metadata = new
+                {
+                    source = "AdminUsers",
+                    errors = result.Errors.Select(error => error.Code).ToArray()
+                },
+                ErrorMessage = string.Join(", ", result.Errors.Select(error => error.Description))
+            });
+        }
+
+        private async Task<string> GetUserRole(LuminaUser user)
+        {
+            foreach (var role in Roles)
+            {
+                if (await _userManager.IsInRoleAsync(user, role))
+                {
+                    return role;
+                }
+            }
+
+            return string.Empty;
         }
     }
 }

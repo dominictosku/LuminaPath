@@ -12,6 +12,7 @@
 @inject IEmailSender<LuminaUser> EmailSender
 @inject IdentityUserAccessor UserAccessor
 @inject NavigationManager NavigationManager
+@inject AuditLogService AuditLog
 
 <PageTitle>Manage email</PageTitle>
 
@@ -102,6 +103,18 @@
             new Dictionary<string, object?> { ["userId"] = userId, ["email"] = Input.NewEmail, ["code"] = code });
 
         await EmailSender.SendConfirmationLinkAsync(user, Input.NewEmail, HtmlEncoder.Default.Encode(callbackUrl));
+        await AuditLog.RecordAsync(new AuditLogEntry
+        {
+            Category = AuditCategories.Account,
+            Action = AuditActions.EmailChangeRequested,
+            Outcome = AuditOutcomes.Success,
+            Actor = new AuditActor(user.Id, user.Email),
+            TargetType = "User",
+            TargetId = user.Id,
+            TargetName = user.Email,
+            Changes = AuditLogService.Changes(("Email", email, Input.NewEmail)),
+            Metadata = new { source = "Blazor" }
+        });
 
         message = "Confirmation link to change email sent. Please check your email.";
     }

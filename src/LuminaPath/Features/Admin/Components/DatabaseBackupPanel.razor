@@ -64,11 +64,19 @@
 					<MudTh>File</MudTh>
 					<MudTh>Created</MudTh>
 					<MudTh>Size</MudTh>
+					<MudTh>Actions</MudTh>
 				</HeaderContent>
 				<RowTemplate>
 					<MudTd DataLabel="File">@context.FileName</MudTd>
 					<MudTd DataLabel="Created">@FormatDate(context.LastModifiedAt)</MudTd>
 					<MudTd DataLabel="Size">@FormatBytes(context.SizeBytes)</MudTd>
+					<MudTd DataLabel="Actions">
+						<MudIconButton Href="@BackupDownloadUrl(context)"
+									   Target="_blank"
+									   Icon="@Icons.Material.Filled.Download"
+									   Color="Color.Primary"
+									   Size="Size.Small" />
+					</MudTd>
 				</RowTemplate>
 			</MudTable>
 		}
@@ -172,5 +180,10 @@
 		}
 
 		return $"{size:0.#} {units[unit]}";
+	}
+
+	private static string BackupDownloadUrl(DatabaseBackupInfo backup)
+	{
+		return $"/api/admin/database-backups/{Uri.EscapeDataString(backup.FileName)}/download";
 	}
 }

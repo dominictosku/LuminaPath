@@ -53,6 +53,26 @@ public sealed class DatabaseBackupService
         return Task.FromResult<IReadOnlyList<DatabaseBackupInfo>>(backups);
     }
 
+    public Task<DatabaseBackupInfo?> GetBackupAsync(string fileName, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(fileName) || fileName != Path.GetFileName(fileName))
+        {
+            return Task.FromResult<DatabaseBackupInfo?>(null);
+        }
+
+        var directory = GetBackupDirectory();
+        var fullPath = Path.GetFullPath(Path.Combine(directory, fileName));
+        if (!IsPathUnderDirectory(fullPath, directory)
+            || !string.Equals(Path.GetExtension(fullPath), ".dump", StringComparison.OrdinalIgnoreCase)
+            || !File.Exists(fullPath))
+        {
+            return Task.FromResult<DatabaseBackupInfo?>(null);
+        }
+
+        return Task.FromResult<DatabaseBackupInfo?>(CreateBackupInfo(fullPath));
+    }
+
     public Task<int> DeleteOldBackupsAsync(int keepCount, CancellationToken cancellationToken = default)
     {
         var directory = GetBackupDirectory();
@@ -258,6 +278,17 @@ public sealed class DatabaseBackupService
         {
             File.Delete(filePath);
         }
+    }
+
+    private static bool IsPathUnderDirectory(string path, string directory)
+    {
+        var normalizedDirectory = Path.GetFullPath(directory);
+        if (!normalizedDirectory.EndsWith(Path.DirectorySeparatorChar))
+        {
+            normalizedDirectory += Path.DirectorySeparatorChar;
+        }
+
+        return path.StartsWith(normalizedDirectory, StringComparison.OrdinalIgnoreCase);
     }
 }
 

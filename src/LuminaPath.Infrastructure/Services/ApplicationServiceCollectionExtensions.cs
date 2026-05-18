@@ -2,6 +2,7 @@ using LuminaPath.Infrastructure.Services.ModelServices;
 using LuminaPath.Infrastructure.Services.Imports;
 using LuminaPath.Infrastructure.Services.Application;
 using LuminaPath.Infrastructure.Services.Application.BackgroundJobs;
+using LuminaPath.Infrastructure.Services.Auditing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -28,6 +29,7 @@ internal static class ApplicationServiceCollectionExtensions
         services.AddScoped<LuminaUserService>();
         services.AddScoped<FriendsService>();
         services.AddScoped<DirectMessageService>();
+        services.AddScoped<AuditLogService>();
 
         services.AddScoped<ExcelService>();
         services.AddScoped<GameImportPipeline>();

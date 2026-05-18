@@ -5,7 +5,9 @@ using LuminaPath.Infrastructure.Configuration;
 using LuminaPath.Infrastructure.Hubs;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services;
+using LuminaPath.Infrastructure.Services.Application;
 using LuminaPath.Infrastructure.Services.AiChat;
+using LuminaPath.Infrastructure.Services.Auditing;
 using LuminaPath.Infrastructure.Services.Third_Party;
 using LuminaPath.Infrastructure.Validators;
 using Microsoft.AspNetCore.Builder;
@@ -33,6 +35,8 @@ namespace LuminaPath.Infrastructure
             services.AddApplicationServices(config);
             services.AddThirdPartyIntegrations(config);
             services.AddAiChatServices(config);
+            services.AddHttpContextAccessor();
+            services.AddSingleton<AuditSaveChangesInterceptor>();
             AddCache(services, config);
             AddCors(services, config);
             services.AddSignalR();
@@ -93,8 +97,10 @@ namespace LuminaPath.Infrastructure
             var connectionString = ConfigurationValues.FirstNonEmpty(config.GetConnectionString("Default"), config["POSTGRESQL_DB"])
                 ?? throw new InvalidOperationException("Missing database connection string. Set ConnectionStrings__Default.");
 
-            services.AddDbContextFactory<LuminaPathDbContext>(options =>
-                options.UseNpgsql(connectionString));
+            services.AddDbContextFactory<LuminaPathDbContext>((serviceProvider, options) =>
+                options
+                    .UseNpgsql(connectionString)
+                    .AddInterceptors(serviceProvider.GetRequiredService<AuditSaveChangesInterceptor>()));
             services.AddScoped<ILuminaPathDbContext, LuminaPathDbContext>();
         }
 
@@ -199,6 +205,7 @@ namespace LuminaPath.Infrastructure
 
             await ConfigureEnvironment(app);
             app.UseAuthentication();
+            app.UseMiddleware<IdentityEndpointAuditMiddleware>();
             app.UseAuthorization();
         }
 
@@ -236,8 +243,59 @@ namespace LuminaPath.Infrastructure
                 })
                 .RequireAuthorization();
 
+            app.MapGet("/api/admin/database-backups/{fileName}/download", DownloadDatabaseBackupAsync)
+                .RequireAuthorization(policy => policy.RequireRole("Administrator"));
+
             app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "LuminaPath" }))
                 .AllowAnonymous();
+        }
+
+        private static async Task<IResult> DownloadDatabaseBackupAsync(
+            HttpContext context,
+            string fileName,
+            DatabaseBackupService backupService,
+            AuditLogService auditLog,
+            CancellationToken cancellationToken)
+        {
+            var actor = AuditLogService.ActorFromPrincipal(context.User);
+            var backup = await backupService.GetBackupAsync(fileName, cancellationToken);
+            if (backup is null)
+            {
+                await auditLog.RecordAsync(new AuditLogEntry
+                {
+                    Category = AuditCategories.Admin,
+                    Action = AuditActions.DatabaseBackupDownloaded,
+                    Outcome = AuditOutcomes.Failure,
+                    Actor = actor,
+                    TargetType = "DatabaseBackup",
+                    TargetId = fileName,
+                    TargetName = fileName,
+                    ErrorMessage = "Database backup was not found."
+                }, cancellationToken);
+
+                return Results.NotFound();
+            }
+
+            await auditLog.RecordAsync(new AuditLogEntry
+            {
+                Category = AuditCategories.Admin,
+                Action = AuditActions.DatabaseBackupDownloaded,
+                Outcome = AuditOutcomes.Success,
+                Actor = actor,
+                TargetType = "DatabaseBackup",
+                TargetId = backup.FileName,
+                TargetName = backup.FileName,
+                Metadata = new
+                {
+                    sizeBytes = backup.SizeBytes,
+                    createdAt = backup.CreatedAt
+                }
+            }, cancellationToken);
+
+            return Results.File(
+                backup.FullPath,
+                contentType: "application/octet-stream",
+                fileDownloadName: backup.FileName);
         }
     }
 }

@@ -1,4 +1,5 @@
 using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Services.Auditing;
 using Microsoft.EntityFrameworkCore;
 
 namespace LuminaPath.Infrastructure.Services;
@@ -18,11 +19,26 @@ public sealed class ApplicationSettingsService
     public const string NewsEnabled = "News.Enabled";
     public const string NewsCustomRssUrl = "News.CustomRssUrl";
 
+    private static readonly HashSet<string> SensitiveKeys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        SteamApiKey,
+        PsnBearerToken,
+        MetadataIgdbClientSecret,
+        MetadataRawgApiKey
+    };
+
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
+    private readonly AuditLogService? _auditLog;
 
     public ApplicationSettingsService(IDbContextFactory<LuminaPathDbContext> dbContextFactory)
+        : this(dbContextFactory, null)
+    {
+    }
+
+    public ApplicationSettingsService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, AuditLogService? auditLog)
     {
         _dbContextFactory = dbContextFactory;
+        _auditLog = auditLog;
     }
 
     public async Task<string> GetSteamApiKeyAsync(CancellationToken cancellationToken = default)
@@ -161,6 +177,12 @@ public sealed class ApplicationSettingsService
         var setting = await context.ApplicationSettings
             .FirstOrDefaultAsync(item => item.Key == key, cancellationToken);
 
+        var oldValue = setting?.Value;
+        if (string.Equals(oldValue, value, StringComparison.Ordinal))
+        {
+            return;
+        }
+
         if (setting is null)
         {
             context.ApplicationSettings.Add(new ApplicationSetting
@@ -177,6 +199,35 @@ public sealed class ApplicationSettingsService
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        await AuditSettingChangedAsync(key, oldValue, value, cancellationToken);
+    }
+
+    private async Task AuditSettingChangedAsync(string key, string? oldValue, string newValue, CancellationToken cancellationToken)
+    {
+        if (_auditLog is null)
+        {
+            return;
+        }
+
+        var isSensitive = SensitiveKeys.Contains(key);
+        await _auditLog.RecordAsync(new AuditLogEntry
+        {
+            Category = AuditCategories.Admin,
+            Action = AuditActions.ApplicationSettingChanged,
+            Outcome = AuditOutcomes.Success,
+            TargetType = "ApplicationSetting",
+            TargetId = key,
+            TargetName = key,
+            Changes = AuditLogService.Changes((
+                "Value",
+                isSensitive ? AuditLogService.ValueState(oldValue) : oldValue,
+                isSensitive ? AuditLogService.ValueState(newValue) : newValue)),
+            Metadata = new
+            {
+                sensitive = isSensitive,
+                source = "ApplicationSettings"
+            }
+        }, cancellationToken);
     }
 }
 

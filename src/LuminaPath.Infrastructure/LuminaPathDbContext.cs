@@ -120,6 +120,7 @@ namespace LuminaPath.Infrastructure
         public DbSet<DirectMessage> DirectMessages { get; set; }
         public DbSet<ApplicationSetting> ApplicationSettings { get; set; }
         public DbSet<BackgroundJobRecord> BackgroundJobs { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<MediaExternalId> MediaExternalIds { get; set; }
     }
 }

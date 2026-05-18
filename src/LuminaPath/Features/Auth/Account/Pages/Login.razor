@@ -8,6 +8,7 @@
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject AuditLogService AuditLog
 
 <PageTitle>Sign in — LuminaPath</PageTitle>
 
@@ -151,26 +152,56 @@
     public async Task LoginUser()
     {
         var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        var user = await SignInManager.UserManager.FindByEmailAsync(Input.Email);
         if (result.Succeeded)
         {
+            await AuditLog.RecordAsync(new AuditLogEntry
+            {
+                Category = AuditCategories.Account,
+                Action = AuditActions.Login,
+                Outcome = AuditOutcomes.Success,
+                Actor = user is null ? null : new AuditActor(user.Id, user.Email),
+                TargetType = "User",
+                TargetId = user?.Id,
+                TargetName = user?.Email ?? Input.Email,
+                Metadata = new { source = "Blazor", rememberMe = Input.RememberMe }
+            });
             Logger.LogInformation("User logged in.");
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.RequiresTwoFactor)
         {
+            await AuditFailedLoginAsync(user, "Two-factor required.");
             RedirectManager.RedirectTo(
                 "Account/LoginWith2fa",
                 new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
         }
         else if (result.IsLockedOut)
         {
+            await AuditFailedLoginAsync(user, "User account locked out.");
             Logger.LogWarning("User account locked out.");
             RedirectManager.RedirectTo("Account/Lockout");
         }
         else
         {
+            await AuditFailedLoginAsync(user, "Invalid email or password.");
             errorMessage = "Invalid email or password.";
         }
+    }
+
+    private Task AuditFailedLoginAsync(LuminaUser? user, string reason)
+    {
+        return AuditLog.RecordAsync(new AuditLogEntry
+        {
+            Category = AuditCategories.Account,
+            Action = AuditActions.Login,
+            Outcome = AuditOutcomes.Failure,
+            TargetType = "User",
+            TargetId = user?.Id,
+            TargetName = user?.Email ?? Input.Email,
+            Metadata = new { source = "Blazor", reason },
+            ErrorMessage = reason
+        });
     }
 
     private sealed class InputModel
