@@ -1,4 +1,32 @@
-import * as THREE from 'three';
+import {
+  AdditiveBlending,
+  BufferAttribute,
+  BufferGeometry,
+  CanvasTexture,
+  CatmullRomCurve3,
+  Color,
+  DoubleSide,
+  FogExp2,
+  Group,
+  IcosahedronGeometry,
+  Line,
+  Mesh,
+  MeshBasicMaterial,
+  NormalBlending,
+  PerspectiveCamera,
+  PlaneGeometry,
+  Points,
+  PointsMaterial,
+  Raycaster,
+  RingGeometry,
+  Scene,
+  ShaderMaterial,
+  Sprite,
+  SpriteMaterial,
+  Vector2,
+  Vector3,
+  WebGLRenderer,
+} from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -87,22 +115,22 @@ export class SkillTreeScene {
     this.canvas = canvas;
     this.unlockedIds = new Set(initialUnlocked);
 
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight);
     this.renderer.setClearColor(0x06101f, 1);
 
-    this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0x06101f, 0.018);
+    this.scene = new Scene();
+    this.scene.fog = new FogExp2(0x06101f, 0.018);
 
     const aspect = (canvas.clientWidth || window.innerWidth) / (canvas.clientHeight || window.innerHeight);
-    this.camera = new THREE.PerspectiveCamera(55, aspect, 0.1, 800);
+    this.camera = new PerspectiveCamera(55, aspect, 0.1, 800);
     this.camera.position.set(0, 5, 26);
     this.camera.lookAt(0, 5, 0);
 
-    this.raycaster = new THREE.Raycaster();
+    this.raycaster = new Raycaster();
     this.raycaster.params.Points = { threshold: 0.4 };
-    this.mouse = new THREE.Vector2(-10, -10);
+    this.mouse = new Vector2(-10, -10);
 
     this.buildStarfield();
     this.buildNebula(branches);
@@ -127,7 +155,7 @@ export class SkillTreeScene {
 
     this.composer.addPass(new RenderPass(this.scene, this.camera));
 
-    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(w, h), 0.75, 0.55, 0.82);
+    this.bloomPass = new UnrealBloomPass(new Vector2(w, h), 0.75, 0.55, 0.82);
     this.composer.addPass(this.bloomPass);
 
     this.caPass = new ShaderPass({
@@ -214,22 +242,22 @@ export class SkillTreeScene {
     const startCol = m.core.material.color.clone();
     const endCol = m.core.userData.baseColor.clone();
 
-    const ringGeo = new THREE.RingGeometry(0.3, 0.34, 64);
-    const ringMat = new THREE.MeshBasicMaterial({
+    const ringGeo = new RingGeometry(0.3, 0.34, 64);
+    const ringMat = new MeshBasicMaterial({
       color: m.core.userData.baseColor.clone(),
       transparent: true,
       opacity: 0.9,
-      side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
+      side: DoubleSide,
+      blending: AdditiveBlending,
       depthWrite: false,
     });
-    const shock = new THREE.Mesh(ringGeo, ringMat);
+    const shock = new Mesh(ringGeo, ringMat);
     shock.position.copy(m.core.position);
     shock.lookAt(this.camera.position);
     c.group.add(shock);
 
     const partCount = 24;
-    const partGeo = new THREE.BufferGeometry();
+    const partGeo = new BufferGeometry();
     const partPos = new Float32Array(partCount * 3);
     const partVel: [number, number, number][] = [];
     for (let i = 0; i < partCount; i++) {
@@ -245,18 +273,18 @@ export class SkillTreeScene {
         Math.cos(theta) * speed,
       ]);
     }
-    partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
-    const partMat = new THREE.PointsMaterial({
+    partGeo.setAttribute('position', new BufferAttribute(partPos, 3));
+    const partMat = new PointsMaterial({
       color: m.core.userData.baseColor.clone(),
       size: 4,
       sizeAttenuation: false,
       transparent: true,
       opacity: 1,
-      blending: THREE.AdditiveBlending,
+      blending: AdditiveBlending,
       depthWrite: false,
       map: this.getGlowTexture(),
     });
-    const points = new THREE.Points(partGeo, partMat);
+    const points = new Points(partGeo, partMat);
     c.group.add(points);
 
     this.animations.push({
@@ -304,7 +332,7 @@ export class SkillTreeScene {
 
   private buildStarfield(): void {
     const N = 4000;
-    const geo = new THREE.BufferGeometry();
+    const geo = new BufferGeometry();
     const pos = new Float32Array(N * 3);
     const col = new Float32Array(N * 3);
     const sizes = new Float32Array(N);
@@ -324,11 +352,11 @@ export class SkillTreeScene {
       }
       sizes[i] = Math.random() * 1.6 + 0.2;
     }
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    geo.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
+    geo.setAttribute('position', new BufferAttribute(pos, 3));
+    geo.setAttribute('color', new BufferAttribute(col, 3));
+    geo.setAttribute('aSize', new BufferAttribute(sizes, 1));
 
-    const mat = new THREE.ShaderMaterial({
+    const mat = new ShaderMaterial({
       uniforms: { uTime: { value: 0 }, uPixelRatio: { value: this.renderer.getPixelRatio() } },
       vertexShader: `
         attribute float aSize;
@@ -361,21 +389,21 @@ export class SkillTreeScene {
       `,
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      blending: AdditiveBlending,
     });
-    this.starField = new THREE.Points(geo, mat);
+    this.starField = new Points(geo, mat);
     this.scene.add(this.starField);
   }
 
   private buildNebula(branches: SkillTreeBranch[]): void {
-    const group = new THREE.Group();
+    const group = new Group();
     branches.forEach((branch, i) => {
-      const color = new THREE.Color().setHSL(branch.hue / 360, 0.55, 0.32);
-      const planeGeo = new THREE.PlaneGeometry(80, 60);
-      const mat = new THREE.ShaderMaterial({
+      const color = new Color().setHSL(branch.hue / 360, 0.55, 0.32);
+      const planeGeo = new PlaneGeometry(80, 60);
+      const mat = new ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        blending: THREE.AdditiveBlending,
+        blending: AdditiveBlending,
         uniforms: { uColor: { value: color }, uTime: { value: 0 } },
         vertexShader: `
           varying vec2 vUv;
@@ -405,7 +433,7 @@ export class SkillTreeScene {
           }
         `,
       });
-      const mesh = new THREE.Mesh(planeGeo, mat);
+      const mesh = new Mesh(planeGeo, mat);
       mesh.position.set(i * SKILL_SPACING, 5, -34);
       mesh.userData['shaderMat'] = mat;
       group.add(mesh);
@@ -416,10 +444,10 @@ export class SkillTreeScene {
 
   private buildConstellations(branches: SkillTreeBranch[]): void {
     branches.forEach((branch, i) => {
-      const group = new THREE.Group();
+      const group = new Group();
       group.position.x = i * SKILL_SPACING;
-      const baseColor = new THREE.Color().setHSL(branch.hue / 360, 0.7, 0.62);
-      const dimColor = new THREE.Color().setHSL(branch.hue / 360, 0.3, 0.28);
+      const baseColor = new Color().setHSL(branch.hue / 360, 0.7, 0.62);
+      const dimColor = new Color().setHSL(branch.hue / 360, 0.3, 0.28);
 
       const nodeMeshes = new Map<string, NodeMeshes>();
       const lineMeshes: any[] = [];
@@ -428,27 +456,27 @@ export class SkillTreeScene {
         const isCapstone = !!node.capstone;
         const r = isCapstone ? CAPSTONE_RADIUS : NODE_RADIUS;
 
-        const coreGeo = new THREE.IcosahedronGeometry(r, 1);
-        const coreMat = new THREE.MeshBasicMaterial({
+        const coreGeo = new IcosahedronGeometry(r, 1);
+        const coreMat = new MeshBasicMaterial({
           color: baseColor.clone(),
           transparent: true,
           opacity: 1,
         });
-        const core = new THREE.Mesh(coreGeo, coreMat);
+        const core = new Mesh(coreGeo, coreMat);
         core.position.set(node.position[0], node.position[1], node.position[2]);
         core.userData = { branchId: branch.id, nodeId: node.id, baseColor: baseColor.clone(), dimColor: dimColor.clone() };
         core.renderOrder = 2;
         group.add(core);
 
-        const glowMat = new THREE.SpriteMaterial({
+        const glowMat = new SpriteMaterial({
           map: this.getGlowTexture(),
           color: baseColor.clone(),
           transparent: true,
-          blending: THREE.AdditiveBlending,
+          blending: AdditiveBlending,
           depthWrite: false,
           opacity: 1,
         });
-        const glow = new THREE.Sprite(glowMat);
+        const glow = new Sprite(glowMat);
         const glowSize = isCapstone ? 4.5 : 2.4;
         glow.scale.set(glowSize, glowSize, glowSize);
         glow.position.copy(core.position);
@@ -456,16 +484,16 @@ export class SkillTreeScene {
         glow.renderOrder = 1;
         group.add(glow);
 
-        const ringGeo = new THREE.RingGeometry(r * 1.4, r * 1.6, 32);
-        const ringMat = new THREE.MeshBasicMaterial({
+        const ringGeo = new RingGeometry(r * 1.4, r * 1.6, 32);
+        const ringMat = new MeshBasicMaterial({
           color: baseColor.clone(),
           transparent: true,
           opacity: 0.4,
-          side: THREE.DoubleSide,
-          blending: THREE.AdditiveBlending,
+          side: DoubleSide,
+          blending: AdditiveBlending,
           depthWrite: false,
         });
-        const ring = new THREE.Mesh(ringGeo, ringMat);
+        const ring = new Mesh(ringGeo, ringMat);
         ring.position.copy(core.position);
         ring.userData['isRing'] = true;
         ring.lookAt(this.camera.position);
@@ -485,16 +513,16 @@ export class SkillTreeScene {
           const from = branch.nodes.find(n => n.id === prereqId);
           if (!from) return;
           const points = [
-            new THREE.Vector3(from.position[0], from.position[1], from.position[2]),
-            new THREE.Vector3(node.position[0], node.position[1], node.position[2]),
+            new Vector3(from.position[0], from.position[1], from.position[2]),
+            new Vector3(node.position[0], node.position[1], node.position[2]),
           ];
-          const geo = new THREE.BufferGeometry().setFromPoints(points);
-          geo.setAttribute('aProgress', new THREE.BufferAttribute(new Float32Array([0, 1]), 1));
+          const geo = new BufferGeometry().setFromPoints(points);
+          geo.setAttribute('aProgress', new BufferAttribute(new Float32Array([0, 1]), 1));
 
-          const mat = new THREE.ShaderMaterial({
+          const mat = new ShaderMaterial({
             transparent: true,
             depthWrite: false,
-            blending: THREE.AdditiveBlending,
+            blending: AdditiveBlending,
             uniforms: {
               uTime: this.lineTimeUniform,
               uColor: { value: dimColor.clone() },
@@ -531,7 +559,7 @@ export class SkillTreeScene {
               }
             `,
           });
-          const line = new THREE.Line(geo, mat);
+          const line = new Line(geo, mat);
           line.userData = {
             from: prereqId,
             to: node.id,
@@ -556,11 +584,11 @@ export class SkillTreeScene {
 
   private buildVeil(at: any, dimColor: any, isCapstone: boolean): any {
     const size = isCapstone ? 3.0 : 2.0;
-    const geo = new THREE.PlaneGeometry(size, size);
-    const mat = new THREE.ShaderMaterial({
+    const geo = new PlaneGeometry(size, size);
+    const mat = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
-      blending: THREE.NormalBlending,
+      blending: NormalBlending,
       uniforms: {
         uTime: this.lineTimeUniform,
         uColor: { value: dimColor.clone().multiplyScalar(0.55) },
@@ -595,7 +623,7 @@ export class SkillTreeScene {
         }
       `,
     });
-    const veil = new THREE.Mesh(geo, mat);
+    const veil = new Mesh(geo, mat);
     veil.position.copy(at);
     veil.position.z -= 0.35;
     veil.renderOrder = 0;
@@ -619,14 +647,14 @@ export class SkillTreeScene {
       speeds[i] = 0.32 + Math.random() * 0.22;
       angles[i] = Math.random() * Math.PI * 2;
     }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute('aAlpha', new THREE.BufferAttribute(alphas, 1));
-    geo.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
-    const mat = new THREE.ShaderMaterial({
+    const geo = new BufferGeometry();
+    geo.setAttribute('position', new BufferAttribute(positions, 3));
+    geo.setAttribute('aAlpha', new BufferAttribute(alphas, 1));
+    geo.setAttribute('aSize', new BufferAttribute(sizes, 1));
+    const mat = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      blending: AdditiveBlending,
       uniforms: {
         uColor: { value: baseColor.clone() },
         uTexture: { value: this.getGlowTexture() },
@@ -654,7 +682,7 @@ export class SkillTreeScene {
         }
       `,
     });
-    const beacon = new THREE.Points(geo, mat);
+    const beacon = new Points(geo, mat);
     beacon.position.copy(at);
     beacon.visible = false;
     beacon.frustumCulled = false;
@@ -667,18 +695,18 @@ export class SkillTreeScene {
     const positions = new Float32Array(samples * 3);
     const progress = new Float32Array(samples);
     for (let i = 0; i < samples; i++) progress[i] = i / (samples - 1);
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1));
+    const geo = new BufferGeometry();
+    geo.setAttribute('position', new BufferAttribute(positions, 3));
+    geo.setAttribute('aProgress', new BufferAttribute(progress, 1));
     geo.setDrawRange(0, 0);
 
-    const mat = new THREE.ShaderMaterial({
+    const mat = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      blending: AdditiveBlending,
       uniforms: {
         uTime: this.lineTimeUniform,
-        uColor: { value: baseColor.clone().lerp(new THREE.Color(0xffffff), 0.4) },
+        uColor: { value: baseColor.clone().lerp(new Color(0xffffff), 0.4) },
         uOpacity: { value: 0.55 },
       },
       vertexShader: `
@@ -700,7 +728,7 @@ export class SkillTreeScene {
         }
       `,
     });
-    const line = new THREE.Line(geo, mat);
+    const line = new Line(geo, mat);
     line.frustumCulled = false;
     line.renderOrder = 1;
     return line;
@@ -715,8 +743,8 @@ export class SkillTreeScene {
       geo.setDrawRange(0, 0);
       return;
     }
-    const points = unlocked.map(n => new THREE.Vector3(n.position[0], n.position[1], n.position[2]));
-    const curve = new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.35);
+    const points = unlocked.map(n => new Vector3(n.position[0], n.position[1], n.position[2]));
+    const curve = new CatmullRomCurve3(points, false, 'catmullrom', 0.35);
     const sampleCount = 64;
     const samples = curve.getSpacedPoints(sampleCount - 1);
     const arr = geo.attributes.position.array as Float32Array;
@@ -767,7 +795,7 @@ export class SkillTreeScene {
     grad.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 128, 128);
-    this.glowTexture = new THREE.CanvasTexture(c);
+    this.glowTexture = new CanvasTexture(c);
     return this.glowTexture;
   }
 
@@ -841,7 +869,7 @@ export class SkillTreeScene {
         update: () => {
           const t = Math.min(1, (performance.now() - t0) / dur);
           const eased = 1 - Math.pow(1 - t, 3);
-          const mid = new THREE.Vector3().lerpVectors(p0, p1, eased);
+          const mid = new Vector3().lerpVectors(p0, p1, eased);
           line.geometry.setFromPoints([p0, mid]);
           line.geometry.attributes.position.needsUpdate = true;
           if (t >= 1) {
@@ -938,9 +966,9 @@ export class SkillTreeScene {
         m.ring.lookAt(this.camera.position);
         const breath = 1 + Math.sin(t * 1.4 + m.core.position.x * 0.5) * 0.06;
         if (m.status !== 'unlocked' || !isActive) {
-          m.core.scale.lerp(new THREE.Vector3(breath, breath, breath), 0.1);
+          m.core.scale.lerp(new Vector3(breath, breath, breath), 0.1);
         } else {
-          m.core.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+          m.core.scale.lerp(new Vector3(1, 1, 1), 0.1);
         }
 
         const isUnlocked = this.unlockedIds.has(m.node.id);
