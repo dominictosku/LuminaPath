@@ -7,7 +7,7 @@ After this you will have a repeatable checklist for upgrading LuminaPath depende
 LuminaPath currently has these main version anchors:
 
 - Backend projects target `net10.0`.
-- The Dockerfile uses `mcr.microsoft.com/dotnet/sdk:10.0` and `mcr.microsoft.com/dotnet/aspnet:10.0`.
+- The backend Dockerfile at `src/LuminaPath/Dockerfile` uses `mcr.microsoft.com/dotnet/sdk:10.0` and `mcr.microsoft.com/dotnet/aspnet:10.0`.
 - EF Core and ASP.NET package references are pinned in the `.csproj` files.
 - The optional mobile app uses Angular 21, Ionic 8 and Capacitor 8.
 - There is no `global.json` yet, so the local .NET SDK is selected by the machine running the command.
@@ -81,7 +81,7 @@ Typical files to update:
 - `src/LuminaPath.Core/LuminaPath.Core.csproj`
 - `src/LuminaPath.Infrastructure/LuminaPath.Infrastructure.csproj`
 - `src/LuminaPath.Tests/LuminaPath.Tests.csproj`
-- `Dockerfile`
+- `src/LuminaPath/Dockerfile`
 - `README.md`
 - docs that mention the runtime version
 
@@ -190,7 +190,7 @@ If a deployment fails after schema changes were applied, prefer a forward fix. O
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `NETSDK1045` or unsupported target framework | The installed SDK is older than the target framework | Install the target SDK and, if needed, add/update `global.json`. |
-| Docker build still uses the old runtime | `Dockerfile` was not updated | Update both SDK and ASP.NET runtime image tags. |
+| Docker build still uses the old runtime | `src/LuminaPath/Dockerfile` was not updated | Update both SDK and ASP.NET runtime image tags. |
 | EF tooling fails after a .NET upgrade | `dotnet-ef` or EF packages are on the old major version | Update `dotnet-ef` and align EF package versions. |
 | Angular update refuses to run | The current workspace version is too far behind or peer deps conflict | Run `npx ng update` without package names and follow the recommended intermediate version. |
 | TypeScript errors after Angular update | TypeScript version is outside Angular's supported range | Install the TypeScript version range recommended by Angular. |

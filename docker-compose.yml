@@ -5,7 +5,7 @@ services:
     image: ${LUMINAPATH_API_IMAGE:-luminapath-api:local}
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: src/LuminaPath/Dockerfile
     container_name: luminapath-api
     restart: unless-stopped
     environment:
