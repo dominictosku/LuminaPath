@@ -7,6 +7,7 @@
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<GenerateRecoveryCodes> Logger
+@inject AuditLogService AuditLog
 @using LuminaPath.Core.Models
 
 <PageTitle>Generate two-factor authentication (2FA) recovery codes</PageTitle>
@@ -65,5 +66,17 @@ else
         message = "You have generated new recovery codes.";
 
         Logger.LogInformation("User with ID '{UserId}' has generated new 2FA recovery codes.", userId);
+        var email = await UserManager.GetEmailAsync(user);
+        await AuditLog.RecordAsync(new AuditLogEntry
+        {
+            Category = AuditCategories.Account,
+            Action = AuditActions.RecoveryCodesGenerated,
+            Outcome = AuditOutcomes.Success,
+            Actor = new AuditActor(userId, email),
+            TargetType = "User",
+            TargetId = userId,
+            TargetName = email,
+            Metadata = new { source = "Blazor", count = recoveryCodes?.Count() ?? 0 }
+        });
     }
 }

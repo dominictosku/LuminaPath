@@ -114,7 +114,7 @@
                         </div>
 
                         <div class="document-card__actions">
-                            <MudButton Href="@GetDocumentUrl(document)"
+                            <MudButton Href="@GetDocumentOpenUrl(document)"
                                        Target="_blank"
                                        Variant="Variant.Text"
                                        Color="Color.Primary"
@@ -193,7 +193,7 @@
                 <TemplateColumn CellStyle="width:132px" Title="Actions" Sortable="false">
                     <CellTemplate>
                         <div class="document-table-actions">
-                            <MudIconButton Href="@GetDocumentUrl(context.Item)"
+                            <MudIconButton Href="@GetDocumentOpenUrl(context.Item)"
                                            Target="_blank"
                                            Icon="@Icons.Material.Filled.OpenInNew"
                                            Color="Color.Primary"
@@ -371,6 +371,18 @@
         }
 
         return $"/{document.Url}";
+    }
+
+    private static string GetDocumentOpenUrl(MediaDocument document)
+    {
+        var url = GetDocumentUrl(document);
+        if (!url.Contains("/api/files/", StringComparison.OrdinalIgnoreCase))
+        {
+            return url;
+        }
+
+        var separator = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return $"{url}{separator}download=true";
     }
 
     private static bool IsImage(MediaDocument document)

@@ -8,6 +8,7 @@
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<ResetAuthenticator> Logger
+@inject AuditLogService AuditLog
 
 <PageTitle>Reset authenticator key</PageTitle>
 
@@ -37,16 +38,49 @@
     private async Task OnSubmitAsync()
     {
         var user = await UserAccessor.GetRequiredUserAsync(HttpContext);
-        await UserManager.SetTwoFactorEnabledAsync(user, false);
-        await UserManager.ResetAuthenticatorKeyAsync(user);
+        var disableResult = await UserManager.SetTwoFactorEnabledAsync(user, false);
+        if (!disableResult.Succeeded)
+        {
+            var error = string.Join("; ", disableResult.Errors.Select(error => error.Description));
+            await AuditAuthenticatorResetAsync(user, AuditOutcomes.Failure, error);
+            throw new InvalidOperationException("Unexpected error occurred disabling 2FA.");
+        }
+
+        var resetResult = await UserManager.ResetAuthenticatorKeyAsync(user);
+        if (!resetResult.Succeeded)
+        {
+            var error = string.Join("; ", resetResult.Errors.Select(error => error.Description));
+            await AuditAuthenticatorResetAsync(user, AuditOutcomes.Failure, error);
+            throw new InvalidOperationException("Unexpected error occurred resetting the authenticator key.");
+        }
+
         var userId = await UserManager.GetUserIdAsync(user);
         Logger.LogInformation("User with ID '{UserId}' has reset their authentication app key.", userId);
 
         await SignInManager.RefreshSignInAsync(user);
+        await AuditAuthenticatorResetAsync(user, AuditOutcomes.Success);
 
         RedirectManager.RedirectToWithStatus(
             "Account/Manage/EnableAuthenticator",
             "Your authenticator app key has been reset, you will need to configure your authenticator app using the new key.",
             HttpContext);
+    }
+
+    private async Task AuditAuthenticatorResetAsync(LuminaUser user, string outcome, string? errorMessage = null)
+    {
+        var userId = await UserManager.GetUserIdAsync(user);
+        var email = await UserManager.GetEmailAsync(user);
+        await AuditLog.RecordAsync(new AuditLogEntry
+        {
+            Category = AuditCategories.Account,
+            Action = AuditActions.AuthenticatorReset,
+            Outcome = outcome,
+            Actor = new AuditActor(userId, email),
+            TargetType = "User",
+            TargetId = userId,
+            TargetName = email,
+            Metadata = new { source = "Blazor", disablesTwoFactor = true },
+            ErrorMessage = errorMessage
+        });
     }
 }

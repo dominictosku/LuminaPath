@@ -5,6 +5,7 @@ using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Base;
 using LuminaPath.Infrastructure.Extensions;
+using LuminaPath.Infrastructure.Services.Auditing;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -17,13 +18,19 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
         private readonly IStorageService _storage;
         private readonly ILogger<DocumentService> _logger;
+        private readonly AuditLogService? _auditLog;
         private const long MaxAllowedSize = 3145728;
 
-        public DocumentService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, IStorageService storage, ILogger<DocumentService> logger)
+        public DocumentService(
+            IDbContextFactory<LuminaPathDbContext> dbContextFactory,
+            IStorageService storage,
+            ILogger<DocumentService> logger,
+            AuditLogService? auditLog = null)
         {
             _dbContextFactory = dbContextFactory;
             _storage = storage;
             _logger = logger;
+            _auditLog = auditLog;
         }
 
         protected async Task<LuminaPathDbContext> GetDbContextAsync()
@@ -45,24 +52,30 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         public async Task<Result<MediaDocument, FailedResult>> CreateDocument(IBrowserFile file, IMedia<MediaDocument>? media = null)
         {
-            await using Stream fs = file.OpenReadStream(MaxAllowedSize);
+            var displayName = GetDisplayFileName(file.Name);
             try
             {
+                await using Stream fs = file.OpenReadStream(MaxAllowedSize);
                 if (media is not null)
                 {
                     await DeleteDocument(media.Image);
                 }
 
-                var displayName = GetDisplayFileName(file.Name);
                 var storageName = CreateStorageFileName(displayName, file.ContentType);
                 var result = await _storage.UploadAsync(fs, storageName, file.ContentType);
                 if (result.Error)
                 {
                     _logger.LogError("Could not Upload file, error: {0}", result.Status);
+                    await AuditDocumentFileUploadAsync(
+                        displayName,
+                        storageName,
+                        file.ContentType,
+                        AuditOutcomes.Failure,
+                        result.Status);
                     return new FailedResult("Could not upload file");
                 }
 
-                return new MediaDocument()
+                var document = new MediaDocument()
                 {
                     Name = displayName,
                     StorageName = result.Blob.Name,
@@ -71,17 +84,30 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     ContentType = result.Blob.ContentType,
                     DocumentType = InferDocumentType(file.Name, result.Blob.ContentType)
                 };
+                await AuditDocumentFileUploadAsync(
+                    document.Name,
+                    document.StorageName,
+                    document.ContentType,
+                    AuditOutcomes.Success,
+                    documentType: document.DocumentType);
+                return document;
 
             }
             catch (Exception ex)
             {
                 _logger.LogError("Could not Upload File. error: {ex}", ex);
+                await AuditDocumentFileUploadAsync(
+                    displayName,
+                    contentType: file.ContentType,
+                    outcome: AuditOutcomes.Failure,
+                    errorMessage: ex.Message);
                 return new FailedResult("Could not upload file");
             }
         }
 
         public async Task<Result<MediaDocument, FailedResult>> CreateDocument(Stream stream, string fileName, string? contentType, IMedia<MediaDocument>? media = null)
         {
+            var displayName = GetDisplayFileName(fileName);
             try
             {
                 if (media is not null)
@@ -89,16 +115,21 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     await DeleteDocument(media.Image);
                 }
 
-                var displayName = GetDisplayFileName(fileName);
                 var storageName = CreateStorageFileName(displayName, contentType);
                 var result = await _storage.UploadAsync(stream, storageName, contentType);
                 if (result.Error)
                 {
                     _logger.LogError("Could not upload file, error: {Status}", result.Status);
+                    await AuditDocumentFileUploadAsync(
+                        displayName,
+                        storageName,
+                        contentType,
+                        AuditOutcomes.Failure,
+                        result.Status);
                     return new FailedResult("Could not upload file");
                 }
 
-                return new MediaDocument
+                var document = new MediaDocument
                 {
                     Name = displayName,
                     StorageName = result.Blob.Name,
@@ -107,10 +138,22 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     ContentType = result.Blob.ContentType,
                     DocumentType = InferDocumentType(displayName, result.Blob.ContentType)
                 };
+                await AuditDocumentFileUploadAsync(
+                    document.Name,
+                    document.StorageName,
+                    document.ContentType,
+                    AuditOutcomes.Success,
+                    documentType: document.DocumentType);
+                return document;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Could not upload file from stream");
+                await AuditDocumentFileUploadAsync(
+                    displayName,
+                    contentType: contentType,
+                    outcome: AuditOutcomes.Failure,
+                    errorMessage: ex.Message);
                 return new FailedResult("Could not upload file");
             }
         }
@@ -122,6 +165,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             await using var context = await GetDbContextAsync();
             context.MediaDocuments.Add(document);
             await context.SaveChangesAsync();
+            await AuditDocumentAsync(AuditActions.DocumentCreated, document);
             return document;
         }
 
@@ -132,6 +176,14 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             await using var context = await GetDbContextAsync();
             var existingDocument = await context.MediaDocuments.FirstOrDefaultAsync(d => d.Id == document.Id)
                 ?? throw new KeyNotFoundException("Document not found");
+
+            var oldName = existingDocument.Name;
+            var oldStorageName = existingDocument.StorageName;
+            var oldDescription = existingDocument.Description;
+            var oldPath = existingDocument.Path;
+            var oldContentType = existingDocument.ContentType;
+            var oldDocumentType = existingDocument.DocumentType;
+            var oldMediaId = existingDocument.MediaId;
 
             existingDocument.Name = document.Name;
             existingDocument.StorageName = string.IsNullOrWhiteSpace(document.StorageName)
@@ -144,6 +196,17 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             existingDocument.MediaId = document.MediaId;
 
             await context.SaveChangesAsync();
+            await AuditDocumentAsync(
+                AuditActions.DocumentUpdated,
+                existingDocument,
+                changes: AuditLogService.Changes(
+                    ("Name", oldName, existingDocument.Name),
+                    ("StorageName", oldStorageName, existingDocument.StorageName),
+                    ("Description", oldDescription, existingDocument.Description),
+                    ("Path", oldPath, existingDocument.Path),
+                    ("ContentType", oldContentType, existingDocument.ContentType),
+                    ("DocumentType", oldDocumentType, existingDocument.DocumentType),
+                    ("MediaId", oldMediaId, existingDocument.MediaId)));
             return existingDocument;
         }
 
@@ -162,6 +225,11 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             catch (Exception ex)
             {
                 _logger.LogError("Could not delete file. error: {ex}", ex);
+                await AuditDocumentAsync(
+                    AuditActions.DocumentDeleted,
+                    document,
+                    AuditOutcomes.Failure,
+                    errorMessage: ex.Message);
             }
         }
 
@@ -199,10 +267,15 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             if (existingDocument is null)
             {
                 _logger.LogError("Could not find file, document: {0}", document.Name);
+                await AuditDocumentAsync(
+                    AuditActions.DocumentDeleted,
+                    document,
+                    AuditOutcomes.Failure,
+                    "Document not found.");
                 return;
             }
 
-            await DeleteStoredFileIfUnreferenced(context, existingDocument);
+            var storageDeleteStatus = await DeleteStoredFileIfUnreferenced(context, existingDocument);
 
             if (existingDocument.MediaId != null)
             {
@@ -217,14 +290,22 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
             context.Documents.Remove(existingDocument);
             await context.SaveChangesAsync();
+            await AuditDocumentAsync(
+                AuditActions.DocumentDeleted,
+                existingDocument,
+                metadata: new
+                {
+                    source = "DocumentService",
+                    storageDeleteStatus
+                });
         }
 
-        private async Task DeleteStoredFileIfUnreferenced(LuminaPathDbContext context, MediaDocument document)
+        private async Task<string> DeleteStoredFileIfUnreferenced(LuminaPathDbContext context, MediaDocument document)
         {
             var storageName = GetStorageName(document);
             if (string.IsNullOrWhiteSpace(storageName))
             {
-                return;
+                return "NoStorageName";
             }
 
             var isReferenced = await context.Documents
@@ -234,14 +315,80 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
             if (isReferenced)
             {
-                return;
+                return "StillReferenced";
             }
 
             var result = await _storage.DeleteAsync(storageName);
             if (result.Error)
             {
                 _logger.LogWarning("Could not delete stored file {FileName}, removing database document anyway. Error: {Status}", storageName, result.Status);
+                return "StorageDeleteFailed";
             }
+
+            return "Deleted";
+        }
+
+        private Task AuditDocumentFileUploadAsync(
+            string? displayName,
+            string? storageName = null,
+            string? contentType = null,
+            string outcome = AuditOutcomes.Success,
+            string? errorMessage = null,
+            DocumentType? documentType = null)
+        {
+            var resolvedDocumentType = documentType ?? InferDocumentType(displayName ?? string.Empty, contentType);
+            return AuditDocumentAsync(
+                AuditActions.DocumentUploaded,
+                new MediaDocument
+                {
+                    Name = displayName,
+                    StorageName = storageName,
+                    ContentType = contentType,
+                    DocumentType = resolvedDocumentType
+                },
+                outcome,
+                errorMessage,
+                metadata: new
+                {
+                    source = "DocumentService",
+                    contentType,
+                    documentType = resolvedDocumentType.ToString(),
+                    storageName
+                });
+        }
+
+        private async Task AuditDocumentAsync(
+            string action,
+            MediaDocument document,
+            string outcome = AuditOutcomes.Success,
+            string? errorMessage = null,
+            object? changes = null,
+            object? metadata = null)
+        {
+            if (_auditLog is null)
+            {
+                return;
+            }
+
+            await _auditLog.RecordAsync(new AuditLogEntry
+            {
+                Category = AuditCategories.Document,
+                Action = action,
+                Outcome = outcome,
+                TargetType = nameof(MediaDocument),
+                TargetId = document.Id > 0 ? document.Id.ToString() : document.StorageName ?? document.Name,
+                TargetName = document.Name ?? document.StorageName ?? document.Path,
+                Changes = changes,
+                Metadata = metadata ?? new
+                {
+                    source = "DocumentService",
+                    documentType = document.DocumentType.ToString(),
+                    contentType = document.ContentType,
+                    storageName = document.StorageName,
+                    mediaId = document.MediaId
+                },
+                ErrorMessage = errorMessage
+            });
         }
 
         private static string GetStorageName(MediaDocument document)

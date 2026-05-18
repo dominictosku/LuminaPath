@@ -8,6 +8,7 @@
 @inject SignInManager<LuminaUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
+@inject AuditLogService AuditLog
 
 <PageTitle>Two-factor authentication (2FA)</PageTitle>
 
@@ -92,7 +93,21 @@ else
 
     private async Task OnSubmitForgetBrowserAsync()
     {
+        var user = await UserAccessor.GetRequiredUserAsync(HttpContext);
         await SignInManager.ForgetTwoFactorClientAsync();
+        var userId = await UserManager.GetUserIdAsync(user);
+        var email = await UserManager.GetEmailAsync(user);
+        await AuditLog.RecordAsync(new AuditLogEntry
+        {
+            Category = AuditCategories.Account,
+            Action = AuditActions.TwoFactorBrowserForgotten,
+            Outcome = AuditOutcomes.Success,
+            Actor = new AuditActor(userId, email),
+            TargetType = "User",
+            TargetId = userId,
+            TargetName = email,
+            Metadata = new { source = "Blazor" }
+        });
 
         RedirectManager.RedirectToCurrentPageWithStatus(
             "The current browser has been forgotten. When you login again from this browser you will be prompted for your 2fa code.",

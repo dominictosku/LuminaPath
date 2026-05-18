@@ -9,6 +9,7 @@
 @inject UserManager<LuminaUser> UserManager
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<LoginWith2fa> Logger
+@inject AuditLogService AuditLog
 
 <PageTitle>Two-factor authentication</PageTitle>
 
@@ -84,19 +85,46 @@
 
         if (result.Succeeded)
         {
+            await AuditTwoFactorLoginAsync(AuditOutcomes.Success);
             Logger.LogInformation("User with ID '{UserId}' logged in with 2fa.", userId);
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.IsLockedOut)
         {
+            await AuditTwoFactorLoginAsync(AuditOutcomes.Failure, "User account locked out.");
             Logger.LogWarning("User with ID '{UserId}' account locked out.", userId);
             RedirectManager.RedirectTo("Account/Lockout");
         }
         else
         {
+            await AuditTwoFactorLoginAsync(AuditOutcomes.Failure, "Invalid authenticator code.");
             Logger.LogWarning("Invalid authenticator code entered for user with ID '{UserId}'.", userId);
             message = "Error: Invalid authenticator code.";
         }
+    }
+
+    private async Task AuditTwoFactorLoginAsync(string outcome, string? errorMessage = null)
+    {
+        var userId = await UserManager.GetUserIdAsync(user);
+        var email = await UserManager.GetEmailAsync(user);
+        await AuditLog.RecordAsync(new AuditLogEntry
+        {
+            Category = AuditCategories.Account,
+            Action = AuditActions.TwoFactorLogin,
+            Outcome = outcome,
+            Actor = new AuditActor(userId, email),
+            TargetType = "User",
+            TargetId = userId,
+            TargetName = email,
+            Metadata = new
+            {
+                source = "Blazor",
+                method = "Authenticator",
+                rememberMe = RememberMe,
+                rememberMachine = Input.RememberMachine
+            },
+            ErrorMessage = errorMessage
+        });
     }
 
     private sealed class InputModel

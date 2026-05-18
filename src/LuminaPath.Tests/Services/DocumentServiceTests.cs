@@ -3,6 +3,7 @@ using LuminaPath.Core.Enums;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Services.Auditing;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.EntityFrameworkCore;
@@ -95,6 +96,31 @@ namespace Test.Services
         }
 
         [Fact]
+        public async Task CreateMediaDocument_RecordsDocumentCreatedAudit()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            var factory = new TestDbContextFactory(options);
+            var service = CreateService(options, auditLog: new AuditLogService(factory));
+
+            var document = await service.CreateMediaDocument(new MediaDocument
+            {
+                Name = "guide.pdf",
+                StorageName = "stored-guide.pdf",
+                ContentType = "application/pdf",
+                DocumentType = DocumentType.PDF
+            });
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            var auditLog = Assert.Single(await assertContext.AuditLogs
+                .Where(log => log.Action == AuditActions.DocumentCreated)
+                .ToListAsync());
+            Assert.Equal(AuditCategories.Document, auditLog.Category);
+            Assert.Equal(document.Id.ToString(), auditLog.TargetId);
+            Assert.Equal("guide.pdf", auditLog.TargetName);
+            Assert.Equal(AuditOutcomes.Success, auditLog.Outcome);
+        }
+
+        [Fact]
         public async Task UpdateMediaDocument_UpdatesDisplayNameWithoutRenamingStoredFile()
         {
             var options = Utilities.DbContext.TestDbContextOptions();
@@ -125,6 +151,44 @@ namespace Test.Services
             Assert.Equal("new.pdf", updated.Name);
             Assert.Equal("stored.pdf", updated.StorageName);
             storage.Verify(service => service.RenameAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task UpdateMediaDocument_RecordsDocumentUpdatedAuditWithChanges()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.MediaDocuments.Add(new MediaDocument
+                {
+                    Name = "old.pdf",
+                    StorageName = "stored.pdf",
+                    ContentType = "application/pdf",
+                    DocumentType = DocumentType.PDF
+                });
+                await dbContext.SaveChangesAsync();
+            }
+
+            var factory = new TestDbContextFactory(options);
+            var service = CreateService(options, auditLog: new AuditLogService(factory));
+
+            await service.UpdateMediaDocument(new MediaDocument
+            {
+                Id = 1,
+                Name = "new.pdf",
+                StorageName = "stored.pdf",
+                ContentType = "application/pdf",
+                DocumentType = DocumentType.PDF
+            });
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            var auditLog = Assert.Single(await assertContext.AuditLogs
+                .Where(log => log.Action == AuditActions.DocumentUpdated)
+                .ToListAsync());
+            Assert.Equal(AuditCategories.Document, auditLog.Category);
+            Assert.Contains("Name", auditLog.ChangesJson);
+            Assert.Contains("old.pdf", auditLog.ChangesJson);
+            Assert.Contains("new.pdf", auditLog.ChangesJson);
         }
 
         [Fact]
@@ -189,6 +253,44 @@ namespace Test.Services
         }
 
         [Fact]
+        public async Task DeleteDocument_RecordsDocumentDeletedAudit()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            int documentId;
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                var document = new MediaDocument
+                {
+                    Name = "cover.png",
+                    StorageName = "stored-cover.png",
+                    ContentType = "image/png",
+                    DocumentType = DocumentType.Image
+                };
+                dbContext.MediaDocuments.Add(document);
+                await dbContext.SaveChangesAsync();
+                documentId = document.Id;
+            }
+
+            var storage = new Mock<IStorageService>();
+            storage
+                .Setup(service => service.DeleteAsync("stored-cover.png"))
+                .ReturnsAsync(new BlobResponseDto());
+            var factory = new TestDbContextFactory(options);
+            var service = CreateService(options, storage, new AuditLogService(factory));
+
+            await service.DeleteDocument(new MediaDocument { Id = documentId });
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            var auditLog = Assert.Single(await assertContext.AuditLogs
+                .Where(log => log.Action == AuditActions.DocumentDeleted)
+                .ToListAsync());
+            Assert.Equal(AuditCategories.Document, auditLog.Category);
+            Assert.Equal(documentId.ToString(), auditLog.TargetId);
+            Assert.Equal("cover.png", auditLog.TargetName);
+            Assert.Contains("Deleted", auditLog.MetadataJson);
+        }
+
+        [Fact]
         public async Task DeleteDocument_DoesNotDeleteStoredFile_WhenAnotherDocumentReferencesIt()
         {
             var options = Utilities.DbContext.TestDbContextOptions();
@@ -226,12 +328,14 @@ namespace Test.Services
 
         private static DocumentService CreateService(
             DbContextOptions<LuminaPathDbContext> options,
-            Mock<IStorageService>? storage = null)
+            Mock<IStorageService>? storage = null,
+            AuditLogService? auditLog = null)
         {
             return new DocumentService(
                 new TestDbContextFactory(options),
                 storage?.Object ?? new Mock<IStorageService>().Object,
-                new Mock<ILogger<DocumentService>>().Object);
+                new Mock<ILogger<DocumentService>>().Object,
+                auditLog);
         }
 
         private static IBrowserFile CreateBrowserFile(string name, string contentType)

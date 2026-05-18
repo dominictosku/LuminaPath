@@ -3,37 +3,96 @@ using LuminaPath.Core.Mapping;
 using LuminaPath.Infrastructure;
 using MudBlazor.Services;
 using Radzen;
+using Serilog;
+using Serilog.Events;
+using System.Security.Claims;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-builder.Services.AddSpaStaticFiles(configuration =>
+try
 {
-    configuration.RootPath = "../LuminaPath.WebApp/www";
-});
+    var builder = WebApplication.CreateBuilder(args);
+
+    builder.Host.UseSerilog((context, services, loggerConfiguration) => loggerConfiguration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("Application", "LuminaPath"));
+
+    builder.Services.AddSpaStaticFiles(configuration =>
+    {
+        configuration.RootPath = "../LuminaPath.WebApp/www";
+    });
 
 
-// Add services to the container.
-builder.Services
-    .AddInfrastructure(builder.Configuration)
-    .AddServer()
-    .AddBlazor();
+    // Add services to the container.
+    builder.Services
+        .AddInfrastructure(builder.Configuration)
+        .AddServer()
+        .AddBlazor();
 
-builder.Services.AddMudServices();
-builder.Services.AddRadzenComponents();
+    builder.Services.AddMudServices();
+    builder.Services.AddRadzenComponents();
 
-builder.Services.AddScoped<IObjectMapper, ObjectMapper>();
+    builder.Services.AddScoped<IObjectMapper, ObjectMapper>();
 
-var app = builder.Build();
+    var app = builder.Build();
 
-//app.UseSpaStaticFiles();
-//app.UseSpa(spa =>
-//{
-//    spa.Options.SourcePath = "../LuminaPath.WebApp";
-//});
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+        options.GetLevel = (httpContext, _, exception) =>
+        {
+            if (exception is not null || httpContext.Response.StatusCode >= StatusCodes.Status500InternalServerError)
+            {
+                return LogEventLevel.Error;
+            }
 
-await app.ConfigureInfrastructure();
-app.ConfigureServer();
+            if (httpContext.Request.Path.StartsWithSegments("/health"))
+            {
+                return LogEventLevel.Debug;
+            }
 
-app.UseBlazor();
+            return httpContext.Response.StatusCode >= StatusCodes.Status400BadRequest
+                ? LogEventLevel.Warning
+                : LogEventLevel.Information;
+        };
+        options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+        {
+            diagnosticContext.Set("TraceIdentifier", httpContext.TraceIdentifier);
+            diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
+            diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
 
-app.Run();
+            var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
+                diagnosticContext.Set("UserId", userId);
+            }
+        };
+    });
+
+    //app.UseSpaStaticFiles();
+    //app.UseSpa(spa =>
+    //{
+    //    spa.Options.SourcePath = "../LuminaPath.WebApp";
+    //});
+
+    await app.ConfigureInfrastructure();
+    app.ConfigureServer();
+
+    app.UseBlazor();
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "LuminaPath terminated unexpectedly.");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}

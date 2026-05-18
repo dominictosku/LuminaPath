@@ -2,6 +2,7 @@ using LuminaPath.Core.Entities;
 using LuminaPath.Core.Extensions;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Services.Auditing;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -13,8 +14,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         public override string[] Includes { get; set; } = [nameof(Game.ExternalIds), nameof(Game.MyGames), nameof(Game.Image)];
         protected override string UserLibraryNavigationName => nameof(Game.MyGames);
 
-        public GameService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, DocumentService documentService, IObjectMapper mapper)
-            : base(dbContextFactory, documentService, mapper)
+        public GameService(
+            IDbContextFactory<LuminaPathDbContext> dbContextFactory,
+            DocumentService documentService,
+            IObjectMapper mapper,
+            AuditLogService? auditLog = null)
+            : base(dbContextFactory, documentService, mapper, auditLog)
         {
         }
 

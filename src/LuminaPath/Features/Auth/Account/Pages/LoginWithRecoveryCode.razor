@@ -8,6 +8,7 @@
 @inject UserManager<LuminaUser> UserManager
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<LoginWithRecoveryCode> Logger
+@inject AuditLogService AuditLog
 
 <PageTitle>Recovery code verification</PageTitle>
 
@@ -71,19 +72,40 @@
 
         if (result.Succeeded)
         {
+            await AuditTwoFactorLoginAsync(AuditOutcomes.Success);
             Logger.LogInformation("User with ID '{UserId}' logged in with a recovery code.", userId);
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.IsLockedOut)
         {
+            await AuditTwoFactorLoginAsync(AuditOutcomes.Failure, "User account locked out.");
             Logger.LogWarning("User account locked out.");
             RedirectManager.RedirectTo("Account/Lockout");
         }
         else
         {
+            await AuditTwoFactorLoginAsync(AuditOutcomes.Failure, "Invalid recovery code.");
             Logger.LogWarning("Invalid recovery code entered for user with ID '{UserId}' ", userId);
             message = "Error: Invalid recovery code entered.";
         }
+    }
+
+    private async Task AuditTwoFactorLoginAsync(string outcome, string? errorMessage = null)
+    {
+        var userId = await UserManager.GetUserIdAsync(user);
+        var email = await UserManager.GetEmailAsync(user);
+        await AuditLog.RecordAsync(new AuditLogEntry
+        {
+            Category = AuditCategories.Account,
+            Action = AuditActions.TwoFactorLogin,
+            Outcome = outcome,
+            Actor = new AuditActor(userId, email),
+            TargetType = "User",
+            TargetId = userId,
+            TargetName = email,
+            Metadata = new { source = "Blazor", method = "RecoveryCode" },
+            ErrorMessage = errorMessage
+        });
     }
 
     private sealed class InputModel

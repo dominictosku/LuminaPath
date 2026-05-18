@@ -11,7 +11,7 @@
         <div>
             <MudText Typo="Typo.overline">Administration</MudText>
             <MudText Typo="Typo.h3">Audit Log</MudText>
-            <MudText Typo="Typo.body1">Review security-sensitive account and operator actions.</MudText>
+            <MudText Typo="Typo.body1">Review account, admin, document, media and system actions.</MudText>
         </div>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" OnClick="Load">
             Refresh
@@ -156,6 +156,8 @@
     [
         AuditCategories.Account,
         AuditCategories.Admin,
+        AuditCategories.Document,
+        AuditCategories.Media,
         AuditCategories.System
     ];
 
@@ -169,6 +171,12 @@
         AuditActions.PasswordReset,
         AuditActions.EmailChangeRequested,
         AuditActions.EmailChanged,
+        AuditActions.TwoFactorLogin,
+        AuditActions.TwoFactorEnabled,
+        AuditActions.TwoFactorDisabled,
+        AuditActions.TwoFactorBrowserForgotten,
+        AuditActions.AuthenticatorReset,
+        AuditActions.RecoveryCodesGenerated,
         AuditActions.UserCreated,
         AuditActions.UserUpdated,
         AuditActions.UserDeleted,
@@ -182,6 +190,14 @@
         AuditActions.BackgroundJobCanceled,
         AuditActions.DatabaseBackupCreated,
         AuditActions.DatabaseBackupDownloaded,
+        AuditActions.DocumentUploaded,
+        AuditActions.DocumentCreated,
+        AuditActions.DocumentUpdated,
+        AuditActions.DocumentDeleted,
+        AuditActions.DocumentDownloaded,
+        AuditActions.MediaCreated,
+        AuditActions.MediaUpdated,
+        AuditActions.MediaDeleted,
         AuditActions.EntityChanged
     ];
 

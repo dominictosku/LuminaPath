@@ -369,6 +369,7 @@ nginx/certs
 
 # Local file-system storage uploads
 /src/LuminaPath/App_Data/storage/
+/src/LuminaPath/App_Data/logs/
 
 # rider
 .idea

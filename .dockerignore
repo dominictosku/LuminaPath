@@ -17,3 +17,4 @@ TestResults
 *.log
 .env
 src/LuminaPath/App_Data/storage
+src/LuminaPath/App_Data/logs

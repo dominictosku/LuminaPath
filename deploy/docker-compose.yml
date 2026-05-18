@@ -14,6 +14,7 @@ services:
       Https__Redirect: ${HTTPS_REDIRECT:-false}
       Storage__Provider: ${STORAGE_PROVIDER:-FileSystem}
       Storage__Path: ${STORAGE_PATH:-/app/App_Data/storage}
+      Serilog__WriteTo__1__Args__path: ${LOG_PATH:-/app/App_Data/logs/luminapath-.log}
       Azure__BlobConnectionString: ${AZURE_BLOB_CONNECTION_STRING:-}
       Azure__BlobContainerName: ${AZURE_BLOB_CONTAINER_NAME:-media}
       Cors__AllowedOrigins__0: ${FRONTEND_PUBLIC_URL:-http://localhost:4200}
@@ -26,6 +27,7 @@ services:
       - "${BACKEND_HTTP_PORT:-8080}:8080"
     volumes:
       - luminapath-storage:${STORAGE_PATH:-/app/App_Data/storage}
+      - luminapath-logs:/app/App_Data/logs
     depends_on:
       luminapath-db:
         condition: service_healthy
@@ -86,4 +88,5 @@ services:
 volumes:
   luminapath-postgres:
   luminapath-storage:
+  luminapath-logs:
   luminapath-redis:

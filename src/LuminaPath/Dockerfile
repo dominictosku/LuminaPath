@@ -20,7 +20,7 @@ EXPOSE 8080
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
-RUN mkdir -p /app/App_Data/storage
+RUN mkdir -p /app/App_Data/storage /app/App_Data/logs
 COPY --from=build /app/publish .
 
 ENTRYPOINT ["dotnet", "LuminaPath.dll"]

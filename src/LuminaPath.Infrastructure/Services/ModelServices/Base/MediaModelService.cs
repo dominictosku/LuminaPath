@@ -5,6 +5,7 @@ using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models.Base;
 using LuminaPath.Infrastructure.Helper;
+using LuminaPath.Infrastructure.Services.Auditing;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -16,14 +17,17 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
     where TUserMedia : MyMedia, IMyMedia
 {
     private readonly DocumentService _documentService;
+    private readonly AuditLogService? _auditLog;
 
     protected MediaModelService(
         IDbContextFactory<LuminaPathDbContext> dbContextFactory,
         DocumentService documentService,
-        IObjectMapper mapper)
+        IObjectMapper mapper,
+        AuditLogService? auditLog = null)
         : base(dbContextFactory, mapper)
     {
         _documentService = documentService;
+        _auditLog = auditLog;
     }
 
     protected virtual Func<IQueryable<TMedia>, IOrderedQueryable<TMedia>> DefaultOrderBy
@@ -42,10 +46,23 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
         var conflict = await EnsureNameUnique(entity);
         if (conflict is not null)
         {
+            await AuditMediaAsync(AuditActions.MediaCreated, AuditOutcomes.Failure, entity, errorMessage: FailureMessage(conflict));
             return conflict;
         }
 
-        return await base.PostAsync(entity);
+        var result = await base.PostAsync(entity);
+        await result.Match(
+            async media =>
+            {
+                await AuditMediaAsync(AuditActions.MediaCreated, AuditOutcomes.Success, media);
+                return true;
+            },
+            async failure =>
+            {
+                await AuditMediaAsync(AuditActions.MediaCreated, AuditOutcomes.Failure, entity, errorMessage: FailureMessage(failure));
+                return false;
+            });
+        return result;
     }
 
     public override async Task<Result<TMedia, FailedResult>> PutAsync(TMedia entity)
@@ -53,10 +70,28 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
         var conflict = await EnsureNameUnique(entity);
         if (conflict is not null)
         {
+            await AuditMediaAsync(AuditActions.MediaUpdated, AuditOutcomes.Failure, entity, errorMessage: FailureMessage(conflict));
             return conflict;
         }
 
-        return await base.PutAsync(entity);
+        var existing = await GetMediaSnapshotAsync(entity.Id);
+        var result = await base.PutAsync(entity);
+        await result.Match(
+            async media =>
+            {
+                await AuditMediaAsync(
+                    AuditActions.MediaUpdated,
+                    AuditOutcomes.Success,
+                    media,
+                    changes: existing is null ? null : MediaChanges(existing, media));
+                return true;
+            },
+            async failure =>
+            {
+                await AuditMediaAsync(AuditActions.MediaUpdated, AuditOutcomes.Failure, entity, errorMessage: FailureMessage(failure));
+                return false;
+            });
+        return result;
     }
 
     private async Task<ValidationFailed?> EnsureNameUnique(TMedia entity)
@@ -75,6 +110,12 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
     {
         if (id is null)
         {
+            await AuditMediaAsync(
+                AuditActions.MediaDeleted,
+                AuditOutcomes.Failure,
+                targetId: null,
+                targetName: null,
+                errorMessage: "Entry not found");
             return new FailedResult("Entry not found");
         }
 
@@ -85,11 +126,29 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
 
         if (existing is null)
         {
+            await AuditMediaAsync(
+                AuditActions.MediaDeleted,
+                AuditOutcomes.Failure,
+                targetId: id.Value.ToString(),
+                targetName: null,
+                errorMessage: "Entry not found");
             return new FailedResult("Entry not found");
         }
 
         await _documentService.DeleteMediaDocument(existing, context);
-        return await base.DeleteAsync(id);
+        var result = await base.DeleteAsync(id);
+        await result.Match(
+            async deletedId =>
+            {
+                await AuditMediaAsync(AuditActions.MediaDeleted, AuditOutcomes.Success, existing);
+                return true;
+            },
+            async failure =>
+            {
+                await AuditMediaAsync(AuditActions.MediaDeleted, AuditOutcomes.Failure, existing, errorMessage: FailureMessage(failure));
+                return false;
+            });
+        return result;
     }
 
     public virtual async Task<List<TMedia>> GetDropdownMedia(string? searchName = null)
@@ -266,6 +325,81 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
     {
         var inLibrary = IsInUserLibrary(userId);
         return inLibrary.Not();
+    }
+
+    private async Task<TMedia?> GetMediaSnapshotAsync(int id)
+    {
+        await using var context = await GetDbContextAsync();
+        return await context.Set<TMedia>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(media => media.Id == id);
+    }
+
+    private static Dictionary<string, object?> MediaChanges(TMedia existing, TMedia updated)
+    {
+        return AuditLogService.Changes(
+            ("Name", existing.Name, updated.Name),
+            ("Description", existing.Description, updated.Description),
+            ("ReleaseDate", existing.ReleaseDate, updated.ReleaseDate),
+            ("Source", existing.Source, updated.Source),
+            ("Genres", FormatGenres(existing.Genres), FormatGenres(updated.Genres)));
+    }
+
+    private static string FormatGenres(IEnumerable<string>? genres)
+    {
+        return genres is null ? string.Empty : string.Join(", ", genres);
+    }
+
+    private static string FailureMessage(FailedResult failure)
+    {
+        return string.Join("; ", failure.errorMessage);
+    }
+
+    private Task AuditMediaAsync(
+        string action,
+        string outcome,
+        TMedia media,
+        string? errorMessage = null,
+        object? changes = null)
+    {
+        return AuditMediaAsync(
+            action,
+            outcome,
+            media.Id > 0 ? media.Id.ToString() : null,
+            media.Name,
+            errorMessage,
+            changes);
+    }
+
+    private Task AuditMediaAsync(
+        string action,
+        string outcome,
+        string? targetId,
+        string? targetName,
+        string? errorMessage = null,
+        object? changes = null)
+    {
+        if (_auditLog is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return _auditLog.RecordAsync(new AuditLogEntry
+        {
+            Category = AuditCategories.Media,
+            Action = action,
+            Outcome = outcome,
+            TargetType = typeof(TMedia).Name,
+            TargetId = targetId,
+            TargetName = targetName,
+            Changes = changes,
+            Metadata = new
+            {
+                source = "MediaModelService",
+                mediaType = typeof(TMedia).Name
+            },
+            ErrorMessage = errorMessage
+        });
     }
 
     private IEnumerable<string> GetDefaultIncludes(IEnumerable<string>? includes)

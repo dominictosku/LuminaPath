@@ -13,6 +13,7 @@
 @inject UrlEncoder UrlEncoder
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<EnableAuthenticator> Logger
+@inject AuditLogService AuditLog
 
 <PageTitle>Configure authenticator app</PageTitle>
 
@@ -110,24 +111,53 @@ else
 
         if (!is2faTokenValid)
         {
+            await AuditTwoFactorAsync(
+                AuditActions.TwoFactorEnabled,
+                AuditOutcomes.Failure,
+                "Verification code is invalid.",
+                new { source = "Blazor" });
             message = "Error: Verification code is invalid.";
             return;
         }
 
-        await UserManager.SetTwoFactorEnabledAsync(user, true);
+        var enableResult = await UserManager.SetTwoFactorEnabledAsync(user, true);
         var userId = await UserManager.GetUserIdAsync(user);
+        if (!enableResult.Succeeded)
+        {
+            var error = string.Join("; ", enableResult.Errors.Select(error => error.Description));
+            await AuditTwoFactorAsync(
+                AuditActions.TwoFactorEnabled,
+                AuditOutcomes.Failure,
+                error,
+                new { source = "Blazor" });
+            message = "Error: Could not enable two-factor authentication.";
+            return;
+        }
+
         Logger.LogInformation("User with ID '{UserId}' has enabled 2FA with an authenticator app.", userId);
 
         message = "Your authenticator app has been verified.";
 
+        var generatedRecoveryCodes = false;
         if (await UserManager.CountRecoveryCodesAsync(user) == 0)
         {
             recoveryCodes = await UserManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
+            generatedRecoveryCodes = true;
         }
         else
         {
+            await AuditTwoFactorAsync(
+                AuditActions.TwoFactorEnabled,
+                AuditOutcomes.Success,
+                metadata: new { source = "Blazor", generatedRecoveryCodes });
             RedirectManager.RedirectToWithStatus("Account/Manage/TwoFactorAuthentication", message, HttpContext);
+            return;
         }
+
+        await AuditTwoFactorAsync(
+            AuditActions.TwoFactorEnabled,
+            AuditOutcomes.Success,
+            metadata: new { source = "Blazor", generatedRecoveryCodes });
     }
 
     private async ValueTask LoadSharedKeyAndQrCodeUriAsync(LuminaUser user)
@@ -171,6 +201,24 @@ else
             UrlEncoder.Encode("Microsoft.AspNetCore.Identity.UI"),
             UrlEncoder.Encode(email),
             unformattedKey);
+    }
+
+    private async Task AuditTwoFactorAsync(string action, string outcome, string? errorMessage = null, object? metadata = null)
+    {
+        var userId = await UserManager.GetUserIdAsync(user);
+        var email = await UserManager.GetEmailAsync(user);
+        await AuditLog.RecordAsync(new AuditLogEntry
+        {
+            Category = AuditCategories.Account,
+            Action = action,
+            Outcome = outcome,
+            Actor = new AuditActor(userId, email),
+            TargetType = "User",
+            TargetId = userId,
+            TargetName = email,
+            Metadata = metadata,
+            ErrorMessage = errorMessage
+        });
     }
 
     private sealed class InputModel

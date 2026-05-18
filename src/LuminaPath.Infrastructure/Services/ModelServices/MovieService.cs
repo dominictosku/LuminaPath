@@ -1,5 +1,6 @@
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Services.Auditing;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -15,8 +16,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         ];
         protected override string UserLibraryNavigationName => nameof(Movie.MyMovies);
 
-        public MovieService(IDbContextFactory<LuminaPathDbContext> dbContextFactory, DocumentService documentService, IObjectMapper mapper)
-            : base(dbContextFactory, documentService, mapper)
+        public MovieService(
+            IDbContextFactory<LuminaPathDbContext> dbContextFactory,
+            DocumentService documentService,
+            IObjectMapper mapper,
+            AuditLogService? auditLog = null)
+            : base(dbContextFactory, documentService, mapper, auditLog)
         {
         }
 

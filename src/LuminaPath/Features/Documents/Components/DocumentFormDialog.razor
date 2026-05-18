@@ -52,7 +52,7 @@
                             </CustomContent>
                         </MudFileUpload>
 
-                        <MudButton Href="@DocumentSource"
+                        <MudButton Href="@DocumentOpenSource"
                                    Target="_blank"
                                    Disabled="@(!HasDocumentSource)"
                                    Variant="Variant.Outlined"
@@ -169,6 +169,7 @@
         }
     }
     private string DocumentSource => GetDocumentSource();
+    private string DocumentOpenSource => GetDocumentOpenSource();
 
     private string DocumentIcon => Model.DocumentType switch
     {
@@ -275,6 +276,17 @@
 
         var storageName = Model.StorageName ?? Model.Name;
         return !string.IsNullOrWhiteSpace(storageName) ? $"/api/files/{storageName}" : string.Empty;
+    }
+
+    private string GetDocumentOpenSource()
+    {
+        if (!DocumentSource.Contains("/api/files/", StringComparison.OrdinalIgnoreCase))
+        {
+            return DocumentSource;
+        }
+
+        var separator = DocumentSource.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return $"{DocumentSource}{separator}download=true";
     }
 
     private void Cancel()
