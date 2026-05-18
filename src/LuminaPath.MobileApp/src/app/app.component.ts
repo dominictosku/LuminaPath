@@ -1,7 +1,6 @@
-import { Component, DestroyRef, HostBinding, Inject, inject, OnInit, Renderer2, signal } from '@angular/core';
+import { Component, DestroyRef, HostBinding, inject, OnInit, Renderer2, effect, signal } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
-import { initFlowbite } from 'flowbite';
 import { NavBarComponent } from './shared/components/navigation/nav-bar/nav-bar.component'
 import { AiChatComponent } from './shared/components/ai-chat/ai-chat.component';
 import { ReleaseNotificationService } from './shared/services/release-notification.service';
@@ -18,15 +17,13 @@ import { MediaModeService } from './shared/services/media-mode.service';
     imports: [IonApp, IonRouterOutlet, NavBarComponent, AiChatComponent]
 })
 export class AppComponent implements OnInit {
-  private destroyRef = inject(DestroyRef);
+  private releaseNotifications = inject(ReleaseNotificationService);
+  private router = inject(Router);
+  private mediaMode = inject(MediaModeService);
+  private renderer = inject(Renderer2);
+  private document = inject<Document>(DOCUMENT);
 
-  constructor(
-    private releaseNotifications: ReleaseNotificationService,
-    private router: Router,
-    private mediaMode: MediaModeService,
-    private renderer: Renderer2,
-    @Inject(DOCUMENT) private document: Document,
-  ) { }
+  private destroyRef = inject(DestroyRef);
 
   title = 'web-app';
   darkMode = signal<boolean>(true);
@@ -34,12 +31,12 @@ export class AppComponent implements OnInit {
 
   @HostBinding('class.dark') get mode() { return this.darkMode(); }
 
+  constructor() {
+    effect(() => this.applyMediaTheme(this.mediaMode.mode().themeClass));
+  }
+
   ngOnInit(): void {
-    initFlowbite();
     this.releaseNotifications.init();
-    this.mediaMode.mode$
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((mode) => this.applyMediaTheme(mode.themeClass));
     this.updateShellState(this.router.url);
     this.router.events
       .pipe(

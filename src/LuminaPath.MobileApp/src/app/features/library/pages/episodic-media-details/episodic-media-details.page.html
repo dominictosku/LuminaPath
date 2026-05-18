@@ -1,0 +1,180 @@
+<ion-header class="details-header" [class.details-header--condensed]="headerCondensed" [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" class="back-button" aria-label="Go back" (click)="goBack()">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    @if (media) {
+      <div class="condensed-title">
+        <img [src]="imageUrl()" [alt]="media.name" />
+        <div class="condensed-title__copy">
+          <strong>{{ media.name }}</strong>
+          <span>{{ statusLabel }}</span>
+        </div>
+      </div>
+    }
+    <ion-title class="default-title">{{ media?.name || config.titleFallback }}</ion-title>
+    @if (isInLibrary) {
+      <ion-buttons slot="end">
+        <ion-button
+          fill="clear"
+          class="overflow-button"
+          aria-label="More actions"
+          [disabled]="isUpdatingLibrary"
+          (click)="openMoreMenu()">
+          <ion-icon slot="icon-only" name="ellipsis-vertical"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    }
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" [scrollEvents]="true" (ionScroll)="onScroll($any($event))" class="details-shell">
+  @if (isLoading) {
+    <section class="details-state">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>{{ config.loadingLabel }}</p>
+    </section>
+  }
+
+  @if (!isLoading && errorMessage) {
+    <section class="details-state details-state--error">
+      <ion-icon [name]="config.errorIcon"></ion-icon>
+      <h2>Something went wrong</h2>
+      <p>{{ errorMessage }}</p>
+      <ion-button shape="round" (click)="goBack()">Back</ion-button>
+    </section>
+  }
+
+  @if (!isLoading && !errorMessage && media; as media) {
+    <main class="details-page">
+      <section class="hero-card">
+        <div class="hero-backdrop" [style.background-image]="'url(' + imageUrl() + ')'"></div>
+        <div class="hero-inner">
+          <div class="cover-wrap">
+            <img [src]="imageUrl()" [alt]="media.name" class="cover" />
+            <ion-badge class="library-badge" [class.library-badge--owned]="isInLibrary">
+              <ion-icon name="library-outline"></ion-icon>
+              {{ libraryStatusLabel }}
+            </ion-badge>
+          </div>
+
+          <div class="hero-copy">
+            <span class="eyebrow">{{ config.eyebrowLabel }}</span>
+            <h1>{{ media.name }}</h1>
+            @if (hasParent) {
+              <a
+                class="parent-link"
+                [routerLink]="[config.seasonRouteBase, media.parentId]">
+                <ion-icon name="return-up-back-outline"></ion-icon>
+                Season of {{ media.parentName || config.parentLabelFallback }}
+              </a>
+            }
+            @if (media.description) {
+              <p class="description">{{ media.description }}</p>
+            }
+
+            <div class="meta-grid">
+              <div class="meta-item">
+                <span>Episodes</span>
+                <strong>{{ episodeLabel }}</strong>
+              </div>
+              <div class="meta-item">
+                <span>Genre</span>
+                <strong>{{ genreLabel }}</strong>
+              </div>
+              <div class="meta-item">
+                <span>Release</span>
+                <strong>{{ releaseLabel }}</strong>
+              </div>
+              <div class="meta-item">
+                <span>{{ config.fourthMetaLabel }}</span>
+                <strong>{{ fourthMetaLabel }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="quick-actions">
+        @if (!isInLibrary) {
+          <ion-button
+            shape="round"
+            class="quick-action quick-action--primary"
+            [disabled]="isUpdatingLibrary"
+            (click)="addToLibrary()">
+            <ion-icon slot="start" name="add-outline"></ion-icon>
+            Add to library
+          </ion-button>
+        } @else {
+          <ion-button
+            shape="round"
+            class="quick-action quick-action--primary"
+            [disabled]="isUpdatingLibrary || primaryActionDisabled"
+            (click)="runPrimaryAction()">
+            <ion-icon slot="start" [name]="primaryActionIcon"></ion-icon>
+            {{ primaryActionLabel }}
+          </ion-button>
+          @if (canMarkComplete) {
+            <ion-button
+              shape="round"
+              fill="outline"
+              class="quick-action"
+              [disabled]="isUpdatingLibrary"
+              (click)="markComplete()">
+              <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
+              Mark complete
+            </ion-button>
+          }
+        }
+      </section>
+
+      @if (isInLibrary) {
+        <section class="quest-panel progress-panel">
+          <header class="section-header">
+            <div>
+              <span class="eyebrow">
+                <ion-icon [name]="config.progressEyebrowIcon"></ion-icon>
+                Watch progress
+              </span>
+              <h2>{{ episodeLabel }}</h2>
+            </div>
+            <ion-badge>{{ progress }}%</ion-badge>
+          </header>
+          <ion-progress-bar [value]="progress / 100"></ion-progress-bar>
+        </section>
+      }
+
+      @if (seasons.length) {
+        <section class="quest-panel dlc-panel">
+          <header class="section-header">
+            <div>
+              <span class="eyebrow">
+                <ion-icon name="layers-outline"></ion-icon>
+                Seasons
+              </span>
+              <h2>{{ seasons.length }} season{{ seasons.length === 1 ? '' : 's' }}</h2>
+            </div>
+          </header>
+
+          <div class="dlc-list">
+            @for (season of seasons; track season.id) {
+              <a
+                class="dlc-card"
+                [routerLink]="[config.seasonRouteBase, season.id]">
+                @if (season.image) {
+                  <img [src]="seasonImageUrl(season)" [alt]="season.name" />
+                }
+                <div class="dlc-body">
+                  <h3>{{ season.name }}</h3>
+                  <span>{{ seasonReleaseLabel(season) }}</span>
+                </div>
+              </a>
+            }
+          </div>
+        </section>
+      }
+    </main>
+  }
+</ion-content>

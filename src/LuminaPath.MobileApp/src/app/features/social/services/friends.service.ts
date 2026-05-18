@@ -1,14 +1,15 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 import { FriendUser, Friendship } from '../models/friend.model';
 
 @Injectable({ providedIn: 'root' })
 export class FriendsService {
-  private readonly httpConfig = { withCredentials: true };
+  private http = inject(HttpClient);
+  private apiEndpoint = inject(ApiEndpointService);
 
-  constructor(private http: HttpClient, private apiEndpoint: ApiEndpointService) {}
+  private readonly httpConfig = { withCredentials: true };
 
   list(): Observable<Friendship[]> {
     return this.http.get<Friendship[]>(this.apiEndpoint.url('friends'), this.httpConfig);

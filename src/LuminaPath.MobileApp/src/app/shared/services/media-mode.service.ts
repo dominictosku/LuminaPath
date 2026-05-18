@@ -1,5 +1,4 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Injectable, signal } from '@angular/core';
 
 export type MediaMode = 'games' | 'animes' | 'movies' | 'series';
 
@@ -63,18 +62,14 @@ export const MEDIA_MODE_OPTIONS: MediaModeOption[] = [
   providedIn: 'root',
 })
 export class MediaModeService {
-  private readonly modeSubject = new BehaviorSubject<MediaModeOption>(this.readInitialMode());
+  private readonly modeSignal = signal<MediaModeOption>(this.readInitialMode());
 
-  readonly mode$ = this.modeSubject.asObservable();
+  readonly mode = this.modeSignal.asReadonly();
   readonly options = MEDIA_MODE_OPTIONS;
-
-  get current(): MediaModeOption {
-    return this.modeSubject.value;
-  }
 
   select(mode: MediaMode): void {
     const next = this.options.find((option) => option.id === mode) ?? this.options[0];
-    this.modeSubject.next(next);
+    this.modeSignal.set(next);
     localStorage.setItem(STORAGE_KEY, next.id);
   }
 

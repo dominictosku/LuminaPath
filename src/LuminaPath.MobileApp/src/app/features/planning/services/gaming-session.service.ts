@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 
@@ -37,9 +37,10 @@ export type GameForecast = {
 
 @Injectable({ providedIn: 'root' })
 export class GamingSessionService {
-  private readonly httpConfig = { withCredentials: true };
+  private http = inject(HttpClient);
+  private apiEndpoint = inject(ApiEndpointService);
 
-  constructor(private http: HttpClient, private apiEndpoint: ApiEndpointService) {}
+  private readonly httpConfig = { withCredentials: true };
 
   list(options: { myGameId?: number; from?: Date | string; to?: Date | string } = {}): Observable<GamingSession[]> {
     let params = new HttpParams();

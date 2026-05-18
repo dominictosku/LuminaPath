@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
@@ -31,7 +31,6 @@ type FormState = 'idle' | 'saving' | 'success' | 'error';
   templateUrl: './profile.page.html',
   styleUrls: ['./profile.page.scss'],
   imports: [
-    CommonModule,
     FormsModule,
     RouterLink,
     IonButton,
@@ -39,10 +38,13 @@ type FormState = 'idle' | 'saving' | 'success' | 'error';
     IonIcon,
     IonRefresher,
     IonRefresherContent,
-    IonSpinner,
-  ],
+    IonSpinner
+],
 })
 export class ProfilePage implements OnInit {
+  private authService = inject(AuthService);
+  private profileService = inject(ProfileService);
+
   user = new User();
   isLoading = true;
   state: FormState = 'idle';
@@ -55,10 +57,7 @@ export class ProfilePage implements OnInit {
     currentPassword: '',
   };
 
-  constructor(
-    private authService: AuthService,
-    private profileService: ProfileService,
-  ) {
+  constructor() {
     addIcons({
       cardOutline,
       mailOutline,

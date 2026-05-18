@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { AfterViewChecked, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+
+import { AfterViewChecked, Component, ElementRef, OnDestroy, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -24,9 +24,11 @@ interface DisplayMessage extends ChatMessage {
   selector: 'app-ai-chat',
   templateUrl: './ai-chat.component.html',
   styleUrls: ['./ai-chat.component.scss'],
-  imports: [CommonModule, FormsModule, IonIcon],
+  imports: [FormsModule, IonIcon],
 })
 export class AiChatComponent implements AfterViewChecked, OnDestroy {
+  private chat = inject(AiChatService);
+
   open = false;
   draft = '';
   messages: DisplayMessage[] = [];
@@ -36,7 +38,7 @@ export class AiChatComponent implements AfterViewChecked, OnDestroy {
 
   @ViewChild('scrollAnchor') private scrollAnchor?: ElementRef<HTMLDivElement>;
 
-  constructor(private chat: AiChatService) {
+  constructor() {
     addIcons({
       chatbubbleEllipsesOutline,
       closeOutline,
@@ -135,10 +137,6 @@ export class AiChatComponent implements AfterViewChecked, OnDestroy {
       event.preventDefault();
       this.send();
     }
-  }
-
-  trackByIndex(index: number): number {
-    return index;
   }
 
   shortToolLabel(name: string): string {

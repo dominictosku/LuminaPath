@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonBadge,
@@ -134,7 +134,6 @@ type SkillTreeUnlockPayload = {
   templateUrl: './quest-board.page.html',
   styleUrls: ['./quest-board.page.scss'],
   imports: [
-    CommonModule,
     FormsModule,
     IonBadge,
     IonButton,
@@ -146,10 +145,13 @@ type SkillTreeUnlockPayload = {
     IonReorderGroup,
     IonSegment,
     IonSegmentButton,
-    SkillTreeComponent,
-  ],
+    SkillTreeComponent
+],
 })
 export class QuestBoardPage implements OnInit, OnDestroy {
+  private questBoardService = inject(QuestBoardService);
+  private myGameService = inject(MyGameService);
+
   readonly skillIconOptions = [
     { label: 'Code', icon: 'code-slash-outline' },
     { label: 'Art', icon: 'brush-outline' },
@@ -254,10 +256,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   private pendingDeletes = new Map<number, PendingDelete>();
   private undoToastTimer: number | undefined;
 
-  constructor(
-    private questBoardService: QuestBoardService,
-    private myGameService: MyGameService,
-  ) {
+  constructor() {
     addIcons({
       addOutline,
       alertCircleOutline,

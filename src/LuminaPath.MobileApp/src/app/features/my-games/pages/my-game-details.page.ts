@@ -1,5 +1,5 @@
-import { CommonModule, Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Location } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
@@ -59,7 +59,7 @@ import { GameService } from 'src/app/features/games/services/game.service';
 import { Game, GameNewsItem, GameSummary, platformLabelFromValue } from 'src/app/features/games/models/games.model';
 import { MyGameService, UserGameAchievement } from 'src/app/features/my-games/services/my-game.service';
 import { Quest, QuestBoardService, QuestType } from 'src/app/features/quests/services/quest-board.service';
-import { GameForecast, GamingSessionService } from 'src/app/features/planing/services/gaming-session.service';
+import { GameForecast, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 
 const STATUS_LABELS: Record<number, string> = {
@@ -90,7 +90,6 @@ type GameLibraryEntry = {
   templateUrl: './my-game-details.page.html',
   styleUrls: ['./my-game-details.page.scss'],
   imports: [
-    CommonModule,
     FormsModule,
     RouterLink,
     IonBadge,
@@ -108,10 +107,20 @@ type GameLibraryEntry = {
     IonSkeletonText,
     IonSpinner,
     IonTitle,
-    IonToolbar,
-  ],
+    IonToolbar
+],
 })
 export class MyGameDetailsPage implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly location = inject(Location);
+  private readonly gameService = inject(GameService);
+  private readonly myGameService = inject(MyGameService);
+  private readonly questBoardService = inject(QuestBoardService);
+  private readonly sessionService = inject(GamingSessionService);
+  private readonly alertController = inject(AlertController);
+  private readonly actionSheetController = inject(ActionSheetController);
+
   game: GameWithFlexibleLibrary | null = null;
   quests: Quest[] = [];
   forecast: GameForecast | null = null;
@@ -151,17 +160,7 @@ export class MyGameDetailsPage implements OnInit {
     { title: '100% achievements', type: 'sub' },
   ];
 
-  constructor(
-    private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly location: Location,
-    private readonly gameService: GameService,
-    private readonly myGameService: MyGameService,
-    private readonly questBoardService: QuestBoardService,
-    private readonly sessionService: GamingSessionService,
-    private readonly alertController: AlertController,
-    private readonly actionSheetController: ActionSheetController,
-  ) {
+  constructor() {
     addIcons({
       addOutline,
       alertCircleOutline,
@@ -799,7 +798,7 @@ export class MyGameDetailsPage implements OnInit {
   }
 
   goToPlanning(): void {
-    void this.router.navigateByUrl('/planing');
+    void this.router.navigateByUrl('/planning');
   }
 
   private libraryUpdateDetails(overrides: Partial<{

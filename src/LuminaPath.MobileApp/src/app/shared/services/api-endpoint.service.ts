@@ -1,5 +1,4 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Injectable, signal } from '@angular/core';
 import { environment } from 'src/environments/environment';
 
 const apiEndpointStorageKey = 'luminapath.apiEndpoint';
@@ -35,12 +34,9 @@ export function resolveApiEndpoint(): string {
   providedIn: 'root',
 })
 export class ApiEndpointService {
-  private readonly endpointSubject = new BehaviorSubject<string>(resolveApiEndpoint());
-  readonly endpoint$ = this.endpointSubject.asObservable();
+  private readonly endpointSignal = signal<string>(resolveApiEndpoint());
 
-  get endpoint(): string {
-    return this.endpointSubject.value;
-  }
+  readonly endpoint = this.endpointSignal.asReadonly();
 
   get defaultEndpoint(): string {
     return normalizeApiEndpoint(environment.endpoint);
@@ -49,19 +45,19 @@ export class ApiEndpointService {
   setEndpoint(value: string): string {
     const endpoint = normalizeApiEndpoint(value);
     globalThis.localStorage?.setItem(apiEndpointStorageKey, endpoint);
-    this.endpointSubject.next(endpoint);
+    this.endpointSignal.set(endpoint);
     return endpoint;
   }
 
   resetEndpoint(): string {
     globalThis.localStorage?.removeItem(apiEndpointStorageKey);
     const endpoint = this.defaultEndpoint;
-    this.endpointSubject.next(endpoint);
+    this.endpointSignal.set(endpoint);
     return endpoint;
   }
 
   url(path: string): string {
     const normalizedPath = path.replace(/^\/+/, '');
-    return `${this.endpoint}/${normalizedPath}`;
+    return `${this.endpointSignal()}/${normalizedPath}`;
   }
 }

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { of } from 'rxjs';
 
-import { PlaningPage } from './planing.page';
+import { PlanningPage } from './planning.page';
 import { GameService } from '../../games/services/game.service';
 import { GamingSessionService, GamingSession, GameForecast } from '../services/gaming-session.service';
 import { Game, MyGame } from '../../games/models/games.model';
@@ -85,9 +85,9 @@ function boardOf(quests: Quest[] = []): QuestBoardState {
   };
 }
 
-describe('PlaningPage', () => {
-  let component: PlaningPage;
-  let fixture: ComponentFixture<PlaningPage>;
+describe('PlanningPage', () => {
+  let component: PlanningPage;
+  let fixture: ComponentFixture<PlanningPage>;
   let gameService: jasmine.SpyObj<GameService>;
   let sessionService: jasmine.SpyObj<GamingSessionService>;
   let questBoardService: jasmine.SpyObj<QuestBoardService>;
@@ -109,7 +109,7 @@ describe('PlaningPage', () => {
     questBoardService.getBoard.and.resolveTo(boardOf(opts.quests ?? []));
 
     TestBed.configureTestingModule({
-      imports: [PlaningPage],
+      imports: [PlanningPage],
       providers: [
         { provide: GameService, useValue: gameService },
         { provide: GamingSessionService, useValue: sessionService },
@@ -117,7 +117,7 @@ describe('PlaningPage', () => {
       ],
     });
 
-    fixture = TestBed.createComponent(PlaningPage);
+    fixture = TestBed.createComponent(PlanningPage);
     component = fixture.componentInstance;
   }
 

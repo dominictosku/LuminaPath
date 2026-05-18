@@ -8,26 +8,35 @@
 </ion-header>
 
 <ion-content class="chat-content">
-  <div *ngIf="isLoading" class="ion-padding ion-text-center">
-    <ion-spinner></ion-spinner>
-  </div>
-  <div *ngIf="errorMessage" class="ion-padding ion-text-center" style="color: var(--ion-color-danger)">
-    {{ errorMessage }}
-  </div>
+  @if (isLoading) {
+    <div class="ion-padding ion-text-center">
+      <ion-spinner></ion-spinner>
+    </div>
+  }
+  @if (errorMessage) {
+    <div class="ion-padding ion-text-center" style="color: var(--ion-color-danger)">
+      {{ errorMessage }}
+    </div>
+  }
 
-  <div class="chat-messages" *ngIf="!isLoading && !errorMessage">
-    <div *ngIf="!messages.length" class="ion-text-center ion-padding">
-      No messages yet. Say hi!
+  @if (!isLoading && !errorMessage) {
+    <div class="chat-messages">
+      @if (!messages.length) {
+        <div class="ion-text-center ion-padding">
+          No messages yet. Say hi!
+        </div>
+      }
+      @for (message of messages; track message) {
+        <div
+          class="chat-bubble"
+          [class.mine]="isMine(message)"
+          [class.theirs]="!isMine(message)">
+          <div class="chat-bubble-content">{{ message.content }}</div>
+          <div class="chat-bubble-meta">{{ message.sentAt | date: 'shortTime' }}</div>
+        </div>
+      }
     </div>
-    <div
-      *ngFor="let message of messages"
-      class="chat-bubble"
-      [class.mine]="isMine(message)"
-      [class.theirs]="!isMine(message)">
-      <div class="chat-bubble-content">{{ message.content }}</div>
-      <div class="chat-bubble-meta">{{ message.sentAt | date: 'shortTime' }}</div>
-    </div>
-  </div>
+  }
 </ion-content>
 
 <ion-footer>

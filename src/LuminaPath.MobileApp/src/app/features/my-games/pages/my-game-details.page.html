@@ -5,526 +5,559 @@
         <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
-    <div class="condensed-title" *ngIf="game">
-      <img [src]="imageUrl()" [alt]="game.name" />
-      <div class="condensed-title__copy">
-        <strong>{{ game.name }}</strong>
-        <span>{{ statusLabel }}</span>
+    @if (game) {
+      <div class="condensed-title">
+        <img [src]="imageUrl()" [alt]="game.name" />
+        <div class="condensed-title__copy">
+          <strong>{{ game.name }}</strong>
+          <span>{{ statusLabel }}</span>
+        </div>
       </div>
-    </div>
+    }
     <ion-title class="default-title">{{ game?.name || 'Game details' }}</ion-title>
-    <ion-buttons slot="end" *ngIf="isInLibrary">
-      <ion-button
-        fill="clear"
-        class="overflow-button"
-        aria-label="More actions"
-        [disabled]="isUpdatingLibrary"
-        (click)="openMoreMenu()">
-        <ion-icon slot="icon-only" name="ellipsis-vertical"></ion-icon>
-      </ion-button>
-    </ion-buttons>
+    @if (isInLibrary) {
+      <ion-buttons slot="end">
+        <ion-button
+          fill="clear"
+          class="overflow-button"
+          aria-label="More actions"
+          [disabled]="isUpdatingLibrary"
+          (click)="openMoreMenu()">
+          <ion-icon slot="icon-only" name="ellipsis-vertical"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    }
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true" [scrollEvents]="true" (ionScroll)="onScroll($any($event))" class="details-shell">
-  <section class="details-state" *ngIf="isLoading">
-    <ion-spinner name="crescent"></ion-spinner>
-    <p>Loading game details...</p>
-  </section>
-
-  <section class="details-state details-state--error" *ngIf="!isLoading && errorMessage">
-    <ion-icon name="game-controller-outline"></ion-icon>
-    <h2>Something went wrong</h2>
-    <p>{{ errorMessage }}</p>
-    <ion-button shape="round" (click)="goBack()">Back</ion-button>
-  </section>
-
-  <main class="details-page" *ngIf="!isLoading && !errorMessage && game">
-    <section class="hero-card">
-      <div class="hero-backdrop" [style.background-image]="'url(' + imageUrl() + ')'"></div>
-      <div class="hero-inner">
-      <div class="cover-wrap">
-        <img [src]="imageUrl()" [alt]="game.name" class="cover" />
-        <ion-badge class="library-badge" [class.library-badge--owned]="isInLibrary">
-          <ion-icon name="library-outline"></ion-icon>
-          {{ libraryStatusLabel }}
-        </ion-badge>
-      </div>
-
-      <div class="hero-copy">
-        <span class="eyebrow">Game details</span>
-        <h1>{{ game.name }}</h1>
-        <a
-          *ngIf="hasParent"
-          class="parent-link"
-          [routerLink]="['/library/games', game.parentGameId]">
-          <ion-icon name="return-up-back-outline"></ion-icon>
-          DLC of {{ game.parentGameName || 'parent game' }}
-        </a>
-        <p class="description" *ngIf="game.description">{{ game.description }}</p>
-
-        <div class="meta-grid">
-          <div class="meta-item">
-            <span>Genre</span>
-            <strong>{{ genreLabel }}</strong>
-          </div>
-          <div class="meta-item">
-            <span>Platform</span>
-            <strong>{{ platformLabel }}</strong>
-          </div>
-          <div class="meta-item">
-            <span>Release</span>
-            <strong>{{ releaseLabel }}</strong>
-          </div>
-          <div class="meta-item">
-            <span>Playtime</span>
-            <strong>{{ playtimeLabel }}</strong>
-          </div>
-        </div>
-      </div>
-      </div>
+  @if (isLoading) {
+    <section class="details-state">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Loading game details...</p>
     </section>
+  }
 
-    <section class="quick-actions">
-      <ng-container *ngIf="!isInLibrary">
-        <ion-button
-          shape="round"
-          class="quick-action quick-action--primary"
-          [disabled]="isUpdatingLibrary"
-          (click)="addToLibrary()">
-          <ion-icon slot="start" name="add-outline"></ion-icon>
-          Add to library
-        </ion-button>
-      </ng-container>
-      <ng-container *ngIf="isInLibrary">
-        <ion-button
-          shape="round"
-          class="quick-action quick-action--primary"
-          [disabled]="isUpdatingLibrary"
-          (click)="advanceStatus()">
-          <ion-icon slot="start" [name]="primaryActionIcon"></ion-icon>
-          {{ primaryActionLabel }}
-        </ion-button>
-        <ion-button
-          shape="round"
-          fill="outline"
-          class="quick-action"
-          (click)="goToPlanning()">
-          <ion-icon slot="start" name="calendar-clear-outline"></ion-icon>
-          Plan sessions
-        </ion-button>
-      </ng-container>
+  @if (!isLoading && errorMessage) {
+    <section class="details-state details-state--error">
+      <ion-icon name="game-controller-outline"></ion-icon>
+      <h2>Something went wrong</h2>
+      <p>{{ errorMessage }}</p>
+      <ion-button shape="round" (click)="goBack()">Back</ion-button>
     </section>
+  }
 
-    <ion-segment class="detail-tabs" [value]="selectedTab" (ionChange)="setDetailTab($any($event).detail.value)">
-      <ion-segment-button value="overview">
-        <ion-label>Overview</ion-label>
-      </ion-segment-button>
-      <ion-segment-button value="progress">
-        <ion-label>Progress</ion-label>
-      </ion-segment-button>
-      <ion-segment-button value="news">
-        <ion-label>News</ion-label>
-      </ion-segment-button>
-    </ion-segment>
-
-    <section class="quest-panel dlc-panel" *ngIf="selectedTab === 'overview' && dlcs.length">
-      <header class="section-header">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="cube-outline"></ion-icon>
-            Downloadable content
-          </span>
-          <h2>{{ dlcs.length }} DLC{{ dlcs.length === 1 ? '' : 's' }}</h2>
-        </div>
-      </header>
-
-      <div class="dlc-list">
-        <a
-          *ngFor="let dlc of dlcs; trackBy: trackByDlc"
-          class="dlc-card"
-          [routerLink]="['/library/games', dlc.id]">
-          <img *ngIf="dlc.image" [src]="dlcImageUrl(dlc)" [alt]="dlc.name" />
-          <div class="dlc-body">
-            <h3>{{ dlc.name }}</h3>
-            <span>{{ dlcReleaseLabel(dlc) }}</span>
+  @if (!isLoading && !errorMessage && game) {
+    <main class="details-page">
+      <section class="hero-card">
+        <div class="hero-backdrop" [style.background-image]="'url(' + imageUrl() + ')'"></div>
+        <div class="hero-inner">
+          <div class="cover-wrap">
+            <img [src]="imageUrl()" [alt]="game.name" class="cover" />
+            <ion-badge class="library-badge" [class.library-badge--owned]="isInLibrary">
+              <ion-icon name="library-outline"></ion-icon>
+              {{ libraryStatusLabel }}
+            </ion-badge>
           </div>
-        </a>
-      </div>
-    </section>
-
-    <section class="quest-panel forecast-panel" *ngIf="selectedTab === 'overview' && forecast">
-      <header class="section-header">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="hourglass-outline"></ion-icon>
-            Completion forecast
-          </span>
-          <h2>How long until you finish</h2>
-        </div>
-        <ion-button fill="clear" size="small" (click)="goToPlanning()">Plan sessions</ion-button>
-      </header>
-
-      <div class="forecast-bar" *ngIf="forecastBarParts.total > 0; else forecastEmpty">
-        <div class="forecast-bar__track">
-          <span
-            class="forecast-bar__seg forecast-bar__seg--played"
-            [style.width.%]="forecastWidth('played')"
-            [attr.aria-label]="'Played ' + forecastHours(forecast.playedHours)"></span>
-          <span
-            class="forecast-bar__seg forecast-bar__seg--scheduled"
-            [style.width.%]="forecastWidth('scheduled')"
-            [attr.aria-label]="'Scheduled ' + forecastHours(forecast.scheduledHours)"></span>
-          <span
-            class="forecast-bar__seg forecast-bar__seg--remaining"
-            [style.width.%]="forecastWidth('remaining')"></span>
-        </div>
-        <div class="forecast-bar__legend">
-          <span class="forecast-bar__chip">
-            <i class="forecast-dot forecast-dot--played"></i>
-            Played <strong>{{ forecastHours(forecast.playedHours) }}</strong>
-          </span>
-          <span class="forecast-bar__chip">
-            <i class="forecast-dot forecast-dot--scheduled"></i>
-            Scheduled <strong>{{ forecastHours(forecast.scheduledHours) }}</strong>
-          </span>
-          <span class="forecast-bar__chip">
-            <i class="forecast-dot forecast-dot--remaining"></i>
-            Remaining <strong>{{ forecast.remainingHours === null ? '—' : forecastHours(forecast.remainingHours) }}</strong>
-          </span>
-          <span class="forecast-bar__chip forecast-bar__chip--pace">
-            <ion-icon name="hourglass-outline"></ion-icon>
-            <strong>{{ forecastHours(forecast.weeklyHours) }}</strong> / wk
-          </span>
-        </div>
-      </div>
-
-      <ng-template #forecastEmpty>
-        <ion-progress-bar [value]="forecastProgress()"></ion-progress-bar>
-      </ng-template>
-
-      <p class="forecast-summary">{{ forecastSummary() }}</p>
-    </section>
-
-    <section class="quest-panel trophies-panel" *ngIf="selectedTab === 'progress' && isInLibrary">
-      <header class="section-header trophies-header">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="trophy-outline"></ion-icon>
-            Trophies
-          </span>
-          <h2>Unlocked by you</h2>
-        </div>
-        <ion-badge>{{ achievementSummaryLabel }}</ion-badge>
-      </header>
-
-      <div class="empty-state empty-state--locked" *ngIf="isAchievementsLoading">
-        <ion-spinner name="crescent"></ion-spinner>
-        <strong>Loading trophies</strong>
-        <span>Checking the achievements synced for this game.</span>
-      </div>
-
-      <div class="empty-state empty-state--locked" *ngIf="!isAchievementsLoading && achievementsErrorMessage">
-        <ion-icon name="alert-circle-outline"></ion-icon>
-        <strong>Trophies unavailable</strong>
-        <span>{{ achievementsErrorMessage }}</span>
-      </div>
-
-      <div class="empty-state" *ngIf="!isAchievementsLoading && !achievementsErrorMessage && !achievements.length">
-        <ion-icon name="trophy-outline"></ion-icon>
-        <strong>No trophies synced yet</strong>
-        <span>Run a Steam or PSN sync to fill this shelf.</span>
-      </div>
-
-      <div class="trophy-grid" *ngIf="!isAchievementsLoading && !achievementsErrorMessage && achievements.length">
-        <article
-          class="trophy-card"
-          *ngFor="let achievement of achievements; trackBy: trackByAchievement">
-          <div class="trophy-card__icon">
-            <img *ngIf="achievement.iconUrl; else trophyFallback" [src]="achievement.iconUrl" [alt]="achievement.title" />
-            <ng-template #trophyFallback>
-              <ion-icon name="trophy-outline"></ion-icon>
-            </ng-template>
-          </div>
-
-          <div class="trophy-card__body">
-            <div class="trophy-card__meta">
-              <span>{{ achievement.providerName }}</span>
-              <span>{{ trophyTypeLabel(achievement.trophyType) }}</span>
-            </div>
-            <h3>{{ achievement.title }}</h3>
-            <p *ngIf="achievement.description">{{ achievement.description }}</p>
-            <time>{{ achievementDateLabel(achievement) }}</time>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section class="quest-panel notes-panel" *ngIf="selectedTab === 'overview'">
-      <header class="section-header notes-header">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="document-text-outline"></ion-icon>
-            Personal notes
-          </span>
-          <h2>Your Game Journal</h2>
-        </div>
-
-        <div class="notes-actions" *ngIf="isInLibrary">
-          <ng-container *ngIf="!isEditingNotes; else editingNoteActions">
-            <ion-button fill="clear" size="small" (click)="startEditingNotes()">
-              <ion-icon slot="start" name="create-outline"></ion-icon>
-              {{ hasPersonalNotes ? 'Edit' : 'Add note' }}
-            </ion-button>
-          </ng-container>
-          <ng-template #editingNoteActions>
-            <ion-button fill="clear" size="small" [disabled]="isSavingNotes" (click)="cancelEditingNotes()">
-              <ion-icon slot="start" name="close-outline"></ion-icon>
-              Cancel
-            </ion-button>
-            <ion-button fill="clear" size="small" [disabled]="isSavingNotes" (click)="savePersonalNotes()">
-              <ion-icon slot="start" name="save-outline"></ion-icon>
-              Save
-            </ion-button>
-          </ng-template>
-        </div>
-      </header>
-
-      <ng-container *ngIf="isInLibrary; else notesLocked">
-        <ng-container *ngIf="!isEditingNotes; else notesEditor">
-          <div class="notes-preview" *ngIf="hasPersonalNotes; else emptyNotes">
-            <div class="notes-preview__label">
-              <ion-icon name="eye-outline"></ion-icon>
-              Preview
-            </div>
-            <div class="markdown-body" [innerHTML]="renderedPersonalNotes"></div>
-          </div>
-
-          <ng-template #emptyNotes>
-            <div class="empty-state empty-state--notes">
-              <ion-icon name="document-text-outline"></ion-icon>
-              <strong>No notes yet</strong>
-              <span>Keep builds, memories, route ideas, or post-game thoughts here.</span>
-            </div>
-          </ng-template>
-        </ng-container>
-
-        <ng-template #notesEditor>
-          <div class="notes-editor">
-            <textarea
-              [(ngModel)]="notesDraft"
-              maxlength="5000"
-              placeholder="Write a note..."
-              [disabled]="isSavingNotes"></textarea>
-            <div class="notes-editor__preview" *ngIf="notesDraft.trim().length">
-              <span class="notes-preview__label">
-                <ion-icon name="eye-outline"></ion-icon>
-                Preview
-              </span>
-              <div class="markdown-body" [innerHTML]="renderMarkdown(notesDraft)"></div>
-            </div>
-          </div>
-        </ng-template>
-      </ng-container>
-
-      <ng-template #notesLocked>
-        <div class="empty-state empty-state--locked">
-          <ion-icon name="library-outline"></ion-icon>
-          <strong>Notes are locked</strong>
-          <span>Add this game to your library to keep personal notes.</span>
-        </div>
-      </ng-template>
-    </section>
-
-    <section class="quest-panel" *ngIf="selectedTab === 'progress'">
-      <header class="section-header">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="link-outline"></ion-icon>
-            Linked quests
-          </span>
-          <h2>Game Quests</h2>
-        </div>
-      </header>
-
-      <ng-container *ngIf="isInLibrary; else notInLibrary">
-        <ng-container *ngIf="activeQuests.length || completedQuests.length; else emptyQuests">
-          <div class="quest-list" *ngIf="activeQuests.length">
-            <article
-              class="quest-card"
-              *ngFor="let quest of activeQuests; trackBy: trackByQuest">
-              <button type="button" class="icon-action icon-action--complete" (click)="toggleQuest(quest)">
-                <ion-icon name="checkmark-circle-outline"></ion-icon>
-              </button>
-
-              <div class="quest-body">
-                <h3>{{ quest.title }}</h3>
-                <p>
-                  <ion-badge>{{ questTypeLabel(questTypeFor(quest)) }}</ion-badge>
-                  <span>Ready to complete</span>
-                </p>
+          <div class="hero-copy">
+            <span class="eyebrow">Game details</span>
+            <h1>{{ game.name }}</h1>
+            @if (hasParent) {
+              <a
+                class="parent-link"
+                [routerLink]="['/library/games', game.parentGameId]">
+                <ion-icon name="return-up-back-outline"></ion-icon>
+                DLC of {{ game.parentGameName || 'parent game' }}
+              </a>
+            }
+            @if (game.description) {
+              <p class="description">{{ game.description }}</p>
+            }
+            <div class="meta-grid">
+              <div class="meta-item">
+                <span>Genre</span>
+                <strong>{{ genreLabel }}</strong>
               </div>
-
-              <button type="button" class="icon-action" aria-label="Delete quest" (click)="deleteQuest(quest)">
-                <ion-icon name="trash-outline"></ion-icon>
-              </button>
-            </article>
+              <div class="meta-item">
+                <span>Platform</span>
+                <strong>{{ platformLabel }}</strong>
+              </div>
+              <div class="meta-item">
+                <span>Release</span>
+                <strong>{{ releaseLabel }}</strong>
+              </div>
+              <div class="meta-item">
+                <span>Playtime</span>
+                <strong>{{ playtimeLabel }}</strong>
+              </div>
+            </div>
           </div>
-
-          <div class="completed-toggle" *ngIf="completedQuests.length">
-            <button
-              type="button"
-              class="completed-toggle__button"
-              [attr.aria-expanded]="completedExpanded"
-              (click)="toggleCompletedQuests()">
-              <ion-icon [name]="completedExpanded ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
-              Completed
-              <span class="completed-toggle__count">{{ completedQuests.length }}</span>
-            </button>
-
-            <div class="quest-list quest-list--completed" *ngIf="completedExpanded">
-              <article
-                class="quest-card quest-card--done"
-                *ngFor="let quest of completedQuests; trackBy: trackByQuest">
-                <button type="button" class="icon-action icon-action--complete" (click)="toggleQuest(quest)">
-                  <ion-icon name="checkmark-circle"></ion-icon>
-                </button>
-
-                <div class="quest-body">
-                  <h3>{{ quest.title }}</h3>
-                  <p>
-                    <ion-badge>{{ questTypeLabel(questTypeFor(quest)) }}</ion-badge>
-                    <span>Completed</span>
-                  </p>
+        </div>
+      </section>
+      <section class="quick-actions">
+        @if (!isInLibrary) {
+          <ion-button
+            shape="round"
+            class="quick-action quick-action--primary"
+            [disabled]="isUpdatingLibrary"
+            (click)="addToLibrary()">
+            <ion-icon slot="start" name="add-outline"></ion-icon>
+            Add to library
+          </ion-button>
+        }
+        @if (isInLibrary) {
+          <ion-button
+            shape="round"
+            class="quick-action quick-action--primary"
+            [disabled]="isUpdatingLibrary"
+            (click)="advanceStatus()">
+            <ion-icon slot="start" [name]="primaryActionIcon"></ion-icon>
+            {{ primaryActionLabel }}
+          </ion-button>
+          <ion-button
+            shape="round"
+            fill="outline"
+            class="quick-action"
+            (click)="goToPlanning()">
+            <ion-icon slot="start" name="calendar-clear-outline"></ion-icon>
+            Plan sessions
+          </ion-button>
+        }
+      </section>
+      <ion-segment class="detail-tabs" [value]="selectedTab" (ionChange)="setDetailTab($any($event).detail.value)">
+        <ion-segment-button value="overview">
+          <ion-label>Overview</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="progress">
+          <ion-label>Progress</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="news">
+          <ion-label>News</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+      @if (selectedTab === 'overview' && dlcs.length) {
+        <section class="quest-panel dlc-panel">
+          <header class="section-header">
+            <div>
+              <span class="eyebrow">
+                <ion-icon name="cube-outline"></ion-icon>
+                Downloadable content
+              </span>
+              <h2>{{ dlcs.length }} DLC{{ dlcs.length === 1 ? '' : 's' }}</h2>
+            </div>
+          </header>
+          <div class="dlc-list">
+            @for (dlc of dlcs; track trackByDlc($index, dlc)) {
+              <a
+                class="dlc-card"
+                [routerLink]="['/library/games', dlc.id]">
+                @if (dlc.image) {
+                  <img [src]="dlcImageUrl(dlc)" [alt]="dlc.name" />
+                }
+                <div class="dlc-body">
+                  <h3>{{ dlc.name }}</h3>
+                  <span>{{ dlcReleaseLabel(dlc) }}</span>
                 </div>
-
-                <button type="button" class="icon-action" aria-label="Delete quest" (click)="deleteQuest(quest)">
-                  <ion-icon name="trash-outline"></ion-icon>
+              </a>
+            }
+          </div>
+        </section>
+      }
+      @if (selectedTab === 'overview' && forecast) {
+        <section class="quest-panel forecast-panel">
+          <header class="section-header">
+            <div>
+              <span class="eyebrow">
+                <ion-icon name="hourglass-outline"></ion-icon>
+                Completion forecast
+              </span>
+              <h2>How long until you finish</h2>
+            </div>
+            <ion-button fill="clear" size="small" (click)="goToPlanning()">Plan sessions</ion-button>
+          </header>
+          @if (forecastBarParts.total > 0) {
+            <div class="forecast-bar">
+              <div class="forecast-bar__track">
+                <span
+                  class="forecast-bar__seg forecast-bar__seg--played"
+                  [style.width.%]="forecastWidth('played')"
+                [attr.aria-label]="'Played ' + forecastHours(forecast.playedHours)"></span>
+                <span
+                  class="forecast-bar__seg forecast-bar__seg--scheduled"
+                  [style.width.%]="forecastWidth('scheduled')"
+                [attr.aria-label]="'Scheduled ' + forecastHours(forecast.scheduledHours)"></span>
+                <span
+                  class="forecast-bar__seg forecast-bar__seg--remaining"
+                [style.width.%]="forecastWidth('remaining')"></span>
+              </div>
+              <div class="forecast-bar__legend">
+                <span class="forecast-bar__chip">
+                  <i class="forecast-dot forecast-dot--played"></i>
+                  Played <strong>{{ forecastHours(forecast.playedHours) }}</strong>
+                </span>
+                <span class="forecast-bar__chip">
+                  <i class="forecast-dot forecast-dot--scheduled"></i>
+                  Scheduled <strong>{{ forecastHours(forecast.scheduledHours) }}</strong>
+                </span>
+                <span class="forecast-bar__chip">
+                  <i class="forecast-dot forecast-dot--remaining"></i>
+                  Remaining <strong>{{ forecast.remainingHours === null ? '—' : forecastHours(forecast.remainingHours) }}</strong>
+                </span>
+                <span class="forecast-bar__chip forecast-bar__chip--pace">
+                  <ion-icon name="hourglass-outline"></ion-icon>
+                  <strong>{{ forecastHours(forecast.weeklyHours) }}</strong> / wk
+                </span>
+              </div>
+            </div>
+          } @else {
+            <ion-progress-bar [value]="forecastProgress()"></ion-progress-bar>
+          }
+          <p class="forecast-summary">{{ forecastSummary() }}</p>
+        </section>
+      }
+      @if (selectedTab === 'progress' && isInLibrary) {
+        <section class="quest-panel trophies-panel">
+          <header class="section-header trophies-header">
+            <div>
+              <span class="eyebrow">
+                <ion-icon name="trophy-outline"></ion-icon>
+                Trophies
+              </span>
+              <h2>Unlocked by you</h2>
+            </div>
+            <ion-badge>{{ achievementSummaryLabel }}</ion-badge>
+          </header>
+          @if (isAchievementsLoading) {
+            <div class="empty-state empty-state--locked">
+              <ion-spinner name="crescent"></ion-spinner>
+              <strong>Loading trophies</strong>
+              <span>Checking the achievements synced for this game.</span>
+            </div>
+          }
+          @if (!isAchievementsLoading && achievementsErrorMessage) {
+            <div class="empty-state empty-state--locked">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              <strong>Trophies unavailable</strong>
+              <span>{{ achievementsErrorMessage }}</span>
+            </div>
+          }
+          @if (!isAchievementsLoading && !achievementsErrorMessage && !achievements.length) {
+            <div class="empty-state">
+              <ion-icon name="trophy-outline"></ion-icon>
+              <strong>No trophies synced yet</strong>
+              <span>Run a Steam or PSN sync to fill this shelf.</span>
+            </div>
+          }
+          @if (!isAchievementsLoading && !achievementsErrorMessage && achievements.length) {
+            <div class="trophy-grid">
+              @for (achievement of achievements; track trackByAchievement($index, achievement)) {
+                <article
+                  class="trophy-card"
+                  >
+                  <div class="trophy-card__icon">
+                    @if (achievement.iconUrl) {
+                      <img [src]="achievement.iconUrl" [alt]="achievement.title" />
+                    } @else {
+                      <ion-icon name="trophy-outline"></ion-icon>
+                    }
+                  </div>
+                  <div class="trophy-card__body">
+                    <div class="trophy-card__meta">
+                      <span>{{ achievement.providerName }}</span>
+                      <span>{{ trophyTypeLabel(achievement.trophyType) }}</span>
+                    </div>
+                    <h3>{{ achievement.title }}</h3>
+                    @if (achievement.description) {
+                      <p>{{ achievement.description }}</p>
+                    }
+                    <time>{{ achievementDateLabel(achievement) }}</time>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </section>
+      }
+      @if (selectedTab === 'overview') {
+        <section class="quest-panel notes-panel">
+          <header class="section-header notes-header">
+            <div>
+              <span class="eyebrow">
+                <ion-icon name="document-text-outline"></ion-icon>
+                Personal notes
+              </span>
+              <h2>Your Game Journal</h2>
+            </div>
+            @if (isInLibrary) {
+              <div class="notes-actions">
+                @if (!isEditingNotes) {
+                  <ion-button fill="clear" size="small" (click)="startEditingNotes()">
+                    <ion-icon slot="start" name="create-outline"></ion-icon>
+                    {{ hasPersonalNotes ? 'Edit' : 'Add note' }}
+                  </ion-button>
+                } @else {
+                  <ion-button fill="clear" size="small" [disabled]="isSavingNotes" (click)="cancelEditingNotes()">
+                    <ion-icon slot="start" name="close-outline"></ion-icon>
+                    Cancel
+                  </ion-button>
+                  <ion-button fill="clear" size="small" [disabled]="isSavingNotes" (click)="savePersonalNotes()">
+                    <ion-icon slot="start" name="save-outline"></ion-icon>
+                    Save
+                  </ion-button>
+                }
+              </div>
+            }
+          </header>
+          @if (isInLibrary) {
+            @if (!isEditingNotes) {
+              @if (hasPersonalNotes) {
+                <div class="notes-preview">
+                  <div class="notes-preview__label">
+                    <ion-icon name="eye-outline"></ion-icon>
+                    Preview
+                  </div>
+                  <div class="markdown-body" [innerHTML]="renderedPersonalNotes"></div>
+                </div>
+              } @else {
+                <div class="empty-state empty-state--notes">
+                  <ion-icon name="document-text-outline"></ion-icon>
+                  <strong>No notes yet</strong>
+                  <span>Keep builds, memories, route ideas, or post-game thoughts here.</span>
+                </div>
+              }
+            } @else {
+              <div class="notes-editor">
+                <textarea
+                  [(ngModel)]="notesDraft"
+                  maxlength="5000"
+                  placeholder="Write a note..."
+                [disabled]="isSavingNotes"></textarea>
+                @if (notesDraft.trim().length) {
+                  <div class="notes-editor__preview">
+                    <span class="notes-preview__label">
+                      <ion-icon name="eye-outline"></ion-icon>
+                      Preview
+                    </span>
+                    <div class="markdown-body" [innerHTML]="renderMarkdown(notesDraft)"></div>
+                  </div>
+                }
+              </div>
+            }
+          } @else {
+            <div class="empty-state empty-state--locked">
+              <ion-icon name="library-outline"></ion-icon>
+              <strong>Notes are locked</strong>
+              <span>Add this game to your library to keep personal notes.</span>
+            </div>
+          }
+        </section>
+      }
+      @if (selectedTab === 'progress') {
+        <section class="quest-panel">
+          <header class="section-header">
+            <div>
+              <span class="eyebrow">
+                <ion-icon name="link-outline"></ion-icon>
+                Linked quests
+              </span>
+              <h2>Game Quests</h2>
+            </div>
+          </header>
+          @if (isInLibrary) {
+            @if (activeQuests.length || completedQuests.length) {
+              @if (activeQuests.length) {
+                <div class="quest-list">
+                  @for (quest of activeQuests; track trackByQuest($index, quest)) {
+                    <article
+                      class="quest-card"
+                      >
+                      <button type="button" class="icon-action icon-action--complete" (click)="toggleQuest(quest)">
+                        <ion-icon name="checkmark-circle-outline"></ion-icon>
+                      </button>
+                      <div class="quest-body">
+                        <h3>{{ quest.title }}</h3>
+                        <p>
+                          <ion-badge>{{ questTypeLabel(questTypeFor(quest)) }}</ion-badge>
+                          <span>Ready to complete</span>
+                        </p>
+                      </div>
+                      <button type="button" class="icon-action" aria-label="Delete quest" (click)="deleteQuest(quest)">
+                        <ion-icon name="trash-outline"></ion-icon>
+                      </button>
+                    </article>
+                  }
+                </div>
+              }
+              @if (completedQuests.length) {
+                <div class="completed-toggle">
+                  <button
+                    type="button"
+                    class="completed-toggle__button"
+                    [attr.aria-expanded]="completedExpanded"
+                    (click)="toggleCompletedQuests()">
+                    <ion-icon [name]="completedExpanded ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+                    Completed
+                    <span class="completed-toggle__count">{{ completedQuests.length }}</span>
+                  </button>
+                  @if (completedExpanded) {
+                    <div class="quest-list quest-list--completed">
+                      @for (quest of completedQuests; track trackByQuest($index, quest)) {
+                        <article
+                          class="quest-card quest-card--done"
+                          >
+                          <button type="button" class="icon-action icon-action--complete" (click)="toggleQuest(quest)">
+                            <ion-icon name="checkmark-circle"></ion-icon>
+                          </button>
+                          <div class="quest-body">
+                            <h3>{{ quest.title }}</h3>
+                            <p>
+                              <ion-badge>{{ questTypeLabel(questTypeFor(quest)) }}</ion-badge>
+                              <span>Completed</span>
+                            </p>
+                          </div>
+                          <button type="button" class="icon-action" aria-label="Delete quest" (click)="deleteQuest(quest)">
+                            <ion-icon name="trash-outline"></ion-icon>
+                          </button>
+                        </article>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            } @else {
+              <div class="empty-state empty-state--quest-starter">
+                <ion-icon name="link-outline"></ion-icon>
+                <strong>No quests yet</strong>
+                <span>Pick a starter or write your own below.</span>
+                <div class="quest-starter-row">
+                  @for (suggestion of questStarters; track suggestion) {
+                    <button
+                      type="button"
+                      class="quest-starter"
+                      [disabled]="isAddingStarter"
+                      (click)="addStarterQuest(suggestion)">
+                      <ion-icon name="add-outline"></ion-icon>
+                      {{ suggestion.title }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+            <div class="quest-input">
+              <input
+                type="text"
+                placeholder="Add a quest for this game"
+                [(ngModel)]="newQuestTitle"
+                (keydown.enter)="addQuest()" />
+                <ion-select interface="popover" [(ngModel)]="newQuestType" aria-label="Quest type">
+                  @for (option of questTypeOptions; track option) {
+                    <ion-select-option [value]="option.type">
+                      {{ option.label }}
+                    </ion-select-option>
+                  }
+                </ion-select>
+                <ion-button shape="round" aria-label="Add quest" (click)="addQuest()">
+                  <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+                </ion-button>
+              </div>
+            } @else {
+              <div class="empty-state empty-state--locked">
+                <ion-icon name="game-controller-outline"></ion-icon>
+                <strong>Quest tracking is locked</strong>
+                <span>This game needs to be in your library before quests can be attached.</span>
+              </div>
+            }
+          </section>
+        }
+        @if (selectedTab === 'news') {
+          <section class="quest-panel news-panel">
+            <header class="section-header news-header">
+              <div>
+                <span class="eyebrow">
+                  <ion-icon name="newspaper-outline"></ion-icon>
+                  Game news
+                </span>
+                <h2>Latest updates</h2>
+              </div>
+              <ion-button fill="clear" size="small" [disabled]="isNewsLoading" (click)="loadNews(true)">
+                <ion-icon slot="start" name="refresh-outline"></ion-icon>
+                Refresh
+              </ion-button>
+            </header>
+            @if (isNewsLoading) {
+              <div class="news-list">
+                @for (row of newsSkeletonRows; track row) {
+                  <article class="news-card news-card--loading">
+                    <ion-skeleton-text animated class="news-skeleton-title"></ion-skeleton-text>
+                    <ion-skeleton-text animated></ion-skeleton-text>
+                    <ion-skeleton-text animated></ion-skeleton-text>
+                  </article>
+                }
+              </div>
+            }
+            @if (!isNewsLoading && newsErrorMessage) {
+              <div class="empty-state empty-state--locked">
+                <ion-icon name="newspaper-outline"></ion-icon>
+                <strong>News unavailable</strong>
+                <span>{{ newsErrorMessage }}</span>
+              </div>
+            }
+            @if (!isNewsLoading && !newsErrorMessage && newsLoaded && !newsItems.length) {
+              <div class="empty-state">
+                <ion-icon name="newspaper-outline"></ion-icon>
+                <strong>No news found</strong>
+                <span>There are no recent updates for {{ game.name }} yet.</span>
+              </div>
+            }
+            @if (!isNewsLoading && newsProviderFilters.length > 1) {
+              <div class="news-filters">
+                <button
+                  type="button"
+                  class="news-filter"
+                  [class.news-filter--active]="!selectedNewsProvider"
+                  (click)="setNewsProvider(null)">
+                  All <span class="news-filter__count">{{ newsItems.length }}</span>
                 </button>
-              </article>
-            </div>
-          </div>
-        </ng-container>
-
-        <ng-template #emptyQuests>
-          <div class="empty-state empty-state--quest-starter">
-            <ion-icon name="link-outline"></ion-icon>
-            <strong>No quests yet</strong>
-            <span>Pick a starter or write your own below.</span>
-
-            <div class="quest-starter-row">
-              <button
-                type="button"
-                class="quest-starter"
-                *ngFor="let suggestion of questStarters"
-                [disabled]="isAddingStarter"
-                (click)="addStarterQuest(suggestion)">
-                <ion-icon name="add-outline"></ion-icon>
-                {{ suggestion.title }}
-              </button>
-            </div>
-          </div>
-        </ng-template>
-
-        <div class="quest-input">
-          <input
-            type="text"
-            placeholder="Add a quest for this game"
-            [(ngModel)]="newQuestTitle"
-            (keydown.enter)="addQuest()" />
-          <ion-select interface="popover" [(ngModel)]="newQuestType" aria-label="Quest type">
-            <ion-select-option *ngFor="let option of questTypeOptions" [value]="option.type">
-              {{ option.label }}
-            </ion-select-option>
-          </ion-select>
-          <ion-button shape="round" aria-label="Add quest" (click)="addQuest()">
-            <ion-icon slot="icon-only" name="add-outline"></ion-icon>
-          </ion-button>
-        </div>
-      </ng-container>
-
-      <ng-template #notInLibrary>
-        <div class="empty-state empty-state--locked">
-          <ion-icon name="game-controller-outline"></ion-icon>
-          <strong>Quest tracking is locked</strong>
-          <span>This game needs to be in your library before quests can be attached.</span>
-        </div>
-      </ng-template>
-    </section>
-
-    <section class="quest-panel news-panel" *ngIf="selectedTab === 'news'">
-      <header class="section-header news-header">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="newspaper-outline"></ion-icon>
-            Game news
-          </span>
-          <h2>Latest updates</h2>
-        </div>
-        <ion-button fill="clear" size="small" [disabled]="isNewsLoading" (click)="loadNews(true)">
-          <ion-icon slot="start" name="refresh-outline"></ion-icon>
-          Refresh
-        </ion-button>
-      </header>
-
-      <div class="news-list" *ngIf="isNewsLoading">
-        <article class="news-card news-card--loading" *ngFor="let row of newsSkeletonRows">
-          <ion-skeleton-text animated class="news-skeleton-title"></ion-skeleton-text>
-          <ion-skeleton-text animated></ion-skeleton-text>
-          <ion-skeleton-text animated></ion-skeleton-text>
-        </article>
-      </div>
-
-      <div class="empty-state empty-state--locked" *ngIf="!isNewsLoading && newsErrorMessage">
-        <ion-icon name="newspaper-outline"></ion-icon>
-        <strong>News unavailable</strong>
-        <span>{{ newsErrorMessage }}</span>
-      </div>
-
-      <div class="empty-state" *ngIf="!isNewsLoading && !newsErrorMessage && newsLoaded && !newsItems.length">
-        <ion-icon name="newspaper-outline"></ion-icon>
-        <strong>No news found</strong>
-        <span>There are no recent updates for {{ game.name }} yet.</span>
-      </div>
-
-      <div class="news-filters" *ngIf="!isNewsLoading && newsProviderFilters.length > 1">
-        <button
-          type="button"
-          class="news-filter"
-          [class.news-filter--active]="!selectedNewsProvider"
-          (click)="setNewsProvider(null)">
-          All <span class="news-filter__count">{{ newsItems.length }}</span>
-        </button>
-        <button
-          type="button"
-          *ngFor="let filter of newsProviderFilters"
-          class="news-filter"
-          [class.news-filter--active]="selectedNewsProvider === filter.value"
-          (click)="setNewsProvider(filter.value)">
-          {{ filter.label }} <span class="news-filter__count">{{ filter.count }}</span>
-        </button>
-      </div>
-
-      <div class="empty-state" *ngIf="!isNewsLoading && newsItems.length && !filteredNewsItems.length">
-        <ion-icon name="newspaper-outline"></ion-icon>
-        <strong>No matches</strong>
-        <span>Nothing from this source — try another filter.</span>
-      </div>
-
-      <div class="news-list" *ngIf="!isNewsLoading && filteredNewsItems.length">
-        <article class="news-card" *ngFor="let item of filteredNewsItems; trackBy: trackByNews">
-          <div class="news-card__meta">
-            <ion-badge>{{ item.source || providerLabel(item) }}</ion-badge>
-            <span>{{ newsDateLabel(item) }}</span>
-          </div>
-          <h3>{{ item.title }}</h3>
-          <p *ngIf="item.summary">{{ item.summary }}</p>
-          <ion-button fill="clear" size="small" [href]="item.url" target="_blank" rel="noopener noreferrer">
-            Read on {{ providerLabel(item) }}
-            <ion-icon slot="end" name="open-outline"></ion-icon>
-          </ion-button>
-        </article>
-      </div>
-    </section>
-  </main>
-</ion-content>
+                @for (filter of newsProviderFilters; track filter) {
+                  <button
+                    type="button"
+                    class="news-filter"
+                    [class.news-filter--active]="selectedNewsProvider === filter.value"
+                    (click)="setNewsProvider(filter.value)">
+                    {{ filter.label }} <span class="news-filter__count">{{ filter.count }}</span>
+                  </button>
+                }
+              </div>
+            }
+            @if (!isNewsLoading && newsItems.length && !filteredNewsItems.length) {
+              <div class="empty-state">
+                <ion-icon name="newspaper-outline"></ion-icon>
+                <strong>No matches</strong>
+                <span>Nothing from this source — try another filter.</span>
+              </div>
+            }
+            @if (!isNewsLoading && filteredNewsItems.length) {
+              <div class="news-list">
+                @for (item of filteredNewsItems; track trackByNews($index, item)) {
+                  <article class="news-card">
+                    <div class="news-card__meta">
+                      <ion-badge>{{ item.source || providerLabel(item) }}</ion-badge>
+                      <span>{{ newsDateLabel(item) }}</span>
+                    </div>
+                    <h3>{{ item.title }}</h3>
+                    @if (item.summary) {
+                      <p>{{ item.summary }}</p>
+                    }
+                    <ion-button fill="clear" size="small" [href]="item.url" target="_blank" rel="noopener noreferrer">
+                      Read on {{ providerLabel(item) }}
+                      <ion-icon slot="end" name="open-outline"></ion-icon>
+                    </ion-button>
+                  </article>
+                }
+              </div>
+            }
+          </section>
+        }
+      </main>
+    }
+  </ion-content>

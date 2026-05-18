@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewChecked, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -44,6 +44,12 @@ import { MessagesHubService } from '../services/messages-hub.service';
   ],
 })
 export class ChatPage implements OnInit, OnDestroy, AfterViewChecked {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private friendsService = inject(FriendsService);
+  private messagesService = inject(DirectMessagesService);
+  private hub = inject(MessagesHubService);
+
   @ViewChild(IonContent) private contentRef?: IonContent;
 
   otherUserId = '';
@@ -58,13 +64,7 @@ export class ChatPage implements OnInit, OnDestroy, AfterViewChecked {
   private shouldScroll = false;
   private subscriptions: Subscription[] = [];
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private friendsService: FriendsService,
-    private messagesService: DirectMessagesService,
-    private hub: MessagesHubService,
-  ) {
+  constructor() {
     addIcons({ sendOutline });
   }
 

@@ -1,5 +1,5 @@
-import { CommonModule, Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Location } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   IonBadge,
@@ -38,7 +38,6 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
   templateUrl: './movie-details.page.html',
   styleUrls: ['./movie-details.page.scss'],
   imports: [
-    CommonModule,
     IonBadge,
     IonButton,
     IonButtons,
@@ -47,20 +46,20 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
     IonIcon,
     IonSpinner,
     IonTitle,
-    IonToolbar,
-  ],
+    IonToolbar
+],
 })
 export class MovieDetailsPage implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly location = inject(Location);
+  private readonly movieService = inject(MovieService);
+
   movie: Movie | null = null;
   isLoading = true;
   errorMessage = '';
 
-  constructor(
-    private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly location: Location,
-    private readonly movieService: MovieService,
-  ) {
+  constructor() {
     addIcons({
       arrowBackOutline,
       calendarClearOutline,

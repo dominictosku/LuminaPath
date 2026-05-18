@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
 import { Observable, Subject } from 'rxjs';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
@@ -6,6 +6,8 @@ import { DirectMessage } from '../models/friend.model';
 
 @Injectable({ providedIn: 'root' })
 export class MessagesHubService implements OnDestroy {
+  private apiEndpoint = inject(ApiEndpointService);
+
   private connection: HubConnection | null = null;
   private startPromise: Promise<void> | null = null;
 
@@ -16,8 +18,6 @@ export class MessagesHubService implements OnDestroy {
   readonly messageReceived: Observable<DirectMessage> = this.received$.asObservable();
   readonly messageSent: Observable<DirectMessage> = this.sent$.asObservable();
   readonly messagesRead: Observable<{ byUserId: string }> = this.read$.asObservable();
-
-  constructor(private apiEndpoint: ApiEndpointService) {}
 
   async ensureStarted(): Promise<void> {
     if (this.connection && this.connection.state === HubConnectionState.Connected) {
@@ -66,7 +66,7 @@ export class MessagesHubService implements OnDestroy {
   }
 
   private hubUrl(): string {
-    const apiBase = this.apiEndpoint.endpoint.replace(/\/api\/?$/, '');
+    const apiBase = this.apiEndpoint.endpoint().replace(/\/api\/?$/, '');
     return `${apiBase}/hubs/messages`;
   }
 }

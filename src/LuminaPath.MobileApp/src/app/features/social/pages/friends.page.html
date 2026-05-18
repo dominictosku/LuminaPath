@@ -39,7 +39,9 @@
         <ion-segment-button value="pending">
           <ion-icon name="mail-unread-outline"></ion-icon>
           <span>Pending</span>
-          <ion-badge *ngIf="pending.length">{{ pending.length }}</ion-badge>
+          @if (pending.length) {
+            <ion-badge>{{ pending.length }}</ion-badge>
+          }
         </ion-segment-button>
         <ion-segment-button value="find">
           <ion-icon name="search-outline"></ion-icon>
@@ -52,207 +54,227 @@
       </ion-button>
     </section>
 
-    <section class="notice notice--error" *ngIf="errorMessage">
-      {{ errorMessage }}
-    </section>
+    @if (errorMessage) {
+      <section class="notice notice--error">
+        {{ errorMessage }}
+      </section>
+    }
 
-    <section class="loading-state" *ngIf="isLoading">
-      <ion-spinner></ion-spinner>
-    </section>
-
-    <section class="panel" *ngIf="!isLoading && tab === 'friends'">
-      <header class="panel-heading">
-        <div>
-          <span class="eyebrow">Your list</span>
-          <h2>{{ friends.length ? friends.length + ' friends online or saved' : 'No friends yet' }}</h2>
-        </div>
-      </header>
-
-      <div class="person-grid" *ngIf="friends.length; else emptyFriends">
-        <article class="person-card" *ngFor="let f of friends">
-          <button class="person-main" type="button" (click)="openChat(f)">
-            <span class="avatar-fallback">{{ initial(displayName(f.user)) }}</span>
-            <span>
-              <strong>{{ displayName(f.user) }}</strong>
-              <small>{{ f.user.email }}</small>
-            </span>
-          </button>
-
-          <div class="person-actions">
-            <ion-button fill="clear" class="icon-action" aria-label="Open chat" (click)="openChat(f)">
-              <ion-icon slot="icon-only" name="chatbubble-ellipses-outline"></ion-icon>
-            </ion-button>
-            <ion-button fill="clear" class="icon-action icon-action--danger" aria-label="Remove friend" (click)="removeFriend(f)">
-              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
-            </ion-button>
-          </div>
-        </article>
-      </div>
-
-      <ng-template #emptyFriends>
-        <div class="empty-state">
-          <ion-icon name="people-outline"></ion-icon>
-          <h3>Your friend list is quiet</h3>
-          <p>Search for users and send a request to start building your circle.</p>
-          <ion-button fill="outline" (click)="setTab('find')">Find people</ion-button>
-        </div>
-      </ng-template>
-    </section>
-
-    <section class="panel" *ngIf="!isLoading && tab === 'pending'">
-      <header class="panel-heading">
-        <div>
-          <span class="eyebrow">Requests</span>
-          <h2>{{ pending.length ? pending.length + ' pending requests' : 'No pending requests' }}</h2>
-        </div>
-      </header>
-
-      <div class="person-grid" *ngIf="pending.length; else emptyPending">
-        <article class="person-card" *ngFor="let p of pending">
-          <div class="person-main person-main--static">
-            <span class="avatar-fallback">{{ initial(displayName(p.user)) }}</span>
-            <span>
-              <strong>{{ displayName(p.user) }}</strong>
-              <small>{{ p.isIncoming ? 'Wants to be your friend' : 'Request sent' }}</small>
-            </span>
-          </div>
-
-          <div class="person-actions" *ngIf="p.isIncoming">
-            <ion-button fill="clear" class="icon-action icon-action--success" aria-label="Accept request" (click)="accept(p)">
-              <ion-icon slot="icon-only" name="checkmark-outline"></ion-icon>
-            </ion-button>
-            <ion-button fill="clear" class="icon-action" aria-label="Decline request" (click)="decline(p)">
-              <ion-icon slot="icon-only" name="close-outline"></ion-icon>
-            </ion-button>
-          </div>
-
-          <div class="person-actions" *ngIf="!p.isIncoming">
-            <ion-button fill="clear" class="icon-action icon-action--danger" aria-label="Cancel request" (click)="removeFriend(p)">
-              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
-            </ion-button>
-          </div>
-        </article>
-      </div>
-
-      <ng-template #emptyPending>
-        <div class="empty-state">
-          <ion-icon name="mail-unread-outline"></ion-icon>
-          <h3>All caught up</h3>
-          <p>Incoming and outgoing requests will show up here.</p>
-        </div>
-      </ng-template>
-    </section>
-
-    <section class="panel" *ngIf="!isLoading && tab === 'find'">
-      <header class="panel-heading panel-heading--search">
-        <div>
-          <span class="eyebrow">Discover</span>
-          <h2>Find people</h2>
-        </div>
-        <ion-searchbar
-          [value]="searchQuery"
-          (ionInput)="onSearchChange($any($event).detail.value)"
-          placeholder="Search username or email"
-          debounce="0">
-        </ion-searchbar>
-      </header>
-
-      <div class="loading-state loading-state--inline" *ngIf="isSearching">
+    @if (isLoading) {
+      <section class="loading-state">
         <ion-spinner></ion-spinner>
-      </div>
+      </section>
+    }
 
-      <div class="person-grid" *ngIf="searchResults.length">
-        <article class="person-card" *ngFor="let u of searchResults">
-          <div class="person-main person-main--static">
-            <span class="avatar-fallback">{{ initial(displayName(u)) }}</span>
-            <span>
-              <strong>{{ displayName(u) }}</strong>
-              <small>{{ u.email }}</small>
-            </span>
+    @if (!isLoading && tab === 'friends') {
+      <section class="panel">
+        <header class="panel-heading">
+          <div>
+            <span class="eyebrow">Your list</span>
+            <h2>{{ friends.length ? friends.length + ' friends online or saved' : 'No friends yet' }}</h2>
           </div>
+        </header>
+        @if (friends.length) {
+          <div class="person-grid">
+            @for (f of friends; track f) {
+              <article class="person-card">
+                <button class="person-main" type="button" (click)="openChat(f)">
+                  <span class="avatar-fallback">{{ initial(displayName(f.user)) }}</span>
+                  <span>
+                    <strong>{{ displayName(f.user) }}</strong>
+                    <small>{{ f.user.email }}</small>
+                  </span>
+                </button>
+                <div class="person-actions">
+                  <ion-button fill="clear" class="icon-action" aria-label="Open chat" (click)="openChat(f)">
+                    <ion-icon slot="icon-only" name="chatbubble-ellipses-outline"></ion-icon>
+                  </ion-button>
+                  <ion-button fill="clear" class="icon-action icon-action--danger" aria-label="Remove friend" (click)="removeFriend(f)">
+                    <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                  </ion-button>
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <ion-icon name="people-outline"></ion-icon>
+            <h3>Your friend list is quiet</h3>
+            <p>Search for users and send a request to start building your circle.</p>
+            <ion-button fill="outline" (click)="setTab('find')">Find people</ion-button>
+          </div>
+        }
+      </section>
+    }
 
-          <ion-button fill="solid" class="add-button" (click)="sendRequest(u)">
-            <ion-icon slot="start" name="person-add-outline"></ion-icon>
-            Add
-          </ion-button>
-        </article>
-      </div>
+    @if (!isLoading && tab === 'pending') {
+      <section class="panel">
+        <header class="panel-heading">
+          <div>
+            <span class="eyebrow">Requests</span>
+            <h2>{{ pending.length ? pending.length + ' pending requests' : 'No pending requests' }}</h2>
+          </div>
+        </header>
+        @if (pending.length) {
+          <div class="person-grid">
+            @for (p of pending; track p) {
+              <article class="person-card">
+                <div class="person-main person-main--static">
+                  <span class="avatar-fallback">{{ initial(displayName(p.user)) }}</span>
+                  <span>
+                    <strong>{{ displayName(p.user) }}</strong>
+                    <small>{{ p.isIncoming ? 'Wants to be your friend' : 'Request sent' }}</small>
+                  </span>
+                </div>
+                @if (p.isIncoming) {
+                  <div class="person-actions">
+                    <ion-button fill="clear" class="icon-action icon-action--success" aria-label="Accept request" (click)="accept(p)">
+                      <ion-icon slot="icon-only" name="checkmark-outline"></ion-icon>
+                    </ion-button>
+                    <ion-button fill="clear" class="icon-action" aria-label="Decline request" (click)="decline(p)">
+                      <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+                    </ion-button>
+                  </div>
+                }
+                @if (!p.isIncoming) {
+                  <div class="person-actions">
+                    <ion-button fill="clear" class="icon-action icon-action--danger" aria-label="Cancel request" (click)="removeFriend(p)">
+                      <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                    </ion-button>
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <ion-icon name="mail-unread-outline"></ion-icon>
+            <h3>All caught up</h3>
+            <p>Incoming and outgoing requests will show up here.</p>
+          </div>
+        }
+      </section>
+    }
 
-      <div class="empty-state" *ngIf="!searchQuery && !isSearching">
-        <ion-icon name="search-outline"></ion-icon>
-        <h3>Search for someone</h3>
-        <p>Type a username or email to find people you can add.</p>
-      </div>
-
-      <div class="empty-state" *ngIf="searchQuery && !isSearching && !searchResults.length">
-        <ion-icon name="search-outline"></ion-icon>
-        <h3>No matches</h3>
-        <p>No users match "{{ searchQuery }}".</p>
-      </div>
-    </section>
+    @if (!isLoading && tab === 'find') {
+      <section class="panel">
+        <header class="panel-heading panel-heading--search">
+          <div>
+            <span class="eyebrow">Discover</span>
+            <h2>Find people</h2>
+          </div>
+          <ion-searchbar
+            [value]="searchQuery"
+            (ionInput)="onSearchChange($any($event).detail.value)"
+            placeholder="Search username or email"
+            debounce="0">
+          </ion-searchbar>
+        </header>
+        @if (isSearching) {
+          <div class="loading-state loading-state--inline">
+            <ion-spinner></ion-spinner>
+          </div>
+        }
+        @if (searchResults.length) {
+          <div class="person-grid">
+            @for (u of searchResults; track u) {
+              <article class="person-card">
+                <div class="person-main person-main--static">
+                  <span class="avatar-fallback">{{ initial(displayName(u)) }}</span>
+                  <span>
+                    <strong>{{ displayName(u) }}</strong>
+                    <small>{{ u.email }}</small>
+                  </span>
+                </div>
+                <ion-button fill="solid" class="add-button" (click)="sendRequest(u)">
+                  <ion-icon slot="start" name="person-add-outline"></ion-icon>
+                  Add
+                </ion-button>
+              </article>
+            }
+          </div>
+        }
+        @if (!searchQuery && !isSearching) {
+          <div class="empty-state">
+            <ion-icon name="search-outline"></ion-icon>
+            <h3>Search for someone</h3>
+            <p>Type a username or email to find people you can add.</p>
+          </div>
+        }
+        @if (searchQuery && !isSearching && !searchResults.length) {
+          <div class="empty-state">
+            <ion-icon name="search-outline"></ion-icon>
+            <h3>No matches</h3>
+            <p>No users match "{{ searchQuery }}".</p>
+          </div>
+        }
+      </section>
+    }
   </main>
 
-  <aside
-    *ngIf="activeChat as chat"
-    class="chat-modal"
-    [style.left.px]="chatPosition.x"
-    [style.top.px]="chatPosition.y">
-    <header
-      class="chat-modal__header"
-      (pointerdown)="startChatDrag($event)"
-      (pointermove)="moveChatDrag($event)"
-      (pointerup)="endChatDrag($event)"
-      (pointercancel)="endChatDrag($event)">
-      <div class="chat-person">
-        <span class="avatar-fallback">{{ initial(displayName(chat.user)) }}</span>
-        <span>
-          <strong>{{ displayName(chat.user) }}</strong>
-          <small>Drag to move</small>
-        </span>
+  @if (activeChat; as chat) {
+    <aside
+      class="chat-modal"
+      [style.left.px]="chatPosition.x"
+      [style.top.px]="chatPosition.y">
+      <header
+        class="chat-modal__header"
+        (pointerdown)="startChatDrag($event)"
+        (pointermove)="moveChatDrag($event)"
+        (pointerup)="endChatDrag($event)"
+        (pointercancel)="endChatDrag($event)">
+        <div class="chat-person">
+          <span class="avatar-fallback">{{ initial(displayName(chat.user)) }}</span>
+          <span>
+            <strong>{{ displayName(chat.user) }}</strong>
+            <small>Drag to move</small>
+          </span>
+        </div>
+        <ion-button
+          fill="clear"
+          class="icon-action"
+          aria-label="Close chat"
+          (pointerdown)="$event.stopPropagation()"
+          (click)="$event.stopPropagation(); closeChat()">
+          <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+        </ion-button>
+      </header>
+      <div class="chat-modal__body" #chatMessages>
+        @if (isChatLoading) {
+          <div class="loading-state loading-state--inline">
+            <ion-spinner></ion-spinner>
+          </div>
+        }
+        @if (chatErrorMessage) {
+          <div class="notice notice--error">
+            {{ chatErrorMessage }}
+          </div>
+        }
+        @if (!isChatLoading && !chatErrorMessage && !messages.length) {
+          <div class="chat-empty">
+            No messages yet. Say hi.
+          </div>
+        }
+        @for (message of messages; track message) {
+          <div
+            class="chat-bubble"
+            [class.chat-bubble--mine]="isMine(message)">
+            <div>{{ message.content }}</div>
+            <small>{{ message.sentAt | date: 'shortTime' }}</small>
+          </div>
+        }
       </div>
-
-      <ion-button
-        fill="clear"
-        class="icon-action"
-        aria-label="Close chat"
-        (pointerdown)="$event.stopPropagation()"
-        (click)="$event.stopPropagation(); closeChat()">
-        <ion-icon slot="icon-only" name="close-outline"></ion-icon>
-      </ion-button>
-    </header>
-
-    <div class="chat-modal__body" #chatMessages>
-      <div class="loading-state loading-state--inline" *ngIf="isChatLoading">
-        <ion-spinner></ion-spinner>
-      </div>
-
-      <div class="notice notice--error" *ngIf="chatErrorMessage">
-        {{ chatErrorMessage }}
-      </div>
-
-      <div class="chat-empty" *ngIf="!isChatLoading && !chatErrorMessage && !messages.length">
-        No messages yet. Say hi.
-      </div>
-
-      <div
-        *ngFor="let message of messages"
-        class="chat-bubble"
-        [class.chat-bubble--mine]="isMine(message)">
-        <div>{{ message.content }}</div>
-        <small>{{ message.sentAt | date: 'shortTime' }}</small>
-      </div>
-    </div>
-
-    <footer class="chat-modal__composer">
-      <ion-input
-        [(ngModel)]="draft"
-        placeholder="Type a message"
-        (keydown.enter)="send()"
-        [disabled]="isSending || !!chatErrorMessage">
-      </ion-input>
-      <ion-button (click)="send()" [disabled]="isSending || !draft.trim() || !!chatErrorMessage" aria-label="Send message">
-        <ion-icon slot="icon-only" name="send-outline"></ion-icon>
-      </ion-button>
-    </footer>
-  </aside>
+      <footer class="chat-modal__composer">
+        <ion-input
+          [(ngModel)]="draft"
+          placeholder="Type a message"
+          (keydown.enter)="send()"
+          [disabled]="isSending || !!chatErrorMessage">
+        </ion-input>
+        <ion-button (click)="send()" [disabled]="isSending || !draft.trim() || !!chatErrorMessage" aria-label="Send message">
+          <ion-icon slot="icon-only" name="send-outline"></ion-icon>
+        </ion-button>
+      </footer>
+    </aside>
+  }
 </ion-content>

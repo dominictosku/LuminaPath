@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { IonBadge, IonButton, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { addOutline, createOutline, hourglassOutline } from 'ionicons/icons';
@@ -12,9 +12,11 @@ import { MediaLibraryViewService } from '../../services/media-library-view.servi
   selector: 'app-library-list-row',
   templateUrl: './library-list-row.component.html',
   styleUrls: ['./library-list-row.component.scss'],
-  imports: [CommonModule, IonBadge, IonButton, IonIcon],
+  imports: [IonBadge, IonButton, IonIcon],
 })
 export class LibraryListRowComponent {
+  readonly view = inject(MediaLibraryViewService);
+
   @Input({ required: true }) item!: MediaItem;
   @Input({ required: true }) mediaMode!: MediaModeOption;
   @Input() isAdding = false;
@@ -22,7 +24,7 @@ export class LibraryListRowComponent {
   @Output() edit = new EventEmitter<MediaItem>();
   @Output() details = new EventEmitter<MediaItem>();
 
-  constructor(public readonly view: MediaLibraryViewService) {
+  constructor() {
     addIcons({
       addOutline,
       createOutline,

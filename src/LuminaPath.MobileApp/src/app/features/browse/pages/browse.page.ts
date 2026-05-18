@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonButton,
@@ -50,7 +50,6 @@ const SEASONS = [
   templateUrl: './browse.page.html',
   styleUrls: ['./browse.page.scss'],
   imports: [
-    CommonModule,
     FormsModule,
     IonBadge,
     IonButton,
@@ -59,10 +58,15 @@ const SEASONS = [
     IonModal,
     IonSegment,
     IonSegmentButton,
-    IonSkeletonText,
-  ],
+    IonSkeletonText
+],
 })
 export class BrowsePage implements OnInit {
+  private readonly browseService = inject(BrowseService);
+  private readonly mediaModeService = inject(MediaModeService);
+  private readonly mediaLibrary = inject(MediaLibraryFacade);
+  readonly mediaView = inject(MediaLibraryViewService);
+
   selectedKind: BrowseKind = 'games';
   games: BrowseItem[] = [];
   animes: BrowseItem[] = [];
@@ -85,13 +89,8 @@ export class BrowsePage implements OnInit {
   };
   mediaMode: MediaModeOption;
 
-  constructor(
-    private readonly browseService: BrowseService,
-    private readonly mediaModeService: MediaModeService,
-    private readonly mediaLibrary: MediaLibraryFacade,
-    public readonly mediaView: MediaLibraryViewService,
-  ) {
-    this.mediaMode = this.mediaModeService.current;
+  constructor() {
+    this.mediaMode = this.mediaModeService.mode();
     addIcons({
       addOutline,
       calendarClearOutline,
@@ -154,7 +153,7 @@ export class BrowsePage implements OnInit {
   selectKind(kind: BrowseKind): void {
     this.selectedKind = kind;
     this.mediaModeService.select(kind);
-    this.mediaMode = this.mediaModeService.current;
+    this.mediaMode = this.mediaModeService.mode();
   }
 
   previousPeriod(): void {

@@ -25,93 +25,97 @@
           name="oldPassword"
           autocomplete="current-password"
           [(ngModel)]="passwordDraft.oldPassword" />
-      </label>
+        </label>
 
-      <label>
-        <span>New password</span>
-        <input
-          type="password"
-          name="newPassword"
-          autocomplete="new-password"
-          [(ngModel)]="passwordDraft.newPassword" />
-      </label>
+        <label>
+          <span>New password</span>
+          <input
+            type="password"
+            name="newPassword"
+            autocomplete="new-password"
+            [(ngModel)]="passwordDraft.newPassword" />
+          </label>
 
-      <label>
-        <span>Confirm new password</span>
-        <input
-          type="password"
-          name="confirmPassword"
-          autocomplete="new-password"
-          [(ngModel)]="passwordDraft.confirmPassword" />
-      </label>
+          <label>
+            <span>Confirm new password</span>
+            <input
+              type="password"
+              name="confirmPassword"
+              autocomplete="new-password"
+              [(ngModel)]="passwordDraft.confirmPassword" />
+            </label>
 
-      <div class="settings-card__actions">
-        <ion-button type="submit" shape="round" [disabled]="passwordState === 'saving'">
-          <ion-icon slot="start" name="key-outline"></ion-icon>
-          {{ passwordState === 'saving' ? 'Updating…' : 'Update password' }}
-        </ion-button>
-        <span
-          class="settings-card__message"
-          [class.settings-card__message--error]="passwordState === 'error'"
-          [class.settings-card__message--success]="passwordState === 'success'"
-          *ngIf="passwordMessage">
-          {{ passwordMessage }}
-        </span>
-      </div>
-    </form>
+            <div class="settings-card__actions">
+              <ion-button type="submit" shape="round" [disabled]="passwordState === 'saving'">
+                <ion-icon slot="start" name="key-outline"></ion-icon>
+                {{ passwordState === 'saving' ? 'Updating…' : 'Update password' }}
+              </ion-button>
+              @if (passwordMessage) {
+                <span
+                  class="settings-card__message"
+                  [class.settings-card__message--error]="passwordState === 'error'"
+                  [class.settings-card__message--success]="passwordState === 'success'"
+                  >
+                  {{ passwordMessage }}
+                </span>
+              }
+            </div>
+          </form>
 
-    <section class="settings-card">
-      <header class="settings-card__header">
-        <ion-icon name="notifications-outline"></ion-icon>
-        <div>
-          <h2>Release reminders</h2>
-          <p>Local notifications fire 7 days before and on release day for games in your library.</p>
-        </div>
-      </header>
+          <section class="settings-card">
+            <header class="settings-card__header">
+              <ion-icon name="notifications-outline"></ion-icon>
+              <div>
+                <h2>Release reminders</h2>
+                <p>Local notifications fire 7 days before and on release day for games in your library.</p>
+              </div>
+            </header>
 
-      <div class="settings-card__actions">
-        <ion-button
-          shape="round"
-          fill="outline"
-          (click)="clearReleaseNotifications()"
-          [disabled]="notificationsState === 'working'">
-          <ion-icon slot="start" name="notifications-off-outline"></ion-icon>
-          {{ notificationsState === 'working' ? 'Clearing…' : 'Clear scheduled reminders' }}
-        </ion-button>
-        <span class="settings-card__message" *ngIf="notificationsMessage">
-          {{ notificationsMessage }}
-        </span>
-      </div>
-    </section>
+            <div class="settings-card__actions">
+              <ion-button
+                shape="round"
+                fill="outline"
+                (click)="clearReleaseNotifications()"
+                [disabled]="notificationsState === 'working'">
+                <ion-icon slot="start" name="notifications-off-outline"></ion-icon>
+                {{ notificationsState === 'working' ? 'Clearing…' : 'Clear scheduled reminders' }}
+              </ion-button>
+              @if (notificationsMessage) {
+                <span class="settings-card__message">
+                  {{ notificationsMessage }}
+                </span>
+              }
+            </div>
+          </section>
 
-    <section class="settings-card settings-card--quiet">
-      <header class="settings-card__header">
-        <ion-icon name="shield-checkmark-outline"></ion-icon>
-        <div>
-          <h2>Session</h2>
-          <p>Sign out of this device. You will need to log in again to use the app.</p>
-        </div>
-      </header>
+          <section class="settings-card settings-card--quiet">
+            <header class="settings-card__header">
+              <ion-icon name="shield-checkmark-outline"></ion-icon>
+              <div>
+                <h2>Session</h2>
+                <p>Sign out of this device. You will need to log in again to use the app.</p>
+              </div>
+            </header>
 
-      <div class="settings-card__actions">
-        <ion-button
-          shape="round"
-          color="danger"
-          fill="outline"
-          (click)="logout()"
-          [disabled]="isLoggingOut">
-          <ion-icon slot="start" name="log-out-outline"></ion-icon>
-          {{ isLoggingOut ? 'Signing out…' : 'Sign out' }}
-        </ion-button>
-      </div>
-    </section>
+            <div class="settings-card__actions">
+              <ion-button
+                shape="round"
+                color="danger"
+                fill="outline"
+                (click)="logout()"
+                [disabled]="isLoggingOut">
+                <ion-icon slot="start" name="log-out-outline"></ion-icon>
+                {{ isLoggingOut ? 'Signing out…' : 'Sign out' }}
+              </ion-button>
+            </div>
+          </section>
 
-    <a routerLink="/profile" class="settings-link">
-      <ion-icon name="person-circle-outline"></ion-icon>
-      <span>
-        <strong>Back to profile</strong>
-        <small>Edit your username, email, and personal data.</small>
-      </span>
-    </a>
-  </main>
-</ion-content>
+          <a routerLink="/profile" class="settings-link">
+            <ion-icon name="person-circle-outline"></ion-icon>
+            <span>
+              <strong>Back to profile</strong>
+              <small>Edit your username, email, and personal data.</small>
+            </span>
+          </a>
+        </main>
+      </ion-content>

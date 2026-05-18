@@ -8,7 +8,7 @@ import { MyGameDetailsPage } from './my-game-details.page';
 import { GameService } from 'src/app/features/games/services/game.service';
 import { Quest, QuestBoardService } from 'src/app/features/quests/services/quest-board.service';
 import { Game, MyGame } from 'src/app/features/games/models/games.model';
-import { GamingSessionService } from 'src/app/features/planing/services/gaming-session.service';
+import { GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
 import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
 
 function makeGame(overrides: Partial<Game> = {}): Game {

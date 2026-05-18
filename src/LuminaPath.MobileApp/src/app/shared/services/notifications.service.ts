@@ -1,8 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, combineLatest, map, of } from 'rxjs';
 import { Game } from 'src/app/features/games/models/games.model';
 import { GameService } from 'src/app/features/games/services/game.service';
-import { GamingSession, GamingSessionService } from 'src/app/features/planing/services/gaming-session.service';
+import { GamingSession, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
 
 export type NotificationKind = 'release' | 'session' | 'released';
 
@@ -23,10 +23,9 @@ const MAX_ITEMS = 6;
 
 @Injectable({ providedIn: 'root' })
 export class NotificationsService {
-  constructor(
-    private gameService: GameService,
-    private sessionService: GamingSessionService,
-  ) {}
+  private gameService = inject(GameService);
+  private sessionService = inject(GamingSessionService);
+
 
   load(): Observable<NotificationItem[]> {
     const today = startOfDay(new Date());
@@ -81,7 +80,7 @@ export class NotificationsService {
         icon: 'rocket-outline',
         title,
         body: 'Plan a launch session before it lands.',
-        link: '/planing',
+        link: '/planning',
         sortAt: releaseAt,
       });
     }
@@ -140,7 +139,7 @@ export class NotificationsService {
         icon: 'time-outline',
         title,
         body: `${session.durationMinutes} min planned today.`,
-        link: '/planing',
+        link: '/planning',
         sortAt: at,
       });
     }

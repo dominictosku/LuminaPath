@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ApiService } from 'src/app/shared/services/api.service';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
@@ -34,10 +34,10 @@ export type UserGameAchievement = {
   providedIn: 'root',
 })
 export class MyGameService extends ApiService<MyGame> {
-  constructor(
-    httpClient: HttpClient,
-    apiEndpoint: ApiEndpointService,
-  ) {
+  constructor() {
+    const httpClient = inject(HttpClient);
+    const apiEndpoint = inject(ApiEndpointService);
+
     super(httpClient, apiEndpoint, 'mygames');
   }
 

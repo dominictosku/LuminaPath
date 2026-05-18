@@ -18,7 +18,7 @@ async function resolveComponent(path: string): Promise<unknown> {
 
 describe('App routes smoke', () => {
   it('keeps the critical authenticated routes registered', () => {
-    const protectedPaths = ['home', 'library', 'browse', 'library/games/:gameId', 'planing', 'quests', 'profile', 'friends', 'settings'];
+    const protectedPaths = ['home', 'library', 'browse', 'library/games/:gameId', 'planning', 'quests', 'profile', 'friends', 'settings'];
 
     for (const path of protectedPaths) {
       const route = routeFor(path);
@@ -40,7 +40,7 @@ describe('App routes smoke', () => {
       resolveComponent('library'),
       resolveComponent('browse'),
       resolveComponent('library/games/:gameId'),
-      resolveComponent('planing'),
+      resolveComponent('planning'),
       resolveComponent('quests'),
       resolveComponent('profile'),
       resolveComponent('friends'),

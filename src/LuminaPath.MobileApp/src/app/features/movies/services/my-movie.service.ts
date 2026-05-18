@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ApiService } from 'src/app/shared/services/api.service';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
@@ -20,7 +20,10 @@ type AddMyMovieRequest = {
   providedIn: 'root',
 })
 export class MyMovieService extends ApiService<MyMovie> {
-  constructor(httpClient: HttpClient, apiEndpoint: ApiEndpointService) {
+  constructor() {
+    const httpClient = inject(HttpClient);
+    const apiEndpoint = inject(ApiEndpointService);
+
     super(httpClient, apiEndpoint, 'mymovies');
   }
 

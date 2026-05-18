@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Game, GameNewsItem, GameSummary } from '../models/games.model';
 import { ApiService } from '../../../shared/services/api.service';
 import { HttpClient, HttpParams } from '@angular/common/http';
@@ -8,11 +8,15 @@ import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service
   providedIn: 'root',
 })
 export class GameService extends ApiService<Game> {
-  constructor(
-    private httpClient: HttpClient,
-    apiEndpoint: ApiEndpointService,
-  ) {
+  private httpClient: HttpClient;
+
+  constructor() {
+    const httpClient = inject(HttpClient);
+    const apiEndpoint = inject(ApiEndpointService);
+
     super(httpClient, apiEndpoint, 'games');
+  
+    this.httpClient = httpClient;
   }
 
   public labels = ['Title', 'Description', 'Status', 'Release'];

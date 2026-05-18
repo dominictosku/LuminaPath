@@ -1,184 +1,192 @@
-<ion-header *ngIf="showShellNavigation" class="app-header">
-  <nav class="mobile-shell">
-    <a class="brand" [routerLink]="['/home']" aria-label="LuminaPath home">
-      <span class="brand-mark">
-        <img src="assets/brand/luminapath-logo.png" alt="" />
-      </span>
-      <span class="brand-copy">
-        <strong>LuminaPath</strong>
-        <small>Game life tracker</small>
-      </span>
-    </a>
-
-    <div class="nav-links" aria-label="Primary navigation">
-      <a [routerLink]="['/home']" [class.active]="isActive('/home')">
-        <ion-icon name="game-controller-outline"></ion-icon>
-        <span>Home</span>
+@if (showShellNavigation) {
+  <ion-header class="app-header">
+    <nav class="mobile-shell">
+      <a class="brand" [routerLink]="['/home']" aria-label="LuminaPath home">
+        <span class="brand-mark">
+          <img src="assets/brand/luminapath-logo.png" alt="" />
+        </span>
+        <span class="brand-copy">
+          <strong>LuminaPath</strong>
+          <small>Game life tracker</small>
+        </span>
       </a>
-      <a [routerLink]="['/library']" [class.active]="isActive('/library')">
-        <ion-icon name="library-outline"></ion-icon>
-        <span>Library</span>
-      </a>
-      <a [routerLink]="['/planing']" [class.active]="isActive('/planing')">
-        <ion-icon name="calendar-clear-outline"></ion-icon>
-        <span>Plan</span>
-      </a>
-      <a [routerLink]="['/statistic']" [class.active]="isActive('/statistic')">
-        <ion-icon name="bar-chart-outline"></ion-icon>
-        <span>Stats</span>
-      </a>
-      <a [routerLink]="['/quests']" [class.active]="isActive('/quests')">
-        <ion-icon name="sparkles-outline"></ion-icon>
-        <span>Quests</span>
-      </a>
-    </div>
-
-    <div class="menu-wrap media-mode-wrap">
-      <button
-        type="button"
-        class="media-mode-button"
-        aria-label="Choose media type"
-        [class.active]="openMenu === 'media'"
-        (click)="toggleMenu('media')">
-        <ion-icon [name]="mediaMode.icon"></ion-icon>
-        <span>{{ mediaMode.label }}</span>
-        <ion-icon name="chevron-down-outline" class="chevron"></ion-icon>
-      </button>
-
-      <section class="dropdown-panel media-mode-panel" *ngIf="openMenu === 'media'">
-        <div class="dropdown-heading">
-          <span>Media</span>
-          <strong>{{ mediaMode.label }}</strong>
-        </div>
-
-        <button
-          type="button"
-          class="media-mode-item"
-          *ngFor="let mode of mediaModes"
-          [class.active]="mode.id === mediaMode.id"
-          (click)="selectMediaMode(mode.id)">
-          <ion-icon [name]="mode.icon"></ion-icon>
-          <span>{{ mode.label }}</span>
-        </button>
-      </section>
-    </div>
-
-    <div class="header-actions">
-      <div class="menu-wrap">
-        <button
-          type="button"
-          class="icon-action notification-button"
-          aria-label="Open notifications"
-          [class.active]="openMenu === 'notifications'"
-          (click)="toggleMenu('notifications')">
-          <ion-icon name="notifications-outline"></ion-icon>
-          <span class="notification-dot" *ngIf="notifications.length"></span>
-        </button>
-
-        <section class="dropdown-panel notification-panel" *ngIf="openMenu === 'notifications'">
-          <div class="dropdown-heading">
-            <span>Notifications</span>
-            <strong *ngIf="notifications.length; else noneLabel">{{ notifications.length }} new</strong>
-            <ng-template #noneLabel><strong>All clear</strong></ng-template>
-          </div>
-
-          <a
-            *ngFor="let item of notifications; trackBy: trackByNotification"
-            [routerLink]="item.link"
-            class="notification-item"
-            (click)="closeMenus()">
-            <ion-icon [name]="item.icon"></ion-icon>
-            <span>
-              <strong>{{ item.title }}</strong>
-              <small>{{ item.body }}</small>
-            </span>
-          </a>
-
-          <div class="notification-empty" *ngIf="!notifications.length && !notificationsLoading">
-            <ion-icon name="checkmark-circle-outline"></ion-icon>
-            <span>You're all caught up.</span>
-          </div>
-
-          <div class="notification-empty" *ngIf="!notifications.length && notificationsLoading">
-            <ion-icon name="hourglass-outline"></ion-icon>
-            <span>Checking for updates…</span>
-          </div>
-        </section>
+      <div class="nav-links" aria-label="Primary navigation">
+        <a [routerLink]="['/home']" [class.active]="isActive('/home')">
+          <ion-icon name="game-controller-outline"></ion-icon>
+          <span>Home</span>
+        </a>
+        <a [routerLink]="['/library']" [class.active]="isActive('/library')">
+          <ion-icon name="library-outline"></ion-icon>
+          <span>Library</span>
+        </a>
+        <a [routerLink]="['/planning']" [class.active]="isActive('/planning')">
+          <ion-icon name="calendar-clear-outline"></ion-icon>
+          <span>Plan</span>
+        </a>
+        <a [routerLink]="['/statistic']" [class.active]="isActive('/statistic')">
+          <ion-icon name="bar-chart-outline"></ion-icon>
+          <span>Stats</span>
+        </a>
+        <a [routerLink]="['/quests']" [class.active]="isActive('/quests')">
+          <ion-icon name="sparkles-outline"></ion-icon>
+          <span>Quests</span>
+        </a>
       </div>
-
-      <div class="menu-wrap">
+      <div class="menu-wrap media-mode-wrap">
         <button
           type="button"
-          class="icon-action"
-          aria-label="Open app menu"
-          [class.active]="openMenu === 'apps'"
-          (click)="toggleMenu('apps')">
-          <ion-icon name="grid-outline"></ion-icon>
+          class="media-mode-button"
+          aria-label="Choose media type"
+          [class.active]="openMenu === 'media'"
+          (click)="toggleMenu('media')">
+          <ion-icon [name]="mediaMode.icon"></ion-icon>
+          <span>{{ mediaMode.label }}</span>
+          <ion-icon name="chevron-down-outline" class="chevron"></ion-icon>
         </button>
-
-        <section class="dropdown-panel app-panel" *ngIf="openMenu === 'apps'">
-          <div class="dropdown-heading">
-            <span>Quick Launch</span>
-            <strong>Apps</strong>
-          </div>
-          <div class="app-grid">
-            <a [routerLink]="['/friends']" (click)="closeMenus()">
-              <ion-icon name="people-outline"></ion-icon>
-              <span>Friends</span>
-            </a>
-          </div>
-        </section>
+        @if (openMenu === 'media') {
+          <section class="dropdown-panel media-mode-panel">
+            <div class="dropdown-heading">
+              <span>Media</span>
+              <strong>{{ mediaMode.label }}</strong>
+            </div>
+            @for (mode of mediaModes; track mode) {
+              <button
+                type="button"
+                class="media-mode-item"
+                [class.active]="mode.id === mediaMode.id"
+                (click)="selectMediaMode(mode.id)">
+                <ion-icon [name]="mode.icon"></ion-icon>
+                <span>{{ mode.label }}</span>
+              </button>
+            }
+          </section>
+        }
       </div>
-
-      <div class="menu-wrap">
-        <button
-          type="button"
-          class="profile-button"
-          aria-label="Open account menu"
-          [class.active]="openMenu === 'profile'"
-          (click)="toggleMenu('profile')"
-          [disabled]="isLoggingOut">
-          <span class="profile-icon">
-            <ion-icon [name]="isLoggingOut ? 'hourglass-outline' : 'person-circle-outline'"></ion-icon>
-          </span>
-          <span class="profile-copy">
-            <strong>{{ isLoggingOut ? 'Signing out' : 'Account' }}</strong>
-            <small>Profile &amp; settings</small>
-          </span>
-        </button>
-
-        <section class="dropdown-panel notification-panel" *ngIf="openMenu === 'profile'">
-          <div class="dropdown-heading">
-            <span>Account</span>
-            <strong>Manage</strong>
-          </div>
-          <a [routerLink]="['/profile']" class="notification-item" (click)="closeMenus()">
-            <ion-icon name="person-circle-outline"></ion-icon>
-            <span>
-              <strong>Profile</strong>
-              <small>Update your personal data.</small>
-            </span>
-          </a>
-          <a [routerLink]="['/settings']" class="notification-item" (click)="closeMenus()">
-            <ion-icon name="settings-outline"></ion-icon>
-            <span>
-              <strong>Settings</strong>
-              <small>Change password and preferences.</small>
-            </span>
-          </a>
+      <div class="header-actions">
+        <div class="menu-wrap">
           <button
             type="button"
-            class="notification-item notification-item--button"
-            (click)="logout()"
+            class="icon-action notification-button"
+            aria-label="Open notifications"
+            [class.active]="openMenu === 'notifications'"
+            (click)="toggleMenu('notifications')">
+            <ion-icon name="notifications-outline"></ion-icon>
+            @if (notifications.length) {
+              <span class="notification-dot"></span>
+            }
+          </button>
+          @if (openMenu === 'notifications') {
+            <section class="dropdown-panel notification-panel">
+              <div class="dropdown-heading">
+                <span>Notifications</span>
+                @if (notifications.length) {
+                  <strong>{{ notifications.length }} new</strong>
+                } @else {
+                  <strong>All clear</strong>
+                }
+              </div>
+              @for (item of notifications; track trackByNotification($index, item)) {
+                <a
+                  [routerLink]="item.link"
+                  class="notification-item"
+                  (click)="closeMenus()">
+                  <ion-icon [name]="item.icon"></ion-icon>
+                  <span>
+                    <strong>{{ item.title }}</strong>
+                    <small>{{ item.body }}</small>
+                  </span>
+                </a>
+              }
+              @if (!notifications.length && !notificationsLoading) {
+                <div class="notification-empty">
+                  <ion-icon name="checkmark-circle-outline"></ion-icon>
+                  <span>You're all caught up.</span>
+                </div>
+              }
+              @if (!notifications.length && notificationsLoading) {
+                <div class="notification-empty">
+                  <ion-icon name="hourglass-outline"></ion-icon>
+                  <span>Checking for updates…</span>
+                </div>
+              }
+            </section>
+          }
+        </div>
+        <div class="menu-wrap">
+          <button
+            type="button"
+            class="icon-action"
+            aria-label="Open app menu"
+            [class.active]="openMenu === 'apps'"
+            (click)="toggleMenu('apps')">
+            <ion-icon name="grid-outline"></ion-icon>
+          </button>
+          @if (openMenu === 'apps') {
+            <section class="dropdown-panel app-panel">
+              <div class="dropdown-heading">
+                <span>Quick Launch</span>
+                <strong>Apps</strong>
+              </div>
+              <div class="app-grid">
+                <a [routerLink]="['/friends']" (click)="closeMenus()">
+                  <ion-icon name="people-outline"></ion-icon>
+                  <span>Friends</span>
+                </a>
+              </div>
+            </section>
+          }
+        </div>
+        <div class="menu-wrap">
+          <button
+            type="button"
+            class="profile-button"
+            aria-label="Open account menu"
+            [class.active]="openMenu === 'profile'"
+            (click)="toggleMenu('profile')"
             [disabled]="isLoggingOut">
-            <ion-icon [name]="isLoggingOut ? 'hourglass-outline' : 'log-out-outline'"></ion-icon>
-            <span>
-              <strong>{{ isLoggingOut ? 'Signing out…' : 'Sign out' }}</strong>
-              <small>End your session on this device.</small>
+            <span class="profile-icon">
+              <ion-icon [name]="isLoggingOut ? 'hourglass-outline' : 'person-circle-outline'"></ion-icon>
+            </span>
+            <span class="profile-copy">
+              <strong>{{ isLoggingOut ? 'Signing out' : 'Account' }}</strong>
+              <small>Profile &amp; settings</small>
             </span>
           </button>
-        </section>
+          @if (openMenu === 'profile') {
+            <section class="dropdown-panel notification-panel">
+              <div class="dropdown-heading">
+                <span>Account</span>
+                <strong>Manage</strong>
+              </div>
+              <a [routerLink]="['/profile']" class="notification-item" (click)="closeMenus()">
+                <ion-icon name="person-circle-outline"></ion-icon>
+                <span>
+                  <strong>Profile</strong>
+                  <small>Update your personal data.</small>
+                </span>
+              </a>
+              <a [routerLink]="['/settings']" class="notification-item" (click)="closeMenus()">
+                <ion-icon name="settings-outline"></ion-icon>
+                <span>
+                  <strong>Settings</strong>
+                  <small>Change password and preferences.</small>
+                </span>
+              </a>
+              <button
+                type="button"
+                class="notification-item notification-item--button"
+                (click)="logout()"
+                [disabled]="isLoggingOut">
+                <ion-icon [name]="isLoggingOut ? 'hourglass-outline' : 'log-out-outline'"></ion-icon>
+                <span>
+                  <strong>{{ isLoggingOut ? 'Signing out…' : 'Sign out' }}</strong>
+                  <small>End your session on this device.</small>
+                </span>
+              </button>
+            </section>
+          }
+        </div>
       </div>
-    </div>
-  </nav>
-</ion-header>
+    </nav>
+  </ion-header>
+}

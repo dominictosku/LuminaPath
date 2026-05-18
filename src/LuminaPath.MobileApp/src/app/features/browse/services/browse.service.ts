@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 import { BrowseItem } from '../models/browse.model';
@@ -8,11 +8,9 @@ import { BrowseItem } from '../models/browse.model';
   providedIn: 'root',
 })
 export class BrowseService {
-  constructor(
-    private readonly http: HttpClient,
-    private readonly apiEndpoint: ApiEndpointService,
-  ) {
-  }
+  private readonly http = inject(HttpClient);
+  private readonly apiEndpoint = inject(ApiEndpointService);
+
 
   getGameReleases(): Observable<BrowseItem[]> {
     return this.http.get<BrowseItem[]>(this.apiEndpoint.url('browse/games/releases'), {

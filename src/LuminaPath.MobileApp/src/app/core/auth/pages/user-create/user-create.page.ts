@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonHeader, IonTitle, IonToolbar, IonButton } from '@ionic/angular/standalone';
 import { Credentials } from 'src/app/core/auth/models/user.model';
@@ -8,7 +8,7 @@ import { Credentials } from 'src/app/core/auth/models/user.model';
     selector: 'app-user-create',
     templateUrl: './user-create.page.html',
     styleUrls: ['./user-create.page.scss'],
-    imports: [IonContent, IonHeader, IonTitle, IonToolbar, IonButton, CommonModule, FormsModule]
+    imports: [IonContent, IonHeader, IonTitle, IonToolbar, IonButton, FormsModule]
 })
 export class UserCreatePage {
 

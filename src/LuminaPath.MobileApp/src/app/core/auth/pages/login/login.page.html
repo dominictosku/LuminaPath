@@ -32,93 +32,99 @@
         </button>
       </div>
 
-      <div class="api-settings-panel" *ngIf="apiSettingsOpen">
-        <label class="field-label" for="apiEndpoint">Backend URL</label>
-        <div class="field-wrap api-field-wrap">
-          <svg class="field-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M4.25 5.5A2.75 2.75 0 017 2.75h6a2.75 2.75 0 012.75 2.75v9A2.75 2.75 0 0113 17.25H7a2.75 2.75 0 01-2.75-2.75v-9zM7 4.25A1.25 1.25 0 005.75 5.5v9A1.25 1.25 0 007 15.75h6a1.25 1.25 0 001.25-1.25v-9A1.25 1.25 0 0013 4.25H7zm1 2.5A.75.75 0 018.75 6h2.5a.75.75 0 010 1.5h-2.5A.75.75 0 018 6.75zm0 3A.75.75 0 018.75 9h2.5a.75.75 0 010 1.5h-2.5A.75.75 0 018 9.75z" clip-rule="evenodd"/>
-          </svg>
-          <input
-            id="apiEndpoint"
-            [(ngModel)]="apiEndpointDraft"
-            name="apiEndpoint"
-            autocomplete="url"
-            placeholder="https://your-domain.com/api"
-            class="field-input"
-          />
-        </div>
-        <p class="api-settings-help">Use your self-hosted backend URL. If you enter the server root, /api is added automatically.</p>
-        <div class="api-settings-actions">
-          <button type="button" class="api-save-btn" (click)="saveApiEndpoint()">Save server</button>
-          <button type="button" class="api-reset-btn" (click)="resetApiEndpoint()">Use default</button>
-        </div>
-        <div class="api-settings-message" *ngIf="apiSettingsMessage">{{ apiSettingsMessage }}</div>
-      </div>
-
-      <div class="form-fields">
-
-        <div class="field-group">
-          <label class="field-label" for="email">Username</label>
-          <div class="field-wrap">
+      @if (apiSettingsOpen) {
+        <div class="api-settings-panel">
+          <label class="field-label" for="apiEndpoint">Backend URL</label>
+          <div class="field-wrap api-field-wrap">
             <svg class="field-icon" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z"/>
+              <path fill-rule="evenodd" d="M4.25 5.5A2.75 2.75 0 017 2.75h6a2.75 2.75 0 012.75 2.75v9A2.75 2.75 0 0113 17.25H7a2.75 2.75 0 01-2.75-2.75v-9zM7 4.25A1.25 1.25 0 005.75 5.5v9A1.25 1.25 0 007 15.75h6a1.25 1.25 0 001.25-1.25v-9A1.25 1.25 0 0013 4.25H7zm1 2.5A.75.75 0 018.75 6h2.5a.75.75 0 010 1.5h-2.5A.75.75 0 018 6.75zm0 3A.75.75 0 018.75 9h2.5a.75.75 0 010 1.5h-2.5A.75.75 0 018 9.75z" clip-rule="evenodd"/>
             </svg>
             <input
-              id="email"
-              [(ngModel)]="credentials.email"
-              name="email"
-              required
-              autocomplete="username"
-              placeholder="your@email.com"
+              id="apiEndpoint"
+              [(ngModel)]="apiEndpointDraft"
+              name="apiEndpoint"
+              autocomplete="url"
+              placeholder="https://your-domain.com/api"
               class="field-input"
-            />
+              />
+            </div>
+            <p class="api-settings-help">Use your self-hosted backend URL. If you enter the server root, /api is added automatically.</p>
+            <div class="api-settings-actions">
+              <button type="button" class="api-save-btn" (click)="saveApiEndpoint()">Save server</button>
+              <button type="button" class="api-reset-btn" (click)="resetApiEndpoint()">Use default</button>
+            </div>
+            @if (apiSettingsMessage) {
+              <div class="api-settings-message">{{ apiSettingsMessage }}</div>
+            }
+          </div>
+        }
+
+        <div class="form-fields">
+
+          <div class="field-group">
+            <label class="field-label" for="email">Username</label>
+            <div class="field-wrap">
+              <svg class="field-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z"/>
+              </svg>
+              <input
+                id="email"
+                [(ngModel)]="credentials.email"
+                name="email"
+                required
+                autocomplete="username"
+                placeholder="your@email.com"
+                class="field-input"
+                />
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label-row">
+                <label class="field-label" for="password">Password</label>
+                <button type="button" class="forgot-link">Forgot password?</button>
+              </div>
+              <div class="field-wrap">
+                <svg class="field-icon" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M8 7a4 4 0 118 0v1h1a2 2 0 012 2v5a2 2 0 01-2 2H3a2 2 0 01-2-2v-5a2 2 0 012-2h1V7a4 4 0 014-4zm0 2a2 2 0 012-2 2 2 0 012 2v1H8V7zm1 5a1 1 0 112 0v2a1 1 0 11-2 0v-2z" clip-rule="evenodd"/>
+                </svg>
+                <input
+                  id="password"
+                  [(ngModel)]="credentials.password"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="••••••••"
+                  required
+                  class="field-input"
+                  />
+                </div>
+              </div>
+
+              @if (errorMessage) {
+                <div class="error-box">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                  </svg>
+                  <span>{{ errorMessage }}</span>
+                </div>
+              }
+
+              <button class="sign-in-btn" (click)="login()" [disabled]="isSubmitting" [class.loading]="isSubmitting">
+                <span class="btn-text">{{ isSubmitting ? 'Signing in...' : 'Sign in' }}</span>
+                <span class="btn-shimmer"></span>
+              </button>
+
+              <div class="divider">
+                <span>New here?</span>
+              </div>
+
+              <button class="register-btn" routerLink="/auth/create">
+                Create an account
+              </button>
+
+            </div>
           </div>
         </div>
 
-        <div class="field-group">
-          <div class="field-label-row">
-            <label class="field-label" for="password">Password</label>
-            <button type="button" class="forgot-link">Forgot password?</button>
-          </div>
-          <div class="field-wrap">
-            <svg class="field-icon" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M8 7a4 4 0 118 0v1h1a2 2 0 012 2v5a2 2 0 01-2 2H3a2 2 0 01-2-2v-5a2 2 0 012-2h1V7a4 4 0 014-4zm0 2a2 2 0 012-2 2 2 0 012 2v1H8V7zm1 5a1 1 0 112 0v2a1 1 0 11-2 0v-2z" clip-rule="evenodd"/>
-            </svg>
-            <input
-              id="password"
-              [(ngModel)]="credentials.password"
-              name="password"
-              type="password"
-              autocomplete="current-password"
-              placeholder="••••••••"
-              required
-              class="field-input"
-            />
-          </div>
-        </div>
-
-        <div class="error-box" *ngIf="errorMessage">
-          <svg viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-          </svg>
-          <span>{{ errorMessage }}</span>
-        </div>
-
-        <button class="sign-in-btn" (click)="login()" [disabled]="isSubmitting" [class.loading]="isSubmitting">
-          <span class="btn-text">{{ isSubmitting ? 'Signing in...' : 'Sign in' }}</span>
-          <span class="btn-shimmer"></span>
-        </button>
-
-        <div class="divider">
-          <span>New here?</span>
-        </div>
-
-        <button class="register-btn" routerLink="/auth/create">
-          Create an account
-        </button>
-
-      </div>
-    </div>
-  </div>
-
-</ion-content>
+      </ion-content>

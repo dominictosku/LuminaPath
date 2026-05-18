@@ -68,23 +68,28 @@
           [(ngModel)]="statusFilter"
           (ionChange)="applyFilters()">
           <ion-select-option value="all">Any status</ion-select-option>
-          <ion-select-option *ngFor="let status of statusOptions" [value]="status.value">
-            {{ status.label }}
-          </ion-select-option>
+          @for (status of statusOptions; track status) {
+            <ion-select-option [value]="status.value">
+              {{ status.label }}
+            </ion-select-option>
+          }
         </ion-select>
 
-        <ion-select
-          *ngIf="isGamesMode"
-          interface="popover"
-          label="Platform"
-          label-placement="stacked"
-          [(ngModel)]="platformFilter"
-          (ionChange)="applyFilters()">
-          <ion-select-option value="all">Any platform</ion-select-option>
-          <ion-select-option *ngFor="let platform of platforms" [value]="platform.value">
-            {{ platform.label }}
-          </ion-select-option>
-        </ion-select>
+        @if (isGamesMode) {
+          <ion-select
+            interface="popover"
+            label="Platform"
+            label-placement="stacked"
+            [(ngModel)]="platformFilter"
+            (ionChange)="applyFilters()">
+            <ion-select-option value="all">Any platform</ion-select-option>
+            @for (platform of platforms; track platform) {
+              <ion-select-option [value]="platform.value">
+                {{ platform.label }}
+              </ion-select-option>
+            }
+          </ion-select>
+        }
 
         <ion-select
           interface="popover"
@@ -108,9 +113,11 @@
           label-placement="stacked"
           [(ngModel)]="sortMode"
           (ionChange)="applyFilters()">
-          <ion-select-option *ngFor="let option of sortOptions" [value]="option.value">
-            {{ option.label }}
-          </ion-select-option>
+          @for (option of sortOptions; track option) {
+            <ion-select-option [value]="option.value">
+              {{ option.label }}
+            </ion-select-option>
+          }
         </ion-select>
 
         <div class="smart-chips" aria-label="Smart library filters">
@@ -139,16 +146,18 @@
         </div>
       </div>
 
-      <div class="release-date-range" *ngIf="releaseDateFilter === 'custom'">
-        <label>
-          <span>From</span>
-          <input type="date" [(ngModel)]="releaseDateFrom" (change)="onCustomReleaseDateChange()" />
-        </label>
-        <label>
-          <span>To</span>
-          <input type="date" [(ngModel)]="releaseDateTo" (change)="onCustomReleaseDateChange()" />
-        </label>
-      </div>
+      @if (releaseDateFilter === 'custom') {
+        <div class="release-date-range">
+          <label>
+            <span>From</span>
+            <input type="date" [(ngModel)]="releaseDateFrom" (change)="onCustomReleaseDateChange()" />
+          </label>
+          <label>
+            <span>To</span>
+            <input type="date" [(ngModel)]="releaseDateTo" (change)="onCustomReleaseDateChange()" />
+          </label>
+        </div>
+      }
 
       <div class="preset-strip">
         <label class="preset-name">
@@ -159,81 +168,102 @@
           <ion-icon slot="start" name="bookmark-outline"></ion-icon>
           Save
         </ion-button>
-        <button
-          *ngFor="let preset of savedPresets"
-          type="button"
-          class="preset-pill"
-          (click)="applyPreset(preset)">
-          {{ preset.name }}
-          <span (click)="deletePreset(preset, $event)" aria-label="Delete preset">&times;</span>
-        </button>
+        @for (preset of savedPresets; track preset) {
+          <button
+            type="button"
+            class="preset-pill"
+            (click)="applyPreset(preset)">
+            {{ preset.name }}
+            <span (click)="deletePreset(preset, $event)" aria-label="Delete preset">&times;</span>
+          </button>
+        }
       </div>
     </section>
 
-    <section class="finish-pick" *ngIf="!isLoading && nextBestGame as best">
-      <div>
-        <span class="eyebrow">
-          <ion-icon name="flash-outline"></ion-icon>
-          Next best finish
-        </span>
-        <h2>{{ best.name }}</h2>
-        <p>{{ remainingLabel(best) }} · {{ progressOf(best) }}% complete · {{ statusLabel(best) }}</p>
-      </div>
-      <ion-button size="small" (click)="setSmartFilter('best')">Focus</ion-button>
-    </section>
+    @if (!isLoading && nextBestGame; as best) {
+      <section class="finish-pick">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="flash-outline"></ion-icon>
+            Next best finish
+          </span>
+          <h2>{{ best.name }}</h2>
+          <p>{{ remainingLabel(best) }} · {{ progressOf(best) }}% complete · {{ statusLabel(best) }}</p>
+        </div>
+        <ion-button size="small" (click)="setSmartFilter('best')">Focus</ion-button>
+      </section>
+    }
 
-    <section class="notice" *ngIf="errorMessage">
-      <ion-icon name="search-outline"></ion-icon>
-      <span>{{ errorMessage }}</span>
-    </section>
+    @if (errorMessage) {
+      <section class="notice">
+        <ion-icon name="search-outline"></ion-icon>
+        <span>{{ errorMessage }}</span>
+      </section>
+    }
 
-    <section class="notice notice--success" *ngIf="successMessage">
-      <ion-icon name="checkmark-circle-outline"></ion-icon>
-      <span>{{ successMessage }}</span>
-    </section>
+    @if (successMessage) {
+      <section class="notice notice--success">
+        <ion-icon name="checkmark-circle-outline"></ion-icon>
+        <span>{{ successMessage }}</span>
+      </section>
+    }
 
-    <section class="loading-grid" *ngIf="isLoading">
-      <article *ngFor="let item of [1, 2, 3, 4, 5, 6]">
-        <ion-skeleton-text animated></ion-skeleton-text>
-      </article>
-    </section>
+    @if (isLoading) {
+      <section class="loading-grid">
+        @for (item of [1, 2, 3, 4, 5, 6]; track item) {
+          <article>
+            <ion-skeleton-text animated></ion-skeleton-text>
+          </article>
+        }
+      </section>
+    }
 
-    <section class="results-heading" *ngIf="!isLoading">
-      <div>
-        <span class="eyebrow">Results</span>
-        <h2>{{ resultTitle }}</h2>
-      </div>
-      <ion-button fill="clear" size="small" (click)="clearFilters()">Reset</ion-button>
-    </section>
+    @if (!isLoading) {
+      <section class="results-heading">
+        <div>
+          <span class="eyebrow">Results</span>
+          <h2>{{ resultTitle }}</h2>
+        </div>
+        <ion-button fill="clear" size="small" (click)="clearFilters()">Reset</ion-button>
+      </section>
+    }
 
-    <section class="game-grid" *ngIf="!isLoading && viewMode === 'grid' && filteredGames.length">
-      <app-library-card
-        *ngFor="let game of filteredGames; trackBy: trackByGameId"
-        [item]="game"
-        [mediaMode]="mediaMode"
-        [isAdding]="isAdding(game)"
-        (edit)="openGameListDialog($event)"
-        (details)="openDetails($event)">
-      </app-library-card>
-    </section>
+    @if (!isLoading && viewMode === 'grid' && filteredGames.length) {
+      <section class="game-grid">
+        @for (game of filteredGames; track trackByGameId($index, game)) {
+          <app-library-card
+            [item]="game"
+            [mediaMode]="mediaMode"
+            [isAdding]="isAdding(game)"
+            (edit)="openGameListDialog($event)"
+            (details)="openDetails($event)">
+          </app-library-card>
+        }
+      </section>
+    }
 
-    <section class="game-list" *ngIf="!isLoading && viewMode === 'list' && filteredGames.length">
-      <app-library-list-row
-        *ngFor="let game of filteredGames; trackBy: trackByGameId"
-        [item]="game"
-        [mediaMode]="mediaMode"
-        [isAdding]="isAdding(game)"
-        (edit)="openGameListDialog($event)"
-        (details)="openDetails($event)">
-      </app-library-list-row>
-    </section>
+    @if (!isLoading && viewMode === 'list' && filteredGames.length) {
+      <section class="game-list">
+        @for (game of filteredGames; track trackByGameId($index, game)) {
+          <app-library-list-row
+            [item]="game"
+            [mediaMode]="mediaMode"
+            [isAdding]="isAdding(game)"
+            (edit)="openGameListDialog($event)"
+            (details)="openDetails($event)">
+          </app-library-list-row>
+        }
+      </section>
+    }
 
-    <section class="empty-state" *ngIf="!isLoading && !filteredGames.length">
-      <ion-icon name="game-controller-outline"></ion-icon>
-      <h2>{{ emptyTitle }}</h2>
-      <p>Try loosening the search or filters.</p>
-      <ion-button fill="outline" (click)="clearFilters()">Clear filters</ion-button>
-    </section>
+    @if (!isLoading && !filteredGames.length) {
+      <section class="empty-state">
+        <ion-icon name="game-controller-outline"></ion-icon>
+        <h2>{{ emptyTitle }}</h2>
+        <p>Try loosening the search or filters.</p>
+        <ion-button fill="outline" (click)="clearFilters()">Clear filters</ion-button>
+      </section>
+    }
   </main>
 
   <ion-infinite-scroll
@@ -251,128 +281,128 @@
     [isOpen]="isAddDialogOpen"
     (didDismiss)="closeAddDialog()">
     <ng-template>
-      <form *ngIf="selectedGame as game" class="library-editor" (ngSubmit)="submitAddGame()" novalidate>
-        <section class="editor-cover" [style.background-image]="'url(' + imageFor(game) + ')'">
-          <div class="editor-cover__shade"></div>
-          <ion-button
-            type="button"
-            fill="clear"
-            class="dialog-icon-button"
-            aria-label="Close"
-            [disabled]="isAdding(game)"
-            (click)="closeAddDialog()">
-            <ion-icon slot="icon-only" name="close-outline"></ion-icon>
-          </ion-button>
-
-          <div class="editor-cover__content">
-            <img [src]="imageFor(game)" alt="" />
-            <div>
-              <span class="eyebrow">{{ isEditingSelectedGame() ? 'Edit my ' + mediaMode.singular : 'Add to mine' }}</span>
-              <h2>{{ game.name }}</h2>
-              <p>{{ isGamesMode ? platformLabel(game.platforms) : mediaTypeLabel(game) }} · {{ durationLabel(game) }}</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="editor-body">
-          <div class="editor-stats">
-            <article>
-              <span>Status</span>
-              <strong>{{ statusLabel(game) }}</strong>
-            </article>
-            <article>
-              <span>{{ isGamesMode ? 'Progress' : 'Watched' }}</span>
-              <strong>{{ progressOf(game) }}%</strong>
-            </article>
-            <article>
-              <span>Remaining</span>
-              <strong>{{ remainingLabel(game) }}</strong>
-            </article>
-          </div>
-
-          <fieldset class="status-picker">
-            <legend>Status</legend>
-            <button
-              *ngFor="let status of statusOptions"
+      @if (selectedGame; as game) {
+        <form class="library-editor" (ngSubmit)="submitAddGame()" novalidate>
+          <section class="editor-cover" [style.background-image]="'url(' + imageFor(game) + ')'">
+            <div class="editor-cover__shade"></div>
+            <ion-button
               type="button"
-              class="status-option"
-              [class.status-option--active]="addGameForm.status === status.value"
-              [attr.aria-pressed]="addGameForm.status === status.value"
-              (click)="addGameForm.status = status.value">
-              <span>{{ status.label }}</span>
-              <ion-icon *ngIf="addGameForm.status === status.value" name="checkmark-circle-outline"></ion-icon>
-              <small *ngIf="addGameForm.status === status.value">Selected</small>
-            </button>
-          </fieldset>
-
-          <div class="editor-grid">
-            <label class="form-field">
-              <span>{{ isGamesMode ? 'Played hours' : 'Watched hours' }}</span>
-              <input
-                type="number"
-                min="0"
-                inputmode="decimal"
-                [(ngModel)]="addGameForm.timeSpend"
-                name="timeSpend" />
-            </label>
-
-            <label class="form-field" *ngIf="isEpisodeMode">
-              <span>Current episode</span>
-              <input
-                type="number"
-                min="0"
-                inputmode="numeric"
-                [(ngModel)]="addGameForm.currentEpisode"
-                name="currentEpisode" />
-            </label>
-
-            <label class="form-field">
-              <span>Rating</span>
-              <div class="rating-field">
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  step="1"
-                  [(ngModel)]="addGameForm.rating"
-                  name="ratingRange" />
+              fill="clear"
+              class="dialog-icon-button"
+              aria-label="Close"
+              [disabled]="isAdding(game)"
+              (click)="closeAddDialog()">
+              <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+            </ion-button>
+            <div class="editor-cover__content">
+              <img [src]="imageFor(game)" alt="" />
+              <div>
+                <span class="eyebrow">{{ isEditingSelectedGame() ? 'Edit my ' + mediaMode.singular : 'Add to mine' }}</span>
+                <h2>{{ game.name }}</h2>
+                <p>{{ isGamesMode ? platformLabel(game.platforms) : mediaTypeLabel(game) }} · {{ durationLabel(game) }}</p>
+              </div>
+            </div>
+          </section>
+          <section class="editor-body">
+            <div class="editor-stats">
+              <article>
+                <span>Status</span>
+                <strong>{{ statusLabel(game) }}</strong>
+              </article>
+              <article>
+                <span>{{ isGamesMode ? 'Progress' : 'Watched' }}</span>
+                <strong>{{ progressOf(game) }}%</strong>
+              </article>
+              <article>
+                <span>Remaining</span>
+                <strong>{{ remainingLabel(game) }}</strong>
+              </article>
+            </div>
+            <fieldset class="status-picker">
+              <legend>Status</legend>
+              @for (status of statusOptions; track status) {
+                <button
+                  type="button"
+                  class="status-option"
+                  [class.status-option--active]="addGameForm.status === status.value"
+                  [attr.aria-pressed]="addGameForm.status === status.value"
+                  (click)="addGameForm.status = status.value">
+                  <span>{{ status.label }}</span>
+                  @if (addGameForm.status === status.value) {
+                    <ion-icon name="checkmark-circle-outline"></ion-icon>
+                  }
+                  @if (addGameForm.status === status.value) {
+                    <small>Selected</small>
+                  }
+                </button>
+              }
+            </fieldset>
+            <div class="editor-grid">
+              <label class="form-field">
+                <span>{{ isGamesMode ? 'Played hours' : 'Watched hours' }}</span>
                 <input
                   type="number"
-                  min="1"
-                  max="10"
-                  inputmode="numeric"
-                  placeholder="--"
-                  [(ngModel)]="addGameForm.rating"
-                  name="rating" />
-              </div>
-            </label>
-
-            <label class="form-field">
-              <span>Started</span>
-              <input type="date" [(ngModel)]="addGameForm.startDate" name="startDate" />
-            </label>
-
-            <label class="form-field">
-              <span>Finished</span>
-              <input type="date" [(ngModel)]="addGameForm.endDate" name="endDate" />
-            </label>
-          </div>
-        </section>
-
-        <footer class="editor-actions">
-          <ion-button
-            type="button"
-            fill="clear"
-            [disabled]="isAdding(game)"
-            (click)="closeAddDialog()">
-            Cancel
-          </ion-button>
-          <ion-button type="submit" [disabled]="isAdding(game)">
-            <ion-icon slot="start" [name]="isAdding(game) ? 'hourglass-outline' : (isEditingSelectedGame() ? 'checkmark-circle-outline' : 'add-outline')"></ion-icon>
-            {{ isAdding(game) ? 'Saving...' : (isEditingSelectedGame() ? 'Save changes' : 'Add ' + mediaMode.singular) }}
-          </ion-button>
-        </footer>
-      </form>
-    </ng-template>
-  </ion-modal>
-</ion-content>
+                  min="0"
+                  inputmode="decimal"
+                  [(ngModel)]="addGameForm.timeSpend"
+                  name="timeSpend" />
+                </label>
+                @if (isEpisodeMode) {
+                  <label class="form-field">
+                    <span>Current episode</span>
+                    <input
+                      type="number"
+                      min="0"
+                      inputmode="numeric"
+                      [(ngModel)]="addGameForm.currentEpisode"
+                      name="currentEpisode" />
+                    </label>
+                  }
+                  <label class="form-field">
+                    <span>Rating</span>
+                    <div class="rating-field">
+                      <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        step="1"
+                        [(ngModel)]="addGameForm.rating"
+                        name="ratingRange" />
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          inputmode="numeric"
+                          placeholder="--"
+                          [(ngModel)]="addGameForm.rating"
+                          name="rating" />
+                        </div>
+                      </label>
+                      <label class="form-field">
+                        <span>Started</span>
+                        <input type="date" [(ngModel)]="addGameForm.startDate" name="startDate" />
+                      </label>
+                      <label class="form-field">
+                        <span>Finished</span>
+                        <input type="date" [(ngModel)]="addGameForm.endDate" name="endDate" />
+                      </label>
+                    </div>
+                  </section>
+                  <footer class="editor-actions">
+                    <ion-button
+                      type="button"
+                      fill="clear"
+                      [disabled]="isAdding(game)"
+                      (click)="closeAddDialog()">
+                      Cancel
+                    </ion-button>
+                    <ion-button type="submit" [disabled]="isAdding(game)">
+                      <ion-icon slot="start" [name]="isAdding(game) ? 'hourglass-outline' : (isEditingSelectedGame() ? 'checkmark-circle-outline' : 'add-outline')"></ion-icon>
+                      {{ isAdding(game) ? 'Saving...' : (isEditingSelectedGame() ? 'Save changes' : 'Add ' + mediaMode.singular) }}
+                    </ion-button>
+                  </footer>
+                </form>
+              }
+            </ng-template>
+          </ion-modal>
+        </ion-content>

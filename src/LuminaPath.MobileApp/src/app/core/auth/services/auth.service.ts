@@ -1,22 +1,18 @@
 import { Credentials, User } from '../models/user.model';
-import { BehaviorSubject, catchError, map, Observable, of, tap } from 'rxjs';
+import { catchError, map, Observable, of, tap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private authenticated = false;
-  private authenticatedSubject = new BehaviorSubject<boolean>(false);
-  readonly authenticated$ = this.authenticatedSubject.asObservable();
+  private http = inject(HttpClient);
+  private apiEndpoint = inject(ApiEndpointService);
 
-  constructor(private http: HttpClient, private apiEndpoint: ApiEndpointService) {}
-
-  public isAuthenticated() {
-    return this.authenticated;
-  }
+  private readonly authenticatedSignal = signal<boolean>(false);
+  readonly isAuthenticated = this.authenticatedSignal.asReadonly();
 
   getUserInfo(): Observable<User> {
     return this.http.get<User>(this.apiEndpoint.url('manage/info'), {
@@ -27,7 +23,7 @@ export class AuthService {
   login(credentials: Credentials) {
     return this.http.post(`${this.apiEndpoint.url('login')}?useCookies=true`, credentials, {
       withCredentials: true,
-    }).pipe(tap(() => this.setAuthenticated(true)));
+    }).pipe(tap(() => this.authenticatedSignal.set(true)));
   }
 
   logout() {
@@ -36,9 +32,9 @@ export class AuthService {
       {},
       { withCredentials: true }
     ).pipe(
-      tap(() => this.setAuthenticated(false)),
+      tap(() => this.authenticatedSignal.set(false)),
       catchError((error) => {
-        this.setAuthenticated(false);
+        this.authenticatedSignal.set(false);
         throw error;
       })
     );
@@ -47,11 +43,11 @@ export class AuthService {
   isLoggedIn(): Observable<boolean> {
     return this.getUserInfo().pipe(
       map(() => {
-        this.setAuthenticated(true);
+        this.authenticatedSignal.set(true);
         return true;
       }),
       catchError(() => {
-        this.setAuthenticated(false);
+        this.authenticatedSignal.set(false);
         return of(false);
       })
     );
@@ -62,11 +58,6 @@ export class AuthService {
   }
 
   clearSession() {
-    this.setAuthenticated(false);
-  }
-
-  private setAuthenticated(value: boolean) {
-    this.authenticated = value;
-    this.authenticatedSubject.next(value);
+    this.authenticatedSignal.set(false);
   }
 }

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 
@@ -204,9 +204,10 @@ type ApiQuestSkillNode = {
   providedIn: 'root',
 })
 export class QuestBoardService {
-  private readonly httpConfig = { withCredentials: true };
+  private http = inject(HttpClient);
+  private apiEndpoint = inject(ApiEndpointService);
 
-  constructor(private http: HttpClient, private apiEndpoint: ApiEndpointService) {}
+  private readonly httpConfig = { withCredentials: true };
 
   async getBoard(): Promise<QuestBoardState> {
     const board = await firstValueFrom(this.http.get<ApiQuestBoard>(this.apiEndpoint.url('quests/board'), this.httpConfig));

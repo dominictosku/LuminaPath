@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonBadge,
@@ -58,11 +58,10 @@ type DraftSession = {
 };
 
 @Component({
-  selector: 'app-planing',
-  templateUrl: './planing.page.html',
-  styleUrls: ['./planing.page.scss'],
+  selector: 'app-planning',
+  templateUrl: './planning.page.html',
+  styleUrls: ['./planning.page.scss'],
   imports: [
-    CommonModule,
     FormsModule,
     IonBadge,
     IonButton,
@@ -76,10 +75,15 @@ type DraftSession = {
     IonSelect,
     IonSelectOption,
     IonSpinner,
-    ReleasePlanComponent,
-  ],
+    ReleasePlanComponent
+],
 })
-export class PlaningPage implements OnInit {
+export class PlanningPage implements OnInit {
+  private gameService = inject(GameService);
+  private sessionService = inject(GamingSessionService);
+  private questBoardService = inject(QuestBoardService);
+  private planningCalendar = inject(PlanningCalendarService);
+
   isLoading = true;
   mode: PlanMode = 'sessions';
   errorMessage = '';
@@ -96,12 +100,7 @@ export class PlaningPage implements OnInit {
 
   draft: DraftSession;
 
-  constructor(
-    private gameService: GameService,
-    private sessionService: GamingSessionService,
-    private questBoardService: QuestBoardService,
-    private planningCalendar: PlanningCalendarService,
-  ) {
+  constructor() {
     this.calendarAnchor = this.planningCalendar.startOfToday();
     this.draft = this.emptyDraft();
 

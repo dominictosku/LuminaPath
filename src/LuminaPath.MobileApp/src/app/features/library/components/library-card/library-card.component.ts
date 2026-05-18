@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { IonBadge, IonButton, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -18,9 +18,11 @@ import { MediaLibraryViewService } from '../../services/media-library-view.servi
   selector: 'app-library-card',
   templateUrl: './library-card.component.html',
   styleUrls: ['./library-card.component.scss'],
-  imports: [CommonModule, IonBadge, IonButton, IonIcon],
+  imports: [IonBadge, IonButton, IonIcon],
 })
 export class LibraryCardComponent {
+  readonly view = inject(MediaLibraryViewService);
+
   @Input({ required: true }) item!: MediaItem;
   @Input({ required: true }) mediaMode!: MediaModeOption;
   @Input() isAdding = false;
@@ -28,7 +30,7 @@ export class LibraryCardComponent {
   @Output() edit = new EventEmitter<MediaItem>();
   @Output() details = new EventEmitter<MediaItem>();
 
-  constructor(public readonly view: MediaLibraryViewService) {
+  constructor() {
     addIcons({
       addOutline,
       calendarClearOutline,

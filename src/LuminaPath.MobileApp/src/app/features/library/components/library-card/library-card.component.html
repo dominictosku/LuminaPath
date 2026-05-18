@@ -31,14 +31,16 @@
       </span>
     </div>
 
-    <div class="progress-block" *ngIf="view.hasLibraryEntry(item)">
-      <div>
-        <span>{{ view.playedLabel(item, mediaMode) }}</span>
-        <strong>{{ view.progressOf(item, mediaMode) }}%</strong>
+    @if (view.hasLibraryEntry(item)) {
+      <div class="progress-block">
+        <div>
+          <span>{{ view.playedLabel(item, mediaMode) }}</span>
+          <strong>{{ view.progressOf(item, mediaMode) }}%</strong>
+        </div>
+        <div class="progress-track">
+          <span [style.width.%]="view.progressOf(item, mediaMode)"></span>
+        </div>
       </div>
-      <div class="progress-track">
-        <span [style.width.%]="view.progressOf(item, mediaMode)"></span>
-      </div>
-    </div>
+    }
   </div>
 </article>

@@ -7,7 +7,7 @@ import { GameService } from '../../games/services/game.service';
 import { AnimeService } from '../../animes/services/anime.service';
 import { MovieService } from '../../movies/services/movie.service';
 import { SeriesService } from '../../series/services/series.service';
-import { GamingSessionService } from '../../planing/services/gaming-session.service';
+import { GamingSessionService } from '../../planning/services/gaming-session.service';
 import { QuestBoardService } from '../../quests/services/quest-board.service';
 import { PaginateResult } from 'src/app/core/entities/paginatedResult';
 

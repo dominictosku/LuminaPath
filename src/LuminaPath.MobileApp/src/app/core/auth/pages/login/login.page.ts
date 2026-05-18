@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { IonContent } from '@ionic/angular/standalone';
 import { Credentials } from 'src/app/core/auth/models/user.model';
@@ -12,9 +12,13 @@ import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service
     selector: 'app-login',
     templateUrl: './login.page.html',
     styleUrls: ['./login.page.scss'],
-    imports: [IonContent, CommonModule, FormsModule]
+    imports: [IonContent, FormsModule]
 })
 export class LoginPage implements OnInit {
+  private authService = inject(AuthService);
+  private route = inject(Router);
+  private apiEndpoint = inject(ApiEndpointService);
+
   credentials = new Credentials()
   errorMessage = '';
   isSubmitting = false;
@@ -23,13 +27,13 @@ export class LoginPage implements OnInit {
   currentApiEndpoint = '';
   apiSettingsMessage = '';
 
-  constructor(private authService: AuthService, private route: Router, private apiEndpoint: ApiEndpointService) {
+  constructor() {
     this.credentials.email = "admin@example.com"
     this.credentials.password = "Admin123*"
   }
 
   ngOnInit() {
-    this.currentApiEndpoint = this.apiEndpoint.endpoint;
+    this.currentApiEndpoint = this.apiEndpoint.endpoint();
     this.apiEndpointDraft = this.currentApiEndpoint;
   }
 
@@ -50,7 +54,7 @@ export class LoginPage implements OnInit {
   toggleApiSettings() {
     this.apiSettingsOpen = !this.apiSettingsOpen;
     this.apiSettingsMessage = '';
-    this.apiEndpointDraft = this.apiEndpoint.endpoint;
+    this.apiEndpointDraft = this.apiEndpoint.endpoint();
   }
 
   saveApiEndpoint() {

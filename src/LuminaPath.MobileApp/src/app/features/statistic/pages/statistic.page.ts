@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {
   IonBadge,
   IonContent,
@@ -180,6 +180,11 @@ const STATUS_ORDER = ['Planned', 'Active', 'On hold', 'Completed', 'Dropped'];
   ],
 })
 export class StatisticPage implements OnInit {
+  private readonly gameService = inject(GameService);
+  private readonly animeService = inject(AnimeService);
+  private readonly movieService = inject(MovieService);
+  private readonly seriesService = inject(SeriesService);
+
   items: BacklogItem[] = [];
   ownedItems: BacklogItem[] = [];
   backlogItems: BacklogItem[] = [];
@@ -217,12 +222,7 @@ export class StatisticPage implements OnInit {
   readonly trendWidth = TREND_WIDTH;
   readonly trendHeight = TREND_HEIGHT;
 
-  constructor(
-    private readonly gameService: GameService,
-    private readonly animeService: AnimeService,
-    private readonly movieService: MovieService,
-    private readonly seriesService: SeriesService,
-  ) {
+  constructor() {
     addIcons({
       alertCircleOutline,
       barChartOutline,

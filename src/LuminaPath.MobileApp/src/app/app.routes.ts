@@ -2,6 +2,13 @@ import { Routes } from '@angular/router';
 import {
   AuthGuardService as AuthGuard
 } from './core/middleware/auth-guard.service';
+import { animeDetailsProviders } from './features/animes/pages/anime-details.providers';
+import { seriesDetailsProviders } from './features/series/pages/series-details.providers';
+
+const loadEpisodicMediaDetailsPage = () =>
+  import('./features/library/pages/episodic-media-details/episodic-media-details.page').then(
+    (m) => m.EpisodicMediaDetailsPage,
+  );
 
 export const routes: Routes = [
   {
@@ -30,7 +37,8 @@ export const routes: Routes = [
   },
   {
     path: 'library/animes/:animeId',
-    loadComponent: () => import('./features/animes/pages/anime-details.page').then(m => m.AnimeDetailsPage),
+    loadComponent: loadEpisodicMediaDetailsPage,
+    providers: animeDetailsProviders,
     canActivate: [AuthGuard]
   },
   {
@@ -40,13 +48,19 @@ export const routes: Routes = [
   },
   {
     path: 'library/series/:seriesId',
-    loadComponent: () => import('./features/series/pages/series-details.page').then(m => m.SeriesDetailsPage),
+    loadComponent: loadEpisodicMediaDetailsPage,
+    providers: seriesDetailsProviders,
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'planning',
+    loadComponent: () => import('./features/planning/pages/planning.page').then(m => m.PlanningPage),
     canActivate: [AuthGuard]
   },
   {
     path: 'planing',
-    loadComponent: () => import('./features/planing/pages/planing.page').then(m => m.PlaningPage),
-    canActivate: [AuthGuard]
+    redirectTo: 'planning',
+    pathMatch: 'full',
   },
   {
     path: 'statistic',
@@ -80,9 +94,5 @@ export const routes: Routes = [
   {
     path: 'auth/create',
     loadComponent: () => import('./core/auth/pages/user-create/user-create.page').then(m => m.UserCreatePage)
-  },
-  {
-    path: 'test',
-    loadComponent: () => import('./features/test/test.page').then(m => m.TestPage)
   },
 ];

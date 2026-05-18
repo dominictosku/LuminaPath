@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -55,7 +55,6 @@ type PlanMetric = {
   templateUrl: './release-plan.component.html',
   styleUrls: ['./release-plan.component.scss'],
   imports: [
-    CommonModule,
     FormsModule,
     IonBadge,
     IonIcon,
@@ -63,8 +62,8 @@ type PlanMetric = {
     IonRange,
     IonSegment,
     IonSegmentButton,
-    IonSkeletonText,
-  ],
+    IonSkeletonText
+],
 })
 export class ReleasePlanComponent implements OnChanges {
   @Input() games: Game[] = [];

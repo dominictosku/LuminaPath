@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+
 import { catchError, forkJoin, from, of } from 'rxjs';
 import {
   IonBadge,
@@ -37,7 +37,7 @@ import { Series } from '../../series/models/series.model';
 import { SeriesService } from '../../series/services/series.service';
 import { MediaFile } from '../../library/models/mediaFile.model';
 import { GameStatus, gameStatusLabel, isGameBacklogStatus } from '../../library/models/library-status.model';
-import { GamingSession, GamingSessionService } from '../../planing/services/gaming-session.service';
+import { GamingSession, GamingSessionService } from '../../planning/services/gaming-session.service';
 import { Quest, QuestBoardService, QuestBoardState } from '../../quests/services/quest-board.service';
 import {
   estimatedHoursOfGame,
@@ -96,11 +96,17 @@ type DashboardActivityItem = {
     IonIcon,
     IonRefresher,
     IonRefresherContent,
-    IonSkeletonText,
-    CommonModule,
-  ],
+    IonSkeletonText
+],
 })
 export class HomePage implements OnInit {
+  private gameService = inject(GameService);
+  private animeService = inject(AnimeService);
+  private movieService = inject(MovieService);
+  private seriesService = inject(SeriesService);
+  private sessionService = inject(GamingSessionService);
+  private questBoardService = inject(QuestBoardService);
+
   games: Game[] = [];
   animes: Anime[] = [];
   movies: Movie[] = [];
@@ -125,14 +131,7 @@ export class HomePage implements OnInit {
   isLoading = true;
   errorMessage = '';
 
-  constructor(
-    private gameService: GameService,
-    private animeService: AnimeService,
-    private movieService: MovieService,
-    private seriesService: SeriesService,
-    private sessionService: GamingSessionService,
-    private questBoardService: QuestBoardService,
-  ) {
+  constructor() {
     addIcons({
       alertCircleOutline,
       calendarClearOutline,

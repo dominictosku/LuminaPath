@@ -1,5 +1,5 @@
-import { CommonModule, Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Location } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   ActionSheetController,
@@ -31,13 +31,17 @@ import {
   sparklesOutline,
   timeOutline,
   trashOutline,
+  tvOutline,
 } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
-import { Anime, AnimeSummary, MyAnime } from '../models/animes.model';
-import { AnimeService } from '../services/anime.service';
-import { MyAnimeService } from '../services/my-anime.service';
-import { LibraryEntryDetails } from '../../library/models/media-item.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
+import { LibraryEntryDetails } from '../../models/media-item.model';
+import { EPISODIC_MEDIA_ADAPTER, EPISODIC_MEDIA_CONFIG } from './episodic-media.tokens';
+import {
+  EpisodicLibraryEntry,
+  EpisodicMediaSummary,
+  EpisodicMediaView,
+} from './episodic-media.types';
 
 const WATCH_STATUS_LABELS: Record<number, string> = {
   0: 'On hold',
@@ -48,11 +52,10 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
 };
 
 @Component({
-  selector: 'app-anime-details',
-  templateUrl: './anime-details.page.html',
-  styleUrls: ['./anime-details.page.scss'],
+  selector: 'app-episodic-media-details',
+  templateUrl: './episodic-media-details.page.html',
+  styleUrls: ['./episodic-media-details.page.scss'],
   imports: [
-    CommonModule,
     RouterLink,
     IonBadge,
     IonButton,
@@ -63,26 +66,25 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
     IonProgressBar,
     IonSpinner,
     IonTitle,
-    IonToolbar,
-  ],
+    IonToolbar
+],
 })
-export class AnimeDetailsPage implements OnInit {
-  anime: Anime | null = null;
+export class EpisodicMediaDetailsPage implements OnInit {
+  readonly config = inject(EPISODIC_MEDIA_CONFIG);
+  private readonly adapter = inject(EPISODIC_MEDIA_ADAPTER);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly location = inject(Location);
+  private readonly alertController = inject(AlertController);
+  private readonly actionSheetController = inject(ActionSheetController);
+
+  media: EpisodicMediaView | null = null;
   isLoading = true;
   errorMessage = '';
-
   isUpdatingLibrary = false;
   headerCondensed = false;
 
-  constructor(
-    private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly location: Location,
-    private readonly animeService: AnimeService,
-    private readonly myAnimeService: MyAnimeService,
-    private readonly alertController: AlertController,
-    private readonly actionSheetController: ActionSheetController,
-  ) {
+  constructor() {
     addIcons({
       addOutline,
       arrowBackOutline,
@@ -98,34 +100,35 @@ export class AnimeDetailsPage implements OnInit {
       sparklesOutline,
       timeOutline,
       trashOutline,
+      tvOutline,
     });
   }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async (params) => {
-      const animeId = Number(params.get('animeId'));
-      if (!Number.isInteger(animeId) || animeId <= 0) {
-        this.showError('Anime not found.');
+      const mediaId = Number(params.get(this.config.paramKey));
+      if (!Number.isInteger(mediaId) || mediaId <= 0) {
+        this.showError(this.config.notFoundLabel);
         return;
       }
 
       this.isLoading = true;
       this.errorMessage = '';
-      await this.loadAnime(animeId);
+      await this.loadMedia(mediaId);
     });
   }
 
-  get libraryEntry(): MyAnime | null {
-    return this.anime?.myAnimes ?? null;
+  get libraryEntry(): EpisodicLibraryEntry | null {
+    return this.media?.libraryEntry ?? null;
   }
 
-  get myAnimeId(): number | null {
+  get libraryEntryId(): number | null {
     const id = Number(this.libraryEntry?.id);
     return Number.isInteger(id) && id > 0 ? id : null;
   }
 
   get isInLibrary(): boolean {
-    return this.myAnimeId !== null;
+    return this.libraryEntryId !== null;
   }
 
   get libraryStatusLabel(): string {
@@ -138,15 +141,20 @@ export class AnimeDetailsPage implements OnInit {
   }
 
   get releaseLabel(): string {
-    return this.formatDate(this.anime?.releaseDate);
+    return this.formatDate(this.media?.releaseDate);
   }
 
-  get watchTimeLabel(): string {
-    return this.formatMinutes(this.anime?.expectedWatchTimeMinutes);
+  get fourthMetaLabel(): string {
+    const value = this.media?.[this.config.fourthMetaSource] ?? null;
+    const formatted = this.formatMinutes(value);
+    if (this.config.perEpisodeSuffix && value != null && Number(value) > 0) {
+      return `${formatted} ${this.config.perEpisodeSuffix}`;
+    }
+    return formatted;
   }
 
   get genreLabel(): string {
-    const genre = (this.anime?.genre ?? '').trim();
+    const genre = (this.media?.genre ?? '').trim();
     return genre.length ? genre : 'Unspecified';
   }
 
@@ -155,14 +163,16 @@ export class AnimeDetailsPage implements OnInit {
   }
 
   get totalEpisodes(): number {
-    return Math.max(0, Number(this.anime?.episodeCount) || 0);
+    return Math.max(0, Number(this.media?.episodeCount) || 0);
   }
 
   get episodeLabel(): string {
     if (this.totalEpisodes <= 0) {
       return this.currentEpisode > 0 ? `Episode ${this.currentEpisode}` : 'No episode count';
     }
-    return this.isInLibrary ? `Episode ${this.currentEpisode}/${this.totalEpisodes}` : `${this.totalEpisodes} episodes`;
+    return this.isInLibrary
+      ? `Episode ${this.currentEpisode}/${this.totalEpisodes}`
+      : `${this.totalEpisodes} episodes`;
   }
 
   get progress(): number {
@@ -170,17 +180,17 @@ export class AnimeDetailsPage implements OnInit {
     return total > 0 ? Math.min(100, Math.round((this.currentEpisode / total) * 100)) : 0;
   }
 
-  get seasons(): AnimeSummary[] {
-    return this.anime?.seasons ?? [];
+  get seasons(): EpisodicMediaSummary[] {
+    return this.media?.seasons ?? [];
   }
 
   get hasParent(): boolean {
-    return !!this.anime?.parentAnimeId;
+    return !!this.media?.parentId;
   }
 
   get primaryActionLabel(): string {
     const status = Number(this.libraryEntry?.status ?? 1);
-    if (status === 3) return 'Replay';
+    if (status === 3) return this.config.replayLabel;
     if (this.totalEpisodes > 0 && this.currentEpisode >= this.totalEpisodes) {
       return 'Mark completed';
     }
@@ -211,19 +221,15 @@ export class AnimeDetailsPage implements OnInit {
   }
 
   imageUrl(): string {
-    return mediaImageUrl(this.anime?.image);
+    return mediaImageUrl(this.media?.image);
   }
 
-  seasonImageUrl(season: AnimeSummary): string {
+  seasonImageUrl(season: EpisodicMediaSummary): string {
     return mediaImageUrl(season.image ?? null);
   }
 
-  seasonReleaseLabel(season: AnimeSummary): string {
+  seasonReleaseLabel(season: EpisodicMediaSummary): string {
     return this.formatDate(season.releaseDate);
-  }
-
-  trackBySeason(_: number, season: AnimeSummary): number {
-    return season.id;
   }
 
   onScroll(event: CustomEvent<{ scrollTop: number }>): void {
@@ -235,11 +241,12 @@ export class AnimeDetailsPage implements OnInit {
   }
 
   async addToLibrary(): Promise<void> {
-    if (!this.anime?.id || this.isUpdatingLibrary) return;
+    const mediaId = this.media?.id;
+    if (!mediaId || this.isUpdatingLibrary) return;
     this.isUpdatingLibrary = true;
     try {
       await firstValueFrom(
-        this.myAnimeService.addToLibrary(this.anime.id, {
+        this.adapter.add(mediaId, {
           status: 1,
           timeSpend: null,
           rating: null,
@@ -248,7 +255,7 @@ export class AnimeDetailsPage implements OnInit {
           currentEpisode: 0,
         }),
       );
-      await this.loadAnime(this.anime.id);
+      await this.loadMedia(mediaId);
     } catch {
       // silent
     } finally {
@@ -296,7 +303,7 @@ export class AnimeDetailsPage implements OnInit {
     if (!this.isInLibrary) return;
 
     const sheet = await this.actionSheetController.create({
-      header: this.anime?.name ?? 'Anime options',
+      header: this.media?.name ?? this.config.optionsHeaderFallback,
       cssClass: 'media-action-sheet',
       buttons: [
         {
@@ -321,8 +328,8 @@ export class AnimeDetailsPage implements OnInit {
 
     const alert = await this.alertController.create({
       header: 'Remove from library?',
-      subHeader: this.anime?.name ?? undefined,
-      message: 'Your watch progress and dates for this anime will be permanently deleted.',
+      subHeader: this.media?.name ?? undefined,
+      message: this.config.removeMessage,
       cssClass: 'media-confirm-alert',
       buttons: [
         { text: 'Keep', role: 'cancel' },
@@ -339,48 +346,6 @@ export class AnimeDetailsPage implements OnInit {
     await alert.present();
   }
 
-  private async removeFromLibrary(): Promise<void> {
-    const animeId = this.anime?.id;
-    const myAnimeId = this.myAnimeId;
-    if (!animeId || myAnimeId == null || this.isUpdatingLibrary) return;
-
-    this.isUpdatingLibrary = true;
-    try {
-      await firstValueFrom(this.myAnimeService.delete(myAnimeId));
-      await this.loadAnime(animeId);
-    } catch {
-      // silent
-    } finally {
-      this.isUpdatingLibrary = false;
-    }
-  }
-
-  private async updateLibrary(patch: Partial<LibraryEntryDetails>): Promise<void> {
-    const animeId = this.anime?.id;
-    const myAnimeId = this.myAnimeId;
-    const entry = this.libraryEntry;
-    if (!animeId || myAnimeId == null || entry == null || this.isUpdatingLibrary) return;
-
-    this.isUpdatingLibrary = true;
-    try {
-      await firstValueFrom(
-        this.myAnimeService.updateLibraryEntry(myAnimeId, animeId, {
-          status: patch.status ?? Number(entry.status ?? 1),
-          timeSpend: patch.timeSpend ?? entry.timeSpend ?? null,
-          rating: patch.rating ?? entry.rating ?? null,
-          startDate: patch.startDate ?? this.toIsoString(entry.startDate),
-          endDate: patch.endDate ?? this.toIsoString(entry.endDate),
-          currentEpisode: patch.currentEpisode ?? Number(entry.currentEpisode ?? 0),
-        }),
-      );
-      await this.loadAnime(animeId);
-    } catch {
-      // silent
-    } finally {
-      this.isUpdatingLibrary = false;
-    }
-  }
-
   goBack(): void {
     if (window.history.length > 1) {
       this.location.back();
@@ -390,11 +355,53 @@ export class AnimeDetailsPage implements OnInit {
     void this.router.navigateByUrl('/library');
   }
 
-  private async loadAnime(animeId: number): Promise<void> {
+  private async removeFromLibrary(): Promise<void> {
+    const mediaId = this.media?.id;
+    const libraryEntryId = this.libraryEntryId;
+    if (!mediaId || libraryEntryId == null || this.isUpdatingLibrary) return;
+
+    this.isUpdatingLibrary = true;
     try {
-      this.anime = await firstValueFrom(this.animeService.get(animeId));
+      await firstValueFrom(this.adapter.delete(libraryEntryId));
+      await this.loadMedia(mediaId);
     } catch {
-      this.showError('Anime could not be loaded.');
+      // silent
+    } finally {
+      this.isUpdatingLibrary = false;
+    }
+  }
+
+  private async updateLibrary(patch: Partial<LibraryEntryDetails>): Promise<void> {
+    const mediaId = this.media?.id;
+    const libraryEntryId = this.libraryEntryId;
+    const entry = this.libraryEntry;
+    if (!mediaId || libraryEntryId == null || entry == null || this.isUpdatingLibrary) return;
+
+    this.isUpdatingLibrary = true;
+    try {
+      await firstValueFrom(
+        this.adapter.update(libraryEntryId, mediaId, {
+          status: patch.status ?? Number(entry.status ?? 1),
+          timeSpend: patch.timeSpend ?? entry.timeSpend ?? null,
+          rating: patch.rating ?? entry.rating ?? null,
+          startDate: patch.startDate ?? this.toIsoString(entry.startDate),
+          endDate: patch.endDate ?? this.toIsoString(entry.endDate),
+          currentEpisode: patch.currentEpisode ?? Number(entry.currentEpisode ?? 0),
+        }),
+      );
+      await this.loadMedia(mediaId);
+    } catch {
+      // silent
+    } finally {
+      this.isUpdatingLibrary = false;
+    }
+  }
+
+  private async loadMedia(mediaId: number): Promise<void> {
+    try {
+      this.media = await firstValueFrom(this.adapter.load(mediaId));
+    } catch {
+      this.showError(this.config.loadErrorLabel);
     } finally {
       this.isLoading = false;
     }

@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -31,15 +31,19 @@ type FormState = 'idle' | 'saving' | 'success' | 'error';
   templateUrl: './settings.page.html',
   styleUrls: ['./settings.page.scss'],
   imports: [
-    CommonModule,
     FormsModule,
     RouterLink,
     IonButton,
     IonContent,
-    IonIcon,
-  ],
+    IonIcon
+],
 })
 export class SettingsPage {
+  private profileService = inject(ProfileService);
+  private releaseNotifications = inject(ReleaseNotificationService);
+  private authService = inject(AuthService);
+  private router = inject(Router);
+
   passwordDraft = {
     oldPassword: '',
     newPassword: '',
@@ -54,12 +58,7 @@ export class SettingsPage {
 
   isLoggingOut = false;
 
-  constructor(
-    private profileService: ProfileService,
-    private releaseNotifications: ReleaseNotificationService,
-    private authService: AuthService,
-    private router: Router,
-  ) {
+  constructor() {
     addIcons({
       keyOutline,
       lockClosedOutline,

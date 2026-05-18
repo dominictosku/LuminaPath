@@ -4,54 +4,60 @@
   </ion-refresher>
 
   <main class="dashboard">
-    <section class="hero" *ngIf="!isLoading; else heroLoading">
-      <div class="hero__media">
-        <img [src]="imageFor(featuredItem)" alt="" />
-      </div>
-      <div class="hero__content">
-        <span class="eyebrow">
-          <ion-icon name="sparkles-outline"></ion-icon>
-          Today
-        </span>
-        <h1>{{ featuredItem?.name || 'Your library is ready' }}</h1>
-        <p>
-          {{ featuredItem ? statusLabel(featuredItem) + ' · ' + featuredItem.context : 'Log in and start shaping your media plan.' }}
-        </p>
-
-        <div class="hero__progress" *ngIf="featuredItem">
-          <div class="hero__progress-label">
-            <span>{{ playedLabel(featuredItem) }}</span>
-            <strong>{{ heroProgress }}%</strong>
-          </div>
-          <div class="progress-track">
-            <span [style.width.%]="heroProgress"></span>
-          </div>
+    @if (!isLoading) {
+      <section class="hero">
+        <div class="hero__media">
+          <img [src]="imageFor(featuredItem)" alt="" />
         </div>
-      </div>
-    </section>
-
-    <ng-template #heroLoading>
+        <div class="hero__content">
+          <span class="eyebrow">
+            <ion-icon name="sparkles-outline"></ion-icon>
+            Today
+          </span>
+          <h1>{{ featuredItem?.name || 'Your library is ready' }}</h1>
+          <p>
+            {{ featuredItem ? statusLabel(featuredItem) + ' · ' + featuredItem.context : 'Log in and start shaping your media plan.' }}
+          </p>
+          @if (featuredItem) {
+            <div class="hero__progress">
+              <div class="hero__progress-label">
+                <span>{{ playedLabel(featuredItem) }}</span>
+                <strong>{{ heroProgress }}%</strong>
+              </div>
+              <div class="progress-track">
+                <span [style.width.%]="heroProgress"></span>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    } @else {
       <section class="hero hero--loading">
         <ion-skeleton-text animated></ion-skeleton-text>
       </section>
-    </ng-template>
+    }
 
-    <section class="notice" *ngIf="errorMessage">
-      <ion-icon name="flame-outline"></ion-icon>
-      <span>{{ errorMessage }}</span>
-    </section>
+
+    @if (errorMessage) {
+      <section class="notice">
+        <ion-icon name="flame-outline"></ion-icon>
+        <span>{{ errorMessage }}</span>
+      </section>
+    }
 
     <section class="metric-grid">
-      <article class="metric metric--{{ metric.tone }}" *ngFor="let metric of metrics">
-        <div class="metric__icon">
-          <ion-icon [name]="metric.icon"></ion-icon>
-        </div>
-        <div>
-          <span>{{ metric.label }}</span>
-          <strong>{{ metric.value }}</strong>
-          <small>{{ metric.detail }}</small>
-        </div>
-      </article>
+      @for (metric of metrics; track metric) {
+        <article class="metric metric--{{ metric.tone }}">
+          <div class="metric__icon">
+            <ion-icon [name]="metric.icon"></ion-icon>
+          </div>
+          <div>
+            <span>{{ metric.label }}</span>
+            <strong>{{ metric.value }}</strong>
+            <small>{{ metric.detail }}</small>
+          </div>
+        </article>
+      }
     </section>
 
     <section class="section-block section-block--split">
@@ -77,15 +83,17 @@
       </div>
 
       <div class="focus-grid">
-        <article class="focus-card focus-card--{{ item.tone }}" *ngFor="let item of focusItems; trackBy: trackByFocus">
-          <div class="focus-card__icon">
-            <ion-icon [name]="item.icon"></ion-icon>
-          </div>
-          <div>
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.detail }}</p>
-          </div>
-        </article>
+        @for (item of focusItems; track trackByFocus($index, item)) {
+          <article class="focus-card focus-card--{{ item.tone }}">
+            <div class="focus-card__icon">
+              <ion-icon [name]="item.icon"></ion-icon>
+            </div>
+            <div>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.detail }}</p>
+            </div>
+          </article>
+        }
       </div>
     </section>
 
@@ -100,24 +108,27 @@
         </div>
       </div>
 
-      <div class="activity-list" *ngIf="activityItems.length; else noActivity">
-        <article class="activity-item" *ngFor="let item of activityItems; trackBy: trackByActivity">
-          <div class="activity-item__icon">
-            <ion-icon [name]="item.icon"></ion-icon>
-          </div>
-          <div>
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.detail }}</p>
-          </div>
-        </article>
-      </div>
-
-      <ng-template #noActivity>
+      @if (activityItems.length) {
+        <div class="activity-list">
+          @for (item of activityItems; track trackByActivity($index, item)) {
+            <article class="activity-item">
+              <div class="activity-item__icon">
+                <ion-icon [name]="item.icon"></ion-icon>
+              </div>
+              <div>
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.detail }}</p>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
         <div class="empty-state">
           <ion-icon name="time-outline"></ion-icon>
           <span>No activity yet.</span>
         </div>
-      </ng-template>
+      }
+
     </section>
 
     <section class="section-block">
@@ -132,26 +143,29 @@
         <ion-badge>{{ playingItems.length }}</ion-badge>
       </div>
 
-      <div class="horizontal-list" *ngIf="playingItems.length; else noPlaying">
-        <article class="game-card game-card--large" *ngFor="let item of playingItems; trackBy: trackByItem">
-          <img [src]="imageFor(item)" alt="" />
-          <div class="game-card__body">
-            <ion-badge>{{ item.kind }}</ion-badge>
-            <h3>{{ item.name }}</h3>
-            <p>{{ item.context }} · {{ remainingLabel(item) }}</p>
-            <div class="progress-track">
-              <span [style.width.%]="progressOf(item)"></span>
-            </div>
-          </div>
-        </article>
-      </div>
-
-      <ng-template #noPlaying>
+      @if (playingItems.length) {
+        <div class="horizontal-list">
+          @for (item of playingItems; track trackByItem($index, item)) {
+            <article class="game-card game-card--large">
+              <img [src]="imageFor(item)" alt="" />
+              <div class="game-card__body">
+                <ion-badge>{{ item.kind }}</ion-badge>
+                <h3>{{ item.name }}</h3>
+                <p>{{ item.context }} · {{ remainingLabel(item) }}</p>
+                <div class="progress-track">
+                  <span [style.width.%]="progressOf(item)"></span>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
         <div class="empty-state">
           <ion-icon name="game-controller-outline"></ion-icon>
           <span>No active media yet.</span>
         </div>
-      </ng-template>
+      }
+
     </section>
 
     <section class="section-block">
@@ -165,25 +179,28 @@
         </div>
       </div>
 
-      <div class="release-list" *ngIf="upcomingReleases.length; else noReleases">
-        <article class="release-item" *ngFor="let item of upcomingReleases; trackBy: trackByItem">
-          <div class="release-date">
-            <strong>{{ daysUntil(item) }}</strong>
-            <span>{{ releaseLabel(item) }}</span>
-          </div>
-          <div class="release-info">
-            <h3>{{ item.name }}</h3>
-            <p>{{ item.genre || 'No genre' }} · {{ item.context }}</p>
-          </div>
-        </article>
-      </div>
-
-      <ng-template #noReleases>
+      @if (upcomingReleases.length) {
+        <div class="release-list">
+          @for (item of upcomingReleases; track trackByItem($index, item)) {
+            <article class="release-item">
+              <div class="release-date">
+                <strong>{{ daysUntil(item) }}</strong>
+                <span>{{ releaseLabel(item) }}</span>
+              </div>
+              <div class="release-info">
+                <h3>{{ item.name }}</h3>
+                <p>{{ item.genre || 'No genre' }} · {{ item.context }}</p>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
         <div class="empty-state">
           <ion-icon name="calendar-clear-outline"></ion-icon>
           <span>No upcoming releases in the current list.</span>
         </div>
-      </ng-template>
+      }
+
     </section>
 
     <section class="section-block">
@@ -197,22 +214,25 @@
         </div>
       </div>
 
-      <div class="backlog-list" *ngIf="backlogItems.length; else noBacklog">
-        <article class="backlog-item" *ngFor="let item of backlogItems; trackBy: trackByItem">
-          <div>
-            <h3>{{ item.name }}</h3>
-            <p>{{ item.kind }} · {{ playedLabel(item) }} · {{ remainingLabel(item) }}</p>
-          </div>
-          <strong>{{ item.estimatedHours || 0 }}h</strong>
-        </article>
-      </div>
-
-      <ng-template #noBacklog>
+      @if (backlogItems.length) {
+        <div class="backlog-list">
+          @for (item of backlogItems; track trackByItem($index, item)) {
+            <article class="backlog-item">
+              <div>
+                <h3>{{ item.name }}</h3>
+                <p>{{ item.kind }} · {{ playedLabel(item) }} · {{ remainingLabel(item) }}</p>
+              </div>
+              <strong>{{ item.estimatedHours || 0 }}h</strong>
+            </article>
+          }
+        </div>
+      } @else {
         <div class="empty-state">
           <ion-icon name="checkmark-done-outline"></ion-icon>
           <span>No planned backlog found.</span>
         </div>
-      </ng-template>
+      }
+
     </section>
 
     <section class="section-block">
@@ -227,11 +247,13 @@
       </div>
 
       <div class="library-grid">
-        <article class="mini-card" *ngFor="let item of recentItems; trackBy: trackByItem">
-          <img [src]="imageFor(item)" alt="" />
-          <h3>{{ item.name }}</h3>
-          <p>{{ item.kind }}</p>
-        </article>
+        @for (item of recentItems; track trackByItem($index, item)) {
+          <article class="mini-card">
+            <img [src]="imageFor(item)" alt="" />
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.kind }}</p>
+          </article>
+        }
       </div>
     </section>
   </main>

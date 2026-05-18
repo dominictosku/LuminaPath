@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiEndpointService } from './api-endpoint.service';
 
@@ -17,7 +17,8 @@ export type ChatStreamEvent =
 
 @Injectable({ providedIn: 'root' })
 export class AiChatService {
-  constructor(private apiEndpoint: ApiEndpointService) {}
+  private apiEndpoint = inject(ApiEndpointService);
+
 
   stream(messages: ChatMessage[]): Observable<ChatStreamEvent> {
     return new Observable<ChatStreamEvent>((subscriber) => {

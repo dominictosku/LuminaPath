@@ -1,18 +1,5 @@
-import { CommonModule } from '@angular/common';
-import {
-  AfterViewInit,
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  EventEmitter,
-  Input,
-  NgZone,
-  OnChanges,
-  OnDestroy,
-  Output,
-  SimpleChanges,
-  ViewChild,
-} from '@angular/core';
+
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, NgZone, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -47,9 +34,13 @@ export interface NodeUnlockEvent {
   selector: 'app-skill-tree',
   templateUrl: './skill-tree.component.html',
   styleUrls: ['./skill-tree.component.scss'],
-  imports: [CommonModule, FormsModule, IonIcon],
+  imports: [FormsModule, IonIcon],
 })
 export class SkillTreeComponent implements AfterViewInit, OnChanges, OnDestroy {
+  private audio = inject(SkillTreeAudioService);
+  private zone = inject(NgZone);
+  private cdr = inject(ChangeDetectorRef);
+
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
 
   @Input() branches: SkillTreeBranch[] = [];
@@ -76,11 +67,7 @@ export class SkillTreeComponent implements AfterViewInit, OnChanges, OnDestroy {
   private dragHandlerMove = (e: MouseEvent) => this.onDragMove(e);
   private dragHandlerUp = () => this.onDragUp();
 
-  constructor(
-    private audio: SkillTreeAudioService,
-    private zone: NgZone,
-    private cdr: ChangeDetectorRef,
-  ) {
+  constructor() {
     addIcons({
       closeOutline,
       lockClosedOutline,

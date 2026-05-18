@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { User } from 'src/app/core/auth/models/user.model';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
@@ -18,9 +18,10 @@ export interface PasswordChange {
 
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
-  private readonly httpConfig = { withCredentials: true };
+  private http = inject(HttpClient);
+  private apiEndpoint = inject(ApiEndpointService);
 
-  constructor(private http: HttpClient, private apiEndpoint: ApiEndpointService) {}
+  private readonly httpConfig = { withCredentials: true };
 
   updateProfile(update: ProfileUpdate): Observable<User> {
     return this.http.post<User>(

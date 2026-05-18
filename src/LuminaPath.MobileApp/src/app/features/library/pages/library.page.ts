@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+
+import { Component, OnInit, effect, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -36,8 +36,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Platforms } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
-import { MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
-import { Subscription } from 'rxjs';
+import { MediaMode, MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
 import { MediaLibraryFacade } from '../services/media-library.facade';
 import { MediaItem } from '../models/media-item.model';
 import { MediaLibraryForm } from '../models/media-library-form.model';
@@ -62,7 +61,6 @@ import { LibraryFilterPresetService } from '../services/library-filter-preset.se
   templateUrl: './library.page.html',
   styleUrls: ['./library.page.scss'],
   imports: [
-    CommonModule,
     FormsModule,
     IonButton,
     IonContent,
@@ -79,10 +77,18 @@ import { LibraryFilterPresetService } from '../services/library-filter-preset.se
     IonSelectOption,
     IonSkeletonText,
     LibraryCardComponent,
-    LibraryListRowComponent,
-  ],
+    LibraryListRowComponent
+],
 })
-export class LibraryPage implements OnInit, OnDestroy {
+export class LibraryPage implements OnInit {
+  private mediaLibrary = inject(MediaLibraryFacade);
+  private releaseNotifications = inject(ReleaseNotificationService);
+  private router = inject(Router);
+  private mediaModeService = inject(MediaModeService);
+  readonly mediaView = inject(MediaLibraryViewService);
+  private libraryIntelligence = inject(LibraryIntelligenceService);
+  private libraryFilterPresets = inject(LibraryFilterPresetService);
+
   games: MediaItem[] = [];
   filteredGames: MediaItem[] = [];
   searchTerm = '';
@@ -123,7 +129,6 @@ export class LibraryPage implements OnInit, OnDestroy {
   currentPage = 1;
   totalPages = 1;
 
-  private mediaModeSub?: Subscription;
   private readonly pageSize = 24;
 
   readonly platforms = Platforms;
@@ -137,16 +142,19 @@ export class LibraryPage implements OnInit, OnDestroy {
     { label: 'Best to finish', value: 'best-finish' },
   ];
 
-  constructor(
-    private mediaLibrary: MediaLibraryFacade,
-    private releaseNotifications: ReleaseNotificationService,
-    private router: Router,
-    private mediaModeService: MediaModeService,
-    public readonly mediaView: MediaLibraryViewService,
-    private libraryIntelligence: LibraryIntelligenceService,
-    private libraryFilterPresets: LibraryFilterPresetService,
-  ) {
-    this.mediaMode = this.mediaModeService.current;
+  constructor() {
+    this.mediaMode = this.mediaModeService.mode();
+    let previousModeId: MediaMode = this.mediaMode.id;
+    effect(() => {
+      const mode = this.mediaModeService.mode();
+      this.mediaMode = mode;
+      if (mode.id !== previousModeId) {
+        previousModeId = mode.id;
+        this.clearFilters(false);
+        this.loadSavedPresets();
+        this.loadGames();
+      }
+    });
     addIcons({
       addOutline,
       albumsOutline,
@@ -164,20 +172,7 @@ export class LibraryPage implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadSavedPresets();
-    this.mediaModeSub = this.mediaModeService.mode$.subscribe((mode) => {
-      const changed = mode.id !== this.mediaMode.id;
-      this.mediaMode = mode;
-      if (changed) {
-        this.clearFilters(false);
-        this.loadSavedPresets();
-        this.loadGames();
-      }
-    });
     this.loadGames();
-  }
-
-  ngOnDestroy(): void {
-    this.mediaModeSub?.unsubscribe();
   }
 
   loadGames(event?: CustomEvent) {

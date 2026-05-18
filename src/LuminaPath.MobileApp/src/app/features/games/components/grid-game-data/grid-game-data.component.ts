@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Game } from '../../models/games.model';
 import { GameService } from 'src/app/features/games/services/game.service';
 import { IonicFunctionsService } from 'src/app/shared/services/ionic-functions.service';
@@ -15,8 +15,11 @@ import { mediaImageUrl } from 'src/app/shared/utils/media-url';
     imports: [IonFab, IonFabButton, IonIcon]
 })
 export class GridGameDataComponent implements OnInit {
+  private gameService = inject(GameService);
+  private ionicFunctions = inject(IonicFunctionsService);
 
-  constructor(private gameService: GameService, private ionicFunctions: IonicFunctionsService) {
+
+  constructor() {
     addIcons({ create });
   }
 

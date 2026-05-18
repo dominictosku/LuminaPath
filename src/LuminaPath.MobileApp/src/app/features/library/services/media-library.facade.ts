@@ -1,8 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { PaginateResult } from 'src/app/core/entities/paginatedResult';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
-import { MediaModeService } from 'src/app/shared/services/media-mode.service';
+import { MediaMode, MediaModeService } from 'src/app/shared/services/media-mode.service';
 import { Game } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { MyGameService } from '../../my-games/services/my-game.service';
@@ -17,68 +17,72 @@ import { SeriesService } from '../../series/services/series.service';
 import { MySeriesService } from '../../series/services/my-series.service';
 import { LibraryEntryDetails, MediaItem, UserMediaEntry } from '../models/media-item.model';
 
+type MediaStrategy = {
+  list(filter?: MediaFilter): Observable<PaginateResult<MediaItem>>;
+  add(mediaId: number, details: LibraryEntryDetails): Observable<UserMediaEntry>;
+  update(libraryEntryId: number, mediaId: number, details: LibraryEntryDetails): Observable<UserMediaEntry>;
+};
+
 @Injectable({
   providedIn: 'root',
 })
 export class MediaLibraryFacade {
-  constructor(
-    private readonly mediaMode: MediaModeService,
-    private readonly gameService: GameService,
-    private readonly myGameService: MyGameService,
-    private readonly animeService: AnimeService,
-    private readonly myAnimeService: MyAnimeService,
-    private readonly movieService: MovieService,
-    private readonly myMovieService: MyMovieService,
-    private readonly seriesService: SeriesService,
-    private readonly mySeriesService: MySeriesService,
-  ) {
+  private readonly mediaMode = inject(MediaModeService);
+
+  private readonly strategies: Record<MediaMode, MediaStrategy>;
+
+  constructor() {
+    const gameService = inject(GameService);
+    const myGameService = inject(MyGameService);
+    const animeService = inject(AnimeService);
+    const myAnimeService = inject(MyAnimeService);
+    const movieService = inject(MovieService);
+    const myMovieService = inject(MyMovieService);
+    const seriesService = inject(SeriesService);
+    const mySeriesService = inject(MySeriesService);
+
+    this.strategies = {
+      games: {
+        list: (filter) => gameService.getAll(filter).pipe(map((page) => this.mapPage(page, (game) => this.mapGame(game)))),
+        add: (id, details) => myGameService.addToLibrary(id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
+        update: (libId, id, details) => myGameService.updateLibraryEntry(libId, id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
+      },
+      animes: {
+        list: (filter) => animeService.getAll(filter).pipe(map((page) => this.mapPage(page, (anime) => this.mapAnime(anime)))),
+        add: (id, details) => myAnimeService.addToLibrary(id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
+        update: (libId, id, details) => myAnimeService.updateLibraryEntry(libId, id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
+      },
+      movies: {
+        list: (filter) => movieService.getAll(filter).pipe(map((page) => this.mapPage(page, (movie) => this.mapMovie(movie)))),
+        add: (id, details) => myMovieService.addToLibrary(id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
+        update: (libId, id, details) => myMovieService.updateLibraryEntry(libId, id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
+      },
+      series: {
+        list: (filter) => seriesService.getAll(filter).pipe(map((page) => this.mapPage(page, (series) => this.mapSeries(series)))),
+        add: (id, details) => mySeriesService.addToLibrary(id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
+        update: (libId, id, details) => mySeriesService.updateLibraryEntry(libId, id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
+      },
+    };
   }
 
   getAll(mediaFilter?: MediaFilter): Observable<PaginateResult<MediaItem>> {
-    switch (this.mediaMode.current.id) {
-      case 'animes':
-        return this.animeService.getAll(mediaFilter).pipe(map((result) => this.mapPage(result, (anime) => this.mapAnime(anime))));
-      case 'movies':
-        return this.movieService.getAll(mediaFilter).pipe(map((result) => this.mapPage(result, (movie) => this.mapMovie(movie))));
-      case 'series':
-        return this.seriesService.getAll(mediaFilter).pipe(map((result) => this.mapPage(result, (series) => this.mapSeries(series))));
-      case 'games':
-      default:
-        return this.gameService.getAll(mediaFilter).pipe(map((result) => this.mapPage(result, (game) => this.mapGame(game))));
-    }
+    return this.currentStrategy().list(mediaFilter);
   }
 
   addToLibrary(mediaId: number, details: LibraryEntryDetails): Observable<UserMediaEntry> {
-    switch (this.mediaMode.current.id) {
-      case 'animes':
-        return this.myAnimeService.addToLibrary(mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
-      case 'movies':
-        return this.myMovieService.addToLibrary(mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
-      case 'series':
-        return this.mySeriesService.addToLibrary(mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
-      case 'games':
-      default:
-        return this.myGameService.addToLibrary(mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
-    }
+    return this.currentStrategy().add(mediaId, details);
   }
 
   updateLibraryEntry(libraryEntryId: number, mediaId: number, details: LibraryEntryDetails): Observable<UserMediaEntry> {
-    switch (this.mediaMode.current.id) {
-      case 'animes':
-        return this.myAnimeService.updateLibraryEntry(libraryEntryId, mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
-      case 'movies':
-        return this.myMovieService.updateLibraryEntry(libraryEntryId, mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
-      case 'series':
-        return this.mySeriesService.updateLibraryEntry(libraryEntryId, mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
-      case 'games':
-      default:
-        return this.myGameService.updateLibraryEntry(libraryEntryId, mediaId, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry)));
-    }
+    return this.currentStrategy().update(libraryEntryId, mediaId, details);
   }
 
   detailsRoute(item: MediaItem): unknown[] {
-    const mode = this.mediaMode.current.id;
-    return ['/library', mode, item.id];
+    return ['/library', this.mediaMode.mode().id, item.id];
+  }
+
+  private currentStrategy(): MediaStrategy {
+    return this.strategies[this.mediaMode.mode().id];
   }
 
   private mapPage<T>(result: PaginateResult<T>, mapper: (item: T) => MediaItem): PaginateResult<MediaItem> {

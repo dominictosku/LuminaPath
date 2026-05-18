@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ToastController } from '@ionic/angular';
 import { ModalController } from '@ionic/angular';
 
@@ -6,8 +6,9 @@ import { ModalController } from '@ionic/angular';
   providedIn: 'root'
 })
 export class IonicFunctionsService {
+  private toastController = inject(ToastController);
+  private modalCtrl = inject(ModalController);
 
-  constructor(private toastController: ToastController, private modalCtrl: ModalController) { }
 
   async openModal(Modal: any, props: any) {
     const modal = await this.modalCtrl.create({

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, effect, inject } from '@angular/core';
 import { IonIcon, IonHeader } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -23,7 +23,7 @@ import {
 } from 'ionicons/icons';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
-import { CommonModule } from '@angular/common';
+
 import { Subscription, filter, finalize } from 'rxjs';
 import { NotificationItem, NotificationsService } from 'src/app/shared/services/notifications.service';
 import { shouldHideAppNavigation } from 'src/app/shared/utils/app-shell-navigation';
@@ -33,9 +33,14 @@ import { MediaMode, MediaModeOption, MediaModeService } from 'src/app/shared/ser
     selector: 'app-nav-bar',
     templateUrl: './nav-bar.component.html',
     styleUrls: ['./nav-bar.component.scss'],
-    imports: [CommonModule, RouterLink, IonIcon, IonHeader]
+    imports: [RouterLink, IonIcon, IonHeader]
 })
 export class NavBarComponent implements OnInit, OnDestroy {
+  private authService = inject(AuthService);
+  router = inject(Router);
+  private notificationsService = inject(NotificationsService);
+  private mediaModeService = inject(MediaModeService);
+
   isLoggingOut = false;
   openMenu: 'media' | 'notifications' | 'apps' | 'profile' | null = null;
   notifications: NotificationItem[] = [];
@@ -45,16 +50,13 @@ export class NavBarComponent implements OnInit, OnDestroy {
 
   private routerSub?: Subscription;
   private notificationsSub?: Subscription;
-  private mediaModeSub?: Subscription;
 
-  constructor(
-    private authService: AuthService,
-    public router: Router,
-    private notificationsService: NotificationsService,
-    private mediaModeService: MediaModeService,
-  ) {
-    this.mediaMode = this.mediaModeService.current;
+  constructor() {
+    this.mediaMode = this.mediaModeService.mode();
     this.mediaModes = this.mediaModeService.options;
+    effect(() => {
+      this.mediaMode = this.mediaModeService.mode();
+    });
     addIcons({
       calendarClearOutline,
       barChartOutline,
@@ -85,15 +87,11 @@ export class NavBarComponent implements OnInit, OnDestroy {
         this.closeMenus();
         this.refreshNotifications();
       });
-    this.mediaModeSub = this.mediaModeService.mode$.subscribe((mode) => {
-      this.mediaMode = mode;
-    });
   }
 
   ngOnDestroy() {
     this.routerSub?.unsubscribe();
     this.notificationsSub?.unsubscribe();
-    this.mediaModeSub?.unsubscribe();
   }
 
   get showShellNavigation() {

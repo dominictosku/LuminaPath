@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewChecked, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonBadge,
@@ -56,6 +56,10 @@ type Tab = 'friends' | 'pending' | 'find';
   ],
 })
 export class FriendsPage implements OnInit, OnDestroy, AfterViewChecked {
+  private friendsService = inject(FriendsService);
+  private messagesService = inject(DirectMessagesService);
+  private hub = inject(MessagesHubService);
+
   @ViewChild('chatMessages') private chatMessagesRef?: ElementRef<HTMLDivElement>;
 
   tab: Tab = 'friends';
@@ -84,11 +88,7 @@ export class FriendsPage implements OnInit, OnDestroy, AfterViewChecked {
   private dragStart: { pointerId: number; x: number; y: number; left: number; top: number } | null = null;
   private shouldScrollChat = false;
 
-  constructor(
-    private friendsService: FriendsService,
-    private messagesService: DirectMessagesService,
-    private hub: MessagesHubService,
-  ) {
+  constructor() {
     addIcons({
       chatbubbleEllipsesOutline,
       checkmarkOutline,
