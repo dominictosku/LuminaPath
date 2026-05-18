@@ -4,6 +4,7 @@ using LuminaPath.Core.Models.ThirdParty;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.Imports;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -18,10 +19,12 @@ namespace LuminaPath.Infrastructure.Services.ThirdParty
     public class PSNService(
         HttpClient httpClient,
         GameImportPipeline importPipeline,
+        IOptions<PsnOptions> options,
         ILogger<PSNService> logger) : IPsnTrophyClient
     {
         private readonly HttpClient _httpClient = httpClient;
         private readonly GameImportPipeline _importPipeline = importPipeline;
+        private readonly PsnOptions _options = options.Value;
         private readonly ILogger<PSNService> _logger = logger;
         string bearerToken = string.Empty;
 
@@ -36,16 +39,16 @@ namespace LuminaPath.Infrastructure.Services.ThirdParty
                 return string.Empty;
             }
 
-            string authorizationUrl = "https://ca.account.sony.com/api/authz/v3/oauth/authorize";
-            string tokenUrl = "https://ca.account.sony.com/api/authz/v3/oauth/token";
+            var authorizationUrl = $"{_options.AuthorizationBaseUrl.TrimEnd('/')}/oauth/authorize";
+            var tokenUrl = $"{_options.AuthorizationBaseUrl.TrimEnd('/')}/oauth/token";
 
             var queryParams = new Dictionary<string, string>
             {
                 { "access_type", "offline" },
-                { "client_id", "09515159-7237-4370-9b40-3806e67c0891" },
+                { "client_id", _options.ClientId },
                 { "response_type", "code" },
-                { "scope", "psn:mobile.v2.core psn:clientapp" },
-                { "redirect_uri", "com.scee.psxandroid.scecompcall://redirect" }
+                { "scope", _options.Scope },
+                { "redirect_uri", _options.RedirectUri }
             };
 
             var requestUri = authorizationUrl + "?" + string.Join("&", queryParams.Select(kvp => $"{kvp.Key}={HttpUtility.UrlEncode(kvp.Value)}"));
@@ -75,7 +78,7 @@ namespace LuminaPath.Infrastructure.Services.ThirdParty
                 var formContent = new FormUrlEncodedContent(new[]
                 {
                 new KeyValuePair<string, string>("code", code),
-                new KeyValuePair<string, string>("redirect_uri", "com.scee.psxandroid.scecompcall://redirect"),
+                new KeyValuePair<string, string>("redirect_uri", _options.RedirectUri),
                 new KeyValuePair<string, string>("grant_type", "authorization_code"),
                 new KeyValuePair<string, string>("token_format", "jwt")
                 });
@@ -85,7 +88,7 @@ namespace LuminaPath.Infrastructure.Services.ThirdParty
                     Content = formContent
                 };
 
-                tokenRequest.Headers.Add("Authorization", "Basic MDk1MTUxNTktNzIzNy00MzcwLTliNDAtMzgwNmU2N2MwODkxOnVjUGprYTV0bnRCMktxc1A=");
+                tokenRequest.Headers.Add("Authorization", _options.TokenAuthorizationHeader);
 
                 using var tokenResponse = await _httpClient.SendAsync(tokenRequest);
 
@@ -147,7 +150,7 @@ namespace LuminaPath.Infrastructure.Services.ThirdParty
 
         public async Task<ProfileData> GetProfile(string userName)
         {
-            string apiUrl = $"https://us-prof.np.community.playstation.net/userProfile/v1/users/{userName}/profile2?fields=accountId,onlineId,currentOnlineId";
+            string apiUrl = $"{_options.ProfileBaseUrl.TrimEnd('/')}/userProfile/v1/users/{userName}/profile2?fields=accountId,onlineId,currentOnlineId";
             var responseData = await MakeRequest(apiUrl);
             ProfileData profile = JsonSerializer.Deserialize<ProfileData>(responseData) ?? new();
             return profile;
@@ -155,7 +158,7 @@ namespace LuminaPath.Infrastructure.Services.ThirdParty
 
         public async Task<ProfileData> GetMyProfile()
         {
-            string apiUrl = $"https://us-prof.np.community.playstation.net/userProfile/v1/users/me/profile2?fields=accountId,onlineId,currentOnlineId";
+            string apiUrl = $"{_options.ProfileBaseUrl.TrimEnd('/')}/userProfile/v1/users/me/profile2?fields=accountId,onlineId,currentOnlineId";
             var responseData = await MakeRequest(apiUrl);
             ProfileData profile = JsonSerializer.Deserialize<ProfileData>(responseData) ?? new();
             return profile;
@@ -164,7 +167,7 @@ namespace LuminaPath.Infrastructure.Services.ThirdParty
         public async Task<GameData> GetTitles(int offset, string accountId)
         {
             var input = $"?limit=200&offset={offset}";
-            string apiUrl = $"https://m.np.playstation.com/api/gamelist/v2/users/{accountId}/titles{input}";
+            string apiUrl = $"{_options.ApiBaseUrl.TrimEnd('/')}/gamelist/v2/users/{accountId}/titles{input}";
             var responseData = await MakeRequest(apiUrl);
             GameData gameData = JsonSerializer.Deserialize<GameData>(responseData) ?? new();
             return gameData;
@@ -173,7 +176,7 @@ namespace LuminaPath.Infrastructure.Services.ThirdParty
 
         public async Task<TrophyProfileData> GetUserProfileTrophy(string accountId)
         {
-            string apiUrl = $"https://m.np.playstation.com/api/trophy/v1/users/{accountId}/trophySummary";
+            string apiUrl = $"{_options.ApiBaseUrl.TrimEnd('/')}/trophy/v1/users/{accountId}/trophySummary";
             var responseData = await MakeRequest(apiUrl);
             TrophyProfileData trophyData = JsonSerializer.Deserialize<TrophyProfileData>(responseData) ?? new();
             return trophyData;
@@ -182,7 +185,7 @@ namespace LuminaPath.Infrastructure.Services.ThirdParty
 
         public async Task<TrophyData> GetUserTrophyTitles(string accountId)
         {
-            string apiUrl = $"https://m.np.playstation.com/api/trophy/v1/users/{accountId}/trophyTitles";
+            string apiUrl = $"{_options.ApiBaseUrl.TrimEnd('/')}/trophy/v1/users/{accountId}/trophyTitles";
             var responseData = await MakeRequest(apiUrl);
             TrophyData trophyData = JsonSerializer.Deserialize<TrophyData>(responseData) ?? new();
             return trophyData;
@@ -190,7 +193,7 @@ namespace LuminaPath.Infrastructure.Services.ThirdParty
 
         public async Task<TitleTrophyData> GetTitleTrophies(string npCommunicationId, string? npServiceName = null)
         {
-            var apiUrl = $"https://m.np.playstation.com/api/trophy/v1/npCommunicationIds/{npCommunicationId}/trophyGroups/all/trophies";
+            var apiUrl = $"{_options.ApiBaseUrl.TrimEnd('/')}/trophy/v1/npCommunicationIds/{npCommunicationId}/trophyGroups/all/trophies";
             apiUrl = AppendNpServiceName(apiUrl, npServiceName);
             var responseData = await MakeRequest(apiUrl);
             return JsonSerializer.Deserialize<TitleTrophyData>(responseData) ?? new();
@@ -198,7 +201,7 @@ namespace LuminaPath.Infrastructure.Services.ThirdParty
 
         public async Task<UserTrophyData> GetUserTrophiesEarnedForTitle(string accountId, string npCommunicationId, string? npServiceName = null)
         {
-            var apiUrl = $"https://m.np.playstation.com/api/trophy/v1/users/{accountId}/npCommunicationIds/{npCommunicationId}/trophyGroups/all/trophies";
+            var apiUrl = $"{_options.ApiBaseUrl.TrimEnd('/')}/trophy/v1/users/{accountId}/npCommunicationIds/{npCommunicationId}/trophyGroups/all/trophies";
             apiUrl = AppendNpServiceName(apiUrl, npServiceName);
             var responseData = await MakeRequest(apiUrl);
             return JsonSerializer.Deserialize<UserTrophyData>(responseData) ?? new();

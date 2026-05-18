@@ -9,6 +9,12 @@ internal static class IdentityServiceCollectionExtensions
 {
     public static IServiceCollection AddLuminaIdentity(this IServiceCollection services, IConfiguration config)
     {
+        services.AddOptions<AuthCookieOptions>()
+            .Bind(config.GetSection(AuthCookieOptions.SectionName))
+            .Validate(AuthCookieOptions.HasValidSameSiteMode, "Auth:CookieSameSite must be a valid SameSiteMode value.")
+            .Validate(AuthCookieOptions.HasValidCookieSecurePolicy, "Auth:CookieSecurePolicy must be a valid CookieSecurePolicy value.")
+            .ValidateOnStart();
+
         services.AddAuthorization();
         services.AddIdentityApiEndpoints<LuminaUser>(options =>
         {
@@ -32,26 +38,13 @@ internal static class IdentityServiceCollectionExtensions
             .AddSignInManager()
             .AddDefaultTokenProviders();
 
+        var authCookieOptions = AuthCookieOptions.FromConfiguration(config);
         services.ConfigureApplicationCookie(options =>
         {
-            options.Cookie.SameSite = ParseSameSiteMode(config["Auth:CookieSameSite"], SameSiteMode.None);
-            options.Cookie.SecurePolicy = ParseCookieSecurePolicy(config["Auth:CookieSecurePolicy"], CookieSecurePolicy.Always);
+            options.Cookie.SameSite = authCookieOptions.GetSameSiteMode();
+            options.Cookie.SecurePolicy = authCookieOptions.GetCookieSecurePolicy();
         });
 
         return services;
-    }
-
-    private static SameSiteMode ParseSameSiteMode(string? value, SameSiteMode fallback)
-    {
-        return Enum.TryParse<SameSiteMode>(value, ignoreCase: true, out var parsed)
-            ? parsed
-            : fallback;
-    }
-
-    private static CookieSecurePolicy ParseCookieSecurePolicy(string? value, CookieSecurePolicy fallback)
-    {
-        return Enum.TryParse<CookieSecurePolicy>(value, ignoreCase: true, out var parsed)
-            ? parsed
-            : fallback;
     }
 }

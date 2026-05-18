@@ -91,16 +91,19 @@ namespace LuminaPath.Infrastructure
 
         private static void AddCache(IServiceCollection services, IConfiguration config)
         {
-            var redisConnection = ConfigurationValues.FirstNonEmpty(
-                config.GetConnectionString("Redis"),
-                config["Redis:ConnectionString"],
-                config["REDIS_CONNECTIONSTRING"],
-                "localhost:6379");
+            services.AddOptions<RedisOptions>()
+                .Bind(config.GetSection(RedisOptions.SectionName))
+                .PostConfigure(options => RedisOptions.ApplyFallbacks(options, config))
+                .Validate(options => !string.IsNullOrWhiteSpace(options.ConnectionString), "Redis connection string is required.")
+                .Validate(options => !string.IsNullOrWhiteSpace(options.InstanceName), "Redis instance name is required.")
+                .ValidateOnStart();
+
+            var redisOptions = RedisOptions.FromConfiguration(config);
 
             services.AddStackExchangeRedisCache(options =>
             {
-                options.Configuration = redisConnection;
-                options.InstanceName = "LuminaPath:";
+                options.Configuration = redisOptions.ConnectionString;
+                options.InstanceName = redisOptions.InstanceName;
             });
         }
 

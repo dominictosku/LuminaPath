@@ -8,6 +8,7 @@ using LuminaPath.Infrastructure.Services.Imports;
 using LuminaPath.Infrastructure.Services.ThirdParty;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace Test.Services
@@ -73,6 +74,7 @@ namespace Test.Services
             return new PSNService(
                 new HttpClient(),
                 new GameImportPipeline(dbContextFactory),
+                Options.Create(new PsnOptions()),
                 new Mock<ILogger<PSNService>>().Object);
         }
 

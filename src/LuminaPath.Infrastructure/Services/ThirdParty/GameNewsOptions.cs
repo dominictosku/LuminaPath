@@ -11,4 +11,18 @@ public sealed class GameNewsOptions
     public string GoogleNewsBaseUrl { get; set; } = "https://news.google.com/rss/search";
     public string GoogleNewsLocale { get; set; } = "en-US";
     public string GoogleNewsCountry { get; set; } = "US";
+
+    internal static bool HasValidRanges(GameNewsOptions options)
+    {
+        return options.CacheTtlHours is >= 1 and <= 168
+            && options.MaxItems is >= 1 and <= 100
+            && options.SteamMaxLength is >= 120 and <= 5000;
+    }
+
+    internal static bool HasValidGoogleNewsSettings(GameNewsOptions options)
+    {
+        return LuminaPath.Infrastructure.Configuration.InfrastructureOptionValidation.IsHttpUrl(options.GoogleNewsBaseUrl)
+            && !string.IsNullOrWhiteSpace(options.GoogleNewsLocale)
+            && !string.IsNullOrWhiteSpace(options.GoogleNewsCountry);
+    }
 }

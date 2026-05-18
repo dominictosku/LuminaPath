@@ -7,7 +7,12 @@ internal static class BackgroundJobServiceCollectionExtensions
 {
     public static IServiceCollection AddBackgroundJobServices(this IServiceCollection services, IConfiguration config)
     {
-        services.Configure<BackgroundJobOptions>(config.GetSection(BackgroundJobOptions.SectionName));
+        services.AddOptions<BackgroundJobOptions>()
+            .Bind(config.GetSection(BackgroundJobOptions.SectionName))
+            .Validate(
+                BackgroundJobOptions.HasValidRanges,
+                "BackgroundJobs intervals and retention values must be within supported ranges.")
+            .ValidateOnStart();
         services.AddSingleton<IBackgroundJobQueue, BackgroundJobQueue>();
         services.AddSingleton<IBackgroundJobCancellationRegistry, BackgroundJobCancellationRegistry>();
         services.AddScoped<BackgroundJobSettingsResolver>();
