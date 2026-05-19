@@ -1,15 +1,20 @@
+using LuminaPath;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Controllers;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace LuminaPath.Tests.Infrastructure;
 
@@ -99,6 +104,47 @@ public class RouteAndDependencyInjectionTests
     }
 
     [Fact]
+    public async Task UseBlazor_MapsAnonymousBrowserFallback()
+    {
+        await using var app = BuildBlazorRoutedApp();
+
+        var endpoint = GetRouteEndpoints(app)
+            .SingleOrDefault(endpoint => string.Equals(
+                NormalizeRoute(endpoint.RoutePattern.RawText),
+                "{*path:nonfile}",
+                StringComparison.OrdinalIgnoreCase));
+
+        Assert.NotNull(endpoint);
+        Assert.True(AllowsAnonymous(endpoint!));
+    }
+
+    [Fact]
+    public async Task ApplicationCookie_RedirectsBrowserChallengesAndKeepsApiStatusCodes()
+    {
+        var services = CreateServices();
+
+        await using var provider = services.BuildServiceProvider(validateScopes: true);
+        var options = provider.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>()
+            .Get(IdentityConstants.ApplicationScheme);
+
+        Assert.Equal("/Account/Login", options.LoginPath);
+        Assert.Equal("/Account/AccessDenied", options.AccessDeniedPath);
+
+        var apiLoginContext = CreateRedirectContext(provider, options, "/api/Games", "/Account/Login?ReturnUrl=%2Fapi%2FGames");
+        await options.Events.RedirectToLogin(apiLoginContext);
+        Assert.Equal(StatusCodes.Status401Unauthorized, apiLoginContext.Response.StatusCode);
+
+        var apiAccessDeniedContext = CreateRedirectContext(provider, options, "/api/admin/users", "/Account/AccessDenied?ReturnUrl=%2Fapi%2Fadmin%2Fusers");
+        await options.Events.RedirectToAccessDenied(apiAccessDeniedContext);
+        Assert.Equal(StatusCodes.Status403Forbidden, apiAccessDeniedContext.Response.StatusCode);
+
+        var browserLoginContext = CreateRedirectContext(provider, options, "/Admin/Overview", "/Account/Login?ReturnUrl=%2FAdmin%2FOverview");
+        await options.Events.RedirectToLogin(browserLoginContext);
+        Assert.Equal(StatusCodes.Status302Found, browserLoginContext.Response.StatusCode);
+        Assert.Equal("/Account/Login?ReturnUrl=%2FAdmin%2FOverview", browserLoginContext.Response.Headers.Location);
+    }
+
+    [Fact]
     public async Task AddInfrastructure_CanActivateEveryConcreteApiController()
     {
         var services = CreateServices();
@@ -133,6 +179,28 @@ public class RouteAndDependencyInjectionTests
 
         var app = builder.Build();
         app.ConfigureServer();
+        return app;
+    }
+
+    private static WebApplication BuildBlazorRoutedApp()
+    {
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            ApplicationName = typeof(Program).Assembly.GetName().Name,
+            EnvironmentName = Environments.Production,
+            ContentRootPath = Directory.GetCurrentDirectory()
+        });
+
+        builder.Configuration.AddInMemoryCollection(CreateConfigurationValues());
+        builder.Services.AddScoped<IObjectMapper, ObjectMapper>();
+        builder.Services
+            .AddInfrastructure(builder.Configuration)
+            .AddServer()
+            .AddBlazor();
+
+        var app = builder.Build();
+        app.ConfigureServer();
+        app.UseBlazor();
         return app;
     }
 
@@ -257,6 +325,26 @@ public class RouteAndDependencyInjectionTests
         {
             return (controllerType, ex);
         }
+    }
+
+    private static RedirectContext<CookieAuthenticationOptions> CreateRedirectContext(
+        IServiceProvider services,
+        CookieAuthenticationOptions options,
+        string path,
+        string redirectUri)
+    {
+        var httpContext = new DefaultHttpContext
+        {
+            RequestServices = services
+        };
+        httpContext.Request.Path = path;
+
+        return new RedirectContext<CookieAuthenticationOptions>(
+            httpContext,
+            new AuthenticationScheme(IdentityConstants.ApplicationScheme, null, typeof(CookieAuthenticationHandler)),
+            options,
+            new AuthenticationProperties(),
+            redirectUri);
     }
 
     private static Dictionary<string, string?> CreateConfigurationValues()

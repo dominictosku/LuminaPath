@@ -1,0 +1,41 @@
+@page "/Account/AccessDenied"
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+
+<PageTitle>Access denied - LuminaPath</PageTitle>
+
+<section class="account-status">
+    <div class="account-status__icon">
+        <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" />
+    </div>
+    <p class="account-status__kicker">Access denied</p>
+    <h1>You do not have permission to open this page.</h1>
+    <p class="account-status__copy">
+        Your session is valid, but this account is missing the required permission for the requested area.
+    </p>
+
+    @if (!string.IsNullOrWhiteSpace(ReturnUrl))
+    {
+        <div class="account-status__path">@ReturnUrl</div>
+    }
+
+    <div class="account-status__actions">
+        <MudButton Href="/"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Home">
+            Home
+        </MudButton>
+        <MudButton Href="/Account/Login"
+                   Variant="Variant.Outlined"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Login">
+            Sign in again
+        </MudButton>
+    </div>
+</section>
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+}

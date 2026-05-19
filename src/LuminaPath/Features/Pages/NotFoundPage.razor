@@ -1,0 +1,46 @@
+@page "/NotFound"
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+
+<PageTitle>Page not found - LuminaPath</PageTitle>
+
+<section class="not-found-shell" aria-labelledby="not-found-title">
+    <div class="not-found-panel">
+        <div class="not-found-code">404</div>
+        <div class="not-found-content">
+            <p class="not-found-kicker">Page not found</p>
+            <h1 id="not-found-title">This path is not available.</h1>
+            <p class="not-found-copy">
+                The page may have moved, the address may be wrong, or the route no longer exists.
+            </p>
+
+            @if (!string.IsNullOrWhiteSpace(Path))
+            {
+                <div class="not-found-path">
+                    <MudIcon Icon="@Icons.Material.Filled.LinkOff" Size="Size.Small" />
+                    <span>@Path</span>
+                </div>
+            }
+
+            <div class="not-found-actions">
+                <MudButton Href="/"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Home">
+                    Home
+                </MudButton>
+                <MudButton Href="/Account/Login"
+                           Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Login">
+                    Sign in
+                </MudButton>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "path")]
+    private string? Path { get; set; }
+}

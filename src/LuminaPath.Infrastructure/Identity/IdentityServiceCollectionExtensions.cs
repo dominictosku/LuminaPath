@@ -41,10 +41,43 @@ internal static class IdentityServiceCollectionExtensions
         var authCookieOptions = AuthCookieOptions.FromConfiguration(config);
         services.ConfigureApplicationCookie(options =>
         {
+            options.LoginPath = "/Account/Login";
+            options.AccessDeniedPath = "/Account/AccessDenied";
             options.Cookie.SameSite = authCookieOptions.GetSameSiteMode();
             options.Cookie.SecurePolicy = authCookieOptions.GetCookieSecurePolicy();
+            options.Events.OnRedirectToLogin = context =>
+            {
+                if (ShouldReturnStatusCode(context.Request))
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return Task.CompletedTask;
+                }
+
+                context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            };
+            options.Events.OnRedirectToAccessDenied = context =>
+            {
+                if (ShouldReturnStatusCode(context.Request))
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    return Task.CompletedTask;
+                }
+
+                context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            };
         });
 
         return services;
+    }
+
+    private static bool ShouldReturnStatusCode(HttpRequest request)
+    {
+        return request.Path.StartsWithSegments("/api")
+            || request.Path.StartsWithSegments("/hubs")
+            || request.Path.StartsWithSegments("/_blazor")
+            || request.Path.StartsWithSegments("/_framework")
+            || request.Path.StartsWithSegments("/_content");
     }
 }

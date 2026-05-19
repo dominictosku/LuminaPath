@@ -1,0 +1,60 @@
+.account-status {
+    display: grid;
+    gap: 12px;
+    max-width: 680px;
+}
+
+.account-status__icon {
+    display: grid;
+    width: 56px;
+    height: 56px;
+    place-items: center;
+    border: 1px solid rgba(147, 197, 253, 0.24);
+    border-radius: 8px;
+    color: #93c5fd;
+    background: rgba(15, 35, 62, 0.78);
+}
+
+.account-status__kicker {
+    margin: 12px 0 0;
+    color: #93c5fd;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.account-status h1 {
+    margin: 0;
+    max-width: 620px;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1.05;
+}
+
+.account-status__copy {
+    margin: 4px 0 0;
+    max-width: 620px;
+    color: #bfdbfe;
+    line-height: 1.6;
+}
+
+.account-status__path {
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 8px;
+    padding: 10px 12px;
+    border: 1px solid rgba(147, 197, 253, 0.18);
+    border-radius: 8px;
+    color: #dbeafe;
+    background: rgba(8, 21, 40, 0.68);
+    overflow-wrap: anywhere;
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: 0.9rem;
+}
+
+.account-status__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+}

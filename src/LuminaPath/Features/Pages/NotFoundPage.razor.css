@@ -1,0 +1,107 @@
+.not-found-shell {
+    min-height: calc(100vh - 96px);
+    display: grid;
+    place-items: center;
+    padding: 48px 16px;
+}
+
+.not-found-panel {
+    width: min(920px, 100%);
+    display: grid;
+    grid-template-columns: minmax(140px, 220px) 1fr;
+    gap: 32px;
+    align-items: center;
+    padding: 36px;
+    border: 1px solid rgba(128, 99, 255, 0.35);
+    border-radius: 8px;
+    background: linear-gradient(145deg, rgba(18, 29, 48, 0.96), rgba(11, 18, 30, 0.98));
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.26);
+}
+
+.not-found-code {
+    display: grid;
+    place-items: center;
+    min-height: 180px;
+    border: 1px solid rgba(128, 99, 255, 0.28);
+    border-radius: 8px;
+    background: rgba(8, 15, 27, 0.7);
+    color: #8063ff;
+    font-size: clamp(3.75rem, 9vw, 6.5rem);
+    font-weight: 800;
+    line-height: 1;
+}
+
+.not-found-content {
+    min-width: 0;
+}
+
+.not-found-kicker {
+    margin: 0 0 8px;
+    color: #9f8cff;
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.not-found-content h1 {
+    margin: 0;
+    color: #eef3ff;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    font-weight: 750;
+    letter-spacing: 0;
+    line-height: 1.05;
+}
+
+.not-found-copy {
+    margin: 16px 0 0;
+    max-width: 620px;
+    color: rgba(226, 232, 240, 0.78);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.not-found-path {
+    width: fit-content;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 10px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 8px;
+    background: rgba(2, 6, 23, 0.32);
+    color: rgba(226, 232, 240, 0.86);
+}
+
+.not-found-path span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: 0.9rem;
+}
+
+.not-found-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+@media (max-width: 720px) {
+    .not-found-shell {
+        place-items: stretch;
+        padding: 24px 12px;
+    }
+
+    .not-found-panel {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        padding: 24px;
+    }
+
+    .not-found-code {
+        min-height: 128px;
+    }
+}
