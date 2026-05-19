@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { IonContent } from '@ionic/angular/standalone';
 import { Credentials } from 'src/app/core/auth/models/user.model';
 import { AuthService } from '../../services/auth.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 
@@ -12,7 +12,7 @@ import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service
     selector: 'app-login',
     templateUrl: './login.page.html',
     styleUrls: ['./login.page.scss'],
-    imports: [IonContent, FormsModule]
+    imports: [IonContent, FormsModule, RouterLink]
 })
 export class LoginPage implements OnInit {
   private authService = inject(AuthService);
@@ -20,17 +20,16 @@ export class LoginPage implements OnInit {
   private apiEndpoint = inject(ApiEndpointService);
 
   credentials = new Credentials()
+  twoFactorRequired = false;
+  twoFactorCode = '';
+  recoveryCode = '';
+  useRecoveryCode = false;
   errorMessage = '';
   isSubmitting = false;
   apiSettingsOpen = false;
   apiEndpointDraft = '';
   currentApiEndpoint = '';
   apiSettingsMessage = '';
-
-  constructor() {
-    this.credentials.email = "admin@example.com"
-    this.credentials.password = "Admin123*"
-  }
 
   ngOnInit() {
     this.currentApiEndpoint = this.apiEndpoint.endpoint();
@@ -39,16 +38,50 @@ export class LoginPage implements OnInit {
 
   async login(){
     this.errorMessage = '';
+
+    const validationMessage = this.validateLoginInput();
+    if (validationMessage) {
+      this.errorMessage = validationMessage;
+      return;
+    }
+
     this.isSubmitting = true;
 
     try {
-      await firstValueFrom(this.authService.login(this.credentials));
+      const result = await firstValueFrom(this.authService.login(this.createLoginPayload()));
+      if (result.requiresTwoFactor) {
+        this.twoFactorRequired = true;
+        this.twoFactorCode = '';
+        this.recoveryCode = '';
+        return;
+      }
+
+      this.clearSensitiveFields();
       this.route.navigate(['/home']);
     } catch {
-      this.errorMessage = 'Login failed. Check the API is running and the credentials are correct.';
+      this.errorMessage = this.twoFactorRequired
+        ? 'Verification failed. Check the code and try again.'
+        : 'Login failed. Check the API is running and the credentials are correct.';
     } finally {
       this.isSubmitting = false;
     }
+  }
+
+  showAuthenticatorCode() {
+    this.useRecoveryCode = false;
+    this.errorMessage = '';
+  }
+
+  showRecoveryCode() {
+    this.useRecoveryCode = true;
+    this.errorMessage = '';
+  }
+
+  backToPasswordLogin() {
+    this.twoFactorRequired = false;
+    this.twoFactorCode = '';
+    this.recoveryCode = '';
+    this.errorMessage = '';
   }
 
   toggleApiSettings() {
@@ -62,6 +95,7 @@ export class LoginPage implements OnInit {
     this.apiEndpointDraft = this.currentApiEndpoint;
     this.apiSettingsMessage = 'API server saved.';
     this.errorMessage = '';
+    this.backToPasswordLogin();
     this.authService.clearSession();
   }
 
@@ -70,6 +104,49 @@ export class LoginPage implements OnInit {
     this.apiEndpointDraft = this.currentApiEndpoint;
     this.apiSettingsMessage = 'Default API server restored.';
     this.errorMessage = '';
+    this.backToPasswordLogin();
     this.authService.clearSession();
+  }
+
+  private createLoginPayload(): Credentials {
+    const payload = new Credentials();
+    payload.email = this.credentials.email.trim();
+    payload.password = this.credentials.password;
+
+    if (!this.twoFactorRequired) {
+      return payload;
+    }
+
+    if (this.useRecoveryCode) {
+      payload.twoFactorRecoveryCode = this.recoveryCode.replace(/\s+/g, '');
+    } else {
+      payload.twoFactorCode = this.twoFactorCode.replace(/[\s-]+/g, '');
+    }
+
+    return payload;
+  }
+
+  private validateLoginInput(): string {
+    if (!this.credentials.email.trim() || !this.credentials.password) {
+      return 'Enter your email and password.';
+    }
+
+    if (!this.twoFactorRequired) {
+      return '';
+    }
+
+    if (this.useRecoveryCode) {
+      return this.recoveryCode.trim() ? '' : 'Enter a recovery code.';
+    }
+
+    return this.twoFactorCode.trim() ? '' : 'Enter your authenticator code.';
+  }
+
+  private clearSensitiveFields() {
+    this.credentials.password = '';
+    this.twoFactorRequired = false;
+    this.twoFactorCode = '';
+    this.recoveryCode = '';
+    this.useRecoveryCode = false;
   }
 }

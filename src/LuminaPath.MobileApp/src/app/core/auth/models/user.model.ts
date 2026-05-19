@@ -13,7 +13,9 @@ export class User implements IUserInfo {
 export class Credentials implements ICredentials {
   userName: string;
   email: string;
-  password: string
+  password: string;
+  twoFactorCode?: string;
+  twoFactorRecoveryCode?: string;
 
   constructor() {
     this.userName = '';
@@ -32,4 +34,6 @@ export interface ICredentials {
   userName: string
   email: string
   password: string
+  twoFactorCode?: string
+  twoFactorRecoveryCode?: string
 }

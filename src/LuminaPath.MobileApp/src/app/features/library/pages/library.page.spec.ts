@@ -85,12 +85,13 @@ describe('LibraryPage', () => {
         { provide: Router, useValue: router },
       ],
     });
+    TestBed.overrideComponent(LibraryPage, { set: { template: '' } });
 
     fixture = TestBed.createComponent(LibraryPage);
     component = fixture.componentInstance;
   }
 
-  it('loads games on init and clears the loading flag', () => {
+  it('loads games on init and clears the loading flag', fakeAsync(() => {
     const games = [
       makeGame({ id: 1, name: 'Apex Legends' }),
       makeGame({ id: 2, name: 'Baldurs Gate' }),
@@ -98,15 +99,16 @@ describe('LibraryPage', () => {
     configure(of(pageOf(games)));
 
     fixture.detectChanges(); // triggers ngOnInit
+    tick();
 
     expect(mediaLibrary.getAll).toHaveBeenCalledTimes(1);
     expect(component.games.length).toBe(2);
     expect(component.filteredGames.length).toBe(2);
     expect(component.isLoading).toBeFalse();
     expect(component.errorMessage).toBe('');
-  });
+  }));
 
-  it('loads and appends the next page when infinite scroll fires', () => {
+  it('loads and appends the next page when infinite scroll fires', fakeAsync(() => {
     const pageOne = [makeGame({ id: 1, name: 'Apex Legends' })];
     const pageTwo = [makeGame({ id: 2, name: 'Baldurs Gate' })];
     configure(of(pageOf(pageOne, 1, 2)));
@@ -115,16 +117,20 @@ describe('LibraryPage', () => {
       of(pageOf(pageTwo, 2, 2)),
     );
     fixture.detectChanges();
+    tick();
+    TestBed.flushEffects();
 
     const complete = jasmine.createSpy('complete');
     component.loadMoreGames({ target: { complete } } as unknown as CustomEvent);
+    tick();
+    TestBed.flushEffects();
 
     expect(mediaLibrary.getAll).toHaveBeenCalledTimes(2);
     expect(component.games.map((game) => game.id)).toEqual([1, 2]);
     expect(component.filteredGames.map((game) => game.id)).toEqual([1, 2]);
     expect(component.hasMorePages).toBeFalse();
     expect(complete).toHaveBeenCalled();
-  });
+  }));
 
   it('reloads from the first page with a custom release-date range', () => {
     configure(of(pageOf([])));
@@ -153,16 +159,17 @@ describe('LibraryPage', () => {
     expect(mediaLibrary.getAll).toHaveBeenCalledTimes(2);
   });
 
-  it('shows an error message when the games request fails', () => {
+  it('shows an error message when the games request fails', fakeAsync(() => {
     configure(throwError(() => new Error('boom')));
 
     fixture.detectChanges();
+    tick();
 
     expect(component.games).toEqual([]);
     expect(component.filteredGames).toEqual([]);
     expect(component.errorMessage).toBe('Games could not be loaded.');
     expect(component.isLoading).toBeFalse();
-  });
+  }));
 
   it('reloads from the first page with ownership and search filters', () => {
     const owned = makeGame({

@@ -1,8 +1,17 @@
 import { Credentials, User } from '../models/user.model';
-import { catchError, map, Observable, of, tap } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { catchError, map, Observable, of, tap, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
+
+export interface LoginResult {
+  authenticated: boolean;
+  requiresTwoFactor: boolean;
+}
+
+interface IdentityLoginResponse {
+  requiresTwoFactor?: boolean;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -20,10 +29,30 @@ export class AuthService {
     });
   }
 
-  login(credentials: Credentials) {
-    return this.http.post(`${this.apiEndpoint.url('login')}?useCookies=true`, credentials, {
+  login(credentials: Credentials): Observable<LoginResult> {
+    return this.http.post<IdentityLoginResponse | null>(`${this.apiEndpoint.url('login')}?useCookies=true&useSessionCookies=true`, this.toLoginPayload(credentials), {
       withCredentials: true,
-    }).pipe(tap(() => this.authenticatedSignal.set(true)));
+    }).pipe(
+      map((response) => {
+        const requiresTwoFactor = response?.requiresTwoFactor === true;
+        return {
+          authenticated: !requiresTwoFactor,
+          requiresTwoFactor,
+        };
+      }),
+      catchError((error: unknown) => {
+        if (this.isTwoFactorChallenge(error)) {
+          return of({
+            authenticated: false,
+            requiresTwoFactor: true,
+          });
+        }
+
+        this.authenticatedSignal.set(false);
+        return throwError(() => error);
+      }),
+      tap((result) => this.authenticatedSignal.set(result.authenticated))
+    );
   }
 
   logout() {
@@ -59,5 +88,34 @@ export class AuthService {
 
   clearSession() {
     this.authenticatedSignal.set(false);
+  }
+
+  private toLoginPayload(credentials: Credentials) {
+    return {
+      email: credentials.email,
+      password: credentials.password,
+      twoFactorCode: credentials.twoFactorCode || undefined,
+      twoFactorRecoveryCode: credentials.twoFactorRecoveryCode || undefined,
+    };
+  }
+
+  private isTwoFactorChallenge(error: unknown): boolean {
+    if (!(error instanceof HttpErrorResponse) || error.status !== 401) {
+      return false;
+    }
+
+    const payload = error.error;
+    if (typeof payload === 'string') {
+      return payload.includes('RequiresTwoFactor');
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      return false;
+    }
+
+    const problem = payload as { detail?: unknown; title?: unknown; errors?: unknown };
+    return problem.detail === 'RequiresTwoFactor'
+      || problem.title === 'RequiresTwoFactor'
+      || JSON.stringify(problem.errors ?? '').includes('RequiresTwoFactor');
   }
 }

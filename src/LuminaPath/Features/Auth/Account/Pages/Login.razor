@@ -151,7 +151,8 @@
 
     public async Task LoginUser()
     {
-        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        await SignInManager.ForgetTwoFactorClientAsync();
+        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
         var user = await SignInManager.UserManager.FindByEmailAsync(Input.Email);
         if (result.Succeeded)
         {

@@ -11,12 +11,5 @@ import { Credentials } from 'src/app/core/auth/models/user.model';
     imports: [IonContent, IonHeader, IonTitle, IonToolbar, IonButton, FormsModule]
 })
 export class UserCreatePage {
-
-  constructor() {
-    this.credentials.email = "admin@example.com"
-    this.credentials.password = "Admin123*"
-  }
-
   credentials = new Credentials()
-
 }

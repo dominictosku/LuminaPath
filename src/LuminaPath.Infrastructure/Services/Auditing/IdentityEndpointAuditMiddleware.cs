@@ -1,5 +1,7 @@
 using System.Text.Json;
+using LuminaPath.Infrastructure.Identity;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 
 namespace LuminaPath.Infrastructure.Services.Auditing;
 
@@ -12,7 +14,10 @@ public sealed class IdentityEndpointAuditMiddleware
         _next = next;
     }
 
-    public async Task InvokeAsync(HttpContext context, AuditLogService auditLogService)
+    public async Task InvokeAsync(
+        HttpContext context,
+        AuditLogService auditLogService,
+        SignInManager<LuminaUser> signInManager)
     {
         var request = GetTrackedRequest(context);
         if (request is null)
@@ -28,6 +33,11 @@ public sealed class IdentityEndpointAuditMiddleware
 
         try
         {
+            if (request.Action == AuditActions.Login)
+            {
+                await signInManager.ForgetTwoFactorClientAsync();
+            }
+
             await _next(context);
 
             await auditLogService.RecordAsync(new AuditLogEntry
