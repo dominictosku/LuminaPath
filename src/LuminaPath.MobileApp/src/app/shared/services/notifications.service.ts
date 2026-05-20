@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, combineLatest, map, of } from 'rxjs';
+import { startOfDay } from 'src/app/shared/utils/date-helpers';
 import { Game } from 'src/app/features/games/models/games.model';
 import { GameService } from 'src/app/features/games/services/game.service';
 import { GamingSession, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
@@ -148,8 +149,3 @@ export class NotificationsService {
   }
 }
 
-function startOfDay(date: Date): Date {
-  const copy = new Date(date);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}

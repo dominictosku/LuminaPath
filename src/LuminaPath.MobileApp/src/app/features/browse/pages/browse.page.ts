@@ -37,6 +37,8 @@ import { GameStatus } from '../../library/models/library-status.model';
 import { MediaLibraryFacade } from '../../library/services/media-library.facade';
 import { BrowseGroup, BrowseItem, BrowseKind } from '../models/browse.model';
 import { BrowseService } from '../services/browse.service';
+import { addMonths, startOfMonth } from 'src/app/shared/utils/date-helpers';
+import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
 
 const SEASONS = [
@@ -71,7 +73,7 @@ export class BrowsePage implements OnInit {
   selectedKind: BrowseKind = 'games';
   games: BrowseItem[] = [];
   animes: BrowseItem[] = [];
-  selectedGameMonth = this.startOfMonth(new Date());
+  selectedGameMonth = startOfMonth(new Date());
   selectedAnimeSeason = this.startOfSeason(new Date());
   isLoading = true;
   errorMessage = '';
@@ -172,26 +174,26 @@ export class BrowsePage implements OnInit {
 
   previousPeriod(): void {
     if (this.selectedKind === 'games') {
-      this.selectedGameMonth = this.addMonths(this.selectedGameMonth, -1);
+      this.selectedGameMonth = addMonths(this.selectedGameMonth, -1);
       return;
     }
 
-    this.selectedAnimeSeason = this.addMonths(this.selectedAnimeSeason, -3);
+    this.selectedAnimeSeason = addMonths(this.selectedAnimeSeason, -3);
   }
 
   nextPeriod(): void {
     if (this.selectedKind === 'games') {
-      this.selectedGameMonth = this.addMonths(this.selectedGameMonth, 1);
+      this.selectedGameMonth = addMonths(this.selectedGameMonth, 1);
       return;
     }
 
-    this.selectedAnimeSeason = this.addMonths(this.selectedAnimeSeason, 3);
+    this.selectedAnimeSeason = addMonths(this.selectedAnimeSeason, 3);
   }
 
   jumpToCurrentPeriod(): void {
     const now = new Date();
     if (this.selectedKind === 'games') {
-      this.selectedGameMonth = this.startOfMonth(now);
+      this.selectedGameMonth = startOfMonth(now);
       return;
     }
 
@@ -210,7 +212,7 @@ export class BrowsePage implements OnInit {
       next: ({ games, animes }) => {
         this.games = games ?? [];
         this.animes = animes ?? [];
-        this.selectedGameMonth = this.latestMonth(this.games) ?? this.startOfMonth(new Date());
+        this.selectedGameMonth = this.latestMonth(this.games) ?? startOfMonth(new Date());
         this.selectedAnimeSeason = this.latestSeason(this.animes) ?? this.startOfSeason(new Date());
         this.isLoading = false;
       },
@@ -370,8 +372,8 @@ export class BrowsePage implements OnInit {
   }
 
   private groupForGameMonth(month: Date): BrowseGroup {
-    const start = this.startOfMonth(month);
-    const end = this.addMonths(start, 1);
+    const start = startOfMonth(month);
+    const end = addMonths(start, 1);
     const items = this.games
       .filter((item) => this.isInRange(item, start, end))
       .sort((a, b) => b.addedCount - a.addedCount || this.releaseTime(a) - this.releaseTime(b));
@@ -387,7 +389,7 @@ export class BrowsePage implements OnInit {
 
   private groupForAnimeSeason(seasonStart: Date): BrowseGroup {
     const start = this.startOfSeason(seasonStart);
-    const end = this.addMonths(start, 3);
+    const end = addMonths(start, 3);
     const season = this.seasonFor(start);
     const items = this.animes
       .filter((item) => this.isInRange(item, start, end))
@@ -430,7 +432,7 @@ export class BrowsePage implements OnInit {
 
   private latestMonth(items: BrowseItem[]): Date | null {
     const latest = this.latestReleaseDate(items);
-    return latest ? this.startOfMonth(latest) : null;
+    return latest ? startOfMonth(latest) : null;
   }
 
   private latestSeason(items: BrowseItem[]): Date | null {
@@ -445,17 +447,9 @@ export class BrowsePage implements OnInit {
       .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
   }
 
-  private startOfMonth(date: Date): Date {
-    return new Date(date.getFullYear(), date.getMonth(), 1);
-  }
-
   private startOfSeason(date: Date): Date {
     const season = this.seasonFor(date);
     return new Date(date.getFullYear(), season.startMonth, 1);
-  }
-
-  private addMonths(date: Date, months: number): Date {
-    return new Date(date.getFullYear(), date.getMonth() + months, 1);
   }
 
   private toMediaItem(item: BrowseItem): MediaItem {
@@ -481,28 +475,7 @@ export class BrowsePage implements OnInit {
   }
 
   private addGameErrorMessage(error: unknown): string {
-    const payload = (error as { error?: unknown })?.error;
-
-    if (typeof payload === 'string') {
-      return payload;
-    }
-
-    if (payload && typeof payload === 'object' && 'message' in payload) {
-      return String((payload as { message: unknown }).message);
-    }
-
-    if (payload && typeof payload === 'object' && 'errorMessage' in payload) {
-      const messages = (payload as { errorMessage: unknown }).errorMessage;
-      return Array.isArray(messages) ? messages.join(' ') : String(messages);
-    }
-
-    if (payload && typeof payload === 'object' && 'errors' in payload) {
-      const errors = (payload as { errors: Record<string, string[]> }).errors;
-      const messages = Object.values(errors).flat();
-      return messages.length ? messages.join(' ') : `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`;
-    }
-
-    return `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`;
+    return extractErrorMessage(error, `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`);
   }
 
   private capitalize(value: string): string {

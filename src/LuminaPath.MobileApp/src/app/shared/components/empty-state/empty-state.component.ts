@@ -16,7 +16,7 @@ import { IonIcon, IonSpinner } from '@ionic/angular/standalone';
 })
 export class EmptyStateComponent {
   readonly icon = input<string | null>(null);
-  readonly title = input.required<string>();
+  readonly title = input<string | null>(null);
   readonly message = input<string | null>(null);
   readonly variant = input<'default' | 'locked' | 'notes' | 'quest-starter'>('default');
   readonly loading = input<boolean>(false);

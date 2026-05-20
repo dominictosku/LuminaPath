@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 
+import { startOfDay } from 'src/app/shared/utils/date-helpers';
 import { Game } from '../../games/models/games.model';
 import { Quest } from '../../quests/services/quest-board.service';
 import { GamingSession } from './gaming-session.service';
@@ -104,11 +105,11 @@ export class PlanningCalendarService {
     } else {
       next.setMonth(next.getMonth() + direction);
     }
-    return this.startOfDay(next);
+    return startOfDay(next);
   }
 
   startOfToday(): Date {
-    return this.startOfDay(new Date());
+    return startOfDay(new Date());
   }
 
   dateKey(value: Date): string {
@@ -199,17 +200,13 @@ export class PlanningCalendarService {
     const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
     const start = new Date(monthStart);
     start.setDate(monthStart.getDate() - ((monthStart.getDay() + 6) % 7));
-    return this.startOfDay(start);
+    return startOfDay(start);
   }
 
   private startOfWeek(date: Date): Date {
-    const start = this.startOfDay(date);
+    const start = startOfDay(date);
     start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
     return start;
-  }
-
-  private startOfDay(value: Date): Date {
-    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
   }
 
   private sameDay(a: Date, b: Date): boolean {

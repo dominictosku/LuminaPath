@@ -37,6 +37,7 @@ import { Platforms } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
 import { MediaMode, MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
+import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { MediaLibraryFacade } from '../services/media-library.facade';
 import { MediaStore } from '../state/media.store';
 import { MediaItem } from '../models/media-item.model';
@@ -587,28 +588,7 @@ export class LibraryPage implements OnInit {
   }
 
   private addGameErrorMessage(error: unknown): string {
-    const payload = (error as { error?: unknown })?.error;
-
-    if (typeof payload === 'string') {
-      return payload;
-    }
-
-    if (payload && typeof payload === 'object' && 'message' in payload) {
-      return String((payload as { message: unknown }).message);
-    }
-
-    if (payload && typeof payload === 'object' && 'errorMessage' in payload) {
-      const messages = (payload as { errorMessage: unknown }).errorMessage;
-      return Array.isArray(messages) ? messages.join(' ') : String(messages);
-    }
-
-    if (payload && typeof payload === 'object' && 'errors' in payload) {
-      const errors = (payload as { errors: Record<string, string[]> }).errors;
-      const messages = Object.values(errors).flat();
-      return messages.length ? messages.join(' ') : `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`;
-    }
-
-    return `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`;
+    return extractErrorMessage(error, `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`);
   }
 
   private capitalize(value: string): string {

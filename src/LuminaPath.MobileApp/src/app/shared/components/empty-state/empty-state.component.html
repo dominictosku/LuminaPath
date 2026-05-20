@@ -8,7 +8,9 @@
   } @else if (icon()) {
     <ion-icon [name]="icon()!"></ion-icon>
   }
-  <strong>{{ title() }}</strong>
+  @if (title()) {
+    <strong>{{ title() }}</strong>
+  }
   @if (message()) {
     <span>{{ message() }}</span>
   }

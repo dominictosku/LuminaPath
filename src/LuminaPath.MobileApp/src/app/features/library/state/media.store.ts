@@ -11,6 +11,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 import { MediaModeService } from 'src/app/shared/services/media-mode.service';
+import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import {
   LibraryEntryDetails,
   MediaItem,
@@ -75,17 +76,7 @@ export const MediaStore = signalStore(
       patchState(store, updateEntity<MediaItem>({ id: mediaId, changes }));
     }
 
-    function extractError(error: unknown): string {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'error' in error &&
-        typeof (error as { error: unknown }).error === 'string'
-      ) {
-        return (error as { error: string }).error;
-      }
-      return 'Operation failed.';
-    }
+    const extractError = (error: unknown) => extractErrorMessage(error, 'Operation failed.');
 
     return {
       // -----------------------------------------------------------------------
