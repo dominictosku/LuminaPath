@@ -1,0 +1,82 @@
+<section class="quick-add-card">
+  <div class="quick-add-row">
+    <input
+      type="text"
+      class="quick-add-input"
+      placeholder="Capture a quest"
+      [(ngModel)]="quickAddTitle"
+      (keydown.enter)="submit()" />
+    <ion-button (click)="submit()" aria-label="Add quest">
+      <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+    </ion-button>
+  </div>
+  <div class="quick-date-row" aria-label="Quest due date shortcuts">
+    <button type="button" class="quick-date" [class.quick-date--active]="isDuePreset('today')" (click)="setDuePreset('today')">Today</button>
+    <button type="button" class="quick-date" [class.quick-date--active]="isDuePreset('tomorrow')" (click)="setDuePreset('tomorrow')">Tomorrow</button>
+    <button type="button" class="quick-date" [class.quick-date--active]="isDuePreset('none')" (click)="setDuePreset('none')">Inbox</button>
+    <button type="button" class="quick-date quick-date--tools" (click)="toggleAdvanced()">
+      <ion-icon name="options-outline"></ion-icon>
+      More
+      <ion-icon [name]="quickAddAdvancedOpen ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+    </button>
+  </div>
+  @if (quickAddAdvancedOpen) {
+    <div class="quick-add-meta">
+      <label class="meta-chip">
+        <ion-icon name="flag-outline"></ion-icon>
+        <select [(ngModel)]="quickAddType">
+          @for (option of typeOptions(); track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="meta-chip">
+        <ion-icon name="flame-outline"></ion-icon>
+        <select [(ngModel)]="quickAddPriority">
+          @for (option of priorityOptions(); track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="meta-chip">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <input type="date" [(ngModel)]="quickAddDue" />
+        @if (quickAddDue) {
+          <button type="button" class="meta-chip-clear" aria-label="Clear due date" (click)="setDuePreset('none')">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        }
+      </label>
+      <label class="meta-chip">
+        <ion-icon name="refresh-outline"></ion-icon>
+        <select [(ngModel)]="quickAddRecurrence">
+          @for (option of recurrenceOptions(); track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+      @if (library().length) {
+        <label class="meta-chip">
+          <ion-icon name="game-controller-outline"></ion-icon>
+          <select [(ngModel)]="quickAddGameId">
+            <option [ngValue]="null">No game</option>
+            @for (game of library(); track trackByLibrary($index, game)) {
+              <option [ngValue]="game.myGameId">{{ game.gameName }}</option>
+            }
+          </select>
+        </label>
+      }
+      @if (skills().length) {
+        <label class="meta-chip">
+          <ion-icon name="trophy-outline"></ion-icon>
+          <select [(ngModel)]="quickAddSkillId">
+            <option [ngValue]="null">No skill</option>
+            @for (skill of skills(); track trackBySkill($index, skill)) {
+              <option [ngValue]="skill.id">{{ skill.name }}</option>
+            }
+          </select>
+        </label>
+      }
+    </div>
+  }
+</section>

@@ -1,0 +1,31 @@
+<section class="section-block chart-block">
+  <header class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="layers-outline"></ion-icon>
+        Pipeline
+      </span>
+      <h2>Status Mix</h2>
+    </div>
+  </header>
+  <div class="status-bar" role="img" aria-label="Distribution of items across statuses">
+    @for (slice of slices(); track trackByStatus($index, slice)) {
+      <div
+        class="status-bar__slice"
+        [class]="'status-bar__slice status-bar__slice--' + statusClass(slice.label)"
+        [style.flex-grow]="slice.percent || 0.5"
+        [title]="slice.label + ': ' + slice.count">
+      </div>
+    }
+  </div>
+  <ul class="status-legend">
+    @for (slice of slices(); track trackByStatus($index, slice)) {
+      <li>
+        <span class="status-legend__swatch" [class]="'status-bar__slice--' + statusClass(slice.label)"></span>
+        <span class="status-legend__label">{{ slice.label }}</span>
+        <span class="status-legend__count">{{ slice.count }}</span>
+        <span class="status-legend__percent">{{ slice.percent }}%</span>
+      </li>
+    }
+  </ul>
+</section>

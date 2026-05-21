@@ -1,0 +1,37 @@
+<section class="section-block chart-block">
+  <header class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="time-outline"></ion-icon>
+        Investment
+      </span>
+      <h2>Time by Type</h2>
+    </div>
+  </header>
+  @if (bars().length) {
+    <div class="time-bars">
+      @for (bar of bars(); track trackByTimeBar($index, bar)) {
+        <div class="time-bar">
+          <div class="time-bar__head">
+            <span class="time-bar__dot" [style.background]="bar.color"></span>
+            <span class="time-bar__label">{{ bar.kind }}</span>
+            <strong>{{ formatHours(bar.total) }}</strong>
+          </div>
+          <div class="time-bar__track">
+            <div class="time-bar__consumed" [style.width.%]="bar.consumedPercent" [style.background]="bar.color"></div>
+            <div class="time-bar__remaining" [style.width.%]="bar.remainingPercent" [style.background]="bar.color + '40'"></div>
+          </div>
+          <div class="time-bar__meta">
+            <span>{{ formatHours(bar.consumed) }} logged</span>
+            <span>{{ formatHours(bar.remaining) }} left</span>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <ion-icon name="hourglass-outline"></ion-icon>
+      <span>Log some progress to compare time investment.</span>
+    </div>
+  }
+</section>

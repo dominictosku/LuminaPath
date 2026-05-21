@@ -1,0 +1,33 @@
+<section class="section-block">
+  <div class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="calendar-clear-outline"></ion-icon>
+        Releases
+      </span>
+      <h2>Coming Up</h2>
+    </div>
+  </div>
+
+  @if (items().length) {
+    <div class="release-list">
+      @for (item of items(); track trackByItem($index, item)) {
+        <article class="release-item">
+          <div class="release-date">
+            <strong>{{ daysUntil(item) }}</strong>
+            <span>{{ releaseLabel(item) }}</span>
+          </div>
+          <div class="release-info">
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.genre || 'No genre' }} · {{ item.context }}</p>
+          </div>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <ion-icon name="calendar-clear-outline"></ion-icon>
+      <span>No upcoming releases in the current list.</span>
+    </div>
+  }
+</section>

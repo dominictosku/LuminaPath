@@ -1,0 +1,35 @@
+<section class="section-block">
+  <div class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="game-controller-outline"></ion-icon>
+        Active
+      </span>
+      <h2>Currently Active</h2>
+    </div>
+    <ion-badge>{{ items().length }}</ion-badge>
+  </div>
+
+  @if (items().length) {
+    <div class="horizontal-list">
+      @for (item of items(); track trackByItem($index, item)) {
+        <article class="game-card game-card--large">
+          <img [src]="imageFor(item)" alt="" />
+          <div class="game-card__body">
+            <ion-badge>{{ item.kind }}</ion-badge>
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.context }} · {{ remainingLabel(item) }}</p>
+            <div class="progress-track">
+              <span [style.width.%]="progressOf(item)"></span>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <ion-icon name="game-controller-outline"></ion-icon>
+      <span>No active media yet.</span>
+    </div>
+  }
+</section>

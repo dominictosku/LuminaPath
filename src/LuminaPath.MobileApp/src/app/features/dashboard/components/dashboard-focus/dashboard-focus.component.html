@@ -1,0 +1,25 @@
+<section class="section-block section-block--wide">
+  <div class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="sparkles-outline"></ion-icon>
+        Next up
+      </span>
+      <h2>Today’s Focus</h2>
+    </div>
+  </div>
+
+  <div class="focus-grid">
+    @for (item of items(); track trackByFocus($index, item)) {
+      <article class="focus-card focus-card--{{ item.tone }}">
+        <div class="focus-card__icon">
+          <ion-icon [name]="item.icon"></ion-icon>
+        </div>
+        <div>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.detail }}</p>
+        </div>
+      </article>
+    }
+  </div>
+</section>

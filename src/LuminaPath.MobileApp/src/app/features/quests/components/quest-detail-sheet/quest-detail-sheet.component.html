@@ -1,0 +1,126 @@
+<div class="modal-backdrop detail-backdrop" (click)="close.emit()">
+  <section class="quest-detail-sheet" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" aria-label="Close" (click)="close.emit()">
+      <ion-icon name="close-outline"></ion-icon>
+    </button>
+    <div class="detail-heading">
+      <span class="eyebrow">
+        <ion-icon [name]="typeIcon()(quest().type)"></ion-icon>
+        {{ typeLabel()(quest().type) }} quest
+      </span>
+      <h2>{{ quest().title }}</h2>
+      @if (quest().notes) {
+        <p>{{ quest().notes }}</p>
+      }
+    </div>
+    <div class="detail-actions">
+      <button type="button" (click)="scheduleToday.emit(quest())">Today</button>
+      <button type="button" (click)="scheduleTomorrow.emit(quest())">Tomorrow</button>
+      <button type="button" (click)="clearDueDate.emit(quest())">Inbox</button>
+    </div>
+    @if (editDraft(); as draft) {
+      <label class="edit-field">
+        <span>Title</span>
+        <input type="text" [ngModel]="draft.title" (ngModelChange)="updateDraft('title', $event)" />
+      </label>
+      <label class="edit-field">
+        <span>Notes</span>
+        <textarea rows="3" [ngModel]="draft.notes" (ngModelChange)="updateDraft('notes', $event)" placeholder="Optional notes"></textarea>
+      </label>
+      <div class="edit-row">
+        <label class="edit-field edit-field--inline">
+          <span>Type</span>
+          <select [ngModel]="draft.type" (ngModelChange)="updateDraft('type', $event)">
+            @for (option of typeOptions(); track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="edit-field edit-field--inline">
+          <span>Priority</span>
+          <select [ngModel]="draft.priority" (ngModelChange)="updateDraft('priority', $event)">
+            @for (option of priorityOptions(); track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="edit-field edit-field--inline">
+          <span>Repeat</span>
+          <select [ngModel]="draft.recurrence" (ngModelChange)="updateDraft('recurrence', $event)">
+            @for (option of recurrenceOptions(); track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="edit-field edit-field--inline">
+          <span>Due date</span>
+          <input type="date" [ngModel]="draft.dueDate" (ngModelChange)="updateDraft('dueDate', $event)" />
+        </label>
+        @if (library().length) {
+          <label class="edit-field edit-field--inline">
+            <span>Game</span>
+            <select [ngModel]="draft.myGameId" (ngModelChange)="updateDraft('myGameId', $event)">
+              <option [ngValue]="null">No game</option>
+              @for (game of library(); track trackByLibrary($index, game)) {
+                <option [ngValue]="game.myGameId">{{ game.gameName }}</option>
+              }
+            </select>
+          </label>
+        }
+        @if (skills().length) {
+          <label class="edit-field edit-field--inline">
+            <span>Skill</span>
+            <select [ngModel]="draft.skillId" (ngModelChange)="updateDraft('skillId', $event)">
+              <option [ngValue]="null">No skill</option>
+              @for (skill of skills(); track trackBySkill($index, skill)) {
+                <option [ngValue]="skill.id">{{ skill.name }}</option>
+              }
+            </select>
+          </label>
+        }
+      </div>
+      <label class="edit-field">
+        <span>Tags <small>(comma separated)</small></span>
+        <input type="text" [ngModel]="draft.tags" (ngModelChange)="updateDraft('tags', $event)" placeholder="errand, focus, deep-work" />
+      </label>
+      <div class="edit-field">
+        <span>
+          Subtasks
+          @if (quest().subtasks.length) {
+            <small>{{ subtaskCompletedCount(quest()) }} / {{ quest().subtasks.length }} done</small>
+          }
+        </span>
+        @if (quest().subtasks.length) {
+          <ul class="subtask-list">
+            @for (subtask of quest().subtasks; track trackBySubtask($index, subtask)) {
+              <li class="subtask" [class.subtask--done]="subtask.completed">
+                <button type="button" class="subtask-toggle" aria-label="Toggle subtask" (click)="toggleSubtask.emit({ quest: quest(), subtask })">
+                  <ion-icon [name]="subtask.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
+                </button>
+                <span class="subtask-title">{{ subtask.title }}</span>
+                <button type="button" class="subtask-delete" aria-label="Delete subtask" (click)="deleteSubtask.emit({ quest: quest(), subtask })">
+                  <ion-icon name="close-outline"></ion-icon>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+        <div class="subtask-add">
+          <input
+            type="text"
+            placeholder="Add a subtask"
+            [ngModel]="subtaskDraft()(quest().id)"
+            (ngModelChange)="setSubtaskDraft.emit({ questId: quest().id, value: $event })"
+            (keydown.enter)="addSubtask.emit(quest())" />
+          <button type="button" class="subtask-add-button" aria-label="Add subtask" (click)="addSubtask.emit(quest())">
+            <ion-icon name="add-outline"></ion-icon>
+          </button>
+        </div>
+      </div>
+      <div class="edit-actions">
+        <ion-button fill="clear" (click)="close.emit()">Cancel</ion-button>
+        <ion-button (click)="save.emit(quest())">Save</ion-button>
+      </div>
+    }
+  </section>
+</div>

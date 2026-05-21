@@ -1,4 +1,8 @@
-:host {
+// `:host` only resolves inside Shadow DOM. This page uses
+// `ViewEncapsulation.None`, so the SCSS is emitted verbatim and `:host` wouldn't
+// match. Targeting the component's tag selector keeps the same scoping (these
+// vars only apply while the quest-board route is mounted) with valid CSS.
+app-quest-board {
   --quest-bg: linear-gradient(180deg, rgba(8, 22, 48, 0.98) 0%, rgba(6, 16, 35, 1) 100%);
   --ink: var(--app-chrome-text, #eef6ff);
   --muted: var(--app-chrome-muted, #9fb6d4);

@@ -1,0 +1,71 @@
+:host {
+  display: block;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metric {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+  min-height: 112px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 18px 46px rgba(16, 24, 40, 0.08);
+}
+
+.metric__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 15px;
+  color: #fff;
+}
+
+.metric ion-icon {
+  font-size: 1.35rem;
+}
+
+.metric span,
+.metric small {
+  display: block;
+  color: var(--muted);
+}
+
+.metric strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink);
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.metric small {
+  margin-top: 5px;
+  font-size: 0.78rem;
+}
+
+.metric--blue .metric__icon { background: var(--accent); }
+.metric--green .metric__icon { background: var(--success); }
+.metric--amber .metric__icon { background: var(--warning); }
+.metric--rose .metric__icon { background: var(--danger); }
+
+@media (min-width: 760px) {
+  .metric-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .metric {
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  }
+}

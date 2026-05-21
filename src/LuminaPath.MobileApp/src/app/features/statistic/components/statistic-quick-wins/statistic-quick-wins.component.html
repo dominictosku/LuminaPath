@@ -1,0 +1,30 @@
+<section class="section-block">
+  <header class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="time-outline"></ion-icon>
+        Finishable
+      </span>
+      <h2>Quick Wins</h2>
+    </div>
+    <ion-badge>{{ items().length }}</ion-badge>
+  </header>
+  @if (items().length) {
+    <div class="item-list">
+      @for (item of items(); track trackByItem($index, item)) {
+        <article class="stat-item">
+          <div>
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.kind }} · {{ item.statusLabel }}</p>
+          </div>
+          <strong>{{ formatHours(item.remainingHours) }}</strong>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <ion-icon name="hourglass-outline"></ion-icon>
+      <span>No short backlog wins under 12h.</span>
+    </div>
+  }
+</section>

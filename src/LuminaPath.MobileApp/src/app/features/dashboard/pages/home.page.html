@@ -4,257 +4,59 @@
   </ion-refresher>
 
   <main class="dashboard">
-    @if (!isLoading) {
-      <section class="hero">
-        <div class="hero__media">
-          <img [src]="imageFor(featuredItem)" alt="" />
-        </div>
-        <div class="hero__content">
-          <span class="eyebrow">
-            <ion-icon name="sparkles-outline"></ion-icon>
-            Today
-          </span>
-          <h1>{{ featuredItem?.name || 'Your library is ready' }}</h1>
-          <p>
-            {{ featuredItem ? statusLabel(featuredItem) + ' · ' + featuredItem.context : 'Log in and start shaping your media plan.' }}
-          </p>
-          @if (featuredItem) {
-            <div class="hero__progress">
-              <div class="hero__progress-label">
-                <span>{{ playedLabel(featuredItem) }}</span>
-                <strong>{{ heroProgress }}%</strong>
-              </div>
-              <div class="progress-track">
-                <span [style.width.%]="heroProgress"></span>
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-    } @else {
-      <section class="hero hero--loading">
-        <ion-skeleton-text animated></ion-skeleton-text>
-      </section>
-    }
-
+    <app-dashboard-hero
+      class="dash-cell dash-cell--wide"
+      [featuredItem]="featuredItem"
+      [heroProgress]="heroProgress"
+      [isLoading]="isLoading">
+    </app-dashboard-hero>
 
     @if (errorMessage) {
-      <section class="notice">
+      <section class="notice dash-cell dash-cell--wide">
         <ion-icon name="flame-outline"></ion-icon>
         <span>{{ errorMessage }}</span>
       </section>
     }
 
-    <section class="metric-grid">
-      @for (metric of metrics; track metric) {
-        <article class="metric metric--{{ metric.tone }}">
-          <div class="metric__icon">
-            <ion-icon [name]="metric.icon"></ion-icon>
-          </div>
-          <div>
-            <span>{{ metric.label }}</span>
-            <strong>{{ metric.value }}</strong>
-            <small>{{ metric.detail }}</small>
-          </div>
-        </article>
-      }
-    </section>
+    <app-dashboard-metrics
+      class="dash-cell dash-cell--wide"
+      [metrics]="metrics">
+    </app-dashboard-metrics>
 
-    <section class="section-block section-block--split">
-      <div>
-        <span class="eyebrow">Momentum</span>
-        <h2>{{ playedHours }} hours logged</h2>
-      </div>
-      <div class="completion-ring" [style.--value]="completionRate + '%'">
-        <strong>{{ completionRate }}%</strong>
-        <span>done</span>
-      </div>
-    </section>
+    <app-dashboard-momentum
+      class="dash-cell dash-cell--wide"
+      [playedHours]="playedHours"
+      [completionRate]="completionRate">
+    </app-dashboard-momentum>
 
-    <section class="section-block section-block--wide">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="sparkles-outline"></ion-icon>
-            Next up
-          </span>
-          <h2>Today’s Focus</h2>
-        </div>
-      </div>
+    <app-dashboard-focus
+      class="dash-cell dash-cell--wide"
+      [items]="focusItems">
+    </app-dashboard-focus>
 
-      <div class="focus-grid">
-        @for (item of focusItems; track trackByFocus($index, item)) {
-          <article class="focus-card focus-card--{{ item.tone }}">
-            <div class="focus-card__icon">
-              <ion-icon [name]="item.icon"></ion-icon>
-            </div>
-            <div>
-              <h3>{{ item.title }}</h3>
-              <p>{{ item.detail }}</p>
-            </div>
-          </article>
-        }
-      </div>
-    </section>
+    <app-dashboard-activity
+      class="dash-cell dash-cell--half"
+      [items]="activityItems">
+    </app-dashboard-activity>
 
-    <section class="section-block section-block--activity">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="time-outline"></ion-icon>
-            Activity
-          </span>
-          <h2>Pulse</h2>
-        </div>
-      </div>
+    <app-dashboard-active-rail
+      class="dash-cell dash-cell--half"
+      [items]="playingItems">
+    </app-dashboard-active-rail>
 
-      @if (activityItems.length) {
-        <div class="activity-list">
-          @for (item of activityItems; track trackByActivity($index, item)) {
-            <article class="activity-item">
-              <div class="activity-item__icon">
-                <ion-icon [name]="item.icon"></ion-icon>
-              </div>
-              <div>
-                <h3>{{ item.title }}</h3>
-                <p>{{ item.detail }}</p>
-              </div>
-            </article>
-          }
-        </div>
-      } @else {
-        <div class="empty-state">
-          <ion-icon name="time-outline"></ion-icon>
-          <span>No activity yet.</span>
-        </div>
-      }
+    <app-dashboard-releases
+      class="dash-cell dash-cell--half"
+      [items]="upcomingReleases">
+    </app-dashboard-releases>
 
-    </section>
+    <app-dashboard-backlog
+      class="dash-cell dash-cell--half"
+      [items]="backlogItems">
+    </app-dashboard-backlog>
 
-    <section class="section-block">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="game-controller-outline"></ion-icon>
-            Active
-          </span>
-          <h2>Currently Active</h2>
-        </div>
-        <ion-badge>{{ playingItems.length }}</ion-badge>
-      </div>
-
-      @if (playingItems.length) {
-        <div class="horizontal-list">
-          @for (item of playingItems; track trackByItem($index, item)) {
-            <article class="game-card game-card--large">
-              <img [src]="imageFor(item)" alt="" />
-              <div class="game-card__body">
-                <ion-badge>{{ item.kind }}</ion-badge>
-                <h3>{{ item.name }}</h3>
-                <p>{{ item.context }} · {{ remainingLabel(item) }}</p>
-                <div class="progress-track">
-                  <span [style.width.%]="progressOf(item)"></span>
-                </div>
-              </div>
-            </article>
-          }
-        </div>
-      } @else {
-        <div class="empty-state">
-          <ion-icon name="game-controller-outline"></ion-icon>
-          <span>No active media yet.</span>
-        </div>
-      }
-
-    </section>
-
-    <section class="section-block">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="calendar-clear-outline"></ion-icon>
-            Releases
-          </span>
-          <h2>Coming Up</h2>
-        </div>
-      </div>
-
-      @if (upcomingReleases.length) {
-        <div class="release-list">
-          @for (item of upcomingReleases; track trackByItem($index, item)) {
-            <article class="release-item">
-              <div class="release-date">
-                <strong>{{ daysUntil(item) }}</strong>
-                <span>{{ releaseLabel(item) }}</span>
-              </div>
-              <div class="release-info">
-                <h3>{{ item.name }}</h3>
-                <p>{{ item.genre || 'No genre' }} · {{ item.context }}</p>
-              </div>
-            </article>
-          }
-        </div>
-      } @else {
-        <div class="empty-state">
-          <ion-icon name="calendar-clear-outline"></ion-icon>
-          <span>No upcoming releases in the current list.</span>
-        </div>
-      }
-
-    </section>
-
-    <section class="section-block">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="trending-up-outline"></ion-icon>
-            Backlog
-          </span>
-          <h2>Biggest Commitments</h2>
-        </div>
-      </div>
-
-      @if (backlogItems.length) {
-        <div class="backlog-list">
-          @for (item of backlogItems; track trackByItem($index, item)) {
-            <article class="backlog-item">
-              <div>
-                <h3>{{ item.name }}</h3>
-                <p>{{ item.kind }} · {{ playedLabel(item) }} · {{ remainingLabel(item) }}</p>
-              </div>
-              <strong>{{ item.estimatedHours || 0 }}h</strong>
-            </article>
-          }
-        </div>
-      } @else {
-        <div class="empty-state">
-          <ion-icon name="checkmark-done-outline"></ion-icon>
-          <span>No planned backlog found.</span>
-        </div>
-      }
-
-    </section>
-
-    <section class="section-block">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="library-outline"></ion-icon>
-            Library
-          </span>
-          <h2>Recently Added</h2>
-        </div>
-      </div>
-
-      <div class="library-grid">
-        @for (item of recentItems; track trackByItem($index, item)) {
-          <article class="mini-card">
-            <img [src]="imageFor(item)" alt="" />
-            <h3>{{ item.name }}</h3>
-            <p>{{ item.kind }}</p>
-          </article>
-        }
-      </div>
-    </section>
+    <app-dashboard-recent
+      class="dash-cell dash-cell--half"
+      [items]="recentItems">
+    </app-dashboard-recent>
   </main>
 </ion-content>

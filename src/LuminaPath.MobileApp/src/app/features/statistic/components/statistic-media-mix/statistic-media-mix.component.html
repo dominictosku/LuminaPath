@@ -1,0 +1,50 @@
+<section class="section-block chart-block">
+  <header class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="pie-chart-outline"></ion-icon>
+        Library
+      </span>
+      <h2>Media Mix</h2>
+    </div>
+    <ion-badge>{{ total() }}</ion-badge>
+  </header>
+  @if (segments().length) {
+    <div class="donut-wrap">
+      <svg class="donut" viewBox="0 0 120 120" role="img" aria-label="Distribution of items across media types">
+        <circle cx="60" cy="60" [attr.r]="donutRadius" fill="none" stroke="rgba(137, 180, 255, 0.12)" stroke-width="14"></circle>
+        <g transform="rotate(-90 60 60)">
+          @for (segment of segments(); track trackBySegment($index, segment)) {
+            <circle
+              cx="60"
+              cy="60"
+              [attr.r]="donutRadius"
+              fill="none"
+              [attr.stroke]="segment.color"
+              stroke-width="14"
+              stroke-linecap="butt"
+              [attr.stroke-dasharray]="segment.length + ' ' + segment.gap"
+              [attr.stroke-dashoffset]="segment.offset"></circle>
+          }
+        </g>
+        <text x="60" y="58" text-anchor="middle" class="donut__total">{{ total() }}</text>
+        <text x="60" y="74" text-anchor="middle" class="donut__sub">tracked</text>
+      </svg>
+      <ul class="legend">
+        @for (segment of segments(); track trackBySegment($index, segment)) {
+          <li>
+            <span class="legend__swatch" [style.background]="segment.color"></span>
+            <span class="legend__label">{{ segment.kind }}</span>
+            <span class="legend__value">{{ segment.value }}</span>
+            <span class="legend__percent">{{ segment.percent }}%</span>
+          </li>
+        }
+      </ul>
+    </div>
+  } @else {
+    <div class="empty-state">
+      <ion-icon name="bookmark-outline"></ion-icon>
+      <span>Track a few items to see your library mix.</span>
+    </div>
+  }
+</section>

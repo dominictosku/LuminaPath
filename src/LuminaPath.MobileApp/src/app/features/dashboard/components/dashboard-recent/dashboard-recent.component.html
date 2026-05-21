@@ -1,0 +1,21 @@
+<section class="section-block">
+  <div class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="library-outline"></ion-icon>
+        Library
+      </span>
+      <h2>Recently Added</h2>
+    </div>
+  </div>
+
+  <div class="library-grid">
+    @for (item of items(); track trackByItem($index, item)) {
+      <article class="mini-card">
+        <img [src]="imageFor(item)" alt="" />
+        <h3>{{ item.name }}</h3>
+        <p>{{ item.kind }}</p>
+      </article>
+    }
+  </div>
+</section>

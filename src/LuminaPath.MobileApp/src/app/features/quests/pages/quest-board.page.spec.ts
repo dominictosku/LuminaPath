@@ -188,15 +188,9 @@ describe('QuestBoardPage', () => {
     expect(component.visibleQuests.map((quest) => quest.id)).toEqual([1, 3]);
   });
 
-  it('submitQuickAdd creates a quest with current quick-add options and replaces the optimistic row', async () => {
+  it('handleQuickAdd creates a quest with the submitted options and replaces the optimistic row', async () => {
     component.library = [{ myGameId: 42, gameName: 'Hades' }];
     component.skills = [makeSkill({ id: 9, name: 'Programming' })];
-    component.quickAddTitle = '  Beat boss  ';
-    component.quickAddType = 'main';
-    component.quickAddPriority = 'high';
-    component.quickAddGameId = 42;
-    component.quickAddSkillId = 9;
-    component.setQuickAddToday();
     const savedQuest = makeQuest({
       id: 77,
       title: 'Beat boss',
@@ -209,7 +203,15 @@ describe('QuestBoardPage', () => {
     });
     questBoardService.createQuest.and.resolveTo(makeMutation(savedQuest, { totalXp: 25 }));
 
-    await component.submitQuickAdd();
+    await component.handleQuickAdd({
+      title: 'Beat boss',
+      type: 'main',
+      priority: 'high',
+      recurrence: 'none',
+      dueDate: isoDate(new Date()),
+      myGameId: 42,
+      skillId: 9,
+    });
 
     expect(questBoardService.createQuest).toHaveBeenCalledOnceWith(jasmine.objectContaining({
       title: 'Beat boss',
@@ -218,9 +220,10 @@ describe('QuestBoardPage', () => {
       myGameId: 42,
       skillId: 9,
     }));
-    expect(component.quickAddTitle).toBe('');
     expect(component.quests).toEqual([savedQuest]);
     expect(component.xp).toBe(25);
+    expect(component.quickAddType).toBe('main');
+    expect(component.quickAddPriority).toBe('high');
   });
 
   it('scheduleQuest updates due date and sends clearDueDate when moved to inbox', async () => {
@@ -241,7 +244,7 @@ describe('QuestBoardPage', () => {
   it('addSubtask, toggleSubtask, and deleteSubtask use the current subtask API', async () => {
     const quest = makeQuest({ id: 6, title: 'Quest', subtasks: [] });
     component.quests = [quest];
-    component.setSubtaskDraft(6, '  Prep  ');
+    component.setSubtaskDraft({ questId: 6, value: '  Prep  ' });
 
     await component.addSubtask(quest);
     expect(questBoardService.addSubtask).toHaveBeenCalledOnceWith(6, 'Prep');
@@ -252,10 +255,10 @@ describe('QuestBoardPage', () => {
       id: 6,
       subtasks: [{ ...subtask, completed: true }],
     })));
-    await component.toggleSubtask(component.quests[0], subtask);
+    await component.toggleSubtask({ quest: component.quests[0], subtask });
     expect(questBoardService.updateSubtask).toHaveBeenCalledOnceWith(6, 4, { completed: true });
 
-    await component.deleteSubtask(component.quests[0], component.quests[0].subtasks[0]);
+    await component.deleteSubtask({ quest: component.quests[0], subtask: component.quests[0].subtasks[0] });
     expect(questBoardService.deleteSubtask).toHaveBeenCalledOnceWith(6, 4);
     expect(component.quests[0].subtasks).toEqual([]);
   });

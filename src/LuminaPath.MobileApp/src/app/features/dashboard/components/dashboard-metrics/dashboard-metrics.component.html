@@ -1,0 +1,14 @@
+<section class="metric-grid">
+  @for (metric of metrics(); track trackByMetric($index, metric)) {
+    <article class="metric metric--{{ metric.tone }}">
+      <div class="metric__icon">
+        <ion-icon [name]="metric.icon"></ion-icon>
+      </div>
+      <div>
+        <span>{{ metric.label }}</span>
+        <strong>{{ metric.value }}</strong>
+        <small>{{ metric.detail }}</small>
+      </div>
+    </article>
+  }
+</section>

@@ -1,0 +1,10 @@
+<section class="section-block section-block--split">
+  <div>
+    <span class="eyebrow">Momentum</span>
+    <h2>{{ playedHours() }} hours logged</h2>
+  </div>
+  <div class="completion-ring" [style.--value]="completionRate() + '%'">
+    <strong>{{ completionRate() }}%</strong>
+    <span>done</span>
+  </div>
+</section>

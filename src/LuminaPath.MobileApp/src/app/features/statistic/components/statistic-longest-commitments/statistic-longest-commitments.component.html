@@ -1,0 +1,30 @@
+<section class="section-block">
+  <header class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="flame-outline"></ion-icon>
+        Pressure
+      </span>
+      <h2>Longest Commitments</h2>
+    </div>
+  </header>
+  @if (items().length) {
+    <div class="item-list">
+      @for (item of items(); track trackByItem($index, item)) {
+        <article class="stat-item">
+          <div>
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.kind }} · {{ item.statusLabel }}</p>
+            <ion-progress-bar [value]="item.estimatedHours ? item.consumedHours / item.estimatedHours : 0"></ion-progress-bar>
+          </div>
+          <strong>{{ formatHours(item.remainingHours) }}</strong>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <ion-icon name="checkmark-circle-outline"></ion-icon>
+      <span>No large open commitments found.</span>
+    </div>
+  }
+</section>

@@ -1,0 +1,19 @@
+<section class="hero">
+  <span class="eyebrow">
+    <ion-icon name="bar-chart-outline"></ion-icon>
+    Statistic
+  </span>
+  <h1>Backlog Health</h1>
+  <p>See whether your library is balanced, overloaded, or ready for a satisfying clean-up run.</p>
+
+  @if (!isLoading()) {
+    <div
+      class="health-orbit health-orbit--{{ healthTone() }}"
+      [style.--score]="healthScore()">
+      <strong>{{ healthScore() }}</strong>
+      <span>health score</span>
+    </div>
+  } @else {
+    <ion-skeleton-text animated class="health-skeleton"></ion-skeleton-text>
+  }
+</section>

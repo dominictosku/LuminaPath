@@ -1,44 +1,17 @@
 <ion-content [fullscreen]="true" class="quest-shell">
   <main class="quest-page">
-    <section class="quest-hero">
-      <div class="quest-hero__copy">
-        <span class="eyebrow">
-          <ion-icon name="sparkles-outline"></ion-icon>
-          Quest Board
-        </span>
-        <h1>Level {{ level }} {{ title }}</h1>
-        <p>Pick the next real-world quest, keep the streak alive, and let the rest wait in the right lane.</p>
-      </div>
-
-      <div class="quest-hero__panel">
-        <div class="rank-row">
-          <div>
-            <span>Total XP</span>
-            <strong>{{ xp }}</strong>
-          </div>
-          <ion-badge>{{ xpIntoLevel }}/200 XP</ion-badge>
-        </div>
-        <ion-progress-bar [value]="xpProgress"></ion-progress-bar>
-        <div class="stat-row">
-          <span><ion-icon name="today-outline"></ion-icon> {{ todayCount }} today</span>
-          <span><ion-icon name="alert-circle-outline"></ion-icon> {{ overdueCount }} overdue</span>
-          <span><ion-icon name="checkmark-circle-outline"></ion-icon> {{ completedQuestCount }} done</span>
-        </div>
-        @if (currentStreakDays > 0 || longestStreakDays > 0) {
-          <div class="streak-row">
-            <span class="streak-pill">
-              <ion-icon name="flame-outline"></ion-icon>
-              {{ currentStreakDays }}-day streak
-            </span>
-            @if (longestStreakDays > currentStreakDays) {
-              <span class="streak-best">
-                best: {{ longestStreakDays }}
-              </span>
-            }
-          </div>
-        }
-      </div>
-    </section>
+    <app-quest-board-hero
+      [level]="level"
+      [title]="title"
+      [xp]="xp"
+      [xpIntoLevel]="xpIntoLevel"
+      [xpProgress]="xpProgress"
+      [todayCount]="todayCount"
+      [overdueCount]="overdueCount"
+      [completedQuestCount]="completedQuestCount"
+      [currentStreakDays]="currentStreakDays"
+      [longestStreakDays]="longestStreakDays">
+    </app-quest-board-hero>
 
     <section class="mode-panel">
       <ion-segment [(ngModel)]="mode">
@@ -55,417 +28,193 @@
     </section>
 
     @if (mode === 'quests') {
-      <section class="quick-add-card">
-        <div class="quick-add-row">
-          <input
-            type="text"
-            class="quick-add-input"
-            placeholder="Capture a quest"
-            [(ngModel)]="quickAddTitle"
-            (keydown.enter)="submitQuickAdd()" />
-            <ion-button (click)="submitQuickAdd()" aria-label="Add quest">
-              <ion-icon slot="icon-only" name="add-outline"></ion-icon>
-            </ion-button>
-          </div>
-          <div class="quick-date-row" aria-label="Quest due date shortcuts">
-            <button
-              type="button"
-              class="quick-date"
-              [class.quick-date--active]="isQuickAddDue('today')"
-              (click)="setQuickAddToday()">
-              Today
-            </button>
-            <button
-              type="button"
-              class="quick-date"
-              [class.quick-date--active]="isQuickAddDue('tomorrow')"
-              (click)="setQuickAddTomorrow()">
-              Tomorrow
-            </button>
-            <button
-              type="button"
-              class="quick-date"
-              [class.quick-date--active]="isQuickAddDue('none')"
-              (click)="resetQuickAddDue()">
-              Inbox
-            </button>
-            <button type="button" class="quick-date quick-date--tools" (click)="toggleQuickAddAdvanced()">
-              <ion-icon name="options-outline"></ion-icon>
-              More
-              <ion-icon [name]="quickAddAdvancedOpen ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
-            </button>
-          </div>
-          @if (quickAddAdvancedOpen) {
-            <div class="quick-add-meta">
-              <label class="meta-chip">
-                <ion-icon name="flag-outline"></ion-icon>
-                <select [(ngModel)]="quickAddType">
-                  @for (option of typeOptions; track option) {
-                    <option [value]="option.value">{{ option.label }}</option>
-                  }
-                </select>
-              </label>
-              <label class="meta-chip">
-                <ion-icon name="flame-outline"></ion-icon>
-                <select [(ngModel)]="quickAddPriority">
-                  @for (option of priorityOptions; track option) {
-                    <option [value]="option.value">{{ option.label }}</option>
-                  }
-                </select>
-              </label>
-              <label class="meta-chip">
-                <ion-icon name="calendar-outline"></ion-icon>
-                <input type="date" [(ngModel)]="quickAddDue" />
-                @if (quickAddDue) {
-                  <button type="button" class="meta-chip-clear" aria-label="Clear due date" (click)="resetQuickAddDue()">
-                    <ion-icon name="close-outline"></ion-icon>
-                  </button>
-                }
-              </label>
-              <label class="meta-chip">
-                <ion-icon name="refresh-outline"></ion-icon>
-                <select [(ngModel)]="quickAddRecurrence">
-                  @for (option of recurrenceOptions; track option) {
-                    <option [value]="option.value">{{ option.label }}</option>
-                  }
-                </select>
-              </label>
-              @if (library.length) {
-                <label class="meta-chip">
-                  <ion-icon name="game-controller-outline"></ion-icon>
-                  <select [(ngModel)]="quickAddGameId">
-                    <option [ngValue]="null">No game</option>
-                    @for (game of library; track trackByLibrary($index, game)) {
-                      <option [ngValue]="game.myGameId">{{ game.gameName }}</option>
-                    }
-                  </select>
-                </label>
-              }
-              @if (skills.length) {
-                <label class="meta-chip">
-                  <ion-icon name="trophy-outline"></ion-icon>
-                  <select [(ngModel)]="quickAddSkillId">
-                    <option [ngValue]="null">No skill</option>
-                    @for (skill of skills; track trackBySkill($index, skill)) {
-                      <option [ngValue]="skill.id">{{ skill.name }}</option>
-                    }
-                  </select>
-                </label>
-              }
-            </div>
-          }
-        </section>
-        <section class="board-toolbar">
-          <ion-segment [value]="filter" (ionChange)="setFilter($any($event).detail.value)">
-            @for (option of filterOptions; track option) {
-              <ion-segment-button [value]="option.value">
-                <ion-icon [name]="option.icon"></ion-icon>
-                <ion-label>{{ option.label }}</ion-label>
-                <ion-badge>{{ filterCount(option.value) }}</ion-badge>
-              </ion-segment-button>
-            }
-          </ion-segment>
-          <label class="search-field">
-            <ion-icon name="search-outline"></ion-icon>
-            <input type="text" placeholder="Search quests, notes, tags" [(ngModel)]="searchQuery" />
-            @if (searchQuery) {
-              <button type="button" class="meta-chip-clear" aria-label="Clear search" (click)="clearSearch()">
-                <ion-icon name="close-outline"></ion-icon>
-              </button>
-            }
-          </label>
-          @if (availableTags.length) {
-            <div class="tag-filter-strip">
-              @for (tag of availableTags; track trackByText($index, tag)) {
-                <button
-                  type="button"
-                  class="tag-chip"
-                  [class.tag-chip--active]="tagFilter === tag"
-                  (click)="selectTag(tag)">
-                  <ion-icon name="pricetag-outline"></ion-icon>
-                  {{ tag }}
+      <app-quest-quick-add
+        [typeOptions]="typeOptions"
+        [priorityOptions]="priorityOptions"
+        [recurrenceOptions]="recurrenceOptions"
+        [library]="library"
+        [skills]="skills"
+        [(quickAddType)]="quickAddType"
+        [(quickAddPriority)]="quickAddPriority"
+        [(quickAddRecurrence)]="quickAddRecurrence"
+        (submitQuest)="handleQuickAdd($event)">
+      </app-quest-quick-add>
+
+      <app-quest-board-toolbar
+        [filterOptions]="filterOptions"
+        [filter]="filter"
+        [(searchQuery)]="searchQuery"
+        [availableTags]="availableTags"
+        [tagFilter]="tagFilter"
+        [filterCount]="filterCountFn"
+        (filterChange)="setFilter($event)"
+        (tagToggle)="selectTag($event)"
+        (tagClear)="clearTagFilter()"
+        (searchClear)="clearSearch()">
+      </app-quest-board-toolbar>
+
+      <section class="quest-board">
+        @if (!isLoading && !visibleQuests.length) {
+          <div class="empty-state">
+            <ion-icon name="sparkles-outline"></ion-icon>
+            <strong>Nothing needs your attention here</strong>
+            <span>Capture a quest above, or switch lanes to see what is scheduled elsewhere.</span>
+            @if (nextQueuedQuest; as nextQuest) {
+              <div class="empty-actions">
+                <button type="button" (click)="pullNextQuestToToday()">
+                  Pull "{{ nextQuest.title }}" into today
                 </button>
-              }
-              @if (tagFilter) {
-                <button type="button" class="tag-chip tag-chip--clear" (click)="clearTagFilter()">
-                  <ion-icon name="close-outline"></ion-icon>
-                  Clear
-                </button>
-              }
-            </div>
-          }
-        </section>
-        <section class="quest-board">
-          @if (!isLoading && !visibleQuests.length) {
-            <div class="empty-state">
-              <ion-icon name="sparkles-outline"></ion-icon>
-              <strong>Nothing needs your attention here</strong>
-              <span>Capture a quest above, or switch lanes to see what is scheduled elsewhere.</span>
-              @if (nextQueuedQuest; as nextQuest) {
-                <div class="empty-actions">
-                  <button type="button" (click)="pullNextQuestToToday()">
-                    Pull "{{ nextQuest.title }}" into today
+              </div>
+            }
+          </div>
+        }
+        @for (section of questSections; track trackByQuestSection($index, section)) {
+          <section class="quest-section quest-section--{{ section.tone }}">
+            <header class="quest-section__header">
+              <div class="section-icon">
+                <ion-icon [name]="section.icon"></ion-icon>
+              </div>
+              <div>
+                <h2>{{ section.title }}</h2>
+                <p>{{ section.subtitle }}</p>
+              </div>
+              <ion-badge>{{ section.quests.length }}</ion-badge>
+            </header>
+            <ion-reorder-group
+              class="quest-stack"
+              [disabled]="!isManualOrderActive"
+              (ionItemReorder)="handleReorder($any($event), section.quests)">
+              @for (quest of section.quests; track trackByQuest($index, quest)) {
+                <article
+                  class="quest-card"
+                  [class.quest-card--done]="quest.completed"
+                  [class.quest-card--selected]="expandedQuestId === quest.id"
+                  [attr.data-due]="dueState(quest)">
+                  <button type="button" class="complete-button" aria-label="Toggle complete" (click)="toggleQuest(quest)">
+                    <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
                   </button>
-                </div>
-              }
-            </div>
-          }
-          @for (section of questSections; track trackByQuestSection($index, section)) {
-            <section
-              class="quest-section quest-section--{{ section.tone }}"
-              >
-              <header class="quest-section__header">
-                <div class="section-icon">
-                  <ion-icon [name]="section.icon"></ion-icon>
-                </div>
-                <div>
-                  <h2>{{ section.title }}</h2>
-                  <p>{{ section.subtitle }}</p>
-                </div>
-                <ion-badge>{{ section.quests.length }}</ion-badge>
-              </header>
-              <ion-reorder-group
-                class="quest-stack"
-                [disabled]="!isManualOrderActive"
-                (ionItemReorder)="handleReorder($any($event), section.quests)">
-                @for (quest of section.quests; track trackByQuest($index, quest)) {
-                  <article
-                    class="quest-card"
-                    [class.quest-card--done]="quest.completed"
-                    [class.quest-card--selected]="expandedQuestId === quest.id"
-                    [attr.data-due]="dueState(quest)">
-                    <button type="button" class="complete-button" aria-label="Toggle complete" (click)="toggleQuest(quest)">
-                      <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
-                    </button>
-                    <div
-                      class="quest-body"
-                      role="button"
-                      tabindex="0"
-                      (click)="toggleExpand(quest)"
-                      (keydown.enter)="toggleExpand(quest)"
-                      (keydown.space)="$event.preventDefault(); toggleExpand(quest)">
-                      <span class="quest-kicker">
-                        <ion-icon [name]="typeIcon(quest.type)"></ion-icon>
-                        {{ typeLabel(quest.type) }}
-                        <span class="dot"></span>
-                        {{ priorityLabel(quest.priority) }}
-                      </span>
-                      <h3>{{ quest.title }}</h3>
-                      @if (quest.notes) {
-                        <p class="quest-notes">{{ quest.notes }}</p>
+                  <div
+                    class="quest-body"
+                    role="button"
+                    tabindex="0"
+                    (click)="toggleExpand(quest)"
+                    (keydown.enter)="toggleExpand(quest)"
+                    (keydown.space)="$event.preventDefault(); toggleExpand(quest)">
+                    <span class="quest-kicker">
+                      <ion-icon [name]="typeIcon(quest.type)"></ion-icon>
+                      {{ typeLabel(quest.type) }}
+                      <span class="dot"></span>
+                      {{ priorityLabel(quest.priority) }}
+                    </span>
+                    <h3>{{ quest.title }}</h3>
+                    @if (quest.notes) {
+                      <p class="quest-notes">{{ quest.notes }}</p>
+                    }
+                    <div class="quest-meta">
+                      @if (quest.dueDate) {
+                        <span class="meta-pill meta-pill--due" [attr.data-state]="dueState(quest)">
+                          <ion-icon name="calendar-outline"></ion-icon>
+                          {{ dueDateLabel(quest) }}
+                        </span>
                       }
-                      <div class="quest-meta">
-                        @if (quest.dueDate) {
-                          <span class="meta-pill meta-pill--due" [attr.data-state]="dueState(quest)">
-                            <ion-icon name="calendar-outline"></ion-icon>
-                            {{ dueDateLabel(quest) }}
-                          </span>
+                      @if (!quest.dueDate && !quest.completed) {
+                        <span class="meta-pill">
+                          <ion-icon name="library-outline"></ion-icon>
+                          Inbox
+                        </span>
+                      }
+                      @if (quest.recurrence && quest.recurrence !== 'none') {
+                        <span class="meta-pill meta-pill--recurrence">
+                          <ion-icon name="refresh-outline"></ion-icon>
+                          {{ recurrenceLabel(quest.recurrence) }}
+                        </span>
+                      }
+                      @if (quest.gameName) {
+                        <span class="meta-pill meta-pill--game">
+                          <ion-icon name="game-controller-outline"></ion-icon>
+                          {{ quest.gameName }}
+                        </span>
+                      }
+                      @if (quest.skillName) {
+                        <span class="meta-pill meta-pill--skill">
+                          <ion-icon name="trophy-outline"></ion-icon>
+                          {{ quest.skillName }}
+                        </span>
+                      }
+                      @if (quest.subtasks.length) {
+                        <span class="meta-pill meta-pill--subtasks">
+                          <ion-icon name="checkmark-done-outline"></ion-icon>
+                          {{ subtaskCompletedCount(quest) }}/{{ quest.subtasks.length }}
+                        </span>
+                      }
+                    </div>
+                    @if (quest.subtasks.length) {
+                      <div class="subtask-progress">
+                        <ion-progress-bar [value]="subtaskProgress(quest)"></ion-progress-bar>
+                      </div>
+                    }
+                    @if (!quest.completed) {
+                      <div class="quest-plan-actions">
+                        @if (canScheduleToday(quest)) {
+                          <button type="button" (click)="$event.stopPropagation(); scheduleToday(quest)">Today</button>
                         }
-                        @if (!quest.dueDate && !quest.completed) {
-                          <span class="meta-pill">
-                            <ion-icon name="library-outline"></ion-icon>
-                            Inbox
-                          </span>
+                        @if (canScheduleTomorrow(quest)) {
+                          <button type="button" (click)="$event.stopPropagation(); scheduleTomorrow(quest)">Tomorrow</button>
                         }
-                        @if (quest.recurrence && quest.recurrence !== 'none') {
-                          <span class="meta-pill meta-pill--recurrence">
-                            <ion-icon name="refresh-outline"></ion-icon>
-                            {{ recurrenceLabel(quest.recurrence) }}
-                          </span>
-                        }
-                        @if (quest.gameName) {
-                          <span class="meta-pill meta-pill--game">
-                            <ion-icon name="game-controller-outline"></ion-icon>
-                            {{ quest.gameName }}
-                          </span>
-                        }
-                        @if (quest.skillName) {
-                          <span class="meta-pill meta-pill--skill">
-                            <ion-icon name="trophy-outline"></ion-icon>
-                            {{ quest.skillName }}
-                          </span>
-                        }
-                        @if (quest.subtasks.length) {
-                          <span class="meta-pill meta-pill--subtasks">
-                            <ion-icon name="checkmark-done-outline"></ion-icon>
-                            {{ subtaskCompletedCount(quest) }}/{{ quest.subtasks.length }}
-                          </span>
+                        @if (canMoveToInbox(quest)) {
+                          <button type="button" (click)="$event.stopPropagation(); clearQuestDueDate(quest)">Inbox</button>
                         }
                       </div>
-                      @if (quest.subtasks.length) {
-                        <div class="subtask-progress">
-                          <ion-progress-bar [value]="subtaskProgress(quest)"></ion-progress-bar>
-                        </div>
-                      }
-                      @if (!quest.completed) {
-                        <div class="quest-plan-actions">
-                          @if (canScheduleToday(quest)) {
-                            <button
-                              type="button"
-                              (click)="$event.stopPropagation(); scheduleToday(quest)">
-                              Today
-                            </button>
-                          }
-                          @if (canScheduleTomorrow(quest)) {
-                            <button
-                              type="button"
-                              (click)="$event.stopPropagation(); scheduleTomorrow(quest)">
-                              Tomorrow
-                            </button>
-                          }
-                          @if (canMoveToInbox(quest)) {
-                            <button
-                              type="button"
-                              (click)="$event.stopPropagation(); clearQuestDueDate(quest)">
-                              Inbox
-                            </button>
-                          }
-                        </div>
-                      }
-                    </div>
-                    <button type="button" class="delete-button" aria-label="Delete quest" (click)="beginDelete(quest)">
-                      <ion-icon name="trash-outline"></ion-icon>
-                    </button>
-                    @if (isManualOrderActive) {
-                      <ion-reorder class="reorder-handle"></ion-reorder>
                     }
-                  </article>
-                }
-              </ion-reorder-group>
-            </section>
-          }
-        </section>
-        @if (achievements.length) {
-          <section class="achievements-panel">
-            <header class="section-header">
-              <div>
-                <span class="eyebrow">
-                  <ion-icon name="trophy-outline"></ion-icon>
-                  Achievements
-                </span>
-                <h2>{{ achievements.length }} unlocked</h2>
-              </div>
-            </header>
-            <div class="achievement-grid">
-              @for (achievement of achievements; track trackByAchievement($index, achievement)) {
-                <article
-                  class="achievement-card"
-                  [title]="achievement.description">
-                  <div class="achievement-icon">
-                    <ion-icon [name]="achievement.icon"></ion-icon>
                   </div>
-                  <div class="achievement-body">
-                    <strong>{{ achievement.title }}</strong>
-                    <span>{{ achievement.description }}</span>
-                  </div>
+                  <button type="button" class="delete-button" aria-label="Delete quest" (click)="beginDelete(quest)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </button>
+                  @if (isManualOrderActive) {
+                    <ion-reorder class="reorder-handle"></ion-reorder>
+                  }
                 </article>
               }
-            </div>
+            </ion-reorder-group>
           </section>
         }
-      }
+      </section>
 
-      @if (mode === 'skills') {
-        <section class="skills-layout">
-          <div class="skills-heading">
-            <div>
-              <span class="eyebrow">
-                <ion-icon name="trophy-outline"></ion-icon>
-                Mastery paths
-              </span>
-              <h2>End Goals</h2>
-            </div>
-            <ion-button fill="clear" (click)="openSkillModal()">
-              <ion-icon slot="start" name="add-outline"></ion-icon>
-              Skill
-            </ion-button>
-          </div>
-          <div class="skill-grid">
-            @for (skill of skills; track trackBySkill($index, skill)) {
-              <article class="skill-card" [style.--skill-color]="skill.color">
-                <header>
-                  <div class="skill-icon">
-                    <ion-icon [name]="skill.icon"></ion-icon>
-                  </div>
-                  <div>
-                    <h3>{{ skill.name }}</h3>
-                    <p>Level {{ skillLevel(skill) }} · {{ skill.xp }} XP · {{ activeLinkedQuestCount(skill) }} active quests</p>
-                  </div>
-                  <div class="skill-card-actions">
-                    <button type="button" aria-label="Edit skill" (click)="openEditSkillModal(skill)">
-                      <ion-icon name="create-outline"></ion-icon>
-                    </button>
-                    <button type="button" aria-label="Delete skill" (click)="deleteSkill(skill.id)">
-                      <ion-icon name="trash-outline"></ion-icon>
-                    </button>
-                  </div>
-                </header>
-                <ion-progress-bar [value]="skillProgress(skill)"></ion-progress-bar>
-                <div class="skill-next">
-                  <span>Next node</span>
-                  <strong>{{ nextNodeName(skill) }}</strong>
-                  <small>{{ unlockedCount(skill) }} / {{ skill.nodes.length }} nodes · {{ linkedQuestCount(skill) }} linked quests</small>
-                </div>
-                <div class="skill-actions">
-                  <ion-button size="small" (click)="trainSkill(skill)">
-                    <ion-icon slot="start" name="flash-outline"></ion-icon>
-                    Train
-                  </ion-button>
-                  <ion-button size="small" fill="clear" (click)="openNodeModal(skill)">
-                    <ion-icon slot="start" name="add-outline"></ion-icon>
-                    Node
-                  </ion-button>
-                </div>
-                <div class="node-list">
-                  @for (node of skill.nodes; track trackByText(nodeIndex, node); let nodeIndex = $index) {
-                    <div
-                      class="node"
-                      role="button"
-                      tabindex="0"
-                      [class.node--unlocked]="skillNodeState(skill, nodeIndex) === 'completed'"
-                      [class.node--available]="skillNodeState(skill, nodeIndex) === 'available'"
-                      [class.node--locked]="skillNodeState(skill, nodeIndex) === 'locked'"
-                      (click)="unlockNode(skill, nodeIndex)"
-                      (keydown.enter)="unlockNode(skill, nodeIndex)"
-                      (keydown.space)="$event.preventDefault(); unlockNode(skill, nodeIndex)">
-                      <ion-icon [name]="skillNodeState(skill, nodeIndex) === 'completed' ? 'star-outline' : skillNodeState(skill, nodeIndex) === 'available' ? 'sparkles-outline' : 'lock-closed-outline'"></ion-icon>
-                      <span>
-                        <strong>{{ node }}</strong>
-                        <small>{{ skillNodeState(skill, nodeIndex) === 'completed' ? 'Completed' : skillNodeState(skill, nodeIndex) === 'available' ? 'Ready to unlock' : 'Locked' }}</small>
-                      </span>
-                      @if (skillNodeState(skill, nodeIndex) === 'available') {
-                        <button
-                          type="button"
-                          class="node-quest-button"
-                          (click)="$event.stopPropagation(); startNodeQuest(skill, node)">
-                          Quest
-                        </button>
-                      }
-                    </div>
-                  }
-                </div>
-                <ion-progress-bar [value]="skillCompletion(skill)"></ion-progress-bar>
-              </article>
-            }
-          </div>
-        </section>
+      @if (achievements.length) {
+        <app-quest-achievements [achievements]="achievements"></app-quest-achievements>
       }
+    }
 
-      @if (mode === 'tree') {
-        <section class="skills-layout">
-          @defer (on viewport) {
+    @if (mode === 'skills') {
+      <app-skills-list
+        [skills]="skills"
+        [activeLinkedQuestCount]="activeLinkedQuestCountFn"
+        [linkedQuestCount]="linkedQuestCountFn"
+        (addSkill)="openSkillModal()"
+        (editSkill)="openEditSkillModal($event)"
+        (deleteSkill)="deleteSkill($event)"
+        (addNode)="openNodeModal($event)"
+        (trainSkill)="trainSkill($event)"
+        (unlockNode)="unlockNode($event)"
+        (startNodeQuest)="startNodeQuest($event)">
+      </app-skills-list>
+    }
+
+    @if (mode === 'tree') {
+      <section class="skills-layout">
+        @defer (on viewport) {
           <app-skill-tree
             [branches]="skillTreeBranches"
             [unlockedNodeIds]="skillTreeUnlockedNodeIds"
             (nodeUnlocked)="handleSkillTreeNodeUnlocked($event)">
           </app-skill-tree>
-          } @placeholder {
+        } @placeholder {
           <div class="empty-state">
             <ion-icon name="sparkles-outline"></ion-icon>
             <strong>Skill tree is ready when you are</strong>
             <span>The 3D view will load once this panel is visible.</span>
           </div>
-          } @loading (minimum 300ms) {
+        } @loading (minimum 300ms) {
           <div class="empty-state">
             <ion-icon name="sparkles-outline"></ion-icon>
             <strong>Loading skill tree</strong>
@@ -477,219 +226,72 @@
   </main>
 
   @if (selectedQuest; as quest) {
-    <div class="modal-backdrop detail-backdrop" (click)="cancelEdit()">
-      <section class="quest-detail-sheet" (click)="$event.stopPropagation()">
-        <button type="button" class="modal-close" aria-label="Close" (click)="cancelEdit()">
-          <ion-icon name="close-outline"></ion-icon>
-        </button>
-        <div class="detail-heading">
-          <span class="eyebrow">
-            <ion-icon [name]="typeIcon(quest.type)"></ion-icon>
-            {{ typeLabel(quest.type) }} quest
-          </span>
-          <h2>{{ quest.title }}</h2>
-          @if (quest.notes) {
-            <p>{{ quest.notes }}</p>
-          }
-        </div>
-        <div class="detail-actions">
-          <button type="button" (click)="scheduleToday(quest)">Today</button>
-          <button type="button" (click)="scheduleTomorrow(quest)">Tomorrow</button>
-          <button type="button" (click)="clearQuestDueDate(quest)">Inbox</button>
-        </div>
-        @if (editDraft) {
-          <label class="edit-field">
-            <span>Title</span>
-            <input type="text" [(ngModel)]="editDraft.title" />
-          </label>
-          <label class="edit-field">
-            <span>Notes</span>
-            <textarea rows="3" [(ngModel)]="editDraft.notes" placeholder="Optional notes"></textarea>
-          </label>
-          <div class="edit-row">
-            <label class="edit-field edit-field--inline">
-              <span>Type</span>
-              <select [(ngModel)]="editDraft.type">
-                @for (option of typeOptions; track option) {
-                  <option [value]="option.value">{{ option.label }}</option>
-                }
-              </select>
-            </label>
-            <label class="edit-field edit-field--inline">
-              <span>Priority</span>
-              <select [(ngModel)]="editDraft.priority">
-                @for (option of priorityOptions; track option) {
-                  <option [value]="option.value">{{ option.label }}</option>
-                }
-              </select>
-            </label>
-            <label class="edit-field edit-field--inline">
-              <span>Repeat</span>
-              <select [(ngModel)]="editDraft.recurrence">
-                @for (option of recurrenceOptions; track option) {
-                  <option [value]="option.value">{{ option.label }}</option>
-                }
-              </select>
-            </label>
-            <label class="edit-field edit-field--inline">
-              <span>Due date</span>
-              <input type="date" [(ngModel)]="editDraft.dueDate" />
-            </label>
-            @if (library.length) {
-              <label class="edit-field edit-field--inline">
-                <span>Game</span>
-                <select [(ngModel)]="editDraft.myGameId">
-                  <option [ngValue]="null">No game</option>
-                  @for (game of library; track trackByLibrary($index, game)) {
-                    <option [ngValue]="game.myGameId">{{ game.gameName }}</option>
-                  }
-                </select>
-              </label>
-            }
-            @if (skills.length) {
-              <label class="edit-field edit-field--inline">
-                <span>Skill</span>
-                <select [(ngModel)]="editDraft.skillId">
-                  <option [ngValue]="null">No skill</option>
-                  @for (skill of skills; track trackBySkill($index, skill)) {
-                    <option [ngValue]="skill.id">{{ skill.name }}</option>
-                  }
-                </select>
-              </label>
-            }
-          </div>
-          <label class="edit-field">
-            <span>Tags <small>(comma separated)</small></span>
-            <input type="text" [(ngModel)]="editDraft.tags" placeholder="errand, focus, deep-work" />
-          </label>
-          <div class="edit-field">
-            <span>Subtasks @if (quest.subtasks.length) {
-              <small>{{ subtaskCompletedCount(quest) }} / {{ quest.subtasks.length }} done</small>
-            }</span>
-            @if (quest.subtasks.length) {
-              <ul class="subtask-list">
-                @for (subtask of quest.subtasks; track trackBySubtask($index, subtask)) {
-                  <li
-                    class="subtask"
-                    [class.subtask--done]="subtask.completed">
-                    <button type="button" class="subtask-toggle" aria-label="Toggle subtask" (click)="toggleSubtask(quest, subtask)">
-                      <ion-icon [name]="subtask.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
-                    </button>
-                    <span class="subtask-title">{{ subtask.title }}</span>
-                    <button type="button" class="subtask-delete" aria-label="Delete subtask" (click)="deleteSubtask(quest, subtask)">
-                      <ion-icon name="close-outline"></ion-icon>
-                    </button>
-                  </li>
-                }
-              </ul>
-            }
-            <div class="subtask-add">
-              <input
-                type="text"
-                placeholder="Add a subtask"
-                [ngModel]="subtaskDraft(quest.id)"
-                (ngModelChange)="setSubtaskDraft(quest.id, $event)"
-                (keydown.enter)="addSubtask(quest)" />
-                <button type="button" class="subtask-add-button" aria-label="Add subtask" (click)="addSubtask(quest)">
-                  <ion-icon name="add-outline"></ion-icon>
-                </button>
-              </div>
-            </div>
-            <div class="edit-actions">
-              <ion-button fill="clear" (click)="cancelEdit()">Cancel</ion-button>
-              <ion-button (click)="saveEdit(quest)">Save</ion-button>
-            </div>
-          }
-        </section>
-      </div>
-    }
+    <app-quest-detail-sheet
+      [quest]="quest"
+      [(editDraft)]="editDraft"
+      [typeOptions]="typeOptions"
+      [priorityOptions]="priorityOptions"
+      [recurrenceOptions]="recurrenceOptions"
+      [library]="library"
+      [skills]="skills"
+      [typeIcon]="typeIconFn"
+      [typeLabel]="typeLabelFn"
+      [subtaskDraft]="subtaskDraftFn"
+      (setSubtaskDraft)="setSubtaskDraft($event)"
+      (close)="cancelEdit()"
+      (scheduleToday)="scheduleToday($event)"
+      (scheduleTomorrow)="scheduleTomorrow($event)"
+      (clearDueDate)="clearQuestDueDate($event)"
+      (save)="saveEdit($event)"
+      (toggleSubtask)="toggleSubtask($event)"
+      (deleteSubtask)="deleteSubtask($event)"
+      (addSubtask)="addSubtask($event)">
+    </app-quest-detail-sheet>
+  }
 
-    @if (modalMode) {
-      <div class="modal-backdrop" (click)="closeModal()">
-        <section class="quest-modal" (click)="$event.stopPropagation()">
-          <button type="button" class="modal-close" aria-label="Close" (click)="closeModal()">
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
-          @if (modalMode === 'skill') {
-            <span class="eyebrow">
-              <ion-icon name="sparkles-outline"></ion-icon>
-              {{ editingSkillId === null ? 'New skill' : 'Edit skill' }}
-            </span>
-            <h2>{{ editingSkillId === null ? 'Add a real-life skill' : 'Update this skill' }}</h2>
-            <label>
-              <span>Name</span>
-              <input type="text" placeholder="Drawing, cooking, writing..." [(ngModel)]="newSkill.name" />
-            </label>
-            <div class="choice-row">
-              @for (option of skillIconOptions; track option) {
-                <button
-                  type="button"
-                  [class.choice--selected]="newSkill.icon === option.icon"
-                  (click)="newSkill.icon = option.icon">
-                  <ion-icon [name]="option.icon"></ion-icon>
-                  <span>{{ option.label }}</span>
-                </button>
-              }
-            </div>
-            <div class="color-row">
-              @for (color of skillColorOptions; track color) {
-                <button
-                  type="button"
-                  [style.background]="color"
-                  [class.color--selected]="newSkill.color === color"
-                  [attr.aria-label]="'Use color ' + color"
-                  (click)="newSkill.color = color">
-                </button>
-              }
-            </div>
-            <ion-button expand="block" (click)="saveSkill()">
-              {{ editingSkillId === null ? 'Add Skill' : 'Save Skill' }}
-            </ion-button>
-          } @else {
-            <span class="eyebrow">
-              <ion-icon name="star-outline"></ion-icon>
-              New node
-            </span>
-            <h2>Add a milestone</h2>
-            <label>
-              <span>Node name</span>
-              <input type="text" placeholder="30 day streak, first portrait..." [(ngModel)]="newNodeName" />
-            </label>
-            <ion-button expand="block" (click)="addNode()">Add Node</ion-button>
-          }
-        </section>
-      </div>
-    }
+  @if (modalMode) {
+    <app-skill-modal
+      [mode]="modalMode"
+      [editingSkillId]="editingSkillId"
+      [(skillForm)]="newSkill"
+      [(nodeName)]="newNodeName"
+      [skillIconOptions]="skillIconOptions"
+      [skillColorOptions]="skillColorOptions"
+      (close)="closeModal()"
+      (saveSkill)="saveSkill()"
+      (addNode)="addNode()">
+    </app-skill-modal>
+  }
 
-    @if (achievementToast) {
-      <div class="achievement-toast" (click)="closeAchievementToast()">
-        <div class="achievement-toast__icon">
-          <ion-icon [name]="achievementToast.icon"></ion-icon>
+  @if (achievementToast) {
+    <div class="achievement-toast" (click)="closeAchievementToast()">
+      <div class="achievement-toast__icon">
+        <ion-icon [name]="achievementToast.icon"></ion-icon>
+      </div>
+      <div class="achievement-toast__body">
+        <span class="eyebrow">Achievement unlocked</span>
+        <strong>{{ achievementToast.title }}</strong>
+        <span>{{ achievementToast.description }}</span>
+      </div>
+    </div>
+  }
+
+  @if (pendingDeleteList.length) {
+    <div class="undo-toast">
+      @for (quest of pendingDeleteList; track trackByQuest($index, quest)) {
+        <div class="undo-toast__row">
+          <ion-icon name="trash-outline"></ion-icon>
+          <span>Deleted "{{ quest.title }}"</span>
+          <button type="button" (click)="undoDelete(quest.id)">Undo</button>
         </div>
-        <div class="achievement-toast__body">
-          <span class="eyebrow">Achievement unlocked</span>
-          <strong>{{ achievementToast.title }}</strong>
-          <span>{{ achievementToast.description }}</span>
-        </div>
-      </div>
-    }
+      }
+    </div>
+  }
 
-    @if (pendingDeleteList.length) {
-      <div class="undo-toast">
-        @for (quest of pendingDeleteList; track trackByQuest($index, quest)) {
-          <div class="undo-toast__row">
-            <ion-icon name="trash-outline"></ion-icon>
-            <span>Deleted "{{ quest.title }}"</span>
-            <button type="button" (click)="undoDelete(quest.id)">Undo</button>
-          </div>
-        }
-      </div>
-    }
-
-    @if (toastMessage) {
-      <div class="toast">
-        <ion-icon name="sparkles"></ion-icon>
-        <span>{{ toastMessage }}</span>
-      </div>
-    }
-  </ion-content>
+  @if (toastMessage) {
+    <div class="toast">
+      <ion-icon name="sparkles"></ion-icon>
+      <span>{{ toastMessage }}</span>
+    </div>
+  }
+</ion-content>

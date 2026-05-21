@@ -1,0 +1,48 @@
+<section class="section-block chart-block">
+  <header class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="star-outline"></ion-icon>
+        Taste
+      </span>
+      <h2>Rating Spread</h2>
+    </div>
+    <ion-badge>{{ count() }}</ion-badge>
+  </header>
+  @if (count() > 0) {
+    <svg class="histogram" viewBox="0 0 240 86" role="img" aria-label="Distribution of personal ratings from one to ten">
+      <g>
+        @for (bucket of buckets(); track trackByBucket($index, bucket)) {
+          <rect
+            [attr.x]="bucket.x"
+            [attr.y]="bucket.y"
+            width="18"
+            [attr.height]="bucket.height || 2"
+            rx="3"
+            [attr.fill]="bucket.count > 0 ? 'url(#histGradient)' : 'rgba(137, 180, 255, 0.16)'"></rect>
+        }
+      </g>
+      <defs>
+        <linearGradient id="histGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--accent-2)"></stop>
+          <stop offset="100%" stop-color="var(--accent)"></stop>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="histogram-axis">
+      @for (bucket of buckets(); track trackByBucket($index, bucket)) {
+        <span>{{ bucket.rating }}</span>
+      }
+    </div>
+    <p class="chart-note">
+      Average rating
+      <strong>{{ average() | number:'1.1-1' }}</strong>
+      across {{ count() }} rated item{{ count() === 1 ? '' : 's' }}.
+    </p>
+  } @else {
+    <div class="empty-state">
+      <ion-icon name="ribbon-outline"></ion-icon>
+      <span>Rate completed items to grow this chart.</span>
+    </div>
+  }
+</section>

@@ -1,0 +1,25 @@
+<section class="section-block">
+  <header class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="ribbon-outline"></ion-icon>
+        Favorites
+      </span>
+      <h2>Top Rated</h2>
+    </div>
+  </header>
+  <div class="item-list">
+    @for (item of items(); track trackByItem($index, item)) {
+      <article class="stat-item">
+        <div>
+          <h3>{{ item.name }}</h3>
+          <p>{{ item.kind }} · {{ item.statusLabel }}</p>
+        </div>
+        <strong class="rating-badge">
+          <ion-icon name="star-outline"></ion-icon>
+          {{ item.rating }}
+        </strong>
+      </article>
+    }
+  </div>
+</section>

@@ -1,0 +1,54 @@
+<section class="section-block chart-block">
+  <header class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="trending-up-outline"></ion-icon>
+        Momentum
+      </span>
+      <h2>Completion Trend</h2>
+    </div>
+    <ion-badge>{{ trend().total }} / 12mo</ion-badge>
+  </header>
+  @if (trend().total > 0) {
+    <svg class="trend" [attr.viewBox]="'0 0 ' + trendWidth + ' ' + trendHeight" preserveAspectRatio="none" role="img" aria-label="Completions over the last twelve months">
+      <defs>
+        <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.45"></stop>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"></stop>
+        </linearGradient>
+      </defs>
+      @if (trend().area) {
+        <path [attr.d]="trend().area" fill="url(#trendFill)"></path>
+      }
+      <polyline
+        [attr.points]="trend().polyline"
+        fill="none"
+        stroke="var(--accent-2)"
+        stroke-width="2"
+        stroke-linejoin="round"
+        stroke-linecap="round"></polyline>
+      <g>
+        @for (point of trend().points; track trackByTrend($index, point)) {
+          <circle
+            [attr.cx]="point.x"
+            [attr.cy]="point.y"
+            r="2.6"
+            [attr.fill]="point.count > 0 ? 'var(--accent-2)' : 'rgba(137, 180, 255, 0.4)'"></circle>
+        }
+      </g>
+    </svg>
+    <div class="trend-axis">
+      @for (point of trend().points; track trackByTrend($index, point)) {
+        <span>{{ point.shortLabel }}</span>
+      }
+    </div>
+    <p class="chart-note">
+      Peak month closed {{ trend().max }} item{{ trend().max === 1 ? '' : 's' }}.
+    </p>
+  } @else {
+    <div class="empty-state">
+      <ion-icon name="calendar-outline"></ion-icon>
+      <span>Mark items with an end date to chart your completion pace.</span>
+    </div>
+  }
+</section>

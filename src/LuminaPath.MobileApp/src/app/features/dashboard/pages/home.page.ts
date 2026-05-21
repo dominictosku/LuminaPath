@@ -2,48 +2,28 @@ import { Component, OnInit, inject } from '@angular/core';
 
 import { catchError, forkJoin, from, of } from 'rxjs';
 import {
-  IonBadge,
   IonContent,
   IonIcon,
   IonRefresher,
   IonRefresherContent,
-  IonSkeletonText,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import {
-  alertCircleOutline,
-  calendarClearOutline,
-  checkmarkDoneOutline,
-  checkboxOutline,
-  flameOutline,
-  gameControllerOutline,
-  hourglassOutline,
-  libraryOutline,
-  sparklesOutline,
-  timeOutline,
-  trendingUpOutline,
-  filmOutline,
-  bookOutline,
-  tvOutline,
-} from 'ionicons/icons';
+import { flameOutline } from 'ionicons/icons';
 import { Game, platformLabelFromValue } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
-import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { Anime } from '../../animes/models/animes.model';
 import { AnimeService } from '../../animes/services/anime.service';
 import { Movie } from '../../movies/models/movies.model';
 import { MovieService } from '../../movies/services/movie.service';
 import { Series } from '../../series/models/series.model';
 import { SeriesService } from '../../series/services/series.service';
-import { MediaFile } from '../../library/models/mediaFile.model';
-import { GameStatus, gameStatusLabel, isGameBacklogStatus } from '../../library/models/library-status.model';
+import { GameStatus, isGameBacklogStatus } from '../../library/models/library-status.model';
 import { GamingSession, GamingSessionService } from '../../planning/services/gaming-session.service';
 import { Quest, QuestBoardService, QuestBoardState } from '../../quests/services/quest-board.service';
 import {
   estimatedHoursOfGame,
   gameStatusOf,
   playedHoursOfGame,
-  releaseDateOfGame,
   remainingHoursOfGame,
 } from '../../games/domain/game-library-metrics';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
@@ -54,19 +34,37 @@ import {
   DashboardMediaKind,
   DashboardMetric,
 } from '../models/dashboard.model';
+import { progressOf, releaseDateOf, remainingLabel, statusLabel } from '../dashboard-view.helpers';
+import { addDays, startOfDay } from 'src/app/shared/utils/date-helpers';
+import { DashboardHeroComponent } from '../components/dashboard-hero/dashboard-hero.component';
+import { DashboardMetricsComponent } from '../components/dashboard-metrics/dashboard-metrics.component';
+import { DashboardMomentumComponent } from '../components/dashboard-momentum/dashboard-momentum.component';
+import { DashboardFocusComponent } from '../components/dashboard-focus/dashboard-focus.component';
+import { DashboardActivityComponent } from '../components/dashboard-activity/dashboard-activity.component';
+import { DashboardActiveRailComponent } from '../components/dashboard-active-rail/dashboard-active-rail.component';
+import { DashboardReleasesComponent } from '../components/dashboard-releases/dashboard-releases.component';
+import { DashboardBacklogComponent } from '../components/dashboard-backlog/dashboard-backlog.component';
+import { DashboardRecentComponent } from '../components/dashboard-recent/dashboard-recent.component';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
   imports: [
-    IonBadge,
     IonContent,
     IonIcon,
     IonRefresher,
     IonRefresherContent,
-    IonSkeletonText
-],
+    DashboardHeroComponent,
+    DashboardMetricsComponent,
+    DashboardMomentumComponent,
+    DashboardFocusComponent,
+    DashboardActivityComponent,
+    DashboardActiveRailComponent,
+    DashboardReleasesComponent,
+    DashboardBacklogComponent,
+    DashboardRecentComponent,
+  ],
 })
 export class HomePage implements OnInit {
   private gameService = inject(GameService);
@@ -101,22 +99,7 @@ export class HomePage implements OnInit {
   errorMessage = '';
 
   constructor() {
-    addIcons({
-      alertCircleOutline,
-      calendarClearOutline,
-      checkmarkDoneOutline,
-      checkboxOutline,
-      flameOutline,
-      gameControllerOutline,
-      hourglassOutline,
-      libraryOutline,
-      sparklesOutline,
-      timeOutline,
-      trendingUpOutline,
-      filmOutline,
-      bookOutline,
-      tvOutline,
-    });
+    addIcons({ flameOutline });
   }
 
   ngOnInit() {
@@ -126,7 +109,7 @@ export class HomePage implements OnInit {
   loadDashboard(event?: CustomEvent) {
     this.isLoading = !event;
     this.errorMessage = '';
-    const today = this.startOfToday();
+    const today = startOfDay(new Date());
     const gamesFilter = this.dashboardLibraryFilter();
     const animesFilter = this.dashboardLibraryFilter();
     const moviesFilter = this.dashboardLibraryFilter();
@@ -137,7 +120,7 @@ export class HomePage implements OnInit {
       animes: this.animeService.getAll(animesFilter),
       movies: this.movieService.getAll(moviesFilter),
       series: this.seriesService.getAll(seriesFilter),
-      sessions: this.sessionService.list({ from: today, to: this.addDays(today, 14) }).pipe(catchError(() => of([]))),
+      sessions: this.sessionService.list({ from: today, to: addDays(today, 14) }).pipe(catchError(() => of([]))),
       board: from(this.questBoardService.getBoard()).pipe(catchError(() => of(null))),
     }).subscribe({
       next: (result) => {
@@ -178,7 +161,7 @@ export class HomePage implements OnInit {
     this.ownedItems = this.mediaItems.filter((item) => item.status >= 0);
     this.playingItems = this.ownedItems
       .filter((item) => item.status === GameStatus.Playing)
-      .sort((a, b) => this.progressOf(b) - this.progressOf(a))
+      .sort((a, b) => progressOf(b) - progressOf(a))
       .slice(0, 4);
     this.upcomingReleases = this.getUpcomingReleases();
     this.backlogItems = this.getBacklogItems();
@@ -197,7 +180,7 @@ export class HomePage implements OnInit {
     this.completionRate = this.ownedItems.length === 0
       ? 0
       : Math.round((completedItems / this.ownedItems.length) * 100);
-    this.heroProgress = this.featuredItem ? this.progressOf(this.featuredItem) : 0;
+    this.heroProgress = this.featuredItem ? progressOf(this.featuredItem) : 0;
     this.metrics = this.createMetrics(completedItems);
     this.focusItems = this.createFocusItems();
     this.activityItems = this.createActivityItems();
@@ -240,11 +223,11 @@ export class HomePage implements OnInit {
   }
 
   private getUpcomingReleases(): DashboardMediaItem[] {
-    const today = this.startOfToday();
+    const today = startOfDay(new Date());
 
     return this.mediaItems
-      .filter((item) => this.releaseDateOf(item) >= today)
-      .sort((a, b) => this.releaseDateOf(a).getTime() - this.releaseDateOf(b).getTime())
+      .filter((item) => releaseDateOf(item) >= today)
+      .sort((a, b) => releaseDateOf(a).getTime() - releaseDateOf(b).getTime())
       .slice(0, 5);
   }
 
@@ -256,9 +239,10 @@ export class HomePage implements OnInit {
   }
 
   private createFocusItems(): DashboardFocusItem[] {
+    const today = startOfDay(new Date());
     const nextSession = this.nextSession();
     const dueQuests = this.openQuests()
-      .filter((quest) => quest.dueDate && new Date(quest.dueDate) <= this.addDays(this.startOfToday(), 1))
+      .filter((quest) => quest.dueDate && new Date(quest.dueDate) <= addDays(today, 1))
       .length;
     const nextRelease = this.upcomingReleases[0] ?? null;
     const backlogPick = this.backlogItems[0] ?? null;
@@ -286,7 +270,7 @@ export class HomePage implements OnInit {
       },
       {
         title: backlogPick?.name ?? 'Backlog is clear',
-        detail: backlogPick ? `${this.remainingLabel(backlogPick)} · ${this.statusLabel(backlogPick)}` : 'No planned commitment found',
+        detail: backlogPick ? `${remainingLabel(backlogPick)} · ${statusLabel(backlogPick)}` : 'No planned commitment found',
         icon: 'hourglass-outline',
         tone: 'blue',
       },
@@ -330,74 +314,6 @@ export class HomePage implements OnInit {
     }
 
     return items.slice(0, 8);
-  }
-
-  imageFor(item: DashboardMediaItem | null): string {
-    return mediaImageUrl(item?.image);
-  }
-
-  statusLabel(item: DashboardMediaItem): string {
-    return gameStatusLabel(item.status, 'Not started');
-  }
-
-  releaseLabel(item: DashboardMediaItem): string {
-    const date = this.releaseDateOf(item);
-
-    if (Number.isNaN(date.getTime())) {
-      return 'No release date';
-    }
-
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
-  }
-
-  daysUntil(item: DashboardMediaItem): string {
-    const date = this.releaseDateOf(item);
-    const today = this.startOfToday();
-    const days = Math.ceil((date.getTime() - today.getTime()) / 86400000);
-
-    if (days <= 0) {
-      return 'Today';
-    }
-
-    if (days === 1) {
-      return 'Tomorrow';
-    }
-
-    return `${days} days`;
-  }
-
-  playedLabel(item: DashboardMediaItem): string {
-    return `${Math.round(item.playedHours)}h logged`;
-  }
-
-  remainingLabel(item: DashboardMediaItem): string {
-    return `${Math.round(item.remainingHours)}h left`;
-  }
-
-  progressOf(item: DashboardMediaItem): number {
-    const estimated = item.estimatedHours;
-
-    if (estimated <= 0) {
-      return item.status === GameStatus.Completed ? 100 : 0;
-    }
-
-    return Math.min(100, Math.round((item.playedHours / estimated) * 100));
-  }
-
-  trackByItem(_: number, item: DashboardMediaItem): string {
-    return `${item.kind}-${item.id}`;
-  }
-
-  trackByFocus(_: number, item: DashboardFocusItem): string {
-    return `${item.icon}-${item.title}`;
-  }
-
-  trackByActivity(_: number, item: DashboardActivityItem): string {
-    return `${item.icon}-${item.title}-${item.detail}`;
   }
 
   private fromGame(game: Game): DashboardMediaItem {
@@ -458,8 +374,14 @@ export class HomePage implements OnInit {
     };
   }
 
-  private releaseDateOf(item: DashboardMediaItem): Date {
-    return releaseDateOfGame(item);
+  private daysUntil(item: DashboardMediaItem): string {
+    const date = releaseDateOf(item);
+    const today = startOfDay(new Date());
+    const days = Math.ceil((date.getTime() - today.getTime()) / 86400000);
+
+    if (days <= 0) return 'Today';
+    if (days === 1) return 'Tomorrow';
+    return `${days} days`;
   }
 
   private nextSession(): GamingSession | null {
@@ -486,18 +408,6 @@ export class HomePage implements OnInit {
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date(value));
-  }
-
-  private startOfToday(): Date {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
-  }
-
-  private addDays(value: Date, days: number): Date {
-    const next = new Date(value);
-    next.setDate(next.getDate() + days);
-    return next;
   }
 
   private dashboardLibraryFilter(): MediaFilter {

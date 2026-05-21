@@ -1,0 +1,29 @@
+<section class="section-block chart-block">
+  <header class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="pricetag-outline"></ion-icon>
+        Genres
+      </span>
+      <h2>Top Genres</h2>
+    </div>
+  </header>
+  @if (genres().length) {
+    <div class="genre-list">
+      @for (genre of genres(); track trackByGenre($index, genre)) {
+        <div class="genre-row">
+          <span class="genre-row__name">{{ genre.name }}</span>
+          <div class="genre-row__bar">
+            <div class="genre-row__fill" [style.width.%]="genre.percent"></div>
+          </div>
+          <strong class="genre-row__count">{{ genre.count }}</strong>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <ion-icon name="pricetag-outline"></ion-icon>
+      <span>Add a genre to your items to see this chart.</span>
+    </div>
+  }
+</section>

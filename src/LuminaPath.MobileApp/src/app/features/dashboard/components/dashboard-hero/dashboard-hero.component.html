@@ -1,0 +1,30 @@
+@if (!isLoading()) {
+  <section class="hero">
+    <div class="hero__media">
+      <img [src]="imageSrc()" alt="" />
+    </div>
+    <div class="hero__content">
+      <span class="eyebrow">
+        <ion-icon name="sparkles-outline"></ion-icon>
+        Today
+      </span>
+      <h1>{{ featuredItem()?.name || 'Your library is ready' }}</h1>
+      <p>{{ subtitle() }}</p>
+      @if (featuredItem(); as item) {
+        <div class="hero__progress">
+          <div class="hero__progress-label">
+            <span>{{ playedSummary() }}</span>
+            <strong>{{ heroProgress() }}%</strong>
+          </div>
+          <div class="progress-track">
+            <span [style.width.%]="heroProgress()"></span>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+} @else {
+  <section class="hero hero--loading">
+    <ion-skeleton-text animated></ion-skeleton-text>
+  </section>
+}

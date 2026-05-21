@@ -1,0 +1,40 @@
+<section class="board-toolbar">
+  <ion-segment [value]="filter()" (ionChange)="onSegmentChange($event)">
+    @for (option of filterOptions(); track option.value) {
+      <ion-segment-button [value]="option.value">
+        <ion-icon [name]="option.icon"></ion-icon>
+        <ion-label>{{ option.label }}</ion-label>
+        <ion-badge>{{ filterCount()(option.value) }}</ion-badge>
+      </ion-segment-button>
+    }
+  </ion-segment>
+  <label class="search-field">
+    <ion-icon name="search-outline"></ion-icon>
+    <input type="text" placeholder="Search quests, notes, tags" [(ngModel)]="searchQuery" />
+    @if (searchQuery()) {
+      <button type="button" class="meta-chip-clear" aria-label="Clear search" (click)="searchClear.emit()">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+    }
+  </label>
+  @if (availableTags().length) {
+    <div class="tag-filter-strip">
+      @for (tag of availableTags(); track trackByText($index, tag)) {
+        <button
+          type="button"
+          class="tag-chip"
+          [class.tag-chip--active]="tagFilter() === tag"
+          (click)="tagToggle.emit(tag)">
+          <ion-icon name="pricetag-outline"></ion-icon>
+          {{ tag }}
+        </button>
+      }
+      @if (tagFilter()) {
+        <button type="button" class="tag-chip tag-chip--clear" (click)="tagClear.emit()">
+          <ion-icon name="close-outline"></ion-icon>
+          Clear
+        </button>
+      }
+    </div>
+  }
+</section>

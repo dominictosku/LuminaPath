@@ -1,0 +1,58 @@
+<div class="modal-backdrop" (click)="close.emit()">
+  <section class="quest-modal" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" aria-label="Close" (click)="close.emit()">
+      <ion-icon name="close-outline"></ion-icon>
+    </button>
+    @if (mode() === 'skill') {
+      <span class="eyebrow">
+        <ion-icon name="sparkles-outline"></ion-icon>
+        {{ editingSkillId() === null ? 'New skill' : 'Edit skill' }}
+      </span>
+      <h2>{{ editingSkillId() === null ? 'Add a real-life skill' : 'Update this skill' }}</h2>
+      <label>
+        <span>Name</span>
+        <input
+          type="text"
+          placeholder="Drawing, cooking, writing..."
+          [ngModel]="skillForm().name"
+          (ngModelChange)="updateName($event)" />
+      </label>
+      <div class="choice-row">
+        @for (option of skillIconOptions(); track option.icon) {
+          <button
+            type="button"
+            [class.choice--selected]="skillForm().icon === option.icon"
+            (click)="selectIcon(option.icon)">
+            <ion-icon [name]="option.icon"></ion-icon>
+            <span>{{ option.label }}</span>
+          </button>
+        }
+      </div>
+      <div class="color-row">
+        @for (color of skillColorOptions(); track color) {
+          <button
+            type="button"
+            [style.background]="color"
+            [class.color--selected]="skillForm().color === color"
+            [attr.aria-label]="'Use color ' + color"
+            (click)="selectColor(color)">
+          </button>
+        }
+      </div>
+      <ion-button expand="block" (click)="saveSkill.emit()">
+        {{ editingSkillId() === null ? 'Add Skill' : 'Save Skill' }}
+      </ion-button>
+    } @else {
+      <span class="eyebrow">
+        <ion-icon name="star-outline"></ion-icon>
+        New node
+      </span>
+      <h2>Add a milestone</h2>
+      <label>
+        <span>Node name</span>
+        <input type="text" placeholder="30 day streak, first portrait..." [(ngModel)]="nodeName" />
+      </label>
+      <ion-button expand="block" (click)="addNode.emit()">Add Node</ion-button>
+    }
+  </section>
+</div>

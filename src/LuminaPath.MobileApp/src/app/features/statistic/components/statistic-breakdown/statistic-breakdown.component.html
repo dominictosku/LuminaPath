@@ -1,0 +1,25 @@
+<section class="section-block section-block--wide">
+  <header class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="game-controller-outline"></ion-icon>
+        Library
+      </span>
+      <h2>By Media Type</h2>
+    </div>
+  </header>
+  <div class="breakdown-grid">
+    @for (row of rows(); track trackByBreakdown($index, row)) {
+      <article class="breakdown-card">
+        <div class="breakdown-card__head">
+          <span class="breakdown-card__dot" [style.background]="row.color"></span>
+          <h3>{{ row.kind }}</h3>
+        </div>
+        <p>{{ row.owned }} owned · {{ row.active }} active</p>
+        <strong>{{ formatHours(row.remainingHours) }}</strong>
+        <ion-progress-bar [value]="row.completionRate / 100"></ion-progress-bar>
+        <span>{{ row.completionRate }}% complete</span>
+      </article>
+    }
+  </div>
+</section>

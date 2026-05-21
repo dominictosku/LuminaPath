@@ -1,0 +1,22 @@
+<section class="section-block">
+  <header class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="pulse-outline"></ion-icon>
+        Signals
+      </span>
+      <h2>Health Flags</h2>
+    </div>
+  </header>
+  <div class="flag-list">
+    @for (flag of flags(); track trackByFlag($index, flag)) {
+      <article class="flag flag--{{ flag.tone }}">
+        <ion-icon [name]="flag.icon"></ion-icon>
+        <div>
+          <h3>{{ flag.title }}</h3>
+          <p>{{ flag.detail }}</p>
+        </div>
+      </article>
+    }
+  </div>
+</section>

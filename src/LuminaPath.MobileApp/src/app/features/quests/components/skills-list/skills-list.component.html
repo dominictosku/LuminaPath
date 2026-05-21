@@ -1,0 +1,83 @@
+<section class="skills-layout">
+  <div class="skills-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="trophy-outline"></ion-icon>
+        Mastery paths
+      </span>
+      <h2>End Goals</h2>
+    </div>
+    <ion-button fill="clear" (click)="addSkill.emit()">
+      <ion-icon slot="start" name="add-outline"></ion-icon>
+      Skill
+    </ion-button>
+  </div>
+  <div class="skill-grid">
+    @for (skill of skills(); track trackBySkill($index, skill)) {
+      <article class="skill-card" [style.--skill-color]="skill.color">
+        <header>
+          <div class="skill-icon">
+            <ion-icon [name]="skill.icon"></ion-icon>
+          </div>
+          <div>
+            <h3>{{ skill.name }}</h3>
+            <p>Level {{ skillLevel(skill) }} · {{ skill.xp }} XP · {{ activeLinkedQuestCount()(skill) }} active quests</p>
+          </div>
+          <div class="skill-card-actions">
+            <button type="button" aria-label="Edit skill" (click)="editSkill.emit(skill)">
+              <ion-icon name="create-outline"></ion-icon>
+            </button>
+            <button type="button" aria-label="Delete skill" (click)="deleteSkill.emit(skill.id)">
+              <ion-icon name="trash-outline"></ion-icon>
+            </button>
+          </div>
+        </header>
+        <ion-progress-bar [value]="skillProgress(skill)"></ion-progress-bar>
+        <div class="skill-next">
+          <span>Next node</span>
+          <strong>{{ nextNodeName(skill) }}</strong>
+          <small>{{ unlockedCount(skill) }} / {{ skill.nodes.length }} nodes · {{ linkedQuestCount()(skill) }} linked quests</small>
+        </div>
+        <div class="skill-actions">
+          <ion-button size="small" (click)="trainSkill.emit(skill)">
+            <ion-icon slot="start" name="flash-outline"></ion-icon>
+            Train
+          </ion-button>
+          <ion-button size="small" fill="clear" (click)="addNode.emit(skill)">
+            <ion-icon slot="start" name="add-outline"></ion-icon>
+            Node
+          </ion-button>
+        </div>
+        <div class="node-list">
+          @for (node of skill.nodes; track trackByText(nodeIndex, node); let nodeIndex = $index) {
+            <div
+              class="node"
+              role="button"
+              tabindex="0"
+              [class.node--unlocked]="skillNodeState(skill, nodeIndex) === 'completed'"
+              [class.node--available]="skillNodeState(skill, nodeIndex) === 'available'"
+              [class.node--locked]="skillNodeState(skill, nodeIndex) === 'locked'"
+              (click)="unlockNode.emit({ skill, nodeIndex })"
+              (keydown.enter)="unlockNode.emit({ skill, nodeIndex })"
+              (keydown.space)="$event.preventDefault(); unlockNode.emit({ skill, nodeIndex })">
+              <ion-icon [name]="skillNodeState(skill, nodeIndex) === 'completed' ? 'star-outline' : skillNodeState(skill, nodeIndex) === 'available' ? 'sparkles-outline' : 'lock-closed-outline'"></ion-icon>
+              <span>
+                <strong>{{ node }}</strong>
+                <small>{{ skillNodeState(skill, nodeIndex) === 'completed' ? 'Completed' : skillNodeState(skill, nodeIndex) === 'available' ? 'Ready to unlock' : 'Locked' }}</small>
+              </span>
+              @if (skillNodeState(skill, nodeIndex) === 'available') {
+                <button
+                  type="button"
+                  class="node-quest-button"
+                  (click)="$event.stopPropagation(); startNodeQuest.emit({ skill, node })">
+                  Quest
+                </button>
+              }
+            </div>
+          }
+        </div>
+        <ion-progress-bar [value]="skillCompletion(skill)"></ion-progress-bar>
+      </article>
+    }
+  </div>
+</section>

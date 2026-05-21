@@ -1,4 +1,8 @@
-:host {
+// `:host` only resolves inside Shadow DOM, and this page runs with
+// `ViewEncapsulation.None` so the SCSS is emitted to <head> verbatim.
+// Using the component tag selector keeps the same scoping (every variable
+// is defined on the page's host element) but uses a real CSS selector.
+app-statistic {
   --page-bg: #03081a;
   --page-bg-soft: #081935;
   --surface: var(--app-chrome-bg, rgba(8, 22, 48, 0.86));
@@ -22,6 +26,29 @@
   display: grid;
   gap: 16px;
   padding: 16px 14px 98px;
+}
+
+/*
+ * Make each Angular sub-component "transparent" to layout so the inner
+ * <section class="hero/section-block/etc"> becomes the actual grid item.
+ * Without this the host elements themselves would land in the grid and the
+ * existing `.hero`, `.section-block`, `.section-block--wide` placement rules
+ * would never reach the real sections.
+ */
+app-statistic-hero,
+app-statistic-metrics,
+app-statistic-media-mix,
+app-statistic-completion-trend,
+app-statistic-rating-histogram,
+app-statistic-time-by-type,
+app-statistic-top-genres,
+app-statistic-status-mix,
+app-statistic-health-flags,
+app-statistic-quick-wins,
+app-statistic-longest-commitments,
+app-statistic-top-rated,
+app-statistic-breakdown {
+  display: contents;
 }
 
 /* ─── Common surface ──────────────────────────────────────────────────────── */

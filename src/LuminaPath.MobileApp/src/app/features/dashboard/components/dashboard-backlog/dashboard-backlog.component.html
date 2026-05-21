@@ -1,0 +1,30 @@
+<section class="section-block">
+  <div class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="trending-up-outline"></ion-icon>
+        Backlog
+      </span>
+      <h2>Biggest Commitments</h2>
+    </div>
+  </div>
+
+  @if (items().length) {
+    <div class="backlog-list">
+      @for (item of items(); track trackByItem($index, item)) {
+        <article class="backlog-item">
+          <div>
+            <h3>{{ item.name }}</h3>
+            <p>{{ item.kind }} · {{ playedLabel(item) }} · {{ remainingLabel(item) }}</p>
+          </div>
+          <strong>{{ item.estimatedHours || 0 }}h</strong>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <ion-icon name="checkmark-done-outline"></ion-icon>
+      <span>No planned backlog found.</span>
+    </div>
+  }
+</section>

@@ -1,0 +1,32 @@
+<section class="section-block">
+  <div class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="time-outline"></ion-icon>
+        Activity
+      </span>
+      <h2>Pulse</h2>
+    </div>
+  </div>
+
+  @if (items().length) {
+    <div class="activity-list">
+      @for (item of items(); track trackByActivity($index, item)) {
+        <article class="activity-item">
+          <div class="activity-item__icon">
+            <ion-icon [name]="item.icon"></ion-icon>
+          </div>
+          <div>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.detail }}</p>
+          </div>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <ion-icon name="time-outline"></ion-icon>
+      <span>No activity yet.</span>
+    </div>
+  }
+</section>

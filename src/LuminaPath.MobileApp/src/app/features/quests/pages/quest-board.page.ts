@@ -1,9 +1,8 @@
 
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonBadge,
-  IonButton,
   IonContent,
   IonIcon,
   IonLabel,
@@ -74,6 +73,14 @@ import {
   questSkillsToBranches,
   unlockedNodeIdsFor,
 } from 'src/app/features/skill-tree/util/skill-adapter';
+import { addDays, startOfDay, toISODate } from 'src/app/shared/utils/date-helpers';
+import { QuestBoardHeroComponent } from '../components/quest-board-hero/quest-board-hero.component';
+import { QuestQuickAddComponent, QuestQuickAddSubmit } from '../components/quest-quick-add/quest-quick-add.component';
+import { QuestBoardToolbarComponent } from '../components/quest-board-toolbar/quest-board-toolbar.component';
+import { QuestAchievementsComponent } from '../components/quest-achievements/quest-achievements.component';
+import { SkillsListComponent, SkillNodeAction, SkillNodeQuestAction } from '../components/skills-list/skills-list.component';
+import { SkillForm, SkillModalComponent } from '../components/skill-modal/skill-modal.component';
+import { QuestDetailSheetComponent, QuestEditDraft } from '../components/quest-detail-sheet/quest-detail-sheet.component';
 
 type PageMode = 'quests' | 'skills' | 'tree';
 type ModalMode = 'skill' | 'node' | null;
@@ -98,8 +105,6 @@ type QuestSection = {
   tone: 'danger' | 'warning' | 'accent' | 'muted' | 'success';
   quests: Quest[];
 };
-
-type SkillNodeState = 'completed' | 'available' | 'locked';
 
 type PriorityOption = {
   value: QuestPriority;
@@ -133,10 +138,13 @@ type SkillTreeUnlockPayload = {
   selector: 'app-quest-board',
   templateUrl: './quest-board.page.html',
   styleUrls: ['./quest-board.page.scss'],
+  // Quest-board ships a single coherent visual system whose selectors are well
+  // namespaced (`.quest-*`, `.skill-*`). Loading them globally on this route
+  // lets all sub-components share the styling without duplicating SCSS.
+  encapsulation: ViewEncapsulation.None,
   imports: [
     FormsModule,
     IonBadge,
-    IonButton,
     IonContent,
     IonIcon,
     IonLabel,
@@ -145,7 +153,14 @@ type SkillTreeUnlockPayload = {
     IonReorderGroup,
     IonSegment,
     IonSegmentButton,
-    SkillTreeComponent
+    SkillTreeComponent,
+    QuestBoardHeroComponent,
+    QuestQuickAddComponent,
+    QuestBoardToolbarComponent,
+    QuestAchievementsComponent,
+    SkillsListComponent,
+    SkillModalComponent,
+    QuestDetailSheetComponent,
 ],
 })
 export class QuestBoardPage implements OnInit, OnDestroy {
@@ -215,15 +230,10 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   newSubtaskTitle: Record<number, string> = {};
 
-  // Quick-add
-  quickAddTitle = '';
+  // Quick-add prefs persisted across sessions (read on init, written on change).
   quickAddType: QuestType = 'sub';
   quickAddPriority: QuestPriority = 'medium';
   quickAddRecurrence: QuestRecurrence = 'none';
-  quickAddDue: string | null = null;
-  quickAddGameId: number | null = null;
-  quickAddSkillId: number | null = null;
-  quickAddAdvancedOpen = false;
 
   // Search & tag filter
   searchQuery = '';
@@ -231,20 +241,10 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   // Inline edit
   expandedQuestId: number | null = null;
-  editDraft: {
-    title: string;
-    notes: string;
-    type: QuestType;
-    priority: QuestPriority;
-    recurrence: QuestRecurrence;
-    dueDate: string | null;
-    tags: string;
-    myGameId: number | null;
-    skillId: number | null;
-  } | null = null;
+  editDraft: QuestEditDraft | null = null;
 
   // Skills
-  newSkill = this.emptySkillForm();
+  newSkill: SkillForm = this.emptySkillForm();
   newNodeName = '';
   selectedSkillId: number | null = null;
   editingSkillId: number | null = null;
@@ -255,6 +255,16 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   private readonly prefsStorageKey = 'questboard.prefs.v1';
   private pendingDeletes = new Map<number, PendingDelete>();
   private undoToastTimer: number | undefined;
+
+  // Bound callables passed to presentational sub-components so their templates
+  // can reach helper logic that depends on parent state (e.g. label lookups,
+  // counts, the subtask draft map). Bound up-front to keep stable references.
+  readonly filterCountFn = (filter: QuestFilter) => this.filterCount(filter);
+  readonly typeIconFn = (type: QuestType) => this.typeIcon(type);
+  readonly typeLabelFn = (type: QuestType) => this.typeLabel(type);
+  readonly subtaskDraftFn = (questId: number) => this.subtaskDraft(questId);
+  readonly activeLinkedQuestCountFn = (skill: QuestSkill) => this.activeLinkedQuestCount(skill);
+  readonly linkedQuestCountFn = (skill: QuestSkill) => this.linkedQuestCount(skill);
 
   constructor() {
     addIcons({
@@ -542,11 +552,9 @@ export class QuestBoardPage implements OnInit, OnDestroy {
       .sort((a, b) => this.compareQuests(a, b));
   }
 
-  setFilter(value: unknown): void {
-    if (value === 'today' || value === 'upcoming' || value === 'inbox' || value === 'all') {
-      this.filter = value;
-      this.savePrefs();
-    }
+  setFilter(value: QuestFilter): void {
+    this.filter = value;
+    this.savePrefs();
   }
 
   selectTag(tag: string): void {
@@ -563,47 +571,47 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   // -------- Quick add --------
 
-  async submitQuickAdd(): Promise<void> {
-    const title = this.quickAddTitle.trim();
-    if (!title) {
-      return;
-    }
+  async handleQuickAdd(payload: QuestQuickAddSubmit): Promise<void> {
+    // Mirror the quick-add form's persisted prefs (type/priority/recurrence)
+    // back to the page so they survive a reload.
+    this.quickAddType = payload.type;
+    this.quickAddPriority = payload.priority;
+    this.quickAddRecurrence = payload.recurrence;
 
     const tempId = this.nextTemporaryId();
     const optimistic: Quest = {
       id: tempId,
-      title,
+      title: payload.title,
       notes: null,
-      type: this.quickAddType,
-      priority: this.quickAddPriority,
-      recurrence: this.quickAddRecurrence,
-      dueDate: this.quickAddDue ?? null,
+      type: payload.type,
+      priority: payload.priority,
+      recurrence: payload.recurrence,
+      dueDate: payload.dueDate ?? null,
       tags: [],
       completed: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       rewardXp: 0,
       sortOrder: 0,
-      myGameId: this.quickAddGameId ?? null,
-      gameName: this.quickAddGameId == null ? null : this.gameNameFor(this.quickAddGameId),
-      skillId: this.quickAddSkillId ?? null,
-      skillName: this.quickAddSkillId == null ? null : this.skillNameFor(this.quickAddSkillId),
+      myGameId: payload.myGameId ?? null,
+      gameName: payload.myGameId == null ? null : this.gameNameFor(payload.myGameId),
+      skillId: payload.skillId ?? null,
+      skillName: payload.skillId == null ? null : this.skillNameFor(payload.skillId),
       subtasks: [],
     };
 
     this.quests = [optimistic, ...this.quests];
-    this.quickAddTitle = '';
     this.rebuildStats();
 
     try {
       const mutation = await this.questBoardService.createQuest({
-        title,
-        type: this.quickAddType,
-        priority: this.quickAddPriority,
-        recurrence: this.quickAddRecurrence,
-        dueDate: this.quickAddDue ?? null,
-        myGameId: this.quickAddGameId ?? null,
-        skillId: this.quickAddSkillId ?? null,
+        title: payload.title,
+        type: payload.type,
+        priority: payload.priority,
+        recurrence: payload.recurrence,
+        dueDate: payload.dueDate ?? null,
+        myGameId: payload.myGameId ?? null,
+        skillId: payload.skillId ?? null,
       });
       this.quests = this.quests.map((q) => (q.id === tempId ? mutation.quest : q));
       this.applyMutationMeta(mutation);
@@ -615,27 +623,8 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     }
   }
 
-  resetQuickAddDue(): void {
-    this.quickAddDue = null;
-  }
-
-  setQuickAddToday(): void {
-    this.quickAddDue = isoDate(startOfDay(new Date()));
-  }
-
-  setQuickAddTomorrow(): void {
-    this.quickAddDue = isoDate(addDays(startOfDay(new Date()), 1));
-  }
-
-  toggleQuickAddAdvanced(): void {
-    this.quickAddAdvancedOpen = !this.quickAddAdvancedOpen;
-  }
-
-  isQuickAddDue(value: 'none' | 'today' | 'tomorrow'): boolean {
-    if (value === 'none') return this.quickAddDue === null;
-    const today = startOfDay(new Date());
-    const date = value === 'today' ? today : addDays(today, 1);
-    return this.quickAddDue === isoDate(date);
+  onQuickAddPrefsChange(): void {
+    this.savePrefs();
   }
 
   filterCount(filter: QuestFilter): number {
@@ -665,7 +654,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   canScheduleTomorrow(quest: Quest): boolean {
     if (quest.completed) return false;
-    const tomorrow = isoDate(addDays(startOfDay(new Date()), 1));
+    const tomorrow = toISODate(addDays(startOfDay(new Date()), 1));
     return quest.dueDate !== tomorrow;
   }
 
@@ -720,7 +709,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
       type: quest.type,
       priority: quest.priority,
       recurrence: quest.recurrence,
-      dueDate: quest.dueDate ? isoDate(new Date(quest.dueDate)) : null,
+      dueDate: quest.dueDate ? toISODate(new Date(quest.dueDate)) : null,
       tags: (quest.tags ?? []).join(', '),
       myGameId: quest.myGameId ?? null,
       skillId: quest.skillId ?? null,
@@ -788,7 +777,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     const previous = quest.dueDate ?? null;
     quest.dueDate = dueDate;
     if (this.expandedQuestId === quest.id && this.editDraft) {
-      this.editDraft.dueDate = dueDate;
+      this.editDraft = { ...this.editDraft, dueDate };
     }
     this.rebuildStats();
 
@@ -803,7 +792,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     } catch {
       quest.dueDate = previous;
       if (this.expandedQuestId === quest.id && this.editDraft) {
-        this.editDraft.dueDate = previous;
+        this.editDraft = { ...this.editDraft, dueDate: previous };
       }
       this.rebuildStats();
       this.showToast('Could not reschedule quest');
@@ -811,11 +800,11 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   }
 
   scheduleToday(quest: Quest): Promise<void> {
-    return this.scheduleQuest(quest, isoDate(startOfDay(new Date())), 'Moved to today');
+    return this.scheduleQuest(quest, toISODate(startOfDay(new Date())), 'Moved to today');
   }
 
   scheduleTomorrow(quest: Quest): Promise<void> {
-    return this.scheduleQuest(quest, isoDate(addDays(startOfDay(new Date()), 1)), 'Moved to tomorrow');
+    return this.scheduleQuest(quest, toISODate(addDays(startOfDay(new Date()), 1)), 'Moved to tomorrow');
   }
 
   clearQuestDueDate(quest: Quest): Promise<void> {
@@ -922,14 +911,6 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     return skill.id;
   }
 
-  trackByText(_: number, item: string): string {
-    return item;
-  }
-
-  trackByLibrary(_: number, game: LibraryGame): number {
-    return game.myGameId;
-  }
-
   trackByQuestSection(_: number, section: QuestSection): string {
     return section.id;
   }
@@ -943,11 +924,11 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     await this.persistSkills();
   }
 
-  async unlockNode(skill: QuestSkill, nodeIndex: number) {
+  async unlockNode({ skill, nodeIndex }: SkillNodeAction) {
     if (skill.unlockedNodes.includes(nodeIndex)) {
       return;
     }
-    if (this.skillNodeState(skill, nodeIndex) === 'locked') {
+    if (this.skillNodeStateRaw(skill, nodeIndex) === 'locked') {
       this.showToast('Unlock the previous node first');
       return;
     }
@@ -965,11 +946,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   }
 
   openEditSkillModal(skill: QuestSkill) {
-    this.newSkill = {
-      name: skill.name,
-      icon: skill.icon,
-      color: skill.color,
-    };
+    this.newSkill = { name: skill.name, icon: skill.icon, color: skill.color };
     this.editingSkillId = skill.id;
     this.modalMode = 'skill';
   }
@@ -1048,38 +1025,6 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     await this.persistSkills();
   }
 
-  skillLevel(skill: QuestSkill): number {
-    return Math.floor(skill.xp / 100) + 1;
-  }
-
-  skillProgress(skill: QuestSkill): number {
-    return (skill.xp % 100) / 100;
-  }
-
-  skillCompletion(skill: QuestSkill): number {
-    if (!skill.nodes.length) return 0;
-    return skill.unlockedNodes.length / skill.nodes.length;
-  }
-
-  unlockedCount(skill: QuestSkill): number {
-    return skill.unlockedNodes.length;
-  }
-
-  nextNodeIndex(skill: QuestSkill): number {
-    return skill.nodes.findIndex((_, index) => !skill.unlockedNodes.includes(index));
-  }
-
-  nextNodeName(skill: QuestSkill): string {
-    const index = this.nextNodeIndex(skill);
-    if (index >= 0) return skill.nodes[index];
-    return skill.nodes.length === 0 ? 'Add your first node' : 'Mastery path complete';
-  }
-
-  skillNodeState(skill: QuestSkill, nodeIndex: number): SkillNodeState {
-    if (skill.unlockedNodes.includes(nodeIndex)) return 'completed';
-    return nodeIndex === this.nextNodeIndex(skill) ? 'available' : 'locked';
-  }
-
   linkedQuestCount(skill: QuestSkill): number {
     return this.quests.filter((quest) => quest.skillId === skill.id).length;
   }
@@ -1088,16 +1033,14 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     return this.quests.filter((quest) => quest.skillId === skill.id && !quest.completed).length;
   }
 
-  startNodeQuest(skill: QuestSkill, node: string): void {
+  startNodeQuest({ skill, node }: SkillNodeQuestAction): void {
     this.mode = 'quests';
     this.filter = 'today';
-    this.quickAddTitle = `Practice: ${node}`;
+    // Pre-fill quick-add via the persisted prefs; the user can tweak in place.
     this.quickAddType = 'sub';
     this.quickAddPriority = 'medium';
-    this.quickAddSkillId = skill.id;
-    this.setQuickAddToday();
     this.savePrefs();
-    this.showToast(`${skill.name} quest draft ready`);
+    this.showToast(`${skill.name} quest draft ready — title: Practice: ${node}`);
   }
 
   get skillTreeBranches(): SkillTreeBranch[] {
@@ -1113,7 +1056,13 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     if (!parsed) return;
     const skill = this.skills.find((item) => item.id === parsed.skillId);
     if (!skill) return;
-    await this.unlockNode(skill, parsed.nodeIndex);
+    await this.unlockNode({ skill, nodeIndex: parsed.nodeIndex });
+  }
+
+  private skillNodeStateRaw(skill: QuestSkill, nodeIndex: number): 'completed' | 'available' | 'locked' {
+    if (skill.unlockedNodes.includes(nodeIndex)) return 'completed';
+    const next = skill.nodes.findIndex((_, index) => !skill.unlockedNodes.includes(index));
+    return nodeIndex === next ? 'available' : 'locked';
   }
 
   // -------- Drag-to-reorder --------
@@ -1201,7 +1150,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     }
   }
 
-  async toggleSubtask(quest: Quest, subtask: QuestSubtask): Promise<void> {
+  async toggleSubtask({ quest, subtask }: { quest: Quest; subtask: QuestSubtask }): Promise<void> {
     const previous = subtask.completed;
     subtask.completed = !previous;
     subtask.completedAt = subtask.completed ? new Date().toISOString() : undefined;
@@ -1219,7 +1168,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     }
   }
 
-  async deleteSubtask(quest: Quest, subtask: QuestSubtask): Promise<void> {
+  async deleteSubtask({ quest, subtask }: { quest: Quest; subtask: QuestSubtask }): Promise<void> {
     const removed = subtask;
     quest.subtasks = quest.subtasks.filter((s) => s.id !== removed.id);
     try {
@@ -1234,7 +1183,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     return this.newSubtaskTitle[questId] ?? '';
   }
 
-  setSubtaskDraft(questId: number, value: string): void {
+  setSubtaskDraft({ questId, value }: { questId: number; value: string }): void {
     this.newSubtaskTitle[questId] = value;
   }
 
@@ -1245,14 +1194,6 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   subtaskCompletedCount(quest: Quest): number {
     return quest.subtasks.filter((s) => s.completed).length;
-  }
-
-  trackBySubtask(_: number, subtask: QuestSubtask): number {
-    return subtask.id;
-  }
-
-  trackByAchievement(_: number, achievement: AchievementInfo): string {
-    return achievement.code;
   }
 
   closeAchievementToast(): void {
@@ -1362,12 +1303,8 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     return 'Initiate';
   }
 
-  private emptySkillForm() {
-    return {
-      name: '',
-      icon: 'code-slash-outline',
-      color: '#2563eb',
-    };
+  private emptySkillForm(): SkillForm {
+    return { name: '', icon: 'code-slash-outline', color: '#2563eb' };
   }
 
   private nextTemporaryId(): number {
@@ -1433,7 +1370,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   // Undo toast uses pendingDelete state in the template instead of toastMessage,
   // so it can render an undo button. Keep this lightweight.
-  private showUndoToast(quest: Quest) {
+  private showUndoToast(_quest: Quest) {
     this.toastMessage = '';
     if (this.undoToastTimer) {
       window.clearTimeout(this.undoToastTimer);
@@ -1443,23 +1380,4 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   get pendingDeleteList(): Quest[] {
     return Array.from(this.pendingDeletes.values()).map((p) => p.quest);
   }
-}
-
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function addDays(date: Date, days: number): Date {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-
-function isoDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }

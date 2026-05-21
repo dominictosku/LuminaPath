@@ -1,0 +1,37 @@
+<section class="quest-hero">
+  <div class="quest-hero__copy">
+    <span class="eyebrow">
+      <ion-icon name="sparkles-outline"></ion-icon>
+      Quest Board
+    </span>
+    <h1>Level {{ level() }} {{ title() }}</h1>
+    <p>Pick the next real-world quest, keep the streak alive, and let the rest wait in the right lane.</p>
+  </div>
+
+  <div class="quest-hero__panel">
+    <div class="rank-row">
+      <div>
+        <span>Total XP</span>
+        <strong>{{ xp() }}</strong>
+      </div>
+      <ion-badge>{{ xpIntoLevel() }}/200 XP</ion-badge>
+    </div>
+    <ion-progress-bar [value]="xpProgress()"></ion-progress-bar>
+    <div class="stat-row">
+      <span><ion-icon name="today-outline"></ion-icon> {{ todayCount() }} today</span>
+      <span><ion-icon name="alert-circle-outline"></ion-icon> {{ overdueCount() }} overdue</span>
+      <span><ion-icon name="checkmark-circle-outline"></ion-icon> {{ completedQuestCount() }} done</span>
+    </div>
+    @if (currentStreakDays() > 0 || longestStreakDays() > 0) {
+      <div class="streak-row">
+        <span class="streak-pill">
+          <ion-icon name="flame-outline"></ion-icon>
+          {{ currentStreakDays() }}-day streak
+        </span>
+        @if (longestStreakDays() > currentStreakDays()) {
+          <span class="streak-best">best: {{ longestStreakDays() }}</span>
+        }
+      </div>
+    }
+  </div>
+</section>
