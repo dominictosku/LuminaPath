@@ -52,6 +52,7 @@ import {
 } from '../models/dashboard.model';
 import { progressOf, releaseDateOf, remainingLabel, statusLabel } from '../dashboard-view.helpers';
 import { addDays, startOfDay } from 'src/app/shared/utils/date-helpers';
+import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { DashboardHeroComponent } from '../components/dashboard-hero/dashboard-hero.component';
 import { DashboardMetricsComponent } from '../components/dashboard-metrics/dashboard-metrics.component';
 import { DashboardMomentumComponent } from '../components/dashboard-momentum/dashboard-momentum.component';
@@ -61,6 +62,32 @@ import { DashboardActiveRailComponent } from '../components/dashboard-active-rai
 import { DashboardReleasesComponent } from '../components/dashboard-releases/dashboard-releases.component';
 import { DashboardBacklogComponent } from '../components/dashboard-backlog/dashboard-backlog.component';
 import { DashboardRecentComponent } from '../components/dashboard-recent/dashboard-recent.component';
+
+/** Raw fetched data for the dashboard. Stored in RequestCache so repeat
+ *  visits paint immediately, then refetch in the background. */
+type DashboardSnapshot = {
+  games: Game[];
+  animes: Anime[];
+  movies: Movie[];
+  series: Series[];
+  libraryTotal: number;
+  sessions: GamingSession[];
+  questBoard: QuestBoardState | null;
+};
+
+const DASHBOARD_CACHE_KEY = 'home:dashboard';
+
+function emptyDashboardSnapshot(): DashboardSnapshot {
+  return {
+    games: [],
+    animes: [],
+    movies: [],
+    series: [],
+    libraryTotal: 0,
+    sessions: [],
+    questBoard: null,
+  };
+}
 
 @Component({
   selector: 'app-home',
@@ -89,6 +116,7 @@ export class HomePage implements OnInit {
   private seriesService = inject(SeriesService);
   private sessionService = inject(GamingSessionService);
   private questBoardService = inject(QuestBoardService);
+  private cache = inject(RequestCache);
 
   games: Game[] = [];
   animes: Anime[] = [];
@@ -135,8 +163,21 @@ export class HomePage implements OnInit {
   }
 
   loadDashboard(event?: CustomEvent) {
-    this.isLoading = !event;
+    // Stale-while-revalidate: paint cached snapshot instantly so repeat
+    // visits don't flash a skeleton, then refetch in the background unless
+    // the cache is still fresh and the user didn't pull-to-refresh.
+    const cached = this.cache.get<DashboardSnapshot>(DASHBOARD_CACHE_KEY);
+    if (cached) {
+      this.applyDashboard(cached);
+      this.isLoading = false;
+      if (!event && this.cache.isFresh(DASHBOARD_CACHE_KEY)) {
+        return;
+      }
+    } else {
+      this.isLoading = !event;
+    }
     this.errorMessage = '';
+
     const today = startOfDay(new Date());
     const gamesFilter = this.dashboardLibraryFilter();
     const animesFilter = this.dashboardLibraryFilter();
@@ -152,31 +193,47 @@ export class HomePage implements OnInit {
       board: from(this.questBoardService.getBoard()).pipe(catchError(() => of(null))),
     }).subscribe({
       next: (result) => {
-        this.games = result.games.data ?? [];
-        this.animes = result.animes.data ?? [];
-        this.movies = result.movies.data ?? [];
-        this.series = result.series.data ?? [];
-        this.libraryTotal = this.totalOf(result.games) + this.totalOf(result.animes) + this.totalOf(result.movies) + this.totalOf(result.series);
-        this.sessions = result.sessions ?? [];
-        this.questBoard = result.board;
-        this.buildDashboard();
+        const snapshot: DashboardSnapshot = {
+          games: result.games.data ?? [],
+          animes: result.animes.data ?? [],
+          movies: result.movies.data ?? [],
+          series: result.series.data ?? [],
+          libraryTotal:
+            this.totalOf(result.games) +
+            this.totalOf(result.animes) +
+            this.totalOf(result.movies) +
+            this.totalOf(result.series),
+          sessions: result.sessions ?? [],
+          questBoard: result.board,
+        };
+        this.cache.set(DASHBOARD_CACHE_KEY, snapshot);
+        this.applyDashboard(snapshot);
         this.isLoading = false;
         this.completeRefresh(event);
       },
       error: () => {
-        this.games = [];
-        this.animes = [];
-        this.movies = [];
-        this.series = [];
-        this.libraryTotal = 0;
-        this.sessions = [];
-        this.questBoard = null;
-        this.buildDashboard();
+        // Background refetch failed: keep the cached paint, surface the
+        // error message so the user can pull-to-refresh. Only wipe data
+        // if we never had any to begin with.
+        if (!cached) {
+          this.applyDashboard(emptyDashboardSnapshot());
+        }
         this.errorMessage = 'Dashboard data could not be loaded.';
         this.isLoading = false;
         this.completeRefresh(event);
       },
     });
+  }
+
+  private applyDashboard(snapshot: DashboardSnapshot): void {
+    this.games = snapshot.games;
+    this.animes = snapshot.animes;
+    this.movies = snapshot.movies;
+    this.series = snapshot.series;
+    this.libraryTotal = snapshot.libraryTotal;
+    this.sessions = snapshot.sessions;
+    this.questBoard = snapshot.questBoard;
+    this.buildDashboard();
   }
 
   private buildDashboard() {

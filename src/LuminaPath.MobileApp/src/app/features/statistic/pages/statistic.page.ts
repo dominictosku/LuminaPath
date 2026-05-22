@@ -78,6 +78,9 @@ import { StatisticQuickWinsComponent } from '../components/statistic-quick-wins/
 import { StatisticLongestCommitmentsComponent } from '../components/statistic-longest-commitments/statistic-longest-commitments.component';
 import { StatisticTopRatedComponent } from '../components/statistic-top-rated/statistic-top-rated.component';
 import { StatisticBreakdownComponent } from '../components/statistic-breakdown/statistic-breakdown.component';
+import { RequestCache } from 'src/app/shared/services/request-cache.service';
+
+const STATISTIC_CACHE_KEY = 'statistic:items';
 
 @Component({
   selector: 'app-statistic',
@@ -114,6 +117,7 @@ export class StatisticPage implements OnInit {
   private readonly animeService = inject(AnimeService);
   private readonly movieService = inject(MovieService);
   private readonly seriesService = inject(SeriesService);
+  private readonly cache = inject(RequestCache);
 
   items: BacklogItem[] = [];
   ownedItems: BacklogItem[] = [];
@@ -173,10 +177,22 @@ export class StatisticPage implements OnInit {
   }
 
   loadStatistic(event?: CustomEvent): void {
-    this.isLoading = !event;
+    // Stale-while-revalidate: paint cached items immediately so repeat
+    // visits don't flash skeletons across 13 sub-components.
+    const cached = this.cache.get<BacklogItem[]>(STATISTIC_CACHE_KEY);
+    if (cached) {
+      this.items = cached;
+      this.buildStatistics();
+      this.isLoading = false;
+      if (!event && this.cache.isFresh(STATISTIC_CACHE_KEY)) {
+        return;
+      }
+    } else {
+      this.isLoading = !event;
+    }
     this.errorMessage = '';
-    const filter = this.createLargeFilter();
 
+    const filter = this.createLargeFilter();
     forkJoin({
       games: this.gameService.getAll(filter).pipe(catchError(() => of({ data: [] }))),
       animes: this.animeService.getAll(filter).pipe(catchError(() => of({ data: [] }))),
@@ -190,13 +206,17 @@ export class StatisticPage implements OnInit {
           ...(movies.data ?? []).map(fromMovie),
           ...(series.data ?? []).map(fromSeries),
         ];
+        this.cache.set(STATISTIC_CACHE_KEY, this.items);
         this.buildStatistics();
         this.isLoading = false;
         this.completeRefresh(event);
       },
       error: () => {
-        this.items = [];
-        this.buildStatistics();
+        // Keep the cached paint if we had one; only wipe on a true cold-error.
+        if (!cached) {
+          this.items = [];
+          this.buildStatistics();
+        }
         this.errorMessage = 'Statistic data could not be loaded.';
         this.isLoading = false;
         this.completeRefresh(event);
