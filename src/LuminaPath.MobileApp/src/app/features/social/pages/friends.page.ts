@@ -14,19 +14,6 @@ import {
   IonSegmentButton,
   IonSpinner,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  chatbubbleEllipsesOutline,
-  checkmarkOutline,
-  closeOutline,
-  mailUnreadOutline,
-  peopleOutline,
-  personAddOutline,
-  refreshOutline,
-  searchOutline,
-  sendOutline,
-  trashOutline,
-} from 'ionicons/icons';
 import { Subject, Subscription, debounceTime, firstValueFrom, switchMap } from 'rxjs';
 import { DirectMessage, FriendUser, Friendship } from '../models/friend.model';
 import { DirectMessagesService } from '../services/direct-messages.service';
@@ -89,19 +76,6 @@ export class FriendsPage implements OnInit, OnDestroy, AfterViewChecked {
   private shouldScrollChat = false;
 
   constructor() {
-    addIcons({
-      chatbubbleEllipsesOutline,
-      checkmarkOutline,
-      closeOutline,
-      mailUnreadOutline,
-      peopleOutline,
-      personAddOutline,
-      refreshOutline,
-      searchOutline,
-      sendOutline,
-      trashOutline,
-    });
-
     this.subscriptions.push(
       this.searchInput$
         .pipe(
@@ -329,11 +303,11 @@ export class FriendsPage implements OnInit, OnDestroy, AfterViewChecked {
       || (message.senderId === this.currentUserId && message.recipientId === otherUserId)
       || (!this.currentUserId && (message.senderId === otherUserId || message.recipientId === otherUserId));
 
-    if (!involves) {
+  if (!involves) {
       return;
     }
 
-    if (!this.currentUserId) {
+  if (!this.currentUserId) {
       this.currentUserId = message.senderId === otherUserId ? message.recipientId : message.senderId;
     }
 
@@ -358,7 +332,7 @@ export class FriendsPage implements OnInit, OnDestroy, AfterViewChecked {
       return null;
     }
 
-    for (const message of history) {
+  for (const message of history) {
       if (message.senderId !== otherUserId) {
         return message.senderId;
       }

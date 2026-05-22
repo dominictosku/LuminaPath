@@ -6,8 +6,6 @@ import {
   IonSkeletonText,
 } from '@ionic/angular/standalone';
 import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
-import { addIcons } from 'ionicons';
-import { newspaperOutline, openOutline, refreshOutline } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 
 import { GameNewsItem } from 'src/app/features/games/models/games.model';
@@ -32,10 +30,6 @@ export class GameNewsComponent implements OnChanges {
   loaded = false;
   selectedProvider: string | null = null;
   readonly skeletonRows = [1, 2, 3];
-
-  constructor() {
-    addIcons({ newspaperOutline, openOutline, refreshOutline });
-  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['gameId']) {

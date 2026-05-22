@@ -1,6 +1,4 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { gridOutline, listOutline, add } from 'ionicons/icons';
-import { addIcons } from 'ionicons';
 import { IonIcon, IonFab, IonFabButton } from "@ionic/angular/standalone";
 import { FormsModule } from '@angular/forms';
 
@@ -14,11 +12,7 @@ type MediaViewMode = 'grid' | 'list';
 })
 export class FilterComponent {
 
-  constructor() {
-    addIcons({ gridOutline, listOutline, add });
-  }
-
-  @Output()
+    @Output()
   toggleGrid = new EventEmitter<MediaViewMode>();
 
   searchString = ""

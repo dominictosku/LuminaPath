@@ -5,7 +5,6 @@ import { IonicFunctionsService } from 'src/app/shared/services/ionic-functions.s
 import { MyGameFormComponent } from 'src/app/features/my-games/components/my-game-form/my-game-form.component';
 import { IonFab, IonFabButton, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from "ionicons";
-import { create } from 'ionicons/icons';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 
 @Component({
@@ -18,10 +17,6 @@ export class GridGameDataComponent implements OnInit {
   private gameService = inject(GameService);
   private ionicFunctions = inject(IonicFunctionsService);
 
-
-  constructor() {
-    addIcons({ create });
-  }
 
   ngOnInit() {
     this.gameService.getAll().subscribe((event: any) => {

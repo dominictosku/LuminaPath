@@ -7,24 +7,10 @@ import {
   IonRefresher,
   IonRefresherContent,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
 // `addIcons` populates Ionic's global icon registry. Sub-components only
 // declare which icons they render, so the page is responsible for ensuring
 // every name used by any descendant template (including ones bound from
 // data like `DashboardMetric.icon`) is registered here.
-import {
-  alertCircleOutline,
-  calendarClearOutline,
-  checkboxOutline,
-  checkmarkDoneOutline,
-  flameOutline,
-  gameControllerOutline,
-  hourglassOutline,
-  libraryOutline,
-  sparklesOutline,
-  timeOutline,
-  trendingUpOutline,
-} from 'ionicons/icons';
 import { Game, platformLabelFromValue } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { Anime } from '../../animes/models/animes.model';
@@ -142,22 +128,6 @@ export class HomePage implements OnInit {
   isLoading = true;
   errorMessage = '';
 
-  constructor() {
-    addIcons({
-      alertCircleOutline,
-      calendarClearOutline,
-      checkboxOutline,
-      checkmarkDoneOutline,
-      flameOutline,
-      gameControllerOutline,
-      hourglassOutline,
-      libraryOutline,
-      sparklesOutline,
-      timeOutline,
-      trendingUpOutline,
-    });
-  }
-
   ngOnInit() {
     this.loadDashboard();
   }
@@ -184,7 +154,7 @@ export class HomePage implements OnInit {
     const moviesFilter = this.dashboardLibraryFilter();
     const seriesFilter = this.dashboardLibraryFilter();
 
-    forkJoin({
+  forkJoin({
       games: this.gameService.getAll(gamesFilter),
       animes: this.animeService.getAll(animesFilter),
       movies: this.movieService.getAll(moviesFilter),
@@ -374,7 +344,7 @@ export class HomePage implements OnInit {
       });
     }
 
-    for (const quest of this.completedQuests().slice(0, 3)) {
+  for (const quest of this.completedQuests().slice(0, 3)) {
       items.push({
         title: quest.title,
         detail: `Quest completed${quest.gameName ? ' · ' + quest.gameName : ''}`,
@@ -382,7 +352,7 @@ export class HomePage implements OnInit {
       });
     }
 
-    for (const release of this.upcomingReleases.slice(0, 2)) {
+  for (const release of this.upcomingReleases.slice(0, 2)) {
       items.push({
         title: release.name,
         detail: `Releases ${this.daysUntil(release)} · ${release.kind}`,
@@ -390,7 +360,7 @@ export class HomePage implements OnInit {
       });
     }
 
-    for (const item of this.recentItems.slice(0, 3)) {
+  for (const item of this.recentItems.slice(0, 3)) {
       items.push({
         title: item.name,
         detail: `Recently added · ${item.kind}`,
@@ -464,7 +434,7 @@ export class HomePage implements OnInit {
     const today = startOfDay(new Date());
     const days = Math.ceil((date.getTime() - today.getTime()) / 86400000);
 
-    if (days <= 0) return 'Today';
+  if (days <= 0) return 'Today';
     if (days === 1) return 'Tomorrow';
     return `${days} days`;
   }

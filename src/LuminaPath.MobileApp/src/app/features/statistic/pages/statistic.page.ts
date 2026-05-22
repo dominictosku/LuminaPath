@@ -5,33 +5,10 @@ import {
   IonRefresher,
   IonRefresherContent,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
 // `addIcons` populates Ionic's global icon registry. Sub-components only
 // declare which icons they render, so the page is responsible for ensuring
 // every name used by any descendant template (including ones bound from
 // data like `StatMetric.icon` and `HealthFlag.icon`) is registered here.
-import {
-  alertCircleOutline,
-  barChartOutline,
-  bookmarkOutline,
-  calendarOutline,
-  checkmarkCircleOutline,
-  filmOutline,
-  flameOutline,
-  gameControllerOutline,
-  hourglassOutline,
-  layersOutline,
-  pieChartOutline,
-  pricetagOutline,
-  pulseOutline,
-  ribbonOutline,
-  speedometerOutline,
-  starOutline,
-  timeOutline,
-  trendingUpOutline,
-  trophyOutline,
-  tvOutline,
-} from 'ionicons/icons';
 import { catchError, forkJoin, of } from 'rxjs';
 
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
@@ -148,28 +125,6 @@ export class StatisticPage implements OnInit {
   constructor() {
     // Only the page's own "error" notice uses an icon here; sub-components
     // register their own icons in their constructors.
-    addIcons({
-      alertCircleOutline,
-      barChartOutline,
-      bookmarkOutline,
-      calendarOutline,
-      checkmarkCircleOutline,
-      filmOutline,
-      flameOutline,
-      gameControllerOutline,
-      hourglassOutline,
-      layersOutline,
-      pieChartOutline,
-      pricetagOutline,
-      pulseOutline,
-      ribbonOutline,
-      speedometerOutline,
-      starOutline,
-      timeOutline,
-      trendingUpOutline,
-      trophyOutline,
-      tvOutline,
-    });
   }
 
   ngOnInit(): void {

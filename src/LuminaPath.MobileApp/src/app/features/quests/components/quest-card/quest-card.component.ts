@@ -3,8 +3,9 @@ import { IonIcon, IonProgressBar, IonReorder } from '@ionic/angular/standalone';
 
 import { addDays, startOfDay, toISODate } from 'src/app/shared/utils/date-helpers';
 import { Quest, QuestPriority, QuestRecurrence, QuestType } from '../../services/quest-board.service';
+import { QuestDueState, dueDateLabel, dueState } from '../../quest-due';
 
-export type QuestDueState = 'overdue' | 'today' | 'soon' | 'later' | 'none';
+export type { QuestDueState };
 
 /**
  * Single quest row inside the quest-board list. Owns all of its own pure
@@ -46,8 +47,8 @@ export class QuestCardComponent {
 
   // Computed views over the quest input so the template doesn't recompute on
   // every CD pass.
-  readonly dueState = computed<QuestDueState>(() => computeDueState(this.quest()));
-  readonly dueDateLabel = computed(() => computeDueDateLabel(this.quest()));
+  readonly dueState = computed<QuestDueState>(() => dueState(this.quest()));
+  readonly dueDateLabel = computed(() => dueDateLabel(this.quest()));
   readonly subtaskCompletedCount = computed(
     () => this.quest().subtasks.filter((s) => s.completed).length,
   );
@@ -67,33 +68,4 @@ export class QuestCardComponent {
   readonly canMoveToInbox = computed(
     () => !this.quest().completed && Boolean(this.quest().dueDate),
   );
-}
-
-function computeDueState(quest: Quest): QuestDueState {
-  if (!quest.dueDate) return 'none';
-  const due = new Date(quest.dueDate);
-  if (Number.isNaN(due.getTime())) return 'none';
-  const today = startOfDay(new Date());
-  const dueDay = startOfDay(due);
-  if (dueDay < today) return 'overdue';
-  if (dueDay.getTime() === today.getTime()) return 'today';
-  const diff = (dueDay.getTime() - today.getTime()) / 86_400_000;
-  return diff <= 3 ? 'soon' : 'later';
-}
-
-function computeDueDateLabel(quest: Quest): string {
-  if (!quest.dueDate) return '';
-  const due = new Date(quest.dueDate);
-  if (Number.isNaN(due.getTime())) return '';
-  const today = startOfDay(new Date());
-  const dueDay = startOfDay(due);
-  const diffDays = Math.round((dueDay.getTime() - today.getTime()) / 86_400_000);
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays === -1) return 'Yesterday';
-  if (diffDays < -1 && diffDays >= -7) return `${Math.abs(diffDays)}d overdue`;
-  if (diffDays > 1 && diffDays <= 7) return `In ${diffDays}d`;
-
-  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(due);
 }

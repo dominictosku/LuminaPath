@@ -2,16 +2,6 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonButton, IonIcon } from '@ionic/angular/standalone';
 import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
-import { addIcons } from 'ionicons';
-import {
-  closeOutline,
-  createOutline,
-  documentTextOutline,
-  eyeOutline,
-  libraryOutline,
-  saveOutline,
-} from 'ionicons/icons';
-
 @Component({
   selector: 'app-game-notes',
   templateUrl: './game-notes.component.html',
@@ -27,18 +17,7 @@ export class GameNotesComponent {
   isEditing = false;
   notesDraft = '';
 
-  constructor() {
-    addIcons({
-      closeOutline,
-      createOutline,
-      documentTextOutline,
-      eyeOutline,
-      libraryOutline,
-      saveOutline,
-    });
-  }
-
-  get displayedNotes(): string {
+    get displayedNotes(): string {
     return (this.personalNotes ?? '').trim();
   }
 
@@ -91,7 +70,7 @@ export class GameNotesComponent {
       listItems = [];
     };
 
-    for (const line of lines) {
+  for (const line of lines) {
       if (line.trim().startsWith('```')) {
         flushParagraph();
         flushList();
@@ -136,7 +115,7 @@ export class GameNotesComponent {
       paragraph.push(trimmed);
     }
 
-    flushParagraph();
+  flushParagraph();
     flushList();
     if (codeLines) {
       html.push(`<pre><code>${codeLines.join('\n')}</code></pre>`);

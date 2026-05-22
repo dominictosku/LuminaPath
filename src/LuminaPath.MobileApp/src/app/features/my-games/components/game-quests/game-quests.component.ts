@@ -8,18 +8,6 @@ import {
   IonSelectOption,
 } from '@ionic/angular/standalone';
 import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
-import { addIcons } from 'ionicons';
-import {
-  addOutline,
-  checkmarkCircle,
-  checkmarkCircleOutline,
-  chevronDownOutline,
-  chevronUpOutline,
-  gameControllerOutline,
-  linkOutline,
-  trashOutline,
-} from 'ionicons/icons';
-
 import { Quest, QuestBoardService, QuestType } from 'src/app/features/quests/services/quest-board.service';
 
 @Component({
@@ -51,19 +39,6 @@ export class GameQuestsComponent implements OnChanges {
     { title: 'Reach max level', type: 'sub' },
     { title: '100% achievements', type: 'sub' },
   ];
-
-  constructor() {
-    addIcons({
-      addOutline,
-      checkmarkCircle,
-      checkmarkCircleOutline,
-      chevronDownOutline,
-      chevronUpOutline,
-      gameControllerOutline,
-      linkOutline,
-      trashOutline,
-    });
-  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['myGameId']) {
@@ -118,7 +93,7 @@ export class GameQuestsComponent implements OnChanges {
     const title = this.newQuestTitle.trim();
     const id = this.myGameId();
 
-    if (!title || id == null) return;
+  if (!title || id == null) return;
 
     try {
       await this.questBoardService.createQuest({

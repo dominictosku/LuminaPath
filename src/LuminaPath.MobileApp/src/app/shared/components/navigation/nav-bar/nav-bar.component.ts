@@ -1,26 +1,5 @@
 import { Component, OnDestroy, OnInit, effect, inject } from '@angular/core';
 import { IonIcon, IonHeader } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  calendarClearOutline,
-  barChartOutline,
-  chevronDownOutline,
-  checkmarkCircleOutline,
-  filmOutline,
-  gameControllerOutline,
-  gridOutline,
-  hourglassOutline,
-  libraryOutline,
-  logOutOutline,
-  notificationsOutline,
-  personCircleOutline,
-  rocketOutline,
-  settingsOutline,
-  sparklesOutline,
-  peopleOutline,
-  timeOutline,
-  tvOutline,
-} from 'ionicons/icons';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 
@@ -56,26 +35,6 @@ export class NavBarComponent implements OnInit, OnDestroy {
     this.mediaModes = this.mediaModeService.options;
     effect(() => {
       this.mediaMode = this.mediaModeService.mode();
-    });
-    addIcons({
-      calendarClearOutline,
-      barChartOutline,
-      chevronDownOutline,
-      checkmarkCircleOutline,
-      filmOutline,
-      gameControllerOutline,
-      gridOutline,
-      hourglassOutline,
-      libraryOutline,
-      logOutOutline,
-      notificationsOutline,
-      personCircleOutline,
-      rocketOutline,
-      settingsOutline,
-      sparklesOutline,
-      timeOutline,
-      peopleOutline,
-      tvOutline,
     });
   }
 

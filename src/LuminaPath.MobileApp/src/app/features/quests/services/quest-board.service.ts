@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
+import { RequestCache } from 'src/app/shared/services/request-cache.service';
 
 export type QuestType = 'main' | 'sub' | 'faction';
 
@@ -206,8 +207,16 @@ type ApiQuestSkillNode = {
 export class QuestBoardService {
   private http = inject(HttpClient);
   private apiEndpoint = inject(ApiEndpointService);
+  private cache = inject(RequestCache);
 
   private readonly httpConfig = { withCredentials: true };
+
+  /** Dashboard caches questBoard data, so every successful quest mutation
+   *  has to expire the snapshot to avoid up-to-60s of stale "Active" /
+   *  "This Month" metrics. */
+  private invalidateDashboardCache(): void {
+    this.cache.invalidate('home:dashboard');
+  }
 
   async getBoard(): Promise<QuestBoardState> {
     const board = await firstValueFrom(this.http.get<ApiQuestBoard>(this.apiEndpoint.url('quests/board'), this.httpConfig));
@@ -227,6 +236,7 @@ export class QuestBoardService {
       skillId: input.skillId ?? null,
     };
     const response = await firstValueFrom(this.http.post<ApiQuestMutationResult>(this.apiEndpoint.url('quests'), payload, this.httpConfig));
+    this.invalidateDashboardCache();
     return this.toMutation(response);
   }
 
@@ -248,6 +258,7 @@ export class QuestBoardService {
     if (input.clearSkill !== undefined) payload['clearSkill'] = input.clearSkill;
 
     const response = await firstValueFrom(this.http.patch<ApiQuestMutationResult>(this.apiEndpoint.url(`quests/${id}`), payload, this.httpConfig));
+    this.invalidateDashboardCache();
     return this.toMutation(response);
   }
 
@@ -255,6 +266,7 @@ export class QuestBoardService {
     const response = await firstValueFrom(
       this.http.post<ApiQuestMutationResult>(this.apiEndpoint.url(`quests/${questId}/subtasks`), { title }, this.httpConfig)
     );
+    this.invalidateDashboardCache();
     return this.toMutation(response);
   }
 
@@ -266,6 +278,7 @@ export class QuestBoardService {
     const response = await firstValueFrom(
       this.http.patch<ApiQuestMutationResult>(this.apiEndpoint.url(`quests/${questId}/subtasks/${subtaskId}`), payload, this.httpConfig)
     );
+    this.invalidateDashboardCache();
     return this.toMutation(response);
   }
 
@@ -273,10 +286,12 @@ export class QuestBoardService {
     await firstValueFrom(
       this.http.delete<void>(this.apiEndpoint.url(`quests/${questId}/subtasks/${subtaskId}`), this.httpConfig)
     );
+    this.invalidateDashboardCache();
   }
 
   async deleteQuest(id: number): Promise<void> {
     await firstValueFrom(this.http.delete<void>(this.apiEndpoint.url(`quests/${id}`), this.httpConfig));
+    this.invalidateDashboardCache();
   }
 
   async reorderQuests(items: QuestReorderItem[]): Promise<void> {
@@ -286,12 +301,14 @@ export class QuestBoardService {
       type: this.toApiQuestType(item.type),
     }));
     await firstValueFrom(this.http.put<void>(this.apiEndpoint.url('quests/reorder'), payload, this.httpConfig));
+    this.invalidateDashboardCache();
   }
 
   async saveSkills(state: QuestBoardState): Promise<QuestBoardState> {
     const board = await firstValueFrom(
       this.http.put<ApiQuestBoard>(this.apiEndpoint.url('quests/skills'), this.toApi(state), this.httpConfig)
     );
+    this.invalidateDashboardCache();
     return this.toState(board);
   }
 

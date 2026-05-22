@@ -18,25 +18,6 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  addOutline,
-  alertCircleOutline,
-  arrowBackOutline,
-  calendarClearOutline,
-  checkmarkDoneOutline,
-  cubeOutline,
-  ellipsisVertical,
-  flagOutline,
-  gameControllerOutline,
-  hourglassOutline,
-  libraryOutline,
-  playOutline,
-  refreshOutline,
-  returnUpBackOutline,
-  trashOutline,
-  trophyOutline,
-} from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 
 import { GameService } from 'src/app/features/games/services/game.service';
@@ -106,27 +87,6 @@ export class MyGameDetailsPage implements OnInit {
   isUpdatingLibrary = false;
   isSavingNotes = false;
   headerCondensed = false;
-
-  constructor() {
-    addIcons({
-      addOutline,
-      alertCircleOutline,
-      arrowBackOutline,
-      calendarClearOutline,
-      checkmarkDoneOutline,
-      cubeOutline,
-      ellipsisVertical,
-      flagOutline,
-      gameControllerOutline,
-      hourglassOutline,
-      libraryOutline,
-      playOutline,
-      refreshOutline,
-      returnUpBackOutline,
-      trashOutline,
-      trophyOutline,
-    });
-  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async (params) => {

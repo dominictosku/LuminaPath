@@ -11,6 +11,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 import { MediaModeService } from 'src/app/shared/services/media-mode.service';
+import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import {
   LibraryEntryDetails,
@@ -63,6 +64,11 @@ export const MediaStore = signalStore(
   withMethods((store) => {
     const facade = inject(MediaLibraryFacade);
     const mediaMode = inject(MediaModeService);
+    const cache = inject(RequestCache);
+
+    /** Library mutations affect both the dashboard's library count + featured
+     *  items and the statistic page's owned-item derivations. Expire both. */
+    const invalidateDerivedCaches = () => cache.invalidate(/^(home|statistic):/);
 
     function ensureKind(kind: MediaKind): void {
       if (store.loadedKind() === kind) return;
@@ -129,6 +135,7 @@ export const MediaStore = signalStore(
           const entry = await firstValueFrom(facade.addToLibrary(mediaId, details));
           patchEntry(mediaId, { libraryEntry: entry });
           patchState(store, { isMutating: false });
+          invalidateDerivedCaches();
           return entry;
         } catch (error) {
           patchState(store, { isMutating: false, error: extractError(error) });
@@ -149,6 +156,7 @@ export const MediaStore = signalStore(
           );
           patchEntry(mediaId, { libraryEntry: entry });
           patchState(store, { isMutating: false });
+          invalidateDerivedCaches();
           return entry;
         } catch (error) {
           patchState(store, { isMutating: false, error: extractError(error) });
@@ -167,9 +175,12 @@ export const MediaStore = signalStore(
         patchState(store, upsertEntity<MediaItem>(item));
       },
 
-      /** Replace just the libraryEntry on a cached item. No-op if not cached. */
+      /** Replace just the libraryEntry on a cached item. No-op if not cached.
+       *  Always invalidates derived caches — the per-kind detail pages call
+       *  this after a successful add/update/remove via their own services. */
       setLibraryEntry(mediaId: number, entry: UserMediaEntry | null): void {
         patchEntry(mediaId, { libraryEntry: entry });
+        invalidateDerivedCaches();
       },
 
       /** Drop a cached item entirely. */

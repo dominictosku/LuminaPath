@@ -10,15 +10,6 @@ import {
   IonRefresherContent,
   IonSpinner,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  cardOutline,
-  mailOutline,
-  personCircleOutline,
-  saveOutline,
-  settingsOutline,
-  timeOutline,
-} from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 import { User } from 'src/app/core/auth/models/user.model';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
@@ -56,17 +47,6 @@ export class ProfilePage implements OnInit {
     age: 0,
     currentPassword: '',
   };
-
-  constructor() {
-    addIcons({
-      cardOutline,
-      mailOutline,
-      personCircleOutline,
-      saveOutline,
-      settingsOutline,
-      timeOutline,
-    });
-  }
 
   async ngOnInit(): Promise<void> {
     await this.refresh();
@@ -108,7 +88,7 @@ export class ProfilePage implements OnInit {
       return;
     }
 
-    if (this.emailChanged && !this.draft.currentPassword) {
+  if (this.emailChanged && !this.draft.currentPassword) {
       this.state = 'error';
       this.message = 'Confirm your current password to change email.';
       return;

@@ -10,18 +10,6 @@ import {
   IonSegmentButton,
   IonSkeletonText,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  calendarClearOutline,
-  checkmarkCircleOutline,
-  flameOutline,
-  gameControllerOutline,
-  hourglassOutline,
-  layersOutline,
-  rocketOutline,
-  sparklesOutline,
-  timeOutline,
-} from 'ionicons/icons';
 import { Game, platformLabelFromValue } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
@@ -81,20 +69,6 @@ export class ReleasePlanComponent implements OnChanges {
   weeklyHours = 10;
   monthLabel = '';
 
-  constructor() {
-    addIcons({
-      calendarClearOutline,
-      checkmarkCircleOutline,
-      flameOutline,
-      gameControllerOutline,
-      hourglassOutline,
-      layersOutline,
-      rocketOutline,
-      sparklesOutline,
-      timeOutline,
-    });
-  }
-
   ngOnChanges(changes: SimpleChanges) {
     if (changes['games']) {
       this.buildPlan();
@@ -120,7 +94,7 @@ export class ReleasePlanComponent implements OnChanges {
   releaseLabel(game: Game): string {
     const date = this.releaseDateOf(game);
 
-    if (Number.isNaN(date.getTime())) {
+  if (Number.isNaN(date.getTime())) {
       return 'No date';
     }
 

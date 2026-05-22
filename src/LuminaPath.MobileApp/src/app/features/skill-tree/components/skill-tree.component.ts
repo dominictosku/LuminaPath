@@ -2,16 +2,6 @@
 import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, NgZone, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  closeOutline,
-  lockClosedOutline,
-  musicalNotesOutline,
-  sparkles,
-  sparklesOutline,
-  starOutline,
-  volumeMuteOutline,
-} from 'ionicons/icons';
 import {
   SkillTreeBranch,
   SkillTreeNode,
@@ -67,18 +57,6 @@ export class SkillTreeComponent implements AfterViewInit, OnChanges, OnDestroy {
   private dragHandlerMove = (e: MouseEvent) => this.onDragMove(e);
   private dragHandlerUp = () => this.onDragUp();
 
-  constructor() {
-    addIcons({
-      closeOutline,
-      lockClosedOutline,
-      musicalNotesOutline,
-      sparkles,
-      sparklesOutline,
-      starOutline,
-      volumeMuteOutline,
-    });
-  }
-
   ngAfterViewInit(): void {
     this.viewReady = true;
     this.quests = this.loadQuests();
@@ -95,7 +73,7 @@ export class SkillTreeComponent implements AfterViewInit, OnChanges, OnDestroy {
     window.addEventListener('mousemove', this.dragHandlerMove);
     window.addEventListener('mouseup', this.dragHandlerUp);
 
-    setTimeout(() => {
+  setTimeout(() => {
       this.loading = false;
       this.cdr.detectChanges();
     }, 600);
@@ -126,7 +104,7 @@ export class SkillTreeComponent implements AfterViewInit, OnChanges, OnDestroy {
       return;
     }
 
-    if (changes['unlockedNodeIds'] && this.scene && this.viewReady) {
+  if (changes['unlockedNodeIds'] && this.scene && this.viewReady) {
       this.zone.runOutsideAngular(() => this.scene?.setUnlocked(this.unlockedNodeIds));
     }
   }

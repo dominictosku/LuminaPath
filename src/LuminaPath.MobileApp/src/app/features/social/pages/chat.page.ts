@@ -15,8 +15,6 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { sendOutline } from 'ionicons/icons';
 import { Subscription, firstValueFrom } from 'rxjs';
 import { DirectMessage, FriendUser } from '../models/friend.model';
 import { DirectMessagesService } from '../services/direct-messages.service';
@@ -63,10 +61,6 @@ export class ChatPage implements OnInit, OnDestroy, AfterViewChecked {
 
   private shouldScroll = false;
   private subscriptions: Subscription[] = [];
-
-  constructor() {
-    addIcons({ sendOutline });
-  }
 
   async ngOnInit(): Promise<void> {
     this.otherUserId = this.route.snapshot.paramMap.get('userId') ?? '';
@@ -147,7 +141,7 @@ export class ChatPage implements OnInit, OnDestroy, AfterViewChecked {
       || (message.senderId === this.currentUserId && message.recipientId === this.otherUserId)
       || (!this.currentUserId && (message.senderId === this.otherUserId || message.recipientId === this.otherUserId));
 
-    if (!involves) return;
+  if (!involves) return;
     if (!this.currentUserId) {
       this.currentUserId = message.senderId === this.otherUserId ? message.recipientId : message.senderId;
     }

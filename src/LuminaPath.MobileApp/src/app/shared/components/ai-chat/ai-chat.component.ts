@@ -2,15 +2,6 @@
 import { AfterViewChecked, Component, ElementRef, OnDestroy, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  chatbubbleEllipsesOutline,
-  closeOutline,
-  hourglassOutline,
-  paperPlaneOutline,
-  refreshOutline,
-  sparklesOutline,
-} from 'ionicons/icons';
 import { Subscription } from 'rxjs';
 import { AiChatService, ChatMessage } from 'src/app/shared/services/ai-chat.service';
 
@@ -37,17 +28,6 @@ export class AiChatComponent implements AfterViewChecked, OnDestroy {
   private shouldScroll = false;
 
   @ViewChild('scrollAnchor') private scrollAnchor?: ElementRef<HTMLDivElement>;
-
-  constructor() {
-    addIcons({
-      chatbubbleEllipsesOutline,
-      closeOutline,
-      hourglassOutline,
-      paperPlaneOutline,
-      refreshOutline,
-      sparklesOutline,
-    });
-  }
 
   ngAfterViewChecked(): void {
     if (this.shouldScroll) {

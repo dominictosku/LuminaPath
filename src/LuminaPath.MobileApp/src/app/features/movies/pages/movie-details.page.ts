@@ -12,14 +12,6 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  arrowBackOutline,
-  calendarClearOutline,
-  filmOutline,
-  libraryOutline,
-  timeOutline,
-} from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 import { Movie } from '../models/movies.model';
 import { MovieService } from '../services/movie.service';
@@ -61,16 +53,6 @@ export class MovieDetailsPage implements OnInit {
   movie: Movie | null = null;
   isLoading = true;
   errorMessage = '';
-
-  constructor() {
-    addIcons({
-      arrowBackOutline,
-      calendarClearOutline,
-      filmOutline,
-      libraryOutline,
-      timeOutline,
-    });
-  }
 
   async ngOnInit(): Promise<void> {
     const movieId = Number(this.route.snapshot.paramMap.get('movieId'));

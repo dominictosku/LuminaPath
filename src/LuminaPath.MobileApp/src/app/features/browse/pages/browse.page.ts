@@ -11,21 +11,6 @@ import {
   IonSegmentButton,
   IonSkeletonText,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  addOutline,
-  calendarClearOutline,
-  checkmarkCircleOutline,
-  closeOutline,
-  createOutline,
-  filmOutline,
-  gameControllerOutline,
-  hourglassOutline,
-  peopleOutline,
-  refreshOutline,
-  sparklesOutline,
-  timeOutline,
-} from 'ionicons/icons';
 import { forkJoin } from 'rxjs';
 import { platformLabelFromValue } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
@@ -106,20 +91,6 @@ export class BrowsePage implements OnInit {
         this.selectedKind = mode.id;
         this.load();
       }
-    });
-    addIcons({
-      addOutline,
-      calendarClearOutline,
-      checkmarkCircleOutline,
-      closeOutline,
-      createOutline,
-      filmOutline,
-      gameControllerOutline,
-      hourglassOutline,
-      peopleOutline,
-      refreshOutline,
-      sparklesOutline,
-      timeOutline,
     });
   }
 
@@ -205,7 +176,7 @@ export class BrowsePage implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    forkJoin({
+  forkJoin({
       games: this.browseService.getGameReleases(),
       animes: this.browseService.getAnimeReleases(),
     }).subscribe({
@@ -253,7 +224,7 @@ export class BrowsePage implements OnInit {
     const item = this.selectedItem;
     const media = this.selectedMedia;
 
-    if (!item || !media || this.isAdding(item)) {
+  if (!item || !media || this.isAdding(item)) {
       return;
     }
 
@@ -410,11 +381,11 @@ export class BrowsePage implements OnInit {
       return SEASONS[3];
     }
 
-    if (month >= 6) {
+  if (month >= 6) {
       return SEASONS[2];
     }
 
-    if (month >= 3) {
+  if (month >= 3) {
       return SEASONS[1];
     }
 

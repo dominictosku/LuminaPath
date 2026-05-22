@@ -15,24 +15,6 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  addOutline,
-  arrowBackOutline,
-  calendarClearOutline,
-  checkmarkDoneOutline,
-  ellipsisVertical,
-  filmOutline,
-  layersOutline,
-  libraryOutline,
-  playForwardOutline,
-  refreshOutline,
-  returnUpBackOutline,
-  sparklesOutline,
-  timeOutline,
-  trashOutline,
-  tvOutline,
-} from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
@@ -86,26 +68,6 @@ export class EpisodicMediaDetailsPage implements OnInit {
   errorMessage = '';
   isUpdatingLibrary = false;
   headerCondensed = false;
-
-  constructor() {
-    addIcons({
-      addOutline,
-      arrowBackOutline,
-      calendarClearOutline,
-      checkmarkDoneOutline,
-      ellipsisVertical,
-      filmOutline,
-      layersOutline,
-      libraryOutline,
-      playForwardOutline,
-      refreshOutline,
-      returnUpBackOutline,
-      sparklesOutline,
-      timeOutline,
-      trashOutline,
-      tvOutline,
-    });
-  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async (params) => {

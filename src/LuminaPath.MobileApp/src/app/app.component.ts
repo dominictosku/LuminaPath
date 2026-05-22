@@ -10,6 +10,7 @@ import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { shouldHideAppNavigation } from './shared/utils/app-shell-navigation';
 import { MediaModeService } from './shared/services/media-mode.service';
+import { registerAppIcons } from './shared/icons/register-icons';
 
 @Component({
     selector: 'app-root',
@@ -33,6 +34,10 @@ export class AppComponent implements OnInit {
   @HostBinding('class.dark') get mode() { return this.darkMode(); }
 
   constructor() {
+    // Register every Ionicons name the app uses, once, at startup. Replaces
+    // the foot-gun where each page had to remember every icon used by any
+    // descendant. See shared/icons/register-icons.ts.
+    registerAppIcons();
     effect(() => this.applyMediaTheme(this.mediaMode.mode().themeClass));
   }
 

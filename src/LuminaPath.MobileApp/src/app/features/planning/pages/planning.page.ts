@@ -15,21 +15,6 @@ import {
   IonSelectOption,
   IonSpinner,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  addOutline,
-  calendarClearOutline,
-  checkmarkCircle,
-  checkmarkCircleOutline,
-  chevronBackOutline,
-  chevronForwardOutline,
-  flagOutline,
-  gameControllerOutline,
-  hourglassOutline,
-  rocketOutline,
-  timeOutline,
-  trashOutline,
-} from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 
 import { Game } from '../../games/models/games.model';
@@ -106,20 +91,6 @@ export class PlanningPage implements OnInit {
     this.calendarAnchor = this.planningCalendar.startOfToday();
     this.draft = this.emptyDraft();
 
-    addIcons({
-      addOutline,
-      calendarClearOutline,
-      checkmarkCircle,
-      checkmarkCircleOutline,
-      chevronBackOutline,
-      chevronForwardOutline,
-      flagOutline,
-      gameControllerOutline,
-      hourglassOutline,
-      rocketOutline,
-      timeOutline,
-      trashOutline,
-    });
   }
 
   async ngOnInit(): Promise<void> {
@@ -176,7 +147,7 @@ export class PlanningPage implements OnInit {
   async addSession(): Promise<void> {
     const scheduledAt = this.combineDateTime(this.draft.scheduledDate, this.draft.scheduledTime);
 
-    if (!scheduledAt || this.draft.durationMinutes <= 0) {
+  if (!scheduledAt || this.draft.durationMinutes <= 0) {
       this.errorMessage = 'Pick a date, time, and a duration.';
       return;
     }
@@ -302,16 +273,16 @@ export class PlanningPage implements OnInit {
       return 'No playtime estimate yet';
     }
 
-    if (forecast.remainingHours <= 0) {
+  if (forecast.remainingHours <= 0) {
       return 'Already past the estimated playtime';
     }
 
-    if (forecast.projectedCompletionDate) {
+  if (forecast.projectedCompletionDate) {
       const sessions = forecast.sessionsToCompletion ?? 0;
       return `${sessions} session${sessions === 1 ? '' : 's'} to finish · ETA ${this.formatDate(forecast.projectedCompletionDate)}`;
     }
 
-    if (forecast.weeksAtCurrentPace != null) {
+  if (forecast.weeksAtCurrentPace != null) {
       return `Need ${this.formatHours(forecast.additionalHoursNeeded)} more · ~${forecast.weeksAtCurrentPace} weeks at ${this.formatHours(forecast.weeklyHours)}/week`;
     }
 

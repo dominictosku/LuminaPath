@@ -1,8 +1,6 @@
 
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { IonBadge, IonButton, IonIcon } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { addOutline, createOutline, hourglassOutline } from 'ionicons/icons';
 import { MediaModeOption } from 'src/app/shared/services/media-mode.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { MediaItem } from '../../models/media-item.model';
@@ -23,14 +21,6 @@ export class LibraryListRowComponent {
 
   @Output() edit = new EventEmitter<MediaItem>();
   @Output() details = new EventEmitter<MediaItem>();
-
-  constructor() {
-    addIcons({
-      addOutline,
-      createOutline,
-      hourglassOutline,
-    });
-  }
 
   imageFor(item: MediaItem): string {
     return mediaImageUrl(item.image);

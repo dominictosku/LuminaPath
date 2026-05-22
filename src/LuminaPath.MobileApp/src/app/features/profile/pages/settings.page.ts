@@ -7,18 +7,6 @@ import {
   IonContent,
   IonIcon,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  keyOutline,
-  lockClosedOutline,
-  logOutOutline,
-  notificationsOffOutline,
-  notificationsOutline,
-  personCircleOutline,
-  saveOutline,
-  settingsOutline,
-  shieldCheckmarkOutline,
-} from 'ionicons/icons';
 import { firstValueFrom, finalize } from 'rxjs';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
@@ -58,24 +46,10 @@ export class SettingsPage {
 
   isLoggingOut = false;
 
-  constructor() {
-    addIcons({
-      keyOutline,
-      lockClosedOutline,
-      logOutOutline,
-      notificationsOffOutline,
-      notificationsOutline,
-      personCircleOutline,
-      saveOutline,
-      settingsOutline,
-      shieldCheckmarkOutline,
-    });
-  }
-
   async changePassword(): Promise<void> {
     const { oldPassword, newPassword, confirmPassword } = this.passwordDraft;
 
-    if (!oldPassword || !newPassword) {
+  if (!oldPassword || !newPassword) {
       this.passwordState = 'error';
       this.passwordMessage = 'Enter both your current and new password.';
       return;

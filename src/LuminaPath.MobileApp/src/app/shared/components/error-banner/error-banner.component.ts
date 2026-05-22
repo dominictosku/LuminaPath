@@ -1,8 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { alertCircleOutline, closeOutline, refreshOutline } from 'ionicons/icons';
-
 import { ErrorReporter } from '../../services/error-reporter.service';
 
 /**
@@ -26,10 +23,6 @@ export class ErrorBannerComponent {
 
   readonly current = this.reporter.current;
   readonly visible = computed(() => this.current() !== null);
-
-  constructor() {
-    addIcons({ alertCircleOutline, closeOutline, refreshOutline });
-  }
 
   dismiss(): void {
     this.reporter.dismiss();

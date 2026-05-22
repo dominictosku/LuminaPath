@@ -18,20 +18,6 @@ import {
   IonSelectOption,
   IonSkeletonText,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import {
-  albumsOutline,
-  addOutline,
-  bookmarkOutline,
-  checkmarkCircleOutline,
-  closeOutline,
-  flashOutline,
-  gameControllerOutline,
-  gridOutline,
-  hourglassOutline,
-  listOutline,
-  searchOutline,
-} from 'ionicons/icons';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Platforms } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
@@ -170,19 +156,6 @@ export class LibraryPage implements OnInit {
         this.errorMessage = storeError;
       }
       this.applyLoadedGames();
-    });
-    addIcons({
-      addOutline,
-      albumsOutline,
-      bookmarkOutline,
-      checkmarkCircleOutline,
-      closeOutline,
-      flashOutline,
-      gameControllerOutline,
-      gridOutline,
-      hourglassOutline,
-      listOutline,
-      searchOutline,
     });
   }
 
@@ -340,7 +313,7 @@ export class LibraryPage implements OnInit {
   async submitAddGame(): Promise<void> {
     const game = this.selectedGame;
 
-    if (!game || this.addingGameIds.has(game.id)) {
+  if (!game || this.addingGameIds.has(game.id)) {
       return;
     }
 
@@ -513,7 +486,7 @@ export class LibraryPage implements OnInit {
     const today = new Date();
     const year = today.getFullYear();
 
-    switch (this.releaseDateFilter) {
+  switch (this.releaseDateFilter) {
       case 'released':
         return { from: null, to: this.toDateParam(this.addDays(today, 1)) };
       case 'upcoming':
