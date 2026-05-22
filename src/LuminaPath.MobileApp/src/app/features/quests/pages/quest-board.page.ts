@@ -75,7 +75,7 @@ import {
 } from 'src/app/features/skill-tree/util/skill-adapter';
 import { addDays, startOfDay, toISODate } from 'src/app/shared/utils/date-helpers';
 import { QuestBoardHeroComponent } from '../components/quest-board-hero/quest-board-hero.component';
-import { QuestQuickAddComponent, QuestQuickAddSubmit } from '../components/quest-quick-add/quest-quick-add.component';
+import { QuestQuickAddComponent, QuestQuickAddPreset, QuestQuickAddSubmit } from '../components/quest-quick-add/quest-quick-add.component';
 import { QuestBoardToolbarComponent } from '../components/quest-board-toolbar/quest-board-toolbar.component';
 import { QuestAchievementsComponent } from '../components/quest-achievements/quest-achievements.component';
 import { SkillsListComponent, SkillNodeAction, SkillNodeQuestAction } from '../components/skills-list/skills-list.component';
@@ -234,6 +234,9 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   quickAddType: QuestType = 'sub';
   quickAddPriority: QuestPriority = 'medium';
   quickAddRecurrence: QuestRecurrence = 'none';
+  /** Drop-in pre-fill for the quick-add row (skill-tree "Quest" button, etc.).
+   *  Assign a new object reference to trigger the child's apply-effect. */
+  quickAddPreset: QuestQuickAddPreset | null = null;
 
   // Search & tag filter
   searchQuery = '';
@@ -907,10 +910,6 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     return quest.id;
   }
 
-  trackBySkill(_: number, skill: QuestSkill): number {
-    return skill.id;
-  }
-
   trackByQuestSection(_: number, section: QuestSection): string {
     return section.id;
   }
@@ -1036,11 +1035,17 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   startNodeQuest({ skill, node }: SkillNodeQuestAction): void {
     this.mode = 'quests';
     this.filter = 'today';
-    // Pre-fill quick-add via the persisted prefs; the user can tweak in place.
     this.quickAddType = 'sub';
     this.quickAddPriority = 'medium';
+    // New object reference each call → child effect fires → form pre-fills.
+    this.quickAddPreset = {
+      title: `Practice: ${node}`,
+      dueDate: toISODate(startOfDay(new Date())),
+      skillId: skill.id,
+      advancedOpen: true,
+    };
     this.savePrefs();
-    this.showToast(`${skill.name} quest draft ready — title: Practice: ${node}`);
+    this.showToast(`${skill.name} quest draft ready`);
   }
 
   get skillTreeBranches(): SkillTreeBranch[] {

@@ -1,4 +1,4 @@
-import { Component, input, model, output } from '@angular/core';
+import { Component, effect, input, model, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonButton, IonIcon } from '@ionic/angular/standalone';
 
@@ -12,6 +12,18 @@ export type QuestQuickAddSubmit = {
   dueDate: string | null;
   myGameId: number | null;
   skillId: number | null;
+};
+
+/** Drop-in field values pushed from the parent (e.g. "Start a quest for this
+ *  skill node" pre-fills title/due/skill on the quick-add row). Every property
+ *  is optional — only the keys present are applied. Pass a *new* object each
+ *  time you want the preset to take effect; the child watches by reference. */
+export type QuestQuickAddPreset = {
+  title?: string;
+  dueDate?: string | null;
+  skillId?: number | null;
+  myGameId?: number | null;
+  advancedOpen?: boolean;
 };
 
 type LibraryGame = { myGameId: number; gameName: string };
@@ -36,6 +48,8 @@ export class QuestQuickAddComponent {
   readonly recurrenceOptions = input<RecurrenceOption[]>([]);
   readonly library = input<LibraryGame[]>([]);
   readonly skills = input<QuestSkill[]>([]);
+  /** Parent-driven pre-fill. Pass a new reference to apply (see type docs). */
+  readonly preset = input<QuestQuickAddPreset | null>(null);
 
   // Form state two-way bound so the parent can persist preferences across sessions.
   readonly quickAddType = model<QuestType>('sub');
@@ -49,6 +63,21 @@ export class QuestQuickAddComponent {
   quickAddGameId: number | null = null;
   quickAddSkillId: number | null = null;
   quickAddAdvancedOpen = false;
+
+  constructor() {
+    // Apply parent presets as they arrive. We only touch the keys the parent
+    // actually specified so individual presets can target a subset (e.g. only
+    // title + skill from the skill-tree "Quest" button).
+    effect(() => {
+      const preset = this.preset();
+      if (!preset) return;
+      if (preset.title !== undefined) this.quickAddTitle = preset.title;
+      if (preset.dueDate !== undefined) this.quickAddDue = preset.dueDate;
+      if (preset.skillId !== undefined) this.quickAddSkillId = preset.skillId;
+      if (preset.myGameId !== undefined) this.quickAddGameId = preset.myGameId;
+      if (preset.advancedOpen !== undefined) this.quickAddAdvancedOpen = preset.advancedOpen;
+    });
+  }
 
   submit(): void {
     const title = this.quickAddTitle.trim();
