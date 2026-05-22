@@ -8,7 +8,23 @@ import {
   IonRefresherContent,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { flameOutline } from 'ionicons/icons';
+// `addIcons` populates Ionic's global icon registry. Sub-components only
+// declare which icons they render, so the page is responsible for ensuring
+// every name used by any descendant template (including ones bound from
+// data like `DashboardMetric.icon`) is registered here.
+import {
+  alertCircleOutline,
+  calendarClearOutline,
+  checkboxOutline,
+  checkmarkDoneOutline,
+  flameOutline,
+  gameControllerOutline,
+  hourglassOutline,
+  libraryOutline,
+  sparklesOutline,
+  timeOutline,
+  trendingUpOutline,
+} from 'ionicons/icons';
 import { Game, platformLabelFromValue } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { Anime } from '../../animes/models/animes.model';
@@ -99,7 +115,19 @@ export class HomePage implements OnInit {
   errorMessage = '';
 
   constructor() {
-    addIcons({ flameOutline });
+    addIcons({
+      alertCircleOutline,
+      calendarClearOutline,
+      checkboxOutline,
+      checkmarkDoneOutline,
+      flameOutline,
+      gameControllerOutline,
+      hourglassOutline,
+      libraryOutline,
+      sparklesOutline,
+      timeOutline,
+      trendingUpOutline,
+    });
   }
 
   ngOnInit() {
