@@ -1,0 +1,22 @@
+@if (current(); as record) {
+  <aside class="error-banner" role="alert" aria-live="assertive">
+    <ion-icon name="alert-circle-outline" class="error-banner__icon" aria-hidden="true"></ion-icon>
+    <div class="error-banner__body">
+      <strong>Something went wrong</strong>
+      <span>{{ record.message }}</span>
+    </div>
+    <div class="error-banner__actions">
+      <button type="button" class="error-banner__action" (click)="reload()">
+        <ion-icon name="refresh-outline" aria-hidden="true"></ion-icon>
+        Reload
+      </button>
+      <button
+        type="button"
+        class="error-banner__close"
+        aria-label="Dismiss error"
+        (click)="dismiss()">
+        <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+      </button>
+    </div>
+  </aside>
+}

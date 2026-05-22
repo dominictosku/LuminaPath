@@ -1,0 +1,82 @@
+/* Fixed at the top of the viewport, above ion-router-outlet content and
+   the nav bar. Designed to be readable on mobile (touch targets ≥ 44px). */
+.error-banner {
+  position: fixed;
+  top: env(safe-area-inset-top, 0);
+  left: env(safe-area-inset-left, 0);
+  right: env(safe-area-inset-right, 0);
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+  box-shadow: 0 8px 24px rgba(127, 29, 29, 0.35);
+}
+
+.error-banner__icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.error-banner__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  strong {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  span {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.92);
+    overflow-wrap: break-word;
+  }
+}
+
+.error-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.error-banner__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  ion-icon {
+    font-size: 16px;
+  }
+}
+
+.error-banner__close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 20px;
+  }
+}

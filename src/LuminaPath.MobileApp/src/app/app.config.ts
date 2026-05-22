@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, ErrorHandler, provideZoneChangeDetection } from '@angular/core';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import {
   PreloadAllModules,
@@ -17,6 +17,7 @@ import {
 } from '@angular/common/http';
 import { routes } from '../app/app.routes';
 import { CookieInterceptor } from './core/middleware/CookieInterceptor.service';
+import { GlobalErrorHandler } from './shared/services/global-error-handler';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -26,6 +27,7 @@ export const appConfig: ApplicationConfig = {
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     provideHttpClient(withInterceptorsFromDi()),
     { provide: HTTP_INTERCEPTORS, useClass: CookieInterceptor, multi: true },
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
     provideIonicAngular(),
   ],
 };

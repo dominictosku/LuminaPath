@@ -3,6 +3,7 @@ import { DOCUMENT } from '@angular/common';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { NavBarComponent } from './shared/components/navigation/nav-bar/nav-bar.component'
 import { AiChatComponent } from './shared/components/ai-chat/ai-chat.component';
+import { ErrorBannerComponent } from './shared/components/error-banner/error-banner.component';
 import { ReleaseNotificationService } from './shared/services/release-notification.service';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
@@ -14,7 +15,7 @@ import { MediaModeService } from './shared/services/media-mode.service';
     selector: 'app-root',
     templateUrl: 'app.component.html',
     styleUrls: ['app.component.scss'],
-    imports: [IonApp, IonRouterOutlet, NavBarComponent, AiChatComponent]
+    imports: [IonApp, IonRouterOutlet, NavBarComponent, AiChatComponent, ErrorBannerComponent]
 })
 export class AppComponent implements OnInit {
   private releaseNotifications = inject(ReleaseNotificationService);
