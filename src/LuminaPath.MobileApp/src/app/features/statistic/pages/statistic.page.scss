@@ -206,6 +206,10 @@ app-statistic-breakdown {
 
 .section-heading {
   display: flex;
+  // Without this the flex default (`stretch`) would pull each child to fill
+  // the row height, turning the trailing `ion-badge` into a tall thin pill
+  // whenever the heading's eyebrow + h2 stack is taller than the badge.
+  align-items: center;
   justify-content: space-between;
   gap: 14px;
 }
