@@ -1,0 +1,98 @@
+@let q = quest();
+<article
+  class="quest-card"
+  [class.quest-card--done]="q.completed"
+  [class.quest-card--selected]="expanded()"
+  [attr.data-due]="dueState()">
+  <button
+    type="button"
+    class="complete-button"
+    aria-label="Toggle complete"
+    (click)="toggleComplete.emit(q)">
+    <ion-icon [name]="q.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
+  </button>
+  <div
+    class="quest-body"
+    role="button"
+    tabindex="0"
+    (click)="expand.emit(q)"
+    (keydown.enter)="expand.emit(q)"
+    (keydown.space)="$event.preventDefault(); expand.emit(q)">
+    <span class="quest-kicker">
+      <ion-icon [name]="typeIcon()(q.type)"></ion-icon>
+      {{ typeLabel()(q.type) }}
+      <span class="dot"></span>
+      {{ priorityLabel()(q.priority) }}
+    </span>
+    <h3>{{ q.title }}</h3>
+    @if (q.notes) {
+      <p class="quest-notes">{{ q.notes }}</p>
+    }
+    <div class="quest-meta">
+      @if (q.dueDate) {
+        <span class="meta-pill meta-pill--due" [attr.data-state]="dueState()">
+          <ion-icon name="calendar-outline"></ion-icon>
+          {{ dueDateLabel() }}
+        </span>
+      }
+      @if (!q.dueDate && !q.completed) {
+        <span class="meta-pill">
+          <ion-icon name="library-outline"></ion-icon>
+          Inbox
+        </span>
+      }
+      @if (q.recurrence && q.recurrence !== 'none') {
+        <span class="meta-pill meta-pill--recurrence">
+          <ion-icon name="refresh-outline"></ion-icon>
+          {{ recurrenceLabel()(q.recurrence) }}
+        </span>
+      }
+      @if (q.gameName) {
+        <span class="meta-pill meta-pill--game">
+          <ion-icon name="game-controller-outline"></ion-icon>
+          {{ q.gameName }}
+        </span>
+      }
+      @if (q.skillName) {
+        <span class="meta-pill meta-pill--skill">
+          <ion-icon name="trophy-outline"></ion-icon>
+          {{ q.skillName }}
+        </span>
+      }
+      @if (q.subtasks.length) {
+        <span class="meta-pill meta-pill--subtasks">
+          <ion-icon name="checkmark-done-outline"></ion-icon>
+          {{ subtaskCompletedCount() }}/{{ q.subtasks.length }}
+        </span>
+      }
+    </div>
+    @if (q.subtasks.length) {
+      <div class="subtask-progress">
+        <ion-progress-bar [value]="subtaskProgress()"></ion-progress-bar>
+      </div>
+    }
+    @if (!q.completed) {
+      <div class="quest-plan-actions">
+        @if (canScheduleToday()) {
+          <button type="button" (click)="$event.stopPropagation(); scheduleToday.emit(q)">Today</button>
+        }
+        @if (canScheduleTomorrow()) {
+          <button type="button" (click)="$event.stopPropagation(); scheduleTomorrow.emit(q)">Tomorrow</button>
+        }
+        @if (canMoveToInbox()) {
+          <button type="button" (click)="$event.stopPropagation(); clearDueDate.emit(q)">Inbox</button>
+        }
+      </div>
+    }
+  </div>
+  <button
+    type="button"
+    class="delete-button"
+    aria-label="Delete quest"
+    (click)="requestDelete.emit(q)">
+    <ion-icon name="trash-outline"></ion-icon>
+  </button>
+  @if (manualOrderActive()) {
+    <ion-reorder class="reorder-handle"></ion-reorder>
+  }
+</article>

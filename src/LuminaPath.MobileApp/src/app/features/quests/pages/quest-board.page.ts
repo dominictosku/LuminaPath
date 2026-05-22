@@ -6,8 +6,6 @@ import {
   IonContent,
   IonIcon,
   IonLabel,
-  IonProgressBar,
-  IonReorder,
   IonReorderGroup,
   IonSegment,
   IonSegmentButton,
@@ -81,6 +79,7 @@ import { QuestAchievementsComponent } from '../components/quest-achievements/que
 import { SkillsListComponent, SkillNodeAction, SkillNodeQuestAction } from '../components/skills-list/skills-list.component';
 import { SkillForm, SkillModalComponent } from '../components/skill-modal/skill-modal.component';
 import { QuestDetailSheetComponent, QuestEditDraft } from '../components/quest-detail-sheet/quest-detail-sheet.component';
+import { QuestCardComponent } from '../components/quest-card/quest-card.component';
 import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
 
 type PageMode = 'quests' | 'skills' | 'tree';
@@ -149,8 +148,6 @@ type SkillTreeUnlockPayload = {
     IonContent,
     IonIcon,
     IonLabel,
-    IonProgressBar,
-    IonReorder,
     IonReorderGroup,
     IonSegment,
     IonSegmentButton,
@@ -162,6 +159,7 @@ type SkillTreeUnlockPayload = {
     SkillsListComponent,
     SkillModalComponent,
     QuestDetailSheetComponent,
+    QuestCardComponent,
     EmptyStateComponent,
 ],
 })
@@ -267,6 +265,8 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   readonly filterCountFn = (filter: QuestFilter) => this.filterCount(filter);
   readonly typeIconFn = (type: QuestType) => this.typeIcon(type);
   readonly typeLabelFn = (type: QuestType) => this.typeLabel(type);
+  readonly priorityLabelFn = (priority: QuestPriority) => this.priorityLabel(priority);
+  readonly recurrenceLabelFn = (recurrence: QuestRecurrence) => this.recurrenceLabel(recurrence);
   readonly subtaskDraftFn = (questId: number) => this.subtaskDraft(questId);
   readonly activeLinkedQuestCountFn = (skill: QuestSkill) => this.activeLinkedQuestCount(skill);
   readonly linkedQuestCountFn = (skill: QuestSkill) => this.linkedQuestCount(skill);
@@ -653,20 +653,6 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     }
   }
 
-  canScheduleToday(quest: Quest): boolean {
-    return !quest.completed && this.dueState(quest) !== 'today';
-  }
-
-  canScheduleTomorrow(quest: Quest): boolean {
-    if (quest.completed) return false;
-    const tomorrow = toISODate(addDays(startOfDay(new Date()), 1));
-    return quest.dueDate !== tomorrow;
-  }
-
-  canMoveToInbox(quest: Quest): boolean {
-    return !quest.completed && Boolean(quest.dueDate);
-  }
-
   // -------- Toggle / edit / delete --------
 
   async toggleQuest(quest: Quest): Promise<void> {
@@ -877,23 +863,6 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   recurrenceLabel(recurrence: QuestRecurrence): string {
     return this.recurrenceOptions.find((option) => option.value === recurrence)?.label ?? 'No repeat';
-  }
-
-  dueDateLabel(quest: Quest): string {
-    if (!quest.dueDate) return '';
-    const due = new Date(quest.dueDate);
-    if (Number.isNaN(due.getTime())) return '';
-    const today = startOfDay(new Date());
-    const dueDay = startOfDay(due);
-    const diffDays = Math.round((dueDay.getTime() - today.getTime()) / 86400000);
-
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
-    if (diffDays === -1) return 'Yesterday';
-    if (diffDays < -1 && diffDays >= -7) return `${Math.abs(diffDays)}d overdue`;
-    if (diffDays > 1 && diffDays <= 7) return `In ${diffDays}d`;
-
-    return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(due);
   }
 
   dueState(quest: Quest): 'overdue' | 'today' | 'soon' | 'later' | 'none' {
@@ -1192,15 +1161,6 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   setSubtaskDraft({ questId, value }: { questId: number; value: string }): void {
     this.newSubtaskTitle[questId] = value;
-  }
-
-  subtaskProgress(quest: Quest): number {
-    if (!quest.subtasks.length) return 0;
-    return quest.subtasks.filter((s) => s.completed).length / quest.subtasks.length;
-  }
-
-  subtaskCompletedCount(quest: Quest): number {
-    return quest.subtasks.filter((s) => s.completed).length;
   }
 
   closeAchievementToast(): void {

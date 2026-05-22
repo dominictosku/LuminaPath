@@ -86,95 +86,20 @@
               [disabled]="!isManualOrderActive"
               (ionItemReorder)="handleReorder($any($event), section.quests)">
               @for (quest of section.quests; track trackByQuest($index, quest)) {
-                <article
-                  class="quest-card"
-                  [class.quest-card--done]="quest.completed"
-                  [class.quest-card--selected]="expandedQuestId === quest.id"
-                  [attr.data-due]="dueState(quest)">
-                  <button type="button" class="complete-button" aria-label="Toggle complete" (click)="toggleQuest(quest)">
-                    <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
-                  </button>
-                  <div
-                    class="quest-body"
-                    role="button"
-                    tabindex="0"
-                    (click)="toggleExpand(quest)"
-                    (keydown.enter)="toggleExpand(quest)"
-                    (keydown.space)="$event.preventDefault(); toggleExpand(quest)">
-                    <span class="quest-kicker">
-                      <ion-icon [name]="typeIcon(quest.type)"></ion-icon>
-                      {{ typeLabel(quest.type) }}
-                      <span class="dot"></span>
-                      {{ priorityLabel(quest.priority) }}
-                    </span>
-                    <h3>{{ quest.title }}</h3>
-                    @if (quest.notes) {
-                      <p class="quest-notes">{{ quest.notes }}</p>
-                    }
-                    <div class="quest-meta">
-                      @if (quest.dueDate) {
-                        <span class="meta-pill meta-pill--due" [attr.data-state]="dueState(quest)">
-                          <ion-icon name="calendar-outline"></ion-icon>
-                          {{ dueDateLabel(quest) }}
-                        </span>
-                      }
-                      @if (!quest.dueDate && !quest.completed) {
-                        <span class="meta-pill">
-                          <ion-icon name="library-outline"></ion-icon>
-                          Inbox
-                        </span>
-                      }
-                      @if (quest.recurrence && quest.recurrence !== 'none') {
-                        <span class="meta-pill meta-pill--recurrence">
-                          <ion-icon name="refresh-outline"></ion-icon>
-                          {{ recurrenceLabel(quest.recurrence) }}
-                        </span>
-                      }
-                      @if (quest.gameName) {
-                        <span class="meta-pill meta-pill--game">
-                          <ion-icon name="game-controller-outline"></ion-icon>
-                          {{ quest.gameName }}
-                        </span>
-                      }
-                      @if (quest.skillName) {
-                        <span class="meta-pill meta-pill--skill">
-                          <ion-icon name="trophy-outline"></ion-icon>
-                          {{ quest.skillName }}
-                        </span>
-                      }
-                      @if (quest.subtasks.length) {
-                        <span class="meta-pill meta-pill--subtasks">
-                          <ion-icon name="checkmark-done-outline"></ion-icon>
-                          {{ subtaskCompletedCount(quest) }}/{{ quest.subtasks.length }}
-                        </span>
-                      }
-                    </div>
-                    @if (quest.subtasks.length) {
-                      <div class="subtask-progress">
-                        <ion-progress-bar [value]="subtaskProgress(quest)"></ion-progress-bar>
-                      </div>
-                    }
-                    @if (!quest.completed) {
-                      <div class="quest-plan-actions">
-                        @if (canScheduleToday(quest)) {
-                          <button type="button" (click)="$event.stopPropagation(); scheduleToday(quest)">Today</button>
-                        }
-                        @if (canScheduleTomorrow(quest)) {
-                          <button type="button" (click)="$event.stopPropagation(); scheduleTomorrow(quest)">Tomorrow</button>
-                        }
-                        @if (canMoveToInbox(quest)) {
-                          <button type="button" (click)="$event.stopPropagation(); clearQuestDueDate(quest)">Inbox</button>
-                        }
-                      </div>
-                    }
-                  </div>
-                  <button type="button" class="delete-button" aria-label="Delete quest" (click)="beginDelete(quest)">
-                    <ion-icon name="trash-outline"></ion-icon>
-                  </button>
-                  @if (isManualOrderActive) {
-                    <ion-reorder class="reorder-handle"></ion-reorder>
-                  }
-                </article>
+                <app-quest-card
+                  [quest]="quest"
+                  [expanded]="expandedQuestId === quest.id"
+                  [manualOrderActive]="isManualOrderActive"
+                  [typeIcon]="typeIconFn"
+                  [typeLabel]="typeLabelFn"
+                  [priorityLabel]="priorityLabelFn"
+                  [recurrenceLabel]="recurrenceLabelFn"
+                  (toggleComplete)="toggleQuest($event)"
+                  (expand)="toggleExpand($event)"
+                  (scheduleToday)="scheduleToday($event)"
+                  (scheduleTomorrow)="scheduleTomorrow($event)"
+                  (clearDueDate)="clearQuestDueDate($event)"
+                  (requestDelete)="beginDelete($event)" />
               }
             </ion-reorder-group>
           </section>
