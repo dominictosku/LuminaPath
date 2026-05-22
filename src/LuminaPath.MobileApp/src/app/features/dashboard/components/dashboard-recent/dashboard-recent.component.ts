@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
@@ -10,6 +10,7 @@ import { DashboardMediaItem } from '../../models/dashboard.model';
   templateUrl: './dashboard-recent.component.html',
   styleUrls: ['./dashboard-recent.component.scss'],
   imports: [IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardRecentComponent {
   readonly items = input<DashboardMediaItem[]>([]);

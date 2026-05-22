@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { BacklogItem } from '../../models/statistic.model';
@@ -8,6 +8,7 @@ import { BacklogItem } from '../../models/statistic.model';
   selector: 'app-statistic-top-rated',
   templateUrl: './statistic-top-rated.component.html',
   imports: [IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatisticTopRatedComponent {
   readonly items = input<BacklogItem[]>([]);

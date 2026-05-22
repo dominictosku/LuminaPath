@@ -9,7 +9,7 @@
     <ion-icon slot="icon-only" [name]="isAdding ? 'hourglass-outline' : (view.hasLibraryEntry(item) ? 'create-outline' : 'add-outline')"></ion-icon>
   </ion-button>
 
-  <img [src]="imageFor(item)" alt="" (click)="details.emit(item)" />
+  <img [src]="imageFor(item)" alt="" loading="lazy" decoding="async" (click)="details.emit(item)" />
 
   <div class="list-row__main" (click)="details.emit(item)">
     <div class="badge-row">

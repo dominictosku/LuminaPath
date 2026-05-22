@@ -164,7 +164,7 @@
                 class="dlc-card"
                 [routerLink]="[config.seasonRouteBase, season.id]">
                 @if (season.image) {
-                  <img [src]="seasonImageUrl(season)" [alt]="season.name" />
+                  <img [src]="seasonImageUrl(season)" [alt]="season.name" loading="lazy" decoding="async" />
                 }
                 <div class="dlc-body">
                   <h3>{{ season.name }}</h3>

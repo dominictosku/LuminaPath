@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon, IonSpinner } from '@ionic/angular/standalone';
 
 /**
@@ -13,6 +13,7 @@ import { IonIcon, IonSpinner } from '@ionic/angular/standalone';
   templateUrl: './empty-state.component.html',
   styleUrls: ['./empty-state.component.scss'],
   imports: [IonIcon, IonSpinner],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EmptyStateComponent {
   readonly icon = input<string | null>(null);

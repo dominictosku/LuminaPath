@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonBadge, IonIcon } from '@ionic/angular/standalone';
 
 import { TREND_HEIGHT, TREND_WIDTH, TrendData } from '../../models/statistic.model';
@@ -8,6 +8,7 @@ import { TREND_HEIGHT, TREND_WIDTH, TrendData } from '../../models/statistic.mod
   selector: 'app-statistic-completion-trend',
   templateUrl: './statistic-completion-trend.component.html',
   imports: [IonBadge, IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatisticCompletionTrendComponent {
   readonly trend = input.required<TrendData>();

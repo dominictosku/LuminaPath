@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { IonButton, IonIcon, IonProgressBar } from '@ionic/angular/standalone';
 
 import { QuestSkill } from '../../services/quest-board.service';
@@ -16,6 +16,7 @@ export type SkillNodeQuestAction = { skill: QuestSkill; node: string };
   selector: 'app-skills-list',
   templateUrl: './skills-list.component.html',
   imports: [IonButton, IonIcon, IonProgressBar],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SkillsListComponent {
   readonly skills = input<QuestSkill[]>([]);

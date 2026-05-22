@@ -1,4 +1,4 @@
-import { Component, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonButton, IonIcon } from '@ionic/angular/standalone';
 
@@ -20,6 +20,7 @@ type SkillIconOption = { label: string; icon: string };
   selector: 'app-skill-modal',
   templateUrl: './skill-modal.component.html',
   imports: [FormsModule, IonButton, IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SkillModalComponent {
   readonly mode = input.required<ModalMode>();

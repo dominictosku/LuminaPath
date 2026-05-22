@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon, IonSkeletonText } from '@ionic/angular/standalone';
 
 import { StatMetric } from '../../models/statistic.model';
@@ -8,6 +8,7 @@ import { StatMetric } from '../../models/statistic.model';
   selector: 'app-statistic-metrics',
   templateUrl: './statistic-metrics.component.html',
   imports: [IonIcon, IonSkeletonText],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatisticMetricsComponent {
   readonly metrics = input<StatMetric[]>([]);

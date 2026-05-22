@@ -152,7 +152,7 @@
                 class="dlc-card"
                 [routerLink]="['/library/games', dlc.id]">
                 @if (dlc.image) {
-                  <img [src]="dlcImageUrl(dlc)" [alt]="dlc.name" />
+                  <img [src]="dlcImageUrl(dlc)" [alt]="dlc.name" loading="lazy" decoding="async" />
                 }
                 <div class="dlc-body">
                   <h3>{{ dlc.name }}</h3>
@@ -253,7 +253,7 @@
                 <article class="trophy-card">
                   <div class="trophy-card__icon">
                     @if (achievement.iconUrl) {
-                      <img [src]="achievement.iconUrl" [alt]="achievement.title" />
+                      <img [src]="achievement.iconUrl" [alt]="achievement.title" loading="lazy" decoding="async" />
                     } @else {
                       <ion-icon name="trophy-outline"></ion-icon>
                     }

@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { IonIcon, IonSkeletonText } from '@ionic/angular/standalone';
 
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
@@ -14,6 +14,7 @@ import { playedLabel, statusLabel } from '../../dashboard-view.helpers';
   templateUrl: './dashboard-hero.component.html',
   styleUrls: ['./dashboard-hero.component.scss'],
   imports: [IonIcon, IonSkeletonText],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardHeroComponent {
   readonly featuredItem = input<DashboardMediaItem | null>(null);

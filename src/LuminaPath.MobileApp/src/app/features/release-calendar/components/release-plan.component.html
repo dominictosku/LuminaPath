@@ -65,7 +65,7 @@
       <div class="timeline">
         @for (game of playingGames; track trackByGameId($index, game)) {
           <article class="timeline-item">
-            <img [src]="imageFor(game)" alt="" />
+            <img [src]="imageFor(game)" alt="" loading="lazy" decoding="async" />
             <div class="timeline-item__body">
               <div class="badge-row">
                 <ion-badge>{{ statusLabel(game) }}</ion-badge>
@@ -148,7 +148,7 @@
       <div class="backlog-list">
         @for (game of backlogGames; track trackByGameId($index, game)) {
           <article class="backlog-item">
-            <img [src]="imageFor(game)" alt="" />
+            <img [src]="imageFor(game)" alt="" loading="lazy" decoding="async" />
             <div>
               <ion-badge>{{ statusLabel(game) }}</ion-badge>
               <h3>{{ game.name }}</h3>

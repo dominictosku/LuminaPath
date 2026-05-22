@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
  * Split panel: total hours logged paired with a conic completion ring.
@@ -8,6 +8,7 @@ import { Component, input } from '@angular/core';
   selector: 'app-dashboard-momentum',
   templateUrl: './dashboard-momentum.component.html',
   styleUrls: ['./dashboard-momentum.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardMomentumComponent {
   readonly playedHours = input<number>(0);

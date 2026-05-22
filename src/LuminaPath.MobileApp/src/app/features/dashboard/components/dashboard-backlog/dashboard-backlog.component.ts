@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { DashboardMediaItem } from '../../models/dashboard.model';
@@ -10,6 +10,7 @@ import { playedLabel, remainingLabel } from '../../dashboard-view.helpers';
   templateUrl: './dashboard-backlog.component.html',
   styleUrls: ['./dashboard-backlog.component.scss'],
   imports: [IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardBacklogComponent {
   readonly items = input<DashboardMediaItem[]>([]);

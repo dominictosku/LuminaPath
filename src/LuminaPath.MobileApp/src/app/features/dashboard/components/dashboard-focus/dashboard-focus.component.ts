@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { DashboardFocusItem } from '../../models/dashboard.model';
@@ -9,6 +9,7 @@ import { DashboardFocusItem } from '../../models/dashboard.model';
   templateUrl: './dashboard-focus.component.html',
   styleUrls: ['./dashboard-focus.component.scss'],
   imports: [IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardFocusComponent {
   readonly items = input<DashboardFocusItem[]>([]);

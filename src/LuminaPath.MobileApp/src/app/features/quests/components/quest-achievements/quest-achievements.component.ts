@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { AchievementInfo } from '../../services/quest-board.service';
@@ -8,6 +8,7 @@ import { AchievementInfo } from '../../services/quest-board.service';
   selector: 'app-quest-achievements',
   templateUrl: './quest-achievements.component.html',
   imports: [IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuestAchievementsComponent {
   readonly achievements = input<AchievementInfo[]>([]);

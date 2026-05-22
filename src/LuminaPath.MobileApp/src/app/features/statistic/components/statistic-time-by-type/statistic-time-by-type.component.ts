@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { TimeBar } from '../../models/statistic.model';
@@ -9,6 +9,7 @@ import { formatHours } from '../../statistic.computations';
   selector: 'app-statistic-time-by-type',
   templateUrl: './statistic-time-by-type.component.html',
   imports: [IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatisticTimeByTypeComponent {
   readonly bars = input<TimeBar[]>([]);

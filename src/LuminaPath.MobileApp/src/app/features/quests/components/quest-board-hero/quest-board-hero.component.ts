@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonBadge, IonIcon, IonProgressBar } from '@ionic/angular/standalone';
 
 /**
@@ -9,6 +9,7 @@ import { IonBadge, IonIcon, IonProgressBar } from '@ionic/angular/standalone';
   selector: 'app-quest-board-hero',
   templateUrl: './quest-board-hero.component.html',
   imports: [IonBadge, IonIcon, IonProgressBar],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuestBoardHeroComponent {
   readonly level = input<number>(1);

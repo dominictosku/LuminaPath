@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { GenreSlice } from '../../models/statistic.model';
@@ -8,6 +8,7 @@ import { GenreSlice } from '../../models/statistic.model';
   selector: 'app-statistic-top-genres',
   templateUrl: './statistic-top-genres.component.html',
   imports: [IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatisticTopGenresComponent {
   readonly genres = input<GenreSlice[]>([]);

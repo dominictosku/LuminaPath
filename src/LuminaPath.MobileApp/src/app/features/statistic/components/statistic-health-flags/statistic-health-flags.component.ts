@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { HealthFlag } from '../../models/statistic.model';
@@ -8,6 +8,7 @@ import { HealthFlag } from '../../models/statistic.model';
   selector: 'app-statistic-health-flags',
   templateUrl: './statistic-health-flags.component.html',
   imports: [IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatisticHealthFlagsComponent {
   readonly flags = input<HealthFlag[]>([]);

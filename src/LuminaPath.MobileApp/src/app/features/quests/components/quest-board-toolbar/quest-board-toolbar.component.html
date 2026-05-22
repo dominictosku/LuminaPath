@@ -10,8 +10,12 @@
   </ion-segment>
   <label class="search-field">
     <ion-icon name="search-outline"></ion-icon>
-    <input type="text" placeholder="Search quests, notes, tags" [(ngModel)]="searchQuery" />
-    @if (searchQuery()) {
+    <input
+      type="text"
+      placeholder="Search quests, notes, tags"
+      [value]="inputValue"
+      (input)="onInput($any($event.target).value)" />
+    @if (inputValue) {
       <button type="button" class="meta-chip-clear" aria-label="Clear search" (click)="searchClear.emit()">
         <ion-icon name="close-outline"></ion-icon>
       </button>

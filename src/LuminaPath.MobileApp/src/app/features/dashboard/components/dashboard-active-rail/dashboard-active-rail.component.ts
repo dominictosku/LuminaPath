@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonBadge, IonIcon } from '@ionic/angular/standalone';
 
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
@@ -11,6 +11,7 @@ import { progressOf, remainingLabel } from '../../dashboard-view.helpers';
   templateUrl: './dashboard-active-rail.component.html',
   styleUrls: ['./dashboard-active-rail.component.scss'],
   imports: [IonBadge, IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardActiveRailComponent {
   readonly items = input<DashboardMediaItem[]>([]);

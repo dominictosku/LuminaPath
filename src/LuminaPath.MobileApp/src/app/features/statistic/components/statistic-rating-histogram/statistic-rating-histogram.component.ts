@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonBadge, IonIcon } from '@ionic/angular/standalone';
 
 import { RatingBucket } from '../../models/statistic.model';
@@ -9,6 +9,7 @@ import { RatingBucket } from '../../models/statistic.model';
   selector: 'app-statistic-rating-histogram',
   templateUrl: './statistic-rating-histogram.component.html',
   imports: [DecimalPipe, IonBadge, IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatisticRatingHistogramComponent {
   readonly buckets = input<RatingBucket[]>([]);

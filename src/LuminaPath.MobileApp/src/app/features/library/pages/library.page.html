@@ -295,7 +295,7 @@
               <ion-icon slot="icon-only" name="close-outline"></ion-icon>
             </ion-button>
             <div class="editor-cover__content">
-              <img [src]="imageFor(game)" alt="" />
+              <img [src]="imageFor(game)" alt="" loading="lazy" decoding="async" />
               <div>
                 <span class="eyebrow">{{ isEditingSelectedGame() ? 'Edit my ' + mediaMode.singular : 'Add to mine' }}</span>
                 <h2>{{ game.name }}</h2>

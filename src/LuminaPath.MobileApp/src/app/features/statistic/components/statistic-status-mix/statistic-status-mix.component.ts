@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { StatusSlice } from '../../models/statistic.model';
@@ -9,6 +9,7 @@ import { statusClass } from '../../statistic.computations';
   selector: 'app-statistic-status-mix',
   templateUrl: './statistic-status-mix.component.html',
   imports: [IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatisticStatusMixComponent {
   readonly slices = input<StatusSlice[]>([]);

@@ -1,4 +1,4 @@
-import { Component, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonButton, IonIcon } from '@ionic/angular/standalone';
 
@@ -37,6 +37,7 @@ type RecurrenceOption = { value: QuestRecurrence; label: string };
   selector: 'app-quest-detail-sheet',
   templateUrl: './quest-detail-sheet.component.html',
   imports: [FormsModule, IonButton, IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuestDetailSheetComponent {
   readonly quest = input.required<Quest>();

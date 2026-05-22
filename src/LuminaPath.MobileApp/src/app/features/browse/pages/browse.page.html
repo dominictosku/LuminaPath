@@ -89,7 +89,7 @@
                 (click)="openLibraryDialog(item)">
                 <ion-icon slot="icon-only" [name]="isAdding(item) ? 'hourglass-outline' : (hasLibraryEntry(item) ? 'create-outline' : 'add-outline')"></ion-icon>
               </ion-button>
-              <img [src]="imageFor(item)" alt="" />
+              <img [src]="imageFor(item)" alt="" loading="lazy" decoding="async" />
               <div>
                 <ion-badge>
                   <ion-icon name="people-outline"></ion-icon>
@@ -126,7 +126,7 @@
                 (click)="openLibraryDialog(item)">
                 <ion-icon slot="icon-only" [name]="isAdding(item) ? 'hourglass-outline' : (hasLibraryEntry(item) ? 'create-outline' : 'add-outline')"></ion-icon>
               </ion-button>
-              <img [src]="imageFor(item)" alt="" />
+              <img [src]="imageFor(item)" alt="" loading="lazy" decoding="async" />
               <div class="card-body">
                 <div class="badge-row">
                   <ion-badge>
@@ -182,7 +182,7 @@
               <ion-icon slot="icon-only" name="close-outline"></ion-icon>
             </ion-button>
             <div class="editor-cover__content">
-              <img [src]="imageFor(game)" alt="" />
+              <img [src]="imageFor(game)" alt="" loading="lazy" decoding="async" />
               <div>
                 <span class="eyebrow">{{ isEditingSelectedGame() ? 'Edit my ' + mediaMode.singular : 'Add to mine' }}</span>
                 <h2>{{ game.name }}</h2>

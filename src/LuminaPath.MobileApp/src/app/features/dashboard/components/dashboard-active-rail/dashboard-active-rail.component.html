@@ -14,7 +14,7 @@
     <div class="horizontal-list">
       @for (item of items(); track trackByItem($index, item)) {
         <article class="game-card game-card--large">
-          <img [src]="imageFor(item)" alt="" />
+          <img [src]="imageFor(item)" alt="" loading="lazy" decoding="async" />
           <div class="game-card__body">
             <ion-badge>{{ item.kind }}</ion-badge>
             <h3>{{ item.name }}</h3>

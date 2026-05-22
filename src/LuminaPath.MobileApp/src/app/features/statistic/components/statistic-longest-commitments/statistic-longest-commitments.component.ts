@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon, IonProgressBar } from '@ionic/angular/standalone';
 
 import { BacklogItem } from '../../models/statistic.model';
@@ -9,6 +9,7 @@ import { formatHours } from '../../statistic.computations';
   selector: 'app-statistic-longest-commitments',
   templateUrl: './statistic-longest-commitments.component.html',
   imports: [IonIcon, IonProgressBar],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatisticLongestCommitmentsComponent {
   readonly items = input<BacklogItem[]>([]);

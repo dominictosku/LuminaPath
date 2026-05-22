@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { DashboardActivityItem } from '../../models/dashboard.model';
@@ -9,6 +9,7 @@ import { DashboardActivityItem } from '../../models/dashboard.model';
   templateUrl: './dashboard-activity.component.html',
   styleUrls: ['./dashboard-activity.component.scss'],
   imports: [IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardActivityComponent {
   readonly items = input<DashboardActivityItem[]>([]);

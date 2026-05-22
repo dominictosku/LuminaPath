@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { DashboardMetric } from '../../models/dashboard.model';
@@ -9,6 +9,7 @@ import { DashboardMetric } from '../../models/dashboard.model';
   templateUrl: './dashboard-metrics.component.html',
   styleUrls: ['./dashboard-metrics.component.scss'],
   imports: [IonIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardMetricsComponent {
   readonly metrics = input<DashboardMetric[]>([]);
