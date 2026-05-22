@@ -129,11 +129,10 @@
             <h2>Upcoming sessions</h2>
           </header>
           @if (!buckets.length) {
-            <div class="empty-state">
-              <ion-icon name="calendar-clear-outline"></ion-icon>
-              <strong>No sessions planned</strong>
-              <span>Add a session above to start projecting completion.</span>
-            </div>
+            <app-empty-state
+              icon="calendar-clear-outline"
+              title="No sessions planned"
+              message="Add a session above to start projecting completion." />
           }
           @for (bucket of buckets; track trackByBucket($index, bucket)) {
             <article class="day-bucket">

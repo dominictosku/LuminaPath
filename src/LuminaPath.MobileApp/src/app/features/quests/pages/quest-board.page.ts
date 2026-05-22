@@ -81,6 +81,7 @@ import { QuestAchievementsComponent } from '../components/quest-achievements/que
 import { SkillsListComponent, SkillNodeAction, SkillNodeQuestAction } from '../components/skills-list/skills-list.component';
 import { SkillForm, SkillModalComponent } from '../components/skill-modal/skill-modal.component';
 import { QuestDetailSheetComponent, QuestEditDraft } from '../components/quest-detail-sheet/quest-detail-sheet.component';
+import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
 
 type PageMode = 'quests' | 'skills' | 'tree';
 type ModalMode = 'skill' | 'node' | null;
@@ -161,6 +162,7 @@ type SkillTreeUnlockPayload = {
     SkillsListComponent,
     SkillModalComponent,
     QuestDetailSheetComponent,
+    EmptyStateComponent,
 ],
 })
 export class QuestBoardPage implements OnInit, OnDestroy {

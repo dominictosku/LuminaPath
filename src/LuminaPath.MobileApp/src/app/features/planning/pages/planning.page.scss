@@ -62,7 +62,6 @@
 .day-bucket,
 .calendar-planner,
 .mode-panel,
-.empty-state,
 .loading-state {
   border: 1px solid var(--card-border);
   border-radius: 22px;
@@ -394,24 +393,6 @@
       color: var(--text);
       font-size: 14px;
     }
-  }
-}
-
-.empty-state {
-  display: grid;
-  place-items: center;
-  gap: 6px;
-  padding: 28px 18px;
-  color: var(--muted);
-  text-align: center;
-
-  ion-icon {
-    color: var(--accent-strong);
-    font-size: 34px;
-  }
-
-  strong {
-    color: var(--text);
   }
 }
 

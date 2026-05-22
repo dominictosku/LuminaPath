@@ -24,6 +24,7 @@ import {
 } from 'ionicons/icons';
 import { Game, platformLabelFromValue } from '../../games/models/games.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
+import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
 import { GameStatus, gameStatusLabel, isGameBacklogStatus } from '../../library/models/library-status.model';
 import {
   gameStatusOf,
@@ -62,7 +63,8 @@ type PlanMetric = {
     IonRange,
     IonSegment,
     IonSegmentButton,
-    IonSkeletonText
+    IonSkeletonText,
+    EmptyStateComponent,
 ],
 })
 export class ReleasePlanComponent implements OnChanges {

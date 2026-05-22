@@ -56,10 +56,10 @@
 
       <section class="quest-board">
         @if (!isLoading && !visibleQuests.length) {
-          <div class="empty-state">
-            <ion-icon name="sparkles-outline"></ion-icon>
-            <strong>Nothing needs your attention here</strong>
-            <span>Capture a quest above, or switch lanes to see what is scheduled elsewhere.</span>
+          <app-empty-state
+            icon="sparkles-outline"
+            title="Nothing needs your attention here"
+            message="Capture a quest above, or switch lanes to see what is scheduled elsewhere.">
             @if (nextQueuedQuest; as nextQuest) {
               <div class="empty-actions">
                 <button type="button" (click)="pullNextQuestToToday()">
@@ -67,7 +67,7 @@
                 </button>
               </div>
             }
-          </div>
+          </app-empty-state>
         }
         @for (section of questSections; track trackByQuestSection($index, section)) {
           <section class="quest-section quest-section--{{ section.tone }}">
@@ -210,17 +210,15 @@
             (nodeUnlocked)="handleSkillTreeNodeUnlocked($event)">
           </app-skill-tree>
         } @placeholder {
-          <div class="empty-state">
-            <ion-icon name="sparkles-outline"></ion-icon>
-            <strong>Skill tree is ready when you are</strong>
-            <span>The 3D view will load once this panel is visible.</span>
-          </div>
+          <app-empty-state
+            icon="sparkles-outline"
+            title="Skill tree is ready when you are"
+            message="The 3D view will load once this panel is visible." />
         } @loading (minimum 300ms) {
-          <div class="empty-state">
-            <ion-icon name="sparkles-outline"></ion-icon>
-            <strong>Loading skill tree</strong>
-            <span>Preparing the 3D path view.</span>
-          </div>
+          <app-empty-state
+            [loading]="true"
+            title="Loading skill tree"
+            message="Preparing the 3D path view." />
         }
       </section>
     }

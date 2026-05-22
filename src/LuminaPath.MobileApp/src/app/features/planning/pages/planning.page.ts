@@ -36,6 +36,7 @@ import { Game } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { Quest, QuestBoardService } from '../../quests/services/quest-board.service';
 import { ReleasePlanComponent } from '../../release-calendar/components/release-plan.component';
+import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
 import { GameForecast, GamingSession, GamingSessionService } from '../services/gaming-session.service';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 import {
@@ -75,7 +76,8 @@ type DraftSession = {
     IonSelect,
     IonSelectOption,
     IonSpinner,
-    ReleasePlanComponent
+    ReleasePlanComponent,
+    EmptyStateComponent,
 ],
 })
 export class PlanningPage implements OnInit {

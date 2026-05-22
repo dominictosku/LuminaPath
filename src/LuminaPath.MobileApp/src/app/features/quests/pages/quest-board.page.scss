@@ -29,8 +29,7 @@ app-quest-board {
 .quest-section,
 .skill-card,
 .quest-modal,
-.quest-detail-sheet,
-.empty-state {
+.quest-detail-sheet {
   border: 1px solid var(--line);
   background: var(--surface);
   box-shadow: 0 24px 54px rgba(8, 22, 48, 0.18);
@@ -106,7 +105,7 @@ label {
 }
 
 .rank-row, .stat-row, .quest-section__header, .section-header { justify-content: space-between; }
-.rank-row span, .stat-row, .quest-section p, .quest-card p, .empty-state span, label span, .detail-heading p { color: var(--muted); font-size: .82rem; }
+.rank-row span, .stat-row, .quest-section p, .quest-card p, label span, .detail-heading p { color: var(--muted); font-size: .82rem; }
 .quest-hero .rank-row span, .quest-hero .stat-row { color: rgba(255,255,255,.75); }
 .rank-row strong { display: block; margin-top: 2px; font-size: 2.2rem; line-height: 1; }
 
@@ -279,9 +278,6 @@ input, textarea, select { min-width: 0; color: var(--ink); }
 .meta-pill--due[data-state="today"] { background: rgba(251,191,36,.16); color: #fde68a; }
 .meta-pill--due[data-state="soon"], .meta-pill--type { background: var(--accent-soft); color: var(--accent); }
 .subtask-progress ion-progress-bar { height: 4px; }
-
-.empty-state { justify-items: center; gap: 8px; padding: 28px 18px; border-radius: 20px; color: var(--ink); text-align: center; box-shadow: none; }
-.empty-state ion-icon { color: var(--accent); font-size: 2rem; }
 
 .skill-grid {
   display: grid;

@@ -79,11 +79,10 @@
         }
       </div>
     } @else {
-      <div class="empty-state">
-        <ion-icon name="game-controller-outline"></ion-icon>
-        <h3>No active game</h3>
-        <p>Mark something as Playing to build a weekly queue.</p>
-      </div>
+      <app-empty-state
+        icon="game-controller-outline"
+        title="No active game"
+        message="Mark something as Playing to build a weekly queue." />
     }
   </section>
 }
@@ -159,11 +158,10 @@
         }
       </div>
     } @else {
-      <div class="empty-state">
-        <ion-icon name="checkmark-circle-outline"></ion-icon>
-        <h3>No planned backlog</h3>
-        <p>Your planned/on-hold list is clear.</p>
-      </div>
+      <app-empty-state
+        icon="checkmark-circle-outline"
+        title="No planned backlog"
+        message="Your planned/on-hold list is clear." />
     }
   </section>
 }
