@@ -64,6 +64,8 @@ export class LibraryCreateDialogComponent {
     const id = this.mediaMode().id;
     return id === 'animes' || id === 'series';
   });
+  /** Movies — single-instance watchable; only the total runtime field is relevant. */
+  readonly isMovieMode = computed(() => this.mediaMode().id === 'movies');
 
   readonly canSubmit = computed(() => this.form().name.trim().length > 0);
 

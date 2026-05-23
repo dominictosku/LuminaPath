@@ -37,11 +37,34 @@ export interface EpisodicMediaView {
   libraryEntry: EpisodicLibraryEntry | null;
 }
 
+/**
+ * Catalog-edit payload built by the details page from the create-dialog
+ * form. The provider-supplied adapter assembles the entity-specific
+ * request (Anime / Series) from it before calling its typed service's
+ * PUT — that's the only place that knows which navigation collections
+ * to scrub so EF doesn't try to upsert personal user-library rows
+ * (see the Game edit bug fix for the same lesson).
+ */
+export interface CatalogPatch {
+  name: string;
+  description: string;
+  releaseDate: string;
+  genre: string;
+  episodeCount: number | null;
+  expectedWatchTimePerEpisodeMinutes: number | null;
+  expectedWatchTimeMinutes: number | null;
+  image: MediaFile | null;
+}
+
 export interface EpisodicMediaAdapter {
   load(id: number): Observable<EpisodicMediaView>;
   add(mediaId: number, details: LibraryEntryDetails): Observable<unknown>;
   update(libraryEntryId: number, mediaId: number, details: LibraryEntryDetails): Observable<unknown>;
   delete(libraryEntryId: number): Observable<unknown>;
+  /** Admin / editor: PUT the catalog entry with a fresh payload (no personal collections). */
+  updateCatalog(id: number, patch: CatalogPatch, existing: EpisodicMediaView): Observable<unknown>;
+  /** Admin / editor: DELETE the catalog entry. */
+  deleteCatalog(id: number): Observable<unknown>;
 }
 
 export type FourthMetaSource = 'expectedWatchTimeMinutes' | 'expectedWatchTimePerEpisodeMinutes';

@@ -16,12 +16,22 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { firstValueFrom } from 'rxjs';
+import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
+import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
+import { MEDIA_MODE_OPTIONS, MediaModeOption } from 'src/app/shared/services/media-mode.service';
 import { LibraryEntryDetails } from '../../models/media-item.model';
+import { MediaLibraryViewService } from '../../services/media-library-view.service';
 import { MediaStore } from '../../state/media.store';
+import { LibraryCreateDialogComponent } from '../../components/library-create-dialog/library-create-dialog.component';
+import {
+  CreateMediaForm,
+  emptyCreateForm,
+} from '../../components/library-create-dialog/library-create-dialog.model';
 import { EPISODIC_MEDIA_ADAPTER, EPISODIC_MEDIA_CONFIG } from './episodic-media.tokens';
 import {
+  CatalogPatch,
   EpisodicLibraryEntry,
   EpisodicMediaSummary,
   EpisodicMediaView,
@@ -50,7 +60,8 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
     IonProgressBar,
     IonSpinner,
     IonTitle,
-    IonToolbar
+    IonToolbar,
+    LibraryCreateDialogComponent,
 ],
 })
 export class EpisodicMediaDetailsPage implements OnInit {
@@ -62,12 +73,26 @@ export class EpisodicMediaDetailsPage implements OnInit {
   private readonly alertController = inject(AlertController);
   private readonly actionSheetController = inject(ActionSheetController);
   private readonly mediaStore = inject(MediaStore);
+  private readonly mediaView = inject(MediaLibraryViewService);
+  readonly auth = inject(AuthService);
+
+  /** Resolved at construction time from the kind on the supplied config. */
+  readonly mediaMode: MediaModeOption =
+    MEDIA_MODE_OPTIONS.find((option) => option.id === inject(EPISODIC_MEDIA_CONFIG).kind)
+      ?? MEDIA_MODE_OPTIONS[0];
 
   media: EpisodicMediaView | null = null;
   isLoading = true;
   errorMessage = '';
   isUpdatingLibrary = false;
   headerCondensed = false;
+
+  // Admin edit/delete state ----------------------------------------------------
+  isEditDialogOpen = false;
+  isSavingCatalogEdit = false;
+  editErrorMessage = '';
+  editForm: CreateMediaForm = emptyCreateForm();
+  isDeletingCatalogEntry = false;
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async (params) => {
@@ -397,5 +422,145 @@ export class EpisodicMediaDetailsPage implements OnInit {
   private showError(message: string): void {
     this.errorMessage = message;
     this.isLoading = false;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Admin / editor catalog actions
+  // ---------------------------------------------------------------------------
+
+  /** Status options bound to the (unused-in-edit-mode) library toggle. */
+  get watchStatusOptions() {
+    return this.mediaView.statusOptions(this.mediaMode);
+  }
+
+  get canEditCatalog(): boolean {
+    return this.auth.canEditCatalog();
+  }
+
+  openEditDialog(): void {
+    if (!this.canEditCatalog || !this.media) return;
+    this.editErrorMessage = '';
+    this.editForm = this.mediaToCreateForm(this.media);
+    this.isEditDialogOpen = true;
+  }
+
+  closeEditDialog(): void {
+    if (this.isSavingCatalogEdit) return;
+    this.isEditDialogOpen = false;
+  }
+
+  /** Commit catalog edits via the adapter, then refetch the page. */
+  async submitCatalogEdit(): Promise<void> {
+    if (!this.canEditCatalog || !this.media || this.isSavingCatalogEdit) return;
+    const name = this.editForm.name.trim();
+    if (!name) {
+      this.editErrorMessage = 'Title is required.';
+      return;
+    }
+
+    this.isSavingCatalogEdit = true;
+    this.editErrorMessage = '';
+    const mediaId = this.media.id;
+    const patch: CatalogPatch = {
+      name,
+      description: this.editForm.description,
+      releaseDate: this.editForm.releaseDate,
+      genre: this.editForm.genre,
+      episodeCount: this.editForm.episodeCount,
+      expectedWatchTimePerEpisodeMinutes: this.editForm.expectedWatchTimePerEpisodeMinutes,
+      expectedWatchTimeMinutes: this.editForm.expectedWatchTimeMinutes,
+      image: this.editForm.cover ?? this.media.image,
+    };
+
+    try {
+      await firstValueFrom(this.adapter.updateCatalog(mediaId, patch, this.media));
+      this.isEditDialogOpen = false;
+      await this.loadMedia(mediaId);
+    } catch (error) {
+      this.editErrorMessage = extractErrorMessage(
+        error,
+        `${this.capitalize(this.mediaMode.singular)} could not be updated.`,
+      );
+    } finally {
+      this.isSavingCatalogEdit = false;
+    }
+  }
+
+  async confirmDeleteCatalogEntry(): Promise<void> {
+    if (!this.canEditCatalog || !this.media || this.isDeletingCatalogEntry) return;
+
+    const libraryWarning = this.isInLibrary
+      ? ' It is currently referenced by your personal library entry.'
+      : '';
+
+    const alert = await this.alertController.create({
+      header: `Delete "${this.media.name}"?`,
+      message:
+        `This removes the shared catalog ${this.mediaMode.singular}, including its metadata and cover link.${libraryWarning} This cannot be undone.`,
+      cssClass: 'media-confirm-alert',
+      buttons: [
+        { text: 'Keep', role: 'cancel' },
+        {
+          text: 'Delete',
+          role: 'destructive',
+          cssClass: 'media-confirm-alert__destructive',
+          handler: () => {
+            void this.deleteCatalogEntry();
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  private async deleteCatalogEntry(): Promise<void> {
+    if (!this.canEditCatalog || !this.media || this.isDeletingCatalogEntry) return;
+    const mediaId = this.media.id;
+    this.isDeletingCatalogEntry = true;
+
+    try {
+      await firstValueFrom(this.adapter.deleteCatalog(mediaId));
+      this.mediaStore.removeItem(mediaId);
+      void this.router.navigateByUrl('/library');
+    } catch (error) {
+      this.errorMessage = extractErrorMessage(
+        error,
+        `${this.capitalize(this.mediaMode.singular)} could not be deleted.`,
+      );
+    } finally {
+      this.isDeletingCatalogEntry = false;
+    }
+  }
+
+  /** Maps the loaded view into the create-dialog form draft for editing. */
+  private mediaToCreateForm(media: EpisodicMediaView): CreateMediaForm {
+    const blank = emptyCreateForm();
+    return {
+      ...blank,
+      name: media.name ?? '',
+      description: media.description ?? '',
+      releaseDate: this.toDateInputValue(media.releaseDate),
+      genre: media.genre ?? '',
+      episodeCount: media.episodeCount ?? null,
+      expectedWatchTimePerEpisodeMinutes: media.expectedWatchTimePerEpisodeMinutes ?? null,
+      expectedWatchTimeMinutes: media.expectedWatchTimeMinutes ?? null,
+      createLibraryEntry: false,
+      cover: media.image ?? null,
+      coverPreviewUrl: null,
+    };
+  }
+
+  private toDateInputValue(value: Date | string | null | undefined): string {
+    if (!value) return '';
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  private capitalize(value: string): string {
+    return `${value[0]?.toUpperCase() ?? ''}${value.slice(1)}`;
   }
 }

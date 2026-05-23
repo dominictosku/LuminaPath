@@ -6,6 +6,26 @@
       </ion-button>
     </ion-buttons>
     <ion-title>{{ movie?.name || 'Movie details' }}</ion-title>
+    @if (canEditCatalog && movie) {
+      <ion-buttons slot="end">
+        <ion-button
+          fill="clear"
+          class="admin-action-button"
+          aria-label="Edit movie"
+          [disabled]="isSavingCatalogEdit || isDeletingCatalogEntry"
+          (click)="openEditDialog()">
+          <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+        </ion-button>
+        <ion-button
+          fill="clear"
+          class="admin-action-button admin-action-button--danger"
+          aria-label="Delete movie"
+          [disabled]="isSavingCatalogEdit || isDeletingCatalogEntry"
+          (click)="confirmDeleteCatalogEntry()">
+          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    }
   </ion-toolbar>
 </ion-header>
 
@@ -74,5 +94,18 @@
         <ion-badge>{{ progress }}%</ion-badge>
       </section>
     </main>
+  }
+
+  @if (canEditCatalog) {
+    <app-library-create-dialog
+      [(isOpen)]="isEditDialogOpen"
+      [(form)]="editForm"
+      [mediaMode]="moviesMode"
+      [statusOptions]="watchStatusOptions"
+      [isSaving]="isSavingCatalogEdit"
+      [errorMessage]="editErrorMessage"
+      [isEditing]="true"
+      (dismiss)="closeEditDialog()"
+      (submit)="submitCatalogEdit()" />
   }
 </ion-content>

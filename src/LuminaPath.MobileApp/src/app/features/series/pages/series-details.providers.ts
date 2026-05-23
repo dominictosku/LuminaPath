@@ -76,6 +76,27 @@ function createAdapter(seriesService: SeriesService, mySeriesService: MySeriesSe
     add: (mediaId, details) => mySeriesService.addToLibrary(mediaId, details),
     update: (libId, mediaId, details) => mySeriesService.updateLibraryEntry(libId, mediaId, details),
     delete: (libId) => mySeriesService.delete(libId),
+    updateCatalog: (id, patch, existing) => {
+      // Scrub user-collections (mySeries, seasons) so EF doesn't try to
+      // upsert personal entries — same lesson as the Game edit fix.
+      const series = Object.assign(new Series(), {
+        id,
+        name: patch.name,
+        description: patch.description,
+        releaseDate: patch.releaseDate || existing.releaseDate || null,
+        genre: patch.genre,
+        episodeCount: patch.episodeCount,
+        expectedWatchTimePerEpisodeMinutes: patch.expectedWatchTimePerEpisodeMinutes,
+        expectedWatchTimeMinutes: patch.expectedWatchTimeMinutes,
+        image: patch.image ?? existing.image,
+        parentSeriesId: existing.parentId,
+        parentSeriesName: existing.parentName,
+        mySeries: null,
+        seasons: null,
+      });
+      return seriesService.put(id, series);
+    },
+    deleteCatalog: (id) => seriesService.delete(id),
   };
 }
 

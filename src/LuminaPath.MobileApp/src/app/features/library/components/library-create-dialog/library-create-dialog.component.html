@@ -194,6 +194,19 @@
                   name="totalMinutes" />
               </label>
             }
+
+            @if (isMovieMode()) {
+              <label class="create-dialog__field create-dialog__field--full">
+                <span>Runtime (min)</span>
+                <input
+                  type="number"
+                  min="0"
+                  inputmode="numeric"
+                  [ngModel]="form().expectedWatchTimeMinutes"
+                  (ngModelChange)="form.update((f) => ({ ...f, expectedWatchTimeMinutes: $event }))"
+                  name="movieRuntime" />
+              </label>
+            }
           </div>
         </section>
 

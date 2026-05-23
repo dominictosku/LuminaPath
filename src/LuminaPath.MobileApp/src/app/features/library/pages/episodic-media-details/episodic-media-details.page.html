@@ -15,16 +15,36 @@
       </div>
     }
     <ion-title class="default-title">{{ media?.name || config.titleFallback }}</ion-title>
-    @if (isInLibrary) {
+    @if (canEditCatalog || isInLibrary) {
       <ion-buttons slot="end">
-        <ion-button
-          fill="clear"
-          class="overflow-button"
-          aria-label="More actions"
-          [disabled]="isUpdatingLibrary"
-          (click)="openMoreMenu()">
-          <ion-icon slot="icon-only" name="ellipsis-vertical"></ion-icon>
-        </ion-button>
+        @if (canEditCatalog && media) {
+          <ion-button
+            fill="clear"
+            class="admin-action-button"
+            aria-label="Edit"
+            [disabled]="isSavingCatalogEdit || isDeletingCatalogEntry"
+            (click)="openEditDialog()">
+            <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+          </ion-button>
+          <ion-button
+            fill="clear"
+            class="admin-action-button admin-action-button--danger"
+            aria-label="Delete"
+            [disabled]="isSavingCatalogEdit || isDeletingCatalogEntry"
+            (click)="confirmDeleteCatalogEntry()">
+            <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+          </ion-button>
+        }
+        @if (isInLibrary) {
+          <ion-button
+            fill="clear"
+            class="overflow-button"
+            aria-label="More actions"
+            [disabled]="isUpdatingLibrary"
+            (click)="openMoreMenu()">
+            <ion-icon slot="icon-only" name="ellipsis-vertical"></ion-icon>
+          </ion-button>
+        }
       </ion-buttons>
     }
   </ion-toolbar>
@@ -176,5 +196,18 @@
         </section>
       }
     </main>
+  }
+
+  @if (canEditCatalog) {
+    <app-library-create-dialog
+      [(isOpen)]="isEditDialogOpen"
+      [(form)]="editForm"
+      [mediaMode]="mediaMode"
+      [statusOptions]="watchStatusOptions"
+      [isSaving]="isSavingCatalogEdit"
+      [errorMessage]="editErrorMessage"
+      [isEditing]="true"
+      (dismiss)="closeEditDialog()"
+      (submit)="submitCatalogEdit()" />
   }
 </ion-content>
