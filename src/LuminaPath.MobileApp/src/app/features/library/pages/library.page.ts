@@ -573,6 +573,7 @@ export class LibraryPage implements OnInit {
    *  freshly-created entity (so we can chain MyGame/MyAnime/MySeries). */
   private async createCatalogEntry(name: string): Promise<{ id: number }> {
     const releaseDate = this.parseDateOrNull(this.createForm.releaseDate);
+    const cover = this.createForm.cover;
     switch (this.mediaMode.id) {
       case 'games': {
         const game = Object.assign(new Game(), {
@@ -582,6 +583,7 @@ export class LibraryPage implements OnInit {
           genre: this.createForm.genre,
           platforms: this.createForm.platforms,
           playtime: this.createForm.playtime ?? 0,
+          image: cover,
         });
         return firstValueFrom(this.gameService.post(game));
       }
@@ -594,6 +596,7 @@ export class LibraryPage implements OnInit {
           episodeCount: this.createForm.episodeCount,
           expectedWatchTimePerEpisodeMinutes: this.createForm.expectedWatchTimePerEpisodeMinutes,
           expectedWatchTimeMinutes: this.createForm.expectedWatchTimeMinutes,
+          image: cover,
         });
         return firstValueFrom(this.animeService.post(anime));
       }
@@ -606,6 +609,7 @@ export class LibraryPage implements OnInit {
           episodeCount: this.createForm.episodeCount,
           expectedWatchTimePerEpisodeMinutes: this.createForm.expectedWatchTimePerEpisodeMinutes,
           expectedWatchTimeMinutes: this.createForm.expectedWatchTimeMinutes,
+          image: cover,
         });
         return firstValueFrom(this.seriesService.post(series));
       }

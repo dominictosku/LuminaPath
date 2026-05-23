@@ -37,12 +37,27 @@ namespace LuminaPath.Infrastructure.Controllers
                 return BadRequest(result.Status);
             }
 
+            var storedName = result.Blob.Name ?? file.FileName;
+            var contentType = result.Blob.ContentType ?? file.ContentType;
+
             await AuditFileAsync(
                 AuditActions.DocumentUploaded,
                 AuditOutcomes.Success,
-                result.Blob.Name ?? file.FileName,
-                result.Blob.ContentType ?? file.ContentType);
-            return Ok(new { Message = "File uploaded successfully." });
+                storedName,
+                contentType);
+
+            // Return enough metadata for callers to wire the file into a
+            // freshly-created entity (e.g. Game.Image) without needing a
+            // follow-up lookup. `Url` matches Document.Url so the mobile
+            // app can render the cover immediately.
+            return Ok(new
+            {
+                Message = "File uploaded successfully.",
+                Name = file.FileName,
+                StorageName = storedName,
+                ContentType = contentType,
+                Url = $"api/files/{storedName}"
+            });
         }
 
         [HttpGet("{url}")]

@@ -1,4 +1,5 @@
 import { LibraryEntryDetails, MediaKind } from '../../models/media-item.model';
+import { MediaFile } from '../../models/mediaFile.model';
 
 /**
  * Draft state the create dialog binds to. The page maps this to the typed
@@ -23,6 +24,16 @@ export interface CreateMediaForm {
   createLibraryEntry: boolean;
   /** The personal library draft — mirrors LibraryEntryDetails plus episode. */
   libraryEntry: LibraryEntryDetails;
+  /**
+   * Cover image, populated after a successful upload to `/api/files`.
+   * Sent to the backend on submit as the entity's `image` field.
+   */
+  cover: MediaFile | null;
+  /**
+   * Local object URL for the picked file — used to render an immediate
+   * preview before the upload completes. Cleared when the form resets.
+   */
+  coverPreviewUrl: string | null;
 }
 
 export function emptyCreateForm(): CreateMediaForm {
@@ -46,6 +57,8 @@ export function emptyCreateForm(): CreateMediaForm {
       personalNotes: null,
       currentEpisode: null,
     },
+    cover: null,
+    coverPreviewUrl: null,
   };
 }
 

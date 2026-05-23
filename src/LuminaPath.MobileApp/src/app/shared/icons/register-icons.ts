@@ -1,6 +1,7 @@
 import { addIcons } from 'ionicons';
 import {
   add,
+  addCircleOutline,
   addOutline,
   albums,
   albumsOutline,
@@ -25,6 +26,7 @@ import {
   chevronForwardOutline,
   chevronUpOutline,
   closeOutline,
+  cloudUploadOutline,
   codeSlashOutline,
   create,
   createOutline,
@@ -41,6 +43,7 @@ import {
   gameControllerOutline,
   gridOutline,
   hourglassOutline,
+  imageOutline,
   keyOutline,
   layersOutline,
   library,
@@ -107,6 +110,7 @@ import {
 export function registerAppIcons(): void {
   addIcons({
     add,
+    addCircleOutline,
     addOutline,
     albums,
     albumsOutline,
@@ -131,6 +135,7 @@ export function registerAppIcons(): void {
     chevronForwardOutline,
     chevronUpOutline,
     closeOutline,
+    cloudUploadOutline,
     codeSlashOutline,
     create,
     createOutline,
@@ -147,6 +152,7 @@ export function registerAppIcons(): void {
     gameControllerOutline,
     gridOutline,
     hourglassOutline,
+    imageOutline,
     keyOutline,
     layersOutline,
     library,

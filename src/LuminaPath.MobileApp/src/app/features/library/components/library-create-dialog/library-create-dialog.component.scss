@@ -1,99 +1,353 @@
-/* Styles specific to the admin create-catalog dialog. The shared editor
-   chrome (.library-editor, .editor-grid, .form-field, .status-picker,
-   .editor-actions, .notice) is provided by library.page.scss. */
+/* Self-contained create-dialog styles. No inheritance from library.page.scss
+   because that file uses a hard-coded light palette which clashed with the
+   dark theme. Everything here is built on Ionic's CSS variables (which the
+   theme switches at runtime) so the dialog matches both modes. */
 
-.create-editor {
-  /* Slightly different vertical rhythm than the add-to-library modal:
-     no cover hero, more breathing room around the form sections. */
-  display: grid;
-  gap: 18px;
-  padding: 20px 18px 16px;
+.create-modal {
+  --width: min(640px, calc(100vw - 24px));
+  --max-width: 640px;
+  --height: auto;
+  --max-height: calc(100vh - 32px);
+  --border-radius: 22px;
+  --box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
 }
 
-.create-header {
+.create-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  max-height: calc(100vh - 32px);
+  color: var(--ion-text-color, #1f2937);
+  background: var(--ion-card-background, var(--ion-background-color, #fff));
+}
+
+/* ----- Header ------------------------------------------------------------ */
+
+.create-dialog__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  padding: 20px 22px 12px;
+  border-bottom: 1px solid var(--ion-color-step-150, rgba(125, 125, 125, 0.18));
+}
+
+.create-dialog__heading {
+  min-width: 0;
 
   h2 {
-    margin: 4px 0 2px;
+    margin: 6px 0 4px;
     font-size: 1.35rem;
     line-height: 1.2;
-    color: var(--ink, #111827);
+    color: var(--ion-text-color);
   }
 
   p {
     margin: 0;
-    color: var(--muted, #667085);
-    font-size: 0.92rem;
+    color: var(--ion-color-step-600, rgba(125, 125, 125, 0.78));
+    font-size: 0.9rem;
   }
 }
 
-.create-grid {
-  /* Reuses .editor-grid spacing; .form-field--full forces 1-col span on
-     wide-form rows like Title / Description / Platforms. */
-  .form-field--full {
-    grid-column: 1 / -1;
+.create-dialog__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ion-color-primary, #3b82f6);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  ion-icon {
+    font-size: 1rem;
   }
 }
 
-.platform-picker {
+.create-dialog__close {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  --color: var(--ion-color-step-600);
+  margin: 0;
+}
+
+/* ----- Body (scrolling region) ------------------------------------------ */
+
+.create-dialog__body {
+  display: grid;
+  gap: 18px;
+  padding: 18px 22px 22px;
+  overflow-y: auto;
+}
+
+.create-dialog__section {
+  display: grid;
+  gap: 14px;
+}
+
+.create-dialog__notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+
+  ion-icon {
+    flex: 0 0 auto;
+    font-size: 1.1rem;
+  }
+}
+
+.create-dialog__notice--error {
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--ion-color-danger, #dc2626);
+}
+
+/* ----- Cover uploader --------------------------------------------------- */
+
+.create-dialog__cover {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.create-dialog__cover-preview {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border: 1px solid var(--ion-color-step-150, rgba(125, 125, 125, 0.22));
+  border-radius: 14px;
+  background: var(--ion-color-step-50, rgba(125, 125, 125, 0.06));
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  &.is-empty {
+    border-style: dashed;
+  }
+}
+
+.create-dialog__cover-placeholder {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  color: var(--ion-color-step-500, rgba(125, 125, 125, 0.7));
+
+  ion-icon {
+    font-size: 1.8rem;
+  }
+
+  span {
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+}
+
+.create-dialog__cover-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 0.82rem;
+
+  ion-spinner {
+    --color: #fff;
+  }
+}
+
+.create-dialog__cover-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.create-dialog__upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--ion-color-primary, #3b82f6);
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--ion-color-primary, #3b82f6);
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.18);
+  }
+
+  ion-icon {
+    font-size: 1.1rem;
+  }
+
+  input[type='file'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    border: 0;
+  }
+}
+
+.create-dialog__link-button {
+  background: none;
   border: 0;
+  padding: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--ion-color-danger, #dc2626);
+  cursor: pointer;
+  text-align: left;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.create-dialog__hint,
+.create-dialog__cover-error {
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.create-dialog__hint {
+  color: var(--ion-color-step-550, rgba(125, 125, 125, 0.7));
+}
+
+.create-dialog__cover-error {
+  color: var(--ion-color-danger, #dc2626);
+  font-weight: 600;
+}
+
+/* ----- Form grid + fields ----------------------------------------------- */
+
+.create-dialog__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.create-dialog__field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
   margin: 0;
   padding: 0;
+  border: 0;
 
-  legend {
-    margin-bottom: 6px;
-    color: var(--muted, #667085);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+  > span,
+  > legend {
+    color: var(--ion-color-step-600, rgba(125, 125, 125, 0.78));
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--ion-color-step-150, rgba(125, 125, 125, 0.25));
+    border-radius: 12px;
+    outline: none;
+    color: var(--ion-text-color);
+    background: var(--ion-item-background, var(--ion-color-step-50, rgba(125, 125, 125, 0.06)));
+    font: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:focus {
+      border-color: var(--ion-color-primary, #3b82f6);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+    }
+
+    &::placeholder {
+      color: var(--ion-color-step-450, rgba(125, 125, 125, 0.55));
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 88px;
   }
 }
 
-.platform-chips {
+.create-dialog__field--full {
+  grid-column: 1 / -1;
+}
+
+/* ----- Platform chips --------------------------------------------------- */
+
+.create-dialog__chips {
+  > legend {
+    margin-bottom: 4px;
+  }
+}
+
+.create-dialog__chip-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.platform-chip {
+.create-dialog__chip {
   display: inline-flex;
   align-items: center;
   min-height: 36px;
   padding: 6px 14px;
-  border: 1px solid var(--line, rgba(17, 24, 39, 0.12));
+  border: 1px solid var(--ion-color-step-150, rgba(125, 125, 125, 0.25));
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.6);
-  color: var(--ink, #111827);
+  background: var(--ion-item-background, transparent);
+  color: var(--ion-text-color);
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 
   &:hover {
-    background: rgba(37, 99, 235, 0.06);
+    border-color: var(--ion-color-primary, #3b82f6);
+  }
+
+  &.is-active {
+    border-color: var(--ion-color-primary, #3b82f6);
+    background: rgba(59, 130, 246, 0.18);
+    color: var(--ion-color-primary, #3b82f6);
   }
 }
 
-.platform-chip--active {
-  border-color: var(--accent-border, rgba(37, 99, 235, 0.42));
-  background: var(--accent-soft, rgba(37, 99, 235, 0.12));
-  color: var(--accent, #2563eb);
-}
+/* ----- Personal-entry library section ----------------------------------- */
 
-.library-toggle-section {
-  display: grid;
-  gap: 14px;
+.create-dialog__library-section {
   padding: 14px;
-  border: 1px dashed var(--line, rgba(17, 24, 39, 0.14));
+  border: 1px dashed var(--ion-color-step-150, rgba(125, 125, 125, 0.28));
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--ion-color-step-50, rgba(125, 125, 125, 0.05));
 }
 
-.library-toggle-header {
+.create-dialog__toggle-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -101,17 +355,19 @@
 
   strong {
     display: block;
-    color: var(--ink, #111827);
+    color: var(--ion-text-color);
     font-size: 0.98rem;
   }
 
   small {
-    color: var(--muted, #667085);
+    color: var(--ion-color-step-600, rgba(125, 125, 125, 0.78));
     font-size: 0.82rem;
   }
 }
 
-.switch {
+/* ----- Custom switch ---------------------------------------------------- */
+
+.create-dialog__switch {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -129,7 +385,7 @@
   }
 }
 
-.switch-track {
+.create-dialog__switch-track {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -137,56 +393,105 @@
   height: 24px;
   padding: 2px;
   border-radius: 999px;
-  background: rgba(17, 24, 39, 0.18);
+  background: var(--ion-color-step-200, rgba(125, 125, 125, 0.32));
   transition: background 0.18s ease;
 }
 
-.switch-thumb {
+.create-dialog__switch-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.32);
   transition: transform 0.18s ease;
 }
 
-.switch input:checked + .switch-track {
-  background: var(--accent, #2563eb);
+.create-dialog__switch input:checked + .create-dialog__switch-track {
+  background: var(--ion-color-primary, #3b82f6);
 
-  .switch-thumb {
+  .create-dialog__switch-thumb {
     transform: translateX(20px);
   }
 }
 
-.switch-label {
-  color: var(--muted, #667085);
+.create-dialog__switch-label {
+  color: var(--ion-color-step-600, rgba(125, 125, 125, 0.78));
   font-size: 0.82rem;
   font-weight: 700;
 }
 
-/* The create dialog can be tall — keep the form scrollable so the footer
-   actions stay sticky-ish at the bottom of the modal viewport. */
-.create-editor .editor-body {
-  max-height: min(72vh, 640px);
-  overflow-y: auto;
-  padding-right: 4px;
+/* ----- Status picker ---------------------------------------------------- */
+
+.create-dialog__status-picker {
+  > legend {
+    margin-bottom: 4px;
+  }
 }
 
-.notice--error {
-  /* Lightweight inline error style — falls back when the page-level
-     .notice doesn't cover error variants. */
-  display: flex;
+.create-dialog__status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.create-dialog__status-option {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid rgba(220, 38, 38, 0.35);
-  border-radius: 10px;
-  background: rgba(220, 38, 38, 0.08);
-  color: #b91c1c;
-  font-size: 0.92rem;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 46px;
+  padding: 8px 12px;
+  border: 1px solid var(--ion-color-step-150, rgba(125, 125, 125, 0.25));
+  border-radius: 12px;
+  background: var(--ion-item-background, transparent);
+  color: var(--ion-text-color);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 
   ion-icon {
-    flex: 0 0 auto;
-    font-size: 1.1rem;
+    color: var(--ion-color-primary, #3b82f6);
+    font-size: 1.15rem;
+  }
+
+  &:hover {
+    border-color: var(--ion-color-primary, #3b82f6);
+  }
+
+  &.is-active {
+    border-color: var(--ion-color-primary, #3b82f6);
+    background: rgba(59, 130, 246, 0.16);
+    color: var(--ion-color-primary, #3b82f6);
+  }
+}
+
+/* ----- Footer ----------------------------------------------------------- */
+
+.create-dialog__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--ion-color-step-150, rgba(125, 125, 125, 0.18));
+}
+
+/* ----- Compact viewport ------------------------------------------------- */
+
+@media (max-width: 560px) {
+  .create-dialog__cover {
+    grid-template-columns: 1fr;
+  }
+
+  .create-dialog__cover-preview {
+    max-width: 220px;
+    margin-inline: auto;
+  }
+
+  .create-dialog__grid,
+  .create-dialog__status-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,12 +1,12 @@
 <ion-modal
-  class="add-game-modal create-modal"
+  class="create-modal"
   [isOpen]="isOpen()"
   (didDismiss)="dismiss.emit()">
   <ng-template>
-    <form class="library-editor create-editor" (ngSubmit)="submit.emit()" novalidate>
-      <header class="create-header">
-        <div>
-          <span class="eyebrow">
+    <form class="create-dialog" (ngSubmit)="submit.emit()" novalidate>
+      <header class="create-dialog__header">
+        <div class="create-dialog__heading">
+          <span class="create-dialog__eyebrow">
             <ion-icon name="add-circle-outline"></ion-icon>
             Create
           </span>
@@ -16,7 +16,7 @@
         <ion-button
           type="button"
           fill="clear"
-          class="dialog-icon-button"
+          class="create-dialog__close"
           aria-label="Close"
           [disabled]="isSaving()"
           (click)="dismiss.emit()">
@@ -24,156 +24,219 @@
         </ion-button>
       </header>
 
-      <section class="editor-body">
+      <div class="create-dialog__body">
         @if (errorMessage()) {
-          <div class="notice notice--error" role="alert">
+          <div class="create-dialog__notice create-dialog__notice--error" role="alert">
             <ion-icon name="alert-circle-outline"></ion-icon>
             <span>{{ errorMessage() }}</span>
           </div>
         }
 
-        <div class="editor-grid create-grid">
-          <label class="form-field form-field--full">
-            <span>Title</span>
-            <input
-              type="text"
-              required
-              autocomplete="off"
-              [ngModel]="form().name"
-              (ngModelChange)="form.update((f) => ({ ...f, name: $event }))"
-              name="name" />
-          </label>
+        <!-- Cover uploader -->
+        <section class="create-dialog__section">
+          <div class="create-dialog__cover">
+            <div
+              class="create-dialog__cover-preview"
+              [class.is-empty]="!coverDisplayUrl()">
+              @if (coverDisplayUrl(); as src) {
+                <img [src]="src" alt="Cover preview" />
+              } @else {
+                <div class="create-dialog__cover-placeholder" aria-hidden="true">
+                  <ion-icon name="image-outline"></ion-icon>
+                  <span>No cover yet</span>
+                </div>
+              }
+              @if (isUploadingCover()) {
+                <div class="create-dialog__cover-overlay" aria-live="polite">
+                  <ion-spinner name="crescent"></ion-spinner>
+                  <span>Uploading...</span>
+                </div>
+              }
+            </div>
+            <div class="create-dialog__cover-actions">
+              <label class="create-dialog__upload-button">
+                <input
+                  type="file"
+                  accept="image/*"
+                  [disabled]="isUploadingCover() || isSaving()"
+                  (change)="onCoverPicked($event)" />
+                <ion-icon name="cloud-upload-outline"></ion-icon>
+                <span>{{ form().cover ? 'Replace cover' : 'Upload cover' }}</span>
+              </label>
+              @if (form().cover || form().coverPreviewUrl) {
+                <button
+                  type="button"
+                  class="create-dialog__link-button"
+                  [disabled]="isUploadingCover() || isSaving()"
+                  (click)="removeCover()">
+                  Remove
+                </button>
+              }
+              @if (coverUploadError()) {
+                <small class="create-dialog__cover-error" role="alert">
+                  {{ coverUploadError() }}
+                </small>
+              } @else {
+                <small class="create-dialog__hint">
+                  PNG or JPG. Recommended portrait orientation.
+                </small>
+              }
+            </div>
+          </div>
+        </section>
 
-          <label class="form-field form-field--full">
-            <span>Description</span>
-            <textarea
-              rows="3"
-              [ngModel]="form().description"
-              (ngModelChange)="form.update((f) => ({ ...f, description: $event }))"
-              name="description"></textarea>
-          </label>
-
-          <label class="form-field">
-            <span>Release date</span>
-            <input
-              type="date"
-              [ngModel]="form().releaseDate"
-              (ngModelChange)="form.update((f) => ({ ...f, releaseDate: $event }))"
-              name="releaseDate" />
-          </label>
-
-          <label class="form-field">
-            <span>Genre</span>
-            <input
-              type="text"
-              placeholder="e.g. RPG, Adventure"
-              [ngModel]="form().genre"
-              (ngModelChange)="form.update((f) => ({ ...f, genre: $event }))"
-              name="genre" />
-          </label>
-
-          @if (isGamesMode()) {
-            <fieldset class="form-field form-field--full platform-picker">
-              <legend>Platforms</legend>
-              <div class="platform-chips">
-                @for (option of platformChoices; track trackByValue($index, option)) {
-                  <button
-                    type="button"
-                    class="platform-chip"
-                    [class.platform-chip--active]="isPlatformSelected(option.value)"
-                    [attr.aria-pressed]="isPlatformSelected(option.value)"
-                    (click)="togglePlatform(option.value)">
-                    {{ option.label }}
-                  </button>
-                }
-              </div>
-            </fieldset>
-
-            <label class="form-field">
-              <span>Estimated playtime (h)</span>
+        <!-- Core fields -->
+        <section class="create-dialog__section">
+          <div class="create-dialog__grid">
+            <label class="create-dialog__field create-dialog__field--full">
+              <span>Title</span>
               <input
-                type="number"
-                min="0"
-                inputmode="decimal"
-                [ngModel]="form().playtime"
-                (ngModelChange)="form.update((f) => ({ ...f, playtime: $event }))"
-                name="playtime" />
+                type="text"
+                required
+                autocomplete="off"
+                placeholder="e.g. Hades"
+                [ngModel]="form().name"
+                (ngModelChange)="form.update((f) => ({ ...f, name: $event }))"
+                name="name" />
             </label>
-          }
 
-          @if (isEpisodeMode()) {
-            <label class="form-field">
-              <span>Episodes</span>
-              <input
-                type="number"
-                min="0"
-                inputmode="numeric"
-                [ngModel]="form().episodeCount"
-                (ngModelChange)="form.update((f) => ({ ...f, episodeCount: $event }))"
-                name="episodeCount" />
+            <label class="create-dialog__field create-dialog__field--full">
+              <span>Description</span>
+              <textarea
+                rows="3"
+                placeholder="Short summary players will see in the catalog."
+                [ngModel]="form().description"
+                (ngModelChange)="form.update((f) => ({ ...f, description: $event }))"
+                name="description"></textarea>
             </label>
-            <label class="form-field">
-              <span>Per episode (min)</span>
-              <input
-                type="number"
-                min="0"
-                inputmode="numeric"
-                [ngModel]="form().expectedWatchTimePerEpisodeMinutes"
-                (ngModelChange)="form.update((f) => ({ ...f, expectedWatchTimePerEpisodeMinutes: $event }))"
-                name="perEpisodeMinutes" />
-            </label>
-            <label class="form-field">
-              <span>Total runtime (min)</span>
-              <input
-                type="number"
-                min="0"
-                inputmode="numeric"
-                [ngModel]="form().expectedWatchTimeMinutes"
-                (ngModelChange)="form.update((f) => ({ ...f, expectedWatchTimeMinutes: $event }))"
-                name="totalMinutes" />
-            </label>
-          }
-        </div>
 
-        <section class="library-toggle-section">
-          <header class="library-toggle-header">
+            <label class="create-dialog__field">
+              <span>Release date</span>
+              <input
+                type="date"
+                [ngModel]="form().releaseDate"
+                (ngModelChange)="form.update((f) => ({ ...f, releaseDate: $event }))"
+                name="releaseDate" />
+            </label>
+
+            <label class="create-dialog__field">
+              <span>Genre</span>
+              <input
+                type="text"
+                placeholder="RPG, Adventure..."
+                [ngModel]="form().genre"
+                (ngModelChange)="form.update((f) => ({ ...f, genre: $event }))"
+                name="genre" />
+            </label>
+
+            @if (isGamesMode()) {
+              <fieldset class="create-dialog__field create-dialog__field--full create-dialog__chips">
+                <legend>Platforms</legend>
+                <div class="create-dialog__chip-row">
+                  @for (option of platformChoices; track trackByValue($index, option)) {
+                    <button
+                      type="button"
+                      class="create-dialog__chip"
+                      [class.is-active]="isPlatformSelected(option.value)"
+                      [attr.aria-pressed]="isPlatformSelected(option.value)"
+                      (click)="togglePlatform(option.value)">
+                      {{ option.label }}
+                    </button>
+                  }
+                </div>
+              </fieldset>
+
+              <label class="create-dialog__field">
+                <span>Estimated playtime (h)</span>
+                <input
+                  type="number"
+                  min="0"
+                  inputmode="decimal"
+                  [ngModel]="form().playtime"
+                  (ngModelChange)="form.update((f) => ({ ...f, playtime: $event }))"
+                  name="playtime" />
+              </label>
+            }
+
+            @if (isEpisodeMode()) {
+              <label class="create-dialog__field">
+                <span>Episodes</span>
+                <input
+                  type="number"
+                  min="0"
+                  inputmode="numeric"
+                  [ngModel]="form().episodeCount"
+                  (ngModelChange)="form.update((f) => ({ ...f, episodeCount: $event }))"
+                  name="episodeCount" />
+              </label>
+              <label class="create-dialog__field">
+                <span>Per episode (min)</span>
+                <input
+                  type="number"
+                  min="0"
+                  inputmode="numeric"
+                  [ngModel]="form().expectedWatchTimePerEpisodeMinutes"
+                  (ngModelChange)="form.update((f) => ({ ...f, expectedWatchTimePerEpisodeMinutes: $event }))"
+                  name="perEpisodeMinutes" />
+              </label>
+              <label class="create-dialog__field create-dialog__field--full">
+                <span>Total runtime (min)</span>
+                <input
+                  type="number"
+                  min="0"
+                  inputmode="numeric"
+                  [ngModel]="form().expectedWatchTimeMinutes"
+                  (ngModelChange)="form.update((f) => ({ ...f, expectedWatchTimeMinutes: $event }))"
+                  name="totalMinutes" />
+              </label>
+            }
+          </div>
+        </section>
+
+        <!-- Personal library entry toggle -->
+        <section class="create-dialog__section create-dialog__library-section">
+          <header class="create-dialog__toggle-header">
             <div>
               <strong>Also add to my library</strong>
               <small>Create a matching personal entry while saving.</small>
             </div>
-            <label class="switch">
+            <label class="create-dialog__switch">
               <input
                 type="checkbox"
                 [checked]="form().createLibraryEntry"
                 (change)="setCreateLibraryEntry($any($event.target).checked)"
                 name="createLibraryEntry" />
-              <span class="switch-track" aria-hidden="true">
-                <span class="switch-thumb"></span>
+              <span class="create-dialog__switch-track" aria-hidden="true">
+                <span class="create-dialog__switch-thumb"></span>
               </span>
-              <span class="switch-label">{{ form().createLibraryEntry ? 'On' : 'Off' }}</span>
+              <span class="create-dialog__switch-label">
+                {{ form().createLibraryEntry ? 'On' : 'Off' }}
+              </span>
             </label>
           </header>
 
           @if (form().createLibraryEntry) {
-            <fieldset class="status-picker">
+            <fieldset class="create-dialog__field create-dialog__field--full create-dialog__status-picker">
               <legend>Status</legend>
-              @for (status of statusOptions(); track status.value) {
-                <button
-                  type="button"
-                  class="status-option"
-                  [class.status-option--active]="form().libraryEntry.status === status.value"
-                  [attr.aria-pressed]="form().libraryEntry.status === status.value"
-                  (click)="selectStatus(status.value)">
-                  <span>{{ status.label }}</span>
-                  @if (form().libraryEntry.status === status.value) {
-                    <ion-icon name="checkmark-circle-outline"></ion-icon>
-                  }
-                </button>
-              }
+              <div class="create-dialog__status-grid">
+                @for (status of statusOptions(); track status.value) {
+                  <button
+                    type="button"
+                    class="create-dialog__status-option"
+                    [class.is-active]="form().libraryEntry.status === status.value"
+                    [attr.aria-pressed]="form().libraryEntry.status === status.value"
+                    (click)="selectStatus(status.value)">
+                    @if (form().libraryEntry.status === status.value) {
+                      <ion-icon name="checkmark-circle-outline"></ion-icon>
+                    }
+                    <span>{{ status.label }}</span>
+                  </button>
+                }
+              </div>
             </fieldset>
 
-            <div class="editor-grid">
-              <label class="form-field">
+            <div class="create-dialog__grid">
+              <label class="create-dialog__field">
                 <span>{{ isGamesMode() ? 'Played hours' : 'Watched hours' }}</span>
                 <input
                   type="number"
@@ -185,7 +248,7 @@
               </label>
 
               @if (isEpisodeMode()) {
-                <label class="form-field">
+                <label class="create-dialog__field">
                   <span>Current episode</span>
                   <input
                     type="number"
@@ -197,7 +260,7 @@
                 </label>
               }
 
-              <label class="form-field">
+              <label class="create-dialog__field">
                 <span>Rating</span>
                 <input
                   type="number"
@@ -210,7 +273,7 @@
                   name="libRating" />
               </label>
 
-              <label class="form-field">
+              <label class="create-dialog__field">
                 <span>Started</span>
                 <input
                   type="date"
@@ -219,7 +282,7 @@
                   name="libStart" />
               </label>
 
-              <label class="form-field">
+              <label class="create-dialog__field">
                 <span>Finished</span>
                 <input
                   type="date"
@@ -230,9 +293,9 @@
             </div>
           }
         </section>
-      </section>
+      </div>
 
-      <footer class="editor-actions">
+      <footer class="create-dialog__footer">
         <ion-button
           type="button"
           fill="clear"
@@ -240,7 +303,9 @@
           (click)="dismiss.emit()">
           Cancel
         </ion-button>
-        <ion-button type="submit" [disabled]="isSaving() || !canSubmit()">
+        <ion-button
+          type="submit"
+          [disabled]="isSaving() || isUploadingCover() || !canSubmit()">
           <ion-icon slot="start" [name]="isSaving() ? 'hourglass-outline' : 'add-outline'"></ion-icon>
           {{ isSaving() ? 'Creating...' : 'Create ' + mediaMode().singular }}
         </ion-button>
