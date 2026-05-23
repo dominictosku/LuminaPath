@@ -46,17 +46,25 @@ public sealed class BackgroundJobSchedulerService : BackgroundService
         var maintenanceService = scope.ServiceProvider.GetRequiredService<BackgroundJobMaintenanceService>();
         var settings = await settingsResolver.GetAsync(cancellationToken);
 
-        if (settings.ScheduledBackupsEnabled && await ShouldRunBackupAsync(jobService, settings, cancellationToken))
+        // Master switch: when off, no automatic scheduled jobs are enqueued.
+        // Per-job interval gates (e.g. OrphanedBlobCleanupIntervalHours == 0)
+        // still apply on top so admins can disable individual jobs.
+        // Cleanup/maintenance work below always runs regardless — it's
+        // internal housekeeping for the scheduler itself, not a "job".
+        if (settings.ScheduledJobsEnabled)
         {
-            var job = await jobService.EnqueueDatabaseBackupAsync(cancellationToken);
-            _logger.LogInformation("Scheduled database backup job {JobId} is {Status}.", job.Id, job.Status);
-        }
+            if (await ShouldRunBackupAsync(jobService, settings, cancellationToken))
+            {
+                var job = await jobService.EnqueueDatabaseBackupAsync(cancellationToken);
+                _logger.LogInformation("Scheduled database backup job {JobId} is {Status}.", job.Id, job.Status);
+            }
 
-        if (settings.OrphanedBlobCleanupIntervalHours > 0
-            && await ShouldRunOrphanedBlobCleanupAsync(jobService, settings, cancellationToken))
-        {
-            var job = await jobService.EnqueueOrphanedBlobCleanupAsync(cancellationToken);
-            _logger.LogInformation("Scheduled orphaned blob cleanup job {JobId} is {Status}.", job.Id, job.Status);
+            if (settings.OrphanedBlobCleanupIntervalHours > 0
+                && await ShouldRunOrphanedBlobCleanupAsync(jobService, settings, cancellationToken))
+            {
+                var job = await jobService.EnqueueOrphanedBlobCleanupAsync(cancellationToken);
+                _logger.LogInformation("Scheduled orphaned blob cleanup job {JobId} is {Status}.", job.Id, job.Status);
+            }
         }
 
         var cleanup = await maintenanceService.RunCleanupAsync(cancellationToken);

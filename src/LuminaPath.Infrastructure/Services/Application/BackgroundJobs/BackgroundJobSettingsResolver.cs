@@ -18,7 +18,7 @@ public sealed class BackgroundJobSettingsResolver
     {
         var stored = await _settings.GetBackgroundJobSettingsAsync(cancellationToken);
         return new BackgroundJobRuntimeSettings(
-            ParseBool(stored.ScheduledBackupsEnabled, _options.ScheduledBackupsEnabled),
+            ParseBool(stored.ScheduledJobsEnabled, _options.ScheduledJobsEnabled),
             ParseInt(stored.BackupIntervalHours, _options.BackupIntervalHours, 1, 24 * 30),
             ParseInt(stored.BackupRetentionCount, _options.BackupRetentionCount, 1, 500),
             ParseInt(stored.JobHistoryRetentionDays, _options.JobHistoryRetentionDays, 1, 3650),
@@ -38,7 +38,7 @@ public sealed class BackgroundJobSettingsResolver
 }
 
 public sealed record BackgroundJobRuntimeSettings(
-    bool ScheduledBackupsEnabled,
+    bool ScheduledJobsEnabled,
     int BackupIntervalHours,
     int BackupRetentionCount,
     int JobHistoryRetentionDays,

@@ -12,7 +12,8 @@
 			<MudText Typo="Typo.overline">Scheduling</MudText>
 			<MudText Typo="Typo.h5">Internal job options</MudText>
 			<MudText Typo="Typo.body2">
-				Control automatic database backups and retention for internal maintenance jobs.
+				Master switch for all automatic background jobs &mdash; database backups, orphaned blob cleanup,
+				and any future scheduled maintenance. Cleanup of old job history still runs while this is off.
 			</MudText>
 		</div>
 		<div class="settings-panel__icon">
@@ -23,11 +24,11 @@
 	<div class="settings-form job-settings-form">
 		<div class="job-setting-toggle">
 			<div class="job-setting-toggle__icon">
-				<MudIcon Icon="@Icons.Material.Filled.Backup" />
+				<MudIcon Icon="@Icons.Material.Filled.EventRepeat" />
 			</div>
-			<MudSwitch @bind-Value="scheduledBackupsEnabled"
+			<MudSwitch @bind-Value="scheduledJobsEnabled"
 					   Color="Color.Primary"
-					   Label="Enable scheduled database backups" />
+					   Label="Enable scheduled background jobs" />
 		</div>
 
 		<div class="job-settings-fields">
@@ -172,7 +173,7 @@
 </style>
 
 @code {
-	private bool scheduledBackupsEnabled;
+	private bool scheduledJobsEnabled;
 	private int backupIntervalHours;
 	private int backupRetentionCount;
 	private int jobHistoryRetentionDays;
@@ -182,7 +183,7 @@
 	protected override async Task OnInitializedAsync()
 	{
 		var stored = await ApplicationSettingsService.GetBackgroundJobSettingsAsync();
-		scheduledBackupsEnabled = ParseBool(stored.ScheduledBackupsEnabled, Options.Value.ScheduledBackupsEnabled);
+		scheduledJobsEnabled = ParseBool(stored.ScheduledJobsEnabled, Options.Value.ScheduledJobsEnabled);
 		backupIntervalHours = ParseInt(stored.BackupIntervalHours, Options.Value.BackupIntervalHours, 1, 720);
 		backupRetentionCount = ParseInt(stored.BackupRetentionCount, Options.Value.BackupRetentionCount, 1, 500);
 		jobHistoryRetentionDays = ParseInt(stored.JobHistoryRetentionDays, Options.Value.JobHistoryRetentionDays, 1, 3650);
@@ -194,7 +195,7 @@
 		try
 		{
 			await ApplicationSettingsService.SaveBackgroundJobSettingsAsync(new BackgroundJobStoredSettings(
-				scheduledBackupsEnabled.ToString(),
+				scheduledJobsEnabled.ToString(),
 				Math.Clamp(backupIntervalHours, 1, 720).ToString(),
 				Math.Clamp(backupRetentionCount, 1, 500).ToString(),
 				Math.Clamp(jobHistoryRetentionDays, 1, 3650).ToString()));
