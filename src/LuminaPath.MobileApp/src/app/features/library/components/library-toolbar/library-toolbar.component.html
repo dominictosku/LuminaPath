@@ -8,28 +8,14 @@
       placeholder="Search title, genre, platform, status">
     </ion-searchbar>
 
-    <div class="toolbar-top__right">
-      <ion-segment class="view-toggle" [(ngModel)]="viewMode">
-        <ion-segment-button value="grid">
-          <ion-icon name="grid-outline"></ion-icon>
-        </ion-segment-button>
-        <ion-segment-button value="list">
-          <ion-icon name="list-outline"></ion-icon>
-        </ion-segment-button>
-      </ion-segment>
-
-      @if (canCreate()) {
-        <ion-button
-          class="create-button"
-          fill="solid"
-          size="default"
-          aria-label="Create new catalog entry"
-          (click)="create.emit()">
-          <ion-icon slot="start" name="add-circle-outline"></ion-icon>
-          Create
-        </ion-button>
-      }
-    </div>
+    <ion-segment class="view-toggle" [(ngModel)]="viewMode">
+      <ion-segment-button value="grid">
+        <ion-icon name="grid-outline"></ion-icon>
+      </ion-segment-button>
+      <ion-segment-button value="list">
+        <ion-icon name="list-outline"></ion-icon>
+      </ion-segment-button>
+    </ion-segment>
   </div>
 
   <div class="filter-grid">

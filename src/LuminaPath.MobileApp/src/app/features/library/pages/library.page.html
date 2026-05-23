@@ -34,12 +34,10 @@
       [abandonedGameCount]="abandonedGameCount"
       [hasNextBest]="!!nextBestGame"
       [isGamesMode]="isGamesMode"
-      [canCreate]="canCreateCatalogEntry"
       (apply)="applyFilters()"
       (savePreset)="saveCurrentPreset()"
       (applyPreset)="applyPreset($event)"
-      (deletePreset)="deletePreset($event)"
-      (create)="openCreateDialog()" />
+      (deletePreset)="deletePreset($event)" />
 
     @if (!isLoading && nextBestGame; as best) {
       <section class="finish-pick">
@@ -85,7 +83,19 @@
           <span class="eyebrow">Results</span>
           <h2>{{ resultTitle }}</h2>
         </div>
-        <ion-button fill="clear" size="small" (click)="clearFilters()">Reset</ion-button>
+        <div class="results-heading__actions">
+          @if (canCreateCatalogEntry) {
+            <ion-button
+              class="create-button"
+              size="small"
+              aria-label="Create new catalog entry"
+              (click)="openCreateDialog()">
+              <ion-icon slot="start" name="add-circle-outline"></ion-icon>
+              Create
+            </ion-button>
+          }
+          <ion-button fill="clear" size="small" (click)="clearFilters()">Reset</ion-button>
+        </div>
       </section>
     }
 

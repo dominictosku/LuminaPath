@@ -133,27 +133,30 @@ app-library-toolbar {
 
 .toolbar-top {
   display: grid;
+  /* Search takes all the available space and the view-toggle keeps its
+     natural width hugged to the right. */
   grid-template-columns: minmax(220px, 1fr) auto;
-  gap: 10px;
+  gap: 12px;
   align-items: stretch;
 }
 
-.toolbar-top__right {
+.toolbar-top .view-toggle {
+  /* Hold a comfortable two-button width without forcing the segment to
+     stretch into the search bar's real estate. */
+  width: 132px;
+  justify-self: end;
+}
+
+.results-heading__actions {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 8px;
 }
 
-.toolbar-top__right .view-toggle {
-  flex: 0 0 172px;
-}
-
-.create-button {
-  --border-radius: 16px;
+.results-heading .create-button {
+  --border-radius: 14px;
   --padding-start: 14px;
   --padding-end: 14px;
-  min-height: 50px;
-  height: 50px;
   margin: 0;
   font-weight: 700;
 }
