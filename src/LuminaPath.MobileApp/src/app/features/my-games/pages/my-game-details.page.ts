@@ -483,14 +483,28 @@ export class MyGameDetailsPage implements OnInit {
     const gameId = this.game.id;
 
     try {
-      const updated = Object.assign(new Game(), this.game, {
+      // Build the PUT payload from scratch — DO NOT spread `this.game`.
+      // The loaded Game includes `myGames` (personal library entries) and
+      // `dlcs` / `parentGame` navigation collections. Echoing them back
+      // makes EF Core try to upsert them, which violates
+      // FK_MyGames_AspNetUsers_LuminaUserId because the frontend never
+      // sees the owner's user id. The catalog PUT only cares about the
+      // shared metadata + the cover.
+      const updated = Object.assign(new Game(), {
+        id: gameId,
         name,
         description: this.editForm.description,
         releaseDate: this.parseDateOrNull(this.editForm.releaseDate) ?? this.game.releaseDate,
         genre: this.editForm.genre,
         platforms: this.editForm.platforms,
         playtime: this.editForm.playtime ?? 0,
+        parentGameId: this.game.parentGameId ?? null,
+        parentGameName: this.game.parentGameName ?? null,
         image: this.editForm.cover ?? this.game.image,
+        // Explicitly null the personal-library + child-DLC collections so
+        // the server treats this as a pure catalog update.
+        myGames: null,
+        dlcs: null,
       });
 
       await firstValueFrom(this.gameService.put(gameId, updated));
