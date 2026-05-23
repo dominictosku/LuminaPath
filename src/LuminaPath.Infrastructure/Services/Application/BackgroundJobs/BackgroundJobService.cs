@@ -301,6 +301,39 @@ public sealed class BackgroundJobService
             cancellationToken: cancellationToken);
     }
 
+    /// <summary>
+    /// Enqueue the orphaned-blob janitor. If a run is already pending or
+    /// in flight we return that record instead of double-queueing — the
+    /// scan touches every blob in storage and there's no value in
+    /// stacking runs.
+    /// </summary>
+    public async Task<BackgroundJobRecord> EnqueueOrphanedBlobCleanupAsync(CancellationToken cancellationToken = default)
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var activeJob = await context.BackgroundJobs
+            .AsNoTracking()
+            .Where(job => job.JobType == BackgroundJobTypes.OrphanedBlobCleanup
+                && (job.Status == BackgroundJobStatus.Pending || job.Status == BackgroundJobStatus.Running))
+            .OrderBy(job => job.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (activeJob is not null)
+        {
+            await AuditJobAsync(
+                AuditActions.BackgroundJobQueued,
+                AuditOutcomes.Success,
+                activeJob,
+                new { reusedExisting = true },
+                cancellationToken);
+            return activeJob;
+        }
+
+        return await EnqueueAsync(
+            BackgroundJobTypes.OrphanedBlobCleanup,
+            "Orphaned blob cleanup",
+            cancellationToken: cancellationToken);
+    }
+
     private static async Task<bool> HasActiveJobAsync(LuminaPathDbContext context, string jobType, CancellationToken cancellationToken)
     {
         return await context.BackgroundJobs.AnyAsync(job => job.JobType == jobType

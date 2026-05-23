@@ -52,6 +52,13 @@ public sealed class BackgroundJobSchedulerService : BackgroundService
             _logger.LogInformation("Scheduled database backup job {JobId} is {Status}.", job.Id, job.Status);
         }
 
+        if (settings.OrphanedBlobCleanupIntervalHours > 0
+            && await ShouldRunOrphanedBlobCleanupAsync(jobService, settings, cancellationToken))
+        {
+            var job = await jobService.EnqueueOrphanedBlobCleanupAsync(cancellationToken);
+            _logger.LogInformation("Scheduled orphaned blob cleanup job {JobId} is {Status}.", job.Id, job.Status);
+        }
+
         var cleanup = await maintenanceService.RunCleanupAsync(cancellationToken);
 
         if (cleanup.DeletedJobs > 0 || cleanup.DeletedBackups > 0)
@@ -74,5 +81,22 @@ public sealed class BackgroundJobSchedulerService : BackgroundService
         }
 
         return lastSuccess.CompletedAt.Value <= DateTime.UtcNow.AddHours(-settings.BackupIntervalHours);
+    }
+
+    private static async Task<bool> ShouldRunOrphanedBlobCleanupAsync(
+        BackgroundJobService jobService,
+        BackgroundJobRuntimeSettings settings,
+        CancellationToken cancellationToken)
+    {
+        var lastSuccess = await jobService.GetLastSuccessfulJobAsync(
+            BackgroundJobTypes.OrphanedBlobCleanup,
+            cancellationToken);
+        if (lastSuccess?.CompletedAt is null)
+        {
+            return true;
+        }
+
+        return lastSuccess.CompletedAt.Value
+            <= DateTime.UtcNow.AddHours(-settings.OrphanedBlobCleanupIntervalHours);
     }
 }

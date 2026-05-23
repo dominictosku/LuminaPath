@@ -1,4 +1,5 @@
 using LuminaPath.Core.Interfaces;
+using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.Auditing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -11,6 +12,13 @@ namespace LuminaPath.Infrastructure.Controllers
     [Route("api/[controller]")]
     public class FilesController : ControllerBase
     {
+        /// <summary>
+        /// 3 MB hard cap on uploaded covers — matches DocumentService's
+        /// MaxAllowedSize for IBrowserFile uploads. Anything larger gets
+        /// rejected before we touch the storage backend.
+        /// </summary>
+        private const long MaxUploadBytes = 3 * 1024 * 1024;
+
         private readonly IStorageService Storage;
         private readonly AuditLogService? _auditLog;
 
@@ -20,10 +28,57 @@ namespace LuminaPath.Infrastructure.Controllers
             _auditLog = auditLog;
         }
 
+        /// <summary>
+        /// Uploads a single cover image. Gated by the CatalogEditors
+        /// policy because the only legitimate caller is the catalog
+        /// create/edit dialog. We additionally check that the file is
+        /// non-empty, fits the size cap, and has an image/* content type
+        /// — otherwise this endpoint would happily store arbitrary blobs
+        /// on behalf of any logged-in editor.
+        /// </summary>
         [HttpPost]
-        [AllowAnonymous]
-        public async Task<IActionResult> PostImage(IFormFile file)
+        [Authorize(Policy = AuthorizationPolicies.CatalogEditors)]
+        public async Task<IActionResult> PostImage(IFormFile? file)
         {
+            if (file is null || file.Length == 0)
+            {
+                await AuditFileAsync(
+                    AuditActions.DocumentUploaded,
+                    AuditOutcomes.Failure,
+                    file?.FileName,
+                    file?.ContentType,
+                    "Empty upload.");
+                return BadRequest("No file was uploaded.");
+            }
+
+            if (file.Length > MaxUploadBytes)
+            {
+                await AuditFileAsync(
+                    AuditActions.DocumentUploaded,
+                    AuditOutcomes.Failure,
+                    file.FileName,
+                    file.ContentType,
+                    $"File exceeds the {MaxUploadBytes / 1024} KiB limit.");
+                return new ObjectResult($"File is too large. Maximum allowed size is {MaxUploadBytes / 1024} KiB.")
+                {
+                    StatusCode = StatusCodes.Status413PayloadTooLarge,
+                };
+            }
+
+            if (!IsAllowedImageContentType(file.ContentType))
+            {
+                await AuditFileAsync(
+                    AuditActions.DocumentUploaded,
+                    AuditOutcomes.Failure,
+                    file.FileName,
+                    file.ContentType,
+                    "Unsupported content type.");
+                return new ObjectResult("Only image uploads are allowed (png, jpg, webp, gif, bmp, svg).")
+                {
+                    StatusCode = StatusCodes.Status415UnsupportedMediaType,
+                };
+            }
+
             await using var stream = file.OpenReadStream();
             var result = await Storage.UploadAsync(stream, file.FileName, file.ContentType);
             if (result.Error)
@@ -58,6 +113,16 @@ namespace LuminaPath.Infrastructure.Controllers
                 ContentType = contentType,
                 Url = $"api/files/{storedName}"
             });
+        }
+
+        private static bool IsAllowedImageContentType(string? contentType)
+        {
+            if (string.IsNullOrWhiteSpace(contentType))
+            {
+                return false;
+            }
+
+            return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
         }
 
         [HttpGet("{url}")]

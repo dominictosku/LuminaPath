@@ -18,8 +18,10 @@ internal static class BackgroundJobServiceCollectionExtensions
         services.AddScoped<BackgroundJobSettingsResolver>();
         services.AddScoped<BackgroundJobMaintenanceService>();
         services.AddScoped<BackgroundJobService>();
+        services.AddScoped<OrphanedBlobCleanupService>();
         services.AddScoped<IBackgroundJobRunner, DatabaseBackupJobRunner>();
         services.AddScoped<IBackgroundJobRunner, MaintenanceCleanupJobRunner>();
+        services.AddScoped<IBackgroundJobRunner, OrphanedBlobCleanupJobRunner>();
         services.AddHostedService<QueuedBackgroundJobService>();
         services.AddHostedService<BackgroundJobSchedulerService>();
         return services;
