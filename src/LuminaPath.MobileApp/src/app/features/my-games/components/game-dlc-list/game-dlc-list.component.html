@@ -1,0 +1,26 @@
+<section class="quest-panel dlc-panel">
+  <header class="section-header">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="cube-outline"></ion-icon>
+        Downloadable content
+      </span>
+      <h2>{{ dlcs().length }} DLC{{ dlcs().length === 1 ? '' : 's' }}</h2>
+    </div>
+  </header>
+  <div class="dlc-list">
+    @for (dlc of dlcs(); track trackByDlc($index, dlc)) {
+      <a
+        class="dlc-card"
+        [routerLink]="['/library/games', dlc.id]">
+        @if (dlc.image) {
+          <img [src]="dlcImageUrl(dlc)" [alt]="dlc.name" loading="lazy" decoding="async" />
+        }
+        <div class="dlc-body">
+          <h3>{{ dlc.name }}</h3>
+          <span>{{ dlcReleaseLabel(dlc) }}</span>
+        </div>
+      </a>
+    }
+  </div>
+</section>

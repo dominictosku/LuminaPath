@@ -1,0 +1,29 @@
+<section class="hero">
+  <div>
+    <span class="eyebrow">
+      <ion-icon name="albums-outline"></ion-icon>
+      {{ mediaModeSingular() }} library
+    </span>
+    <h1>{{ heroTitle() }}</h1>
+    <p>{{ heroDescription() }}</p>
+  </div>
+
+  <div class="summary-grid">
+    <article>
+      <span>Total</span>
+      <strong>{{ totalGames() }}</strong>
+    </article>
+    <article>
+      <span>Mine</span>
+      <strong>{{ ownedGames() }}</strong>
+    </article>
+    <article>
+      <span>{{ isGamesMode() ? 'Playing' : 'Active' }}</span>
+      <strong>{{ playingGames() }}</strong>
+    </article>
+    <article>
+      <span>Left</span>
+      <strong>{{ remainingHours() }}h</strong>
+    </article>
+  </div>
+</section>

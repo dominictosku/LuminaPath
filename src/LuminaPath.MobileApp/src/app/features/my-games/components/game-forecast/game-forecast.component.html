@@ -1,0 +1,50 @@
+<section class="quest-panel forecast-panel">
+  <header class="section-header">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="hourglass-outline"></ion-icon>
+        Completion forecast
+      </span>
+      <h2>How long until you finish</h2>
+    </div>
+    <ion-button fill="clear" size="small" (click)="goToPlanning.emit()">Plan sessions</ion-button>
+  </header>
+  @if (bar().total > 0) {
+    <div class="forecast-bar">
+      <div class="forecast-bar__track">
+        <span
+          class="forecast-bar__seg forecast-bar__seg--played"
+          [style.width.%]="segmentWidth('played')"
+          [attr.aria-label]="'Played ' + hours(forecast().playedHours)"></span>
+        <span
+          class="forecast-bar__seg forecast-bar__seg--scheduled"
+          [style.width.%]="segmentWidth('scheduled')"
+          [attr.aria-label]="'Scheduled ' + hours(forecast().scheduledHours)"></span>
+        <span
+          class="forecast-bar__seg forecast-bar__seg--remaining"
+          [style.width.%]="segmentWidth('remaining')"></span>
+      </div>
+      <div class="forecast-bar__legend">
+        <span class="forecast-bar__chip">
+          <i class="forecast-dot forecast-dot--played"></i>
+          Played <strong>{{ hours(forecast().playedHours) }}</strong>
+        </span>
+        <span class="forecast-bar__chip">
+          <i class="forecast-dot forecast-dot--scheduled"></i>
+          Scheduled <strong>{{ hours(forecast().scheduledHours) }}</strong>
+        </span>
+        <span class="forecast-bar__chip">
+          <i class="forecast-dot forecast-dot--remaining"></i>
+          Remaining <strong>{{ forecast().remainingHours === null ? '—' : hours(forecast().remainingHours!) }}</strong>
+        </span>
+        <span class="forecast-bar__chip forecast-bar__chip--pace">
+          <ion-icon name="hourglass-outline"></ion-icon>
+          <strong>{{ hours(forecast().weeklyHours) }}</strong> / wk
+        </span>
+      </div>
+    </div>
+  } @else {
+    <ion-progress-bar [value]="progress()"></ion-progress-bar>
+  }
+  <p class="forecast-summary">{{ summary() }}</p>
+</section>

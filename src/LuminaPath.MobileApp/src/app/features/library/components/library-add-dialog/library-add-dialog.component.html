@@ -1,0 +1,141 @@
+<ion-modal
+  class="add-game-modal"
+  [isOpen]="isOpen()"
+  (didDismiss)="dismiss.emit()">
+  <ng-template>
+    @if (selectedGame(); as game) {
+      <form class="library-editor" (ngSubmit)="submit.emit()" novalidate>
+        <section class="editor-cover" [style.background-image]="'url(' + imageFor(game) + ')'">
+          <div class="editor-cover__shade"></div>
+          <ion-button
+            type="button"
+            fill="clear"
+            class="dialog-icon-button"
+            aria-label="Close"
+            [disabled]="isSaving()"
+            (click)="dismiss.emit()">
+            <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+          </ion-button>
+          <div class="editor-cover__content">
+            <img [src]="imageFor(game)" alt="" loading="lazy" decoding="async" />
+            <div>
+              <span class="eyebrow">{{ isEditing() ? 'Edit my ' + mediaMode().singular : 'Add to mine' }}</span>
+              <h2>{{ game.name }}</h2>
+              <p>{{ isGamesMode() ? view.platformLabel(game.platforms) : view.mediaTypeLabel(game, mediaMode()) }} · {{ view.durationLabel(game, mediaMode()) }}</p>
+            </div>
+          </div>
+        </section>
+        <section class="editor-body">
+          <div class="editor-stats">
+            <article>
+              <span>Status</span>
+              <strong>{{ view.statusLabel(game, mediaMode()) }}</strong>
+            </article>
+            <article>
+              <span>{{ isGamesMode() ? 'Progress' : 'Watched' }}</span>
+              <strong>{{ view.progressOf(game, mediaMode()) }}%</strong>
+            </article>
+            <article>
+              <span>Remaining</span>
+              <strong>{{ view.remainingLabel(game, mediaMode()) }}</strong>
+            </article>
+          </div>
+          <fieldset class="status-picker">
+            <legend>Status</legend>
+            @for (status of statusOptions(); track status) {
+              <button
+                type="button"
+                class="status-option"
+                [class.status-option--active]="form().status === status.value"
+                [attr.aria-pressed]="form().status === status.value"
+                (click)="selectStatus(status.value)">
+                <span>{{ status.label }}</span>
+                @if (form().status === status.value) {
+                  <ion-icon name="checkmark-circle-outline"></ion-icon>
+                }
+                @if (form().status === status.value) {
+                  <small>Selected</small>
+                }
+              </button>
+            }
+          </fieldset>
+          <div class="editor-grid">
+            <label class="form-field">
+              <span>{{ isGamesMode() ? 'Played hours' : 'Watched hours' }}</span>
+              <input
+                type="number"
+                min="0"
+                inputmode="decimal"
+                [ngModel]="form().timeSpend"
+                (ngModelChange)="form.update((f) => ({ ...f, timeSpend: $event }))"
+                name="timeSpend" />
+            </label>
+            @if (isEpisodeMode()) {
+              <label class="form-field">
+                <span>Current episode</span>
+                <input
+                  type="number"
+                  min="0"
+                  inputmode="numeric"
+                  [ngModel]="form().currentEpisode"
+                  (ngModelChange)="form.update((f) => ({ ...f, currentEpisode: $event }))"
+                  name="currentEpisode" />
+              </label>
+            }
+            <label class="form-field">
+              <span>Rating</span>
+              <div class="rating-field">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  step="1"
+                  [ngModel]="form().rating"
+                  (ngModelChange)="form.update((f) => ({ ...f, rating: $event }))"
+                  name="ratingRange" />
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  inputmode="numeric"
+                  placeholder="--"
+                  [ngModel]="form().rating"
+                  (ngModelChange)="form.update((f) => ({ ...f, rating: $event }))"
+                  name="rating" />
+              </div>
+            </label>
+            <label class="form-field">
+              <span>Started</span>
+              <input
+                type="date"
+                [ngModel]="form().startDate"
+                (ngModelChange)="form.update((f) => ({ ...f, startDate: $event }))"
+                name="startDate" />
+            </label>
+            <label class="form-field">
+              <span>Finished</span>
+              <input
+                type="date"
+                [ngModel]="form().endDate"
+                (ngModelChange)="form.update((f) => ({ ...f, endDate: $event }))"
+                name="endDate" />
+            </label>
+          </div>
+        </section>
+        <footer class="editor-actions">
+          <ion-button
+            type="button"
+            fill="clear"
+            [disabled]="isSaving()"
+            (click)="dismiss.emit()">
+            Cancel
+          </ion-button>
+          <ion-button type="submit" [disabled]="isSaving()">
+            <ion-icon slot="start" [name]="isSaving() ? 'hourglass-outline' : (isEditing() ? 'checkmark-circle-outline' : 'add-outline')"></ion-icon>
+            {{ isSaving() ? 'Saving...' : (isEditing() ? 'Save changes' : 'Add ' + mediaMode().singular) }}
+          </ion-button>
+        </footer>
+      </form>
+    }
+  </ng-template>
+</ion-modal>

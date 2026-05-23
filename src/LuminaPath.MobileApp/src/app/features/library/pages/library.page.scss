@@ -21,6 +21,17 @@
   padding: 16px 14px 96px;
 }
 
+/* The hero / toolbar live in their own components but their wrapping
+   <app-…> host elements would otherwise become the direct grid children
+   of .library-page (breaking the grid + the responsive `grid-column: 1 / -1`
+   rules below). `display: contents` makes the hosts layout-transparent so
+   the inner `<section class="hero">` / `<section class="toolbar-panel">`
+   participate in the grid exactly as they did pre-split. */
+app-library-hero,
+app-library-toolbar {
+  display: contents;
+}
+
 .hero,
 .toolbar-panel,
 .finish-pick,

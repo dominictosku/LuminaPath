@@ -1,0 +1,58 @@
+<section class="quest-panel trophies-panel">
+  <header class="section-header trophies-header">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="trophy-outline"></ion-icon>
+        Trophies
+      </span>
+      <h2>Unlocked by you</h2>
+    </div>
+    <ion-badge>{{ summaryLabel() }}</ion-badge>
+  </header>
+  @if (isLoading()) {
+    <app-empty-state
+      variant="locked"
+      [loading]="true"
+      title="Loading trophies"
+      message="Checking the achievements synced for this game." />
+  }
+  @if (!isLoading() && errorMessage()) {
+    <app-empty-state
+      variant="locked"
+      icon="alert-circle-outline"
+      title="Trophies unavailable"
+      [message]="errorMessage()" />
+  }
+  @if (!isLoading() && !errorMessage() && !achievements().length) {
+    <app-empty-state
+      icon="trophy-outline"
+      title="No trophies synced yet"
+      message="Run a Steam or PSN sync to fill this shelf." />
+  }
+  @if (!isLoading() && !errorMessage() && achievements().length) {
+    <div class="trophy-grid">
+      @for (achievement of achievements(); track trackByAchievement($index, achievement)) {
+        <article class="trophy-card">
+          <div class="trophy-card__icon">
+            @if (achievement.iconUrl) {
+              <img [src]="achievement.iconUrl" [alt]="achievement.title" loading="lazy" decoding="async" />
+            } @else {
+              <ion-icon name="trophy-outline"></ion-icon>
+            }
+          </div>
+          <div class="trophy-card__body">
+            <div class="trophy-card__meta">
+              <span>{{ achievement.providerName }}</span>
+              <span>{{ trophyTypeLabel(achievement.trophyType) }}</span>
+            </div>
+            <h3>{{ achievement.title }}</h3>
+            @if (achievement.description) {
+              <p>{{ achievement.description }}</p>
+            }
+            <time>{{ achievementDateLabel(achievement) }}</time>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>

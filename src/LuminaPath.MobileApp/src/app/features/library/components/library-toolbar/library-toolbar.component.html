@@ -1,0 +1,145 @@
+<section class="toolbar-panel">
+  <div class="toolbar-top">
+    <ion-searchbar
+      class="library-search"
+      [value]="inputValue"
+      (ionInput)="onSearchInput($any($event).detail.value ?? '')"
+      debounce="120"
+      placeholder="Search title, genre, platform, status">
+    </ion-searchbar>
+
+    <ion-segment class="view-toggle" [(ngModel)]="viewMode">
+      <ion-segment-button value="grid">
+        <ion-icon name="grid-outline"></ion-icon>
+      </ion-segment-button>
+      <ion-segment-button value="list">
+        <ion-icon name="list-outline"></ion-icon>
+      </ion-segment-button>
+    </ion-segment>
+  </div>
+
+  <div class="filter-grid">
+    <ion-segment [(ngModel)]="ownershipFilter" (ionChange)="apply.emit()">
+      <ion-segment-button value="all">All</ion-segment-button>
+      <ion-segment-button value="mine">Mine</ion-segment-button>
+      <ion-segment-button value="catalog">Catalog</ion-segment-button>
+    </ion-segment>
+
+    <ion-select
+      interface="popover"
+      label="Status"
+      label-placement="stacked"
+      [(ngModel)]="statusFilter"
+      (ionChange)="apply.emit()">
+      <ion-select-option value="all">Any status</ion-select-option>
+      @for (status of statusOptions(); track status) {
+        <ion-select-option [value]="status.value">
+          {{ status.label }}
+        </ion-select-option>
+      }
+    </ion-select>
+
+    @if (isGamesMode()) {
+      <ion-select
+        interface="popover"
+        label="Platform"
+        label-placement="stacked"
+        [(ngModel)]="platformFilter"
+        (ionChange)="apply.emit()">
+        <ion-select-option value="all">Any platform</ion-select-option>
+        @for (platform of platforms(); track platform) {
+          <ion-select-option [value]="platform.value">
+            {{ platform.label }}
+          </ion-select-option>
+        }
+      </ion-select>
+    }
+
+    <ion-select
+      interface="popover"
+      label="Release"
+      label-placement="stacked"
+      [(ngModel)]="releaseDateFilter"
+      (ionChange)="onReleaseDateFilterChange()">
+      <ion-select-option value="all">Any release date</ion-select-option>
+      <ion-select-option value="released">Released</ion-select-option>
+      <ion-select-option value="upcoming">Upcoming</ion-select-option>
+      <ion-select-option value="this-year">This year</ion-select-option>
+      <ion-select-option value="last-year">Last year</ion-select-option>
+      <ion-select-option value="custom">Custom range</ion-select-option>
+    </ion-select>
+  </div>
+
+  <div class="intelligence-grid">
+    <ion-select
+      interface="popover"
+      label="Sort"
+      label-placement="stacked"
+      [(ngModel)]="sortMode"
+      (ionChange)="apply.emit()">
+      @for (option of sortOptions(); track option) {
+        <ion-select-option [value]="option.value">
+          {{ option.label }}
+        </ion-select-option>
+      }
+    </ion-select>
+
+    <div class="smart-chips" aria-label="Smart library filters">
+      <button
+        type="button"
+        [class.smart-chip--active]="smartFilter() === 'short'"
+        (click)="toggleSmartFilter('short')">
+        Short under 10h
+        <span>{{ shortGameCount() }}</span>
+      </button>
+      <button
+        type="button"
+        [class.smart-chip--active]="smartFilter() === 'abandoned'"
+        (click)="toggleSmartFilter('abandoned')">
+        Started, stalled
+        <span>{{ abandonedGameCount() }}</span>
+      </button>
+      <button
+        type="button"
+        [class.smart-chip--active]="smartFilter() === 'best'"
+        [disabled]="!hasNextBest()"
+        (click)="toggleSmartFilter('best')">
+        Best finish
+        <ion-icon name="flash-outline"></ion-icon>
+      </button>
+    </div>
+  </div>
+
+  @if (releaseDateFilter() === 'custom') {
+    <div class="release-date-range">
+      <label>
+        <span>From</span>
+        <input type="date" [(ngModel)]="releaseDateFrom" (change)="onCustomReleaseDateChange()" />
+      </label>
+      <label>
+        <span>To</span>
+        <input type="date" [(ngModel)]="releaseDateTo" (change)="onCustomReleaseDateChange()" />
+      </label>
+    </div>
+  }
+
+  <div class="preset-strip">
+    <label class="preset-name">
+      <span>Preset</span>
+      <input type="text" [(ngModel)]="presetName" placeholder="Save this view" />
+    </label>
+    <ion-button size="small" fill="outline" (click)="savePreset.emit()">
+      <ion-icon slot="start" name="bookmark-outline"></ion-icon>
+      Save
+    </ion-button>
+    @for (preset of savedPresets(); track trackByPreset($index, preset)) {
+      <button
+        type="button"
+        class="preset-pill"
+        (click)="applyPreset.emit(preset)">
+        {{ preset.name }}
+        <span (click)="$event.stopPropagation(); deletePreset.emit(preset)" aria-label="Delete preset">&times;</span>
+      </button>
+    }
+  </div>
+</section>

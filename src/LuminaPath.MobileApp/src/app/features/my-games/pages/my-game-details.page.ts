@@ -1,17 +1,15 @@
 import { Location } from '@angular/common';
 import { Component, OnInit, ViewChild, inject } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   ActionSheetController,
   AlertController,
-  IonBadge,
   IonButton,
   IonButtons,
   IonContent,
   IonHeader,
   IonIcon,
   IonLabel,
-  IonProgressBar,
   IonSegment,
   IonSegmentButton,
   IonSpinner,
@@ -21,7 +19,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 
 import { GameService } from 'src/app/features/games/services/game.service';
-import { GameSummary, platformLabelFromValue } from 'src/app/features/games/models/games.model';
+import { platformLabelFromValue } from 'src/app/features/games/models/games.model';
 import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
 import {
   GameLibraryEntry,
@@ -36,22 +34,22 @@ import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { GameNewsComponent } from '../components/game-news/game-news.component';
 import { GameNotesComponent } from '../components/game-notes/game-notes.component';
 import { GameQuestsComponent } from '../components/game-quests/game-quests.component';
-import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
+import { GameHeroComponent } from '../components/game-hero/game-hero.component';
+import { GameForecastComponent } from '../components/game-forecast/game-forecast.component';
+import { GameTrophiesComponent } from '../components/game-trophies/game-trophies.component';
+import { GameDlcListComponent } from '../components/game-dlc-list/game-dlc-list.component';
 
 @Component({
   selector: 'app-my-game-details',
   templateUrl: './my-game-details.page.html',
   styleUrls: ['./my-game-details.page.scss'],
   imports: [
-    RouterLink,
-    IonBadge,
     IonButton,
     IonButtons,
     IonContent,
     IonHeader,
     IonIcon,
     IonLabel,
-    IonProgressBar,
     IonSegment,
     IonSegmentButton,
     IonSpinner,
@@ -60,7 +58,10 @@ import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty
     GameNewsComponent,
     GameNotesComponent,
     GameQuestsComponent,
-    EmptyStateComponent,
+    GameHeroComponent,
+    GameForecastComponent,
+    GameTrophiesComponent,
+    GameDlcListComponent,
   ],
 })
 export class MyGameDetailsPage implements OnInit {
@@ -144,52 +145,12 @@ export class MyGameDetailsPage implements OnInit {
     return this.game?.playtime ? `${this.game.playtime}h estimated` : 'No estimate';
   }
 
-  get dlcs(): GameSummary[] {
+  get dlcs() {
     return this.game?.dlcs ?? [];
   }
 
   get hasParent(): boolean {
     return !!this.game?.parentGameId;
-  }
-
-  dlcReleaseLabel(dlc: GameSummary): string {
-    return formatShortDate(dlc.releaseDate);
-  }
-
-  dlcImageUrl(dlc: GameSummary): string {
-    return mediaImageUrl(dlc.image ?? null);
-  }
-
-  trackByDlc(_: number, dlc: GameSummary): number {
-    return dlc.id;
-  }
-
-  trackByAchievement(_: number, achievement: UserGameAchievement): number {
-    return achievement.id;
-  }
-
-  get achievementSummaryLabel(): string {
-    if (this.isAchievementsLoading) {
-      return 'Syncing';
-    }
-    if (!this.achievements.length) {
-      return 'None earned yet';
-    }
-    return `${this.achievements.length} earned`;
-  }
-
-  achievementDateLabel(achievement: UserGameAchievement): string {
-    const dateValue = achievement.unlockedAt ?? achievement.syncedAt;
-    return formatShortDate(dateValue, 'Synced recently');
-  }
-
-  trophyTypeLabel(value?: string | null): string {
-    const trophyType = value?.trim();
-    if (!trophyType) {
-      return 'Achievement';
-    }
-
-    return trophyType.charAt(0).toUpperCase() + trophyType.slice(1);
   }
 
   imageUrl(): string {
@@ -421,56 +382,6 @@ export class MyGameDetailsPage implements OnInit {
     } finally {
       this.isAchievementsLoading = false;
     }
-  }
-
-  forecastSummary(): string {
-    if (!this.forecast) return '';
-    if (this.forecast.remainingHours == null) {
-      return 'Add a playtime estimate to see a forecast.';
-    }
-    if (this.forecast.remainingHours <= 0) {
-      return 'You are already past the estimated playtime.';
-    }
-    if (this.forecast.projectedCompletionDate) {
-      const sessions = this.forecast.sessionsToCompletion ?? 0;
-      const date = formatShortDate(this.forecast.projectedCompletionDate);
-      return `${sessions} session${sessions === 1 ? '' : 's'} to finish · ETA ${date}`;
-    }
-    if (this.forecast.weeksAtCurrentPace != null) {
-      return `Need ${this.forecastHours(this.forecast.additionalHoursNeeded)} more · ~${this.forecast.weeksAtCurrentPace} weeks at ${this.forecastHours(this.forecast.weeklyHours)}/week`;
-    }
-    return `Need ${this.forecastHours(this.forecast.additionalHoursNeeded)} more — schedule sessions to project an ETA.`;
-  }
-
-  forecastHours(value: number): string {
-    return `${Math.round(value * 10) / 10}h`;
-  }
-
-  forecastProgress(): number {
-    if (!this.forecast?.playtimeEstimateHours || this.forecast.playtimeEstimateHours <= 0) return 0;
-    return Math.min(1, this.forecast.playedHours / this.forecast.playtimeEstimateHours);
-  }
-
-  get forecastBarParts(): { played: number; scheduled: number; remaining: number; total: number } {
-    const f = this.forecast;
-    if (!f) return { played: 0, scheduled: 0, remaining: 0, total: 0 };
-
-    const played = Math.max(0, f.playedHours ?? 0);
-    const remainingTotal = f.remainingHours != null
-      ? Math.max(0, f.remainingHours)
-      : Math.max(0, (f.playtimeEstimateHours ?? 0) - played);
-    const scheduled = Math.min(Math.max(0, f.scheduledHours ?? 0), remainingTotal);
-    const remaining = Math.max(0, remainingTotal - scheduled);
-
-    return { played, scheduled, remaining, total: played + scheduled + remaining };
-  }
-
-  forecastWidth(segment: 'played' | 'scheduled' | 'remaining'): number {
-    const parts = this.forecastBarParts;
-    if (parts.total <= 0) return 0;
-    const value =
-      segment === 'played' ? parts.played : segment === 'scheduled' ? parts.scheduled : parts.remaining;
-    return Math.round((value / parts.total) * 1000) / 10;
   }
 
   goToPlanning(): void {

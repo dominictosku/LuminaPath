@@ -1,6 +1,5 @@
 
 import { Component, OnInit, effect, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
   IonButton,
@@ -8,19 +7,12 @@ import {
   IonIcon,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
-  IonModal,
   IonRefresher,
   IonRefresherContent,
-  IonSearchbar,
-  IonSegment,
-  IonSegmentButton,
-  IonSelect,
-  IonSelectOption,
   IonSkeletonText,
 } from '@ionic/angular/standalone';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Platforms } from '../../games/models/games.model';
-import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
 import { MediaMode, MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
@@ -32,6 +24,9 @@ import { MediaLibraryViewService } from '../services/media-library-view.service'
 import { GameStatus } from '../models/library-status.model';
 import { LibraryCardComponent } from '../components/library-card/library-card.component';
 import { LibraryListRowComponent } from '../components/library-list-row/library-list-row.component';
+import { LibraryHeroComponent } from '../components/library-hero/library-hero.component';
+import { LibraryToolbarComponent } from '../components/library-toolbar/library-toolbar.component';
+import { LibraryAddDialogComponent } from '../components/library-add-dialog/library-add-dialog.component';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 import { LibraryIntelligenceService } from '../services/library-intelligence.service';
 import {
@@ -50,23 +45,19 @@ import { buildPageFilter, LibraryFilterState } from '../library-filter.helpers';
   templateUrl: './library.page.html',
   styleUrls: ['./library.page.scss'],
   imports: [
-    FormsModule,
     IonButton,
     IonContent,
     IonIcon,
     IonInfiniteScroll,
     IonInfiniteScrollContent,
-    IonModal,
     IonRefresher,
     IonRefresherContent,
-    IonSearchbar,
-    IonSegment,
-    IonSegmentButton,
-    IonSelect,
-    IonSelectOption,
     IonSkeletonText,
     LibraryCardComponent,
-    LibraryListRowComponent
+    LibraryListRowComponent,
+    LibraryHeroComponent,
+    LibraryToolbarComponent,
+    LibraryAddDialogComponent,
 ],
 })
 export class LibraryPage implements OnInit {
@@ -401,48 +392,19 @@ export class LibraryPage implements OnInit {
     this.nextBestGame = summary.nextBestGame;
   }
 
-  imageFor(game: MediaItem): string {
-    return mediaImageUrl(game.image);
-  }
-
-  platformLabel(value: number | null | undefined): string {
-    return this.mediaView.platformLabel(value);
-  }
-
+  // Only the three labels used by the inline "finish-pick" section remain
+  // on the page. Display helpers consumed by sub-components are reached
+  // through MediaLibraryViewService injected inside those components.
   statusLabel(game: MediaItem): string {
     return this.mediaView.statusLabel(game, this.mediaMode);
-  }
-
-  releaseLabel(game: MediaItem): string {
-    return this.mediaView.releaseLabel(game);
   }
 
   progressOf(game: MediaItem): number {
     return this.mediaView.progressOf(game, this.mediaMode);
   }
 
-  playedLabel(game: MediaItem): string {
-    return this.mediaView.playedLabel(game, this.mediaMode);
-  }
-
   remainingLabel(game: MediaItem): string {
     return this.mediaView.remainingLabel(game, this.mediaMode);
-  }
-
-  durationLabel(game: MediaItem): string {
-    return this.mediaView.durationLabel(game, this.mediaMode);
-  }
-
-  episodeLabel(game: MediaItem): string {
-    return this.mediaView.episodeLabel(game, this.mediaMode);
-  }
-
-  mediaTypeLabel(game: MediaItem): string {
-    return this.mediaView.mediaTypeLabel(game, this.mediaMode);
-  }
-
-  hasLibraryEntry(game: MediaItem): boolean {
-    return this.mediaView.hasLibraryEntry(game);
   }
 
   trackByGameId(_: number, game: MediaItem): number {

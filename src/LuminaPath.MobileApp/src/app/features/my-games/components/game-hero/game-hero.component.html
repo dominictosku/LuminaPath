@@ -1,0 +1,45 @@
+<section class="hero-card">
+  <div class="hero-backdrop" [style.background-image]="'url(' + imageUrl() + ')'"></div>
+  <div class="hero-inner">
+    <div class="cover-wrap">
+      <img [src]="imageUrl()" [alt]="game().name" class="cover" />
+      <ion-badge class="library-badge" [class.library-badge--owned]="isInLibrary()">
+        <ion-icon name="library-outline"></ion-icon>
+        {{ libraryStatusLabel() }}
+      </ion-badge>
+    </div>
+    <div class="hero-copy">
+      <span class="eyebrow">Game details</span>
+      <h1>{{ game().name }}</h1>
+      @if (hasParent()) {
+        <a
+          class="parent-link"
+          [routerLink]="['/library/games', game().parentGameId]">
+          <ion-icon name="return-up-back-outline"></ion-icon>
+          DLC of {{ game().parentGameName || 'parent game' }}
+        </a>
+      }
+      @if (game().description) {
+        <p class="description">{{ game().description }}</p>
+      }
+      <div class="meta-grid">
+        <div class="meta-item">
+          <span>Genre</span>
+          <strong>{{ genreLabel() }}</strong>
+        </div>
+        <div class="meta-item">
+          <span>Platform</span>
+          <strong>{{ platformLabel() }}</strong>
+        </div>
+        <div class="meta-item">
+          <span>Release</span>
+          <strong>{{ releaseLabel() }}</strong>
+        </div>
+        <div class="meta-item">
+          <span>Playtime</span>
+          <strong>{{ playtimeLabel() }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

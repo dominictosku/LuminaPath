@@ -134,8 +134,8 @@ describe('MyGameDetailsPage', () => {
 
     expect(component.achievements.length).toBe(1);
     expect(component.achievements[0].title).toBe('First jump');
-    expect(component.achievementSummaryLabel).toBe('1 earned');
-    expect(component.trophyTypeLabel(component.achievements[0].trophyType)).toBe('Bronze');
+    // Display labels (summary, trophy type) live on GameTrophiesComponent —
+    // covered by its own spec.
   });
 
   it('smoke-checks the details tab state without a backend', () => {

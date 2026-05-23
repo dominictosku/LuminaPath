@@ -49,51 +49,17 @@
 
   @if (!isLoading && !errorMessage && game) {
     <main class="details-page">
-      <section class="hero-card">
-        <div class="hero-backdrop" [style.background-image]="'url(' + imageUrl() + ')'"></div>
-        <div class="hero-inner">
-          <div class="cover-wrap">
-            <img [src]="imageUrl()" [alt]="game.name" class="cover" />
-            <ion-badge class="library-badge" [class.library-badge--owned]="isInLibrary">
-              <ion-icon name="library-outline"></ion-icon>
-              {{ libraryStatusLabel }}
-            </ion-badge>
-          </div>
-          <div class="hero-copy">
-            <span class="eyebrow">Game details</span>
-            <h1>{{ game.name }}</h1>
-            @if (hasParent) {
-              <a
-                class="parent-link"
-                [routerLink]="['/library/games', game.parentGameId]">
-                <ion-icon name="return-up-back-outline"></ion-icon>
-                DLC of {{ game.parentGameName || 'parent game' }}
-              </a>
-            }
-            @if (game.description) {
-              <p class="description">{{ game.description }}</p>
-            }
-            <div class="meta-grid">
-              <div class="meta-item">
-                <span>Genre</span>
-                <strong>{{ genreLabel }}</strong>
-              </div>
-              <div class="meta-item">
-                <span>Platform</span>
-                <strong>{{ platformLabel }}</strong>
-              </div>
-              <div class="meta-item">
-                <span>Release</span>
-                <strong>{{ releaseLabel }}</strong>
-              </div>
-              <div class="meta-item">
-                <span>Playtime</span>
-                <strong>{{ playtimeLabel }}</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <app-game-hero
+        [game]="game"
+        [imageUrl]="imageUrl()"
+        [libraryStatusLabel]="libraryStatusLabel"
+        [isInLibrary]="isInLibrary"
+        [hasParent]="hasParent"
+        [genreLabel]="genreLabel"
+        [platformLabel]="platformLabel"
+        [releaseLabel]="releaseLabel"
+        [playtimeLabel]="playtimeLabel" />
+
       <section class="quick-actions">
         @if (!isInLibrary) {
           <ion-button
@@ -124,6 +90,7 @@
           </ion-button>
         }
       </section>
+
       <ion-segment class="detail-tabs" [value]="selectedTab" (ionChange)="setDetailTab($any($event).detail.value)">
         <ion-segment-button value="overview">
           <ion-label>Overview</ion-label>
@@ -135,146 +102,24 @@
           <ion-label>News</ion-label>
         </ion-segment-button>
       </ion-segment>
+
       @if (selectedTab === 'overview' && dlcs.length) {
-        <section class="quest-panel dlc-panel">
-          <header class="section-header">
-            <div>
-              <span class="eyebrow">
-                <ion-icon name="cube-outline"></ion-icon>
-                Downloadable content
-              </span>
-              <h2>{{ dlcs.length }} DLC{{ dlcs.length === 1 ? '' : 's' }}</h2>
-            </div>
-          </header>
-          <div class="dlc-list">
-            @for (dlc of dlcs; track trackByDlc($index, dlc)) {
-              <a
-                class="dlc-card"
-                [routerLink]="['/library/games', dlc.id]">
-                @if (dlc.image) {
-                  <img [src]="dlcImageUrl(dlc)" [alt]="dlc.name" loading="lazy" decoding="async" />
-                }
-                <div class="dlc-body">
-                  <h3>{{ dlc.name }}</h3>
-                  <span>{{ dlcReleaseLabel(dlc) }}</span>
-                </div>
-              </a>
-            }
-          </div>
-        </section>
+        <app-game-dlc-list [dlcs]="dlcs" />
       }
+
       @if (selectedTab === 'overview' && forecast) {
-        <section class="quest-panel forecast-panel">
-          <header class="section-header">
-            <div>
-              <span class="eyebrow">
-                <ion-icon name="hourglass-outline"></ion-icon>
-                Completion forecast
-              </span>
-              <h2>How long until you finish</h2>
-            </div>
-            <ion-button fill="clear" size="small" (click)="goToPlanning()">Plan sessions</ion-button>
-          </header>
-          @if (forecastBarParts.total > 0) {
-            <div class="forecast-bar">
-              <div class="forecast-bar__track">
-                <span
-                  class="forecast-bar__seg forecast-bar__seg--played"
-                  [style.width.%]="forecastWidth('played')"
-                  [attr.aria-label]="'Played ' + forecastHours(forecast.playedHours)"></span>
-                <span
-                  class="forecast-bar__seg forecast-bar__seg--scheduled"
-                  [style.width.%]="forecastWidth('scheduled')"
-                  [attr.aria-label]="'Scheduled ' + forecastHours(forecast.scheduledHours)"></span>
-                <span
-                  class="forecast-bar__seg forecast-bar__seg--remaining"
-                  [style.width.%]="forecastWidth('remaining')"></span>
-              </div>
-              <div class="forecast-bar__legend">
-                <span class="forecast-bar__chip">
-                  <i class="forecast-dot forecast-dot--played"></i>
-                  Played <strong>{{ forecastHours(forecast.playedHours) }}</strong>
-                </span>
-                <span class="forecast-bar__chip">
-                  <i class="forecast-dot forecast-dot--scheduled"></i>
-                  Scheduled <strong>{{ forecastHours(forecast.scheduledHours) }}</strong>
-                </span>
-                <span class="forecast-bar__chip">
-                  <i class="forecast-dot forecast-dot--remaining"></i>
-                  Remaining <strong>{{ forecast.remainingHours === null ? '—' : forecastHours(forecast.remainingHours) }}</strong>
-                </span>
-                <span class="forecast-bar__chip forecast-bar__chip--pace">
-                  <ion-icon name="hourglass-outline"></ion-icon>
-                  <strong>{{ forecastHours(forecast.weeklyHours) }}</strong> / wk
-                </span>
-              </div>
-            </div>
-          } @else {
-            <ion-progress-bar [value]="forecastProgress()"></ion-progress-bar>
-          }
-          <p class="forecast-summary">{{ forecastSummary() }}</p>
-        </section>
+        <app-game-forecast
+          [forecast]="forecast"
+          (goToPlanning)="goToPlanning()" />
       }
+
       @if (selectedTab === 'progress' && isInLibrary) {
-        <section class="quest-panel trophies-panel">
-          <header class="section-header trophies-header">
-            <div>
-              <span class="eyebrow">
-                <ion-icon name="trophy-outline"></ion-icon>
-                Trophies
-              </span>
-              <h2>Unlocked by you</h2>
-            </div>
-            <ion-badge>{{ achievementSummaryLabel }}</ion-badge>
-          </header>
-          @if (isAchievementsLoading) {
-            <app-empty-state
-              variant="locked"
-              [loading]="true"
-              title="Loading trophies"
-              message="Checking the achievements synced for this game." />
-          }
-          @if (!isAchievementsLoading && achievementsErrorMessage) {
-            <app-empty-state
-              variant="locked"
-              icon="alert-circle-outline"
-              title="Trophies unavailable"
-              [message]="achievementsErrorMessage" />
-          }
-          @if (!isAchievementsLoading && !achievementsErrorMessage && !achievements.length) {
-            <app-empty-state
-              icon="trophy-outline"
-              title="No trophies synced yet"
-              message="Run a Steam or PSN sync to fill this shelf." />
-          }
-          @if (!isAchievementsLoading && !achievementsErrorMessage && achievements.length) {
-            <div class="trophy-grid">
-              @for (achievement of achievements; track trackByAchievement($index, achievement)) {
-                <article class="trophy-card">
-                  <div class="trophy-card__icon">
-                    @if (achievement.iconUrl) {
-                      <img [src]="achievement.iconUrl" [alt]="achievement.title" loading="lazy" decoding="async" />
-                    } @else {
-                      <ion-icon name="trophy-outline"></ion-icon>
-                    }
-                  </div>
-                  <div class="trophy-card__body">
-                    <div class="trophy-card__meta">
-                      <span>{{ achievement.providerName }}</span>
-                      <span>{{ trophyTypeLabel(achievement.trophyType) }}</span>
-                    </div>
-                    <h3>{{ achievement.title }}</h3>
-                    @if (achievement.description) {
-                      <p>{{ achievement.description }}</p>
-                    }
-                    <time>{{ achievementDateLabel(achievement) }}</time>
-                  </div>
-                </article>
-              }
-            </div>
-          }
-        </section>
+        <app-game-trophies
+          [achievements]="achievements"
+          [isLoading]="isAchievementsLoading"
+          [errorMessage]="achievementsErrorMessage" />
       }
+
       @if (selectedTab === 'overview') {
         <app-game-notes
           [isInLibrary]="isInLibrary"
