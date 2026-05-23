@@ -3,14 +3,20 @@
   class="quest-card"
   [class.quest-card--done]="q.completed"
   [class.quest-card--selected]="expanded()"
-  [attr.data-due]="dueState()">
+  [class.quest-card--celebrating]="recentlyCompleted()"
+  [attr.data-due]="dueState()"
+  [attr.data-type]="q.type"
+  [attr.data-priority]="q.priority">
   <button
     type="button"
     class="complete-button"
     aria-label="Toggle complete"
     (click)="toggleComplete.emit(q)">
-    <ion-icon [name]="q.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
+    <ion-icon [name]="q.completed ? 'checkmark-circle' : 'ellipse-outline'"></ion-icon>
   </button>
+  <!-- Floating "+XP" badge — anchored to the card; the keyframe lifts +
+       fades it. Hidden by default; .quest-card--celebrating triggers it. -->
+  <span class="quest-card__xp-pop" aria-hidden="true">+{{ q.rewardXp }} XP</span>
   <div
     class="quest-body"
     role="button"
@@ -23,6 +29,12 @@
       {{ typeLabel()(q.type) }}
       <span class="dot"></span>
       {{ priorityLabel()(q.priority) }}
+      @if (q.rewardXp > 0 && !q.completed) {
+        <span class="quest-xp-chip" aria-label="Reward XP">
+          <ion-icon name="flash"></ion-icon>
+          {{ q.rewardXp }}
+        </span>
+      }
     </span>
     <h3>{{ q.title }}</h3>
     @if (q.notes) {

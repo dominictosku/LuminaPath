@@ -30,6 +30,12 @@ export class QuestCardComponent {
   readonly quest = input.required<Quest>();
   readonly expanded = input<boolean>(false);
   readonly manualOrderActive = input<boolean>(false);
+  /**
+   * When true, the card runs its celebration animation (scale+glow,
+   * floating +XP badge). Owned by the page so it can clear after the
+   * keyframe duration without the card needing a timer of its own.
+   */
+  readonly recentlyCompleted = input<boolean>(false);
 
   // Parent-provided lookups — these depend on the page's typeOptions /
   // priorityOptions / recurrenceOptions arrays, so we don't duplicate them.

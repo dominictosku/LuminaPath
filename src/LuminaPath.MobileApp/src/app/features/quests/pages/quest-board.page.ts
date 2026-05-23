@@ -227,6 +227,16 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   private pendingDeletes = new Map<number, PendingDelete>();
   private undoToastTimer: number | undefined;
 
+  /**
+   * IDs of quests whose celebration animation is still in flight. The
+   * card reads this via `[recentlyCompleted]` to add a CSS class that
+   * runs the scale+glow keyframe and the floating "+XP" badge. Cleared
+   * per-id by `celebrationTimers` after the animation duration.
+   */
+  recentlyCompletedIds = new Set<number>();
+  private celebrationTimers = new Map<number, number>();
+  private static readonly CELEBRATION_MS = 1200;
+
   // Bound callables passed to presentational sub-components so their templates
   // can reach helper logic that depends on parent state (e.g. label lookups,
   // counts, the subtask draft map). Bound up-front to keep stable references.
@@ -249,9 +259,37 @@ export class QuestBoardPage implements OnInit, OnDestroy {
       window.clearTimeout(pending.timeoutId);
     }
     this.pendingDeletes.clear();
+    for (const timerId of this.celebrationTimers.values()) {
+      window.clearTimeout(timerId);
+    }
+    this.celebrationTimers.clear();
     if (this.undoToastTimer) {
       window.clearTimeout(this.undoToastTimer);
     }
+  }
+
+  private triggerCelebration(questId: number): void {
+    // If the user re-completes the same quest before the previous
+    // celebration finishes, reset the timer so the animation re-runs
+    // cleanly rather than truncating.
+    const existing = this.celebrationTimers.get(questId);
+    if (existing !== undefined) {
+      window.clearTimeout(existing);
+    }
+    // Re-create the Set so OnPush descendants see a new reference if
+    // we later swap to a signal-backed equivalent.
+    this.recentlyCompletedIds = new Set(this.recentlyCompletedIds).add(questId);
+    const timerId = window.setTimeout(() => {
+      const next = new Set(this.recentlyCompletedIds);
+      next.delete(questId);
+      this.recentlyCompletedIds = next;
+      this.celebrationTimers.delete(questId);
+    }, QuestBoardPage.CELEBRATION_MS);
+    this.celebrationTimers.set(questId, timerId);
+  }
+
+  isRecentlyCompleted(questId: number): boolean {
+    return this.recentlyCompletedIds.has(questId);
   }
 
   // -------- Filters & sorting (delegated to quest-sections.builder) --------
@@ -401,6 +439,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
       }
       this.applyMutationMeta(mutation);
       if (mutation.quest.completed) {
+        this.triggerCelebration(mutation.quest.id);
         const xpParts = [`+${mutation.quest.rewardXp} XP`];
         if (mutation.awardedSkillXp && mutation.awardedSkillXp > 0) {
           xpParts.push(`+${mutation.awardedSkillXp} skill XP`);

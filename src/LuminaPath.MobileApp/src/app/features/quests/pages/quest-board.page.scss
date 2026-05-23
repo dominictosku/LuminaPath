@@ -317,60 +317,252 @@ input, textarea, select { min-width: 0; color: var(--ink); }
 .search-field > input { height: 42px; border: 0; background: transparent; outline: 0; }
 .tag-chip--clear { background: transparent; color: var(--muted); }
 
+/* Tone-tinted section icons. Each tone is a 135° gradient ending in its
+   own accent + a coloured ambient halo, so the "Overdue / Today / Later"
+   triage colour reads at a glance without leaning on text alone. */
 .section-icon {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
   color: #fff;
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
+  box-shadow: 0 12px 26px rgba(96, 165, 250, 0.32);
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-.section-icon { width: 42px; height: 42px; border-radius: 15px; background: var(--accent); }
-.quest-section--danger .section-icon { background: var(--danger); }
-.quest-section--warning .section-icon { background: var(--warning); }
-.quest-section--muted .section-icon { background: #64748b; }
+.quest-section__header:hover .section-icon { transform: translateY(-1px) scale(1.04); }
+.quest-section--danger .section-icon {
+  background: linear-gradient(135deg, #fb7185, #be123c);
+  box-shadow: 0 12px 26px rgba(251, 113, 133, 0.36);
+}
+.quest-section--warning .section-icon {
+  background: linear-gradient(135deg, #fbbf24, #b45309);
+  box-shadow: 0 12px 26px rgba(251, 191, 36, 0.34);
+}
+.quest-section--muted .section-icon {
+  background: linear-gradient(135deg, #94a3b8, #475569);
+  box-shadow: 0 12px 26px rgba(148, 163, 184, 0.24);
+}
 .quest-section h2, .section-header h2 { color: var(--ink); font-size: 1.24rem; }
 
-/* Component host (the `<app-quest-card>` element) sits inside the
-   .quest-stack grid. Set it to block + min-width: 0 so it can shrink
-   inside the 1fr column instead of forcing the section wider. */
+/* ============================================================================
+   QUEST CARD — gamified treatment
+   ----------------------------------------------------------------------------
+   Three layered visual cues, all derived from quest data:
+     • data-type      → left-rail colour (main=gold, sub=blue, faction=purple)
+     • data-priority  → outer hover glow + persistent ambient on `high`
+     • data-due       → "overdue" ambient pulse (slow, ~2.4 s)
+
+   Plus motion:
+     • .quest-card--celebrating → 800 ms scale+glow + floating "+XP" badge
+     • Entrance stagger via `--enter-index` set inline on the host
+     • Hover lift (-2px) + brightened ambient
+
+   None of this relies on JS layout — pure CSS reacts to attribute changes,
+   keeping the OnPush quest-card from forcing change detection passes.
+   ============================================================================ */
+
 app-quest-card {
   display: block;
   min-width: 0;
+  /* Entrance: tiny rise + fade on first paint inside a section. The page
+     sets `--enter-index` to the row's $index so cards stagger by 40 ms.
+     `both` keeps the post-animation state (opacity 1, transform none). */
+  animation: quest-card-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--enter-index, 0) * 40ms);
 }
+@keyframes quest-card-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  app-quest-card { animation: none; }
+}
+
 .quest-card {
+  position: relative;
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 38px;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
   gap: 10px;
   align-items: start;
-  padding: 11px;
+  padding: 12px;
+  /* Left rail = data-type colour (set below). Right/top/bottom stay
+     subtle — the rail does the heavy lifting visually. */
   border: 1px solid var(--line);
+  border-left: 3px solid var(--type-color, var(--accent));
   border-radius: 18px;
-  background: rgba(255,255,255,.06);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.02) 100%),
+    rgba(255, 255, 255, 0.04);
+  /* `--type-color` is a per-card variable, defaulting to the page accent
+     and overridden by the data-type rules below. Used by both the rail
+     and the complete-button hover/celebrate states. */
+  --type-color: var(--accent);
+  --type-glow: rgba(96, 165, 250, 0.22);
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 220ms ease;
 }
-.quest-card[data-due="overdue"] { border-left: 3px solid var(--danger); }
 
+/* Type-themed left rail + matching glow tint */
+.quest-card[data-type="main"]    { --type-color: #fbbf24; --type-glow: rgba(251, 191, 36, 0.26); }
+.quest-card[data-type="sub"]     { --type-color: #60a5fa; --type-glow: rgba(96, 165, 250, 0.24); }
+.quest-card[data-type="faction"] { --type-color: #a78bfa; --type-glow: rgba(167, 139, 250, 0.26); }
+
+/* Priority — high gets a persistent low-alpha glow so it stands out in
+   the stack without being noisy. Hovering any card lifts it. */
+.quest-card[data-priority="high"]:not(.quest-card--done) {
+  box-shadow: 0 0 0 1px rgba(251, 113, 133, 0.18), 0 14px 28px rgba(0, 0, 0, 0.18);
+}
+.quest-card:not(.quest-card--done):hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--type-color) 38%, var(--line));
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28), 0 0 0 1px var(--type-glow);
+}
+
+/* Overdue ambient pulse — slow, easy on the eyes. Skipped when done.
+   Layered over the existing hover/celebrate box-shadow via `outline`
+   so it doesn't fight them. */
+.quest-card[data-due="overdue"]:not(.quest-card--done) {
+  animation: quest-overdue-pulse 2.4s ease-in-out infinite;
+}
+@keyframes quest-overdue-pulse {
+  0%, 100% { outline: 1px solid rgba(251, 113, 133, 0.0); outline-offset: 0; }
+  50%      { outline: 1px solid rgba(251, 113, 133, 0.55); outline-offset: 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .quest-card[data-due="overdue"]:not(.quest-card--done) { animation: none; }
+}
+
+/* Celebration: scale+glow burst + the "+XP" badge floats up. Triggered
+   by .quest-card--celebrating (added for ~1.2 s by the page). */
+.quest-card--celebrating {
+  animation: quest-card-celebrate 800ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes quest-card-celebrate {
+  0%   { transform: scale(1);    box-shadow: 0 0 0 rgba(52, 211, 153, 0); }
+  25%  { transform: scale(1.025); box-shadow: 0 0 30px rgba(52, 211, 153, 0.55), 0 0 0 1px rgba(52, 211, 153, 0.6); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 rgba(52, 211, 153, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .quest-card--celebrating { animation: none; }
+}
+
+/* Floating "+XP" badge — anchored near the complete button. Hidden
+   until celebration kicks in. `pointer-events: none` so it doesn't
+   intercept taps as it floats up. */
+.quest-card__xp-pop {
+  position: absolute;
+  top: 10px;
+  left: 56px;
+  z-index: 2;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(52, 211, 153, 0.18);
+  color: #6ee7b7;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 12px rgba(52, 211, 153, 0.5);
+  opacity: 0;
+  pointer-events: none;
+}
+.quest-card--celebrating .quest-card__xp-pop {
+  animation: quest-xp-float 1200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes quest-xp-float {
+  0%   { opacity: 0; transform: translateY(0)    scale(0.6); }
+  18%  { opacity: 1; transform: translateY(-6px) scale(1.08); }
+  100% { opacity: 0; transform: translateY(-40px) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .quest-card--celebrating .quest-card__xp-pop { animation: none; }
+}
+
+/* Complete button — outline-circle → filled checkmark on complete.
+   Adopts the card's type colour on hover so completion feels personal
+   to the quest type. */
 .complete-button, .delete-button, .modal-close, .skill-card-actions button, .subtask-toggle, .subtask-delete, .subtask-add-button {
   display: grid;
   place-items: center;
   border: 0;
   cursor: pointer;
 }
-.complete-button, .delete-button, .modal-close { width: 38px; height: 38px; border-radius: 14px; }
-.complete-button { color: var(--accent); background: var(--accent-soft); }
-.delete-button { color: var(--muted); background: transparent; }
+.complete-button, .delete-button, .modal-close { width: 40px; height: 40px; border-radius: 14px; }
+.complete-button {
+  color: var(--type-color);
+  background: color-mix(in srgb, var(--type-color) 14%, transparent);
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 180ms ease,
+    color 180ms ease;
+}
+.complete-button ion-icon {
+  font-size: 1.5rem;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.complete-button:hover {
+  transform: scale(1.08);
+  background: color-mix(in srgb, var(--type-color) 24%, transparent);
+}
+.complete-button:active { transform: scale(0.92); }
+.quest-card--done .complete-button {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.18);
+}
+.quest-card--done .complete-button ion-icon { transform: scale(1.08); }
+.delete-button {
+  color: var(--muted);
+  background: transparent;
+  transition: color 180ms ease, background 180ms ease;
+}
+.delete-button:hover { color: var(--danger); background: rgba(251, 113, 133, 0.1); }
+
 .quest-body { min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
 .quest-kicker {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  flex-wrap: wrap;
+  gap: 6px;
   color: var(--muted);
   font-size: .7rem;
   font-weight: 800;
   text-transform: uppercase;
 }
+.quest-kicker ion-icon { color: var(--type-color); font-size: 0.92rem; }
 .dot { width: 3px; height: 3px; border-radius: 999px; background: currentColor; opacity: .55; }
+
+/* XP chip — small amber badge with a lightning glyph. Hidden once the
+   quest is completed (its purpose is showing "what you'd earn"). */
+.quest-xp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  padding: 2px 7px 2px 5px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.14);
+  color: #fbbf24;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.quest-xp-chip ion-icon { font-size: 0.78rem; color: #fbbf24; }
+
 .quest-card h3 { color: var(--ink); font-size: .98rem; font-weight: 760; line-height: 1.3; word-break: break-word; }
-.quest-card--done h3 { color: var(--muted); text-decoration: line-through; }
+.quest-card--done h3 {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: rgba(52, 211, 153, 0.55);
+  text-decoration-thickness: 2px;
+}
 .quest-notes { overflow: hidden; line-height: 1.4; }
+
 
 /* ----- Compact list view --------------------------------------------------
    Single-line dense rows. Used as an alternate to `<app-quest-card>` when
@@ -394,6 +586,13 @@ app-quest-card {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
 }
+/* Type-coloured left rail — mirrors the gamified card so the colour
+   cue stays consistent across both views. Declared *before* the
+   data-due overdue rule so overdue still wins the cascade and reads as
+   red regardless of quest type. */
+.quest-compact__row[data-type="main"]    { border-left: 3px solid #fbbf24; }
+.quest-compact__row[data-type="sub"]     { border-left: 3px solid #60a5fa; }
+.quest-compact__row[data-type="faction"] { border-left: 3px solid #a78bfa; }
 .quest-compact__row[data-due="overdue"] { border-left: 3px solid var(--danger); }
 .quest-compact__row--done .quest-compact__title { color: var(--muted); text-decoration: line-through; }
 

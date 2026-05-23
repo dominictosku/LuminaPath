@@ -106,15 +106,17 @@
                   class="quest-stack"
                   [disabled]="!isManualOrderActive"
                   (ionItemReorder)="handleReorder($any($event), section.quests)">
-                  @for (quest of section.quests; track trackByQuest($index, quest)) {
+                  @for (quest of section.quests; track trackByQuest($index, quest); let i = $index) {
                     <app-quest-card
                       [quest]="quest"
                       [expanded]="expandedQuestId === quest.id"
                       [manualOrderActive]="isManualOrderActive"
+                      [recentlyCompleted]="isRecentlyCompleted(quest.id)"
                       [typeIcon]="typeIconFn"
                       [typeLabel]="typeLabelFn"
                       [priorityLabel]="priorityLabelFn"
                       [recurrenceLabel]="recurrenceLabelFn"
+                      [style.--enter-index]="i"
                       (toggleComplete)="toggleQuest($event)"
                       (expand)="toggleExpand($event)"
                       (scheduleToday)="scheduleToday($event)"
@@ -129,7 +131,8 @@
                     <li
                       class="quest-compact__row"
                       [class.quest-compact__row--done]="quest.completed"
-                      [attr.data-due]="dueStateOf(quest)">
+                      [attr.data-due]="dueStateOf(quest)"
+                      [attr.data-type]="quest.type">
                       <button
                         type="button"
                         class="quest-compact__check"
