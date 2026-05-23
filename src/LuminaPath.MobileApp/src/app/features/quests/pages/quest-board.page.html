@@ -81,27 +81,44 @@
               </div>
               <ion-badge>{{ section.quests.length }}</ion-badge>
             </header>
-            <ion-reorder-group
-              class="quest-stack"
-              [disabled]="!isManualOrderActive"
-              (ionItemReorder)="handleReorder($any($event), section.quests)">
-              @for (quest of section.quests; track trackByQuest($index, quest)) {
-                <app-quest-card
-                  [quest]="quest"
-                  [expanded]="expandedQuestId === quest.id"
-                  [manualOrderActive]="isManualOrderActive"
-                  [typeIcon]="typeIconFn"
-                  [typeLabel]="typeLabelFn"
-                  [priorityLabel]="priorityLabelFn"
-                  [recurrenceLabel]="recurrenceLabelFn"
-                  (toggleComplete)="toggleQuest($event)"
-                  (expand)="toggleExpand($event)"
-                  (scheduleToday)="scheduleToday($event)"
-                  (scheduleTomorrow)="scheduleTomorrow($event)"
-                  (clearDueDate)="clearQuestDueDate($event)"
-                  (requestDelete)="beginDelete($event)" />
-              }
-            </ion-reorder-group>
+            <!--
+              `@defer (on viewport)` keeps off-screen sections from rendering
+              their card list at all on the first paint. Reorder is preserved
+              inside each section because once a section mounts, its cards
+              stay in DOM (we deliberately avoid true window-virtualisation
+              here — `ion-reorder-group` needs stable DOM nodes for the
+              drag-to-reorder gesture). The placeholder is a low-cost
+              skeleton so the page height doesn't pop when the cards arrive.
+            -->
+            @defer (on viewport; prefetch on idle) {
+              <ion-reorder-group
+                class="quest-stack"
+                [disabled]="!isManualOrderActive"
+                (ionItemReorder)="handleReorder($any($event), section.quests)">
+                @for (quest of section.quests; track trackByQuest($index, quest)) {
+                  <app-quest-card
+                    [quest]="quest"
+                    [expanded]="expandedQuestId === quest.id"
+                    [manualOrderActive]="isManualOrderActive"
+                    [typeIcon]="typeIconFn"
+                    [typeLabel]="typeLabelFn"
+                    [priorityLabel]="priorityLabelFn"
+                    [recurrenceLabel]="recurrenceLabelFn"
+                    (toggleComplete)="toggleQuest($event)"
+                    (expand)="toggleExpand($event)"
+                    (scheduleToday)="scheduleToday($event)"
+                    (scheduleTomorrow)="scheduleTomorrow($event)"
+                    (clearDueDate)="clearQuestDueDate($event)"
+                    (requestDelete)="beginDelete($event)" />
+                }
+              </ion-reorder-group>
+            } @placeholder (minimum 100ms) {
+              <div class="quest-stack quest-stack--deferred" aria-hidden="true">
+                @for (_ of section.quests.slice(0, 3); track $index) {
+                  <div class="quest-stack__skeleton"></div>
+                }
+              </div>
+            }
           </section>
         }
       </section>

@@ -1,10 +1,13 @@
 :host {
-  --tab-surface: rgba(255, 255, 255, 0.86);
-  --tab-border: rgba(17, 24, 39, 0.1);
-  --tab-ink: #667085;
-  --tab-active: #111827;
-  --tab-accent: #2563eb;
-  --tab-accent-soft: rgba(37, 99, 235, 0.14);
+  /* Always-dark tokens (the app-wide commitment from global.scss / the
+     library page). Previously this had a light default with a dark
+     media-query override. */
+  --tab-surface: rgba(17, 24, 39, 0.82);
+  --tab-border: rgba(255, 255, 255, 0.1);
+  --tab-ink: #98a2b3;
+  --tab-active: #f8fafc;
+  --tab-accent: #60a5fa;
+  --tab-accent-soft: rgba(96, 165, 250, 0.16);
 }
 
 .app-tabs {
@@ -22,7 +25,7 @@
     border: 1px solid var(--tab-border);
     border-radius: 28px;
     background: var(--tab-surface);
-    box-shadow: 0 18px 48px rgba(16, 24, 40, 0.18);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(22px) saturate(1.35);
     overflow: hidden;
     contain: layout paint;
@@ -190,17 +193,3 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :host {
-    --tab-surface: rgba(17, 24, 39, 0.82);
-    --tab-border: rgba(255, 255, 255, 0.1);
-    --tab-ink: #98a2b3;
-    --tab-active: #f8fafc;
-    --tab-accent: #60a5fa;
-    --tab-accent-soft: rgba(96, 165, 250, 0.16);
-  }
-
-  .app-tabs ion-tab-bar.floating-tab-bar {
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
-  }
-}

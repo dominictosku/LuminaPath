@@ -1,16 +1,18 @@
 // Page-level theme tokens cascade into every dashboard sub-component
 // because CSS custom properties ignore Angular view encapsulation.
+// Always-dark — see `library.page.scss` / `global.scss` for the broader
+// app-wide commitment to a single dark visual identity.
 :host {
-  --dashboard-bg: #f6f7fb;
-  --ink: #111827;
-  --muted: #667085;
-  --line: rgba(17, 24, 39, 0.09);
-  --surface: rgba(255, 255, 255, 0.88);
-  --surface-strong: #ffffff;
-  --accent: #2563eb;
-  --success: #059669;
-  --warning: #d97706;
-  --danger: #e11d48;
+  --dashboard-bg: #070b12;
+  --ink: #eef2ff;
+  --muted: #98a2b3;
+  --line: rgba(255, 255, 255, 0.1);
+  --surface: rgba(18, 24, 38, 0.86);
+  --surface-strong: #111827;
+  --accent: #60a5fa;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #fb7185;
 }
 
 .dashboard-shell {
@@ -36,8 +38,8 @@
   padding: 14px 16px;
   border: 1px solid rgba(225, 29, 72, 0.2);
   border-radius: 18px;
-  color: #9f1239;
-  background: #fff1f2;
+  color: #fecdd3;
+  background: rgba(127, 29, 29, 0.36);
 }
 
 @media (min-width: 760px) {
@@ -58,18 +60,3 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :host {
-    --dashboard-bg: #070b12;
-    --ink: #eef2ff;
-    --muted: #98a2b3;
-    --line: rgba(255, 255, 255, 0.1);
-    --surface: rgba(18, 24, 38, 0.86);
-    --surface-strong: #111827;
-  }
-
-  .notice {
-    color: #fecdd3;
-    background: rgba(127, 29, 29, 0.36);
-  }
-}

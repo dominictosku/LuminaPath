@@ -1,11 +1,12 @@
 :host {
-  --header-bg: rgba(247, 250, 255, 0.84);
-  --header-border: rgba(15, 23, 42, 0.09);
-  --ink: #0f172a;
-  --muted: #64748b;
-  --accent: var(--app-theme-accent, #2563eb);
-  --accent-2: var(--app-theme-accent-2, #0891b2);
-  --accent-soft: var(--app-theme-accent-soft, rgba(37, 99, 235, 0.11));
+  /* Always-dark — see global.scss / library.page.scss. */
+  --header-bg: rgba(17, 24, 39, 0.78);
+  --header-border: rgba(255, 255, 255, 0.1);
+  --ink: #f8fafc;
+  --muted: #98a2b3;
+  --accent: var(--app-theme-accent, #60a5fa);
+  --accent-2: var(--app-theme-accent-2, #22d3ee);
+  --accent-soft: var(--app-theme-accent-soft, rgba(96, 165, 250, 0.14));
 }
 
 .app-header {
@@ -139,7 +140,7 @@
 .nav-links a:hover,
 .nav-links a:focus-visible {
   color: var(--ink);
-  background: rgba(15, 23, 42, 0.055);
+  background: rgba(255, 255, 255, 0.075);
   transform: translateY(-1px);
 }
 
@@ -159,10 +160,10 @@
   width: 46px;
   height: 46px;
   place-items: center;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.64);
+  background: rgba(255, 255, 255, 0.055);
   cursor: pointer;
   transition:
     color 180ms ease,
@@ -340,10 +341,10 @@
   gap: 9px;
   min-height: 46px;
   padding: 5px 8px 5px 5px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.64);
+  background: rgba(255, 255, 255, 0.055);
   font: inherit;
   cursor: pointer;
 }
@@ -391,9 +392,9 @@
   gap: 8px;
   min-height: 46px;
   padding: 0 12px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.64);
+  background: rgba(255, 255, 255, 0.055);
   font-size: 0.84rem;
   font-weight: 820;
 }
@@ -537,34 +538,3 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :host {
-    --header-bg: rgba(17, 24, 39, 0.78);
-    --header-border: rgba(255, 255, 255, 0.1);
-    --ink: #f8fafc;
-    --muted: #98a2b3;
-    --accent: var(--app-theme-accent, #60a5fa);
-    --accent-2: var(--app-theme-accent-2, #22d3ee);
-    --accent-soft: var(--app-theme-accent-soft, rgba(96, 165, 250, 0.14));
-  }
-
-  .profile-button {
-    border-color: rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.055);
-  }
-
-  .icon-action {
-    border-color: rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.055);
-  }
-
-  .media-mode-button {
-    border-color: rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.055);
-  }
-
-  .nav-links a:hover,
-  .nav-links a:focus-visible {
-    background: rgba(255, 255, 255, 0.075);
-  }
-}

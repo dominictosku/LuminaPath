@@ -10,7 +10,7 @@
   border: 1px solid var(--line);
   border-radius: 28px;
   background: var(--surface);
-  box-shadow: 0 18px 46px rgba(16, 24, 40, 0.08);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
   color: #fff;
   isolation: isolate;
 }
@@ -93,7 +93,7 @@
 .hero--loading {
   min-height: 340px;
   padding: 24px;
-  background: #e9edf5;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .hero--loading ion-skeleton-text {
@@ -128,8 +128,3 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .hero {
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
-  }
-}

@@ -146,6 +146,29 @@ ion-segment-button {
 }
 
 .quick-add-card, .board-toolbar, .quest-section { padding: 14px; border-radius: 22px; }
+
+/* Deferred-section placeholder: matches the rough height of a few quest
+   cards so the page doesn't reflow when the real cards mount on scroll-in. */
+.quest-stack--deferred {
+  pointer-events: none;
+  opacity: 0.55;
+}
+.quest-stack__skeleton {
+  height: 64px;
+  border-radius: 18px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.04)
+  );
+  background-size: 200% 100%;
+  animation: quest-skeleton-pulse 1.6s ease-in-out infinite;
+}
+@keyframes quest-skeleton-pulse {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
 .quick-add-row { display: grid; grid-template-columns: 1fr 46px; gap: 10px; align-items: center; }
 .quick-add-row ion-button { width: 46px; height: 46px; margin: 0; --border-radius: 15px; --background: var(--accent); }
 

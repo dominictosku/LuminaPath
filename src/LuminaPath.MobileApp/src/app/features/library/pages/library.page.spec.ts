@@ -138,7 +138,7 @@ describe('LibraryPage', () => {
 
     expect(mediaLibrary.getAll).toHaveBeenCalledTimes(1);
     expect(component.games.length).toBe(2);
-    expect(component.filteredGames.length).toBe(2);
+    expect(component.filteredGames().length).toBe(2);
     expect(component.isLoading).toBeFalse();
     expect(component.errorMessage).toBe('');
   }));
@@ -162,7 +162,7 @@ describe('LibraryPage', () => {
 
     expect(mediaLibrary.getAll).toHaveBeenCalledTimes(2);
     expect(component.games.map((game) => game.id)).toEqual([1, 2]);
-    expect(component.filteredGames.map((game) => game.id)).toEqual([1, 2]);
+    expect(component.filteredGames().map((game) => game.id)).toEqual([1, 2]);
     expect(component.hasMorePages).toBeFalse();
     expect(complete).toHaveBeenCalled();
   }));
@@ -201,7 +201,7 @@ describe('LibraryPage', () => {
     tick();
 
     expect(component.games).toEqual([]);
-    expect(component.filteredGames).toEqual([]);
+    expect(component.filteredGames()).toEqual([]);
     expect(component.errorMessage).toBe('Games could not be loaded.');
     expect(component.isLoading).toBeFalse();
   }));

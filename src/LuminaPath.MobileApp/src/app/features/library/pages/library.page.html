@@ -1,4 +1,8 @@
-<ion-content [fullscreen]="true" class="library-shell">
+<ion-content
+  [fullscreen]="true"
+  class="library-shell"
+  [scrollEvents]="true"
+  (ionScroll)="onContentScroll($event)">
   <ion-refresher slot="fixed" (ionRefresh)="loadGames($event)">
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
@@ -99,9 +103,9 @@
       </section>
     }
 
-    @if (!isLoading && viewMode === 'grid' && filteredGames.length) {
+    @if (!isLoading && viewMode === 'grid' && filteredGames().length) {
       <section class="game-grid">
-        @for (game of filteredGames; track trackByGameId($index, game)) {
+        @for (game of filteredGames(); track trackByGameId($index, game)) {
           <app-library-card
             [item]="game"
             [mediaMode]="mediaMode"
@@ -113,21 +117,29 @@
       </section>
     }
 
-    @if (!isLoading && viewMode === 'list' && filteredGames.length) {
-      <section class="game-list">
-        @for (game of filteredGames; track trackByGameId($index, game)) {
+    @if (!isLoading && viewMode === 'list' && filteredGames().length) {
+      <!-- Virtualised: only the visible-window slice is rendered. The
+           container's height matches the *full* list so the scrollbar +
+           infinite-scroll trigger behave as if every row were present. -->
+      <section
+        #listAnchor
+        class="game-list"
+        [style.height.px]="visibleListWindow().totalHeight">
+        @for (game of visibleGames(); track trackByGameId($index, game); let i = $index) {
           <app-library-list-row
+            class="game-list__virtual-row"
             [item]="game"
             [mediaMode]="mediaMode"
             [isAdding]="isAdding(game)"
             (edit)="openGameListDialog($event)"
-            (details)="openDetails($event)">
+            (details)="openDetails($event)"
+            [style.top.px]="(visibleListWindow().start + i) * listRowStride">
           </app-library-list-row>
         }
       </section>
     }
 
-    @if (!isLoading && !filteredGames.length) {
+    @if (!isLoading && !filteredGames().length) {
       <section class="empty-state">
         <ion-icon name="game-controller-outline"></ion-icon>
         <h2>{{ emptyTitle }}</h2>

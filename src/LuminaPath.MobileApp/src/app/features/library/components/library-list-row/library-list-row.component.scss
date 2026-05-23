@@ -29,23 +29,23 @@
   --padding-start: 0;
   --padding-top: 0;
   --border-radius: 14px;
-  --background: rgba(255, 255, 255, 0.9);
-  --background-hover: rgba(255, 255, 255, 1);
-  --background-focused: rgba(255, 255, 255, 1);
+  --background: rgba(17, 24, 39, 0.86);
+  --background-hover: rgba(31, 41, 55, 0.96);
+  --background-focused: rgba(31, 41, 55, 0.96);
   --box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
   --color: var(--accent);
   backdrop-filter: blur(16px);
 }
 
 .quick-add-button::part(native) {
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .quick-add-button--edit {
-  --background: rgba(16, 185, 129, 0.92);
-  --background-hover: rgba(5, 150, 105, 0.98);
-  --background-focused: rgba(5, 150, 105, 0.98);
-  --color: #fff;
+  --background: rgba(16, 185, 129, 0.86);
+  --background-hover: rgba(5, 150, 105, 0.96);
+  --background-focused: rgba(5, 150, 105, 0.96);
+  --color: #ecfdf5;
 }
 
 .quick-add-button ion-icon {
@@ -115,22 +115,3 @@ ion-badge {
   color: var(--ink);
 }
 
-@media (prefers-color-scheme: dark) {
-  .quick-add-button {
-    --background: rgba(17, 24, 39, 0.86);
-    --background-hover: rgba(31, 41, 55, 0.96);
-    --background-focused: rgba(31, 41, 55, 0.96);
-    --color: var(--accent);
-  }
-
-  .quick-add-button::part(native) {
-    border-color: rgba(255, 255, 255, 0.12);
-  }
-
-  .quick-add-button--edit {
-    --background: rgba(16, 185, 129, 0.86);
-    --background-hover: rgba(5, 150, 105, 0.96);
-    --background-focused: rgba(5, 150, 105, 0.96);
-    --color: #ecfdf5;
-  }
-}

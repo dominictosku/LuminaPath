@@ -30,11 +30,17 @@
  * -----------------------------------------------------
  * For more info, please see:
  * https://ionicframework.com/docs/theming/dark-mode
+ *
+ * `dark.always.css` (not `dark.system.css`) so the Ionic palette is dark
+ * regardless of the OS preference. The rest of the app — including all
+ * page-level token blocks — is committed to a single dark visual identity;
+ * mixing OS-light Ionic chrome with always-dark page surfaces produced
+ * the visible inconsistency this replaces.
  */
 
-/* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import '@ionic/angular/css/palettes/dark.system.css';
+/* @import "@ionic/angular/css/palettes/dark.system.css"; */
+@import '@ionic/angular/css/palettes/dark.always.css';
 
 :root {
   --app-theme-accent: #60a5fa;

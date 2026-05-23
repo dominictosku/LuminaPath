@@ -1,15 +1,16 @@
 :host {
-  --friends-bg: #f5f7fb;
-  --ink: #111827;
-  --muted: #667085;
-  --line: rgba(17, 24, 39, 0.09);
-  --surface: rgba(255, 255, 255, 0.92);
-  --surface-solid: #fff;
-  --accent: var(--app-theme-accent, #2563eb);
-  --accent-2: var(--app-theme-accent-2, #10b981);
-  --accent-soft: var(--app-theme-accent-soft, rgba(37, 99, 235, 0.12));
-  --danger-soft: rgba(225, 29, 72, 0.1);
-  --success-soft: rgba(16, 185, 129, 0.12);
+  /* Always-dark — see global.scss / library.page.scss. */
+  --friends-bg: #070b12;
+  --ink: #eef2ff;
+  --muted: #98a2b3;
+  --line: rgba(255, 255, 255, 0.1);
+  --surface: rgba(18, 24, 38, 0.88);
+  --surface-solid: #111827;
+  --accent: var(--app-theme-accent, #60a5fa);
+  --accent-2: var(--app-theme-accent-2, #22d3ee);
+  --accent-soft: var(--app-theme-accent-soft, rgba(96, 165, 250, 0.16));
+  --danger-soft: rgba(225, 29, 72, 0.18);
+  --success-soft: rgba(16, 185, 129, 0.16);
 }
 
 .friends-shell {
@@ -177,8 +178,8 @@ ion-segment-button ion-badge {
 }
 
 .notice--error {
-  color: #9f1239;
-  background: #fff1f2;
+  color: #fecdd3;
+  background: rgba(127, 29, 29, 0.36);
 }
 
 .loading-state {
@@ -526,20 +527,3 @@ ion-segment-button ion-badge {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :host {
-    --friends-bg: #070b12;
-    --ink: #eef2ff;
-    --muted: #98a2b3;
-    --line: rgba(255, 255, 255, 0.1);
-    --surface: rgba(18, 24, 38, 0.88);
-    --surface-solid: #111827;
-    --danger-soft: rgba(225, 29, 72, 0.18);
-    --success-soft: rgba(16, 185, 129, 0.16);
-  }
-
-  .notice--error {
-    color: #fecdd3;
-    background: rgba(127, 29, 29, 0.36);
-  }
-}

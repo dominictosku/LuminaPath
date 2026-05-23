@@ -1,5 +1,16 @@
 
-import { Component, OnInit, effect, inject } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -73,7 +84,7 @@ import { buildPageFilter, LibraryFilterState } from '../library-filter.helpers';
     LibraryCreateDialogComponent,
 ],
 })
-export class LibraryPage implements OnInit {
+export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   private mediaLibrary = inject(MediaLibraryFacade);
   private mediaStore = inject(MediaStore);
   private releaseNotifications = inject(ReleaseNotificationService);
@@ -88,7 +99,13 @@ export class LibraryPage implements OnInit {
   readonly auth = inject(AuthService);
 
   games: MediaItem[] = [];
-  filteredGames: MediaItem[] = [];
+  /**
+   * Signal-backed so the virtualisation window (which reads the list length
+   * to compute total height + slice bounds) reacts whenever the data set
+   * changes — refresh, infinite-scroll page, mediaStore upsert from a
+   * detail page, etc. Kept narrow on purpose; templates read via `()`.
+   */
+  filteredGames = signal<MediaItem[]>([]);
   searchTerm = '';
   ownershipFilter: OwnershipFilter = 'all';
   statusFilter = 'all';
@@ -141,6 +158,82 @@ export class LibraryPage implements OnInit {
 
   private readonly pageSize = 24;
 
+  // ----- Virtual list (single-column "list" view only) -----------------------
+  // Grid view keeps the original DOM-for-everything render path because its
+  // density (2-4 columns) means item-count is naturally lower for the same
+  // scroll length, and absolute-positioning a responsive grid is more invasive
+  // than it's worth for the modest win. List view is where huge libraries
+  // (~500+ rows) cause real jank, so it's where we virtualise.
+  //
+  // Strategy: keep the page scrolling as one (IonContent owns the scroll —
+  // pull-to-refresh + infinite-scroll keep working). The list container gets
+  // an explicit height matching the *full* row count; only rows in the
+  // visible window are rendered, absolutely positioned at their natural Y.
+  private static readonly LIST_ROW_HEIGHT = 96;
+  private static readonly LIST_ROW_GAP = 10;
+  private static readonly LIST_ROW_STRIDE =
+    LibraryPage.LIST_ROW_HEIGHT + LibraryPage.LIST_ROW_GAP;
+  private static readonly LIST_BUFFER_ROWS = 4;
+
+  /** Exposed for the template's `[style.top.px]` math. */
+  protected readonly listRowStride = LibraryPage.LIST_ROW_STRIDE;
+  protected readonly listRowHeight = LibraryPage.LIST_ROW_HEIGHT;
+
+  private readonly contentRef = viewChild<IonContent>(IonContent);
+  private readonly listAnchorRef = viewChild<ElementRef<HTMLElement>>('listAnchor');
+
+  private readonly listScrollTop = signal(0);
+  // Sensible non-zero starting value so the *first* paint shows a real
+  // window of rows instead of waiting for a resize event.
+  private readonly listViewportHeight = signal(
+    typeof window !== 'undefined' ? window.innerHeight : 800,
+  );
+  private readonly listOffsetTop = signal(0);
+
+  protected readonly visibleListWindow = computed(() => {
+    const games = this.filteredGames();
+    const total = games.length;
+    const totalHeight =
+      total === 0
+        ? 0
+        : total * LibraryPage.LIST_ROW_HEIGHT +
+          (total - 1) * LibraryPage.LIST_ROW_GAP;
+
+    if (total === 0) {
+      return { start: 0, end: 0, totalHeight };
+    }
+
+    const stride = LibraryPage.LIST_ROW_STRIDE;
+    const buffer = LibraryPage.LIST_BUFFER_ROWS;
+    const top = this.listScrollTop();
+    const height = this.listViewportHeight();
+    const offset = this.listOffsetTop();
+
+    // Before the first measurement we don't know where the list starts in
+    // scroll-coords yet — render an initial slab so the user sees content
+    // immediately. The measurement effect will tighten this within a frame.
+    if (offset === 0) {
+      return { start: 0, end: Math.min(total, 24), totalHeight };
+    }
+
+    const startY = Math.max(0, top - offset);
+    const endY = startY + height;
+    const start = Math.max(0, Math.floor(startY / stride) - buffer);
+    const end = Math.min(total, Math.ceil(endY / stride) + buffer);
+    return { start, end, totalHeight };
+  });
+
+  protected readonly visibleGames = computed(() =>
+    this.filteredGames().slice(
+      this.visibleListWindow().start,
+      this.visibleListWindow().end,
+    ),
+  );
+
+  private readonly handleResize = () => {
+    this.listViewportHeight.set(window.innerHeight);
+  };
+
   readonly platforms = Platforms;
   readonly sortOptions: { label: string; value: SortMode }[] = [
     { label: 'Title A-Z', value: 'title' },
@@ -178,11 +271,76 @@ export class LibraryPage implements OnInit {
       }
       this.applyLoadedGames();
     });
+
+    // Re-measure the list anchor whenever it (re)appears or the data set
+    // size changes (the data above the list — finish-pick, results-heading
+    // — can shift its Y between empty/non-empty states).
+    effect(() => {
+      const anchor = this.listAnchorRef();
+      const _ = this.filteredGames();
+      void _;
+      if (anchor) {
+        // Defer to the next microtask so the DOM is committed before we
+        // read offsetTop / getBoundingClientRect.
+        queueMicrotask(() => void this.measureListAnchor());
+      }
+    });
   }
 
   ngOnInit() {
     this.loadSavedPresets();
     this.loadGames();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.handleResize, { passive: true });
+    }
+  }
+
+  ngAfterViewInit(): void {
+    // Initial offset measurement once the list anchor is laid out. The
+    // effect set up in the constructor will catch later changes (view-mode
+    // flip, data load that grows content above).
+    void this.measureListAnchor();
+  }
+
+  ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.handleResize);
+    }
+  }
+
+  /**
+   * IonContent fires `(ionScroll)` at roughly frame-rate; signal writes are
+   * cheap and the visible-window computed re-derives lazily, so we just
+   * forward the scrollTop and let Angular do the rest.
+   */
+  protected onContentScroll(event: CustomEvent): void {
+    const detail = event.detail as { scrollTop?: number } | undefined;
+    if (typeof detail?.scrollTop === 'number') {
+      this.listScrollTop.set(detail.scrollTop);
+    }
+  }
+
+  /**
+   * Convert the list anchor's viewport position into scroll-container
+   * coordinates so the visible-window math can subtract it from scrollTop
+   * and get the offset *inside* the list.
+   */
+  private async measureListAnchor(): Promise<void> {
+    const anchor = this.listAnchorRef()?.nativeElement;
+    const content = this.contentRef();
+    if (!anchor || !content) return;
+    try {
+      const scrollEl = await content.getScrollElement();
+      if (!scrollEl) return;
+      const anchorRect = anchor.getBoundingClientRect();
+      const scrollRect = scrollEl.getBoundingClientRect();
+      this.listOffsetTop.set(
+        anchorRect.top - scrollRect.top + scrollEl.scrollTop,
+      );
+    } catch {
+      // getScrollElement can reject pre-hydration in tests — non-fatal,
+      // the computed falls back to its initial-render slab.
+    }
   }
 
   loadGames(event?: CustomEvent) {
@@ -223,7 +381,7 @@ export class LibraryPage implements OnInit {
 
   private applyLoadedGames(): void {
     this.refreshLibraryIntelligence();
-    this.filteredGames = this.games;
+    this.filteredGames.set(this.games);
   }
 
   clearFilters(apply = true) {
@@ -403,7 +561,7 @@ export class LibraryPage implements OnInit {
   }
 
   get resultTitle(): string {
-    return this.mediaView.resultTitle(this.filteredGames.length, this.mediaMode);
+    return this.mediaView.resultTitle(this.filteredGames().length, this.mediaMode);
   }
 
   get emptyTitle(): string {
