@@ -1,5 +1,7 @@
 <section class="board-toolbar">
-  <ion-segment [value]="filter()" (ionChange)="onSegmentChange($event)">
+  <!-- scrollable on narrow viewports so "Upcoming" / "All" don't truncate
+       and the count badges stay visible. -->
+  <ion-segment scrollable="true" [value]="filter()" (ionChange)="onSegmentChange($event)">
     @for (option of filterOptions(); track option.value) {
       <ion-segment-button [value]="option.value">
         <ion-icon [name]="option.icon"></ion-icon>
@@ -8,19 +10,42 @@
       </ion-segment-button>
     }
   </ion-segment>
-  <label class="search-field">
-    <ion-icon name="search-outline"></ion-icon>
-    <input
-      type="text"
-      placeholder="Search quests, notes, tags"
-      [value]="inputValue"
-      (input)="onInput($any($event.target).value)" />
-    @if (inputValue) {
-      <button type="button" class="meta-chip-clear" aria-label="Clear search" (click)="searchClear.emit()">
-        <ion-icon name="close-outline"></ion-icon>
+  <div class="toolbar-row">
+    <label class="search-field">
+      <ion-icon name="search-outline"></ion-icon>
+      <input
+        type="text"
+        placeholder="Search quests, notes, tags"
+        [value]="inputValue"
+        (input)="onInput($any($event.target).value)" />
+      @if (inputValue) {
+        <button type="button" class="meta-chip-clear" aria-label="Clear search" (click)="searchClear.emit()">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      }
+    </label>
+    <!-- View-mode toggle: roomy card layout vs. dense compact rows. Aria
+         labels (not visible text) keep the toggle from eating horizontal
+         space next to the search field on narrow viewports. -->
+    <div class="view-toggle" role="group" aria-label="Quest view">
+      <button
+        type="button"
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'cards'"
+        aria-label="Card view"
+        (click)="viewModeChange.emit('cards')">
+        <ion-icon name="albums-outline"></ion-icon>
       </button>
-    }
-  </label>
+      <button
+        type="button"
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'compact'"
+        aria-label="Compact list view"
+        (click)="viewModeChange.emit('compact')">
+        <ion-icon name="list-outline"></ion-icon>
+      </button>
+    </div>
+  </div>
   @if (availableTags().length) {
     <div class="tag-filter-strip">
       @for (tag of availableTags(); track trackByText($index, tag)) {

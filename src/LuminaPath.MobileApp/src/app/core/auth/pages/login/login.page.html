@@ -60,7 +60,13 @@
         </div>
       }
 
-      <div class="form-fields">
+      <!--
+        Real `<form>` (not a div) so the browser fires submit on Enter
+        from any of the input fields below. ngSubmit then calls login().
+        The API server panel above stays *outside* this form on purpose —
+        hitting Enter while editing the API endpoint should not log in.
+      -->
+      <form class="form-fields" (ngSubmit)="login()">
         @if (!twoFactorRequired) {
           <div class="field-group">
             <label class="field-label" for="email">Email</label>
@@ -170,7 +176,7 @@
           </div>
         }
 
-        <button class="sign-in-btn" (click)="login()" [disabled]="isSubmitting" [class.loading]="isSubmitting">
+        <button type="submit" class="sign-in-btn" [disabled]="isSubmitting" [class.loading]="isSubmitting">
           <span class="btn-text">{{ isSubmitting ? (twoFactorRequired ? 'Verifying...' : 'Signing in...') : (twoFactorRequired ? 'Verify code' : 'Sign in') }}</span>
           <span class="btn-shimmer"></span>
         </button>
@@ -180,11 +186,13 @@
             <span>New here?</span>
           </div>
 
-          <button class="register-btn" routerLink="/auth/create">
+          <!-- `type="button"` so navigating to /auth/create doesn't double
+               as a form submit (which would fire login() before routing). -->
+          <button type="button" class="register-btn" routerLink="/auth/create">
             Create an account
           </button>
         }
-      </div>
+      </form>
     </div>
   </div>
 

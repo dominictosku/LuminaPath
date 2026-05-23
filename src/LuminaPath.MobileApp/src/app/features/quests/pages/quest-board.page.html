@@ -14,7 +14,10 @@
     </app-quest-board-hero>
 
     <section class="mode-panel">
-      <ion-segment [(ngModel)]="mode">
+      <!-- scrollable="true" so labels like "Skill Tree" don't truncate on
+           narrow viewports — segment buttons opt out of even-flex sizing
+           and the segment becomes horizontally scrollable instead. -->
+      <ion-segment scrollable="true" [(ngModel)]="mode">
         <ion-segment-button value="quests">
           <ion-label>Quests</ion-label>
         </ion-segment-button>
@@ -48,10 +51,12 @@
         [availableTags]="availableTags"
         [tagFilter]="tagFilter"
         [filterCount]="filterCountFn"
+        [viewMode]="questViewMode"
         (filterChange)="setFilter($event)"
         (tagToggle)="selectTag($event)"
         (tagClear)="clearTagFilter()"
-        (searchClear)="clearSearch()">
+        (searchClear)="clearSearch()"
+        (viewModeChange)="setViewMode($event)">
       </app-quest-board-toolbar>
 
       <section class="quest-board">
@@ -89,29 +94,80 @@
               here — `ion-reorder-group` needs stable DOM nodes for the
               drag-to-reorder gesture). The placeholder is a low-cost
               skeleton so the page height doesn't pop when the cards arrive.
+
+              The compact view renders the same quests as a dense single-
+              line list. Reorder is suppressed there: the row's too small
+              for the handle and the use case (skim long lists) doesn't
+              call for manual ordering.
             -->
             @defer (on viewport; prefetch on idle) {
-              <ion-reorder-group
-                class="quest-stack"
-                [disabled]="!isManualOrderActive"
-                (ionItemReorder)="handleReorder($any($event), section.quests)">
-                @for (quest of section.quests; track trackByQuest($index, quest)) {
-                  <app-quest-card
-                    [quest]="quest"
-                    [expanded]="expandedQuestId === quest.id"
-                    [manualOrderActive]="isManualOrderActive"
-                    [typeIcon]="typeIconFn"
-                    [typeLabel]="typeLabelFn"
-                    [priorityLabel]="priorityLabelFn"
-                    [recurrenceLabel]="recurrenceLabelFn"
-                    (toggleComplete)="toggleQuest($event)"
-                    (expand)="toggleExpand($event)"
-                    (scheduleToday)="scheduleToday($event)"
-                    (scheduleTomorrow)="scheduleTomorrow($event)"
-                    (clearDueDate)="clearQuestDueDate($event)"
-                    (requestDelete)="beginDelete($event)" />
-                }
-              </ion-reorder-group>
+              @if (questViewMode === 'cards') {
+                <ion-reorder-group
+                  class="quest-stack"
+                  [disabled]="!isManualOrderActive"
+                  (ionItemReorder)="handleReorder($any($event), section.quests)">
+                  @for (quest of section.quests; track trackByQuest($index, quest)) {
+                    <app-quest-card
+                      [quest]="quest"
+                      [expanded]="expandedQuestId === quest.id"
+                      [manualOrderActive]="isManualOrderActive"
+                      [typeIcon]="typeIconFn"
+                      [typeLabel]="typeLabelFn"
+                      [priorityLabel]="priorityLabelFn"
+                      [recurrenceLabel]="recurrenceLabelFn"
+                      (toggleComplete)="toggleQuest($event)"
+                      (expand)="toggleExpand($event)"
+                      (scheduleToday)="scheduleToday($event)"
+                      (scheduleTomorrow)="scheduleTomorrow($event)"
+                      (clearDueDate)="clearQuestDueDate($event)"
+                      (requestDelete)="beginDelete($event)" />
+                  }
+                </ion-reorder-group>
+              } @else {
+                <ul class="quest-compact">
+                  @for (quest of section.quests; track trackByQuest($index, quest)) {
+                    <li
+                      class="quest-compact__row"
+                      [class.quest-compact__row--done]="quest.completed"
+                      [attr.data-due]="dueStateOf(quest)">
+                      <button
+                        type="button"
+                        class="quest-compact__check"
+                        aria-label="Toggle complete"
+                        (click)="toggleQuest(quest)">
+                        <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'ellipse-outline'"></ion-icon>
+                      </button>
+                      <button
+                        type="button"
+                        class="quest-compact__body"
+                        (click)="toggleExpand(quest)">
+                        <span class="quest-compact__title">{{ quest.title }}</span>
+                        <span class="quest-compact__meta">
+                          <ion-icon [name]="typeIcon(quest.type)" aria-hidden="true"></ion-icon>
+                          <span>{{ typeLabel(quest.type) }}</span>
+                          @if (quest.dueDate) {
+                            <span class="quest-compact__dot" aria-hidden="true"></span>
+                            <span class="quest-compact__due" [attr.data-state]="dueStateOf(quest)">
+                              {{ dueLabelOf(quest) }}
+                            </span>
+                          }
+                          @if (quest.subtasks.length) {
+                            <span class="quest-compact__dot" aria-hidden="true"></span>
+                            <span>{{ subtaskCompletedCount(quest) }}/{{ quest.subtasks.length }}</span>
+                          }
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        class="quest-compact__delete"
+                        aria-label="Delete quest"
+                        (click)="beginDelete(quest)">
+                        <ion-icon name="trash-outline"></ion-icon>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
             } @placeholder (minimum 100ms) {
               <div class="quest-stack quest-stack--deferred" aria-hidden="true">
                 @for (_ of section.quests.slice(0, 3); track $index) {

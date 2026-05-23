@@ -9,6 +9,8 @@ type FilterOption = {
   icon: string;
 };
 
+export type QuestViewMode = 'cards' | 'compact';
+
 /**
  * Filter segment + search input + tag chips. Owns no business state itself —
  * the active filter and search query are two-way bound from the parent, and tag
@@ -34,10 +36,13 @@ export class QuestBoardToolbarComponent implements OnDestroy {
   readonly tagFilter = input<string | null>(null);
   readonly filterCount = input<(filter: QuestFilter) => number>(() => 0);
 
+  readonly viewMode = input<QuestViewMode>('cards');
+
   readonly filterChange = output<QuestFilter>();
   readonly tagToggle = output<string>();
   readonly tagClear = output<void>();
   readonly searchClear = output<void>();
+  readonly viewModeChange = output<QuestViewMode>();
 
   /** Local mirror of the input so typing is responsive even while the upstream
    *  debounced write is still pending. */

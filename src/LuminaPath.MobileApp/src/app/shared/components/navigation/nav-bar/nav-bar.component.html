@@ -128,6 +128,14 @@
                 <strong>Apps</strong>
               </div>
               <div class="app-grid">
+                <a [routerLink]="['/planning']" (click)="closeMenus()">
+                  <ion-icon name="calendar-clear-outline"></ion-icon>
+                  <span>Plan</span>
+                </a>
+                <a [routerLink]="['/statistic']" (click)="closeMenus()">
+                  <ion-icon name="bar-chart-outline"></ion-icon>
+                  <span>Stats</span>
+                </a>
                 <a [routerLink]="['/friends']" (click)="closeMenus()">
                   <ion-icon name="people-outline"></ion-icon>
                   <span>Friends</span>

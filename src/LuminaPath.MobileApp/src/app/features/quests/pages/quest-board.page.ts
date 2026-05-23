@@ -33,9 +33,10 @@ import {
   unlockedNodeIdsFor,
 } from 'src/app/features/skill-tree/util/skill-adapter';
 import { addDays, startOfDay, toISODate } from 'src/app/shared/utils/date-helpers';
+import { QuestDueState, dueDateLabel, dueState } from '../quest-due';
 import { QuestBoardHeroComponent } from '../components/quest-board-hero/quest-board-hero.component';
 import { QuestQuickAddComponent, QuestQuickAddPreset, QuestQuickAddSubmit } from '../components/quest-quick-add/quest-quick-add.component';
-import { QuestBoardToolbarComponent } from '../components/quest-board-toolbar/quest-board-toolbar.component';
+import { QuestBoardToolbarComponent, QuestViewMode } from '../components/quest-board-toolbar/quest-board-toolbar.component';
 import { QuestAchievementsComponent } from '../components/quest-achievements/quest-achievements.component';
 import { SkillsListComponent, SkillNodeAction, SkillNodeQuestAction } from '../components/skills-list/skills-list.component';
 import { SkillForm, SkillModalComponent } from '../components/skill-modal/skill-modal.component';
@@ -165,6 +166,13 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   mode: PageMode = 'quests';
   filter: QuestFilter = 'today';
+  /**
+   * `cards`   — roomy card stack, all metadata visible, drag-to-reorder.
+   * `compact` — single-line dense rows (checkbox + title + due chip).
+   *             Reorder is suppressed: the row is too small for the handle
+   *             and the use case (skim a long list) doesn't need it.
+   */
+  questViewMode: QuestViewMode = 'cards';
   modalMode: ModalMode = null;
 
   xp = 0;
@@ -280,6 +288,27 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   setFilter(value: QuestFilter): void {
     this.filter = value;
     this.savePrefs();
+  }
+
+  setViewMode(mode: QuestViewMode): void {
+    if (this.questViewMode === mode) return;
+    this.questViewMode = mode;
+    this.savePrefs();
+  }
+
+  // Helpers consumed by the compact-row template. Mirror what quest-card
+  // computes internally; we don't go through quest-card here because it's
+  // a heavier wrapper with its own host element + ion-reorder.
+  dueStateOf(quest: Quest): QuestDueState {
+    return dueState(quest);
+  }
+
+  dueLabelOf(quest: Quest): string {
+    return dueDateLabel(quest);
+  }
+
+  subtaskCompletedCount(quest: Quest): number {
+    return quest.subtasks.filter((s) => s.completed).length;
   }
 
   selectTag(tag: string): void {
@@ -979,11 +1008,15 @@ export class QuestBoardPage implements OnInit, OnDestroy {
         quickAddType?: QuestType;
         quickAddPriority?: QuestPriority;
         quickAddRecurrence?: QuestRecurrence;
+        questViewMode?: QuestViewMode;
       };
       if (parsed.filter === 'overdue') {
         this.filter = 'today';
       } else if (parsed.filter && ['today', 'upcoming', 'inbox', 'all'].includes(parsed.filter)) {
         this.filter = parsed.filter;
+      }
+      if (parsed.questViewMode === 'cards' || parsed.questViewMode === 'compact') {
+        this.questViewMode = parsed.questViewMode;
       }
       if (parsed.quickAddType && ['main', 'sub', 'faction'].includes(parsed.quickAddType)) {
         this.quickAddType = parsed.quickAddType;
@@ -1009,6 +1042,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
           quickAddType: this.quickAddType,
           quickAddPriority: this.quickAddPriority,
           quickAddRecurrence: this.quickAddRecurrence,
+          questViewMode: this.questViewMode,
         })
       );
     } catch {

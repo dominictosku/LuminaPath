@@ -20,7 +20,25 @@ app-quest-board {
 }
 
 .quest-shell { --background: var(--quest-bg); background: var(--quest-bg); }
-.quest-page { display: grid; gap: 16px; padding: 16px 14px 112px; }
+.quest-page {
+  display: grid;
+  gap: 16px;
+  padding: 16px 14px 112px;
+  /* `min-width: 0` so child grids/flexes can't push the page wider than
+     the viewport. Without this any single intrinsically-wide descendant
+     (a long meta-pill label, a wide segment) would force the whole page
+     to overflow horizontally — visible as everything getting clipped on
+     the right and the AI-chat button drifting over the tab bar. */
+  min-width: 0;
+}
+/* Every direct child of .quest-page is a grid item. Default min-width is
+   `auto`, which lets intrinsic content widths burst the column. Force 0
+   so the 1fr column wins and content shrinks/wraps to fit. */
+.quest-page > * { min-width: 0; }
+/* Same fix for the nested grids (quest-board sections, the per-section
+   quest-stack). Grid items default to auto-min-width here too. */
+.quest-board > *,
+.quest-stack > * { min-width: 0; }
 
 .quest-hero,
 .mode-panel,
@@ -134,7 +152,20 @@ ion-badge { --background: var(--accent-soft); --color: var(--accent); font-weigh
 }
 
 .mode-panel { padding: 8px; border-radius: 20px; }
-ion-segment { min-height: 48px; border-radius: 16px; background: var(--solid); }
+ion-segment {
+  min-height: 48px;
+  border-radius: 16px;
+  background: var(--solid);
+}
+/* Scrollable segments (mode-panel + board-toolbar on mobile) need a
+   sensible per-button min-width so each label stays tappable rather
+   than collapsing to icon-only. The horizontal scrollbar Ionic adds is
+   thin/native so it doesn't eat layout. */
+ion-segment[scrollable] ion-segment-button {
+  min-width: 96px;
+  --padding-start: 14px;
+  --padding-end: 14px;
+}
 ion-segment-button {
   --border-radius: 13px;
   --color: var(--muted);
@@ -169,7 +200,11 @@ ion-segment-button {
   0%   { background-position: 100% 0; }
   100% { background-position: -100% 0; }
 }
-.quick-add-row { display: grid; grid-template-columns: 1fr 46px; gap: 10px; align-items: center; }
+/* `minmax(0, 1fr)` (not bare `1fr`) so the input can shrink below its
+   intrinsic ~200px content width. Without this, on narrow viewports the
+   input claims its content width and the 46px submit gets pushed past
+   the right edge. */
+.quick-add-row { display: grid; grid-template-columns: minmax(0, 1fr) 46px; gap: 10px; align-items: center; }
 .quick-add-row ion-button { width: 46px; height: 46px; margin: 0; --border-radius: 15px; --background: var(--accent); }
 
 input, textarea, select, button { font: inherit; }
@@ -207,7 +242,11 @@ input, textarea, select { min-width: 0; color: var(--ink); }
 .empty-actions button { background: var(--accent); color: #fff; }
 .quest-plan-actions { gap: 6px; padding-top: 2px; }
 .quest-plan-actions button { min-height: 28px; padding: 4px 9px; font-size: .74rem; }
-.quick-date--tools { margin-left: auto; color: var(--accent); background: var(--accent-soft); border-color: var(--accent-border); }
+/* No `margin-left: auto` — that pushed "More" to the right edge of the
+   chip row, which on narrow viewports ended up clipped/cut off because
+   the auto-margin tried to claim slack the row didn't have. Distinct
+   colour + border are enough visual emphasis. */
+.quick-date--tools { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-border); }
 .meta-chip select, .meta-chip input[type="date"] { border: 0; background: transparent; color: inherit; outline: 0; }
 .meta-chip ion-icon, .tag-chip ion-icon { color: var(--muted); }
 .meta-chip-clear {
@@ -225,9 +264,49 @@ input, textarea, select { min-width: 0; color: var(--ink); }
 .board-toolbar ion-segment { border: 1px solid var(--line); background: var(--solid); }
 .board-toolbar ion-segment-button { min-height: 54px; }
 .board-toolbar ion-segment-button ion-badge { margin-top: 3px; font-size: .64rem; }
+
+/* Search field + view-mode toggle share a row. Grid (not flex) keeps
+   the toggle a fixed width and lets the search field consume the rest. */
+.board-toolbar .toolbar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.view-toggle {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--solid);
+}
+.view-toggle__btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.view-toggle__btn ion-icon { font-size: 1.15rem; }
+.view-toggle__btn:hover,
+.view-toggle__btn:focus-visible {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+}
+.view-toggle__btn--active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
 .search-field {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   min-height: 46px;
@@ -250,9 +329,16 @@ input, textarea, select { min-width: 0; color: var(--ink); }
 .quest-section--muted .section-icon { background: #64748b; }
 .quest-section h2, .section-header h2 { color: var(--ink); font-size: 1.24rem; }
 
+/* Component host (the `<app-quest-card>` element) sits inside the
+   .quest-stack grid. Set it to block + min-width: 0 so it can shrink
+   inside the 1fr column instead of forcing the section wider. */
+app-quest-card {
+  display: block;
+  min-width: 0;
+}
 .quest-card {
   display: grid;
-  grid-template-columns: 38px 1fr 38px;
+  grid-template-columns: 38px minmax(0, 1fr) 38px;
   gap: 10px;
   align-items: start;
   padding: 11px;
@@ -286,6 +372,93 @@ input, textarea, select { min-width: 0; color: var(--ink); }
 .quest-card--done h3 { color: var(--muted); text-decoration: line-through; }
 .quest-notes { overflow: hidden; line-height: 1.4; }
 
+/* ----- Compact list view --------------------------------------------------
+   Single-line dense rows. Used as an alternate to `<app-quest-card>` when
+   the user switches the toolbar's view toggle to "compact". Same actions
+   as the card view (toggle, expand-to-edit, delete) just with stripped
+   chrome and one row each. */
+.quest-compact {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.quest-compact__row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 30px;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.quest-compact__row[data-due="overdue"] { border-left: 3px solid var(--danger); }
+.quest-compact__row--done .quest-compact__title { color: var(--muted); text-decoration: line-through; }
+
+.quest-compact__check,
+.quest-compact__delete {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+.quest-compact__delete { color: var(--muted); }
+.quest-compact__check ion-icon,
+.quest-compact__delete ion-icon { font-size: 1.05rem; }
+
+.quest-compact__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.quest-compact__title {
+  color: var(--ink);
+  font-size: .92rem;
+  font-weight: 720;
+  line-height: 1.2;
+  /* Single-line truncation — full title still visible in the detail sheet
+     when the user taps to expand. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quest-compact__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quest-compact__meta ion-icon { font-size: .82rem; }
+.quest-compact__dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .55;
+}
+.quest-compact__due[data-state="overdue"] { color: #fecdd3; }
+.quest-compact__due[data-state="today"]   { color: #fde68a; }
+.quest-compact__due[data-state="soon"]    { color: var(--accent); }
+
 .meta-pill {
   display: inline-flex;
   align-items: center;
@@ -296,6 +469,14 @@ input, textarea, select { min-width: 0; color: var(--ink); }
   color: var(--muted);
   font-size: .74rem;
   font-weight: 650;
+  /* Keep the longest pill (typically a game or skill name) from forcing
+     the card wider than its column. Ellipsis when there's not enough
+     room — full text still readable in the detail sheet. */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 .meta-pill--due[data-state="overdue"] { background: rgba(251,113,133,.16); color: #fecdd3; }
 .meta-pill--due[data-state="today"] { background: rgba(251,191,36,.16); color: #fde68a; }
