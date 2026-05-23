@@ -43,6 +43,7 @@ import {
   ViewMode,
 } from '../models/library-filter.model';
 import { LibraryFilterPresetService } from '../services/library-filter-preset.service';
+import { buildPageFilter, LibraryFilterState } from '../library-filter.helpers';
 
 @Component({
   selector: 'app-library',
@@ -459,84 +460,22 @@ export class LibraryPage implements OnInit {
   }
 
   private createPageFilter(pageIndex: number): MediaFilter {
-    const filter = new MediaFilter();
-    filter.Paging.PageIndex = pageIndex;
-    filter.Paging.Count = this.pageSize;
-    filter.SearchString = this.searchTerm.trim();
-    filter.Ownership = this.ownershipFilter;
-    filter.SortBy = this.sortMode;
-    filter.SmartFilter = this.smartFilter;
-    const range = this.releaseDateRange();
-    filter.From = range.from;
-    filter.To = range.to;
-    if (this.statusFilter !== 'all') {
-      if (this.isGamesMode) {
-        filter.Status = Number(this.statusFilter);
-      } else {
-        filter.MediaStatus = Number(this.statusFilter);
-      }
-    }
-    if (this.isGamesMode && this.platformFilter !== 'all') {
-      filter.Platform = Number(this.platformFilter);
-    }
-    return filter;
-  }
-
-  private releaseDateRange(): { from: string | null; to: string | null } {
-    const today = new Date();
-    const year = today.getFullYear();
-
-  switch (this.releaseDateFilter) {
-      case 'released':
-        return { from: null, to: this.toDateParam(this.addDays(today, 1)) };
-      case 'upcoming':
-        return { from: this.toDateParam(this.startOfDay(today)), to: null };
-      case 'this-year':
-        return {
-          from: this.toDateParam(new Date(year, 0, 1)),
-          to: this.toDateParam(new Date(year + 1, 0, 1)),
-        };
-      case 'last-year':
-        return {
-          from: this.toDateParam(new Date(year - 1, 0, 1)),
-          to: this.toDateParam(new Date(year, 0, 1)),
-        };
-      case 'custom':
-        return {
-          from: this.releaseDateFrom ? this.toDateParam(this.parseDateInput(this.releaseDateFrom)) : null,
-          to: this.releaseDateTo ? this.toDateParam(this.addDays(this.parseDateInput(this.releaseDateTo), 1)) : null,
-        };
-      case 'all':
-      default:
-        return { from: null, to: null };
-    }
-  }
-
-  private parseDateInput(value: string): Date {
-    const [year, month, day] = value.split('-').map(Number);
-    return new Date(year, (month || 1) - 1, day || 1);
-  }
-
-  private startOfDay(value: Date): Date {
-    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
-  }
-
-  private addDays(value: Date, days: number): Date {
-    const next = this.startOfDay(value);
-    next.setDate(next.getDate() + days);
-    return next;
-  }
-
-  private toDateParam(value: Date): string {
-    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
-  }
-
-  private mergeGames(current: MediaItem[], next: MediaItem[]): MediaItem[] {
-    const byId = new Map(current.map((game) => [game.id, game]));
-    for (const game of next) {
-      byId.set(game.id, game);
-    }
-    return Array.from(byId.values());
+    const state: LibraryFilterState = {
+      searchTerm: this.searchTerm,
+      ownershipFilter: this.ownershipFilter,
+      statusFilter: this.statusFilter,
+      platformFilter: this.platformFilter,
+      releaseDateFilter: this.releaseDateFilter,
+      releaseDateFrom: this.releaseDateFrom,
+      releaseDateTo: this.releaseDateTo,
+      sortMode: this.sortMode,
+      smartFilter: this.smartFilter,
+    };
+    return buildPageFilter(state, {
+      pageIndex,
+      pageSize: this.pageSize,
+      isGamesMode: this.isGamesMode,
+    });
   }
 
   private triggerAddHaptic(): void {

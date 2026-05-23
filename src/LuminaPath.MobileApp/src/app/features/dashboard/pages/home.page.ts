@@ -7,11 +7,7 @@ import {
   IonRefresher,
   IonRefresherContent,
 } from '@ionic/angular/standalone';
-// `addIcons` populates Ionic's global icon registry. Sub-components only
-// declare which icons they render, so the page is responsible for ensuring
-// every name used by any descendant template (including ones bound from
-// data like `DashboardMetric.icon`) is registered here.
-import { Game, platformLabelFromValue } from '../../games/models/games.model';
+import { Game } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { Anime } from '../../animes/models/animes.model';
 import { AnimeService } from '../../animes/services/anime.service';
@@ -19,25 +15,31 @@ import { Movie } from '../../movies/models/movies.model';
 import { MovieService } from '../../movies/services/movie.service';
 import { Series } from '../../series/models/series.model';
 import { SeriesService } from '../../series/services/series.service';
-import { GameStatus, isGameBacklogStatus } from '../../library/models/library-status.model';
 import { GamingSession, GamingSessionService } from '../../planning/services/gaming-session.service';
-import { Quest, QuestBoardService, QuestBoardState } from '../../quests/services/quest-board.service';
-import {
-  estimatedHoursOfGame,
-  gameStatusOf,
-  playedHoursOfGame,
-  remainingHoursOfGame,
-} from '../../games/domain/game-library-metrics';
+import { QuestBoardService, QuestBoardState } from '../../quests/services/quest-board.service';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 import {
   DashboardActivityItem,
   DashboardFocusItem,
   DashboardMediaItem,
-  DashboardMediaKind,
   DashboardMetric,
 } from '../models/dashboard.model';
-import { progressOf, releaseDateOf, remainingLabel, statusLabel } from '../dashboard-view.helpers';
 import { addDays, startOfDay } from 'src/app/shared/utils/date-helpers';
+import { progressOf } from '../dashboard-view.helpers';
+import { fromAnime, fromGame, fromMovie, fromSeries } from '../dashboard.mappers';
+import {
+  buildActivityItems,
+  buildFocusItems,
+  buildMetrics,
+  completionRateFor,
+  getBacklogItems,
+  getUpcomingReleases,
+  mostRecentItems,
+  pickFeaturedItem,
+  sumPlayedHours,
+  sumRemainingHours,
+  topPlayingItems,
+} from '../dashboard.derivations';
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { DashboardHeroComponent } from '../components/dashboard-hero/dashboard-hero.component';
 import { DashboardMetricsComponent } from '../components/dashboard-metrics/dashboard-metrics.component';
@@ -208,261 +210,43 @@ export class HomePage implements OnInit {
 
   private buildDashboard() {
     this.mediaItems = [
-      ...this.games.map((game) => this.fromGame(game)),
-      ...this.animes.map((anime) => this.fromAnime(anime)),
-      ...this.movies.map((movie) => this.fromMovie(movie)),
-      ...this.series.map((series) => this.fromSeries(series)),
+      ...this.games.map(fromGame),
+      ...this.animes.map(fromAnime),
+      ...this.movies.map(fromMovie),
+      ...this.series.map(fromSeries),
     ];
     this.ownedItems = this.mediaItems.filter((item) => item.status >= 0);
-    this.playingItems = this.ownedItems
-      .filter((item) => item.status === GameStatus.Playing)
-      .sort((a, b) => progressOf(b) - progressOf(a))
-      .slice(0, 4);
-    this.upcomingReleases = this.getUpcomingReleases();
-    this.backlogItems = this.getBacklogItems();
-    this.recentItems = [...this.mediaItems]
-      .sort((a, b) => b.id - a.id)
-      .slice(0, 8);
-    this.featuredItem = this.playingItems[0] ?? this.upcomingReleases[0] ?? this.recentItems[0] ?? null;
-    this.remainingHours = Math.round(
-      this.ownedItems.reduce((sum, item) => sum + item.remainingHours, 0)
-    );
-    this.playedHours = Math.round(
-      this.ownedItems.reduce((sum, item) => sum + item.playedHours, 0)
-    );
+    this.playingItems = topPlayingItems(this.ownedItems);
+    this.upcomingReleases = getUpcomingReleases(this.mediaItems);
+    this.backlogItems = getBacklogItems(this.ownedItems);
+    this.recentItems = mostRecentItems(this.mediaItems);
+    this.featuredItem = pickFeaturedItem(this.playingItems, this.upcomingReleases, this.recentItems);
+    this.remainingHours = sumRemainingHours(this.ownedItems);
+    this.playedHours = sumPlayedHours(this.ownedItems);
 
-    const completedItems = this.ownedItems.filter((item) => item.status === GameStatus.Completed).length;
-    this.completionRate = this.ownedItems.length === 0
-      ? 0
-      : Math.round((completedItems / this.ownedItems.length) * 100);
+    const { completed, rate } = completionRateFor(this.ownedItems);
+    this.completionRate = rate;
     this.heroProgress = this.featuredItem ? progressOf(this.featuredItem) : 0;
-    this.metrics = this.createMetrics(completedItems);
-    this.focusItems = this.createFocusItems();
-    this.activityItems = this.createActivityItems();
-  }
-
-  private createMetrics(completedItems: number): DashboardMetric[] {
-    const ownedItems = this.libraryTotal || this.ownedItems.length;
-    const activeItems = this.playingItems.length;
-
-    return [
-      {
-        label: 'Library',
-        value: String(ownedItems),
-        detail: `${ownedItems} in your collection`,
-        icon: 'library-outline',
-        tone: 'blue',
-      },
-      {
-        label: 'Active',
-        value: String(activeItems),
-        detail: activeItems === 1 ? 'currently active item' : 'currently active items',
-        icon: 'game-controller-outline',
-        tone: 'green',
-      },
-      {
-        label: 'Completed',
-        value: String(completedItems),
-        detail: `${this.completionRate}% completion rate`,
-        icon: 'checkmark-done-outline',
-        tone: 'amber',
-      },
-      {
-        label: 'Ahead',
-        value: `${this.remainingHours}h`,
-        detail: 'estimated backlog',
-        icon: 'hourglass-outline',
-        tone: 'rose',
-      },
-    ];
-  }
-
-  private getUpcomingReleases(): DashboardMediaItem[] {
-    const today = startOfDay(new Date());
-
-    return this.mediaItems
-      .filter((item) => releaseDateOf(item) >= today)
-      .sort((a, b) => releaseDateOf(a).getTime() - releaseDateOf(b).getTime())
-      .slice(0, 5);
-  }
-
-  private getBacklogItems(): DashboardMediaItem[] {
-    return this.ownedItems
-      .filter((item) => isGameBacklogStatus(item.status))
-      .sort((a, b) => b.remainingHours - a.remainingHours)
-      .slice(0, 4);
-  }
-
-  private createFocusItems(): DashboardFocusItem[] {
-    const today = startOfDay(new Date());
-    const nextSession = this.nextSession();
-    const dueQuests = this.openQuests()
-      .filter((quest) => quest.dueDate && new Date(quest.dueDate) <= addDays(today, 1))
-      .length;
-    const nextRelease = this.upcomingReleases[0] ?? null;
-    const backlogPick = this.backlogItems[0] ?? null;
-
-    return [
-      {
-        title: nextSession?.gameName ?? 'Plan a session',
-        detail: nextSession
-          ? `${this.shortDateTime(nextSession.scheduledAt)} · ${Math.round(nextSession.durationMinutes / 60 * 10) / 10}h`
-          : 'No gaming session scheduled in the next two weeks',
-        icon: 'calendar-clear-outline',
-        tone: 'blue',
-      },
-      {
-        title: dueQuests ? `${dueQuests} quest${dueQuests === 1 ? '' : 's'} need attention` : 'Quest board is calm',
-        detail: dueQuests ? 'Due today or already waiting' : `${this.openQuests().length} open quest${this.openQuests().length === 1 ? '' : 's'}`,
-        icon: dueQuests ? 'alert-circle-outline' : 'checkbox-outline',
-        tone: dueQuests ? 'amber' : 'green',
-      },
-      {
-        title: nextRelease?.name ?? 'No upcoming release',
-        detail: nextRelease ? `${this.daysUntil(nextRelease)} · ${nextRelease.kind}` : 'Nothing dated in the loaded catalog',
-        icon: 'sparkles-outline',
-        tone: 'rose',
-      },
-      {
-        title: backlogPick?.name ?? 'Backlog is clear',
-        detail: backlogPick ? `${remainingLabel(backlogPick)} · ${statusLabel(backlogPick)}` : 'No planned commitment found',
-        icon: 'hourglass-outline',
-        tone: 'blue',
-      },
-    ];
-  }
-
-  private createActivityItems(): DashboardActivityItem[] {
-    const items: DashboardActivityItem[] = [];
-
-    const nextSession = this.nextSession();
-    if (nextSession) {
-      items.push({
-        title: nextSession.gameName ?? 'Generic gaming time',
-        detail: `Session ${this.shortDateTime(nextSession.scheduledAt)}`,
-        icon: 'time-outline',
-      });
-    }
-
-  for (const quest of this.completedQuests().slice(0, 3)) {
-      items.push({
-        title: quest.title,
-        detail: `Quest completed${quest.gameName ? ' · ' + quest.gameName : ''}`,
-        icon: 'checkmark-done-outline',
-      });
-    }
-
-  for (const release of this.upcomingReleases.slice(0, 2)) {
-      items.push({
-        title: release.name,
-        detail: `Releases ${this.daysUntil(release)} · ${release.kind}`,
-        icon: 'calendar-clear-outline',
-      });
-    }
-
-  for (const item of this.recentItems.slice(0, 3)) {
-      items.push({
-        title: item.name,
-        detail: `Recently added · ${item.kind}`,
-        icon: 'library-outline',
-      });
-    }
-
-    return items.slice(0, 8);
-  }
-
-  private fromGame(game: Game): DashboardMediaItem {
-    const playedHours = playedHoursOfGame(game);
-    const estimatedHours = estimatedHoursOfGame(game);
-
-    return {
-      id: game.id,
-      kind: 'Game',
-      name: game.name,
-      description: game.description,
-      genre: game.genre,
-      releaseDate: game.releaseDate,
-      image: game.image,
-      status: gameStatusOf(game),
-      estimatedHours,
-      playedHours,
-      remainingHours: remainingHoursOfGame(game),
-      context: platformLabelFromValue(game.platforms),
-    };
-  }
-
-  private fromAnime(anime: Anime): DashboardMediaItem {
-    return this.fromWatchMedia('Anime', anime, anime.myAnimes?.status, anime.expectedWatchTimeMinutes, anime.myAnimes?.currentWatchTimeMinutes);
-  }
-
-  private fromMovie(movie: Movie): DashboardMediaItem {
-    return this.fromWatchMedia('Movie', movie, movie.myMovies?.status, movie.expectedWatchTimeMinutes, movie.myMovies?.currentWatchTimeMinutes);
-  }
-
-  private fromSeries(series: Series): DashboardMediaItem {
-    return this.fromWatchMedia('Series', series, series.mySeries?.status, series.expectedWatchTimeMinutes, series.mySeries?.currentWatchTimeMinutes);
-  }
-
-  private fromWatchMedia(
-    kind: DashboardMediaKind,
-    media: Anime | Movie | Series,
-    status: number | null | undefined,
-    expectedMinutes: number | null | undefined,
-    watchedMinutes: number | null | undefined,
-  ): DashboardMediaItem {
-    const estimatedHours = Math.round(((Number(expectedMinutes) || 0) / 60) * 10) / 10;
-    const playedHours = Math.round(((Number(watchedMinutes) || 0) / 60) * 10) / 10;
-
-    return {
-      id: media.id,
-      kind,
-      name: media.name,
-      description: media.description,
-      genre: media.genre,
-      releaseDate: media.releaseDate,
-      image: media.image,
-      status: Number(status ?? -1),
-      estimatedHours,
-      playedHours,
-      remainingHours: Math.max(0, estimatedHours - playedHours),
-      context: kind,
-    };
-  }
-
-  private daysUntil(item: DashboardMediaItem): string {
-    const date = releaseDateOf(item);
-    const today = startOfDay(new Date());
-    const days = Math.ceil((date.getTime() - today.getTime()) / 86400000);
-
-  if (days <= 0) return 'Today';
-    if (days === 1) return 'Tomorrow';
-    return `${days} days`;
-  }
-
-  private nextSession(): GamingSession | null {
-    const now = new Date();
-    return [...this.sessions]
-      .filter((session) => !session.completed && new Date(session.scheduledAt) >= now)
-      .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())[0] ?? null;
-  }
-
-  private openQuests(): Quest[] {
-    return this.questBoard?.quests.filter((quest) => !quest.completed) ?? [];
-  }
-
-  private completedQuests(): Quest[] {
-    return [...(this.questBoard?.quests ?? [])]
-      .filter((quest) => quest.completed)
-      .sort((a, b) => new Date(b.completedAt ?? b.updatedAt ?? '').getTime() - new Date(a.completedAt ?? a.updatedAt ?? '').getTime());
-  }
-
-  private shortDateTime(value: string): string {
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(value));
+    this.metrics = buildMetrics({
+      libraryTotal: this.libraryTotal,
+      ownedItemCount: this.ownedItems.length,
+      activeItemCount: this.playingItems.length,
+      completedItemCount: completed,
+      completionRate: this.completionRate,
+      remainingHours: this.remainingHours,
+    });
+    this.focusItems = buildFocusItems({
+      sessions: this.sessions,
+      board: this.questBoard,
+      upcomingReleases: this.upcomingReleases,
+      backlogItems: this.backlogItems,
+    });
+    this.activityItems = buildActivityItems({
+      sessions: this.sessions,
+      board: this.questBoard,
+      upcomingReleases: this.upcomingReleases,
+      recentItems: this.recentItems,
+    });
   }
 
   private dashboardLibraryFilter(): MediaFilter {
