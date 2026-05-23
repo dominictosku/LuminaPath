@@ -314,6 +314,17 @@
   height: 42px;
 }
 
+.admin-action-button {
+  --color: var(--text);
+  --border-radius: 999px;
+  width: 42px;
+  height: 42px;
+}
+
+.admin-action-button--danger {
+  --color: var(--ion-color-danger, #dc2626);
+}
+
 .library-card {
   display: flex;
   justify-content: space-between;

@@ -18,8 +18,9 @@ import {
 } from '@ionic/angular/standalone';
 import { firstValueFrom } from 'rxjs';
 
+import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { GameService } from 'src/app/features/games/services/game.service';
-import { platformLabelFromValue } from 'src/app/features/games/models/games.model';
+import { Game, platformLabelFromValue } from 'src/app/features/games/models/games.model';
 import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
 import {
   GameLibraryEntry,
@@ -29,8 +30,16 @@ import {
 import { GameForecast, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
 import { gameStatusLabel } from 'src/app/features/library/models/library-status.model';
 import { MediaStore } from 'src/app/features/library/state/media.store';
+import { MEDIA_MODE_OPTIONS, MediaModeOption } from 'src/app/shared/services/media-mode.service';
+import { MediaLibraryViewService } from 'src/app/features/library/services/media-library-view.service';
+import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatShortDate } from 'src/app/shared/utils/format';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
+import { LibraryCreateDialogComponent } from 'src/app/features/library/components/library-create-dialog/library-create-dialog.component';
+import {
+  CreateMediaForm,
+  emptyCreateForm,
+} from 'src/app/features/library/components/library-create-dialog/library-create-dialog.model';
 import { GameNewsComponent } from '../components/game-news/game-news.component';
 import { GameNotesComponent } from '../components/game-notes/game-notes.component';
 import { GameQuestsComponent } from '../components/game-quests/game-quests.component';
@@ -62,6 +71,7 @@ import { GameDlcListComponent } from '../components/game-dlc-list/game-dlc-list.
     GameForecastComponent,
     GameTrophiesComponent,
     GameDlcListComponent,
+    LibraryCreateDialogComponent,
   ],
 })
 export class MyGameDetailsPage implements OnInit {
@@ -76,6 +86,12 @@ export class MyGameDetailsPage implements OnInit {
   private readonly alertController = inject(AlertController);
   private readonly actionSheetController = inject(ActionSheetController);
   private readonly mediaStore = inject(MediaStore);
+  private readonly mediaView = inject(MediaLibraryViewService);
+  readonly auth = inject(AuthService);
+
+  /** Catalog dialog needs a MediaModeOption — this page is games-only. */
+  readonly gamesMode: MediaModeOption =
+    MEDIA_MODE_OPTIONS.find((option) => option.id === 'games') ?? MEDIA_MODE_OPTIONS[0];
 
   game: GameWithFlexibleLibrary | null = null;
   forecast: GameForecast | null = null;
@@ -88,6 +104,13 @@ export class MyGameDetailsPage implements OnInit {
   isUpdatingLibrary = false;
   isSavingNotes = false;
   headerCondensed = false;
+
+  // Admin edit/delete state ----------------------------------------------------
+  isEditDialogOpen = false;
+  isSavingCatalogEdit = false;
+  editErrorMessage = '';
+  editForm: CreateMediaForm = emptyCreateForm();
+  isDeletingCatalogEntry = false;
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async (params) => {
@@ -418,5 +441,149 @@ export class MyGameDetailsPage implements OnInit {
   private showError(message: string): void {
     this.errorMessage = message;
     this.isLoading = false;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Admin / editor catalog actions
+  // ---------------------------------------------------------------------------
+
+  /** Status options bound to the (unused-in-edit-mode) library toggle. */
+  get gameStatusOptions() {
+    return this.mediaView.statusOptions(this.gamesMode);
+  }
+
+  /** Admins and editors can mutate the shared catalog entry from here. */
+  get canEditCatalog(): boolean {
+    return this.auth.canEditCatalog();
+  }
+
+  openEditDialog(): void {
+    if (!this.canEditCatalog || !this.game) return;
+    this.editErrorMessage = '';
+    this.editForm = this.gameToCreateForm(this.game);
+    this.isEditDialogOpen = true;
+  }
+
+  closeEditDialog(): void {
+    if (this.isSavingCatalogEdit) return;
+    this.isEditDialogOpen = false;
+  }
+
+  /** Commit catalog edits via GameService.put, then refetch the page. */
+  async submitCatalogEdit(): Promise<void> {
+    if (!this.canEditCatalog || !this.game || this.isSavingCatalogEdit) return;
+    const name = this.editForm.name.trim();
+    if (!name) {
+      this.editErrorMessage = 'Title is required.';
+      return;
+    }
+
+    this.isSavingCatalogEdit = true;
+    this.editErrorMessage = '';
+    const gameId = this.game.id;
+
+    try {
+      const updated = Object.assign(new Game(), this.game, {
+        name,
+        description: this.editForm.description,
+        releaseDate: this.parseDateOrNull(this.editForm.releaseDate) ?? this.game.releaseDate,
+        genre: this.editForm.genre,
+        platforms: this.editForm.platforms,
+        playtime: this.editForm.playtime ?? 0,
+        image: this.editForm.cover ?? this.game.image,
+      });
+
+      await firstValueFrom(this.gameService.put(gameId, updated));
+      this.isEditDialogOpen = false;
+      await this.loadGameAndQuests(gameId);
+    } catch (error) {
+      this.editErrorMessage = extractErrorMessage(
+        error,
+        'Game could not be updated.',
+      );
+    } finally {
+      this.isSavingCatalogEdit = false;
+    }
+  }
+
+  /** Confirm + delete the catalog game. On success, navigates back to /library. */
+  async confirmDeleteCatalogEntry(): Promise<void> {
+    if (!this.canEditCatalog || !this.game || this.isDeletingCatalogEntry) return;
+
+    const libraryCount = this.isInLibrary ? 1 : 0;
+    const libraryWarning = libraryCount > 0
+      ? ' It is currently referenced by your personal library entry.'
+      : '';
+
+    const alert = await this.alertController.create({
+      header: `Delete "${this.game.name}"?`,
+      message:
+        `This removes the shared catalog game, including its metadata, cover link, achievements, and any dependent records.${libraryWarning} This cannot be undone.`,
+      cssClass: 'media-confirm-alert',
+      buttons: [
+        { text: 'Keep', role: 'cancel' },
+        {
+          text: 'Delete',
+          role: 'destructive',
+          cssClass: 'media-confirm-alert__destructive',
+          handler: () => {
+            void this.deleteCatalogEntry();
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  private async deleteCatalogEntry(): Promise<void> {
+    if (!this.canEditCatalog || !this.game || this.isDeletingCatalogEntry) return;
+    const gameId = this.game.id;
+    this.isDeletingCatalogEntry = true;
+
+    try {
+      await firstValueFrom(this.gameService.delete(gameId));
+      this.mediaStore.removeItem(gameId);
+      void this.router.navigateByUrl('/library');
+    } catch (error) {
+      this.errorMessage = extractErrorMessage(error, 'Game could not be deleted.');
+    } finally {
+      this.isDeletingCatalogEntry = false;
+    }
+  }
+
+  /** Maps the loaded Game into the create-dialog form draft for editing. */
+  private gameToCreateForm(game: GameWithFlexibleLibrary): CreateMediaForm {
+    const blank = emptyCreateForm();
+    return {
+      ...blank,
+      name: game.name ?? '',
+      description: game.description ?? '',
+      releaseDate: this.toDateInputValue(game.releaseDate),
+      genre: game.genre ?? '',
+      platforms: Number(game.platforms ?? 0),
+      playtime: game.playtime ?? null,
+      // Always render the edit form with the toggle off; it's hidden anyway
+      // in edit mode but keep the data shape consistent.
+      createLibraryEntry: false,
+      cover: game.image ?? null,
+      coverPreviewUrl: null,
+    };
+  }
+
+  /** Coerce the Game's releaseDate (Date | string) into a YYYY-MM-DD value. */
+  private toDateInputValue(value: Date | string | null | undefined): string {
+    if (!value) return '';
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  private parseDateOrNull(value: string): Date | null {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 }

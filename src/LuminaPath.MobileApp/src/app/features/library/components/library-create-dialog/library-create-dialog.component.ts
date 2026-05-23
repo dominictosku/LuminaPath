@@ -46,6 +46,12 @@ export class LibraryCreateDialogComponent {
   readonly statusOptions = input<MediaStatusOption[]>([]);
   readonly isSaving = input<boolean>(false);
   readonly errorMessage = input<string>('');
+  /**
+   * When true the dialog renders in "edit" mode: heading and submit-button
+   * copy switch to "Save changes", and the "Also add to my library" toggle
+   * is hidden because that flow only makes sense when creating fresh.
+   */
+  readonly isEditing = input<boolean>(false);
 
   readonly dismiss = output<void>();
   readonly submit = output<void>();
