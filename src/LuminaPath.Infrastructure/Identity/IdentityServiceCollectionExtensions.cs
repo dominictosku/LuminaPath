@@ -15,7 +15,15 @@ internal static class IdentityServiceCollectionExtensions
             .Validate(AuthCookieOptions.HasValidCookieSecurePolicy, "Auth:CookieSecurePolicy must be a valid CookieSecurePolicy value.")
             .ValidateOnStart();
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            // Used by the catalog controllers' mutation endpoints (Games,
+            // Animes, Series, Movies) — POST/PUT/DELETE require an
+            // Administrator or Editor role. Mirrors the Blazor app's
+            // BaseAuth.CanUserEdit check.
+            options.AddPolicy(AuthorizationPolicies.CatalogEditors, policy =>
+                policy.RequireRole("Administrator", "Editor"));
+        });
         services.AddIdentityApiEndpoints<LuminaUser>(options =>
         {
             options.Password.RequireDigit = true;

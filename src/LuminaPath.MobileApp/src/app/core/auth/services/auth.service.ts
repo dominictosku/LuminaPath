@@ -1,7 +1,7 @@
-import { Credentials, User } from '../models/user.model';
-import { catchError, map, Observable, of, tap, throwError } from 'rxjs';
+import { canEditCatalog, Credentials, hasAdminRole, User } from '../models/user.model';
+import { catchError, map, Observable, of, switchMap, tap, throwError } from 'rxjs';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
 
 export interface LoginResult {
@@ -11,6 +11,28 @@ export interface LoginResult {
 
 interface IdentityLoginResponse {
   requiresTwoFactor?: boolean;
+}
+
+/**
+ * Loose shape of the `/manage/info` response. ASP.NET Core Identity's
+ * default `InfoResponse` exposes email + isEmailConfirmed; we accept any
+ * extras the server may add.
+ */
+interface UserInfoResponse {
+  userName?: string;
+  email?: string;
+  age?: number;
+  [key: string]: unknown;
+}
+
+/**
+ * Shape of `/api/manage/roles`. The backend returns a `Roles` array
+ * (System.Text.Json camel-cases this to `roles` by default but accept
+ * both for safety in case the server is reconfigured).
+ */
+interface UserRolesResponse {
+  roles?: string[];
+  Roles?: string[];
 }
 
 @Injectable({
@@ -23,10 +45,41 @@ export class AuthService {
   private readonly authenticatedSignal = signal<boolean>(false);
   readonly isAuthenticated = this.authenticatedSignal.asReadonly();
 
+  /**
+   * Roles for the current session, populated from `/api/manage/roles`
+   * after a successful auth check. Stays empty when the call fails or
+   * returns nothing — admin-gated UI just hides in that case.
+   */
+  private readonly rolesSignal = signal<readonly string[]>([]);
+  readonly roles = this.rolesSignal.asReadonly();
+  readonly isAdmin = computed(() => hasAdminRole(this.rolesSignal()));
+  readonly canEditCatalog = computed(() => canEditCatalog(this.rolesSignal()));
+
   getUserInfo(): Observable<User> {
-    return this.http.get<User>(this.apiEndpoint.url('manage/info'), {
+    return this.http.get<UserInfoResponse>(this.apiEndpoint.url('manage/info'), {
       withCredentials: true,
-    });
+    }).pipe(
+      map((response) => response as unknown as User),
+    );
+  }
+
+  /**
+   * Fetches the current user's roles from the dedicated backend endpoint
+   * and writes them into `rolesSignal`. Swallows errors (returns []) so a
+   * missing endpoint or transient failure can't break the auth flow —
+   * the UI just falls back to "no admin access".
+   */
+  refreshRoles(): Observable<readonly string[]> {
+    return this.http.get<UserRolesResponse>(this.apiEndpoint.url('manage/roles'), {
+      withCredentials: true,
+    }).pipe(
+      map((response) => response?.roles ?? response?.Roles ?? []),
+      tap((roles) => this.rolesSignal.set([...roles])),
+      catchError(() => {
+        this.rolesSignal.set([]);
+        return of<readonly string[]>([]);
+      }),
+    );
   }
 
   login(credentials: Credentials): Observable<LoginResult> {
@@ -61,9 +114,13 @@ export class AuthService {
       {},
       { withCredentials: true }
     ).pipe(
-      tap(() => this.authenticatedSignal.set(false)),
+      tap(() => {
+        this.authenticatedSignal.set(false);
+        this.rolesSignal.set([]);
+      }),
       catchError((error) => {
         this.authenticatedSignal.set(false);
+        this.rolesSignal.set([]);
         throw error;
       })
     );
@@ -71,12 +128,17 @@ export class AuthService {
 
   isLoggedIn(): Observable<boolean> {
     return this.getUserInfo().pipe(
-      map(() => {
+      switchMap(() => {
         this.authenticatedSignal.set(true);
-        return true;
+        // Hydrate roles alongside the auth check so admin-only UI is
+        // available immediately. `refreshRoles` swallows its own errors,
+        // so a missing endpoint can't make a logged-in user look logged
+        // out.
+        return this.refreshRoles().pipe(map(() => true));
       }),
       catchError(() => {
         this.authenticatedSignal.set(false);
+        this.rolesSignal.set([]);
         return of(false);
       })
     );
@@ -88,6 +150,7 @@ export class AuthService {
 
   clearSession() {
     this.authenticatedSignal.set(false);
+    this.rolesSignal.set([]);
   }
 
   private toLoginPayload(credentials: Credentials) {

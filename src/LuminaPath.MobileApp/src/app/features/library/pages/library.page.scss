@@ -133,9 +133,29 @@ app-library-toolbar {
 
 .toolbar-top {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 172px;
+  grid-template-columns: minmax(220px, 1fr) auto;
   gap: 10px;
   align-items: stretch;
+}
+
+.toolbar-top__right {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.toolbar-top__right .view-toggle {
+  flex: 0 0 172px;
+}
+
+.create-button {
+  --border-radius: 16px;
+  --padding-start: 14px;
+  --padding-end: 14px;
+  min-height: 50px;
+  height: 50px;
+  margin: 0;
+  font-weight: 700;
 }
 
 .library-search {

@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { Router } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular/standalone';
 import { Observable, of, throwError } from 'rxjs';
+import { signal } from '@angular/core';
 
 import { LibraryPage } from './library.page';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
@@ -9,6 +10,13 @@ import { PaginateResult } from 'src/app/core/entities/paginatedResult';
 import { MediaLibraryFacade } from '../services/media-library.facade';
 import { MediaItem, UserMediaEntry } from '../models/media-item.model';
 import { GameStatus } from '../models/library-status.model';
+import { GameService } from 'src/app/features/games/services/game.service';
+import { AnimeService } from 'src/app/features/animes/services/anime.service';
+import { SeriesService } from 'src/app/features/series/services/series.service';
+import { AuthService } from 'src/app/core/auth/services/auth.service';
+import { Game } from 'src/app/features/games/models/games.model';
+import { Anime } from 'src/app/features/animes/models/animes.model';
+import { Series } from 'src/app/features/series/models/series.model';
 
 function makeGame(overrides: Partial<MediaItem> = {}): MediaItem {
   return {
@@ -53,6 +61,10 @@ describe('LibraryPage', () => {
   let mediaLibrary: jasmine.SpyObj<MediaLibraryFacade>;
   let releaseNotifications: jasmine.SpyObj<ReleaseNotificationService>;
   let router: jasmine.SpyObj<Router>;
+  let gameService: jasmine.SpyObj<GameService>;
+  let animeService: jasmine.SpyObj<AnimeService>;
+  let seriesService: jasmine.SpyObj<SeriesService>;
+  let authIsAdmin: ReturnType<typeof signal<boolean>>;
 
   beforeEach(() => {
     localStorage.clear();
@@ -76,6 +88,25 @@ describe('LibraryPage', () => {
     releaseNotifications.syncForGames.and.resolveTo();
     router.navigate.and.resolveTo(true);
 
+    // Catalog services for the admin create flow — stubs by default so the
+    // page can construct; individual tests opt in to behavior they need.
+    gameService = jasmine.createSpyObj<GameService>('GameService', ['post']);
+    animeService = jasmine.createSpyObj<AnimeService>('AnimeService', ['post']);
+    seriesService = jasmine.createSpyObj<SeriesService>('SeriesService', ['post']);
+    gameService.post.and.returnValue(of(new Game()));
+    animeService.post.and.returnValue(of(new Anime()));
+    seriesService.post.and.returnValue(of(new Series()));
+
+    // Default: not an admin. Tests that need the create button flip this
+    // before the relevant assertions.
+    authIsAdmin = signal(false);
+    const authStub = {
+      isAdmin: authIsAdmin.asReadonly(),
+      isAuthenticated: signal(true).asReadonly(),
+      roles: signal<readonly string[]>([]).asReadonly(),
+      canEditCatalog: signal(false).asReadonly(),
+    } as unknown as AuthService;
+
     TestBed.configureTestingModule({
       imports: [LibraryPage],
       providers: [
@@ -83,6 +114,10 @@ describe('LibraryPage', () => {
         { provide: MediaLibraryFacade, useValue: mediaLibrary },
         { provide: ReleaseNotificationService, useValue: releaseNotifications },
         { provide: Router, useValue: router },
+        { provide: GameService, useValue: gameService },
+        { provide: AnimeService, useValue: animeService },
+        { provide: SeriesService, useValue: seriesService },
+        { provide: AuthService, useValue: authStub },
       ],
     });
     TestBed.overrideComponent(LibraryPage, { set: { template: '' } });
@@ -412,5 +447,143 @@ describe('LibraryPage', () => {
 
     expect(mediaLibrary.detailsRoute).toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledOnceWith(['/library', 'games', 42]);
+  });
+
+  describe('admin create flow', () => {
+    it('canCreateCatalogEntry is false for non-admins', () => {
+      configure(of(pageOf([])));
+      fixture.detectChanges();
+
+      authIsAdmin.set(false);
+      expect(component.canCreateCatalogEntry).toBeFalse();
+    });
+
+    it('canCreateCatalogEntry is true for admins on creatable modes', () => {
+      configure(of(pageOf([])));
+      fixture.detectChanges();
+
+      authIsAdmin.set(true);
+      // Default media mode is games — creatable.
+      expect(component.canCreateCatalogEntry).toBeTrue();
+    });
+
+    it('openCreateDialog is a no-op when the user is not an admin', () => {
+      configure(of(pageOf([])));
+      fixture.detectChanges();
+
+      authIsAdmin.set(false);
+      component.openCreateDialog();
+      expect(component.isCreateDialogOpen).toBeFalse();
+    });
+
+    it('openCreateDialog resets the form and opens the modal for admins', () => {
+      configure(of(pageOf([])));
+      fixture.detectChanges();
+
+      authIsAdmin.set(true);
+      component.createForm.name = 'leftover';
+      component.openCreateDialog();
+
+      expect(component.isCreateDialogOpen).toBeTrue();
+      expect(component.createForm.name).toBe('');
+      expect(component.createForm.createLibraryEntry).toBeFalse();
+    });
+
+    it('submitCreate flags a missing title without calling the service', fakeAsync(() => {
+      configure(of(pageOf([])));
+      fixture.detectChanges();
+
+      authIsAdmin.set(true);
+      component.openCreateDialog();
+      component.createForm.name = '   ';
+
+      component.submitCreate();
+      tick();
+
+      expect(component.createErrorMessage).toBe('Title is required.');
+      expect(gameService.post).not.toHaveBeenCalled();
+    }));
+
+    it('submitCreate posts a game and closes the dialog on success', fakeAsync(() => {
+      configure(of(pageOf([])));
+      fixture.detectChanges();
+
+      authIsAdmin.set(true);
+      component.openCreateDialog();
+      component.createForm.name = 'Hades';
+      component.createForm.description = 'Escape the underworld';
+      component.createForm.platforms = 8;
+      component.createForm.playtime = 25;
+
+      const created = Object.assign(new Game(), { id: 101, name: 'Hades' });
+      gameService.post.and.returnValue(of(created));
+
+      component.submitCreate();
+      tick();
+
+      expect(gameService.post).toHaveBeenCalledTimes(1);
+      const sent = gameService.post.calls.mostRecent().args[0];
+      expect(sent.name).toBe('Hades');
+      expect(sent.description).toBe('Escape the underworld');
+      expect(sent.platforms).toBe(8);
+      expect(sent.playtime).toBe(25);
+
+      expect(component.isCreateDialogOpen).toBeFalse();
+      expect(component.successMessage).toBe('Hades was created.');
+      expect(component.isCreatingCatalogEntry).toBeFalse();
+    }));
+
+    it('submitCreate surfaces backend errors and keeps the dialog open', fakeAsync(() => {
+      configure(of(pageOf([])));
+      fixture.detectChanges();
+
+      authIsAdmin.set(true);
+      component.openCreateDialog();
+      component.createForm.name = 'Hades';
+
+      gameService.post.and.returnValue(throwError(() => ({ error: 'Game already exists' })));
+
+      component.submitCreate();
+      tick();
+
+      expect(component.createErrorMessage).toBe('Game already exists');
+      expect(component.isCreateDialogOpen).toBeTrue();
+      expect(component.isCreatingCatalogEntry).toBeFalse();
+    }));
+
+    it('submitCreate also POSTs the library entry when the toggle is on', fakeAsync(() => {
+      configure(of(pageOf([])));
+      fixture.detectChanges();
+
+      authIsAdmin.set(true);
+      component.openCreateDialog();
+      component.createForm.name = 'Hades';
+      component.createForm.createLibraryEntry = true;
+      component.createForm.libraryEntry = {
+        status: 2,
+        timeSpend: 7,
+        rating: 9,
+        startDate: '2026-05-10',
+        endDate: null,
+        personalNotes: null,
+        currentEpisode: null,
+      };
+
+      const created = Object.assign(new Game(), { id: 202, name: 'Hades' });
+      gameService.post.and.returnValue(of(created));
+      mediaLibrary.addToLibrary.and.returnValue(
+        of({ id: 999, rating: 9, startDate: '2026-05-10', endDate: null, status: 2, timeSpend: 7 } as UserMediaEntry),
+      );
+
+      component.submitCreate();
+      tick();
+
+      expect(mediaLibrary.addToLibrary).toHaveBeenCalledOnceWith(202, jasmine.objectContaining({
+        status: 2,
+        timeSpend: 7,
+        rating: 9,
+        startDate: '2026-05-10',
+      }));
+    }));
   });
 });

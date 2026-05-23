@@ -2,7 +2,9 @@ using LuminaPath.Core.Entities;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models.Base;
+using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -45,4 +47,26 @@ public abstract class MediaController<TMedia, TMediaDto, TService, TUserMedia> :
         var result = await MediaService.GetByIdAndMap<TMediaDto>(id, includes, userId);
         return Ok(result);
     }
+
+    // ---------------------------------------------------------------------
+    // Catalog mutation gates: any user can browse / read the catalog (the
+    // class-level [Authorize] handles that), but adding / updating /
+    // deleting a shared catalog entry is restricted to Administrator or
+    // Editor roles via the CatalogEditors policy.
+    // ---------------------------------------------------------------------
+
+    [HttpPost]
+    [Authorize(Policy = AuthorizationPolicies.CatalogEditors)]
+    public override Task<ActionResult> PostAsync(TMediaDto viewModel)
+        => base.PostAsync(viewModel);
+
+    [HttpPut("{id}")]
+    [Authorize(Policy = AuthorizationPolicies.CatalogEditors)]
+    public override Task<IActionResult> PutAsync(int id, TMediaDto viewModel)
+        => base.PutAsync(id, viewModel);
+
+    [HttpDelete("{id}")]
+    [Authorize(Policy = AuthorizationPolicies.CatalogEditors)]
+    public override Task<IActionResult> DeleteAsync(int? id)
+        => base.DeleteAsync(id);
 }

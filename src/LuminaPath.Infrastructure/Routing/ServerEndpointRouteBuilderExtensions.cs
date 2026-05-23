@@ -33,9 +33,33 @@ public static class ServerEndpointRouteBuilderExtensions
         app.MapGet("/api/admin/database-backups/{fileName}/download", DownloadDatabaseBackupAsync)
             .RequireAuthorization(policy => policy.RequireRole("Administrator"));
 
+        // Returns the role names for the currently signed-in user. The
+        // mobile app calls this once after a successful session check so
+        // it can gate admin-only UI (e.g. catalog "Create" buttons).
+        // The default Identity InfoResponse does NOT include roles, hence
+        // this dedicated endpoint instead of patching MapIdentityApi.
+        app.MapGet("/api/manage/roles", GetUserRolesAsync)
+            .RequireAuthorization();
+
         app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "LuminaPath" }))
             .AllowAnonymous();
     }
+
+    private static async Task<IResult> GetUserRolesAsync(
+        HttpContext context,
+        UserManager<LuminaUser> userManager)
+    {
+        var user = await userManager.GetUserAsync(context.User);
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var roles = await userManager.GetRolesAsync(user);
+        return Results.Ok(new UserRolesResponse(roles));
+    }
+
+    private sealed record UserRolesResponse(IList<string> Roles);
 
     private static async Task<IResult> DownloadDatabaseBackupAsync(
         HttpContext context,

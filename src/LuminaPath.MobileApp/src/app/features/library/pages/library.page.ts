@@ -1,6 +1,7 @@
 
 import { Component, OnInit, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import {
   IonButton,
   IonContent,
@@ -12,10 +13,16 @@ import {
   IonSkeletonText,
 } from '@ionic/angular/standalone';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { Platforms } from '../../games/models/games.model';
+import { Game, Platforms } from '../../games/models/games.model';
+import { Anime } from '../../animes/models/animes.model';
+import { Series } from '../../series/models/series.model';
+import { GameService } from '../../games/services/game.service';
+import { AnimeService } from '../../animes/services/anime.service';
+import { SeriesService } from '../../series/services/series.service';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
 import { MediaMode, MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
+import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { MediaLibraryFacade } from '../services/media-library.facade';
 import { MediaStore } from '../state/media.store';
 import { MediaItem } from '../models/media-item.model';
@@ -27,6 +34,11 @@ import { LibraryListRowComponent } from '../components/library-list-row/library-
 import { LibraryHeroComponent } from '../components/library-hero/library-hero.component';
 import { LibraryToolbarComponent } from '../components/library-toolbar/library-toolbar.component';
 import { LibraryAddDialogComponent } from '../components/library-add-dialog/library-add-dialog.component';
+import { LibraryCreateDialogComponent } from '../components/library-create-dialog/library-create-dialog.component';
+import {
+  CreateMediaForm,
+  emptyCreateForm,
+} from '../components/library-create-dialog/library-create-dialog.model';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 import { LibraryIntelligenceService } from '../services/library-intelligence.service';
 import {
@@ -58,6 +70,7 @@ import { buildPageFilter, LibraryFilterState } from '../library-filter.helpers';
     LibraryHeroComponent,
     LibraryToolbarComponent,
     LibraryAddDialogComponent,
+    LibraryCreateDialogComponent,
 ],
 })
 export class LibraryPage implements OnInit {
@@ -69,6 +82,10 @@ export class LibraryPage implements OnInit {
   readonly mediaView = inject(MediaLibraryViewService);
   private libraryIntelligence = inject(LibraryIntelligenceService);
   private libraryFilterPresets = inject(LibraryFilterPresetService);
+  private gameService = inject(GameService);
+  private animeService = inject(AnimeService);
+  private seriesService = inject(SeriesService);
+  readonly auth = inject(AuthService);
 
   games: MediaItem[] = [];
   filteredGames: MediaItem[] = [];
@@ -109,6 +126,18 @@ export class LibraryPage implements OnInit {
   mediaMode: MediaModeOption;
   currentPage = 1;
   totalPages = 1;
+
+  // Admin create-catalog state ------------------------------------------------
+  /** Only games / animes / series are creatable from this dialog. */
+  private static readonly CREATABLE_KINDS: ReadonlySet<MediaMode> = new Set([
+    'games',
+    'animes',
+    'series',
+  ]);
+  isCreateDialogOpen = false;
+  isCreatingCatalogEntry = false;
+  createErrorMessage = '';
+  createForm: CreateMediaForm = emptyCreateForm();
 
   private readonly pageSize = 24;
 
@@ -476,5 +505,126 @@ export class LibraryPage implements OnInit {
       releaseDate: game.releaseDate,
       myGames: game.libraryEntry,
     })) as never[];
+  }
+
+  // ---------------------------------------------------------------------------
+  // Admin create flow
+  // ---------------------------------------------------------------------------
+
+  /** Show the Create button only when the user is an admin AND the active
+   *  media mode is one we know how to create (games / animes / series). */
+  get canCreateCatalogEntry(): boolean {
+    return this.auth.isAdmin() && LibraryPage.CREATABLE_KINDS.has(this.mediaMode.id);
+  }
+
+  openCreateDialog(): void {
+    if (!this.canCreateCatalogEntry) return;
+    this.createErrorMessage = '';
+    this.createForm = emptyCreateForm();
+    this.isCreateDialogOpen = true;
+  }
+
+  closeCreateDialog(): void {
+    if (this.isCreatingCatalogEntry) return;
+    this.isCreateDialogOpen = false;
+  }
+
+  async submitCreate(): Promise<void> {
+    if (!this.canCreateCatalogEntry || this.isCreatingCatalogEntry) return;
+
+    const name = this.createForm.name.trim();
+    if (!name) {
+      this.createErrorMessage = 'Title is required.';
+      return;
+    }
+
+    this.isCreatingCatalogEntry = true;
+    this.createErrorMessage = '';
+
+    try {
+      const created = await this.createCatalogEntry(name);
+      // Optional sibling: also create the personal library entry.
+      if (this.createForm.createLibraryEntry && created.id > 0) {
+        await this.mediaStore.addToLibrary(created.id, {
+          status: this.createForm.libraryEntry.status,
+          timeSpend: this.createForm.libraryEntry.timeSpend ?? 0,
+          rating: this.createForm.libraryEntry.rating,
+          startDate: this.normalizeIsoDate(this.createForm.libraryEntry.startDate),
+          endDate: this.normalizeIsoDate(this.createForm.libraryEntry.endDate),
+          personalNotes: this.createForm.libraryEntry.personalNotes,
+          currentEpisode: this.createForm.libraryEntry.currentEpisode,
+        });
+      }
+      this.isCreateDialogOpen = false;
+      this.successMessage = `${name} was created.`;
+      this.triggerAddHaptic();
+      this.loadGames();
+    } catch (error) {
+      this.createErrorMessage = extractErrorMessage(
+        error,
+        `${this.capitalize(this.mediaMode.singular)} could not be created.`,
+      );
+    } finally {
+      this.isCreatingCatalogEntry = false;
+    }
+  }
+
+  /** Dispatch to the right typed service per media mode, returning the
+   *  freshly-created entity (so we can chain MyGame/MyAnime/MySeries). */
+  private async createCatalogEntry(name: string): Promise<{ id: number }> {
+    const releaseDate = this.parseDateOrNull(this.createForm.releaseDate);
+    switch (this.mediaMode.id) {
+      case 'games': {
+        const game = Object.assign(new Game(), {
+          name,
+          description: this.createForm.description,
+          releaseDate: releaseDate ?? new Date(),
+          genre: this.createForm.genre,
+          platforms: this.createForm.platforms,
+          playtime: this.createForm.playtime ?? 0,
+        });
+        return firstValueFrom(this.gameService.post(game));
+      }
+      case 'animes': {
+        const anime = Object.assign(new Anime(), {
+          name,
+          description: this.createForm.description,
+          releaseDate: this.createForm.releaseDate || null,
+          genre: this.createForm.genre,
+          episodeCount: this.createForm.episodeCount,
+          expectedWatchTimePerEpisodeMinutes: this.createForm.expectedWatchTimePerEpisodeMinutes,
+          expectedWatchTimeMinutes: this.createForm.expectedWatchTimeMinutes,
+        });
+        return firstValueFrom(this.animeService.post(anime));
+      }
+      case 'series': {
+        const series = Object.assign(new Series(), {
+          name,
+          description: this.createForm.description,
+          releaseDate: this.createForm.releaseDate || null,
+          genre: this.createForm.genre,
+          episodeCount: this.createForm.episodeCount,
+          expectedWatchTimePerEpisodeMinutes: this.createForm.expectedWatchTimePerEpisodeMinutes,
+          expectedWatchTimeMinutes: this.createForm.expectedWatchTimeMinutes,
+        });
+        return firstValueFrom(this.seriesService.post(series));
+      }
+      default:
+        throw new Error(`Create not supported for ${this.mediaMode.id}.`);
+    }
+  }
+
+  private parseDateOrNull(value: string): Date | null {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private normalizeIsoDate(value: string | Date | null | undefined): string | null {
+    if (!value) return null;
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+    }
+    return value || null;
   }
 }

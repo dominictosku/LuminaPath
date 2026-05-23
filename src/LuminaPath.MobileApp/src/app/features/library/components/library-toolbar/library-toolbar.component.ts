@@ -74,10 +74,14 @@ export class LibraryToolbarComponent implements OnDestroy {
   readonly hasNextBest = input<boolean>(false);
   readonly isGamesMode = input<boolean>(false);
 
+  /** When true, the admin-only "Create" button is shown next to the search. */
+  readonly canCreate = input<boolean>(false);
+
   readonly apply = output<void>();
   readonly savePreset = output<void>();
   readonly applyPreset = output<LibraryFilterPreset>();
   readonly deletePreset = output<LibraryFilterPreset>();
+  readonly create = output<void>();
 
   /** Local search mirror so the input stays responsive during the debounce. */
   inputValue = '';

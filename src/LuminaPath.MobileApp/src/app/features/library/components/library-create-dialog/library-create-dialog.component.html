@@ -1,0 +1,250 @@
+<ion-modal
+  class="add-game-modal create-modal"
+  [isOpen]="isOpen()"
+  (didDismiss)="dismiss.emit()">
+  <ng-template>
+    <form class="library-editor create-editor" (ngSubmit)="submit.emit()" novalidate>
+      <header class="create-header">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="add-circle-outline"></ion-icon>
+            Create
+          </span>
+          <h2>New {{ mediaMode().singular }}</h2>
+          <p>Add a {{ mediaMode().singular }} to the shared catalog.</p>
+        </div>
+        <ion-button
+          type="button"
+          fill="clear"
+          class="dialog-icon-button"
+          aria-label="Close"
+          [disabled]="isSaving()"
+          (click)="dismiss.emit()">
+          <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+        </ion-button>
+      </header>
+
+      <section class="editor-body">
+        @if (errorMessage()) {
+          <div class="notice notice--error" role="alert">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <div class="editor-grid create-grid">
+          <label class="form-field form-field--full">
+            <span>Title</span>
+            <input
+              type="text"
+              required
+              autocomplete="off"
+              [ngModel]="form().name"
+              (ngModelChange)="form.update((f) => ({ ...f, name: $event }))"
+              name="name" />
+          </label>
+
+          <label class="form-field form-field--full">
+            <span>Description</span>
+            <textarea
+              rows="3"
+              [ngModel]="form().description"
+              (ngModelChange)="form.update((f) => ({ ...f, description: $event }))"
+              name="description"></textarea>
+          </label>
+
+          <label class="form-field">
+            <span>Release date</span>
+            <input
+              type="date"
+              [ngModel]="form().releaseDate"
+              (ngModelChange)="form.update((f) => ({ ...f, releaseDate: $event }))"
+              name="releaseDate" />
+          </label>
+
+          <label class="form-field">
+            <span>Genre</span>
+            <input
+              type="text"
+              placeholder="e.g. RPG, Adventure"
+              [ngModel]="form().genre"
+              (ngModelChange)="form.update((f) => ({ ...f, genre: $event }))"
+              name="genre" />
+          </label>
+
+          @if (isGamesMode()) {
+            <fieldset class="form-field form-field--full platform-picker">
+              <legend>Platforms</legend>
+              <div class="platform-chips">
+                @for (option of platformChoices; track trackByValue($index, option)) {
+                  <button
+                    type="button"
+                    class="platform-chip"
+                    [class.platform-chip--active]="isPlatformSelected(option.value)"
+                    [attr.aria-pressed]="isPlatformSelected(option.value)"
+                    (click)="togglePlatform(option.value)">
+                    {{ option.label }}
+                  </button>
+                }
+              </div>
+            </fieldset>
+
+            <label class="form-field">
+              <span>Estimated playtime (h)</span>
+              <input
+                type="number"
+                min="0"
+                inputmode="decimal"
+                [ngModel]="form().playtime"
+                (ngModelChange)="form.update((f) => ({ ...f, playtime: $event }))"
+                name="playtime" />
+            </label>
+          }
+
+          @if (isEpisodeMode()) {
+            <label class="form-field">
+              <span>Episodes</span>
+              <input
+                type="number"
+                min="0"
+                inputmode="numeric"
+                [ngModel]="form().episodeCount"
+                (ngModelChange)="form.update((f) => ({ ...f, episodeCount: $event }))"
+                name="episodeCount" />
+            </label>
+            <label class="form-field">
+              <span>Per episode (min)</span>
+              <input
+                type="number"
+                min="0"
+                inputmode="numeric"
+                [ngModel]="form().expectedWatchTimePerEpisodeMinutes"
+                (ngModelChange)="form.update((f) => ({ ...f, expectedWatchTimePerEpisodeMinutes: $event }))"
+                name="perEpisodeMinutes" />
+            </label>
+            <label class="form-field">
+              <span>Total runtime (min)</span>
+              <input
+                type="number"
+                min="0"
+                inputmode="numeric"
+                [ngModel]="form().expectedWatchTimeMinutes"
+                (ngModelChange)="form.update((f) => ({ ...f, expectedWatchTimeMinutes: $event }))"
+                name="totalMinutes" />
+            </label>
+          }
+        </div>
+
+        <section class="library-toggle-section">
+          <header class="library-toggle-header">
+            <div>
+              <strong>Also add to my library</strong>
+              <small>Create a matching personal entry while saving.</small>
+            </div>
+            <label class="switch">
+              <input
+                type="checkbox"
+                [checked]="form().createLibraryEntry"
+                (change)="setCreateLibraryEntry($any($event.target).checked)"
+                name="createLibraryEntry" />
+              <span class="switch-track" aria-hidden="true">
+                <span class="switch-thumb"></span>
+              </span>
+              <span class="switch-label">{{ form().createLibraryEntry ? 'On' : 'Off' }}</span>
+            </label>
+          </header>
+
+          @if (form().createLibraryEntry) {
+            <fieldset class="status-picker">
+              <legend>Status</legend>
+              @for (status of statusOptions(); track status.value) {
+                <button
+                  type="button"
+                  class="status-option"
+                  [class.status-option--active]="form().libraryEntry.status === status.value"
+                  [attr.aria-pressed]="form().libraryEntry.status === status.value"
+                  (click)="selectStatus(status.value)">
+                  <span>{{ status.label }}</span>
+                  @if (form().libraryEntry.status === status.value) {
+                    <ion-icon name="checkmark-circle-outline"></ion-icon>
+                  }
+                </button>
+              }
+            </fieldset>
+
+            <div class="editor-grid">
+              <label class="form-field">
+                <span>{{ isGamesMode() ? 'Played hours' : 'Watched hours' }}</span>
+                <input
+                  type="number"
+                  min="0"
+                  inputmode="decimal"
+                  [ngModel]="form().libraryEntry.timeSpend"
+                  (ngModelChange)="form.update((f) => ({ ...f, libraryEntry: { ...f.libraryEntry, timeSpend: $event } }))"
+                  name="libTime" />
+              </label>
+
+              @if (isEpisodeMode()) {
+                <label class="form-field">
+                  <span>Current episode</span>
+                  <input
+                    type="number"
+                    min="0"
+                    inputmode="numeric"
+                    [ngModel]="form().libraryEntry.currentEpisode"
+                    (ngModelChange)="form.update((f) => ({ ...f, libraryEntry: { ...f.libraryEntry, currentEpisode: $event } }))"
+                    name="libCurrentEpisode" />
+                </label>
+              }
+
+              <label class="form-field">
+                <span>Rating</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  inputmode="numeric"
+                  placeholder="--"
+                  [ngModel]="form().libraryEntry.rating"
+                  (ngModelChange)="form.update((f) => ({ ...f, libraryEntry: { ...f.libraryEntry, rating: $event } }))"
+                  name="libRating" />
+              </label>
+
+              <label class="form-field">
+                <span>Started</span>
+                <input
+                  type="date"
+                  [ngModel]="form().libraryEntry.startDate"
+                  (ngModelChange)="form.update((f) => ({ ...f, libraryEntry: { ...f.libraryEntry, startDate: $event } }))"
+                  name="libStart" />
+              </label>
+
+              <label class="form-field">
+                <span>Finished</span>
+                <input
+                  type="date"
+                  [ngModel]="form().libraryEntry.endDate"
+                  (ngModelChange)="form.update((f) => ({ ...f, libraryEntry: { ...f.libraryEntry, endDate: $event } }))"
+                  name="libEnd" />
+              </label>
+            </div>
+          }
+        </section>
+      </section>
+
+      <footer class="editor-actions">
+        <ion-button
+          type="button"
+          fill="clear"
+          [disabled]="isSaving()"
+          (click)="dismiss.emit()">
+          Cancel
+        </ion-button>
+        <ion-button type="submit" [disabled]="isSaving() || !canSubmit()">
+          <ion-icon slot="start" [name]="isSaving() ? 'hourglass-outline' : 'add-outline'"></ion-icon>
+          {{ isSaving() ? 'Creating...' : 'Create ' + mediaMode().singular }}
+        </ion-button>
+      </footer>
+    </form>
+  </ng-template>
+</ion-modal>

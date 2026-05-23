@@ -1,0 +1,192 @@
+/* Styles specific to the admin create-catalog dialog. The shared editor
+   chrome (.library-editor, .editor-grid, .form-field, .status-picker,
+   .editor-actions, .notice) is provided by library.page.scss. */
+
+.create-editor {
+  /* Slightly different vertical rhythm than the add-to-library modal:
+     no cover hero, more breathing room around the form sections. */
+  display: grid;
+  gap: 18px;
+  padding: 20px 18px 16px;
+}
+
+.create-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+
+  h2 {
+    margin: 4px 0 2px;
+    font-size: 1.35rem;
+    line-height: 1.2;
+    color: var(--ink, #111827);
+  }
+
+  p {
+    margin: 0;
+    color: var(--muted, #667085);
+    font-size: 0.92rem;
+  }
+}
+
+.create-grid {
+  /* Reuses .editor-grid spacing; .form-field--full forces 1-col span on
+     wide-form rows like Title / Description / Platforms. */
+  .form-field--full {
+    grid-column: 1 / -1;
+  }
+}
+
+.platform-picker {
+  border: 0;
+  margin: 0;
+  padding: 0;
+
+  legend {
+    margin-bottom: 6px;
+    color: var(--muted, #667085);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
+.platform-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.platform-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--line, rgba(17, 24, 39, 0.12));
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--ink, #111827);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: rgba(37, 99, 235, 0.06);
+  }
+}
+
+.platform-chip--active {
+  border-color: var(--accent-border, rgba(37, 99, 235, 0.42));
+  background: var(--accent-soft, rgba(37, 99, 235, 0.12));
+  color: var(--accent, #2563eb);
+}
+
+.library-toggle-section {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px dashed var(--line, rgba(17, 24, 39, 0.14));
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.library-toggle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+
+  strong {
+    display: block;
+    color: var(--ink, #111827);
+    font-size: 0.98rem;
+  }
+
+  small {
+    color: var(--muted, #667085);
+    font-size: 0.82rem;
+  }
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    border: 0;
+  }
+}
+
+.switch-track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 44px;
+  height: 24px;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.18);
+  transition: background 0.18s ease;
+}
+
+.switch-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.25);
+  transition: transform 0.18s ease;
+}
+
+.switch input:checked + .switch-track {
+  background: var(--accent, #2563eb);
+
+  .switch-thumb {
+    transform: translateX(20px);
+  }
+}
+
+.switch-label {
+  color: var(--muted, #667085);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+/* The create dialog can be tall — keep the form scrollable so the footer
+   actions stay sticky-ish at the bottom of the modal viewport. */
+.create-editor .editor-body {
+  max-height: min(72vh, 640px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.notice--error {
+  /* Lightweight inline error style — falls back when the page-level
+     .notice doesn't cover error variants. */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  border-radius: 10px;
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  font-size: 0.92rem;
+
+  ion-icon {
+    flex: 0 0 auto;
+    font-size: 1.1rem;
+  }
+}

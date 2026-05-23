@@ -34,10 +34,12 @@
       [abandonedGameCount]="abandonedGameCount"
       [hasNextBest]="!!nextBestGame"
       [isGamesMode]="isGamesMode"
+      [canCreate]="canCreateCatalogEntry"
       (apply)="applyFilters()"
       (savePreset)="saveCurrentPreset()"
       (applyPreset)="applyPreset($event)"
-      (deletePreset)="deletePreset($event)" />
+      (deletePreset)="deletePreset($event)"
+      (create)="openCreateDialog()" />
 
     @if (!isLoading && nextBestGame; as best) {
       <section class="finish-pick">
@@ -147,4 +149,14 @@
     [isSaving]="selectedGame ? isAdding(selectedGame) : false"
     (dismiss)="closeAddDialog()"
     (submit)="submitAddGame()" />
+
+  <app-library-create-dialog
+    [(isOpen)]="isCreateDialogOpen"
+    [(form)]="createForm"
+    [mediaMode]="mediaMode"
+    [statusOptions]="statusOptions"
+    [isSaving]="isCreatingCatalogEntry"
+    [errorMessage]="createErrorMessage"
+    (dismiss)="closeCreateDialog()"
+    (submit)="submitCreate()" />
 </ion-content>
