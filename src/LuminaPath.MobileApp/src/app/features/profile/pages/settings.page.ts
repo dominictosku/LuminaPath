@@ -11,6 +11,7 @@ import { firstValueFrom, finalize } from 'rxjs';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
 import { ProfileService } from '../services/profile.service';
+import { TwoFactorCardComponent } from '../components/two-factor-card/two-factor-card.component';
 
 type FormState = 'idle' | 'saving' | 'success' | 'error';
 
@@ -23,7 +24,8 @@ type FormState = 'idle' | 'saving' | 'success' | 'error';
     RouterLink,
     IonButton,
     IonContent,
-    IonIcon
+    IonIcon,
+    TwoFactorCardComponent,
 ],
 })
 export class SettingsPage {

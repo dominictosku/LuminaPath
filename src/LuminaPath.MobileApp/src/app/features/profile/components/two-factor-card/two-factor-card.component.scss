@@ -1,0 +1,309 @@
+/* All styling is local — no inheritance from settings.page.scss, so the
+   card looks the same whether dropped into Settings or any other host
+   page later. Uses Ionic CSS vars so it adapts to light + dark themes. */
+
+:host {
+  display: contents;
+}
+
+.two-factor-card {
+  /* `.settings-card` chrome (border, padding, gap, etc.) lives on the
+     parent class — see settings.page.scss. We only add 2FA-specific
+     extras here. */
+}
+
+.two-factor-card__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.two-factor-card__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.two-factor-card__badge--on {
+  background: rgba(16, 185, 129, 0.18);
+  color: var(--ion-color-success, #10b981);
+}
+
+.two-factor-card__badge--off {
+  background: rgba(125, 125, 125, 0.18);
+  color: var(--ion-color-step-600, rgba(125, 125, 125, 0.78));
+}
+
+.two-factor-card__loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ion-color-step-600, rgba(125, 125, 125, 0.78));
+  font-size: 0.92rem;
+}
+
+.two-factor-card__notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.92rem;
+
+  ion-icon {
+    flex: 0 0 auto;
+    font-size: 1.1rem;
+  }
+}
+
+.two-factor-card__notice--error {
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--ion-color-danger, #dc2626);
+}
+
+.two-factor-card__notice--success {
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--ion-color-success, #10b981);
+}
+
+/* ----- Recovery-codes panel -------------------------------------------- */
+
+.two-factor-card__recovery {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  border-radius: 12px;
+  background: rgba(234, 179, 8, 0.08);
+
+  header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+
+    ion-icon {
+      flex: 0 0 auto;
+      margin-top: 2px;
+      font-size: 1.2rem;
+      color: #b45309;
+    }
+
+    strong {
+      display: block;
+      color: var(--ion-text-color);
+      font-size: 0.98rem;
+    }
+
+    small {
+      display: block;
+      margin-top: 2px;
+      color: var(--ion-color-step-600, rgba(125, 125, 125, 0.78));
+      font-size: 0.84rem;
+    }
+  }
+}
+
+.two-factor-card__recovery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.94rem;
+    letter-spacing: 0.05em;
+    color: #1f2937;
+  }
+}
+
+.two-factor-card__recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ----- Setup flow ------------------------------------------------------- */
+
+.two-factor-card__setup {
+  display: grid;
+  gap: 14px;
+}
+
+.two-factor-card__steps {
+  display: grid;
+  gap: 18px;
+  margin: 0;
+  padding-left: 22px;
+
+  li {
+    color: var(--ion-text-color);
+
+    strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.98rem;
+    }
+
+    p {
+      margin: 0 0 8px;
+      color: var(--ion-color-step-600, rgba(125, 125, 125, 0.78));
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.two-factor-card__qr-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.two-factor-card__qr {
+  flex: 0 0 auto;
+  padding: 10px;
+  border: 1px solid var(--ion-color-step-150, rgba(125, 125, 125, 0.25));
+  border-radius: 12px;
+  background: #fff;
+
+  /* The generated <svg> has no intrinsic size — pin it so the tile
+     stays consistent on every viewport. */
+  ::ng-deep svg {
+    display: block;
+    width: 180px;
+    height: 180px;
+  }
+}
+
+.two-factor-card__manual {
+  display: grid;
+  gap: 6px;
+  align-content: flex-start;
+  min-width: 0;
+  flex: 1 1 200px;
+
+  span {
+    color: var(--ion-color-step-600, rgba(125, 125, 125, 0.78));
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  code {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--ion-color-step-50, rgba(125, 125, 125, 0.08));
+    color: var(--ion-text-color);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    word-break: break-all;
+  }
+
+  small {
+    color: var(--ion-color-step-550, rgba(125, 125, 125, 0.7));
+    font-size: 0.78rem;
+  }
+}
+
+.two-factor-card__verify {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+
+  label {
+    flex: 1 1 160px;
+    min-width: 0;
+  }
+
+  input {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--ion-color-step-150, rgba(125, 125, 125, 0.25));
+    border-radius: 10px;
+    background: var(--ion-item-background, var(--ion-color-step-50));
+    color: var(--ion-text-color);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 1.05rem;
+    letter-spacing: 0.3em;
+    text-align: center;
+
+    &:focus {
+      outline: none;
+      border-color: var(--ion-color-primary, #3b82f6);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+    }
+  }
+}
+
+.two-factor-card__setup-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ----- Enabled-state status + actions ---------------------------------- */
+
+.two-factor-card__status {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--ion-color-step-150, rgba(125, 125, 125, 0.18));
+  border-radius: 12px;
+  background: var(--ion-color-step-50, rgba(125, 125, 125, 0.06));
+}
+
+.two-factor-card__status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  span {
+    color: var(--ion-color-step-600, rgba(125, 125, 125, 0.78));
+    font-size: 0.88rem;
+  }
+
+  strong {
+    color: var(--ion-text-color);
+    font-size: 1rem;
+  }
+}
+
+.two-factor-card__low {
+  color: var(--ion-color-warning, #f59e0b) !important;
+}
+
+.two-factor-card__action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Screen-reader-only label helper. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}

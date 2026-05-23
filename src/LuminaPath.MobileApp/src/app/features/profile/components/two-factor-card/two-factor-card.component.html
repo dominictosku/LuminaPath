@@ -1,0 +1,199 @@
+<section class="settings-card two-factor-card">
+  <header class="settings-card__header">
+    <ion-icon name="shield-checkmark-outline"></ion-icon>
+    <div class="two-factor-card__title">
+      <h2>Two-factor authentication</h2>
+      <p>
+        @if (isEnabled()) {
+          Codes from your authenticator app are required at sign-in.
+        } @else {
+          Add a second factor at sign-in using an authenticator app.
+        }
+      </p>
+    </div>
+    <span
+      class="two-factor-card__badge"
+      [class.two-factor-card__badge--on]="isEnabled()"
+      [class.two-factor-card__badge--off]="!isEnabled()">
+      {{ isEnabled() ? 'Enabled' : 'Disabled' }}
+    </span>
+  </header>
+
+  @if (isLoading()) {
+    <div class="two-factor-card__loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Loading...</span>
+    </div>
+  }
+
+  @if (!isLoading() && errorMessage()) {
+    <div class="two-factor-card__notice two-factor-card__notice--error" role="alert">
+      <ion-icon name="alert-circle-outline"></ion-icon>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (!isLoading() && successMessage()) {
+    <div class="two-factor-card__notice two-factor-card__notice--success">
+      <ion-icon name="checkmark-circle-outline"></ion-icon>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (freshRecoveryCodes(); as codes) {
+    <div class="two-factor-card__recovery" role="region" aria-label="Recovery codes">
+      <header>
+        <ion-icon name="key-outline"></ion-icon>
+        <div>
+          <strong>Save your recovery codes</strong>
+          <small>
+            Each code works once if you lose your authenticator. We won't show
+            these again.
+          </small>
+        </div>
+      </header>
+      <ul class="two-factor-card__recovery-grid" aria-label="Recovery codes list">
+        @for (code of codes; track code) {
+          <li><code>{{ code }}</code></li>
+        }
+      </ul>
+      <div class="two-factor-card__recovery-actions">
+        <ion-button size="small" fill="outline" (click)="copyRecoveryCodes()">
+          <ion-icon slot="start" name="document-text-outline"></ion-icon>
+          Copy to clipboard
+        </ion-button>
+        <ion-button size="small" (click)="dismissRecoveryCodes()">
+          I've saved them
+        </ion-button>
+      </div>
+    </div>
+  }
+
+  @if (!isLoading() && !isInSetup() && !isEnabled()) {
+    <div class="settings-card__actions">
+      <ion-button shape="round" (click)="beginSetup()" [disabled]="isWorking()">
+        <ion-icon slot="start" name="shield-checkmark-outline"></ion-icon>
+        Set up two-factor authentication
+      </ion-button>
+    </div>
+  }
+
+  @if (!isLoading() && isInSetup()) {
+    <div class="two-factor-card__setup">
+      <ol class="two-factor-card__steps">
+        <li>
+          <strong>Install an authenticator app</strong>
+          <p>Google Authenticator, Microsoft Authenticator, 1Password, Authy — anything TOTP.</p>
+        </li>
+        <li>
+          <strong>Scan the QR code or enter the key</strong>
+          <p>The app will start generating 6-digit codes.</p>
+          <div class="two-factor-card__qr-row">
+            <div class="two-factor-card__qr" aria-label="Authenticator QR code">
+              @if (qrSvg()) {
+                <div [innerHTML]="qrSvg()"></div>
+              }
+            </div>
+            <div class="two-factor-card__manual">
+              <span>Manual entry key</span>
+              <code>{{ formattedSharedKey() }}</code>
+              <small>Spaces and case don't matter.</small>
+            </div>
+          </div>
+        </li>
+        <li>
+          <strong>Enter the 6-digit code shown in your app</strong>
+          <form class="two-factor-card__verify" (ngSubmit)="verifyAndEnable()" novalidate>
+            <label>
+              <span class="visually-hidden">Verification code</span>
+              <input
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                pattern="[0-9 -]*"
+                maxlength="9"
+                placeholder="000000"
+                [ngModel]="verificationCode()"
+                (ngModelChange)="verificationCode.set($event)"
+                name="twoFactorCode" />
+            </label>
+            <div class="two-factor-card__setup-actions">
+              <ion-button
+                type="button"
+                fill="clear"
+                size="small"
+                [disabled]="phase() === 'verifying'"
+                (click)="cancelSetup()">
+                Cancel
+              </ion-button>
+              <ion-button
+                type="submit"
+                size="small"
+                [disabled]="phase() === 'verifying'">
+                <ion-icon
+                  slot="start"
+                  [name]="phase() === 'verifying' ? 'hourglass-outline' : 'checkmark-outline'"></ion-icon>
+                {{ phase() === 'verifying' ? 'Verifying...' : 'Verify & enable' }}
+              </ion-button>
+            </div>
+          </form>
+        </li>
+      </ol>
+    </div>
+  }
+
+  @if (!isLoading() && isEnabled() && !isInSetup()) {
+    <div class="two-factor-card__status">
+      <div class="two-factor-card__status-row">
+        <span>Recovery codes remaining</span>
+        <strong [class.two-factor-card__low]="recoveryCodesLeft() <= 2">
+          {{ recoveryCodesLeft() }}
+        </strong>
+      </div>
+      @if (isMachineRemembered()) {
+        <div class="two-factor-card__status-row">
+          <span>This device</span>
+          <strong>Remembered</strong>
+        </div>
+      }
+    </div>
+
+    <div class="two-factor-card__action-grid">
+      <ion-button
+        size="small"
+        fill="outline"
+        [disabled]="isWorking()"
+        (click)="confirmRegenerateRecoveryCodes()">
+        <ion-icon slot="start" name="refresh-outline"></ion-icon>
+        Regenerate recovery codes
+      </ion-button>
+      <ion-button
+        size="small"
+        fill="outline"
+        [disabled]="isWorking()"
+        (click)="confirmResetSharedKey()">
+        <ion-icon slot="start" name="key-outline"></ion-icon>
+        Reset authenticator key
+      </ion-button>
+      @if (isMachineRemembered()) {
+        <ion-button
+          size="small"
+          fill="outline"
+          [disabled]="isWorking()"
+          (click)="forgetMachine()">
+          <ion-icon slot="start" name="shield-checkmark-outline"></ion-icon>
+          Forget this device
+        </ion-button>
+      }
+      <ion-button
+        size="small"
+        color="danger"
+        fill="outline"
+        [disabled]="isWorking()"
+        (click)="confirmDisable()">
+        <ion-icon slot="start" name="lock-closed-outline"></ion-icon>
+        Disable 2FA
+      </ion-button>
+    </div>
+  }
+</section>
