@@ -877,14 +877,33 @@ app-quest-card {
   z-index: 1100;
   display: grid;
   align-items: end;
-  padding: 18px;
+  /* Reserve space for the chrome:
+     - Top: the floating nav-bar (position:fixed at the top) is
+       --app-nav-offset tall (88px desktop / 76px mobile) plus its own
+       margin. Add a small gap so the sheet doesn't kiss the bar.
+     - Bottom: the floating tab-bar lives ~100px above the viewport
+       bottom (74px tall + 12px gap + iOS safe area). Match it so
+       SAVE/Cancel stay tappable instead of sliding behind the bar. */
+  padding:
+    calc(var(--app-nav-offset, 88px) + 16px)
+    18px
+    calc(110px + env(safe-area-inset-bottom));
   background: rgba(15,23,42,.44);
   backdrop-filter: blur(10px);
 }
 .quest-modal, .quest-detail-sheet {
   position: relative;
   width: min(560px, 100%);
-  max-height: calc(100vh - 42px);
+  /* Explicit calc rather than `100%` because percentage heights on grid
+     items against auto-sized tracks are unreliable. Mirrors the
+     backdrop's padding so the sheet never extends behind nav/tab bars. */
+  max-height: calc(
+    100vh
+    - var(--app-nav-offset, 88px)
+    - 16px
+    - 110px
+    - env(safe-area-inset-bottom)
+  );
   margin-inline: auto;
   overflow: auto;
   padding: 22px;
