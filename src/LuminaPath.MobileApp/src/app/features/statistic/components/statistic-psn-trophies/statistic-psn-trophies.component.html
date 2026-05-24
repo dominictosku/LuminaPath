@@ -1,0 +1,95 @@
+<section class="section-block trophy-block" aria-labelledby="psn-trophies-heading">
+  <header class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <!-- Hand-drawn cup glyph (SVG below) is the visual; using the
+             ionicons trophy here would clash with the styled cups. -->
+        PlayStation
+      </span>
+      <h2 id="psn-trophies-heading">Trophy Cabinet</h2>
+    </div>
+    <span class="trophy-total" [attr.data-empty]="!hasAny()">
+      <strong>{{ totals().total }}</strong>
+      <span>total</span>
+    </span>
+  </header>
+
+  <ul class="trophy-grid">
+    @for (tier of tiers(); track tier.key) {
+      <li class="trophy-tile" [attr.data-tier]="tier.key">
+        <div class="trophy-cup" aria-hidden="true">
+          <svg
+            class="trophy-cup__svg"
+            viewBox="0 0 64 72"
+            xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- Per-tier metallic gradient. Stops are inlined from
+                   the TS so the four tiles render with different
+                   colours without duplicating the SVG path data. -->
+              <linearGradient [attr.id]="'trophy-grad-' + tier.key" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" [attr.stop-color]="tier.highlight" />
+                <stop offset="55%" [attr.stop-color]="tier.accent" />
+                <stop offset="100%" [attr.stop-color]="tier.shadow" />
+              </linearGradient>
+              <linearGradient [attr.id]="'trophy-grad-' + tier.key + '-base'" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" [attr.stop-color]="tier.accent" />
+                <stop offset="100%" [attr.stop-color]="tier.shadow" />
+              </linearGradient>
+              <radialGradient [attr.id]="'trophy-shine-' + tier.key" cx="35%" cy="32%" r="40%">
+                <stop offset="0%" stop-color="rgba(255, 255, 255, 0.7)" />
+                <stop offset="100%" stop-color="rgba(255, 255, 255, 0)" />
+              </radialGradient>
+            </defs>
+
+            <!-- Cup body: rounded shape with two ear-style handles. -->
+            <path
+              d="M16 6 H48 V24 a16 16 0 0 1 -32 0 Z"
+              [attr.fill]="'url(#trophy-grad-' + tier.key + ')'" />
+            <!-- Left handle -->
+            <path
+              d="M16 8 H10 a4 4 0 0 0 -4 4 v3 a8 8 0 0 0 8 8 H17"
+              fill="none"
+              [attr.stroke]="tier.accent"
+              stroke-width="3"
+              stroke-linecap="round" />
+            <!-- Right handle -->
+            <path
+              d="M48 8 H54 a4 4 0 0 1 4 4 v3 a8 8 0 0 1 -8 8 H47"
+              fill="none"
+              [attr.stroke]="tier.accent"
+              stroke-width="3"
+              stroke-linecap="round" />
+            <!-- Stem connecting cup to base -->
+            <rect x="28" y="40" width="8" height="9" [attr.fill]="'url(#trophy-grad-' + tier.key + '-base)'" />
+            <!-- Base pedestal -->
+            <rect x="14" y="48" width="36" height="6" rx="1.5" [attr.fill]="'url(#trophy-grad-' + tier.key + '-base)'" />
+            <rect x="10" y="54" width="44" height="8" rx="2" [attr.fill]="'url(#trophy-grad-' + tier.key + '-base)'" />
+
+            <!-- Subtle radial highlight to suggest metal sheen. -->
+            <ellipse cx="26" cy="14" rx="10" ry="6" [attr.fill]="'url(#trophy-shine-' + tier.key + ')'" />
+
+            <!-- Platinum tier gets a star — matches PSN's own iconography
+                 where platinum is the only tier with the centred star. -->
+            @if (tier.key === 'platinum') {
+              <path
+                d="M32 14 L34.5 19 L40 19.8 L36 23.5 L37 29 L32 26.3 L27 29 L28 23.5 L24 19.8 L29.5 19 Z"
+                fill="#fff"
+                opacity="0.92" />
+            }
+          </svg>
+        </div>
+        <div class="trophy-meta">
+          <strong class="trophy-meta__count">{{ tier.count }}</strong>
+          <span class="trophy-meta__label">{{ tier.label }}</span>
+        </div>
+      </li>
+    }
+  </ul>
+
+  @if (!hasAny()) {
+    <p class="trophy-empty">
+      No PSN trophies synced yet. Link a PlayStation account from your profile
+      to pull in your trophy cabinet.
+    </p>
+  }
+</section>

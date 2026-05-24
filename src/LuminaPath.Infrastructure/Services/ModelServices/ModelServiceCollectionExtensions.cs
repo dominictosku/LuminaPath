@@ -1,3 +1,4 @@
+using LuminaPath.Infrastructure.Services.ModelServices.Statistics;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices;
@@ -20,6 +21,7 @@ internal static class ModelServiceCollectionExtensions
         services.AddScoped<LuminaUserService>();
         services.AddScoped<FriendsService>();
         services.AddScoped<DirectMessageService>();
+        services.AddScoped<StatisticsService>();
         return services;
     }
 }

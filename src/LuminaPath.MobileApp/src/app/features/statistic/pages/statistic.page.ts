@@ -55,9 +55,12 @@ import { StatisticQuickWinsComponent } from '../components/statistic-quick-wins/
 import { StatisticLongestCommitmentsComponent } from '../components/statistic-longest-commitments/statistic-longest-commitments.component';
 import { StatisticTopRatedComponent } from '../components/statistic-top-rated/statistic-top-rated.component';
 import { StatisticBreakdownComponent } from '../components/statistic-breakdown/statistic-breakdown.component';
+import { StatisticPsnTrophiesComponent } from '../components/statistic-psn-trophies/statistic-psn-trophies.component';
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
+import { PsnTrophyTotals, StatisticService } from '../services/statistic.service';
 
 const STATISTIC_CACHE_KEY = 'statistic:items';
+const PSN_TROPHY_CACHE_KEY = 'statistic:psn-trophies';
 
 @Component({
   selector: 'app-statistic',
@@ -87,6 +90,7 @@ const STATISTIC_CACHE_KEY = 'statistic:items';
     StatisticLongestCommitmentsComponent,
     StatisticTopRatedComponent,
     StatisticBreakdownComponent,
+    StatisticPsnTrophiesComponent,
   ],
 })
 export class StatisticPage implements OnInit {
@@ -94,6 +98,7 @@ export class StatisticPage implements OnInit {
   private readonly animeService = inject(AnimeService);
   private readonly movieService = inject(MovieService);
   private readonly seriesService = inject(SeriesService);
+  private readonly statisticService = inject(StatisticService);
   private readonly cache = inject(RequestCache);
 
   items: BacklogItem[] = [];
@@ -122,6 +127,13 @@ export class StatisticPage implements OnInit {
   timeBars: TimeBar[] = [];
   statusSlices: StatusSlice[] = [];
 
+  /**
+   * PSN trophy totals — loaded in parallel with the catalogue data so
+   * the bottom panel never gates the rest of the page. Null until the
+   * first response (the panel is hidden in that window).
+   */
+  psnTrophyTotals: PsnTrophyTotals | null = null;
+
   constructor() {
     // Only the page's own "error" notice uses an icon here; sub-components
     // register their own icons in their constructors.
@@ -129,9 +141,40 @@ export class StatisticPage implements OnInit {
 
   ngOnInit(): void {
     this.loadStatistic();
+    this.loadPsnTrophies();
+  }
+
+  /**
+   * Independent of the catalogue load — runs in parallel and updates the
+   * trophy panel on its own. Cached so subsequent visits paint instantly.
+   * Failures are silent because PSN totals are nice-to-have, not blocking.
+   */
+  private loadPsnTrophies(event?: CustomEvent): void {
+    const cached = this.cache.get<PsnTrophyTotals>(PSN_TROPHY_CACHE_KEY);
+    if (cached) {
+      this.psnTrophyTotals = cached;
+      if (!event && this.cache.isFresh(PSN_TROPHY_CACHE_KEY)) return;
+    }
+
+    this.statisticService.getPsnTrophyTotals().subscribe({
+      next: (totals) => {
+        this.psnTrophyTotals = totals;
+        this.cache.set(PSN_TROPHY_CACHE_KEY, totals);
+      },
+      error: () => {
+        // Leave whatever we had cached; if nothing was cached, the
+        // panel just stays hidden. PSN sync may not be set up yet —
+        // not an error worth surfacing on the page.
+        if (!cached) this.psnTrophyTotals = null;
+      },
+    });
   }
 
   loadStatistic(event?: CustomEvent): void {
+    // Pull-to-refresh should re-fetch the trophy totals too, otherwise
+    // a user who just synced PSN won't see the new counts until they
+    // navigate away and back.
+    if (event) this.loadPsnTrophies(event);
     // Stale-while-revalidate: paint cached items immediately so repeat
     // visits don't flash skeletons across 13 sub-components.
     const cached = this.cache.get<BacklogItem[]>(STATISTIC_CACHE_KEY);

@@ -44,5 +44,9 @@
 
       <app-statistic-breakdown [rows]="breakdown"></app-statistic-breakdown>
     }
+
+    @if (psnTrophyTotals) {
+      <app-statistic-psn-trophies [totals]="psnTrophyTotals"></app-statistic-psn-trophies>
+    }
   </main>
 </ion-content>

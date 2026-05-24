@@ -7,6 +7,7 @@ import { AnimeService } from '../../animes/services/anime.service';
 import { GameService } from '../../games/services/game.service';
 import { MovieService } from '../../movies/services/movie.service';
 import { SeriesService } from '../../series/services/series.service';
+import { StatisticService } from '../services/statistic.service';
 import { StatisticPage } from './statistic.page';
 
 function pageOf<T>(items: T[]): PaginateResult<T> {
@@ -22,17 +23,22 @@ describe('StatisticPage', () => {
   let animeService: jasmine.SpyObj<AnimeService>;
   let movieService: jasmine.SpyObj<MovieService>;
   let seriesService: jasmine.SpyObj<SeriesService>;
+  let statisticService: jasmine.SpyObj<StatisticService>;
 
   beforeEach(() => {
     gameService = jasmine.createSpyObj<GameService>('GameService', ['getAll']);
     animeService = jasmine.createSpyObj<AnimeService>('AnimeService', ['getAll']);
     movieService = jasmine.createSpyObj<MovieService>('MovieService', ['getAll']);
     seriesService = jasmine.createSpyObj<SeriesService>('SeriesService', ['getAll']);
+    statisticService = jasmine.createSpyObj<StatisticService>('StatisticService', ['getPsnTrophyTotals']);
 
     gameService.getAll.and.returnValue(of(pageOf([])));
     animeService.getAll.and.returnValue(of(pageOf([])));
     movieService.getAll.and.returnValue(of(pageOf([])));
     seriesService.getAll.and.returnValue(of(pageOf([])));
+    statisticService.getPsnTrophyTotals.and.returnValue(of({
+      bronze: 0, silver: 0, gold: 0, platinum: 0, total: 0,
+    }));
 
     TestBed.configureTestingModule({
       imports: [StatisticPage],
@@ -42,6 +48,7 @@ describe('StatisticPage', () => {
         { provide: AnimeService, useValue: animeService },
         { provide: MovieService, useValue: movieService },
         { provide: SeriesService, useValue: seriesService },
+        { provide: StatisticService, useValue: statisticService },
       ],
     });
 
