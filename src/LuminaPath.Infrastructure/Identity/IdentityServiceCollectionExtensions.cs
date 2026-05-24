@@ -15,6 +15,13 @@ internal static class IdentityServiceCollectionExtensions
             .Validate(AuthCookieOptions.HasValidCookieSecurePolicy, "Auth:CookieSecurePolicy must be a valid CookieSecurePolicy value.")
             .ValidateOnStart();
 
+        // Self-registration knobs. Reads Auth:RequireAdminApproval from
+        // config / env (Auth__RequireAdminApproval=true). Consumed by
+        // LuminaUserManager when a new user comes in via an anonymous
+        // request.
+        services.AddOptions<AuthRegistrationOptions>()
+            .Bind(config.GetSection(AuthRegistrationOptions.SectionName));
+
         services.AddAuthorization(options =>
         {
             // Used by the catalog controllers' mutation endpoints (Games,
@@ -26,15 +33,22 @@ internal static class IdentityServiceCollectionExtensions
         });
         services.AddIdentityApiEndpoints<LuminaUser>(options =>
         {
+            // Hardened production password policy. RequireConfirmedAccount
+            // stays off because we ship without an SMTP sender; the
+            // RequireAdminApproval gate is the human-in-the-loop check.
             options.Password.RequireDigit = true;
-            options.Password.RequireLowercase = false;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequireUppercase = false;
-            options.Password.RequiredLength = 6;
-            options.Password.RequiredUniqueChars = 1;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireNonAlphanumeric = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequiredLength = 10;
+            options.Password.RequiredUniqueChars = 4;
 
-            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(120);
-            options.Lockout.MaxFailedAccessAttempts = 10;
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+            options.Lockout.MaxFailedAccessAttempts = 5;
+            // Critical for the lockout policy to take effect on NEW users —
+            // without this every freshly-created user has LockoutEnabled=false
+            // and would never be auto-locked on failed attempts.
+            options.Lockout.AllowedForNewUsers = true;
 
             options.SignIn.RequireConfirmedAccount = false;
             options.User.AllowedUserNameCharacters =
@@ -43,7 +57,8 @@ internal static class IdentityServiceCollectionExtensions
         })
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<LuminaPathDbContext>()
-            .AddSignInManager()
+            .AddUserManager<LuminaUserManager>()
+            .AddSignInManager<LuminaSignInManager>()
             .AddDefaultTokenProviders();
 
         var authCookieOptions = AuthCookieOptions.FromConfiguration(config);

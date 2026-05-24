@@ -78,6 +78,33 @@ namespace LuminaPath.Infrastructure.Controllers.Base
             }
 
             var (user, _) = await GetCurrentUserWithIdAsync();
+            if (user is null)
+            {
+                return LoginRequired();
+            }
+
+            // IDOR guard: load the existing row and confirm it belongs
+            // to the caller BEFORE we hand the mapped entity to the
+            // service. Without this check, the service would just stamp
+            // LuminaUserId = current user and update — meaning anyone
+            // could PUT /api/<resource>/<id> against another user's
+            // record and silently take it over. Returning NotFound
+            // (rather than Forbid) keeps the existence of the row
+            // opaque to outsiders.
+            TEntity existing;
+            try
+            {
+                existing = await _service.GetById(id);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+
+            if (existing.LuminaUserId != user.Id)
+            {
+                return NotFound();
+            }
 
             var entity = Mapper.Map<TEntity>(viewModel);
             var result = await _service.PutAsync(entity, user);

@@ -39,8 +39,14 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             CancellationToken cancellationToken = default)
         {
             await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-            var now = DateTimeOffset.UtcNow;
 
+            // The grid's "Locked" badge now reflects our admin-controlled
+            // IsActive flag — that's what gates sign-in via
+            // LuminaSignInManager. Identity's LockoutEnd is still tracked
+            // but represents the orthogonal "too many failed attempts"
+            // auto-lockout, which expires on its own. Surfacing only one
+            // concept on the grid keeps the admin UX simple; both states
+            // independently block sign-in inside SignInManager.
             var query =
                 from user in context.Users.AsNoTracking()
                 join userRole in context.UserRoles.AsNoTracking() on user.Id equals userRole.UserId into userRoles
@@ -56,7 +62,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     PhoneNumber = user.PhoneNumber ?? string.Empty,
                     Role = identityRole == null ? string.Empty : identityRole.Name ?? string.Empty,
                     EmailConfirmed = user.EmailConfirmed,
-                    IsLockedOut = user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd >= now,
+                    IsLockedOut = !user.IsActive,
                     LockoutEnd = user.LockoutEnd
                 };
 
@@ -114,16 +120,20 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 return failure;
             }
 
-            var lockedOut = !model.Active;
             var applicationUser = new LuminaUser
             {
                 FullName = model.UserName,
                 UserName = model.Email,
                 Email = model.Email,
                 PhoneNumber = model.PhoneNumber,
-                LockoutEnabled = lockedOut,
-                LockoutEnd = lockedOut ? DateTimeOffset.UtcNow.AddDays(60) : null,
-                EmailConfirmed = true
+                // Admin-created users skip the email-confirmation step;
+                // the admin attesting in the form is the trust signal.
+                EmailConfirmed = true,
+                // IsActive is the sole sign-in gate now. Admins choose
+                // it in the form — the LuminaUserManager admin-approval
+                // gate doesn't trigger here because the request is
+                // authenticated (the admin is logged in).
+                IsActive = model.Active
             };
             var password = model.Password;
             var state = await _userManager.CreateAsync(applicationUser, password!);
@@ -146,7 +156,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                             ("FullName", null, user.FullName),
                             ("PhoneNumber", null, user.PhoneNumber),
                             ("Role", null, await GetUserRole(user)),
-                            ("Active", null, !lockedOut)),
+                            ("Active", null, model.Active)),
                         Metadata = new { source = "AdminUsers" }
                     });
                 }
@@ -160,20 +170,28 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         public async Task<IdentityResult> UpdateUser(UserDto model)
         {
-            var lockedOut = !model.Active;
             var user = await _userManager.FindByIdAsync(model.Id!) ?? throw new Exception($"The application user [{model.Id}] was not found.");
             var oldEmail = user.Email;
             var oldFullName = user.FullName;
             var oldPhone = user.PhoneNumber;
-            var oldActive = !(user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd >= DateTimeOffset.UtcNow);
+            var oldActive = user.IsActive;
             var oldRole = await GetUserRole(user);
 
             user.FullName = model.UserName;
             user.Email = model.Email;
             user.PhoneNumber = model.PhoneNumber;
             user.UserName = model.Email;
-            user.LockoutEnabled = lockedOut;
-            user.LockoutEnd = lockedOut ? DateTimeOffset.UtcNow.AddDays(60) : null;
+            user.IsActive = model.Active;
+            // Clearing LockoutEnd on activate gives admins a single
+            // "kick the user back in" toggle that covers both manual
+            // deactivation AND the auto-lockout window after too many
+            // failed attempts. Without this, an admin re-activating a
+            // user who got auto-locked from failed sign-ins would still
+            // see the user blocked until LockoutEnd expired.
+            if (model.Active)
+            {
+                user.LockoutEnd = null;
+            }
             await SetUserRole(user, model.Role);
             var result = await _userManager.UpdateAsync(user);
             var newRole = await GetUserRole(user);
@@ -227,11 +245,16 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         public async Task<IdentityResult> SetUserActive(string userId, bool active)
         {
-            bool lockedOut = !active;
             var user = await _userManager.FindByIdAsync(userId!) ?? throw new Exception($"Application user not found {userId}.");
-            var oldActive = !(user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd >= DateTimeOffset.UtcNow);
-            user.LockoutEnd = lockedOut ? DateTimeOffset.UtcNow.AddDays(60) : null;
-            user.LockoutEnabled = lockedOut;
+            var oldActive = user.IsActive;
+            user.IsActive = active;
+            // Activating also clears any auto-lockout that may be in
+            // effect from failed sign-in attempts — see UpdateUser for
+            // the reasoning.
+            if (active)
+            {
+                user.LockoutEnd = null;
+            }
             var result = await _userManager.UpdateAsync(user);
             await _auditLog.RecordAsync(new AuditLogEntry
             {

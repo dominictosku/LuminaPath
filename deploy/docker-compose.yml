@@ -23,6 +23,15 @@ services:
       Cors__AllowedOrigins__3: ${CAPACITOR_ANDROID_HTTPS_PUBLIC_URL:-https://localhost}
       Auth__CookieSameSite: ${AUTH_COOKIE_SAMESITE:-None}
       Auth__CookieSecurePolicy: ${AUTH_COOKIE_SECURE_POLICY:-Always}
+      # When true, newly self-registered users land inactive and cannot
+      # sign in until an admin flips the toggle on /Admin/Users. See
+      # src/README.md → "Require admin approval for new registrations".
+      Auth__RequireAdminApproval: ${AUTH_REQUIRE_ADMIN_APPROVAL:-false}
+      # Seed admin credentials — only used the first time the database
+      # is brought up (when no admin user exists yet). Defaults are the
+      # bundled placeholders and will trigger a startup warning.
+      Admin__Email: ${LUMINAPATH_ADMIN_EMAIL:-admin@example.com}
+      Admin__Password: ${LUMINAPATH_ADMIN_PASSWORD:-ChangeMe!1AdminAccess}
     ports:
       - "${BACKEND_HTTP_PORT:-8080}:8080"
     volumes:

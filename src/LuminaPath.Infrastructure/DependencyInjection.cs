@@ -4,6 +4,7 @@ using FluentValidation;
 using LuminaPath.Infrastructure.Configuration;
 using LuminaPath.Infrastructure.Hubs;
 using LuminaPath.Infrastructure.Identity;
+using LuminaPath.Infrastructure.Middleware;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.AiChat;
 using LuminaPath.Infrastructure.Services.Auditing;
@@ -81,7 +82,11 @@ namespace LuminaPath.Infrastructure
             try
             {
                 context.Database.Migrate();
-                await context.SeedDatabase(userManager, roleManager);
+                // Hand seed credentials through config so operators can
+                // override admin@example.com / weak default password
+                // before first boot. The seeder logs a warning when the
+                // bundled fallback is in use so it's obvious to change.
+                await context.SeedDatabase(userManager, roleManager, app.Configuration, app.Logger);
             }
             catch (Exception e)
             {
@@ -139,8 +144,17 @@ namespace LuminaPath.Infrastructure
         {
             AddMiddleware(app);
 
+            // Defense-in-depth headers go BEFORE CORS / auth so they
+            // apply to every response, including preflight 204s, the
+            // SPA static bundle, and any 401/403/500 error path.
+            app.UseSecurityHeaders();
+
             app.UseCors(MyAllowSpecificOrigins);
-            if (app.Configuration.GetValue("Https:Redirect", app.Environment.IsDevelopment()))
+            // Default-on outside Development. Self-hosted deployments
+            // that terminate TLS at a reverse proxy can flip
+            // Https:Redirect=false to skip the redirect, but anything
+            // not explicitly opted out gets the protection.
+            if (app.Configuration.GetValue("Https:Redirect", !app.Environment.IsDevelopment()))
             {
                 app.UseHttpsRedirection();
             }

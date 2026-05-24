@@ -2,16 +2,48 @@
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace LuminaPath.Infrastructure
 {
     public static class DataSeeder
     {
-        public static async Task SeedDatabase(this LuminaPathDbContext context, UserManager<LuminaUser> userManager, RoleManager<IdentityRole> roleManager)
+        /// <summary>
+        /// Fallback credentials used only when neither <c>Admin:Email</c>
+        /// nor the <c>LUMINAPATH_ADMIN_EMAIL</c> env var is set, AND only
+        /// when no admin user exists yet. The password is intentionally
+        /// long enough to satisfy the production password policy so a
+        /// fresh deployment doesn't fail at seed time. Operators should
+        /// override both via env vars on first boot — the seeder writes
+        /// a warning to the log when these defaults are in use.
+        /// </summary>
+        private const string DefaultAdminEmail = "admin@example.com";
+        private const string DefaultAdminPassword = "ChangeMe!1AdminAccess";
+
+        public static async Task SeedDatabase(this LuminaPathDbContext context,
+            UserManager<LuminaUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            IConfiguration? configuration = null,
+            ILogger? logger = null)
         {
-            // Admin user credentials
-            string adminEmail = "admin@example.com";
-            string adminPassword = "Admin123*";
+            var adminEmail = configuration?["Admin:Email"]
+                ?? Environment.GetEnvironmentVariable("LUMINAPATH_ADMIN_EMAIL")
+                ?? DefaultAdminEmail;
+            var adminPassword = configuration?["Admin:Password"]
+                ?? Environment.GetEnvironmentVariable("LUMINAPATH_ADMIN_PASSWORD")
+                ?? DefaultAdminPassword;
+
+            if (string.Equals(adminEmail, DefaultAdminEmail, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(adminPassword, DefaultAdminPassword, StringComparison.Ordinal))
+            {
+                logger?.LogWarning(
+                    "Seeding admin with bundled default credentials ({Email}). " +
+                    "Set Admin:Email / Admin:Password (or LUMINAPATH_ADMIN_EMAIL / LUMINAPATH_ADMIN_PASSWORD) " +
+                    "before first boot in any non-development deployment.",
+                    adminEmail);
+            }
+
             await SeedRolesAsync(roleManager);
             await SeedAdminUserAsync(userManager, adminEmail, adminPassword);
             await SeedGamesAsync(context);
@@ -58,8 +90,15 @@ namespace LuminaPath.Infrastructure
                     FullName = "Admin",
                     UserName = adminEmail,
                     Email = adminEmail,
+                    // Keep auto-lockout off for the bootstrap admin so a
+                    // brute-force attempt can't lock the only account
+                    // that can re-activate others.
                     LockoutEnabled = false,
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    // Explicit so this never depends on the C# default
+                    // changing later; without it, the seeded admin
+                    // could never sign in.
+                    IsActive = true
                 };
 
                 var result = await userManager.CreateAsync(adminUser, adminPassword);

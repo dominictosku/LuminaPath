@@ -16,7 +16,15 @@
 
 <StatusMessage Message="@statusMessage" />
 
-@if (emailConfirmationLink is not null)
+@if (PendingApproval)
+{
+    <p>
+        Thanks for signing up! Your account is awaiting administrator approval —
+        you won't be able to sign in until an admin activates it. You'll be able
+        to log in normally once that happens.
+    </p>
+}
+else if (emailConfirmationLink is not null)
 {
     <p>
         This app does not currently have a real email sender registered, see <a href="https://aka.ms/aspaccountconf">these docs</a> for how to configure a real email sender.
@@ -40,6 +48,14 @@ else
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
+
+    /// <summary>
+    /// Set by Register.razor when Auth:RequireAdminApproval is on, so the
+    /// confirmation page tells the user to wait for activation rather
+    /// than "check your email".
+    /// </summary>
+    [SupplyParameterFromQuery]
+    private bool PendingApproval { get; set; }
 
     protected override async Task OnInitializedAsync()
     {

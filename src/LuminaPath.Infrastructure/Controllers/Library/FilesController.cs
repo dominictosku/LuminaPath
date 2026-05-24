@@ -125,8 +125,11 @@ namespace LuminaPath.Infrastructure.Controllers
             return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
         }
 
+        // Inherits the class-level [Authorize] — no AllowAnonymous on
+        // file downloads. Cover images are still served to any signed-in
+        // user (it's a shared catalog), but anonymous callers can't
+        // enumerate or scrape blob storage by guessing names.
         [HttpGet("{url}")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetImage(string url)
         {
             var result = await Storage.DownloadAsync(url);
