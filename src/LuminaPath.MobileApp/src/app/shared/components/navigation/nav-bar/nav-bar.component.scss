@@ -465,8 +465,40 @@
     display: none;
   }
 
+  /* Nav-link labels go away at the same breakpoint as the brand copy.
+     With the labels visible, 5 nav buttons (~500 px) + the media-mode
+     button (~110 px) + the action cluster can't fit the 1fr track, so
+     the centered nav bleeds into the brand on the left and the
+     media-mode button on the right. Icons + routerLink are enough
+     wayfinding; screen readers also have the route in the URL. */
   .nav-links a {
-    padding-inline: 10px;
+    padding-inline: 9px;
+  }
+
+  .nav-links a span {
+    display: none;
+  }
+
+  .nav-links ion-icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  /* Match the 640px treatment so we don't have a second awkward
+     in-between where the media-mode button still hogs ~110 px of
+     space while the nav has already gone icon-only. */
+  .media-mode-button {
+    width: 42px;
+    height: 42px;
+    min-height: 42px;
+    justify-content: center;
+    padding: 0;
+    border-radius: 16px;
+  }
+
+  .media-mode-button span,
+  .media-mode-button .chevron {
+    display: none;
   }
 }
 
