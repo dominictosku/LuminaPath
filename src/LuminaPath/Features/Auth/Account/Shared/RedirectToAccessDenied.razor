@@ -1,0 +1,29 @@
+@inject NavigationManager NavigationManager
+
+@*
+    Counterpart to RedirectToLogin: rendered by Routes.razor's NotAuthorized
+    slot when the visitor IS authenticated but lacks the required role
+    (e.g. a logged-in non-admin opening /Documents). Sends them to the
+    pre-styled /Account/AccessDenied page with the path they tried as
+    `returnUrl` so the access-denied UI can echo it back.
+
+    The framework's own cookie pipeline already redirects unauthenticated
+    requests to /Account/Login via AuthCookieOptions.LoginPath — that's
+    why RedirectToLogin uses NavigateTo at all. The same Identity cookie
+    handler points at /Account/AccessDenied for "authenticated but not
+    authorized", but the Blazor AuthorizeRouteView's NotAuthorized slot
+    short-circuits that pipeline (the route was matched and rendered
+    before the cookie handler had a chance), so we mirror its redirect
+    manually here.
+*@
+
+@code {
+    protected override void OnInitialized()
+    {
+        var returnUrl = "/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.NavigateTo(
+            $"Account/AccessDenied?returnUrl={Uri.EscapeDataString(returnUrl)}",
+            forceLoad: true,
+            replace: true);
+    }
+}

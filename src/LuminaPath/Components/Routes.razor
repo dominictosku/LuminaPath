@@ -2,8 +2,23 @@
 <Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
-            <NotAuthorized>
-                <RedirectToLogin />
+            <NotAuthorized Context="authState">
+                @* The NotAuthorized slot is rendered for two distinct cases:
+                   (1) no auth cookie at all → send to /Account/Login so they
+                       can sign in;
+                   (2) signed in but lacks the role required by the page's
+                       [Authorize(Roles = ...)] attribute → send to the
+                       AccessDenied page so they see *why* they were blocked
+                       instead of being bounced back to a login form when
+                       they're already logged in. *@
+                @if (authState.User.Identity?.IsAuthenticated == true)
+                {
+                    <RedirectToAccessDenied />
+                }
+                else
+                {
+                    <RedirectToLogin />
+                }
             </NotAuthorized>
         </AuthorizeRouteView>
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
