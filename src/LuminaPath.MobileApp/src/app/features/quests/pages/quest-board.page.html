@@ -18,11 +18,19 @@
            narrow viewports — segment buttons opt out of even-flex sizing
            and the segment becomes horizontally scrollable instead. -->
       <ion-segment scrollable="true" [(ngModel)]="mode">
+        <!--
+          "Overview" used to be "Folders". Internal mode value kept as
+          `folders` so every code path that branches on the mode keeps
+          working — only the label and tab position changed.
+          First-position because it's the bird's-eye view; the default
+          mode stays `quests` so existing users land on the workhorse
+          tab they're used to.
+        -->
+        <ion-segment-button value="folders">
+          <ion-label>Overview</ion-label>
+        </ion-segment-button>
         <ion-segment-button value="quests">
           <ion-label>Quests</ion-label>
-        </ion-segment-button>
-        <ion-segment-button value="folders">
-          <ion-label>Folders</ion-label>
         </ion-segment-button>
         <ion-segment-button value="skills">
           <ion-label>Skills</ion-label>
@@ -316,42 +324,53 @@
                 </header>
 
                 @if (!isFolderCollapsed(folder.id)) {
-                  @if (questsInFolder(folder.id).length) {
-                    <ul class="folder-card__list">
-                      @for (quest of questsInFolder(folder.id); track trackByQuest($index, quest)) {
-                        <li
-                          class="folder-card__row"
-                          [class.folder-card__row--done]="quest.completed"
-                          [attr.data-type]="quest.type">
-                          <button
-                            type="button"
-                            class="folder-card__check"
-                            aria-label="Toggle complete"
-                            (click)="toggleQuest(quest)">
-                            <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'ellipse-outline'"></ion-icon>
-                          </button>
-                          <button type="button" class="folder-card__row-body" (click)="toggleExpand(quest)">
-                            <span class="folder-card__row-title">{{ quest.title }}</span>
-                            @if (quest.dueDate) {
-                              <span class="folder-card__row-due" [attr.data-state]="dueStateOf(quest)">
-                                <ion-icon name="calendar-outline"></ion-icon>
-                                {{ dueLabelOf(quest) }}
-                              </span>
-                            }
-                          </button>
-                        </li>
-                      }
-                    </ul>
-                  } @else {
-                    <p class="folder-card__empty">No quests here yet. Move a quest into this folder from its detail view.</p>
-                  }
+                  <!-- Always render the list as a cdkDropList so it can
+                       receive drops even when currently empty. CDK needs
+                       the host element present at drop time; an empty
+                       <ul> still works as a target. -->
+                  <ul
+                    class="folder-card__list"
+                    cdkDropList
+                    [id]="folderDropListId(folder.id)"
+                    [cdkDropListData]="$any(folder.id)"
+                    [cdkDropListConnectedTo]="questDropListIds"
+                    (cdkDropListDropped)="handleQuestDropToFolder($any($event))">
+                    @for (quest of questsInFolder(folder.id); track trackByQuest($index, quest)) {
+                      <li
+                        cdkDrag
+                        [cdkDragData]="quest"
+                        class="folder-card__row"
+                        [class.folder-card__row--done]="quest.completed"
+                        [attr.data-type]="quest.type">
+                        <button
+                          type="button"
+                          class="folder-card__check"
+                          aria-label="Toggle complete"
+                          (click)="toggleQuest(quest)">
+                          <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'ellipse-outline'"></ion-icon>
+                        </button>
+                        <button type="button" class="folder-card__row-body" (click)="toggleExpand(quest)">
+                          <span class="folder-card__row-title">{{ quest.title }}</span>
+                          @if (quest.dueDate) {
+                            <span class="folder-card__row-due" [attr.data-state]="dueStateOf(quest)">
+                              <ion-icon name="calendar-outline"></ion-icon>
+                              {{ dueLabelOf(quest) }}
+                            </span>
+                          }
+                        </button>
+                      </li>
+                    }
+                    @if (!questsInFolder(folder.id).length) {
+                      <p class="folder-card__empty">Drop a quest here, or move one from its detail view.</p>
+                    }
+                  </ul>
                 }
               </article>
             }
           </div>
         }
 
-        @if (unfiledQuestCount > 0) {
+        @if (unfiledQuestCount > 0 || folders.length) {
           <article class="folder-card folder-card--unfiled" [class.folder-card--collapsed]="unfiledCollapsed">
             <header class="folder-card__head">
               <button
@@ -368,9 +387,17 @@
               </button>
             </header>
             @if (!unfiledCollapsed) {
-              <ul class="folder-card__list">
+              <ul
+                class="folder-card__list"
+                cdkDropList
+                [id]="folderDropListId(null)"
+                [cdkDropListData]="$any(null)"
+                [cdkDropListConnectedTo]="questDropListIds"
+                (cdkDropListDropped)="handleQuestDropToFolder($event)">
                 @for (quest of questsInFolder(null); track trackByQuest($index, quest)) {
                   <li
+                    cdkDrag
+                    [cdkDragData]="quest"
                     class="folder-card__row"
                     [class.folder-card__row--done]="quest.completed"
                     [attr.data-type]="quest.type">
@@ -391,6 +418,9 @@
                       }
                     </button>
                   </li>
+                }
+                @if (!unfiledQuestCount) {
+                  <p class="folder-card__empty">Quests without a folder land here. Drag one back to send it to Unfiled.</p>
                 }
               </ul>
             }

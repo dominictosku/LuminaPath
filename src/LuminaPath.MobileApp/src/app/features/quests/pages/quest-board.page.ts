@@ -12,6 +12,7 @@ import {
   IonSegmentButton,
   ItemReorderEventDetail,
 } from '@ionic/angular/standalone';
+import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 import {
   AchievementInfo,
   Quest,
@@ -111,6 +112,8 @@ type SkillTreeUnlockPayload = {
   encapsulation: ViewEncapsulation.None,
   imports: [
     FormsModule,
+    CdkDrag,
+    CdkDropList,
     IonBadge,
     IonContent,
     IonIcon,
@@ -1158,6 +1161,47 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   trackByFolderGroup(_: number, group: { section: string | null }): string {
     return group.section ?? '__unfiled__';
+  }
+
+  /**
+   * Drop-list IDs for every quest container in the Overview tab — one per
+   * folder plus the Unfiled bucket. CDK uses these strings to connect
+   * lists into a single drag-drop group so a quest can be dragged from
+   * any list to any other.
+   *
+   * Recomputed on each access rather than cached: the Overview re-renders
+   * cheaply, and folder lists can mutate at any time (create/delete/reorder).
+   */
+  get questDropListIds(): string[] {
+    return [
+      ...this.folders.map((folder) => this.folderDropListId(folder.id)),
+      this.folderDropListId(null),
+    ];
+  }
+
+  folderDropListId(folderId: number | null): string {
+    return folderId == null ? 'quest-drop-unfiled' : `quest-drop-folder-${folderId}`;
+  }
+
+  /**
+   * Drop handler — `event.container.data` is the target folder id (or
+   * null for Unfiled), set on each `cdkDropList` via `[cdkDropListData]`.
+   * Reorder *within* a folder is intentionally a no-op: there's no
+   * per-folder quest-order field on the backend yet, so we only honour
+   * cross-list drops.
+   *
+   * Typed `<unknown>` rather than `<number | null>` so Angular's strict
+   * template checker doesn't complain about the per-list data being
+   * either `number` or `null` (it widens-into rather than out-of, and
+   * `CdkDragDrop<number | null>` isn't assignable from `CdkDragDrop<number>`).
+   */
+  async handleQuestDropToFolder(event: CdkDragDrop<unknown>): Promise<void> {
+    if (event.previousContainer === event.container) return;
+    const quest = event.item.data as Quest;
+    if (!quest) return;
+    const raw = event.container.data;
+    const targetFolderId = typeof raw === 'number' ? raw : null;
+    await this.assignFolderToQuest(quest, targetFolderId);
   }
 
   openCompactFolderPicker(quest: Quest, event: MouseEvent): void {
