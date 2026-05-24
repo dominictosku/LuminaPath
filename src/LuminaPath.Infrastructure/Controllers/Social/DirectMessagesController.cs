@@ -5,6 +5,7 @@ using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LuminaPath.Infrastructure.Controllers
 {
@@ -22,6 +23,7 @@ namespace LuminaPath.Infrastructure.Controllers
         }
 
         [HttpGet("{otherUserId}")]
+        [EnableRateLimiting(RateLimitPolicies.DirectMessages)]
         public async Task<ActionResult<List<DirectMessageDto>>> GetConversation(
             string otherUserId,
             [FromQuery] DateTime? before,
@@ -35,6 +37,8 @@ namespace LuminaPath.Infrastructure.Controllers
         }
 
         [HttpPost]
+        [EnableRateLimiting(RateLimitPolicies.DirectMessages)]
+        [RequestSizeLimit(DirectMessageLimits.MaxRequestBytes)]
         public async Task<ActionResult<DirectMessageDto>> Send([FromBody] SendDirectMessageDto dto)
         {
             var user = await GetCurrentUserAsync();
@@ -44,6 +48,7 @@ namespace LuminaPath.Infrastructure.Controllers
         }
 
         [HttpPost("{otherUserId}/read")]
+        [EnableRateLimiting(RateLimitPolicies.DirectMessages)]
         public async Task<ActionResult<int>> MarkRead(string otherUserId)
         {
             var user = await GetCurrentUserAsync();

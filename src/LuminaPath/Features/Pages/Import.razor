@@ -517,7 +517,7 @@
 </script>
 
 @code {
-	const long MaxExcelFileSize = 10 * 1024 * 1024;
+	const long MaxExcelFileSize = ExcelService.MaxWorkbookBytes;
 	IQueryable<MyGameDto>? games;
 	LuminaUserInfo model = new();
 	SteamLibraryPreview? steamPreview;

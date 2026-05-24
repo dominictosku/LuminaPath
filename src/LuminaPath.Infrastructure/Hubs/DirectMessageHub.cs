@@ -1,5 +1,6 @@
 using LuminaPath.Core.Dtos;
 using LuminaPath.Infrastructure.Services.ModelServices;
+using LuminaPath.Infrastructure.Services.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
@@ -10,10 +11,12 @@ namespace LuminaPath.Infrastructure.Hubs
     public class DirectMessageHub : Hub
     {
         private readonly DirectMessageService _messageService;
+        private readonly UserActionRateLimiter _rateLimiter;
 
-        public DirectMessageHub(DirectMessageService messageService)
+        public DirectMessageHub(DirectMessageService messageService, UserActionRateLimiter rateLimiter)
         {
             _messageService = messageService;
+            _rateLimiter = rateLimiter;
         }
 
         public async Task<DirectMessageDto?> Send(string recipientId, string content)
@@ -22,6 +25,11 @@ namespace LuminaPath.Infrastructure.Hubs
             if (string.IsNullOrWhiteSpace(senderId))
             {
                 throw new HubException("Not authenticated.");
+            }
+
+            if (!await _rateLimiter.TryAcquireDirectMessageAsync(senderId, Context.ConnectionAborted))
+            {
+                throw new HubException("Too many messages. Please wait and try again.");
             }
 
             var result = await _messageService.SendAsync(senderId, recipientId, content);

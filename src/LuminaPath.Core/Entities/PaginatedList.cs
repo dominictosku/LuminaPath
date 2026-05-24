@@ -23,7 +23,7 @@
             IEnumerable<T> source, int pageIndex, int pageSize)
         {
             pageIndex = Math.Max(1, pageIndex);
-            pageSize = Math.Max(1, pageSize);
+            pageSize = Math.Clamp(pageSize, 1, Paging.MaxCount);
 
             var count = source.Count();
             var items = source.Skip(

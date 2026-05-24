@@ -3,6 +3,7 @@ using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Extensions;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -21,6 +22,35 @@ namespace Test.Infrastructure
             Assert.Equal(1, page.PageIndex);
             Assert.Single(page);
             Assert.Equal(1, page[0]);
+        }
+
+        [Fact]
+        public void Paging_ClampsPageSizeToGlobalMaximum()
+        {
+            var paging = new Paging(pageIndex: -5, count: Paging.MaxCount + 500);
+
+            Assert.Equal(1, paging.PageIndex);
+            Assert.Equal(Paging.MaxCount, paging.Count);
+            Assert.Equal(Paging.MaxCount, paging.EffectiveCount);
+        }
+
+        [Fact]
+        public async Task QueryablePagination_ClampsPageSizeToGlobalMaximum()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            await using var dbContext = new LuminaPathDbContext(options);
+            for (var index = 1; index <= Paging.MaxCount + 50; index++)
+            {
+                dbContext.Games.Add(CreateGame($"Game {index:000}"));
+            }
+            await dbContext.SaveChangesAsync();
+
+            var page = await dbContext.Games
+                .OrderBy(game => game.Id)
+                .ToPaginatedListAsync(pageIndex: 1, pageSize: Paging.MaxCount + 50);
+
+            Assert.Equal(Paging.MaxCount, page.Count);
+            Assert.Equal(2, page.TotalPages);
         }
 
         [Fact]

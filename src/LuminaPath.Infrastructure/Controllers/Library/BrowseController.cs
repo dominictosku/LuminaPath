@@ -2,6 +2,7 @@ using LuminaPath.Core.Dtos;
 using LuminaPath.Infrastructure.Services.Application;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace LuminaPath.Infrastructure.Controllers
@@ -19,12 +20,14 @@ namespace LuminaPath.Infrastructure.Controllers
         }
 
         [HttpGet("games/releases")]
+        [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public async Task<ActionResult<IReadOnlyList<BrowseItemDto>>> GetGameReleases(CancellationToken cancellationToken)
         {
             return Ok(await _browseLibraryService.GetGameReleasesAsync(CurrentUserId(), cancellationToken));
         }
 
         [HttpGet("animes/releases")]
+        [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public async Task<ActionResult<IReadOnlyList<BrowseItemDto>>> GetAnimeReleases(CancellationToken cancellationToken)
         {
             return Ok(await _browseLibraryService.GetAnimeReleasesAsync(CurrentUserId(), cancellationToken));

@@ -5,6 +5,7 @@ using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LuminaPath.Infrastructure.Controllers
 {
@@ -22,6 +23,7 @@ namespace LuminaPath.Infrastructure.Controllers
         }
 
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public async Task<ActionResult<List<FriendshipDto>>> Get()
         {
             var user = await GetCurrentUserAsync();
@@ -29,6 +31,7 @@ namespace LuminaPath.Infrastructure.Controllers
         }
 
         [HttpGet("search")]
+        [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public async Task<ActionResult<List<FriendUserDto>>> Search([FromQuery] string query)
         {
             var user = await GetCurrentUserAsync();

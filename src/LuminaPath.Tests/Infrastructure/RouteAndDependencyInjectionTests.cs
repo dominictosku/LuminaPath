@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -190,6 +191,40 @@ public class RouteAndDependencyInjectionTests
             .ToList();
 
         Assert.Empty(missingPolicy);
+    }
+
+    [Fact]
+    public async Task ConfigureServer_ExpensiveApiRoutesHaveRateLimitPolicies()
+    {
+        await using var app = BuildRoutedApp();
+        var endpoints = GetRouteEndpoints(app);
+
+        var expected = new[]
+        {
+            ("POST", "api/chat/stream", RateLimitPolicies.ChatStreaming),
+            ("POST", "api/Files", RateLimitPolicies.Uploads),
+            ("POST", "api/steam/preview", RateLimitPolicies.Imports),
+            ("POST", "api/steam/import", RateLimitPolicies.Imports),
+            ("GET", "api/DirectMessages/{otherUserId}", RateLimitPolicies.DirectMessages),
+            ("POST", "api/DirectMessages", RateLimitPolicies.DirectMessages),
+            ("POST", "api/DirectMessages/{otherUserId}/read", RateLimitPolicies.DirectMessages),
+            ("GET", "api/Games", RateLimitPolicies.BroadReads),
+            ("GET", "api/MyGames", RateLimitPolicies.BroadReads),
+            ("GET", "api/browse/games/releases", RateLimitPolicies.BroadReads)
+        };
+
+        var missing = expected
+            .Select(route => new
+            {
+                route,
+                Endpoint = endpoints.Single(endpoint => RouteMatches(endpoint, route.Item2)
+                    && GetHttpMethods(endpoint).Contains(route.Item1))
+            })
+            .Where(item => !RequiresRateLimitPolicy(item.Endpoint, item.route.Item3))
+            .Select(item => $"{item.route.Item1} /{NormalizeRoute(item.route.Item2)} expected {item.route.Item3}")
+            .ToList();
+
+        Assert.Empty(missing);
     }
 
     [Fact]
@@ -423,6 +458,13 @@ public class RouteAndDependencyInjectionTests
         return endpoint.Metadata
             .GetOrderedMetadata<IAuthorizeData>()
             .Any(data => string.Equals(data.Policy, policy, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool RequiresRateLimitPolicy(Endpoint endpoint, string policy)
+    {
+        return endpoint.Metadata
+            .GetOrderedMetadata<EnableRateLimitingAttribute>()
+            .Any(data => string.Equals(data.PolicyName, policy, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool RequiresRole(Endpoint endpoint, string role)

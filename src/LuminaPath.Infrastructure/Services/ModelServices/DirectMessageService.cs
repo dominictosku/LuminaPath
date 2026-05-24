@@ -55,7 +55,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
             var rows = await query
                 .OrderByDescending(message => message.SentAt)
-                .Take(Math.Clamp(take, 1, 200))
+                .Take(Math.Clamp(take, 1, DirectMessageLimits.MaxConversationTake))
                 .ToListAsync();
 
             rows.Reverse();
@@ -71,7 +71,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             {
                 return new FailedResult("Message cannot be empty.");
             }
-            if (content.Length > 4000)
+            if (content.Length > DirectMessageLimits.MaxMessageCharacters)
             {
                 return new FailedResult("Message is too long.");
             }

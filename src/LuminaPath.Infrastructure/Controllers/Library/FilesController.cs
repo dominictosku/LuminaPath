@@ -4,6 +4,7 @@ using LuminaPath.Infrastructure.Services.Auditing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LuminaPath.Infrastructure.Controllers
 {
@@ -18,6 +19,7 @@ namespace LuminaPath.Infrastructure.Controllers
         /// rejected before we touch the storage backend.
         /// </summary>
         private const long MaxUploadBytes = 3 * 1024 * 1024;
+        private const int MaxUploadRequestBytes = (3 * 1024 * 1024) + (64 * 1024);
 
         private readonly IStorageService Storage;
         private readonly AuditLogService? _auditLog;
@@ -39,6 +41,8 @@ namespace LuminaPath.Infrastructure.Controllers
         /// </summary>
         [HttpPost]
         [Authorize(Policy = AuthorizationPolicies.CatalogEditors)]
+        [EnableRateLimiting(RateLimitPolicies.Uploads)]
+        [RequestSizeLimit(MaxUploadRequestBytes)]
         public async Task<IActionResult> PostImage(IFormFile? file, CancellationToken cancellationToken = default)
         {
             if (file is null || file.Length == 0)

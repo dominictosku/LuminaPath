@@ -5,6 +5,7 @@ using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LuminaPath.Infrastructure.Controllers
 {
@@ -22,6 +23,7 @@ namespace LuminaPath.Infrastructure.Controllers
         }
 
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public async Task<ActionResult<List<GamingSessionDto>>> Get(
             [FromQuery] int? myGameId,
             [FromQuery] DateTime? from,
@@ -70,6 +72,7 @@ namespace LuminaPath.Infrastructure.Controllers
         }
 
         [HttpGet("forecast/{myGameId:int}")]
+        [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public async Task<ActionResult<GameForecastDto>> Forecast(int myGameId)
         {
             var user = await GetCurrentUserAsync();

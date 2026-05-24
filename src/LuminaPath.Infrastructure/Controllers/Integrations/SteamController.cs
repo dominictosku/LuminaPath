@@ -4,6 +4,7 @@ using LuminaPath.Infrastructure.Services.Application;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LuminaPath.Infrastructure.Controllers;
 
@@ -21,12 +22,15 @@ public sealed class SteamController : AuthorizedControllerBase
     }
 
     [HttpGet("status")]
+    [EnableRateLimiting(RateLimitPolicies.BroadReads)]
     public async Task<IActionResult> GetStatus(CancellationToken cancellationToken)
     {
         return Ok(new { configured = await _mediaImportService.IsSteamConfiguredAsync(cancellationToken) });
     }
 
     [HttpPost("preview")]
+    [EnableRateLimiting(RateLimitPolicies.Imports)]
+    [RequestSizeLimit(SteamIdentifierRequest.MaxRequestBytes)]
     public async Task<IActionResult> Preview([FromBody] SteamIdentifierRequest request, CancellationToken cancellationToken)
     {
         if (!await _mediaImportService.IsSteamConfiguredAsync(cancellationToken))
@@ -48,6 +52,8 @@ public sealed class SteamController : AuthorizedControllerBase
     }
 
     [HttpPost("import")]
+    [EnableRateLimiting(RateLimitPolicies.Imports)]
+    [RequestSizeLimit(SteamIdentifierRequest.MaxRequestBytes)]
     public async Task<IActionResult> Import([FromBody] SteamIdentifierRequest request, CancellationToken cancellationToken)
     {
         if (!await _mediaImportService.IsSteamConfiguredAsync(cancellationToken))
@@ -86,5 +92,8 @@ public sealed class SteamController : AuthorizedControllerBase
 
 public sealed class SteamIdentifierRequest
 {
+    public const int MaxIdentifierLength = 128;
+    public const int MaxRequestBytes = 4 * 1024;
+
     public string Identifier { get; set; } = string.Empty;
 }

@@ -6,6 +6,7 @@ using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Linq.Expressions;
 
 namespace LuminaPath.Infrastructure.Controllers.Base
@@ -21,6 +22,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
         public IObjectMapper Mapper { get; } = mapper;
 
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public virtual async Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)
         {
             var (user, _) = await GetCurrentUserWithIdAsync();

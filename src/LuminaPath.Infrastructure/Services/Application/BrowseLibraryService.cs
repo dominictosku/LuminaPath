@@ -6,6 +6,8 @@ namespace LuminaPath.Infrastructure.Services.Application;
 
 public sealed class BrowseLibraryService
 {
+    private const int MaxReleaseItems = 200;
+
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
 
     public BrowseLibraryService(IDbContextFactory<LuminaPathDbContext> dbContextFactory)
@@ -39,6 +41,8 @@ public sealed class BrowseLibraryService
             .AsNoTracking()
             .Include(game => game.Image)
             .Where(game => game.ReleaseDate != null && game.ParentGameId == null)
+            .OrderByDescending(game => game.ReleaseDate)
+            .Take(MaxReleaseItems)
             .ToListAsync(cancellationToken);
 
         return games
@@ -86,6 +90,8 @@ public sealed class BrowseLibraryService
             .AsNoTracking()
             .Include(anime => anime.Image)
             .Where(anime => anime.ReleaseDate != null && anime.ParentAnimeId == null)
+            .OrderByDescending(anime => anime.ReleaseDate)
+            .Take(MaxReleaseItems)
             .ToListAsync(cancellationToken);
 
         return animes

@@ -5,6 +5,7 @@ using LuminaPath.Infrastructure.Services.AiChat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LuminaPath.Infrastructure.Controllers;
 
@@ -25,6 +26,8 @@ public sealed class ChatController : ControllerBase
     }
 
     [HttpPost("stream")]
+    [EnableRateLimiting(RateLimitPolicies.ChatStreaming)]
+    [RequestSizeLimit(ChatRequestLimits.MaxRequestBytes)]
     public async Task Stream([FromBody] ChatRequest request, CancellationToken cancellationToken)
     {
         var userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;

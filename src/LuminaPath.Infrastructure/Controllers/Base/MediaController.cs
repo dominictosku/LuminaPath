@@ -6,6 +6,7 @@ using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace LuminaPath.Infrastructure.Controllers.Base;
@@ -25,6 +26,7 @@ public abstract class MediaController<TMedia, TMediaDto, TService, TUserMedia> :
     protected TService MediaService { get; }
 
     [HttpGet]
+    [EnableRateLimiting(RateLimitPolicies.BroadReads)]
     public override async Task<ActionResult<PaginatedResult<TMediaDto>>> Get([FromQuery] MediaFilter mediaFilter)
     {
         var userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;

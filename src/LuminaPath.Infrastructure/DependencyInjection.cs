@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Globalization;
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 using FluentValidation;
 using LuminaPath.Infrastructure.Configuration;
@@ -9,6 +10,7 @@ using LuminaPath.Infrastructure.Middleware;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.AiChat;
 using LuminaPath.Infrastructure.Services.Auditing;
+using LuminaPath.Infrastructure.Services.RateLimiting;
 using LuminaPath.Infrastructure.Services.ThirdParty;
 using LuminaPath.Infrastructure.Validators;
 using Microsoft.AspNetCore.Builder;
@@ -37,10 +39,14 @@ namespace LuminaPath.Infrastructure
             services.AddApplicationServices(config);
             services.AddThirdPartyIntegrations(config);
             services.AddAiChatServices(config);
+            services.AddSingleton<UserActionRateLimiter>();
             AddCache(services, config);
             AddCors(services, config);
             AddRateLimits(services);
-            services.AddSignalR();
+            services.AddSignalR(options =>
+            {
+                options.MaximumReceiveMessageSize = 16 * 1024;
+            });
             services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, UserIdProvider>();
             services.AddOpenApi();
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
@@ -76,9 +82,39 @@ namespace LuminaPath.Infrastructure
                     }
 
                     await context.HttpContext.Response.WriteAsync(
-                        "Too many authentication attempts. Please wait and try again.",
+                        "Too many requests. Please wait and try again.",
                         cancellationToken);
                 };
+
+                options.AddPolicy(RateLimitPolicies.ChatStreaming, context => CreateUserOrIpFixedWindow(
+                    context,
+                    RateLimitPolicies.ChatStreaming,
+                    permitLimit: 10,
+                    window: TimeSpan.FromMinutes(1)));
+
+                options.AddPolicy(RateLimitPolicies.Imports, context => CreateUserOrIpFixedWindow(
+                    context,
+                    RateLimitPolicies.Imports,
+                    permitLimit: 6,
+                    window: TimeSpan.FromHours(1)));
+
+                options.AddPolicy(RateLimitPolicies.Uploads, context => CreateUserOrIpFixedWindow(
+                    context,
+                    RateLimitPolicies.Uploads,
+                    permitLimit: 30,
+                    window: TimeSpan.FromMinutes(10)));
+
+                options.AddPolicy(RateLimitPolicies.DirectMessages, context => CreateUserOrIpFixedWindow(
+                    context,
+                    RateLimitPolicies.DirectMessages,
+                    permitLimit: 60,
+                    window: TimeSpan.FromMinutes(1)));
+
+                options.AddPolicy(RateLimitPolicies.BroadReads, context => CreateUserOrIpFixedWindow(
+                    context,
+                    RateLimitPolicies.BroadReads,
+                    permitLimit: 120,
+                    window: TimeSpan.FromMinutes(1)));
 
                 options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
                 {
@@ -101,6 +137,34 @@ namespace LuminaPath.Infrastructure
                         });
                 });
             });
+        }
+
+        private static RateLimitPartition<string> CreateUserOrIpFixedWindow(
+            HttpContext context,
+            string policyName,
+            int permitLimit,
+            TimeSpan window)
+        {
+            return RateLimitPartition.GetFixedWindowLimiter(
+                GetUserOrIpPartitionKey(context, policyName),
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true,
+                    PermitLimit = permitLimit,
+                    QueueLimit = 0,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    Window = window
+                });
+        }
+
+        private static string GetUserOrIpPartitionKey(HttpContext context, string policyName)
+        {
+            var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var actorKey = string.IsNullOrWhiteSpace(userId)
+                ? $"ip:{GetClientIp(context)}"
+                : $"user:{userId}";
+
+            return $"{policyName}:{actorKey}";
         }
 
         private static AuthRateLimitProfile? GetAuthRateLimitProfile(HttpRequest request)
@@ -243,8 +307,8 @@ namespace LuminaPath.Infrastructure
             }
 
             await ConfigureEnvironment(app);
-            app.UseRateLimiter();
             app.UseAuthentication();
+            app.UseRateLimiter();
             app.UseMiddleware<IdentityEndpointAuditMiddleware>();
             app.UseAuthorization();
         }

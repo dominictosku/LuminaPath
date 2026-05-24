@@ -449,7 +449,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
         protected virtual async Task<PaginatedList<MediaDocument>> CreatePaginatedList(IQueryable<MediaDocument> entities, Paging paging)
         {
             int pageIndex = paging.PageIndex;
-            int pageSize = paging.Count > 0 ? paging.Count : 10;
+            int pageSize = paging.EffectiveCount;
             return await entities.ToPaginatedListAsync(pageIndex, pageSize);
         }
 

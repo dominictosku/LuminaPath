@@ -81,7 +81,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             }
 
             var mappedEntities = _mapper.Map<IEnumerable<TEntity>, IEnumerable<Dto>>(paginatedEntities);
-            int pageSize = mediaFilter.Paging.Count > 0 ? mediaFilter.Paging.Count : 10;
+            int pageSize = mediaFilter.Paging.EffectiveCount;
             return new PaginatedList<Dto>(
                 mappedEntities.ToList(),
                 paginatedEntities.TotalCount,
@@ -213,18 +213,14 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
         protected virtual async Task<PaginatedList<TEntity>> CreatePaginatedList(IQueryable<TEntity> entities, Paging paging)
         {
             int pageIndex = paging.PageIndex;
-            int pageSize = paging.Count > 0 ? paging.Count : 10;
+            int pageSize = paging.EffectiveCount;
             return await entities.ToPaginatedListAsync(pageIndex, pageSize);
         }
 
         protected virtual PaginatedList<TDto> CreatePaginatedList<TDto>(IEnumerable<TDto> entities, Paging paging)
         {
             int pageIndex = paging.PageIndex;
-            if (paging.Count > 0)
-            {
-                return PaginatedList<TDto>.Create(entities, pageIndex, paging.Count);
-            }
-            return PaginatedList<TDto>.Create(entities, pageIndex, 10);
+            return PaginatedList<TDto>.Create(entities, pageIndex, paging.EffectiveCount);
         }
 
         protected virtual IQueryable<TEntity> PrepareEntity(

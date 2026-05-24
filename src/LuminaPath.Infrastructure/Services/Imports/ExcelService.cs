@@ -16,6 +16,9 @@ namespace LuminaPath.Infrastructure.Services
 {
     public class ExcelService
     {
+        public const long MaxWorkbookBytes = 10 * 1024 * 1024;
+        public const int MaxImportRows = 5_000;
+
         private static readonly string[] GameHeaders =
         [
             "Id",
@@ -133,6 +136,8 @@ namespace LuminaPath.Infrastructure.Services
 
         public async Task<GameExcelImportResult> ImportGamesAsync(Stream stream, LuminaUser user, string? fileName)
         {
+            ValidateWorkbookSize(stream);
+
             if (IsOdsWorkbook(stream, fileName))
             {
                 return await ImportOdsGamesAsync(stream, user);
@@ -151,6 +156,7 @@ namespace LuminaPath.Infrastructure.Services
 
             var result = new GameExcelImportResult();
             var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
+            ValidateImportRowCount(lastRow - 1);
             var items = new List<GameImportItem>();
 
             for (var row = 2; row <= lastRow; row++)
@@ -189,6 +195,8 @@ namespace LuminaPath.Infrastructure.Services
 
         public async Task<GameExcelPreviewResult> PreviewGamesAsync(Stream stream, LuminaUser user, string? fileName)
         {
+            ValidateWorkbookSize(stream);
+
             if (IsOdsWorkbook(stream, fileName))
             {
                 return await PreviewOdsGamesAsync(stream, user);
@@ -207,6 +215,7 @@ namespace LuminaPath.Infrastructure.Services
 
             var result = new GameExcelPreviewResult();
             var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
+            ValidateImportRowCount(lastRow - 1);
             var previewRows = new List<GameExcelPreviewRow>();
             var items = new List<GameImportItem>();
 
@@ -575,6 +584,8 @@ namespace LuminaPath.Infrastructure.Services
                 return new List<OdsRow>();
             }
 
+            ValidateImportRowCount(allRows.Count - 1);
+
             var headerMap = new Dictionary<string, int>();
             for (var index = 0; index < allRows[0].Count; index++)
             {
@@ -601,6 +612,22 @@ namespace LuminaPath.Infrastructure.Services
             return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var repeated)
                 ? Math.Clamp(repeated, 1, 1000)
                 : 1;
+        }
+
+        private static void ValidateWorkbookSize(Stream stream)
+        {
+            if (stream.CanSeek && stream.Length > MaxWorkbookBytes)
+            {
+                throw new InvalidOperationException($"Workbook is too large. Maximum allowed size is {MaxWorkbookBytes / (1024 * 1024)} MiB.");
+            }
+        }
+
+        private static void ValidateImportRowCount(int dataRows)
+        {
+            if (dataRows > MaxImportRows)
+            {
+                throw new InvalidOperationException($"Workbook contains too many rows. Maximum allowed rows: {MaxImportRows}.");
+            }
         }
 
         private static string ReadOdsCell(XElement cellElement, XNamespace textNs, XNamespace officeNs)

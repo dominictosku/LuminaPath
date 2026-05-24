@@ -5,6 +5,7 @@ using LuminaPath.Infrastructure.Services.ModelServices.Statistics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LuminaPath.Infrastructure.Controllers.Statistics;
 
@@ -26,6 +27,7 @@ public sealed class StatisticsController : AuthorizedControllerBase
     /// match what PSN itself displays — bronze, silver, gold, platinum.
     /// </summary>
     [HttpGet("psn-trophies")]
+    [EnableRateLimiting(RateLimitPolicies.BroadReads)]
     public async Task<ActionResult<PsnTrophyTotalsDto>> GetPsnTrophies(CancellationToken cancellationToken)
     {
         var userId = CurrentUserId;

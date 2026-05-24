@@ -15,7 +15,8 @@ public static class ServerEndpointRouteBuilderExtensions
     public static void ConfigureServer(this WebApplication app)
     {
         app.MapControllers();
-        app.MapHub<DirectMessageHub>("/hubs/messages");
+        app.MapHub<DirectMessageHub>("/hubs/messages")
+            .RequireRateLimiting(RateLimitPolicies.DirectMessages);
         app.MapGroup("/api")
             .MapIdentityApi<LuminaUser>();
         app.MapPost("/api/logout", async (SignInManager<LuminaUser> signInManager, [FromBody] object empty) =>

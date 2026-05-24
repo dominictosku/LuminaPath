@@ -2,6 +2,14 @@ using System.Text.Json.Serialization;
 
 namespace LuminaPath.Infrastructure.Services.AiChat;
 
+public static class ChatRequestLimits
+{
+    public const int MaxRequestBytes = 32 * 1024;
+    public const int MaxMessages = 20;
+    public const int MaxMessageCharacters = 4_000;
+    public const int MaxTotalCharacters = 12_000;
+}
+
 public sealed class ChatRequest
 {
     [JsonPropertyName("messages")]

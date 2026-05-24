@@ -5,6 +5,7 @@ using LuminaPath.Core.Mapping;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LuminaPath.Infrastructure.Controllers.Base
 {
@@ -20,6 +21,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
         public IObjectMapper Mapper { get; } = mapper;
 
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public virtual async Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)
         {
             var result = await _service.GetAllPaginated<TEntityDto>(mediaFilter, Includes);
