@@ -124,6 +124,12 @@ namespace LuminaPath.Core.Dtos
         public int? SortOrder { get; set; }
     }
 
+    public class QuestFolderReorderItemDto
+    {
+        public int Id { get; set; }
+        public int SortOrder { get; set; }
+    }
+
     public class QuestReorderItemDto
     {
         public int Id { get; set; }

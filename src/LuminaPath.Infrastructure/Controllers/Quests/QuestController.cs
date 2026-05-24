@@ -169,5 +169,15 @@ namespace LuminaPath.Infrastructure.Controllers
             var result = await _service.DeleteFolderAsync(user.Id, folderId);
             return result.Match<IActionResult>(_ => NoContent(), f => NotFound(f));
         }
+
+        [HttpPut("folders/reorder")]
+        public async Task<IActionResult> ReorderFolders(List<QuestFolderReorderItemDto> items)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return LoginRequired();
+
+            var result = await _service.ReorderFoldersAsync(user.Id, items);
+            return result.Match<IActionResult>(_ => NoContent(), f => BadRequest(f));
+        }
     }
 }

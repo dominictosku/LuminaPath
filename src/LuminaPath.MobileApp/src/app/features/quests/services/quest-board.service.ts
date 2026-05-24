@@ -360,6 +360,19 @@ export class QuestBoardService {
     this.invalidateDashboardCache();
   }
 
+  /**
+   * Batched reorder — single PUT instead of N PATCHes, so dragging a
+   * folder across the list doesn't fire one request per affected sibling.
+   * Server silently skips ids it doesn't own (matches `reorderQuests`).
+   */
+  async reorderFolders(items: { id: number; sortOrder: number }[]): Promise<void> {
+    if (items.length === 0) return;
+    await firstValueFrom(
+      this.http.put<void>(this.apiEndpoint.url('quests/folders/reorder'), items, this.httpConfig),
+    );
+    this.invalidateDashboardCache();
+  }
+
   async addSubtask(questId: number, title: string): Promise<QuestMutationResult> {
     const response = await firstValueFrom(
       this.http.post<ApiQuestMutationResult>(this.apiEndpoint.url(`quests/${questId}/subtasks`), { title }, this.httpConfig)

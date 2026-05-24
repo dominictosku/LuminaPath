@@ -6,6 +6,7 @@ import {
   IonContent,
   IonIcon,
   IonLabel,
+  IonReorder,
   IonReorderGroup,
   IonSegment,
   IonSegmentButton,
@@ -46,6 +47,7 @@ import { SkillForm, SkillModalComponent } from '../components/skill-modal/skill-
 import { QuestDetailSheetComponent, QuestEditDraft } from '../components/quest-detail-sheet/quest-detail-sheet.component';
 import { QuestCardComponent } from '../components/quest-card/quest-card.component';
 import { QuestFolderModalComponent } from '../components/quest-folder-modal/quest-folder-modal.component';
+import { QuestFolderPickerComponent } from '../components/quest-folder-picker/quest-folder-picker.component';
 import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
 import {
   QuestFilter,
@@ -113,6 +115,7 @@ type SkillTreeUnlockPayload = {
     IonContent,
     IonIcon,
     IonLabel,
+    IonReorder,
     IonReorderGroup,
     IonSegment,
     IonSegmentButton,
@@ -126,6 +129,7 @@ type SkillTreeUnlockPayload = {
     QuestDetailSheetComponent,
     QuestCardComponent,
     QuestFolderModalComponent,
+    QuestFolderPickerComponent,
     EmptyStateComponent,
 ],
 })
@@ -210,6 +214,15 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   /** When non-null, the folder modal is open in create-or-edit mode. */
   folderModalState: { mode: 'create' | 'edit'; folder: QuestFolder | null } | null = null;
   folderSaving = false;
+  /** When true, folders show drag handles and are reorderable. Collapse
+   *  toggles are suppressed in this mode so dragging doesn't double-fire
+   *  as a tap on the toggle button. */
+  folderReorderActive = false;
+
+  /** ID of the quest whose folder-picker popover is open in compact view.
+   *  Only one row may have it open at a time — opening a new one closes
+   *  the previous. Card view's picker state is owned by the card itself. */
+  compactFolderPickerQuestId: number | null = null;
 
   newSubtaskTitle: Record<number, string> = {};
 
@@ -1145,6 +1158,100 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   trackByFolderGroup(_: number, group: { section: string | null }): string {
     return group.section ?? '__unfiled__';
+  }
+
+  openCompactFolderPicker(quest: Quest, event: MouseEvent): void {
+    event.stopPropagation();
+    this.compactFolderPickerQuestId = quest.id;
+  }
+
+  closeCompactFolderPicker(): void {
+    this.compactFolderPickerQuestId = null;
+  }
+
+  async pickCompactFolder(quest: Quest, folderId: number | null): Promise<void> {
+    this.compactFolderPickerQuestId = null;
+    await this.assignFolderToQuest(quest, folderId);
+  }
+
+  /**
+   * Move a quest into a folder (or out, when `folderId === null`) from
+   * any view — quest card, compact row, anywhere the picker is hosted.
+   * Optimistic: patch the local quest first so the UI flips instantly,
+   * roll back on failure.
+   */
+  async assignFolderToQuest(quest: Quest, folderId: number | null): Promise<void> {
+    const previousFolderId = quest.folderId ?? null;
+    if (previousFolderId === folderId) return;
+
+    const folder = folderId == null ? null : this.folders.find((f) => f.id === folderId) ?? null;
+    const previousName = quest.folderName ?? null;
+    const previousEmoji = quest.folderEmoji ?? null;
+
+    // Mutate in place (the page leans on plain arrays elsewhere too —
+    // matches the existing toggle / schedule flows).
+    quest.folderId = folderId;
+    quest.folderName = folder?.name ?? null;
+    quest.folderEmoji = folder?.emoji ?? null;
+
+    try {
+      const mutation = await this.questBoardService.updateQuest(quest.id, {
+        folderId: folderId ?? undefined,
+        clearFolder: folderId == null,
+      });
+      this.applyMutation(quest.id, mutation.quest);
+      this.applyMutationMeta(mutation);
+    } catch {
+      quest.folderId = previousFolderId;
+      quest.folderName = previousName;
+      quest.folderEmoji = previousEmoji;
+      this.showToast('Could not move quest');
+    }
+  }
+
+  // ----- Folder reorder ---------------------------------------------------
+
+  toggleFolderReorder(): void {
+    this.folderReorderActive = !this.folderReorderActive;
+  }
+
+  /**
+   * `ion-reorder-group`'s detail carries `from` and `to` indices for the
+   * *currently rendered* folder list. We splice locally for the optimistic
+   * reorder, then persist a normalised (id, sortOrder) batch to the server.
+   *
+   * Note this operates on the *flat* `folders` array — section grouping is
+   * a pure render-time derivation, so reordering folders here may visually
+   * shuffle sections too. That's intentional: there's no separate "section
+   * order" entity, sections inherit the order of their first folder.
+   */
+  async handleFolderReorder(event: CustomEvent): Promise<void> {
+    const detail = event.detail as ItemReorderEventDetail;
+    const from = detail.from;
+    const to = detail.to;
+    // Always call complete() — Ionic needs it to release the dragged element.
+    detail.complete();
+
+    if (from === to || from < 0 || from >= this.folders.length) {
+      return;
+    }
+
+    const previous = [...this.folders];
+    const next = [...this.folders];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+
+    // Normalise SortOrder values to the new array index, then send the
+    // full set so the server doesn't have to reason about diffs.
+    const payload = next.map((folder, index) => ({ id: folder.id, sortOrder: index }));
+    this.folders = next.map((folder, index) => ({ ...folder, sortOrder: index }));
+
+    try {
+      await this.questBoardService.reorderFolders(payload);
+    } catch {
+      this.folders = previous;
+      this.showToast('Could not save folder order');
+    }
   }
 
   private async persistSkills(): Promise<boolean> {

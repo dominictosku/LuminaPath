@@ -9,6 +9,12 @@ import {
 import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
 import { QuestFolder, QuestFolderCreate, QuestFolderUpdate } from '../../services/quest-board.service';
+import {
+  FOLDER_COLOR_PRESETS,
+  FOLDER_EMOJI_PRESETS,
+  FolderColorSwatch,
+  colorsEqual,
+} from '../../util/folder-presets';
 
 /**
  * Create/edit dialog for a quest folder. Self-contained:
@@ -46,6 +52,11 @@ export class QuestFolderModalComponent {
   /** Track if the user has interacted with the form yet (for hydration). */
   private hydrated = false;
 
+  /** Curated palettes; both pickers still accept arbitrary values via the
+   *  text inputs below them — these grids are just the fast path. */
+  protected readonly emojiPresets = FOLDER_EMOJI_PRESETS;
+  protected readonly colorPresets = FOLDER_COLOR_PRESETS;
+
   protected readonly isEdit = computed(() => this.mode() === 'edit');
   protected readonly title = computed(() => (this.isEdit() ? 'Edit folder' : 'New folder'));
   protected readonly canSubmit = computed(() => {
@@ -53,6 +64,26 @@ export class QuestFolderModalComponent {
     const emoji = this.emoji().trim();
     return name.length > 0 && emoji.length > 0;
   });
+
+  /** Whether the user has picked any colour (swatch or custom). Drives the
+   *  "Default" swatch's selected state without re-implementing equality. */
+  protected readonly hasColor = computed(() => this.color().trim().length > 0);
+
+  protected isSwatchActive(swatch: FolderColorSwatch): boolean {
+    return colorsEqual(this.color(), swatch.value);
+  }
+
+  protected isEmojiActive(glyph: string): boolean {
+    return this.emoji().trim() === glyph;
+  }
+
+  protected selectEmoji(glyph: string): void {
+    this.emoji.set(glyph);
+  }
+
+  protected selectColor(value: string | null): void {
+    this.color.set(value ?? '');
+  }
 
   ngOnInit(): void {
     // Hydrate from the folder input on first render of the edit case.

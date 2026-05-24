@@ -94,6 +94,29 @@
         @if (canMoveToInbox()) {
           <button type="button" (click)="$event.stopPropagation(); clearDueDate.emit(q)">Inbox</button>
         }
+        <!-- Folder assignment from outside the detail sheet — picker
+             opens above this button, positioned by the picker host's
+             absolute positioning (needs `.quest-card { position: relative }`
+             which the page styles already set). -->
+        <div class="quest-folder-anchor">
+          <button
+            type="button"
+            class="quest-folder-trigger"
+            [class.quest-folder-trigger--active]="q.folderId != null"
+            [attr.aria-haspopup]="true"
+            [attr.aria-expanded]="folderPickerOpen()"
+            (click)="openFolderPicker($event)">
+            <span aria-hidden="true">{{ q.folderEmoji || '📁' }}</span>
+            {{ q.folderName || 'Folder' }}
+          </button>
+          @if (folderPickerOpen()) {
+            <app-quest-folder-picker
+              [folders]="folders()"
+              [currentFolderId]="q.folderId ?? null"
+              (select)="pickFolder($event)"
+              (close)="closeFolderPicker()" />
+          }
+        </div>
       </div>
     }
   </div>

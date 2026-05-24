@@ -1,0 +1,38 @@
+<div class="folder-picker" role="listbox" aria-label="Move quest to folder">
+  @if (!folders().length) {
+    <p class="folder-picker__empty">
+      No folders yet. Create one from the Folders tab.
+    </p>
+  } @else {
+    <ul class="folder-picker__list">
+      @for (folder of folders(); track trackByFolder($index, folder)) {
+        <li>
+          <button
+            type="button"
+            class="folder-picker__item"
+            role="option"
+            [class.folder-picker__item--active]="isCurrent(folder.id)"
+            [attr.aria-selected]="isCurrent(folder.id)"
+            [style.--picker-accent]="folder.color || 'var(--accent)'"
+            (click)="pick(folder.id)">
+            <span class="folder-picker__emoji" aria-hidden="true">{{ folder.emoji }}</span>
+            <span class="folder-picker__name">{{ folder.name }}</span>
+            @if (isCurrent(folder.id)) {
+              <ion-icon class="folder-picker__check" name="checkmark-outline" aria-hidden="true"></ion-icon>
+            }
+          </button>
+        </li>
+      }
+    </ul>
+  }
+
+  @if (currentFolderId() != null) {
+    <button
+      type="button"
+      class="folder-picker__remove"
+      (click)="pick(null)">
+      <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+      Remove from folder
+    </button>
+  }
+</div>

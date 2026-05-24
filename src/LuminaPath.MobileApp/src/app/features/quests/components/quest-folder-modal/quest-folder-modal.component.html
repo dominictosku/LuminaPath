@@ -6,33 +6,89 @@
 
     <h2>{{ title() }}</h2>
 
-    <div class="folder-modal__row folder-modal__row--top">
-      <label class="folder-modal__emoji-field">
-        <span>Emoji</span>
-        <input
-          type="text"
-          [ngModel]="emoji()"
-          (ngModelChange)="emoji.set($event)"
-          name="folderEmoji"
-          maxlength="6"
-          placeholder="📚"
-          autocomplete="off"
-          aria-label="Folder emoji" />
-        <small>System emoji picker: Win + . / ⌃⌘ Space / 🌐</small>
-      </label>
+    <!-- Name + a live preview chip so the chosen emoji/colour pair shows
+         what the folder will actually look like in the sidebar. -->
+    <label class="folder-modal__field">
+      <span>Name</span>
+      <input
+        type="text"
+        [ngModel]="name()"
+        (ngModelChange)="name.set($event)"
+        name="folderName"
+        maxlength="80"
+        placeholder="e.g. Projects"
+        autocomplete="off"
+        required />
+    </label>
 
-      <label class="folder-modal__name-field">
-        <span>Name</span>
-        <input
-          type="text"
-          [ngModel]="name()"
-          (ngModelChange)="name.set($event)"
-          name="folderName"
-          maxlength="80"
-          placeholder="e.g. Projects"
-          autocomplete="off"
-          required />
-      </label>
+    @if (canSubmit() || color()) {
+      <div
+        class="folder-modal__preview"
+        [style.--preview-accent]="color() || 'var(--accent)'">
+        <span class="folder-modal__preview-rail" aria-hidden="true"></span>
+        <span class="folder-modal__preview-emoji" aria-hidden="true">{{ emoji() || '·' }}</span>
+        <span class="folder-modal__preview-name">{{ name() || 'Folder preview' }}</span>
+      </div>
+    }
+
+    <!-- Emoji picker — 8-col swatch grid + free-form text input as
+         escape hatch for any emoji that isn't in the curated set. -->
+    <div class="folder-modal__field">
+      <span>Emoji</span>
+      <div class="emoji-grid" role="listbox" aria-label="Folder emoji">
+        @for (glyph of emojiPresets; track glyph) {
+          <button
+            type="button"
+            class="emoji-swatch"
+            role="option"
+            [class.emoji-swatch--active]="isEmojiActive(glyph)"
+            [attr.aria-selected]="isEmojiActive(glyph)"
+            [attr.aria-label]="glyph"
+            (click)="selectEmoji(glyph)">
+            {{ glyph }}
+          </button>
+        }
+      </div>
+      <input
+        type="text"
+        class="emoji-custom"
+        [ngModel]="emoji()"
+        (ngModelChange)="emoji.set($event)"
+        name="folderEmoji"
+        maxlength="6"
+        placeholder="Or paste a custom emoji"
+        autocomplete="off" />
+    </div>
+
+    <!-- Colour swatch row. Includes a "Default" tile that clears the
+         override so the folder falls back to the page accent. -->
+    <div class="folder-modal__field">
+      <span>Accent colour</span>
+      <div class="color-grid" role="listbox" aria-label="Folder accent colour">
+        <button
+          type="button"
+          class="color-swatch color-swatch--default"
+          role="option"
+          [class.color-swatch--active]="!hasColor()"
+          [attr.aria-selected]="!hasColor()"
+          aria-label="Default colour"
+          (click)="selectColor(null)">
+          <ion-icon name="ban-outline" aria-hidden="true"></ion-icon>
+        </button>
+        @for (swatch of colorPresets; track swatch.value) {
+          <button
+            type="button"
+            class="color-swatch"
+            role="option"
+            [class.color-swatch--active]="isSwatchActive(swatch)"
+            [attr.aria-selected]="isSwatchActive(swatch)"
+            [attr.aria-label]="swatch.label"
+            [title]="swatch.label"
+            [style.--swatch-color]="swatch.value"
+            (click)="selectColor(swatch.value)">
+          </button>
+        }
+      </div>
     </div>
 
     <label class="folder-modal__field">
@@ -54,18 +110,6 @@
           }
         </div>
       }
-    </label>
-
-    <label class="folder-modal__field">
-      <span>Accent colour <small>(optional, hex)</small></span>
-      <input
-        type="text"
-        [ngModel]="color()"
-        (ngModelChange)="color.set($event)"
-        name="folderColor"
-        maxlength="9"
-        placeholder="#7c3aed"
-        autocomplete="off" />
     </label>
 
     <div class="folder-modal__actions">

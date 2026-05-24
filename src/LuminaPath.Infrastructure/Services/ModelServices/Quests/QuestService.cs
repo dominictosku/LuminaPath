@@ -662,6 +662,39 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return ProjectFolderDto(folder);
         }
 
+        public async Task<Result<int, FailedResult>> ReorderFoldersAsync(string userId, List<QuestFolderReorderItemDto> items)
+        {
+            if (items.Count == 0)
+            {
+                return 0;
+            }
+
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+            var ids = items.Select(item => item.Id).Distinct().ToList();
+            var folders = await dbContext.QuestFolders
+                .Where(f => f.LuminaUserId == userId && ids.Contains(f.Id))
+                .ToListAsync();
+            var foldersById = folders.ToDictionary(f => f.Id);
+
+            // Items belonging to a different user (or already deleted) are
+            // silently skipped — mirrors the existing quest reorder behaviour
+            // so a partially-stale client payload doesn't 400 the whole batch.
+            var now = UtcNow;
+            foreach (var item in items)
+            {
+                if (!foldersById.TryGetValue(item.Id, out var folder))
+                {
+                    continue;
+                }
+                folder.SortOrder = item.SortOrder;
+                folder.UpdatedAt = now;
+            }
+
+            await dbContext.SaveChangesAsync();
+            return items.Count;
+        }
+
         public async Task<Result<int, FailedResult>> DeleteFolderAsync(string userId, int folderId)
         {
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();

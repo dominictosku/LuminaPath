@@ -19,18 +19,7 @@
   }
 }
 
-.folder-modal__row {
-  display: grid;
-  gap: 12px;
-}
-.folder-modal__row--top {
-  /* Emoji is a small, square-ish field; name takes the rest. */
-  grid-template-columns: 88px minmax(0, 1fr);
-}
-
-.folder-modal__field,
-.folder-modal__emoji-field,
-.folder-modal__name-field {
+.folder-modal__field {
   display: grid;
   gap: 6px;
 
@@ -49,7 +38,7 @@
     }
   }
 
-  input {
+  > input {
     min-height: 44px;
     padding: 9px 12px;
     border: 1px solid var(--line, rgba(137, 180, 255, 0.18));
@@ -59,25 +48,148 @@
     outline: 0;
     font: inherit;
 
-    &:focus {
-      border-color: var(--accent, #60a5fa);
-    }
-  }
-
-  small {
-    color: var(--muted, #9fb6d4);
-    font-size: 0.74rem;
-    line-height: 1.3;
+    &:focus { border-color: var(--accent, #60a5fa); }
   }
 }
 
-.folder-modal__emoji-field input {
-  /* Centered, larger glyph so the picked emoji is the visual focus. */
-  font-size: 1.4rem;
+/* ----- Live preview chip ------------------------------------------------- */
+.folder-modal__preview {
+  --preview-accent: var(--accent, #60a5fa);
+  display: inline-grid;
+  grid-template-columns: 3px 32px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--line, rgba(137, 180, 255, 0.18));
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.folder-modal__preview-rail {
+  display: block;
+  width: 3px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--preview-accent);
+}
+.folder-modal__preview-emoji {
+  font-size: 1.5rem;
   line-height: 1;
   text-align: center;
 }
+.folder-modal__preview-name {
+  color: var(--ink, #eef6ff);
+  font-weight: 760;
+  font-size: 0.96rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
+/* ----- Emoji picker ------------------------------------------------------ */
+.emoji-grid {
+  display: grid;
+  /* 8 across on desktop; auto-fit so narrow viewports get more rows
+     instead of horizontal overflow. */
+  grid-template-columns: repeat(auto-fit, minmax(38px, 1fr));
+  gap: 4px;
+  max-height: 168px;          /* ~4 rows tall, the rest scrolls */
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--line, rgba(137, 180, 255, 0.18));
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.emoji-swatch {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 38px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-1px);
+  }
+}
+.emoji-swatch--active {
+  border-color: var(--accent, #60a5fa);
+  background: color-mix(in srgb, var(--accent, #60a5fa) 22%, transparent);
+}
+
+.emoji-custom {
+  min-height: 38px;
+  padding: 6px 12px;
+  margin-top: 2px;
+  border: 1px solid var(--line, rgba(137, 180, 255, 0.18));
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink, #eef6ff);
+  outline: 0;
+  font: inherit;
+  font-size: 0.92rem;
+
+  &:focus { border-color: var(--accent, #60a5fa); }
+}
+
+/* ----- Colour picker ----------------------------------------------------- */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line, rgba(137, 180, 255, 0.18));
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.color-swatch {
+  --swatch-color: var(--accent, #60a5fa);
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--swatch-color);
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  transition: transform 0.12s ease;
+
+  &:hover { transform: scale(1.08); }
+}
+.color-swatch--active {
+  /* Two-layer ring (gap + outline) so the selected colour pops clearly
+     against both light and dark tiles in the row. */
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42),
+    0 0 0 2px var(--solid, #0c1f40),
+    0 0 0 4px var(--swatch-color);
+}
+
+.color-swatch--default {
+  background: transparent;
+  border: 1px dashed var(--line, rgba(137, 180, 255, 0.32));
+  color: var(--muted, #9fb6d4);
+
+  ion-icon { font-size: 1rem; }
+
+  &:hover { background: rgba(255, 255, 255, 0.04); }
+}
+.color-swatch--default.color-swatch--active {
+  border-style: solid;
+  border-color: var(--accent, #60a5fa);
+  color: var(--accent, #60a5fa);
+  box-shadow: 0 0 0 2px var(--solid, #0c1f40), 0 0 0 4px var(--accent, #60a5fa);
+}
+
+/* ----- Section suggestions ---------------------------------------------- */
 .folder-modal__suggestions {
   display: flex;
   flex-wrap: wrap;
@@ -101,6 +213,7 @@
   }
 }
 
+/* ----- Actions ---------------------------------------------------------- */
 .folder-modal__actions {
   display: flex;
   align-items: center;

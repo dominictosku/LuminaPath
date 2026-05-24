@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { IonIcon, IonProgressBar, IonReorder } from '@ionic/angular/standalone';
 
 import { addDays, startOfDay, toISODate } from 'src/app/shared/utils/date-helpers';
-import { Quest, QuestPriority, QuestRecurrence, QuestType } from '../../services/quest-board.service';
+import { Quest, QuestFolder, QuestPriority, QuestRecurrence, QuestType } from '../../services/quest-board.service';
 import { QuestDueState, dueDateLabel, dueState } from '../../quest-due';
+import { QuestFolderPickerComponent } from '../quest-folder-picker/quest-folder-picker.component';
 
 export type { QuestDueState };
 
@@ -23,13 +24,15 @@ export type { QuestDueState };
 @Component({
   selector: 'app-quest-card',
   templateUrl: './quest-card.component.html',
-  imports: [IonIcon, IonProgressBar, IonReorder],
+  imports: [IonIcon, IonProgressBar, IonReorder, QuestFolderPickerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuestCardComponent {
   readonly quest = input.required<Quest>();
   readonly expanded = input<boolean>(false);
   readonly manualOrderActive = input<boolean>(false);
+  /** Folders available for assignment via the inline picker. */
+  readonly folders = input<readonly QuestFolder[]>([]);
   /**
    * When true, the card runs its celebration animation (scale+glow,
    * floating +XP badge). Owned by the page so it can clear after the
@@ -50,6 +53,27 @@ export class QuestCardComponent {
   readonly scheduleTomorrow = output<Quest>();
   readonly clearDueDate = output<Quest>();
   readonly requestDelete = output<Quest>();
+  /** Emits the chosen folder id (`null` = "Remove from folder"). */
+  readonly assignFolder = output<{ quest: Quest; folderId: number | null }>();
+
+  /** Inline folder-picker open state — local to this card instance. */
+  protected readonly folderPickerOpen = signal(false);
+
+  protected openFolderPicker(event: MouseEvent): void {
+    // Stop propagation so the card's body click handler doesn't fire
+    // (which would open the detail sheet on top of the picker).
+    event.stopPropagation();
+    this.folderPickerOpen.set(true);
+  }
+
+  protected closeFolderPicker(): void {
+    this.folderPickerOpen.set(false);
+  }
+
+  protected pickFolder(folderId: number | null): void {
+    this.assignFolder.emit({ quest: this.quest(), folderId });
+    this.folderPickerOpen.set(false);
+  }
 
   // Computed views over the quest input so the template doesn't recompute on
   // every CD pass.

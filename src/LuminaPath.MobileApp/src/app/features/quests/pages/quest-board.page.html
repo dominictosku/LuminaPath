@@ -115,6 +115,7 @@
                       [expanded]="expandedQuestId === quest.id"
                       [manualOrderActive]="isManualOrderActive"
                       [recentlyCompleted]="isRecentlyCompleted(quest.id)"
+                      [folders]="folders"
                       [typeIcon]="typeIconFn"
                       [typeLabel]="typeLabelFn"
                       [priorityLabel]="priorityLabelFn"
@@ -125,6 +126,7 @@
                       (scheduleToday)="scheduleToday($event)"
                       (scheduleTomorrow)="scheduleTomorrow($event)"
                       (clearDueDate)="clearQuestDueDate($event)"
+                      (assignFolder)="assignFolderToQuest($event.quest, $event.folderId)"
                       (requestDelete)="beginDelete($event)" />
                   }
                 </ion-reorder-group>
@@ -163,6 +165,29 @@
                           }
                         </span>
                       </button>
+                      <div class="quest-folder-anchor quest-compact__folder-anchor">
+                        <button
+                          type="button"
+                          class="quest-compact__folder"
+                          [class.quest-compact__folder--active]="quest.folderId != null"
+                          [attr.aria-label]="quest.folderName ? 'Move quest (currently in ' + quest.folderName + ')' : 'Move quest to folder'"
+                          [attr.aria-haspopup]="true"
+                          [attr.aria-expanded]="compactFolderPickerQuestId === quest.id"
+                          (click)="openCompactFolderPicker(quest, $event)">
+                          @if (quest.folderEmoji) {
+                            <span aria-hidden="true">{{ quest.folderEmoji }}</span>
+                          } @else {
+                            <ion-icon name="albums-outline"></ion-icon>
+                          }
+                        </button>
+                        @if (compactFolderPickerQuestId === quest.id) {
+                          <app-quest-folder-picker
+                            [folders]="folders"
+                            [currentFolderId]="quest.folderId ?? null"
+                            (select)="pickCompactFolder(quest, $event)"
+                            (close)="closeCompactFolderPicker()" />
+                        }
+                      </div>
                       <button
                         type="button"
                         class="quest-compact__delete"
@@ -204,10 +229,22 @@
               Add a section name to bundle related folders under a heading.
             </p>
           </div>
-          <button type="button" class="folders-panel__new" (click)="openCreateFolderModal()">
-            <ion-icon name="add-outline"></ion-icon>
-            New folder
-          </button>
+          <div class="folders-panel__actions">
+            @if (folders.length > 1) {
+              <button
+                type="button"
+                class="folders-panel__reorder"
+                [class.folders-panel__reorder--active]="folderReorderActive"
+                (click)="toggleFolderReorder()">
+                <ion-icon [name]="folderReorderActive ? 'checkmark-outline' : 'swap-vertical-outline'"></ion-icon>
+                {{ folderReorderActive ? 'Done' : 'Reorder' }}
+              </button>
+            }
+            <button type="button" class="folders-panel__new" (click)="openCreateFolderModal()">
+              <ion-icon name="add-outline"></ion-icon>
+              New folder
+            </button>
+          </div>
         </header>
 
         @if (!folders.length) {
@@ -223,6 +260,29 @@
           </app-empty-state>
         }
 
+        @if (folderReorderActive && folders.length) {
+          <!-- Reorder mode: flat list, sections suppressed so dragging
+               operates on a single uninterrupted axis. The section
+               grouping below re-derives once the user taps Done. -->
+          <ion-reorder-group
+            class="folder-reorder-list"
+            [disabled]="false"
+            (ionItemReorder)="handleFolderReorder($any($event))">
+            @for (folder of folders; track trackByFolder($index, folder)) {
+              <article class="folder-reorder-row" [style.--folder-accent]="folder.color || 'var(--accent)'">
+                <span class="folder-reorder-row__rail" aria-hidden="true"></span>
+                <span class="folder-reorder-row__emoji" aria-hidden="true">{{ folder.emoji }}</span>
+                <span class="folder-reorder-row__name">{{ folder.name }}</span>
+                @if (folder.sectionName) {
+                  <span class="folder-reorder-row__section">{{ folder.sectionName }}</span>
+                }
+                <ion-reorder class="folder-reorder-row__handle"></ion-reorder>
+              </article>
+            }
+          </ion-reorder-group>
+        }
+
+        @if (!folderReorderActive) {
         @for (group of folderGroups; track trackByFolderGroup($index, group)) {
           <div class="folder-group">
             @if (group.section) {
@@ -336,6 +396,7 @@
             }
           </article>
         }
+        } <!-- /@if !folderReorderActive -->
       </section>
     }
 
