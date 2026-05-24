@@ -1,4 +1,3 @@
-using System.Net;
 using System.Reflection;
 using System.Globalization;
 using System.Threading.RateLimiting;
@@ -149,24 +148,6 @@ namespace LuminaPath.Infrastructure
 
         private sealed record AuthRateLimitProfile(string Name, int PermitLimit, TimeSpan Window);
 
-        private static void AddMiddleware(WebApplication app)
-        {
-            app.Use(async (context, next) =>
-            {
-                await next();
-
-                if (context.Response.StatusCode == (int)HttpStatusCode.Unauthorized)
-                {
-                    await context.Response.WriteAsync("Session expired, please login");
-                }
-
-                if (context.Response.StatusCode == (int)HttpStatusCode.Forbidden)
-                {
-                    await context.Response.WriteAsync("You have not permission to access this");
-                }
-            });
-        }
-
         public static async Task MigrateDatabase(this WebApplication app)
         {
             using var serviceScope = app.Services.CreateScope();
@@ -238,7 +219,7 @@ namespace LuminaPath.Infrastructure
 
         public static async Task ConfigureInfrastructure(this WebApplication app)
         {
-            AddMiddleware(app);
+            app.UseMiddleware<AuthorizationStatusMiddleware>();
 
             // Defense-in-depth headers go BEFORE CORS / auth so they
             // apply to every response, including preflight 204s, the
