@@ -1,0 +1,85 @@
+<div class="modal-backdrop folder-backdrop" (click)="onClose()">
+  <form class="quest-modal folder-modal" (click)="$event.stopPropagation()" (ngSubmit)="onSubmit($event)">
+    <button type="button" class="modal-close" aria-label="Close" (click)="onClose()">
+      <ion-icon name="close-outline"></ion-icon>
+    </button>
+
+    <h2>{{ title() }}</h2>
+
+    <div class="folder-modal__row folder-modal__row--top">
+      <label class="folder-modal__emoji-field">
+        <span>Emoji</span>
+        <input
+          type="text"
+          [ngModel]="emoji()"
+          (ngModelChange)="emoji.set($event)"
+          name="folderEmoji"
+          maxlength="6"
+          placeholder="📚"
+          autocomplete="off"
+          aria-label="Folder emoji" />
+        <small>System emoji picker: Win + . / ⌃⌘ Space / 🌐</small>
+      </label>
+
+      <label class="folder-modal__name-field">
+        <span>Name</span>
+        <input
+          type="text"
+          [ngModel]="name()"
+          (ngModelChange)="name.set($event)"
+          name="folderName"
+          maxlength="80"
+          placeholder="e.g. Projects"
+          autocomplete="off"
+          required />
+      </label>
+    </div>
+
+    <label class="folder-modal__field">
+      <span>Section <small>(optional grouping header)</small></span>
+      <input
+        type="text"
+        [ngModel]="sectionName()"
+        (ngModelChange)="sectionName.set($event)"
+        name="folderSection"
+        maxlength="48"
+        placeholder="e.g. Lists, Pinned"
+        autocomplete="off" />
+      @if (sectionSuggestions().length) {
+        <div class="folder-modal__suggestions">
+          @for (suggestion of sectionSuggestions(); track suggestion) {
+            <button type="button" class="folder-modal__suggestion" (click)="pickSuggestion(suggestion)">
+              {{ suggestion }}
+            </button>
+          }
+        </div>
+      }
+    </label>
+
+    <label class="folder-modal__field">
+      <span>Accent colour <small>(optional, hex)</small></span>
+      <input
+        type="text"
+        [ngModel]="color()"
+        (ngModelChange)="color.set($event)"
+        name="folderColor"
+        maxlength="9"
+        placeholder="#7c3aed"
+        autocomplete="off" />
+    </label>
+
+    <div class="folder-modal__actions">
+      @if (isEdit()) {
+        <button type="button" class="folder-modal__danger" (click)="onDelete()">
+          <ion-icon name="trash-outline"></ion-icon>
+          Delete
+        </button>
+      }
+      <span class="folder-modal__spacer"></span>
+      <button type="button" class="folder-modal__cancel" (click)="onClose()">Cancel</button>
+      <button type="submit" class="folder-modal__save" [disabled]="!canSubmit()">
+        {{ isEdit() ? 'Save' : 'Create' }}
+      </button>
+    </div>
+  </form>
+</div>

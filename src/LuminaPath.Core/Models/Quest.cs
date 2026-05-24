@@ -24,6 +24,8 @@ namespace LuminaPath.Core.Models
         public MyGame? MyGame { get; set; }
         public int? SkillId { get; set; }
         public QuestSkill? Skill { get; set; }
+        public int? QuestFolderId { get; set; }
+        public QuestFolder? QuestFolder { get; set; }
         public List<QuestSubtask> Subtasks { get; set; } = new();
     }
 }

@@ -21,6 +21,9 @@
         <ion-segment-button value="quests">
           <ion-label>Quests</ion-label>
         </ion-segment-button>
+        <ion-segment-button value="folders">
+          <ion-label>Folders</ion-label>
+        </ion-segment-button>
         <ion-segment-button value="skills">
           <ion-label>Skills</ion-label>
         </ion-segment-button>
@@ -187,6 +190,155 @@
       }
     }
 
+    @if (mode === 'folders') {
+      <section class="folders-panel">
+        <header class="folders-panel__head">
+          <div>
+            <span class="eyebrow">
+              <ion-icon name="albums-outline"></ion-icon>
+              Folders
+            </span>
+            <h2>Organise quests</h2>
+            <p>
+              Group quests into your own lists — Projects, Errands, Reading.
+              Add a section name to bundle related folders under a heading.
+            </p>
+          </div>
+          <button type="button" class="folders-panel__new" (click)="openCreateFolderModal()">
+            <ion-icon name="add-outline"></ion-icon>
+            New folder
+          </button>
+        </header>
+
+        @if (!folders.length) {
+          <app-empty-state
+            icon="albums-outline"
+            title="No folders yet"
+            message="Create a folder to organise quests outside the Today / Upcoming / Inbox split.">
+            <div class="empty-actions">
+              <button type="button" (click)="openCreateFolderModal()">
+                Create your first folder
+              </button>
+            </div>
+          </app-empty-state>
+        }
+
+        @for (group of folderGroups; track trackByFolderGroup($index, group)) {
+          <div class="folder-group">
+            @if (group.section) {
+              <div class="folder-group__heading">{{ group.section }}</div>
+            }
+            @for (folder of group.folders; track trackByFolder($index, folder)) {
+              <article
+                class="folder-card"
+                [class.folder-card--collapsed]="isFolderCollapsed(folder.id)"
+                [style.--folder-accent]="folder.color || 'var(--accent)'">
+                <header class="folder-card__head">
+                  <button
+                    type="button"
+                    class="folder-card__toggle"
+                    [attr.aria-expanded]="!isFolderCollapsed(folder.id)"
+                    (click)="toggleFolderCollapsed(folder.id)">
+                    <span class="folder-card__chevron" aria-hidden="true">
+                      <ion-icon [name]="isFolderCollapsed(folder.id) ? 'chevron-forward-outline' : 'chevron-down-outline'"></ion-icon>
+                    </span>
+                    <span class="folder-card__emoji" aria-hidden="true">{{ folder.emoji }}</span>
+                    <span class="folder-card__title">{{ folder.name }}</span>
+                    <span class="folder-card__count">{{ questsInFolder(folder.id).length }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="folder-card__edit"
+                    aria-label="Edit folder"
+                    (click)="openEditFolderModal(folder)">
+                    <ion-icon name="create-outline"></ion-icon>
+                  </button>
+                </header>
+
+                @if (!isFolderCollapsed(folder.id)) {
+                  @if (questsInFolder(folder.id).length) {
+                    <ul class="folder-card__list">
+                      @for (quest of questsInFolder(folder.id); track trackByQuest($index, quest)) {
+                        <li
+                          class="folder-card__row"
+                          [class.folder-card__row--done]="quest.completed"
+                          [attr.data-type]="quest.type">
+                          <button
+                            type="button"
+                            class="folder-card__check"
+                            aria-label="Toggle complete"
+                            (click)="toggleQuest(quest)">
+                            <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'ellipse-outline'"></ion-icon>
+                          </button>
+                          <button type="button" class="folder-card__row-body" (click)="toggleExpand(quest)">
+                            <span class="folder-card__row-title">{{ quest.title }}</span>
+                            @if (quest.dueDate) {
+                              <span class="folder-card__row-due" [attr.data-state]="dueStateOf(quest)">
+                                <ion-icon name="calendar-outline"></ion-icon>
+                                {{ dueLabelOf(quest) }}
+                              </span>
+                            }
+                          </button>
+                        </li>
+                      }
+                    </ul>
+                  } @else {
+                    <p class="folder-card__empty">No quests here yet. Move a quest into this folder from its detail view.</p>
+                  }
+                }
+              </article>
+            }
+          </div>
+        }
+
+        @if (unfiledQuestCount > 0) {
+          <article class="folder-card folder-card--unfiled" [class.folder-card--collapsed]="unfiledCollapsed">
+            <header class="folder-card__head">
+              <button
+                type="button"
+                class="folder-card__toggle"
+                [attr.aria-expanded]="!unfiledCollapsed"
+                (click)="toggleUnfiledCollapsed()">
+                <span class="folder-card__chevron" aria-hidden="true">
+                  <ion-icon [name]="unfiledCollapsed ? 'chevron-forward-outline' : 'chevron-down-outline'"></ion-icon>
+                </span>
+                <span class="folder-card__emoji" aria-hidden="true">📥</span>
+                <span class="folder-card__title">Unfiled</span>
+                <span class="folder-card__count">{{ unfiledQuestCount }}</span>
+              </button>
+            </header>
+            @if (!unfiledCollapsed) {
+              <ul class="folder-card__list">
+                @for (quest of questsInFolder(null); track trackByQuest($index, quest)) {
+                  <li
+                    class="folder-card__row"
+                    [class.folder-card__row--done]="quest.completed"
+                    [attr.data-type]="quest.type">
+                    <button
+                      type="button"
+                      class="folder-card__check"
+                      aria-label="Toggle complete"
+                      (click)="toggleQuest(quest)">
+                      <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'ellipse-outline'"></ion-icon>
+                    </button>
+                    <button type="button" class="folder-card__row-body" (click)="toggleExpand(quest)">
+                      <span class="folder-card__row-title">{{ quest.title }}</span>
+                      @if (quest.dueDate) {
+                        <span class="folder-card__row-due" [attr.data-state]="dueStateOf(quest)">
+                          <ion-icon name="calendar-outline"></ion-icon>
+                          {{ dueLabelOf(quest) }}
+                        </span>
+                      }
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          </article>
+        }
+      </section>
+    }
+
     @if (mode === 'skills') {
       <app-skills-list
         [skills]="skills"
@@ -234,6 +386,7 @@
       [recurrenceOptions]="recurrenceOptions"
       [library]="library"
       [skills]="skills"
+      [folders]="folders"
       [typeIcon]="typeIconFn"
       [typeLabel]="typeLabelFn"
       [subtaskDraft]="subtaskDraftFn"
@@ -261,6 +414,18 @@
       (saveSkill)="saveSkill()"
       (addNode)="addNode()">
     </app-skill-modal>
+  }
+
+  @if (folderModalState; as state) {
+    <app-quest-folder-modal
+      [mode]="state.mode"
+      [folder]="state.folder"
+      [sectionSuggestions]="knownSections"
+      (close)="closeFolderModal()"
+      (submitCreate)="createFolder($event)"
+      (submitUpdate)="updateFolder($event.id, $event.patch)"
+      (delete)="deleteFolder($event)">
+    </app-quest-folder-modal>
   }
 
   @if (achievementToast) {

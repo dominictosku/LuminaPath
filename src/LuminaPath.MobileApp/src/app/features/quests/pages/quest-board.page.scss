@@ -1011,3 +1011,432 @@ app-quest-card {
   .skill-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .modal-backdrop { align-items: center; }
 }
+
+/* ============================================================================
+   FOLDERS PANEL — mode === 'folders'
+   ----------------------------------------------------------------------------
+   Vertically stacked, collapsible folder cards grouped by an optional
+   section heading. Per-folder accent (`--folder-accent`, set inline from
+   the QuestFolder.color field) tints the left rail + count badge so the
+   list scans like a TickTick / Things sidebar.
+   ============================================================================ */
+
+.folders-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.folders-panel__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
+
+  h2 {
+    margin: 6px 0 0;
+    color: var(--ink);
+    font-size: 1.24rem;
+    font-weight: 850;
+  }
+  p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.86rem;
+    line-height: 1.4;
+  }
+}
+
+.folders-panel__new {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 760;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+
+  &:hover { transform: translateY(-1px); }
+  ion-icon { font-size: 1rem; }
+}
+
+.folder-group {
+  display: grid;
+  gap: 10px;
+}
+.folder-group__heading {
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.folder-card {
+  --folder-accent: var(--accent);
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--folder-accent);
+  border-radius: 18px;
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color 180ms ease;
+}
+.folder-card--unfiled {
+  --folder-accent: #94a3b8;
+}
+
+.folder-card__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.folder-card__toggle {
+  display: grid;
+  grid-template-columns: 22px 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.folder-card__chevron {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  ion-icon { font-size: 1.05rem; }
+}
+.folder-card__emoji {
+  font-size: 1.2rem;
+  line-height: 1;
+  text-align: center;
+}
+.folder-card__title {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 0.98rem;
+  font-weight: 780;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder-card__count {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--folder-accent) 18%, transparent);
+  color: var(--folder-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.folder-card__edit {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-right: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: var(--ink);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  ion-icon { font-size: 1.05rem; }
+}
+
+.folder-card__list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 4px 10px 12px;
+  list-style: none;
+}
+
+.folder-card__row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 4px 6px;
+  border-radius: 10px;
+  transition: background 0.15s ease;
+
+  &:hover { background: rgba(255, 255, 255, 0.04); }
+}
+.folder-card__row[data-type="main"]    { border-left: 2px solid #fbbf24; padding-left: 8px; }
+.folder-card__row[data-type="sub"]     { border-left: 2px solid #60a5fa; padding-left: 8px; }
+.folder-card__row[data-type="faction"] { border-left: 2px solid #a78bfa; padding-left: 8px; }
+.folder-card__row--done .folder-card__row-title {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: rgba(52, 211, 153, 0.55);
+  text-decoration-thickness: 2px;
+}
+
+.folder-card__check {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--folder-accent) 14%, transparent);
+  color: var(--folder-accent);
+  cursor: pointer;
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), background 180ms ease;
+
+  ion-icon { font-size: 1.1rem; }
+  &:hover { transform: scale(1.08); background: color-mix(in srgb, var(--folder-accent) 22%, transparent); }
+  &:active { transform: scale(0.94); }
+}
+.folder-card__row--done .folder-card__check {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.18);
+}
+
+.folder-card__row-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.folder-card__row-title {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 0.94rem;
+  font-weight: 660;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder-card__row-due {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+
+  ion-icon { font-size: 0.78rem; }
+}
+.folder-card__row-due[data-state="overdue"] { background: rgba(251,113,133,.18); color: #fecdd3; }
+.folder-card__row-due[data-state="today"]   { background: rgba(251,191,36,.18); color: #fde68a; }
+.folder-card__row-due[data-state="soon"]    { background: var(--accent-soft); color: var(--accent); }
+
+.folder-card__empty {
+  margin: 0;
+  padding: 6px 14px 14px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+/* ============================================================================
+   DETAIL SHEET TABS + markdown-rendered notes
+   ============================================================================ */
+
+.detail-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--solid);
+  margin-bottom: 6px;
+}
+.detail-tabs__btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 760;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.detail-tabs__btn:hover { color: var(--ink); }
+.detail-tabs__btn--active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.detail-tabs__count {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+/* ----- Notes tab --------------------------------------------------------- */
+
+.notes-tab {
+  display: grid;
+  gap: 10px;
+}
+.notes-tab__view {
+  position: relative;
+  min-height: 80px;
+  padding: 14px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: text;
+  transition: border-color 180ms ease, background 180ms ease;
+}
+.notes-tab__view:hover,
+.notes-tab__view:focus {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.05);
+  outline: 0;
+}
+.notes-tab__empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 16px 0;
+  color: var(--muted);
+  text-align: center;
+
+  ion-icon { font-size: 1.4rem; color: var(--accent); }
+  p { margin: 0; font-size: 0.88rem; }
+}
+
+.notes-tab__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 6px;
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+
+  ion-icon { font-size: 0.84rem; }
+}
+.notes-tab__view .notes-tab__toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+/* Rendered markdown — re-style for the dark sheet. Marked outputs raw
+   HTML (h1-h6, p, ul/ol, code, pre, blockquote, a) — clamp font sizes
+   and colour them against the surface. */
+.notes-tab__rendered {
+  color: var(--ink);
+  font-size: 0.94rem;
+  line-height: 1.55;
+
+  h1, h2, h3, h4, h5, h6 {
+    margin: 14px 0 4px;
+    color: var(--ink);
+    font-weight: 800;
+    line-height: 1.2;
+  }
+  h1 { font-size: 1.25rem; }
+  h2 { font-size: 1.12rem; }
+  h3 { font-size: 1rem; }
+  h4, h5, h6 { font-size: 0.92rem; }
+  h1:first-child, h2:first-child, h3:first-child { margin-top: 0; }
+
+  p { margin: 0 0 8px; }
+  p:last-child { margin-bottom: 0; }
+
+  ul, ol { margin: 0 0 8px; padding-left: 22px; }
+  li { margin: 2px 0; }
+  li > input[type="checkbox"] { margin-right: 6px; }
+
+  a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--accent) 44%, transparent);
+  }
+  a:hover { text-decoration-color: var(--accent); }
+
+  code {
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.07);
+    color: #fde68a;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.86em;
+  }
+  pre {
+    margin: 8px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.32);
+    overflow-x: auto;
+
+    code {
+      padding: 0;
+      background: transparent;
+      color: var(--ink);
+      font-size: 0.86rem;
+    }
+  }
+
+  blockquote {
+    margin: 8px 0;
+    padding: 6px 12px;
+    border-left: 3px solid var(--accent);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--muted);
+  }
+
+  hr {
+    margin: 12px 0;
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
+}

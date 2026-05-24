@@ -149,6 +149,7 @@ describe('QuestBoardService', () => {
       tags: ['release'],
       myGameId: 42,
       skillId: 9,
+      questFolderId: null,
     });
     req.flush(mutation({ quest: apiQuest({ id: 10, title: 'Ship', type: 2, priority: 2, recurrence: 3 }) }));
 

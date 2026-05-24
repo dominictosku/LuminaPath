@@ -16,6 +16,9 @@ import {
   Quest,
   QuestBoardService,
   QuestBoardState,
+  QuestFolder,
+  QuestFolderCreate,
+  QuestFolderUpdate,
   QuestMutationResult,
   QuestPriority,
   QuestRecurrence,
@@ -42,6 +45,7 @@ import { SkillsListComponent, SkillNodeAction, SkillNodeQuestAction } from '../c
 import { SkillForm, SkillModalComponent } from '../components/skill-modal/skill-modal.component';
 import { QuestDetailSheetComponent, QuestEditDraft } from '../components/quest-detail-sheet/quest-detail-sheet.component';
 import { QuestCardComponent } from '../components/quest-card/quest-card.component';
+import { QuestFolderModalComponent } from '../components/quest-folder-modal/quest-folder-modal.component';
 import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
 import {
   QuestFilter,
@@ -53,7 +57,7 @@ import {
   nextQueuedQuest,
 } from '../quest-sections.builder';
 
-type PageMode = 'quests' | 'skills' | 'tree';
+type PageMode = 'quests' | 'folders' | 'skills' | 'tree';
 type ModalMode = 'skill' | 'node' | null;
 
 type LibraryGame = {
@@ -121,6 +125,7 @@ type SkillTreeUnlockPayload = {
     SkillModalComponent,
     QuestDetailSheetComponent,
     QuestCardComponent,
+    QuestFolderModalComponent,
     EmptyStateComponent,
 ],
 })
@@ -195,6 +200,16 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   quests: Quest[] = [];
   skills: QuestSkill[] = [];
   achievements: AchievementInfo[] = [];
+
+  // ===== Folders =============================================================
+  folders: QuestFolder[] = [];
+  /** Per-folder collapsed state — defaults to expanded. */
+  collapsedFolderIds = new Set<number>();
+  /** Folder ID that should also expand the "Unfiled" pseudo-group. */
+  unfiledCollapsed = false;
+  /** When non-null, the folder modal is open in create-or-edit mode. */
+  folderModalState: { mode: 'create' | 'edit'; folder: QuestFolder | null } | null = null;
+  folderSaving = false;
 
   newSubtaskTitle: Record<number, string> = {};
 
@@ -475,6 +490,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
       tags: (quest.tags ?? []).join(', '),
       myGameId: quest.myGameId ?? null,
       skillId: quest.skillId ?? null,
+      folderId: quest.folderId ?? null,
     };
   }
 
@@ -501,6 +517,10 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     quest.gameName = draft.myGameId == null ? null : this.gameNameFor(draft.myGameId);
     quest.skillId = draft.skillId ?? null;
     quest.skillName = draft.skillId == null ? null : this.skillNameFor(draft.skillId);
+    quest.folderId = draft.folderId ?? null;
+    const draftFolder = draft.folderId == null ? null : this.folders.find((f) => f.id === draft.folderId) ?? null;
+    quest.folderName = draftFolder?.name ?? null;
+    quest.folderEmoji = draftFolder?.emoji ?? null;
 
     this.expandedQuestId = null;
     this.editDraft = null;
@@ -519,6 +539,8 @@ export class QuestBoardPage implements OnInit, OnDestroy {
         clearMyGame: draft.myGameId == null,
         skillId: draft.skillId ?? undefined,
         clearSkill: draft.skillId == null,
+        folderId: draft.folderId ?? undefined,
+        clearFolder: draft.folderId == null,
       });
       this.applyMutation(quest.id, mutation.quest);
       this.applyMutationMeta(mutation);
@@ -975,8 +997,154 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     this.longestStreakDays = board.longestStreakDays;
     this.quests = board.quests;
     this.skills = board.skills;
+    this.folders = board.folders ?? [];
     this.achievements = board.achievements;
     this.rebuildStats();
+  }
+
+  // ===== Folders ==========================================================
+
+  /**
+   * Grouped view consumed by the "Folders" mode template. Folders sharing
+   * the same SectionName (case-insensitive trim) render under one header;
+   * folders with no section come first in an unlabelled group. Inside each
+   * section, folders keep their server-side SortOrder.
+   *
+   * Returned shape is plain arrays so Angular's @for can iterate cheaply
+   * without recomputing on each change-detection cycle (we hand-call this
+   * from a getter to keep things explicit).
+   */
+  get folderGroups(): { section: string | null; folders: QuestFolder[] }[] {
+    const map = new Map<string, { section: string | null; folders: QuestFolder[] }>();
+    const orderedKeys: string[] = [];
+
+    for (const folder of this.folders) {
+      const key = (folder.sectionName ?? '').trim().toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, { section: folder.sectionName ?? null, folders: [] });
+        orderedKeys.push(key);
+      }
+      map.get(key)!.folders.push(folder);
+    }
+
+    // Unfiled first, then sections by first-occurrence order.
+    orderedKeys.sort((a, b) => (a === '' ? -1 : b === '' ? 1 : 0));
+    return orderedKeys.map((key) => map.get(key)!);
+  }
+
+  /** Section-name suggestions used by the folder modal's chip strip. */
+  get knownSections(): string[] {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const folder of this.folders) {
+      const name = (folder.sectionName ?? '').trim();
+      if (!name) continue;
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(name);
+    }
+    return out;
+  }
+
+  questsInFolder(folderId: number | null): Quest[] {
+    return this.quests.filter((quest) => (quest.folderId ?? null) === folderId);
+  }
+
+  get unfiledQuestCount(): number {
+    return this.questsInFolder(null).length;
+  }
+
+  isFolderCollapsed(folderId: number): boolean {
+    return this.collapsedFolderIds.has(folderId);
+  }
+
+  toggleFolderCollapsed(folderId: number): void {
+    const next = new Set(this.collapsedFolderIds);
+    if (next.has(folderId)) next.delete(folderId);
+    else next.add(folderId);
+    this.collapsedFolderIds = next;
+  }
+
+  toggleUnfiledCollapsed(): void {
+    this.unfiledCollapsed = !this.unfiledCollapsed;
+  }
+
+  openCreateFolderModal(): void {
+    this.folderModalState = { mode: 'create', folder: null };
+  }
+
+  openEditFolderModal(folder: QuestFolder): void {
+    this.folderModalState = { mode: 'edit', folder };
+  }
+
+  closeFolderModal(): void {
+    if (this.folderSaving) return;
+    this.folderModalState = null;
+  }
+
+  async createFolder(input: QuestFolderCreate): Promise<void> {
+    if (this.folderSaving) return;
+    this.folderSaving = true;
+    try {
+      const folder = await this.questBoardService.createFolder(input);
+      this.folders = [...this.folders, folder];
+      this.folderModalState = null;
+    } catch {
+      this.showToast('Could not create folder');
+    } finally {
+      this.folderSaving = false;
+    }
+  }
+
+  async updateFolder(id: number, patch: QuestFolderUpdate): Promise<void> {
+    if (this.folderSaving) return;
+    this.folderSaving = true;
+    try {
+      const updated = await this.questBoardService.updateFolder(id, patch);
+      this.folders = this.folders.map((f) => (f.id === id ? updated : f));
+      // Propagate folder name/emoji into the quest list so cards re-render
+      // with the latest label without a full board reload.
+      this.quests = this.quests.map((quest) =>
+        quest.folderId === id
+          ? { ...quest, folderName: updated.name, folderEmoji: updated.emoji }
+          : quest,
+      );
+      this.folderModalState = null;
+    } catch {
+      this.showToast('Could not save folder');
+    } finally {
+      this.folderSaving = false;
+    }
+  }
+
+  async deleteFolder(folder: QuestFolder): Promise<void> {
+    if (this.folderSaving) return;
+    this.folderSaving = true;
+    try {
+      await this.questBoardService.deleteFolder(folder.id);
+      this.folders = this.folders.filter((f) => f.id !== folder.id);
+      // Backend SetNulls the FK; mirror locally so the unfiled bucket
+      // picks them up immediately.
+      this.quests = this.quests.map((quest) =>
+        quest.folderId === folder.id
+          ? { ...quest, folderId: null, folderName: null, folderEmoji: null }
+          : quest,
+      );
+      this.folderModalState = null;
+    } catch {
+      this.showToast('Could not delete folder');
+    } finally {
+      this.folderSaving = false;
+    }
+  }
+
+  trackByFolder(_: number, folder: QuestFolder): number {
+    return folder.id;
+  }
+
+  trackByFolderGroup(_: number, group: { section: string | null }): string {
+    return group.section ?? '__unfiled__';
   }
 
   private async persistSkills(): Promise<boolean> {

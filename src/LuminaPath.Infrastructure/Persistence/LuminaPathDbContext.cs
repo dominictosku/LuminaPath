@@ -109,6 +109,7 @@ namespace LuminaPath.Infrastructure
         public DbSet<MySeries> MySeries { get; set; }
         public DbSet<Quest> Quests { get; set; }
         public DbSet<QuestSubtask> QuestSubtasks { get; set; }
+        public DbSet<QuestFolder> QuestFolders { get; set; }
         public DbSet<QuestProfile> QuestProfiles { get; set; }
         public DbSet<QuestSkill> QuestSkills { get; set; }
         public DbSet<QuestSkillNode> QuestSkillNodes { get; set; }

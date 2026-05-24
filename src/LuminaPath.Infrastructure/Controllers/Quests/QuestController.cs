@@ -125,5 +125,49 @@ namespace LuminaPath.Infrastructure.Controllers
             var result = await _service.DeleteSubtaskAsync(user.Id, questId, subtaskId);
             return result.Match<IActionResult>(_ => NoContent(), f => NotFound(f));
         }
+
+        // ===== Folders =================================================
+        // Kept under /api/quests/folders rather than a sibling controller
+        // so they share the same auth attribute + base policy as the
+        // parent quest endpoints.
+
+        [HttpGet("folders")]
+        public async Task<ActionResult<List<QuestFolderDto>>> GetFolders()
+        {
+            var user = await GetCurrentUserAsync();
+            return user == null
+                ? LoginRequired()
+                : Ok(await _service.GetFoldersAsync(user.Id));
+        }
+
+        [HttpPost("folders")]
+        public async Task<ActionResult<QuestFolderDto>> CreateFolder(QuestFolderCreateDto dto)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return LoginRequired();
+
+            var result = await _service.CreateFolderAsync(user.Id, dto);
+            return result.Match<ActionResult<QuestFolderDto>>(folder => Ok(folder), failed => BadRequest(failed));
+        }
+
+        [HttpPatch("folders/{folderId:int}")]
+        public async Task<ActionResult<QuestFolderDto>> UpdateFolder(int folderId, QuestFolderUpdateDto dto)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return LoginRequired();
+
+            var result = await _service.UpdateFolderAsync(user.Id, folderId, dto);
+            return result.Match<ActionResult<QuestFolderDto>>(folder => Ok(folder), failed => NotFound(failed));
+        }
+
+        [HttpDelete("folders/{folderId:int}")]
+        public async Task<IActionResult> DeleteFolder(int folderId)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return LoginRequired();
+
+            var result = await _service.DeleteFolderAsync(user.Id, folderId);
+            return result.Match<IActionResult>(_ => NoContent(), f => NotFound(f));
+        }
     }
 }

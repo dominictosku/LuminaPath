@@ -29,7 +29,36 @@ export type Quest = {
   gameName?: string | null;
   skillId?: number | null;
   skillName?: string | null;
+  folderId?: number | null;
+  folderName?: string | null;
+  folderEmoji?: string | null;
   subtasks: QuestSubtask[];
+};
+
+export type QuestFolder = {
+  id: number;
+  name: string;
+  emoji: string;
+  color?: string | null;
+  sectionName?: string | null;
+  sortOrder: number;
+};
+
+export type QuestFolderCreate = {
+  name: string;
+  emoji: string;
+  color?: string | null;
+  sectionName?: string | null;
+};
+
+export type QuestFolderUpdate = {
+  name?: string;
+  emoji?: string;
+  color?: string | null;
+  clearColor?: boolean;
+  sectionName?: string | null;
+  clearSectionName?: boolean;
+  sortOrder?: number;
 };
 
 export type QuestSubtask = {
@@ -50,6 +79,7 @@ export type QuestCreate = {
   tags?: string[];
   myGameId?: number | null;
   skillId?: number | null;
+  folderId?: number | null;
 };
 
 export type QuestUpdate = {
@@ -67,6 +97,8 @@ export type QuestUpdate = {
   sortOrder?: number;
   skillId?: number | null;
   clearSkill?: boolean;
+  folderId?: number | null;
+  clearFolder?: boolean;
 };
 
 export type QuestSubtaskUpdate = {
@@ -117,6 +149,11 @@ export type QuestBoardState = {
   lastCompletionDate?: string | null;
   quests: Quest[];
   skills: QuestSkill[];
+  /**
+   * Optional so existing test fixtures + dashboard derivation snapshots
+   * stay compile-clean. `toState()` always returns a real array.
+   */
+  folders?: QuestFolder[];
   achievements: AchievementInfo[];
 };
 
@@ -131,6 +168,7 @@ type ApiQuestBoard = {
   lastCompletionDate?: string | null;
   quests: ApiQuest[];
   skills: ApiQuestSkill[];
+  folders?: ApiQuestFolder[];
   achievements: ApiAchievement[];
 };
 
@@ -153,7 +191,19 @@ type ApiQuest = {
   gameName?: string | null;
   skillId?: number | null;
   skillName?: string | null;
+  questFolderId?: number | null;
+  folderName?: string | null;
+  folderEmoji?: string | null;
   subtasks: ApiQuestSubtask[];
+};
+
+type ApiQuestFolder = {
+  id: number;
+  name: string;
+  emoji: string;
+  color?: string | null;
+  sectionName?: string | null;
+  sortOrder: number;
 };
 
 type ApiQuestSubtask = {
@@ -234,6 +284,7 @@ export class QuestBoardService {
       tags: input.tags ?? [],
       myGameId: input.myGameId ?? null,
       skillId: input.skillId ?? null,
+      questFolderId: input.folderId ?? null,
     };
     const response = await firstValueFrom(this.http.post<ApiQuestMutationResult>(this.apiEndpoint.url('quests'), payload, this.httpConfig));
     this.invalidateDashboardCache();
@@ -256,10 +307,57 @@ export class QuestBoardService {
     if (input.sortOrder !== undefined) payload['sortOrder'] = input.sortOrder;
     if (input.skillId !== undefined) payload['skillId'] = input.skillId;
     if (input.clearSkill !== undefined) payload['clearSkill'] = input.clearSkill;
+    if (input.folderId !== undefined) payload['questFolderId'] = input.folderId;
+    if (input.clearFolder !== undefined) payload['clearQuestFolder'] = input.clearFolder;
 
     const response = await firstValueFrom(this.http.patch<ApiQuestMutationResult>(this.apiEndpoint.url(`quests/${id}`), payload, this.httpConfig));
     this.invalidateDashboardCache();
     return this.toMutation(response);
+  }
+
+  // ----- Folders ------------------------------------------------------------
+
+  async listFolders(): Promise<QuestFolder[]> {
+    const folders = await firstValueFrom(
+      this.http.get<ApiQuestFolder[]>(this.apiEndpoint.url('quests/folders'), this.httpConfig),
+    );
+    return folders.map((folder) => this.toFolder(folder));
+  }
+
+  async createFolder(input: QuestFolderCreate): Promise<QuestFolder> {
+    const payload = {
+      name: input.name,
+      emoji: input.emoji,
+      color: input.color ?? null,
+      sectionName: input.sectionName ?? null,
+    };
+    const response = await firstValueFrom(
+      this.http.post<ApiQuestFolder>(this.apiEndpoint.url('quests/folders'), payload, this.httpConfig),
+    );
+    this.invalidateDashboardCache();
+    return this.toFolder(response);
+  }
+
+  async updateFolder(id: number, input: QuestFolderUpdate): Promise<QuestFolder> {
+    const payload: Record<string, unknown> = {};
+    if (input.name !== undefined) payload['name'] = input.name;
+    if (input.emoji !== undefined) payload['emoji'] = input.emoji;
+    if (input.color !== undefined) payload['color'] = input.color;
+    if (input.clearColor !== undefined) payload['clearColor'] = input.clearColor;
+    if (input.sectionName !== undefined) payload['sectionName'] = input.sectionName;
+    if (input.clearSectionName !== undefined) payload['clearSectionName'] = input.clearSectionName;
+    if (input.sortOrder !== undefined) payload['sortOrder'] = input.sortOrder;
+
+    const response = await firstValueFrom(
+      this.http.patch<ApiQuestFolder>(this.apiEndpoint.url(`quests/folders/${id}`), payload, this.httpConfig),
+    );
+    this.invalidateDashboardCache();
+    return this.toFolder(response);
+  }
+
+  async deleteFolder(id: number): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(this.apiEndpoint.url(`quests/folders/${id}`), this.httpConfig));
+    this.invalidateDashboardCache();
   }
 
   async addSubtask(questId: number, title: string): Promise<QuestMutationResult> {
@@ -337,6 +435,7 @@ export class QuestBoardService {
           .map((node, index) => (node.unlocked ? index : -1))
           .filter((index) => index >= 0),
       })),
+      folders: (board.folders ?? []).map((folder) => this.toFolder(folder)),
       achievements: (board.achievements ?? []).map((a) => ({ ...a })),
     };
   }
@@ -361,6 +460,9 @@ export class QuestBoardService {
       gameName: apiQuest.gameName ?? null,
       skillId: apiQuest.skillId ?? null,
       skillName: apiQuest.skillName ?? null,
+      folderId: apiQuest.questFolderId ?? null,
+      folderName: apiQuest.folderName ?? null,
+      folderEmoji: apiQuest.folderEmoji ?? null,
       subtasks: (apiQuest.subtasks ?? []).map((s) => ({
         id: s.id,
         title: s.title,
@@ -368,6 +470,17 @@ export class QuestBoardService {
         completedAt: s.completedAt,
         sortOrder: s.sortOrder,
       })),
+    };
+  }
+
+  private toFolder(folder: ApiQuestFolder): QuestFolder {
+    return {
+      id: folder.id,
+      name: folder.name,
+      emoji: folder.emoji ?? '',
+      color: folder.color ?? null,
+      sectionName: folder.sectionName ?? null,
+      sortOrder: folder.sortOrder,
     };
   }
 

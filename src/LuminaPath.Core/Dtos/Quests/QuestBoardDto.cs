@@ -10,6 +10,7 @@ namespace LuminaPath.Core.Dtos
         public DateTime? LastCompletionDate { get; set; }
         public List<QuestDto> Quests { get; set; } = [];
         public List<QuestSkillDto> Skills { get; set; } = [];
+        public List<QuestFolderDto> Folders { get; set; } = [];
         public List<AchievementDto> Achievements { get; set; } = [];
     }
 
@@ -33,6 +34,9 @@ namespace LuminaPath.Core.Dtos
         public string? GameName { get; set; }
         public int? SkillId { get; set; }
         public string? SkillName { get; set; }
+        public int? QuestFolderId { get; set; }
+        public string? FolderName { get; set; }
+        public string? FolderEmoji { get; set; }
         public List<QuestSubtaskDto> Subtasks { get; set; } = [];
     }
 
@@ -68,6 +72,7 @@ namespace LuminaPath.Core.Dtos
         public List<string> Tags { get; set; } = [];
         public int? MyGameId { get; set; }
         public int? SkillId { get; set; }
+        public int? QuestFolderId { get; set; }
     }
 
     public class QuestUpdateDto
@@ -86,6 +91,37 @@ namespace LuminaPath.Core.Dtos
         public int? SortOrder { get; set; }
         public int? SkillId { get; set; }
         public bool? ClearSkill { get; set; }
+        public int? QuestFolderId { get; set; }
+        public bool? ClearQuestFolder { get; set; }
+    }
+
+    public class QuestFolderDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Emoji { get; set; } = string.Empty;
+        public string? Color { get; set; }
+        public string? SectionName { get; set; }
+        public int SortOrder { get; set; }
+    }
+
+    public class QuestFolderCreateDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Emoji { get; set; } = string.Empty;
+        public string? Color { get; set; }
+        public string? SectionName { get; set; }
+    }
+
+    public class QuestFolderUpdateDto
+    {
+        public string? Name { get; set; }
+        public string? Emoji { get; set; }
+        public string? Color { get; set; }
+        public bool? ClearColor { get; set; }
+        public string? SectionName { get; set; }
+        public bool? ClearSectionName { get; set; }
+        public int? SortOrder { get; set; }
     }
 
     public class QuestReorderItemDto

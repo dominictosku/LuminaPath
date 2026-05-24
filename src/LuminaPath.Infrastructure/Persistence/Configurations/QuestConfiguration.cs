@@ -20,6 +20,13 @@ namespace LuminaPath.Infrastructure.ModelConfiguration
                 .HasForeignKey(quest => quest.SkillId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // Deleting a folder shouldn't take its quests with it — they
+            // fall back to the "Unfiled" bucket (folderId = null).
+            builder.HasOne(quest => quest.QuestFolder)
+                .WithMany()
+                .HasForeignKey(quest => quest.QuestFolderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             builder.HasMany(quest => quest.Subtasks)
                 .WithOne(subtask => subtask.Quest!)
                 .HasForeignKey(subtask => subtask.QuestId)
