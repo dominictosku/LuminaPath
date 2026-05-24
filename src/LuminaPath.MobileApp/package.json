@@ -36,6 +36,7 @@
     "@ngrx/signals": "^21.0.0",
     "@tailwindcss/postcss": "^4.2.4",
     "@types/three": "^0.184.0",
+    "dompurify": "^3.4.5",
     "marked": "^18.0.4",
     "postcss": "^8.5.13",
     "qrcode-generator": "^2.0.4",

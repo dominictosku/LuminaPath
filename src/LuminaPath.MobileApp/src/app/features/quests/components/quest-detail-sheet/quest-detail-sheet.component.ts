@@ -80,9 +80,8 @@ export class QuestDetailSheetComponent {
   /** When false, the notes tab shows rendered markdown; tap to flip into edit. */
   protected readonly notesEditing = signal(false);
 
-  /** Rendered markdown for the Notes tab. Sanitised through DomSanitizer's
-   *  bypassSecurityTrustHtml — we trust the output of `marked` *because*
-   *  we configure it without HTML-passthrough (see `renderMarkdown`). */
+  /** Rendered markdown for the Notes tab. `renderMarkdown` sanitizes the
+   *  parsed HTML with DOMPurify before this value is trusted for binding. */
   protected readonly renderedNotes = computed<SafeHtml>(() => {
     const text = this.editDraft()?.notes ?? this.quest().notes ?? '';
     if (!text.trim()) return '';
