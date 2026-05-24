@@ -63,16 +63,22 @@ an existing admin's password, log in to the Blazor app and use
 
 ### Require admin approval for new registrations
 
-By default any visitor can register and immediately sign in. To gate
-self-registration behind admin approval — newly registered accounts
-land as `IsActive=false` and cannot sign in until an admin flips the
-flag on the Blazor Users page — set:
+When this gate is on, newly self-registered users land as
+`IsActive=false` and cannot sign in until an admin flips the flag on
+the Blazor `/Admin/Users` page.
 
-| Setting                       | Env var (raw)                   | Env var (.env)                  | Default |
-| ----------------------------- | ------------------------------- | ------------------------------- | ------- |
-| Require admin approval        | `Auth__RequireAdminApproval`    | `AUTH_REQUIRE_ADMIN_APPROVAL`   | `false` |
+| Setting                | Env var (raw)                | Env var (.env)                | Default (Production)        | Default (Development) |
+| ---------------------- | ---------------------------- | ----------------------------- | --------------------------- | --------------------- |
+| Require admin approval | `Auth__RequireAdminApproval` | `AUTH_REQUIRE_ADMIN_APPROVAL` | **`true`** (approval on)    | `false` (immediate)   |
 
-**Option A — `appsettings.json`:**
+The defaults are wired through `appsettings.json` (sets `true`) and
+`appsettings.Development.json` (overrides to `false`), so the
+production-safe behavior is on without any explicit configuration, and
+local dev with `ASPNETCORE_ENVIRONMENT=Development` doesn't make you
+click "Activate" after every test registration.
+
+**To force it on locally** (e.g. to reproduce the production approval
+flow) — set in `appsettings.Development.json`:
 
 ```jsonc
 {
@@ -82,10 +88,21 @@ flag on the Blazor Users page — set:
 }
 ```
 
-**Option B — `.env`:**
+**To allow immediate sign-in in production** (for example, a private
+deployment where every visitor is trusted) — set in `appsettings.Production.json`
+or via env:
+
+```jsonc
+{
+  "Auth": {
+    "RequireAdminApproval": false
+  }
+}
+```
 
 ```bash
-AUTH_REQUIRE_ADMIN_APPROVAL=true
+# Docker Compose .env
+AUTH_REQUIRE_ADMIN_APPROVAL=false
 ```
 
 How it behaves end-to-end:
@@ -111,10 +128,11 @@ How it behaves end-to-end:
 1. Copy `.env.example` → `.env` and set:
    - `POSTGRES_PASSWORD` (database)
    - `LUMINAPATH_ADMIN_EMAIL` + `LUMINAPATH_ADMIN_PASSWORD` (admin seed)
-   - `AUTH_REQUIRE_ADMIN_APPROVAL=true` if you want the approval gate
+   - Leave `AUTH_REQUIRE_ADMIN_APPROVAL=true` (the production default) —
+     or set it to `false` if every visitor is trusted in your deployment
 2. `docker compose up -d`
 3. Sign in to the Blazor admin at `https://<your-host>/Account/Login`
    using the credentials from step 1.
-4. (Optional) Confirm the approval gate is on: register a new account
-   in the mobile app, then verify it cannot sign in until you Activate
-   it from the Users page.
+4. (Approval gate verification) Register a new account in the mobile
+   app, then verify it cannot sign in until you click **Activate** on
+   the row in `/Admin/Users`.

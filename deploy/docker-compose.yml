@@ -24,9 +24,11 @@ services:
       Auth__CookieSameSite: ${AUTH_COOKIE_SAMESITE:-None}
       Auth__CookieSecurePolicy: ${AUTH_COOKIE_SECURE_POLICY:-Always}
       # When true, newly self-registered users land inactive and cannot
-      # sign in until an admin flips the toggle on /Admin/Users. See
-      # src/README.md → "Require admin approval for new registrations".
-      Auth__RequireAdminApproval: ${AUTH_REQUIRE_ADMIN_APPROVAL:-false}
+      # sign in until an admin flips the toggle on /Admin/Users. The
+      # compose-default mirrors appsettings.json (true = production-safe);
+      # override to false in .env for friction-free local testing.
+      # See src/README.md → "Require admin approval for new registrations".
+      Auth__RequireAdminApproval: ${AUTH_REQUIRE_ADMIN_APPROVAL:-true}
       # Seed admin credentials — only used the first time the database
       # is brought up (when no admin user exists yet). Defaults are the
       # bundled placeholders and will trigger a startup warning.
