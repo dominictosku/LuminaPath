@@ -2,7 +2,14 @@
    / `.eyebrow` styling globally (ViewEncapsulation.None on the page).
    Only the per-tile + trophy-cup chrome lives here. */
 
-:host { display: block; }
+/* The page applies `display: contents` to our host so the inner
+   <section class="trophy-block"> becomes the real grid item. Make THAT
+   the inline-size container so the tile grid below adapts to whichever
+   width the page hands us (half-width on desktop, full-width on mobile)
+   — viewport media queries can't see the half-width case. */
+.trophy-block {
+  container-type: inline-size;
+}
 
 .trophy-total {
   display: inline-flex;
@@ -46,6 +53,11 @@
   display: grid;
   justify-items: center;
   gap: 10px;
+  /* `min-width: 0` lets the tile shrink below the intrinsic width of
+     its longest child (the "PLATINUM" label is ~125 px on its own,
+     which would otherwise push the tile past its grid track and crash
+     into the neighbour). */
+  min-width: 0;
   padding: 16px 10px 14px;
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -87,6 +99,9 @@
   justify-items: center;
   gap: 2px;
   min-width: 0;
+  /* Hard cap so even when the tile gets squished the meta stack still
+     follows the column boundary instead of overflowing. */
+  max-width: 100%;
 }
 .trophy-meta__count {
   color: var(--ink);
@@ -97,10 +112,17 @@
 }
 .trophy-meta__label {
   color: var(--muted);
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  /* Final safety net: if the label still can't fit (very narrow
+     container, custom font scaling), truncate with an ellipsis rather
+     than overflow into the neighbour. */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .trophy-empty {
@@ -114,8 +136,19 @@
   text-align: center;
 }
 
-/* Narrow viewports — 4 tiles get crowded under ~360px wide. Wrap
-   to 2x2 to keep the cup glyphs readable. */
+/* Container-query fallback to 2x2 when the panel itself is narrow.
+   This fires on desktop too — when the page lays the trophy block out
+   as a half-width column (~500 px), 4 tiles can't fit the long
+   "PLATINUM" label, so we drop to 2x2 from ~520 px down. */
+@container (max-width: 520px) {
+  .trophy-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Viewport fallback for browsers without container query support.
+   (Chrome 105+, Safari 16+, Firefox 110+ all have it, so this is
+   defensive — kept narrow so it doesn't fight the container query.) */
 @media (max-width: 420px) {
   .trophy-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
