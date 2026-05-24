@@ -9,6 +9,18 @@ export interface LoginResult {
   requiresTwoFactor: boolean;
 }
 
+/**
+ * Specific block reasons the backend can signal on a 401 from /api/login
+ * via the `X-Login-Blocked-Reason` response header. Stays a string union
+ * so unknown reasons surface as `null` and the UI falls back to its
+ * generic message — that way a future backend reason can ship without
+ * coordinated SPA changes.
+ */
+export type LoginBlockedReason = 'InactiveAccount';
+
+const LOGIN_BLOCKED_REASON_HEADER = 'X-Login-Blocked-Reason';
+const KNOWN_LOGIN_BLOCKED_REASONS: readonly LoginBlockedReason[] = ['InactiveAccount'];
+
 export interface RegisterResult {
   /**
    * True when the server confirmed the account was created. The backend's
@@ -214,6 +226,33 @@ export class AuthService {
       twoFactorCode: credentials.twoFactorCode || undefined,
       twoFactorRecoveryCode: credentials.twoFactorRecoveryCode || undefined,
     };
+  }
+
+  /**
+   * Extracts the backend's block reason from a failed-login error so
+   * the login page can show a tailored message (e.g. "awaiting admin
+   * approval") instead of the generic "invalid credentials".
+   *
+   * <p>Returns null when the header is missing, the value isn't a
+   * recognized reason, or the input isn't an HttpErrorResponse — all
+   * of which collapse to "show the generic message" upstream.</p>
+   *
+   * <p>The header is only readable cross-origin because the backend's
+   * CORS policy adds it to `Access-Control-Expose-Headers` — see
+   * <c>AddCors</c> in the .NET DependencyInjection.cs.</p>
+   */
+  getLoginBlockedReason(error: unknown): LoginBlockedReason | null {
+    if (!(error instanceof HttpErrorResponse) || error.status !== 401) {
+      return null;
+    }
+    const raw = error.headers?.get(LOGIN_BLOCKED_REASON_HEADER);
+    if (!raw) {
+      return null;
+    }
+    const trimmed = raw.trim();
+    return (KNOWN_LOGIN_BLOCKED_REASONS as readonly string[]).includes(trimmed)
+      ? (trimmed as LoginBlockedReason)
+      : null;
   }
 
   /**

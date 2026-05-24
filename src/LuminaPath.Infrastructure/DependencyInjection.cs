@@ -50,7 +50,13 @@ namespace LuminaPath.Infrastructure
                 .WithOrigins(config.GetCorsOrigins())
                 .AllowAnyMethod()
                 .AllowAnyHeader()
-                .AllowCredentials()));
+                .AllowCredentials()
+                // Allowlist the custom header that LuminaSignInManager
+                // sets on a 401 from /api/login when the user's account
+                // is inactive — without this, the browser hides it from
+                // the Angular SPA on cross-origin requests and the
+                // tailored "awaiting approval" message can't be shown.
+                .WithExposedHeaders(LoginBlockedReason.ResponseHeaderName)));
         }
 
         private static void AddMiddleware(WebApplication app)

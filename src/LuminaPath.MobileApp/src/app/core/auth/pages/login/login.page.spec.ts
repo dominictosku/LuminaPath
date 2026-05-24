@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { provideRouter, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { Credentials } from '../../models/user.model';
 import { AuthService, LoginResult } from '../../services/auth.service';
@@ -14,7 +15,14 @@ describe('LoginPage', () => {
   let navigateSpy: jasmine.Spy;
 
   beforeEach(async () => {
-    authService = jasmine.createSpyObj<AuthService>('AuthService', ['login', 'clearSession']);
+    authService = jasmine.createSpyObj<AuthService>('AuthService', [
+      'login',
+      'clearSession',
+      'getLoginBlockedReason',
+    ]);
+    // Default: no special block reason — the inactive-account test
+    // overrides this. Keeps existing happy-path tests untouched.
+    authService.getLoginBlockedReason.and.returnValue(null);
 
     await TestBed.configureTestingModule({
       imports: [LoginPage],
@@ -81,6 +89,36 @@ describe('LoginPage', () => {
     const payload = authService.login.calls.mostRecent().args[0] as Credentials;
     expect(payload.twoFactorCode).toBeUndefined();
     expect(payload.twoFactorRecoveryCode).toBe('abcdefgh');
+  });
+
+  it('shows the awaiting-approval message when the backend reports an inactive account', async () => {
+    const inactiveError = new HttpErrorResponse({
+      status: 401,
+      statusText: 'Unauthorized',
+      headers: new HttpHeaders({ 'X-Login-Blocked-Reason': 'InactiveAccount' }),
+    });
+    authService.login.and.returnValue(throwError(() => inactiveError));
+    authService.getLoginBlockedReason.and.returnValue('InactiveAccount');
+
+    component.credentials.email = 'pending@example.com';
+    component.credentials.password = 'StrongP@ssw0rd';
+
+    await component.login();
+
+    expect(component.errorMessage).toContain('awaiting administrator approval');
+    expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the generic message when no block reason is signalled', async () => {
+    authService.login.and.returnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
+    authService.getLoginBlockedReason.and.returnValue(null);
+
+    component.credentials.email = 'someone@example.com';
+    component.credentials.password = 'wrong-password';
+
+    await component.login();
+
+    expect(component.errorMessage).toContain('Login failed');
   });
 
   function loginResult(overrides: Partial<LoginResult>): LoginResult {

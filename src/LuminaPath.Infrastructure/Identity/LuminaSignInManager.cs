@@ -75,12 +75,58 @@ public sealed class LuminaSignInManager : SignInManager<LuminaUser>
             Metadata = new
             {
                 source = "LuminaSignInManager",
-                reason = "InactiveAccount"
+                reason = LoginBlockedReason.InactiveAccount
             },
             ErrorMessage = "Sign-in blocked: account is not active."
         });
 
         Logger.LogInformation("Sign-in blocked for user '{UserId}' — IsActive is false.", user.Id);
+
+        // Signal the specific reason on the in-flight HTTP context so
+        // the Blazor login page (which can inspect Context.Items
+        // directly) and the Angular SPA (which reads the response
+        // header) can swap the generic "invalid credentials" copy for
+        // an "account awaiting administrator approval" message.
+        // SignInManager's `Context` property is populated from
+        // IHttpContextAccessor; it's null only outside a request,
+        // which doesn't happen for any real login flow.
+        SignalBlockReason(LoginBlockedReason.InactiveAccount);
+
         return false;
+    }
+
+    /// <summary>
+    /// Writes the block reason to both the request-scoped
+    /// <see cref="HttpContext.Items"/> bag (read inline by Blazor
+    /// Login.razor right after PasswordSignInAsync returns) and a
+    /// response header (read by the Angular SPA from the 401). The
+    /// header has to be added via <see cref="HttpResponse.OnStarting"/>
+    /// because the Identity API endpoint writes its own response after
+    /// CanSignInAsync returns — modifying Headers directly at this
+    /// point is too early.
+    /// </summary>
+    private void SignalBlockReason(string reason)
+    {
+        var http = Context;
+        if (http is null)
+        {
+            return;
+        }
+
+        http.Items[LoginBlockedReason.HttpContextItemKey] = reason;
+
+        // Hook the response-starting event so we can set the header
+        // right before the framework flushes headers. Setting it now
+        // can race with the Identity API endpoint's own header writes.
+        http.Response.OnStarting(state =>
+        {
+            var (response, headerValue) = ((HttpResponse, string))state!;
+            // Don't clobber if something else already populated it.
+            if (!response.Headers.ContainsKey(LoginBlockedReason.ResponseHeaderName))
+            {
+                response.Headers[LoginBlockedReason.ResponseHeaderName] = headerValue;
+            }
+            return Task.CompletedTask;
+        }, (http.Response, reason));
     }
 }

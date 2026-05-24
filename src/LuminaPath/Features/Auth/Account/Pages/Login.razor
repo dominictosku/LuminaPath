@@ -183,6 +183,28 @@
             Logger.LogWarning("User account locked out.");
             RedirectManager.RedirectTo("Account/Lockout");
         }
+        else if (result.IsNotAllowed)
+        {
+            // PasswordSignInAsync collapses every pre-sign-in block
+            // (email unconfirmed, account inactive, etc.) into the
+            // same IsNotAllowed flag. LuminaSignInManager.CanSignInAsync
+            // stashes the specific reason on HttpContext.Items when it
+            // returns false, so we can swap the generic message for an
+            // approval-pending message in that exact case.
+            var reason = HttpContext.Items[LoginBlockedReason.HttpContextItemKey] as string;
+            if (reason == LoginBlockedReason.InactiveAccount)
+            {
+                await AuditFailedLoginAsync(user, "Account is not active.");
+                errorMessage = "Your account is awaiting administrator approval. " +
+                    "An administrator has to activate it before you can sign in.";
+            }
+            else
+            {
+                await AuditFailedLoginAsync(user, "Sign-in not allowed.");
+                errorMessage = "Sign-in is not allowed for this account. " +
+                    "If the email isn't confirmed yet, use the link below to resend the confirmation.";
+            }
+        }
         else
         {
             await AuditFailedLoginAsync(user, "Invalid email or password.");

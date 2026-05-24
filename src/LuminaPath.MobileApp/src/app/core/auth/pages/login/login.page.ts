@@ -58,13 +58,31 @@ export class LoginPage implements OnInit {
 
       this.clearSensitiveFields();
       this.route.navigate(['/home']);
-    } catch {
-      this.errorMessage = this.twoFactorRequired
-        ? 'Verification failed. Check the code and try again.'
-        : 'Login failed. Check the API is running and the credentials are correct.';
+    } catch (error: unknown) {
+      this.errorMessage = this.resolveLoginErrorMessage(error);
     } finally {
       this.isSubmitting = false;
     }
+  }
+
+  /**
+   * Picks the right error copy to surface in the red error box. Order
+   * matters: the 2FA-step error wins when the user is on the code
+   * screen (otherwise they'd see "awaiting approval" when the code is
+   * just wrong), then we check for the inactive-account block-reason
+   * header from the backend, then fall back to the generic message.
+   */
+  private resolveLoginErrorMessage(error: unknown): string {
+    if (this.twoFactorRequired) {
+      return 'Verification failed. Check the code and try again.';
+    }
+
+    if (this.authService.getLoginBlockedReason(error) === 'InactiveAccount') {
+      return 'Your account is awaiting administrator approval. ' +
+        'An administrator has to activate it before you can sign in.';
+    }
+
+    return 'Login failed. Check the API is running and the credentials are correct.';
   }
 
   showAuthenticatorCode() {
