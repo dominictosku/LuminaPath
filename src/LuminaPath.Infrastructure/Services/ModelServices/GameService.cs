@@ -126,6 +126,18 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                             - ((myGame.Rating ?? 0) / 3.0))
                         .FirstOrDefault())
                     .ThenBy(game => game.Name),
+                // "Most tracked hours" — manual TimeSpend plus the
+                // third-party tracker total (Steam / PSN sync writes
+                // into MyGameInfo.TrackedHours). Games not in the
+                // user's library get a 0 from FirstOrDefault, so they
+                // sort to the bottom — which matches the user's mental
+                // model of "show me what I've sunk the most time into".
+                "tracked-desc" => query
+                    .OrderByDescending(game => game.MyGames!
+                        .Where(myGame => myGame.LuminaUserId == userId)
+                        .Select(myGame => (myGame.TimeSpend ?? 0) + (myGame.MyGameInfo != null ? myGame.MyGameInfo.TrackedHours : 0))
+                        .FirstOrDefault())
+                    .ThenBy(game => game.Name),
                 _ => base.ApplyOrdering(query, mediaFilter, userId),
             };
         }

@@ -240,6 +240,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     { label: 'Newest release', value: 'release-desc' },
     { label: 'Oldest release', value: 'release-asc' },
     { label: 'Highest rating', value: 'rating-desc' },
+    { label: 'Most tracked hours', value: 'tracked-desc' },
     { label: 'Least remaining', value: 'remaining-asc' },
     { label: 'Recently added', value: 'recently-added' },
     { label: 'Best to finish', value: 'best-finish' },

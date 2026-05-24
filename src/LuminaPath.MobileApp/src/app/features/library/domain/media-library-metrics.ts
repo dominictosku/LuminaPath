@@ -1,5 +1,4 @@
 import { MediaItem, UserMediaEntry } from '../models/media-item.model';
-import { GameStatus } from '../models/library-status.model';
 
 export type LibraryModeContext = {
   id: 'games' | 'animes' | 'movies' | 'series';
@@ -51,9 +50,18 @@ export function remainingOf(item: MediaItem, mode: LibraryModeContext): number {
 export function progressOf(item: MediaItem, mode: LibraryModeContext): number {
   const estimated = expectedHoursOf(item, mode);
 
+  // No denominator (0 or null estimated hours) → treat as complete.
+  // The honest answer is "indeterminate", but for the library's
+  // glanceable progress bar that's noise; the user explicitly wants
+  // 100% when there's no length to measure against. Covers brand-new
+  // catalog entries with no playtime metadata and side titles like
+  // unmeasured tools/utilities.
   if (estimated <= 0) {
-    return statusOf(item) === GameStatus.Completed ? 100 : 0;
+    return 100;
   }
 
+  // Overflow case (tracked > estimated, e.g. a 60h playthrough of a
+  // game IGDB lists at 40h, or a series re-watch). Clamp to 100% so
+  // the bar doesn't blow past its track.
   return Math.min(100, Math.round((playedOf(item, mode) / estimated) * 100));
 }
