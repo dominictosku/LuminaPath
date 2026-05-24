@@ -33,6 +33,54 @@ describe('CookieInterceptor', () => {
     });
   });
 
+  it('adds the API client header to unsafe API requests', (done) => {
+    const { interceptor } = setup();
+    const request = new HttpRequest('POST', '/api/quests', {});
+    const next: HttpHandler = {
+      handle: jasmine.createSpy('handle').and.callFake((handledRequest: HttpRequest<unknown>) => {
+        expect(handledRequest.headers.get('X-Lumina-Client')).toBe('web');
+        return of({} as never);
+      }),
+    };
+
+    interceptor.intercept(request, next).subscribe(() => {
+      expect(next.handle).toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('adds the API client header to prefixed API requests', (done) => {
+    const { interceptor } = setup();
+    const request = new HttpRequest('DELETE', 'https://example.test/luminapath/api/quests/1');
+    const next: HttpHandler = {
+      handle: jasmine.createSpy('handle').and.callFake((handledRequest: HttpRequest<unknown>) => {
+        expect(handledRequest.headers.get('X-Lumina-Client')).toBe('web');
+        return of({} as never);
+      }),
+    };
+
+    interceptor.intercept(request, next).subscribe(() => {
+      expect(next.handle).toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('does not add the API client header to safe API requests', (done) => {
+    const { interceptor } = setup();
+    const request = new HttpRequest('GET', '/api/quests');
+    const next: HttpHandler = {
+      handle: jasmine.createSpy('handle').and.callFake((handledRequest: HttpRequest<unknown>) => {
+        expect(handledRequest.headers.has('X-Lumina-Client')).toBeFalse();
+        return of({} as never);
+      }),
+    };
+
+    interceptor.intercept(request, next).subscribe(() => {
+      expect(next.handle).toHaveBeenCalled();
+      done();
+    });
+  });
+
   it('redirects to login on protected 401 responses', (done) => {
     const { router, interceptor } = setup();
     const request = new HttpRequest('GET', '/api/games');

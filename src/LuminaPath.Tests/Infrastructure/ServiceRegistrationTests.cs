@@ -6,10 +6,13 @@ using LuminaPath.Infrastructure.Services.Auditing;
 using LuminaPath.Infrastructure.Services.Imports;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using LuminaPath.Core.Mapping;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace LuminaPath.Tests.Infrastructure;
 
@@ -47,6 +50,10 @@ public class ServiceRegistrationTests
         Assert.NotEmpty(scopedServices.GetRequiredService<IEnumerable<IBackgroundJobRunner>>());
         Assert.NotNull(provider.GetRequiredService<IBackgroundJobQueue>());
         Assert.NotNull(provider.GetRequiredService<IBackgroundJobCancellationRegistry>());
+
+        var rateLimiterOptions = provider.GetRequiredService<IOptions<RateLimiterOptions>>().Value;
+        Assert.NotNull(rateLimiterOptions.GlobalLimiter);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, rateLimiterOptions.RejectionStatusCode);
     }
 
     private static IConfiguration CreateConfiguration()
