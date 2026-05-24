@@ -1,2 +1,11 @@
 ﻿@using LuminaPath.Features.Auth.Account.Shared
 @layout AccountLayout
+
+@*
+  Account pages are the public auth surface (Login, Register, ForgotPassword,
+  ResetPassword, ConfirmEmail, etc.) — they must be reachable without a
+  session. This overrides the global [Authorize] in the root _Imports.razor.
+  The /Account/Manage subfolder re-asserts [Authorize] in its own
+  _Imports.razor so the account-management pages still require sign-in.
+*@
+@attribute [AllowAnonymous]

@@ -1,36 +1,160 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>userCreate</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true" class="register-content">
 
-<ion-content [fullscreen]="true">
-  <form class="space-y-6" type="form">
-    <div>
-      <label for="userName" class="block text-sm font-medium leading-6 text-white">Username</label>
-      <div class="mt-2">
-        <input id="userName" [(ngModel)]="credentials.userName" name="userName" required
-          class="block w-full rounded-md border-0 py-1.5 text-white shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
-      </div>
-      <label for="userName" class="block text-sm font-medium leading-6 text-white">Email</label>
-      <div class="mt-2">
-        <input id="Email" [(ngModel)]="credentials.email" name="Email" required
-          class="block w-full rounded-md border-0 py-1.5 text-white shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
-      </div>
-    </div>
-    <div>
-      <div class="mt-2">
-        <input [(ngModel)]="credentials.password" type="password" name="password" label="Password"
-          validation="required|length:6|matches:/[^a-zA-Z]/" :validation-messages="{
-                        matches: 'Please include at least one symbol',
-                    }" placeholder="Your password" help="Choose a password" />
-        <input type="password" name="password_confirm" label="Confirm password" placeholder="Confirm password"
-          validation="required|confirm" help="Confirm your password" />
-      </div>
-    </div>
+  <!-- Same orb + grid scaffolding as the login page so toggling between
+       /auth/login and /auth/create reads as one continuous flow. -->
+  <div class="register-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="grid-lines"></div>
+  </div>
 
-    <div>
-      <ion-button type="submit" label="Create account" />
+  <div class="register-wrapper">
+    <div class="register-card">
+
+      <div class="brand">
+        <div class="brand-mark">
+          <img src="assets/brand/luminapath-logo.png" alt="" />
+        </div>
+        <span class="brand-name">LuminaPath</span>
+      </div>
+
+      @if (registrationComplete) {
+        <!-- Success branch — matches the "two-factor panel" look so the
+             user understands a *something* changed and they need to wait
+             before continuing. We don't auto-route to /home because the
+             admin-approval gate would just bounce them back. -->
+        <div class="card-header">
+          <h1 class="card-title">Account created</h1>
+          <p class="card-subtitle">Your sign-up is in — almost there.</p>
+        </div>
+
+        <div class="success-panel">
+          <div class="success-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <div>
+            <h2>Awaiting administrator approval</h2>
+            <p>
+              If the server is configured with admin approval, an administrator
+              has to activate your account before you can sign in. You'll be
+              notified out-of-band when that happens. If approval is off, you
+              can sign in right now.
+            </p>
+          </div>
+        </div>
+
+        <button type="button" class="primary-btn" (click)="goToLogin()">
+          <span class="btn-text">Go to sign in</span>
+        </button>
+      } @else {
+        <div class="card-header">
+          <h1 class="card-title">Create your account</h1>
+          <p class="card-subtitle">Start tracking your library across every platform</p>
+        </div>
+
+        <!-- ngSubmit handles Enter from any field, same pattern as the
+             login page. The form is the only interactive surface on the
+             card so there's no other submit handler to worry about. -->
+        <form class="form-fields" (ngSubmit)="register()">
+          <div class="field-group">
+            <label class="field-label" for="email">Email</label>
+            <div class="field-wrap">
+              <svg class="field-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M3 4a2 2 0 00-2 2v1.161l8.441 4.221a1.25 1.25 0 001.118 0L19 7.162V6a2 2 0 00-2-2H3z"/>
+                <path d="M19 8.839l-7.77 3.885a2.75 2.75 0 01-2.46 0L1 8.839V14a2 2 0 002 2h14a2 2 0 002-2V8.839z"/>
+              </svg>
+              <input
+                id="email"
+                [(ngModel)]="email"
+                name="email"
+                type="email"
+                required
+                autocomplete="email"
+                placeholder="your@email.com"
+                class="field-input"
+                />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="password">Password</label>
+            <div class="field-wrap">
+              <svg class="field-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8 7a4 4 0 118 0v1h1a2 2 0 012 2v5a2 2 0 01-2 2H3a2 2 0 01-2-2v-5a2 2 0 012-2h1V7a4 4 0 014-4zm0 2a2 2 0 012-2 2 2 0 012 2v1H8V7zm1 5a1 1 0 112 0v2a1 1 0 11-2 0v-2z" clip-rule="evenodd"/>
+              </svg>
+              <input
+                id="password"
+                [(ngModel)]="password"
+                name="password"
+                type="password"
+                required
+                autocomplete="new-password"
+                placeholder="At least 10 characters"
+                class="field-input"
+                />
+            </div>
+            <p class="field-help">
+              Must contain upper + lower case letters, a digit, and a symbol.
+            </p>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="confirmPassword">Confirm password</label>
+            <div class="field-wrap">
+              <svg class="field-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M2.5 4A1.5 1.5 0 001 5.5V6h18v-.5A1.5 1.5 0 0017.5 4h-15zM19 8.5H1V14a2 2 0 002 2h14a2 2 0 002-2V8.5zM3 12.25c0-.414.336-.75.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zm4.75-.75a.75.75 0 000 1.5h2.5a.75.75 0 000-1.5h-2.5z" clip-rule="evenodd"/>
+              </svg>
+              <input
+                id="confirmPassword"
+                [(ngModel)]="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                required
+                autocomplete="new-password"
+                placeholder="Repeat password"
+                class="field-input"
+                />
+            </div>
+          </div>
+
+          @if (errorMessage) {
+            <div class="error-box">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+              </svg>
+              <div>
+                <span>{{ errorMessage }}</span>
+                @if (fieldErrors.length > 1) {
+                  <ul class="field-error-list">
+                    @for (err of fieldErrors; track err.field + err.message) {
+                      <li>{{ err.message }}</li>
+                    }
+                  </ul>
+                }
+              </div>
+            </div>
+          }
+
+          <button type="submit" class="primary-btn" [disabled]="isSubmitting" [class.loading]="isSubmitting">
+            <span class="btn-text">{{ isSubmitting ? 'Creating account…' : 'Create account' }}</span>
+            <span class="btn-shimmer"></span>
+          </button>
+
+          <div class="divider">
+            <span>Already have an account?</span>
+          </div>
+
+          <!-- `type="button"` so navigating doesn't double as a form
+               submit (which would fire register() and either error out
+               or create the account inadvertently). -->
+          <button type="button" class="secondary-btn" routerLink="/auth/login">
+            Back to sign in
+          </button>
+        </form>
+      }
     </div>
-  </form>
+  </div>
+
 </ion-content>

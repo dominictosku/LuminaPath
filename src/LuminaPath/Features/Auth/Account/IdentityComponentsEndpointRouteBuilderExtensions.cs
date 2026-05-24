@@ -60,7 +60,16 @@ namespace LuminaPath.Features.Auth.Account
                     TargetName = actor.Email,
                     Metadata = new { source = "Blazor" }
                 });
-                return TypedResults.LocalRedirect($"~/{returnUrl}");
+                // After sign-out the cookie is gone, so redirecting back
+                // to `returnUrl` only "works" when that URL happens to be
+                // an [AllowAnonymous] page — otherwise the user lands on
+                // a protected route, sees the AuthorizeRouteView's
+                // <NotAuthorized> fallback, and never gets a clear
+                // "you're signed out" cue. Always sending them to the
+                // login page (with the original returnUrl preserved as a
+                // query param so Login.razor can bounce them back after
+                // sign-in) is the predictable post-logout UX.
+                return TypedResults.LocalRedirect(BuildPostLogoutTarget(returnUrl));
             });
 
             var manageGroup = accountGroup.MapGroup("/Manage").RequireAuthorization();
@@ -122,6 +131,49 @@ namespace LuminaPath.Features.Auth.Account
             });
 
             return accountGroup;
+        }
+
+        /// <summary>
+        /// Builds the post-logout target — always <c>~/Account/Login</c>,
+        /// with the caller's original page passed through as
+        /// <c>?ReturnUrl=...</c> so a successful re-login bounces back to
+        /// where they were. We reject absolute / protocol-relative URLs
+        /// to keep the LocalRedirect safe from open-redirect abuse, and
+        /// drop returnUrls that already point at /Account/Login (which
+        /// would otherwise create an ugly self-referential querystring).
+        /// </summary>
+        private static string BuildPostLogoutTarget(string? returnUrl)
+        {
+            const string LoginPath = "~/Account/Login";
+
+            if (string.IsNullOrWhiteSpace(returnUrl))
+            {
+                return LoginPath;
+            }
+
+            var trimmed = returnUrl.Trim();
+
+            // Anything that looks externally addressable should not be
+            // round-tripped — TypedResults.LocalRedirect would throw on
+            // those anyway, but failing fast keeps the URL clean.
+            if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                || trimmed.StartsWith("//", StringComparison.Ordinal))
+            {
+                return LoginPath;
+            }
+
+            // Strip the leading slash so we don't double it up later.
+            var normalized = trimmed.TrimStart('/');
+
+            // Already at the login page — no point preserving it as a
+            // returnUrl that would re-redirect to itself.
+            if (normalized.StartsWith("Account/Login", StringComparison.OrdinalIgnoreCase))
+            {
+                return LoginPath;
+            }
+
+            return $"{LoginPath}?ReturnUrl={Uri.EscapeDataString("/" + normalized)}";
         }
     }
 }

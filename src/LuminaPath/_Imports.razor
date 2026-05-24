@@ -7,6 +7,7 @@
 @using LuminaPath.Infrastructure.Services.Auditing
 @using System.Net.Http
 @using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
@@ -17,3 +18,15 @@
 @using MudBlazor
 @* @using Radzen
 @using Radzen.Blazor *@
+
+@*
+  Default-deny: every routable page in this app requires an authenticated
+  user unless it explicitly opts out with [AllowAnonymous]. AuthorizeRouteView
+  in Routes.razor reads all [Authorize] attributes attached to the routable
+  component and enforces them, so this single line covers every page in
+  every folder by default. The Auth/Account/Pages/_Imports.razor (login,
+  register, forgot/reset password) and a couple of one-off pages
+  (NotFoundPage, AccessDenied) override with [AllowAnonymous]; stricter
+  role attributes on admin pages stack on top of this base rule.
+*@
+@attribute [Authorize]

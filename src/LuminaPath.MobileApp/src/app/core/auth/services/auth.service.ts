@@ -9,8 +9,35 @@ export interface LoginResult {
   requiresTwoFactor: boolean;
 }
 
+export interface RegisterResult {
+  /**
+   * True when the server confirmed the account was created. The backend's
+   * /api/register returns 200 OK on success regardless of whether the
+   * admin-approval gate is on — callers should still show the
+   * "awaiting approval" copy when they know that flag is enabled (we
+   * can't detect it from the response).
+   */
+  created: boolean;
+  /**
+   * Validation errors keyed by field — surfaced verbatim from
+   * Identity's ValidationProblemDetails (e.g. `Email`, `Password`).
+   * Empty array when the call succeeded.
+   */
+  errors: RegisterFieldError[];
+}
+
+export interface RegisterFieldError {
+  field: string;
+  message: string;
+}
+
 interface IdentityLoginResponse {
   requiresTwoFactor?: boolean;
+}
+
+/** Shape Identity's /register returns for validation problems. */
+interface IdentityValidationProblem {
+  errors?: Record<string, string[]>;
 }
 
 /**
@@ -108,6 +135,33 @@ export class AuthService {
     );
   }
 
+  /**
+   * POSTs to Identity's /api/register. Returns a normalized
+   * {created, errors} result so the page doesn't have to know about
+   * Identity's ValidationProblemDetails shape. We deliberately do NOT
+   * auto-sign-in afterwards — if the admin-approval gate is enabled,
+   * the user can't sign in yet, and even when it's off we want the
+   * user to confirm their credentials work via the login screen.
+   */
+  register(email: string, password: string): Observable<RegisterResult> {
+    return this.http.post(
+      this.apiEndpoint.url('register'),
+      { email, password },
+      { withCredentials: true },
+    ).pipe(
+      map(() => ({ created: true, errors: [] as RegisterFieldError[] })),
+      catchError((error: unknown) => {
+        if (error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500) {
+          return of({
+            created: false,
+            errors: this.parseRegisterErrors(error.error),
+          });
+        }
+        return throwError(() => error);
+      }),
+    );
+  }
+
   logout() {
     return this.http.post(
       this.apiEndpoint.url('logout'),
@@ -160,6 +214,35 @@ export class AuthService {
       twoFactorCode: credentials.twoFactorCode || undefined,
       twoFactorRecoveryCode: credentials.twoFactorRecoveryCode || undefined,
     };
+  }
+
+  /**
+   * Flattens Identity's `{errors: {Email: ['msg'], Password: ['msg1','msg2']}}`
+   * shape into the flat array our register page renders. Falls back to a
+   * single generic error when the payload doesn't match the expected
+   * shape (e.g. the backend returned a plain string).
+   */
+  private parseRegisterErrors(payload: unknown): RegisterFieldError[] {
+    if (typeof payload === 'string' && payload.trim().length > 0) {
+      return [{ field: '', message: payload }];
+    }
+
+    const problem = payload as IdentityValidationProblem | null;
+    const errors = problem?.errors;
+    if (!errors || typeof errors !== 'object') {
+      return [{ field: '', message: 'Registration failed. Please try again.' }];
+    }
+
+    const flat: RegisterFieldError[] = [];
+    for (const [field, messages] of Object.entries(errors)) {
+      if (!Array.isArray(messages)) continue;
+      for (const message of messages) {
+        flat.push({ field, message: String(message) });
+      }
+    }
+    return flat.length > 0
+      ? flat
+      : [{ field: '', message: 'Registration failed. Please try again.' }];
   }
 
   private isTwoFactorChallenge(error: unknown): boolean {

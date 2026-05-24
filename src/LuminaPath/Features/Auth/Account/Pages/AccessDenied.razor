@@ -1,6 +1,6 @@
 @page "/Account/AccessDenied"
-@using Microsoft.AspNetCore.Authorization
-@attribute [AllowAnonymous]
+@* [AllowAnonymous] is inherited from Account/Pages/_Imports.razor —
+   redeclaring it here would be a duplicate-attribute compile error. *@
 
 <PageTitle>Access denied - LuminaPath</PageTitle>
 
