@@ -8,7 +8,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Default: Host=luminapath-db;Port=5432;Database=${POSTGRES_DB:-luminapath};Username=${POSTGRES_USER:-luminapath};Password=${POSTGRES_PASSWORD:-change-me};
+      ConnectionStrings__Default: "Host=luminapath-db;Port=5432;Database=${POSTGRES_DB:-luminapath};Username=${POSTGRES_USER:-luminapath};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env};"
       ConnectionStrings__Redis: luminapath-redis:6379
       Database__RunMigrationsOnStartup: ${RUN_MIGRATIONS_ON_STARTUP:-true}
       Https__Redirect: ${HTTPS_REDIRECT:-false}
@@ -17,11 +17,8 @@ services:
       Serilog__WriteTo__1__Args__path: ${LOG_PATH:-/app/App_Data/logs/luminapath-.log}
       Azure__BlobConnectionString: ${AZURE_BLOB_CONNECTION_STRING:-}
       Azure__BlobContainerName: ${AZURE_BLOB_CONTAINER_NAME:-media}
-      Cors__AllowedOrigins__0: ${FRONTEND_PUBLIC_URL:-http://localhost:4200}
-      Cors__AllowedOrigins__1: ${IONIC_PUBLIC_URL:-capacitor://localhost}
-      Cors__AllowedOrigins__2: ${CAPACITOR_ANDROID_PUBLIC_URL:-http://localhost}
-      Cors__AllowedOrigins__3: ${CAPACITOR_ANDROID_HTTPS_PUBLIC_URL:-https://localhost}
-      Auth__CookieSameSite: ${AUTH_COOKIE_SAMESITE:-None}
+      Cors__AllowedOrigins__0: ${FRONTEND_PUBLIC_URL:?Set FRONTEND_PUBLIC_URL to your public HTTPS origin in deploy/.env}
+      Auth__CookieSameSite: ${AUTH_COOKIE_SAMESITE:-Lax}
       Auth__CookieSecurePolicy: ${AUTH_COOKIE_SECURE_POLICY:-Always}
       # When true, newly self-registered users land inactive and cannot
       # sign in until an admin flips the toggle on /Admin/Users. The
@@ -30,10 +27,10 @@ services:
       # See src/README.md → "Require admin approval for new registrations".
       Auth__RequireAdminApproval: ${AUTH_REQUIRE_ADMIN_APPROVAL:-true}
       # Seed admin credentials — only used the first time the database
-      # is brought up (when no admin user exists yet). Defaults are the
-      # bundled placeholders and will trigger a startup warning.
-      Admin__Email: ${LUMINAPATH_ADMIN_EMAIL:-admin@example.com}
-      Admin__Password: ${LUMINAPATH_ADMIN_PASSWORD:-ChangeMe!1AdminAccess}
+      # is brought up (when no admin user exists yet). Production startup
+      # refuses the bundled placeholders.
+      Admin__Email: ${LUMINAPATH_ADMIN_EMAIL:?Set LUMINAPATH_ADMIN_EMAIL in deploy/.env}
+      Admin__Password: ${LUMINAPATH_ADMIN_PASSWORD:?Set LUMINAPATH_ADMIN_PASSWORD in deploy/.env}
     ports:
       - "${BACKEND_HTTP_PORT:-8080}:8080"
     volumes:
@@ -55,8 +52,6 @@ services:
     image: redis:${REDIS_VERSION:-7-alpine}
     container_name: luminapath-redis
     restart: unless-stopped
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - luminapath-redis:/data
     healthcheck:
@@ -85,9 +80,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-luminapath}
       POSTGRES_USER: ${POSTGRES_USER:-luminapath}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
     volumes:
       - luminapath-postgres:/var/lib/postgresql/data
     healthcheck:

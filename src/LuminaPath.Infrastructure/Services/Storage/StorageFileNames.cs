@@ -4,8 +4,9 @@ namespace LuminaPath.Infrastructure.Services.Storage
     {
         public static string GetSafeName(string fileName)
         {
-            var safeFileName = Path.GetFileName(fileName);
-            if (string.IsNullOrWhiteSpace(safeFileName))
+            var safeFileName = Path.GetFileName(fileName.Replace('\\', '/'));
+            if (string.IsNullOrWhiteSpace(safeFileName)
+                || safeFileName is "." or "..")
             {
                 throw new InvalidOperationException("File name is required.");
             }

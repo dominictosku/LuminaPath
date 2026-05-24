@@ -32,13 +32,14 @@ namespace LuminaPath.Infrastructure.Controllers
         /// Uploads a single cover image. Gated by the CatalogEditors
         /// policy because the only legitimate caller is the catalog
         /// create/edit dialog. We additionally check that the file is
-        /// non-empty, fits the size cap, and has an image/* content type
-        /// — otherwise this endpoint would happily store arbitrary blobs
-        /// on behalf of any logged-in editor.
+        /// non-empty, fits the size cap, and is one of the raster image
+        /// formats we can identify by file signature. SVG is deliberately
+        /// excluded because serving it from the app origin can become
+        /// stored XSS.
         /// </summary>
         [HttpPost]
         [Authorize(Policy = AuthorizationPolicies.CatalogEditors)]
-        public async Task<IActionResult> PostImage(IFormFile? file)
+        public async Task<IActionResult> PostImage(IFormFile? file, CancellationToken cancellationToken = default)
         {
             if (file is null || file.Length == 0)
             {
@@ -65,35 +66,42 @@ namespace LuminaPath.Infrastructure.Controllers
                 };
             }
 
-            if (!IsAllowedImageContentType(file.ContentType))
+            await using var sourceStream = file.OpenReadStream();
+            await using var bufferedStream = new MemoryStream();
+            await sourceStream.CopyToAsync(bufferedStream, cancellationToken);
+            bufferedStream.Position = 0;
+
+            var imageType = DetectAllowedRasterImage(bufferedStream);
+            if (imageType is null)
             {
                 await AuditFileAsync(
                     AuditActions.DocumentUploaded,
                     AuditOutcomes.Failure,
                     file.FileName,
                     file.ContentType,
-                    "Unsupported content type.");
-                return new ObjectResult("Only image uploads are allowed (png, jpg, webp, gif, bmp, svg).")
+                    "Unsupported or unrecognized image signature.");
+                return new ObjectResult("Only raster image uploads are allowed (png, jpg, webp, gif, bmp).")
                 {
                     StatusCode = StatusCodes.Status415UnsupportedMediaType,
                 };
             }
 
-            await using var stream = file.OpenReadStream();
-            var result = await Storage.UploadAsync(stream, file.FileName, file.ContentType);
+            bufferedStream.Position = 0;
+            var storageName = $"{Guid.NewGuid():N}{imageType.Extension}";
+            var result = await Storage.UploadAsync(bufferedStream, storageName, imageType.ContentType);
             if (result.Error)
             {
                 await AuditFileAsync(
                     AuditActions.DocumentUploaded,
                     AuditOutcomes.Failure,
                     file.FileName,
-                    file.ContentType,
+                    imageType.ContentType,
                     result.Status);
                 return BadRequest(result.Status);
             }
 
-            var storedName = result.Blob.Name ?? file.FileName;
-            var contentType = result.Blob.ContentType ?? file.ContentType;
+            var storedName = result.Blob.Name ?? storageName;
+            var contentType = result.Blob.ContentType ?? imageType.ContentType;
 
             await AuditFileAsync(
                 AuditActions.DocumentUploaded,
@@ -115,15 +123,70 @@ namespace LuminaPath.Infrastructure.Controllers
             });
         }
 
-        private static bool IsAllowedImageContentType(string? contentType)
+        private static RasterImageType? DetectAllowedRasterImage(Stream stream)
         {
-            if (string.IsNullOrWhiteSpace(contentType))
+            Span<byte> header = stackalloc byte[16];
+            var read = stream.Read(header);
+            if (stream.CanSeek)
+            {
+                stream.Position = 0;
+            }
+
+            if (StartsWith(header, read, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))
+            {
+                return new RasterImageType("image/png", ".png");
+            }
+
+            if (StartsWith(header, read, [0xFF, 0xD8, 0xFF]))
+            {
+                return new RasterImageType("image/jpeg", ".jpg");
+            }
+
+            if (StartsWith(header, read, [0x47, 0x49, 0x46, 0x38, 0x37, 0x61])
+                || StartsWith(header, read, [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]))
+            {
+                return new RasterImageType("image/gif", ".gif");
+            }
+
+            if (read >= 12
+                && MatchesAt(header, read, 0, [0x52, 0x49, 0x46, 0x46])
+                && MatchesAt(header, read, 8, [0x57, 0x45, 0x42, 0x50]))
+            {
+                return new RasterImageType("image/webp", ".webp");
+            }
+
+            if (StartsWith(header, read, [0x42, 0x4D]))
+            {
+                return new RasterImageType("image/bmp", ".bmp");
+            }
+
+            return null;
+        }
+
+        private static bool StartsWith(ReadOnlySpan<byte> value, int bytesRead, ReadOnlySpan<byte> expected)
+        {
+            return MatchesAt(value, bytesRead, 0, expected);
+        }
+
+        private static bool MatchesAt(ReadOnlySpan<byte> value, int bytesRead, int offset, ReadOnlySpan<byte> expected)
+        {
+            if (bytesRead < offset + expected.Length)
             {
                 return false;
             }
 
-            return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+            for (var i = 0; i < expected.Length; i++)
+            {
+                if (value[offset + i] != expected[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
+
+        private sealed record RasterImageType(string ContentType, string Extension);
 
         // Inherits the class-level [Authorize] — no AllowAnonymous on
         // file downloads. Cover images are still served to any signed-in

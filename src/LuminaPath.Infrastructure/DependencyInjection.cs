@@ -163,7 +163,12 @@ namespace LuminaPath.Infrastructure
                 // override admin@example.com / weak default password
                 // before first boot. The seeder logs a warning when the
                 // bundled fallback is in use so it's obvious to change.
-                await context.SeedDatabase(userManager, roleManager, app.Configuration, app.Logger);
+                await context.SeedDatabase(
+                    userManager,
+                    roleManager,
+                    app.Configuration,
+                    app.Logger,
+                    requireConfiguredAdminCredentials: !app.Environment.IsDevelopment());
             }
             catch (Exception e)
             {

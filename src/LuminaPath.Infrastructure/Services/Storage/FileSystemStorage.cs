@@ -79,7 +79,7 @@ namespace LuminaPath.Infrastructure.Services.Storage
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Could not upload file {FileName}.", storedFileName);
-                response.Status = $"Unexpected error: {ex.Message}";
+                response.Status = "Unexpected storage error while uploading the file. Check the server logs.";
                 response.Error = true;
             }
 

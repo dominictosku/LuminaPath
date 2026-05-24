@@ -1,5 +1,7 @@
 using LuminaPath.Core.Mapping;
 using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Identity;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -57,6 +59,49 @@ public class ConfigurationOptionsValidationTests
         Assert.Contains("Azure blob storage requires", string.Join(" ", exception.Failures));
     }
 
+    [Fact]
+    public async Task AddInfrastructure_ProductionConfigurationWithoutCorsOrigins_UsesNoLocalhostFallback()
+    {
+        var configurationValues = CreateValidConfiguration();
+        configurationValues.Remove("Cors:AllowedOrigins:0");
+
+        await using var provider = BuildProviderFromValues(configurationValues);
+
+        var policy = provider.GetRequiredService<IOptions<CorsOptions>>()
+            .Value
+            .GetPolicy(global::LuminaPath.Infrastructure.DependencyInjection.MyAllowSpecificOrigins);
+
+        Assert.NotNull(policy);
+        Assert.Empty(policy!.Origins);
+        Assert.True(policy.SupportsCredentials);
+    }
+
+    [Fact]
+    public async Task AddInfrastructure_DevelopmentConfigurationWithoutCorsOrigins_KeepsLocalhostFallback()
+    {
+        var configurationValues = CreateValidConfiguration();
+        configurationValues.Remove("Cors:AllowedOrigins:0");
+        configurationValues["ASPNETCORE_ENVIRONMENT"] = Environments.Development;
+
+        await using var provider = BuildProviderFromValues(configurationValues);
+
+        var policy = provider.GetRequiredService<IOptions<CorsOptions>>()
+            .Value
+            .GetPolicy(global::LuminaPath.Infrastructure.DependencyInjection.MyAllowSpecificOrigins);
+
+        Assert.NotNull(policy);
+        Assert.Equal(["http://localhost:4200"], policy!.Origins);
+        Assert.True(policy.SupportsCredentials);
+    }
+
+    [Fact]
+    public void AuthCookieOptions_DefaultsToLaxSameSite()
+    {
+        var options = new AuthCookieOptions();
+
+        Assert.Equal("Lax", options.CookieSameSite);
+    }
+
     private static ServiceProvider BuildProvider(Dictionary<string, string?>? overrides = null)
     {
         var configurationValues = CreateValidConfiguration();
@@ -68,6 +113,11 @@ public class ConfigurationOptionsValidationTests
             }
         }
 
+        return BuildProviderFromValues(configurationValues);
+    }
+
+    private static ServiceProvider BuildProviderFromValues(Dictionary<string, string?> configurationValues)
+    {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(configurationValues)
             .Build();

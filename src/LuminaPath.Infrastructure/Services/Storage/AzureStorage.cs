@@ -45,10 +45,11 @@ namespace LuminaPath.Infrastructure.Services.Storage
         public async Task<BlobDto?> DownloadAsync(string blobFilename)
         {
             var container = CreateContainerClient();
+            var blobName = StorageFileNames.GetSafeName(blobFilename);
 
             try
             {
-                var file = container.GetBlobClient(blobFilename);
+                var file = container.GetBlobClient(blobName);
 
                 if (await file.ExistsAsync())
                 {
@@ -59,7 +60,7 @@ namespace LuminaPath.Infrastructure.Services.Storage
                     return new BlobDto
                     {
                         Content = blobContent,
-                        Name = blobFilename,
+                        Name = blobName,
                         ContentType = content.Value.Details.ContentType
                     };
                 }
@@ -67,7 +68,7 @@ namespace LuminaPath.Infrastructure.Services.Storage
             catch (RequestFailedException ex)
                 when (ex.ErrorCode == BlobErrorCode.BlobNotFound)
             {
-                _logger.LogError("File {FileName} was not found.", blobFilename);
+                _logger.LogError("File {FileName} was not found.", blobName);
             }
 
             return null;
@@ -79,17 +80,18 @@ namespace LuminaPath.Infrastructure.Services.Storage
             BlobResponseDto response = new();
             var container = CreateContainerClient();
             await container.CreateIfNotExistsAsync();
+            var blobName = StorageFileNames.WithExtensionFromContentType(fileName, contentType);
 
             try
             {
-                var client = container.GetBlobClient(fileName);
+                var client = container.GetBlobClient(blobName);
 
                 await using (Stream? data = blob)
                 {
                     await client.UploadAsync(data, new BlobHttpHeaders { ContentType = contentType });
                 }
 
-                response.Status = $"File {fileName} Uploaded Successfully";
+                response.Status = $"File {blobName} Uploaded Successfully";
                 response.Error = false;
                 response.Blob.Uri = client.Uri.AbsoluteUri;
                 response.Blob.Name = client.Name;
@@ -101,16 +103,16 @@ namespace LuminaPath.Infrastructure.Services.Storage
             {
                 _logger.LogError(
                     "File with name {FileName} already exists in container {ContainerName}.",
-                    fileName,
+                    blobName,
                     _storageContainerName);
-                response.Status = $"File with name {fileName} already exists. Please use another name to store your file.";
+                response.Status = $"File with name {blobName} already exists. Please use another name to store your file.";
                 response.Error = true;
                 return response;
             }
             catch (RequestFailedException ex)
             {
-                _logger.LogError(ex, "Could not upload file {FileName}.", fileName);
-                response.Status = $"Unexpected error: {ex.StackTrace}. Check log with StackTrace ID.";
+                _logger.LogError(ex, "Could not upload file {FileName}.", blobName);
+                response.Status = "Unexpected storage error while uploading the file. Check the server logs.";
                 response.Error = true;
                 return response;
             }
@@ -121,33 +123,36 @@ namespace LuminaPath.Infrastructure.Services.Storage
         public async Task<BlobResponseDto> DeleteAsync(string blobFilename)
         {
             var container = CreateContainerClient();
-            var file = container.GetBlobClient(blobFilename);
+            var blobName = StorageFileNames.GetSafeName(blobFilename);
+            var file = container.GetBlobClient(blobName);
 
             try
             {
                 var deleteResult = await file.DeleteIfExistsAsync();
                 if (!deleteResult.Value)
                 {
-                    _logger.LogError("File {FileName} was not found.", blobFilename);
-                    return new BlobResponseDto { Error = true, Status = $"File with name {blobFilename} not found." };
+                    _logger.LogError("File {FileName} was not found.", blobName);
+                    return new BlobResponseDto { Error = true, Status = $"File with name {blobName} not found." };
                 }
             }
             catch (RequestFailedException ex)
                 when (ex.ErrorCode == BlobErrorCode.BlobNotFound)
             {
-                _logger.LogError("File {FileName} was not found.", blobFilename);
-                return new BlobResponseDto { Error = true, Status = $"File with name {blobFilename} not found." };
+                _logger.LogError("File {FileName} was not found.", blobName);
+                return new BlobResponseDto { Error = true, Status = $"File with name {blobName} not found." };
             }
 
-            return new BlobResponseDto { Error = false, Status = $"File: {blobFilename} has been successfully deleted." };
+            return new BlobResponseDto { Error = false, Status = $"File: {blobName} has been successfully deleted." };
 
         }
 
         public async Task<bool> RenameAsync(string oldName, string newName)
         {
             var container = CreateContainerClient();
-            var source = container.GetBlobClient(oldName);
-            var target = container.GetBlobClient(newName);
+            var oldBlobName = StorageFileNames.GetSafeName(oldName);
+            var newBlobName = StorageFileNames.ForRename(oldBlobName, newName);
+            var source = container.GetBlobClient(oldBlobName);
+            var target = container.GetBlobClient(newBlobName);
 
             try
             {
@@ -158,7 +163,7 @@ namespace LuminaPath.Infrastructure.Services.Storage
             catch (RequestFailedException ex)
                 when (ex.ErrorCode == BlobErrorCode.BlobNotFound)
             {
-                _logger.LogError("File {FileName} was not found.", oldName);
+                _logger.LogError("File {FileName} was not found.", oldBlobName);
                 return false;
             }
 

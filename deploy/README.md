@@ -14,6 +14,9 @@ Edit `.env` and set at least:
 
 ```text
 POSTGRES_PASSWORD=your-strong-password
+FRONTEND_PUBLIC_URL=https://luminapath.yourdomain.com
+LUMINAPATH_ADMIN_EMAIL=you@example.com
+LUMINAPATH_ADMIN_PASSWORD=your-strong-admin-password
 ```
 
 Start LuminaPath:
@@ -28,6 +31,9 @@ Open:
 http://localhost:4200
 ```
 
+The frontend container proxies `/api` to the backend container internally.
+PostgreSQL and Redis are only reachable on the Docker network.
+
 The backend API is exposed at:
 
 ```text
@@ -40,10 +46,7 @@ If you put LuminaPath behind a reverse proxy, set the public frontend URL:
 
 ```text
 FRONTEND_PUBLIC_URL=https://luminapath.yourdomain.com
-IONIC_PUBLIC_URL=capacitor://localhost
-CAPACITOR_ANDROID_PUBLIC_URL=http://localhost
-CAPACITOR_ANDROID_HTTPS_PUBLIC_URL=https://localhost
-AUTH_COOKIE_SAMESITE=None
+AUTH_COOKIE_SAMESITE=Lax
 AUTH_COOKIE_SECURE_POLICY=Always
 ```
 
@@ -55,6 +58,10 @@ LUMINAPATH_API_PROXY_TARGET=http://luminapath-api:8080
 ```
 
 The frontend container proxies `/api` to the backend container internally.
+
+Only add additional CORS origins when you intentionally serve the frontend
+from a different origin than the API. If you do that, set exact HTTPS origins
+and use `AUTH_COOKIE_SAMESITE=None` only for those cross-site cookie flows.
 
 ## Updating
 

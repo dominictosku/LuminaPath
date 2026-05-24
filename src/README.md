@@ -16,17 +16,17 @@ Nested config keys use `:` in JSON and **`__` (double underscore)** in env
 vars — e.g. `Auth:RequireAdminApproval` → `Auth__RequireAdminApproval`.
 
 The Docker Compose stack reads the `.env` file at the repo root (start
-from `.env.example`) and maps friendly SCREAMING_SNAKE_CASE names onto
-the `__`-style env vars the .NET host expects. See `docker-compose.yml`
-for the mapping table.
+from the required values shown below) and maps friendly SCREAMING_SNAKE_CASE
+names onto the `__`-style env vars the .NET host expects. See
+`docker-compose.yml` for the mapping table.
 
 ### Seed admin credentials
 
 On first boot — when no admin user exists yet — the backend creates one
 automatically so you can sign in to the Blazor admin and the mobile app.
 **Override the bundled defaults before any deployment you actually use.**
-A startup warning is written to the log whenever the bundled fallback
-credentials are in play.
+Non-development startup refuses the bundled fallback credentials; in
+development a startup warning is written when those credentials are in play.
 
 | Setting             | Env var (raw)              | Env var (.env)             | Default                  |
 | ------------------- | -------------------------- | -------------------------- | ------------------------ |

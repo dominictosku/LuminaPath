@@ -7,7 +7,7 @@ public sealed class AuthCookieOptions
 {
     public const string SectionName = "Auth";
 
-    public string CookieSameSite { get; set; } = SameSiteMode.None.ToString();
+    public string CookieSameSite { get; set; } = SameSiteMode.Lax.ToString();
     public string CookieSecurePolicy { get; set; } = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always.ToString();
 
     internal static AuthCookieOptions FromConfiguration(IConfiguration config)

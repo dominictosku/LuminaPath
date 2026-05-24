@@ -11,13 +11,13 @@ namespace LuminaPath
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddBlazor(this IServiceCollection services)
+        public static IServiceCollection AddBlazor(this IServiceCollection services, bool detailedErrors = false)
         {
             services.AddRazorComponents()
                 .AddInteractiveServerComponents()
                 .AddCircuitOptions(e =>
                 {
-                    e.DetailedErrors = true;
+                    e.DetailedErrors = detailedErrors;
                 });
 
             services.AddCascadingAuthenticationState();

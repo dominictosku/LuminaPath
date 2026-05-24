@@ -32,10 +32,32 @@ internal static class ConfigurationValues
 
     public static string[] GetCorsOrigins(this IConfiguration config)
     {
-        return config.GetSection("Cors:AllowedOrigins").Get<string[]>()
-            ?? config.GetSection("FrontendUrls").Get<string[]>()
-            ?? SplitList(config["LUMINAPATH_CORS_ORIGINS"])
-            ?? SplitList(config["FrontendUrl"])
-            ?? ["http://localhost:4200"];
+        var configured = NormalizeOrigins(config.GetSection("Cors:AllowedOrigins").Get<string[]>())
+            ?? NormalizeOrigins(config.GetSection("FrontendUrls").Get<string[]>())
+            ?? NormalizeOrigins(SplitList(config["LUMINAPATH_CORS_ORIGINS"]))
+            ?? NormalizeOrigins(SplitList(config["FrontendUrl"]));
+
+        if (configured is not null)
+        {
+            return configured;
+        }
+
+        var environment = config["ASPNETCORE_ENVIRONMENT"]
+            ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+        return string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase)
+            ? ["http://localhost:4200"]
+            : [];
+    }
+
+    private static string[]? NormalizeOrigins(string[]? origins)
+    {
+        var normalized = origins?
+            .Select(origin => origin.Trim())
+            .Where(origin => !string.IsNullOrWhiteSpace(origin))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return normalized is { Length: > 0 } ? normalized : null;
     }
 }

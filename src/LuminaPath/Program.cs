@@ -32,7 +32,7 @@ try
     builder.Services
         .AddInfrastructure(builder.Configuration)
         .AddServer()
-        .AddBlazor();
+        .AddBlazor(builder.Environment.IsDevelopment());
 
     builder.Services.AddMudServices();
     builder.Services.AddRadzenComponents();

@@ -14,9 +14,9 @@ namespace LuminaPath.Infrastructure
         /// nor the <c>LUMINAPATH_ADMIN_EMAIL</c> env var is set, AND only
         /// when no admin user exists yet. The password is intentionally
         /// long enough to satisfy the production password policy so a
-        /// fresh deployment doesn't fail at seed time. Operators should
-        /// override both via env vars on first boot — the seeder writes
-        /// a warning to the log when these defaults are in use.
+        /// fresh local deployment doesn't fail at seed time. Production
+        /// callers can force real credentials with
+        /// <paramref name="requireConfiguredAdminCredentials"/>.
         /// </summary>
         private const string DefaultAdminEmail = "admin@example.com";
         private const string DefaultAdminPassword = "ChangeMe!1AdminAccess";
@@ -25,7 +25,8 @@ namespace LuminaPath.Infrastructure
             UserManager<LuminaUser> userManager,
             RoleManager<IdentityRole> roleManager,
             IConfiguration? configuration = null,
-            ILogger? logger = null)
+            ILogger? logger = null,
+            bool requireConfiguredAdminCredentials = false)
         {
             var adminEmail = configuration?["Admin:Email"]
                 ?? Environment.GetEnvironmentVariable("LUMINAPATH_ADMIN_EMAIL")
@@ -37,10 +38,16 @@ namespace LuminaPath.Infrastructure
             if (string.Equals(adminEmail, DefaultAdminEmail, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(adminPassword, DefaultAdminPassword, StringComparison.Ordinal))
             {
+                if (requireConfiguredAdminCredentials)
+                {
+                    throw new InvalidOperationException(
+                        "Refusing to seed the bootstrap administrator with bundled default credentials. " +
+                        "Set Admin:Email and Admin:Password, or LUMINAPATH_ADMIN_EMAIL and LUMINAPATH_ADMIN_PASSWORD, before starting a non-development deployment.");
+                }
+
                 logger?.LogWarning(
                     "Seeding admin with bundled default credentials ({Email}). " +
-                    "Set Admin:Email / Admin:Password (or LUMINAPATH_ADMIN_EMAIL / LUMINAPATH_ADMIN_PASSWORD) " +
-                    "before first boot in any non-development deployment.",
+                    "Set Admin:Email / Admin:Password (or LUMINAPATH_ADMIN_EMAIL / LUMINAPATH_ADMIN_PASSWORD) before first boot.",
                     adminEmail);
             }
 

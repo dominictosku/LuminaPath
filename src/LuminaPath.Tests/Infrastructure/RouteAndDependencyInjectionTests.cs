@@ -2,13 +2,17 @@ using LuminaPath;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Controllers;
+using LuminaPath.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Components.Server;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -73,6 +77,28 @@ public class RouteAndDependencyInjectionTests
     }
 
     [Fact]
+    public void AddBlazor_DefaultsDetailedErrorsOff()
+    {
+        var services = CreateBlazorServices();
+        services.AddBlazor();
+
+        using var provider = services.BuildServiceProvider();
+
+        Assert.False(provider.GetRequiredService<IOptions<CircuitOptions>>().Value.DetailedErrors);
+    }
+
+    [Fact]
+    public void AddBlazor_EnablesDetailedErrors_WhenRequested()
+    {
+        var services = CreateBlazorServices();
+        services.AddBlazor(detailedErrors: true);
+
+        using var provider = services.BuildServiceProvider();
+
+        Assert.True(provider.GetRequiredService<IOptions<CircuitOptions>>().Value.DetailedErrors);
+    }
+
+    [Fact]
     public async Task ConfigureServer_ApiRoutesRequireAuthorizationOrKnownPublicAccess()
     {
         await using var app = BuildRoutedApp();
@@ -89,6 +115,21 @@ public class RouteAndDependencyInjectionTests
     }
 
     [Fact]
+    public async Task ConfigureServer_MvcControllerRoutesRequireAuthorization()
+    {
+        await using var app = BuildRoutedApp();
+
+        var unprotectedControllerRoutes = GetRouteEndpoints(app)
+            .Where(IsMvcControllerEndpoint)
+            .Where(endpoint => !RequiresAuthorization(endpoint) || AllowsAnonymous(endpoint))
+            .Select(DescribeEndpoint)
+            .OrderBy(value => value)
+            .ToList();
+
+        Assert.Empty(unprotectedControllerRoutes);
+    }
+
+    [Fact]
     public async Task ConfigureServer_AdminBackupDownloadRequiresAdministratorRole()
     {
         await using var app = BuildRoutedApp();
@@ -101,6 +142,87 @@ public class RouteAndDependencyInjectionTests
         Assert.True(
             RequiresRole(endpoint, "Administrator"),
             $"Expected {DescribeEndpoint(endpoint)} to require the Administrator role.");
+    }
+
+    [Fact]
+    public async Task ConfigureServer_FileUploadRequiresCatalogEditorsPolicy()
+    {
+        await using var app = BuildRoutedApp();
+
+        var endpoint = GetRouteEndpoints(app)
+            .Single(endpoint => RouteMatches(endpoint, "api/Files")
+                && GetHttpMethods(endpoint).Contains("POST"));
+
+        Assert.True(RequiresPolicy(endpoint, AuthorizationPolicies.CatalogEditors));
+    }
+
+    [Fact]
+    public async Task ConfigureServer_CatalogMediaMutationRoutesRequireCatalogEditorsPolicy()
+    {
+        await using var app = BuildRoutedApp();
+        var endpoints = GetRouteEndpoints(app);
+
+        var expected = new[]
+        {
+            ("POST", "api/Games"),
+            ("PUT", "api/Games/{id}"),
+            ("DELETE", "api/Games/{id}"),
+            ("POST", "api/Animes"),
+            ("PUT", "api/Animes/{id}"),
+            ("DELETE", "api/Animes/{id}"),
+            ("POST", "api/Movies"),
+            ("PUT", "api/Movies/{id}"),
+            ("DELETE", "api/Movies/{id}"),
+            ("POST", "api/Series"),
+            ("PUT", "api/Series/{id}"),
+            ("DELETE", "api/Series/{id}")
+        };
+
+        var missingPolicy = expected
+            .Select(route => new
+            {
+                route,
+                Endpoint = endpoints.Single(endpoint => RouteMatches(endpoint, route.Item2)
+                    && GetHttpMethods(endpoint).Contains(route.Item1))
+            })
+            .Where(item => !RequiresPolicy(item.Endpoint, AuthorizationPolicies.CatalogEditors))
+            .Select(item => $"{item.route.Item1} /{NormalizeRoute(item.route.Item2)}")
+            .ToList();
+
+        Assert.Empty(missingPolicy);
+    }
+
+    [Fact]
+    public void CatalogEditorsPolicy_AllowsOnlyAdministratorOrEditor()
+    {
+        var services = CreateServices();
+
+        using var provider = services.BuildServiceProvider(validateScopes: true);
+        var policy = provider.GetRequiredService<IOptions<AuthorizationOptions>>()
+            .Value
+            .GetPolicy(AuthorizationPolicies.CatalogEditors);
+
+        Assert.NotNull(policy);
+        var roles = policy!.Requirements
+            .OfType<RolesAuthorizationRequirement>()
+            .SelectMany(requirement => requirement.AllowedRoles)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        Assert.Equal(["Administrator", "Editor"], roles.OrderBy(role => role).ToArray());
+    }
+
+    [Fact]
+    public void DocumentsPageRequiresAdministratorOrEditorRole()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "src",
+            "LuminaPath",
+            "Features",
+            "Documents",
+            "Index.razor"));
+
+        Assert.Contains("@attribute [Authorize(Roles = \"Administrator, Editor\")]", source);
     }
 
     [Fact]
@@ -210,14 +332,28 @@ public class RouteAndDependencyInjectionTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(CreateConfigurationValues())
             .Build();
+        var environment = new TestHostEnvironment();
 
         services.AddLogging();
         services.AddSingleton<IConfiguration>(configuration);
-        services.AddSingleton<IHostEnvironment>(new TestHostEnvironment());
+        services.AddSingleton<IHostEnvironment>(environment);
+        services.AddSingleton<IWebHostEnvironment>(environment);
         services.AddScoped<IObjectMapper, ObjectMapper>();
         services
             .AddInfrastructure(configuration)
             .AddServer();
+
+        return services;
+    }
+
+    private static IServiceCollection CreateBlazorServices()
+    {
+        var services = new ServiceCollection();
+        var environment = new TestHostEnvironment();
+
+        services.AddSingleton<IHostEnvironment>(environment);
+        services.AddSingleton<IWebHostEnvironment>(environment);
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
 
         return services;
     }
@@ -275,6 +411,18 @@ public class RouteAndDependencyInjectionTests
     {
         var route = NormalizeRoute(endpoint.RoutePattern.RawText);
         return GetHttpMethods(endpoint).Any(method => PublicIdentityApiRoutes.Contains($"{method} {route}"));
+    }
+
+    private static bool IsMvcControllerEndpoint(Endpoint endpoint)
+    {
+        return endpoint.Metadata.GetMetadata<ControllerActionDescriptor>() is not null;
+    }
+
+    private static bool RequiresPolicy(Endpoint endpoint, string policy)
+    {
+        return endpoint.Metadata
+            .GetOrderedMetadata<IAuthorizeData>()
+            .Any(data => string.Equals(data.Policy, policy, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool RequiresRole(Endpoint endpoint, string role)
@@ -360,12 +508,31 @@ public class RouteAndDependencyInjectionTests
         };
     }
 
-    private sealed class TestHostEnvironment : IHostEnvironment
+    private static string FindRepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "src", "LuminaPath", "LuminaPath.csproj")))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new DirectoryNotFoundException("Could not locate the LuminaPath repository root.");
+    }
+
+    private sealed class TestHostEnvironment : IWebHostEnvironment
     {
         public string EnvironmentName { get; set; } = Environments.Production;
         public string ApplicationName { get; set; } = "LuminaPath.Tests";
         public string ContentRootPath { get; set; } = Path.Combine(Path.GetTempPath(), "LuminaPath.Tests");
         public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; }
+            = new Microsoft.Extensions.FileProviders.NullFileProvider();
+        public string WebRootPath { get; set; } = Path.Combine(Path.GetTempPath(), "LuminaPath.Tests", "wwwroot");
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; }
             = new Microsoft.Extensions.FileProviders.NullFileProvider();
     }
 }

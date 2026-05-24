@@ -107,6 +107,12 @@ Use the lightweight deployment files if you want to run LuminaPath from prebuilt
 ```powershell
 cd deploy
 Copy-Item .env.example .env
+```
+
+Edit `.env` and set `POSTGRES_PASSWORD`, `FRONTEND_PUBLIC_URL`,
+`LUMINAPATH_ADMIN_EMAIL`, and `LUMINAPATH_ADMIN_PASSWORD`, then start:
+
+```powershell
 docker compose --env-file .env up -d
 ```
 
@@ -114,10 +120,13 @@ Open Angular at `http://localhost:4200` or the backend at `http://localhost:8080
 
 Use the root Compose files below when you want to build the images yourself from source.
 
-Copy the example environment file and adjust passwords/ports if needed:
+Create `.env` with the same required production values:
 
-```powershell
-Copy-Item .env.example .env
+```text
+POSTGRES_PASSWORD=your-strong-password
+FRONTEND_PUBLIC_URL=https://luminapath.yourdomain.com
+LUMINAPATH_ADMIN_EMAIL=you@example.com
+LUMINAPATH_ADMIN_PASSWORD=your-strong-admin-password
 ```
 
 Start the backend and PostgreSQL:
@@ -174,19 +183,23 @@ FRONTEND_HTTP_PORT=4200
 POSTGRES_PORT=5432
 POSTGRES_DB=luminapath
 POSTGRES_USER=luminapath
-POSTGRES_PASSWORD=change-me
+POSTGRES_PASSWORD=your-strong-password
+FRONTEND_PUBLIC_URL=https://luminapath.yourdomain.com
+LUMINAPATH_ADMIN_EMAIL=you@example.com
+LUMINAPATH_ADMIN_PASSWORD=your-strong-admin-password
 ```
 
 Backend variables:
 
 ```text
 ASPNETCORE_ENVIRONMENT=Production
-ConnectionStrings__Default=Host=db;Port=5432;Database=luminapath;Username=luminapath;Password=change-me;
+ConnectionStrings__Default=Host=db;Port=5432;Database=luminapath;Username=luminapath;Password=your-strong-password;
 RUN_MIGRATIONS_ON_STARTUP=false
 HTTPS_REDIRECT=false
 Storage__Provider=FileSystem
 Storage__Path=/app/App_Data/storage
-Cors__AllowedOrigins__0=http://localhost:4200
+Cors__AllowedOrigins__0=https://luminapath.yourdomain.com
+Auth__CookieSameSite=Lax
 ```
 
 Azure Blob storage, if you do not want file-system storage:
@@ -498,12 +511,15 @@ ANDROID_KEY_PASSWORD
 
 ## Seeded Login
 
-Development seeding creates:
+Development fallback seeding creates:
 
 ```text
 Email:    admin@example.com
-Password: Admin123*
+Password: ChangeMe!1AdminAccess
 ```
+
+Production startup refuses those bundled credentials, so set
+`LUMINAPATH_ADMIN_EMAIL` and `LUMINAPATH_ADMIN_PASSWORD` before first boot.
 
 Roles:
 
