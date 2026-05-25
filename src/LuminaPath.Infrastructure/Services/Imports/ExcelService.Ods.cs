@@ -1,3 +1,7 @@
+using LuminaPath.Core.Enums;
+using LuminaPath.Core.Models.ThirdParty;
+using LuminaPath.Infrastructure.Identity;
+using LuminaPath.Infrastructure.Services.Imports;
 using System.Globalization;
 using System.IO.Compression;
 using System.Xml.Linq;
@@ -6,6 +10,137 @@ namespace LuminaPath.Infrastructure.Services;
 
 public partial class ExcelService
 {
+    private async Task<GameExcelImportResult> ImportOdsGamesAsync(Stream stream, LuminaUser user)
+    {
+        var rows = ReadOdsRows(stream);
+        var result = new GameExcelImportResult();
+        var items = new List<GameImportItem>();
+
+        foreach (var row in rows)
+        {
+            var name = GetOdsText(row, "name");
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            try
+            {
+                items.Add(BuildImportItem(row, name));
+            }
+            catch (Exception ex)
+            {
+                result.Errors.Add($"Row {row.RowNumber}: {ex.Message}");
+            }
+        }
+
+        var importResult = await _importPipeline.ImportAsync(user, items);
+        result.RowsImported += importResult.RowsImported;
+        result.CreatedGames += importResult.CreatedGames;
+        result.UpdatedGames += importResult.UpdatedGames;
+        result.CreatedMyGames += importResult.CreatedMyGames;
+        result.UpdatedMyGames += importResult.UpdatedMyGames;
+        result.Errors.AddRange(importResult.Errors);
+
+        return result;
+    }
+
+    private async Task<GameExcelPreviewResult> PreviewOdsGamesAsync(Stream stream, LuminaUser user)
+    {
+        var rows = ReadOdsRows(stream);
+        var result = new GameExcelPreviewResult();
+        var previewRows = new List<GameExcelPreviewRow>();
+        var items = new List<GameImportItem>();
+
+        foreach (var row in rows)
+        {
+            var name = GetOdsText(row, "name");
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            var previewRow = new GameExcelPreviewRow
+            {
+                RowNumber = row.RowNumber,
+                Name = name,
+                Platform = GetOdsText(row, "platform") ?? string.Empty,
+                Status = GetOdsText(row, "status") ?? string.Empty,
+                Source = GetOdsText(row, "source") ?? "ODS",
+                PsnId = GetOdsText(row, "psnid", "psn id", "psn") ?? string.Empty,
+                TrackedHours = GetOdsDouble(row, "trackedhours", "playtimeinhours"),
+            };
+
+            try
+            {
+                items.Add(BuildImportItem(row, name));
+            }
+            catch (Exception ex)
+            {
+                previewRow.Error = ex.Message;
+                previewRow.ChangeType = "Error";
+                result.Errors.Add($"Row {row.RowNumber}: {ex.Message}");
+            }
+
+            previewRows.Add(previewRow);
+        }
+
+        var pipelinePreview = await _importPipeline.PreviewAsync(user, items);
+        result.RowsDetected = pipelinePreview.RowsDetected;
+        result.DuplicateRows = pipelinePreview.DuplicateRows;
+        result.CreatedGames = pipelinePreview.CreatedGames;
+        result.UpdatedGames = pipelinePreview.UpdatedGames;
+        result.CreatedMyGames = pipelinePreview.CreatedMyGames;
+        result.UpdatedMyGames = pipelinePreview.UpdatedMyGames;
+        result.Errors.AddRange(pipelinePreview.Errors);
+
+        var pipelineRowsByNumber = pipelinePreview.Rows.ToDictionary(row => row.RowNumber);
+        foreach (var previewRow in previewRows)
+        {
+            pipelineRowsByNumber.TryGetValue(previewRow.RowNumber, out var pipelineRow);
+            previewRow.GameAction = pipelineRow?.GameAction ?? previewRow.GameAction;
+            previewRow.LibraryAction = pipelineRow?.LibraryAction ?? previewRow.LibraryAction;
+            previewRow.ChangeType = pipelineRow?.ChangeType ?? previewRow.ChangeType;
+            previewRow.Error = string.IsNullOrWhiteSpace(previewRow.Error)
+                ? pipelineRow?.Error ?? string.Empty
+                : previewRow.Error;
+            result.Rows.Add(previewRow);
+        }
+
+        return result;
+    }
+
+    private static GameImportItem BuildImportItem(OdsRow row, string name)
+    {
+        var psnId = GetOdsText(row, "psnid", "psn id", "psn");
+        var platform = GetOdsText(row, "platform");
+        var genres = GetOdsText(row, "genre", "genres");
+        var status = GetOdsText(row, "status");
+
+        return new GameImportItem
+        {
+            RowNumber = row.RowNumber,
+            Name = name,
+            Description = GetOdsText(row, "description"),
+            Source = GetOdsText(row, "source") ?? "ODS",
+            ReleaseDate = ToUtcDate(GetOdsDate(row, "releasedate")),
+            Platforms = string.IsNullOrWhiteSpace(platform) ? 0 : ParsePlatforms(platform),
+            Genres = string.IsNullOrWhiteSpace(genres) ? new List<string>() : SplitList(genres).ToList(),
+            Playtime = GetOdsInt(row, "playtime", "estimatedplaytime"),
+            ExternalProvider = string.IsNullOrWhiteSpace(psnId) ? null : ExternalMediaProvider.Psn,
+            ExternalId = psnId,
+            Status = string.IsNullOrWhiteSpace(status) ? GameStatus.Planned : ParseStatus(status),
+            Priority = GetOdsInt(row, "priority") ?? 0,
+            Rating = GetOdsShort(row, "rating"),
+            StartDate = ToUtcDate(GetOdsDate(row, "startdate", "startedon")),
+            EndDate = ToUtcDate(GetOdsDate(row, "enddate", "finishedon")),
+            TimeSpend = GetOdsDouble(row, "timespend", "timespent"),
+            FirstPlayed = ToUtcDate(GetOdsDate(row, "firstplayed")),
+            LastPlayed = ToUtcDate(GetOdsDate(row, "lastplayed")),
+            TrackedHours = GetOdsDouble(row, "trackedhours", "playtimeinhours"),
+        };
+    }
+
     private static bool IsOdsWorkbook(Stream stream, string? fileName)
     {
         if (fileName?.EndsWith(".ods", StringComparison.OrdinalIgnoreCase) == true)
