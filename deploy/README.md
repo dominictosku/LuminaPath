@@ -10,11 +10,10 @@ Copy the example environment file:
 Copy-Item .env.example .env
 ```
 
-Edit `.env` and set at least:
+Edit `.env` and set the required first-run values:
 
 ```text
 POSTGRES_PASSWORD=your-strong-password
-FRONTEND_PUBLIC_URL=https://luminapath.yourdomain.com
 LUMINAPATH_ADMIN_EMAIL=you@example.com
 LUMINAPATH_ADMIN_PASSWORD=your-strong-admin-password
 ```
@@ -42,10 +41,13 @@ http://localhost:8080
 
 ## Homelab Domains
 
-If you put LuminaPath behind a reverse proxy, set the public frontend URL:
+The included frontend container uses `/api` and proxies requests to the
+backend container, so you usually do not need CORS configuration.
+
+When the frontend and API are served through the same public origin, keep the
+default cookie settings:
 
 ```text
-FRONTEND_PUBLIC_URL=https://luminapath.yourdomain.com
 AUTH_COOKIE_SAMESITE=Lax
 AUTH_COOKIE_SECURE_POLICY=Always
 ```
@@ -59,9 +61,15 @@ LUMINAPATH_API_PROXY_TARGET=http://luminapath-api:8080
 
 The frontend container proxies `/api` to the backend container internally.
 
-Only add additional CORS origins when you intentionally serve the frontend
-from a different origin than the API. If you do that, set exact HTTPS origins
-and use `AUTH_COOKIE_SAMESITE=None` only for those cross-site cookie flows.
+Only add a CORS origin when you intentionally serve the frontend from a
+different origin than the API. If you do that, set the exact HTTPS frontend
+origin and allow cross-site cookies:
+
+```text
+FRONTEND_PUBLIC_URL=https://luminapath.yourdomain.com
+AUTH_COOKIE_SAMESITE=None
+AUTH_COOKIE_SECURE_POLICY=Always
+```
 
 ## Updating
 
@@ -83,8 +91,10 @@ LUMINAPATH_FRONTEND_IMAGE=dominictosku/luminapath-frontend:1.2.3
 
 ## For developers
 
+```powershell
 $env:LUMINAPATH_API_IMAGE="sekijuo/luminapath-api:latest" 
 $env:LUMINAPATH_FRONTEND_IMAGE="sekijuo/luminapath-frontend:latest"
 docker compose --env-file .env -f docker-compose.yml -f docker-compose.frontend.yml build
 docker push sekijuo/luminapath-api:latest  
 docker push sekijuo/luminapath-frontend:latest
+```

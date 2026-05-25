@@ -20,6 +20,10 @@ from the required values shown below) and maps friendly SCREAMING_SNAKE_CASE
 names onto the `__`-style env vars the .NET host expects. See
 `docker-compose.yml` for the mapping table.
 
+Most deployment settings have code or Compose defaults. Keep `.env` small:
+set the database password and bootstrap admin values first, then add optional
+overrides only when your deployment actually needs them.
+
 ### Seed admin credentials
 
 On first boot — when no admin user exists yet — the backend creates one

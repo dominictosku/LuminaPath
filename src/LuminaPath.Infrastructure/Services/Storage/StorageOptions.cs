@@ -10,7 +10,7 @@ public sealed partial class StorageOptions
     public const string AzureProvider = "Azure";
     public const string FileSystemProvider = "FileSystem";
 
-    public string Provider { get; set; } = AzureProvider;
+    public string Provider { get; set; } = FileSystemProvider;
     public string Path { get; set; } = System.IO.Path.Combine("App_Data", "storage");
     public string AzureBlobConnectionString { get; set; } = string.Empty;
     public string AzureBlobContainerName { get; set; } = "media";
@@ -30,8 +30,8 @@ public sealed partial class StorageOptions
     {
         options.Provider = ConfigurationValues.FirstNonEmpty(
                 options.Provider,
-                AzureProvider)
-            ?? AzureProvider;
+                FileSystemProvider)
+            ?? FileSystemProvider;
 
         options.Path = ConfigurationValues.FirstNonEmpty(
                 options.Path,
@@ -39,16 +39,19 @@ public sealed partial class StorageOptions
             ?? System.IO.Path.Combine("App_Data", "storage");
 
         options.AzureBlobConnectionString = ConfigurationValues.FirstNonEmpty(
-                options.AzureBlobConnectionString,
+                config.GetSection(SectionName)["AzureBlobConnectionString"],
                 config.GetSection("Azure")["BlobConnectionString"],
-                config["AZURE_CONNECTIONSTRING"])
+                config["AZURE_CONNECTIONSTRING"],
+                options.AzureBlobConnectionString)
             ?? string.Empty;
 
         options.AzureBlobContainerName = ConfigurationValues.FirstNonEmpty(
-                options.AzureBlobContainerName,
+                config.GetSection(SectionName)["AzureBlobContainerName"],
                 config.GetSection("Azure")["BlobContainerName"],
-                config["AZURE_CONTAINER_NAME"])
-            ?? string.Empty;
+                config["AZURE_CONTAINER_NAME"],
+                options.AzureBlobContainerName,
+                "media")
+            ?? "media";
     }
 
     internal static bool IsSupportedProvider(StorageOptions options)

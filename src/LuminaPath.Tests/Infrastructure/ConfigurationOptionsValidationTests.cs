@@ -1,6 +1,7 @@
 using LuminaPath.Core.Mapping;
 using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Identity;
+using LuminaPath.Infrastructure.Services.Storage;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -60,10 +61,43 @@ public class ConfigurationOptionsValidationTests
     }
 
     [Fact]
+    public async Task AddInfrastructure_AzureStorageReadsAzureSectionContainerName()
+    {
+        await using var provider = BuildProvider(new Dictionary<string, string?>
+        {
+            ["Storage:Provider"] = "Azure",
+            ["Azure:BlobConnectionString"] = "UseDevelopmentStorage=true",
+            ["Azure:BlobContainerName"] = "custom-media"
+        });
+
+        var options = provider.GetRequiredService<IOptions<StorageOptions>>().Value;
+
+        Assert.Equal("UseDevelopmentStorage=true", options.AzureBlobConnectionString);
+        Assert.Equal("custom-media", options.AzureBlobContainerName);
+    }
+
+    [Fact]
     public async Task AddInfrastructure_ProductionConfigurationWithoutCorsOrigins_UsesNoLocalhostFallback()
     {
         var configurationValues = CreateValidConfiguration();
         configurationValues.Remove("Cors:AllowedOrigins:0");
+
+        await using var provider = BuildProviderFromValues(configurationValues);
+
+        var policy = provider.GetRequiredService<IOptions<CorsOptions>>()
+            .Value
+            .GetPolicy(global::LuminaPath.Infrastructure.DependencyInjection.MyAllowSpecificOrigins);
+
+        Assert.NotNull(policy);
+        Assert.Empty(policy!.Origins);
+        Assert.True(policy.SupportsCredentials);
+    }
+
+    [Fact]
+    public async Task AddInfrastructure_ProductionConfigurationWithBlankCorsOrigin_UsesNoOrigins()
+    {
+        var configurationValues = CreateValidConfiguration();
+        configurationValues["Cors:AllowedOrigins:0"] = string.Empty;
 
         await using var provider = BuildProviderFromValues(configurationValues);
 
@@ -100,6 +134,23 @@ public class ConfigurationOptionsValidationTests
         var options = new AuthCookieOptions();
 
         Assert.Equal("Lax", options.CookieSameSite);
+    }
+
+    [Fact]
+    public void AuthRegistrationOptions_DefaultsToRequireAdminApproval()
+    {
+        var options = new AuthRegistrationOptions();
+
+        Assert.True(options.RequireAdminApproval);
+    }
+
+    [Fact]
+    public void StorageOptions_DefaultsToFileSystemStorage()
+    {
+        var options = new StorageOptions();
+
+        Assert.Equal(StorageOptions.FileSystemProvider, options.Provider);
+        Assert.True(options.UsesFileSystem);
     }
 
     private static ServiceProvider BuildProvider(Dictionary<string, string?>? overrides = null)

@@ -109,8 +109,8 @@ cd deploy
 Copy-Item .env.example .env
 ```
 
-Edit `.env` and set `POSTGRES_PASSWORD`, `FRONTEND_PUBLIC_URL`,
-`LUMINAPATH_ADMIN_EMAIL`, and `LUMINAPATH_ADMIN_PASSWORD`, then start:
+Edit `.env` and set `POSTGRES_PASSWORD`, `LUMINAPATH_ADMIN_EMAIL`,
+and `LUMINAPATH_ADMIN_PASSWORD`, then start:
 
 ```powershell
 docker compose --env-file .env up -d
@@ -124,10 +124,14 @@ Create `.env` with the same required production values:
 
 ```text
 POSTGRES_PASSWORD=your-strong-password
-FRONTEND_PUBLIC_URL=https://luminapath.yourdomain.com
 LUMINAPATH_ADMIN_EMAIL=you@example.com
 LUMINAPATH_ADMIN_PASSWORD=your-strong-admin-password
 ```
+
+`FRONTEND_PUBLIC_URL` is optional when the included frontend proxies `/api`
+same-origin. Set it only when a browser talks to the backend API from a
+different public origin; cross-site cookie deployments should also set
+`AUTH_COOKIE_SAMESITE=None` with `AUTH_COOKIE_SECURE_POLICY=Always`.
 
 Start the backend and PostgreSQL:
 
@@ -174,40 +178,32 @@ Use `--profile nvidia` instead on NVIDIA hosts. This starts `vllm` at `http://lo
 ## Environment Variables
 
 All deployment-specific values are controlled through `.env` or normal ASP.NET environment variables.
+Most knobs have defaults in Docker Compose or the backend option classes.
 
-Core Docker variables:
+Required Docker variables:
 
 ```text
-BACKEND_HTTP_PORT=8080
-FRONTEND_HTTP_PORT=4200
-POSTGRES_PORT=5432
-POSTGRES_DB=luminapath
-POSTGRES_USER=luminapath
 POSTGRES_PASSWORD=your-strong-password
-FRONTEND_PUBLIC_URL=https://luminapath.yourdomain.com
 LUMINAPATH_ADMIN_EMAIL=you@example.com
 LUMINAPATH_ADMIN_PASSWORD=your-strong-admin-password
 ```
 
-Backend variables:
+Common optional Docker variables:
 
 ```text
-ASPNETCORE_ENVIRONMENT=Production
-ConnectionStrings__Default=Host=db;Port=5432;Database=luminapath;Username=luminapath;Password=your-strong-password;
+BACKEND_HTTP_PORT=8080
+FRONTEND_HTTP_PORT=4200
 RUN_MIGRATIONS_ON_STARTUP=false
-HTTPS_REDIRECT=false
-Storage__Provider=FileSystem
-Storage__Path=/app/App_Data/storage
-Cors__AllowedOrigins__0=https://luminapath.yourdomain.com
-Auth__CookieSameSite=Lax
+AUTH_REQUIRE_ADMIN_APPROVAL=true
+FRONTEND_PUBLIC_URL=https://luminapath.yourdomain.com
 ```
 
 Azure Blob storage, if you do not want file-system storage:
 
 ```text
-Storage__Provider=Azure
-Azure__BlobConnectionString=...
-Azure__BlobContainerName=media
+STORAGE_PROVIDER=Azure
+AZURE_BLOB_CONNECTION_STRING=...
+AZURE_BLOB_CONTAINER_NAME=media
 ```
 
 Angular runtime variable:
