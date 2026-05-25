@@ -1,6 +1,6 @@
 using LuminaPath.Core.Dtos;
+using LuminaPath.Infrastructure.RateLimiting;
 using LuminaPath.Infrastructure.Services.ModelServices;
-using LuminaPath.Infrastructure.Services.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;

@@ -4,8 +4,8 @@ using LuminaPath.Core.Enums;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Base;
-using LuminaPath.Infrastructure.Extensions;
 using LuminaPath.Infrastructure.Services.Auditing;
+using LuminaPath.Infrastructure.Services.ModelServices.Base;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -448,9 +448,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
         protected virtual async Task<PaginatedList<MediaDocument>> CreatePaginatedList(IQueryable<MediaDocument> entities, Paging paging)
         {
-            int pageIndex = paging.PageIndex;
-            int pageSize = paging.EffectiveCount;
-            return await entities.ToPaginatedListAsync(pageIndex, pageSize);
+            return await PaginationFactory.CreateAsync(entities, paging);
         }
 
         protected virtual IQueryable<MediaDocument> PrepareEntity(

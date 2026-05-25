@@ -1,6 +1,6 @@
 using System.Threading.RateLimiting;
 
-namespace LuminaPath.Infrastructure.Services.RateLimiting;
+namespace LuminaPath.Infrastructure.RateLimiting;
 
 public sealed class UserActionRateLimiter : IDisposable
 {

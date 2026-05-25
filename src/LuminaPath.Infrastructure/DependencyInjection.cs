@@ -1,16 +1,13 @@
 using System.Reflection;
-using System.Globalization;
-using System.Security.Claims;
-using System.Threading.RateLimiting;
 using FluentValidation;
 using LuminaPath.Infrastructure.Configuration;
 using LuminaPath.Infrastructure.Hubs;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Middleware;
+using LuminaPath.Infrastructure.RateLimiting;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.AiChat;
 using LuminaPath.Infrastructure.Services.Auditing;
-using LuminaPath.Infrastructure.Services.RateLimiting;
 using LuminaPath.Infrastructure.Services.ThirdParty;
 using LuminaPath.Infrastructure.Validators;
 using Microsoft.AspNetCore.Builder;
@@ -18,7 +15,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,10 +35,9 @@ namespace LuminaPath.Infrastructure
             services.AddApplicationServices(config);
             services.AddThirdPartyIntegrations(config);
             services.AddAiChatServices(config);
-            services.AddSingleton<UserActionRateLimiter>();
             AddCache(services, config);
             AddCors(services, config);
-            AddRateLimits(services);
+            services.AddLuminaPathRateLimiting();
             services.AddSignalR(options =>
             {
                 options.MaximumReceiveMessageSize = 16 * 1024;
@@ -67,150 +62,6 @@ namespace LuminaPath.Infrastructure
                 // tailored "awaiting approval" message can't be shown.
                 .WithExposedHeaders(LoginBlockedReason.ResponseHeaderName)));
         }
-
-        private static void AddRateLimits(IServiceCollection services)
-        {
-            services.AddRateLimiter(options =>
-            {
-                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-                options.OnRejected = async (context, cancellationToken) =>
-                {
-                    if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
-                    {
-                        context.HttpContext.Response.Headers["Retry-After"] =
-                            Math.Ceiling(retryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture);
-                    }
-
-                    await context.HttpContext.Response.WriteAsync(
-                        "Too many requests. Please wait and try again.",
-                        cancellationToken);
-                };
-
-                options.AddPolicy(RateLimitPolicies.ChatStreaming, context => CreateUserOrIpFixedWindow(
-                    context,
-                    RateLimitPolicies.ChatStreaming,
-                    permitLimit: 10,
-                    window: TimeSpan.FromMinutes(1)));
-
-                options.AddPolicy(RateLimitPolicies.Imports, context => CreateUserOrIpFixedWindow(
-                    context,
-                    RateLimitPolicies.Imports,
-                    permitLimit: 6,
-                    window: TimeSpan.FromHours(1)));
-
-                options.AddPolicy(RateLimitPolicies.Uploads, context => CreateUserOrIpFixedWindow(
-                    context,
-                    RateLimitPolicies.Uploads,
-                    permitLimit: 30,
-                    window: TimeSpan.FromMinutes(10)));
-
-                options.AddPolicy(RateLimitPolicies.DirectMessages, context => CreateUserOrIpFixedWindow(
-                    context,
-                    RateLimitPolicies.DirectMessages,
-                    permitLimit: 60,
-                    window: TimeSpan.FromMinutes(1)));
-
-                options.AddPolicy(RateLimitPolicies.BroadReads, context => CreateUserOrIpFixedWindow(
-                    context,
-                    RateLimitPolicies.BroadReads,
-                    permitLimit: 120,
-                    window: TimeSpan.FromMinutes(1)));
-
-                options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-                {
-                    var profile = GetAuthRateLimitProfile(context.Request);
-                    if (profile is null)
-                    {
-                        return RateLimitPartition.GetNoLimiter("non-auth");
-                    }
-
-                    var partitionKey = $"{profile.Name}:{GetClientIp(context)}";
-                    return RateLimitPartition.GetFixedWindowLimiter(
-                        partitionKey,
-                        _ => new FixedWindowRateLimiterOptions
-                        {
-                            AutoReplenishment = true,
-                            PermitLimit = profile.PermitLimit,
-                            QueueLimit = 0,
-                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                            Window = profile.Window
-                        });
-                });
-            });
-        }
-
-        private static RateLimitPartition<string> CreateUserOrIpFixedWindow(
-            HttpContext context,
-            string policyName,
-            int permitLimit,
-            TimeSpan window)
-        {
-            return RateLimitPartition.GetFixedWindowLimiter(
-                GetUserOrIpPartitionKey(context, policyName),
-                _ => new FixedWindowRateLimiterOptions
-                {
-                    AutoReplenishment = true,
-                    PermitLimit = permitLimit,
-                    QueueLimit = 0,
-                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                    Window = window
-                });
-        }
-
-        private static string GetUserOrIpPartitionKey(HttpContext context, string policyName)
-        {
-            var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var actorKey = string.IsNullOrWhiteSpace(userId)
-                ? $"ip:{GetClientIp(context)}"
-                : $"user:{userId}";
-
-            return $"{policyName}:{actorKey}";
-        }
-
-        private static AuthRateLimitProfile? GetAuthRateLimitProfile(HttpRequest request)
-        {
-            if (!HttpMethods.IsPost(request.Method))
-            {
-                return null;
-            }
-
-            var path = request.Path.Value ?? string.Empty;
-            if (IsPath(path, "/api/login")
-                || IsPath(path, "/Account/Login")
-                || IsPath(path, "/Account/LoginWith2fa")
-                || IsPath(path, "/Account/LoginWithRecoveryCode"))
-            {
-                return new AuthRateLimitProfile("login", 10, TimeSpan.FromMinutes(5));
-            }
-
-            if (IsPath(path, "/api/register")
-                || IsPath(path, "/Account/Register")
-                || IsPath(path, "/Account/ExternalLogin"))
-            {
-                return new AuthRateLimitProfile("register", 5, TimeSpan.FromHours(1));
-            }
-
-            if (IsPath(path, "/api/forgotPassword")
-                || IsPath(path, "/api/resendConfirmationEmail")
-                || IsPath(path, "/Account/ForgotPassword"))
-            {
-                return new AuthRateLimitProfile("email", 5, TimeSpan.FromHours(1));
-            }
-
-            return null;
-        }
-
-        private static bool IsPath(string actual, string expected)
-        {
-            return string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static string GetClientIp(HttpContext context)
-        {
-            return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        }
-
-        private sealed record AuthRateLimitProfile(string Name, int PermitLimit, TimeSpan Window);
 
         public static async Task MigrateDatabase(this WebApplication app)
         {

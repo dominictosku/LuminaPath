@@ -2,7 +2,6 @@ using LuminaPath.Core.Entities;
 using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
-using LuminaPath.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -65,12 +64,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             }
 
             var mappedEntities = _mapper.Map<IEnumerable<TEntity>, IEnumerable<Dto>>(paginatedEntities);
-            int pageSize = mediaFilter.Paging.EffectiveCount;
-            return new PaginatedList<Dto>(
-                mappedEntities.ToList(),
-                paginatedEntities.TotalCount,
-                paginatedEntities.PageIndex,
-                pageSize);
+            return PaginationFactory.FromMapped(paginatedEntities, mappedEntities, mediaFilter.Paging);
         }
 
         public virtual async Task<TEntity> GetById(int? id, IEnumerable<string>? includes = null)
@@ -153,15 +147,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
 
         protected virtual async Task<PaginatedList<TEntity>> CreatePaginatedList(IQueryable<TEntity> entities, Paging paging)
         {
-            int pageIndex = paging.PageIndex;
-            int pageSize = paging.EffectiveCount;
-            return await entities.ToPaginatedListAsync(pageIndex, pageSize);
+            return await PaginationFactory.CreateAsync(entities, paging);
         }
 
         protected virtual PaginatedList<TDto> CreatePaginatedList<TDto>(IEnumerable<TDto> entities, Paging paging)
         {
-            int pageIndex = paging.PageIndex;
-            return PaginatedList<TDto>.Create(entities, pageIndex, paging.EffectiveCount);
+            return PaginationFactory.Create(entities, paging);
         }
 
         protected virtual IQueryable<TEntity> PrepareEntity(

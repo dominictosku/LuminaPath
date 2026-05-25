@@ -234,12 +234,7 @@ public abstract class MediaModelService<TMedia, TUserMedia> : GenericModelServic
             : await GetAllPaginated<TMedia>(mediaFilter, GetDefaultIncludes(includes), filter, query => ApplyOrdering(query, mediaFilter, userId));
 
         var entitiesDto = _mapper.Map<IEnumerable<TMedia>, IEnumerable<TDto>>(entities);
-        var pageSize = mediaFilter.Paging.EffectiveCount;
-        return new PaginatedList<TDto>(
-            entitiesDto.ToList(),
-            entities.TotalCount,
-            entities.PageIndex,
-            pageSize);
+        return PaginationFactory.FromMapped(entities, entitiesDto, mediaFilter.Paging);
     }
 
     public virtual async Task<TDto> GetByIdAndMap<TDto>(int? id, IEnumerable<string> includes, string? userId)
