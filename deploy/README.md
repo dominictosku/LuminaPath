@@ -32,14 +32,25 @@ Open:
 http://localhost:4200
 ```
 
-The frontend container proxies `/api` to the backend container internally.
-PostgreSQL and Redis are only reachable on the Docker network.
+The frontend container proxies `/api`, `/Account`, `/Admin` and Blazor
+resources to the backend container internally. PostgreSQL, Redis and the
+backend API are only reachable on the Docker network by default.
 
-The backend API is exposed at:
+If you want direct local access to the backend API or the full Blazor app,
+start with the optional backend-port overlay:
+
+```powershell
+docker compose --env-file .env -f docker-compose.yml -f docker-compose.backend.yml up -d
+```
+
+The overlay binds the backend to:
 
 ```text
 http://localhost:8080
 ```
+
+Set `BACKEND_HTTP_BIND=0.0.0.0` only when you intentionally want that backend
+port reachable from other machines.
 
 ## Homelab Domains
 
@@ -61,7 +72,8 @@ LUMINAPATH_API_ENDPOINT=/api
 LUMINAPATH_API_PROXY_TARGET=http://luminapath-api:8080
 ```
 
-The frontend container proxies `/api` to the backend container internally.
+The frontend container proxies app API and Blazor admin/account paths to the
+backend container internally.
 
 Only add a CORS origin when you intentionally serve the frontend from a
 different origin than the API. If you do that, set the exact HTTPS frontend

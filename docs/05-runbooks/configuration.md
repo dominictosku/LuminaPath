@@ -40,7 +40,8 @@ keys where needed.
 |---|---|---|
 | `LUMINAPATH_API_IMAGE` | Root: `luminapath-api:local`; deploy: `dominictosku/luminapath-api:latest` | Pin this to a release tag for stable installs. |
 | `LUMINAPATH_FRONTEND_IMAGE` | Root: `luminapath-frontend:local`; deploy: `dominictosku/luminapath-frontend:latest` | Pin this to the same release tag as the API. |
-| `BACKEND_HTTP_PORT` | `8080` | Host port for the API and Blazor admin. |
+| `BACKEND_HTTP_PORT` | `8080` | Host port for the API and Blazor admin. Deploy uses this only with `deploy/docker-compose.backend.yml`. |
+| `BACKEND_HTTP_BIND` | `127.0.0.1` | Deploy backend-port overlay bind address. Set `0.0.0.0` only when intentionally exposing the backend port. |
 | `FRONTEND_HTTP_PORT` | `4200` | Host port for the Angular frontend container. |
 | `POSTGRES_PORT` | `5432` | Root development compose only. Bound to `127.0.0.1`. |
 | `REDIS_PORT` | `6379` | Root development compose only. Bound to `127.0.0.1`. |
@@ -77,6 +78,16 @@ Guardrails:
 - `AUTH_COOKIE_SAMESITE=None` with anything except
   `AUTH_COOKIE_SECURE_POLICY=Always` fails startup validation.
 
+## Startup summary and warnings
+
+On startup the backend logs a redacted configuration summary with safe values
+only: environment, whether database/Redis are configured, storage provider,
+migration switch, CORS origin count, cookie modes, admin-approval switch, AI
+provider and scheduled-job switch.
+
+It never logs passwords, connection strings, API keys or the bootstrap admin
+email/password.
+
 ## HTTPS and reverse proxies
 
 | Variable | Default | Notes |
@@ -110,6 +121,11 @@ Azure__BlobContainerName=media
 |---|---|---|
 | `LUMINAPATH_API_ENDPOINT` | `/api` | Browser-facing API endpoint. Keep `/api` with the included frontend container. |
 | `LUMINAPATH_API_PROXY_TARGET` | Root: `http://api:8080`; deploy: `http://luminapath-api:8080` | Nginx target inside the Docker network. |
+
+The deploy frontend also proxies `/Account`, `/Admin`, `/_blazor`,
+`/_content` and `/_framework` to the backend. This keeps the default deploy
+path to a single public frontend port while preserving access to the Blazor
+admin and account flows.
 
 ## AI assistant
 

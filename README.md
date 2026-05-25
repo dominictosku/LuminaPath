@@ -116,7 +116,13 @@ and `LUMINAPATH_ADMIN_PASSWORD`, then start:
 docker compose --env-file .env up -d
 ```
 
-Open Angular at `http://localhost:4200` or the backend at `http://localhost:8080`.
+Open Angular at `http://localhost:4200`. The deploy frontend proxies `/api`,
+`/Account`, and `/Admin` to the backend internally. For direct local backend
+access, add the optional backend-port overlay:
+
+```powershell
+docker compose --env-file .env -f docker-compose.yml -f docker-compose.backend.yml up -d
+```
 
 Use the root Compose files below when you want to build the images yourself from source.
 
