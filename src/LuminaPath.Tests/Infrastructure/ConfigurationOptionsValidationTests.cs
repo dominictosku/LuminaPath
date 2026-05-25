@@ -61,6 +61,21 @@ public class ConfigurationOptionsValidationTests
     }
 
     [Fact]
+    public async Task AddInfrastructure_SameSiteNoneWithoutSecureAlways_FailsStartupOptionsValidation()
+    {
+        await using var provider = BuildProvider(new Dictionary<string, string?>
+        {
+            ["Auth:CookieSameSite"] = "None",
+            ["Auth:CookieSecurePolicy"] = "SameAsRequest"
+        });
+
+        var exception = Assert.Throws<OptionsValidationException>(() =>
+            provider.GetRequiredService<IStartupValidator>().Validate());
+
+        Assert.Contains("Auth:CookieSecurePolicy must be Always", string.Join(" ", exception.Failures));
+    }
+
+    [Fact]
     public async Task AddInfrastructure_AzureStorageReadsAzureSectionContainerName()
     {
         await using var provider = BuildProvider(new Dictionary<string, string?>

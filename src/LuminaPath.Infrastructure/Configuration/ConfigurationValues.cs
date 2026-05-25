@@ -32,12 +32,8 @@ internal static class ConfigurationValues
 
     public static string[] GetCorsOrigins(this IConfiguration config)
     {
-        var configured = NormalizeOrigins(config.GetSection("Cors:AllowedOrigins").Get<string[]>())
-            ?? NormalizeOrigins(config.GetSection("FrontendUrls").Get<string[]>())
-            ?? NormalizeOrigins(SplitList(config["LUMINAPATH_CORS_ORIGINS"]))
-            ?? NormalizeOrigins(SplitList(config["FrontendUrl"]));
-
-        if (configured is not null)
+        var configured = config.GetConfiguredCorsOrigins();
+        if (configured.Length > 0)
         {
             return configured;
         }
@@ -48,6 +44,15 @@ internal static class ConfigurationValues
         return string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase)
             ? ["http://localhost:4200"]
             : [];
+    }
+
+    public static string[] GetConfiguredCorsOrigins(this IConfiguration config)
+    {
+        return NormalizeOrigins(config.GetSection("Cors:AllowedOrigins").Get<string[]>())
+            ?? NormalizeOrigins(config.GetSection("FrontendUrls").Get<string[]>())
+            ?? NormalizeOrigins(SplitList(config["LUMINAPATH_CORS_ORIGINS"]))
+            ?? NormalizeOrigins(SplitList(config["FrontendUrl"]))
+            ?? [];
     }
 
     private static string[]? NormalizeOrigins(string[]? origins)

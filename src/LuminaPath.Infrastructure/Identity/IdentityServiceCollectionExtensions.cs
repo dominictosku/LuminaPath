@@ -13,6 +13,9 @@ internal static class IdentityServiceCollectionExtensions
             .Bind(config.GetSection(AuthCookieOptions.SectionName))
             .Validate(AuthCookieOptions.HasValidSameSiteMode, "Auth:CookieSameSite must be a valid SameSiteMode value.")
             .Validate(AuthCookieOptions.HasValidCookieSecurePolicy, "Auth:CookieSecurePolicy must be a valid CookieSecurePolicy value.")
+            .Validate(
+                AuthCookieOptions.HasSecureCrossSiteCookiePolicy,
+                "Auth:CookieSecurePolicy must be Always when Auth:CookieSameSite is None.")
             .ValidateOnStart();
 
         // Self-registration knobs. Reads Auth:RequireAdminApproval from

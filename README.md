@@ -179,6 +179,7 @@ Use `--profile nvidia` instead on NVIDIA hosts. This starts `vllm` at `http://lo
 
 All deployment-specific values are controlled through `.env` or normal ASP.NET environment variables.
 Most knobs have defaults in Docker Compose or the backend option classes.
+The full optional reference lives in [`docs/05-runbooks/configuration.md`](docs/05-runbooks/configuration.md).
 
 Required Docker variables:
 

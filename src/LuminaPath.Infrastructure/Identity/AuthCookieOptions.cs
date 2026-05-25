@@ -36,4 +36,15 @@ public sealed class AuthCookieOptions
     {
         return Enum.TryParse<CookieSecurePolicy>(options.CookieSecurePolicy, ignoreCase: true, out _);
     }
+
+    internal static bool HasSecureCrossSiteCookiePolicy(AuthCookieOptions options)
+    {
+        if (!Enum.TryParse<SameSiteMode>(options.CookieSameSite, ignoreCase: true, out var sameSite)
+            || !Enum.TryParse<CookieSecurePolicy>(options.CookieSecurePolicy, ignoreCase: true, out var securePolicy))
+        {
+            return true;
+        }
+
+        return sameSite != SameSiteMode.None || securePolicy == Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
+    }
 }

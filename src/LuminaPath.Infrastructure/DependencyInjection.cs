@@ -37,6 +37,7 @@ namespace LuminaPath.Infrastructure
             services.AddAiChatServices(config);
             AddCache(services, config);
             AddCors(services, config);
+            services.AddHostedService<DeploymentConfigurationWarningService>();
             services.AddLuminaPathRateLimiting();
             services.AddSignalR(options =>
             {

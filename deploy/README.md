@@ -18,6 +18,8 @@ LUMINAPATH_ADMIN_EMAIL=you@example.com
 LUMINAPATH_ADMIN_PASSWORD=your-strong-admin-password
 ```
 
+The full optional reference is in [`../docs/05-runbooks/configuration.md`](../docs/05-runbooks/configuration.md).
+
 Start LuminaPath:
 
 ```powershell
@@ -92,9 +94,9 @@ LUMINAPATH_FRONTEND_IMAGE=dominictosku/luminapath-frontend:1.2.3
 ## For developers
 
 ```powershell
-$env:LUMINAPATH_API_IMAGE="sekijuo/luminapath-api:latest" 
-$env:LUMINAPATH_FRONTEND_IMAGE="sekijuo/luminapath-frontend:latest"
+$env:LUMINAPATH_API_IMAGE="dominictosku/luminapath-api:latest"
+$env:LUMINAPATH_FRONTEND_IMAGE="dominictosku/luminapath-frontend:latest"
 docker compose --env-file .env -f docker-compose.yml -f docker-compose.frontend.yml build
-docker push sekijuo/luminapath-api:latest  
-docker push sekijuo/luminapath-frontend:latest
+docker push dominictosku/luminapath-api:latest
+docker push dominictosku/luminapath-frontend:latest
 ```
