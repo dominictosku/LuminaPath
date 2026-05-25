@@ -92,6 +92,31 @@ public class ConfigurationOptionsValidationTests
     }
 
     [Fact]
+    public async Task AddInfrastructure_DatabasePasswordFileBuildsConnectionSettings()
+    {
+        var passwordFile = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(passwordFile, "secret-from-file\n");
+            var configurationValues = CreateValidConfiguration();
+            configurationValues.Remove("ConnectionStrings:Default");
+            configurationValues["Database:Host"] = "localhost";
+            configurationValues["Database:Port"] = "5432";
+            configurationValues["Database:Name"] = "luminapath_test";
+            configurationValues["Database:Username"] = "test";
+            configurationValues["Database:PasswordFile"] = passwordFile;
+
+            await using var provider = BuildProviderFromValues(configurationValues);
+
+            provider.GetRequiredService<IStartupValidator>().Validate();
+        }
+        finally
+        {
+            File.Delete(passwordFile);
+        }
+    }
+
+    [Fact]
     public async Task AddInfrastructure_ProductionConfigurationWithoutCorsOrigins_UsesNoLocalhostFallback()
     {
         var configurationValues = CreateValidConfiguration();

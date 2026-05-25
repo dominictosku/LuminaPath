@@ -32,10 +32,11 @@ automatically so you can sign in to the Blazor admin and the mobile app.
 Non-development startup refuses the bundled fallback credentials; in
 development a startup warning is written when those credentials are in play.
 
-| Setting             | Env var (raw)              | Env var (.env)             | Default                  |
-| ------------------- | -------------------------- | -------------------------- | ------------------------ |
-| Admin email         | `Admin__Email`             | `LUMINAPATH_ADMIN_EMAIL`   | `admin@example.com`      |
-| Admin password      | `Admin__Password`          | `LUMINAPATH_ADMIN_PASSWORD`| `ChangeMe!1AdminAccess`  |
+| Setting             | Env var (raw)              | Env var (.env)                    | Default                  |
+| ------------------- | -------------------------- | --------------------------------- | ------------------------ |
+| Admin email         | `Admin__Email`             | `LUMINAPATH_ADMIN_EMAIL`          | `admin@example.com`      |
+| Admin password      | `Admin__Password`          | `LUMINAPATH_ADMIN_PASSWORD`       | `ChangeMe!1AdminAccess`  |
+| Admin password file | `Admin__PasswordFile`      | `LUMINAPATH_ADMIN_PASSWORD_FILE`  | none                     |
 
 The password has to satisfy the production policy: ≥ 10 chars, ≥ 4
 unique chars, uppercase + lowercase + digit + non-alphanumeric. Custom
@@ -58,6 +59,13 @@ startup.
 ```bash
 LUMINAPATH_ADMIN_EMAIL=you@example.com
 LUMINAPATH_ADMIN_PASSWORD=your-strong-password-here
+```
+
+For mounted secret files, use:
+
+```bash
+LUMINAPATH_ADMIN_EMAIL=you@example.com
+LUMINAPATH_ADMIN_PASSWORD_FILE=/run/secrets/luminapath_admin_password
 ```
 
 The seeder runs only when no admin user exists, so changing these
@@ -130,8 +138,9 @@ How it behaves end-to-end:
 ### Quick first-boot checklist
 
 1. Copy `.env.example` → `.env` and set:
-   - `POSTGRES_PASSWORD` (database)
-   - `LUMINAPATH_ADMIN_EMAIL` + `LUMINAPATH_ADMIN_PASSWORD` (admin seed)
+   - `POSTGRES_PASSWORD` or `POSTGRES_PASSWORD_FILE` (database)
+   - `LUMINAPATH_ADMIN_EMAIL`
+   - `LUMINAPATH_ADMIN_PASSWORD` or `LUMINAPATH_ADMIN_PASSWORD_FILE` (admin seed)
    - Leave `AUTH_REQUIRE_ADMIN_APPROVAL=true` (the production default) —
      or set it to `false` if every visitor is trusted in your deployment
 2. `docker compose up -d`

@@ -2,13 +2,18 @@ name: luminapath
 
 services:
   luminapath-api:
-    image: ${LUMINAPATH_API_IMAGE:-dominictosku/luminapath-api:latest}
+    image: ${LUMINAPATH_API_IMAGE:-sekijuo/luminapath-api:latest}
     container_name: luminapath-api
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Default: "Host=luminapath-db;Port=5432;Database=${POSTGRES_DB:-luminapath};Username=${POSTGRES_USER:-luminapath};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env};"
+      Database__Host: luminapath-db
+      Database__Port: 5432
+      Database__Name: ${POSTGRES_DB:-luminapath}
+      Database__Username: ${POSTGRES_USER:-luminapath}
+      Database__Password: ${POSTGRES_PASSWORD:-}
+      Database__PasswordFile: ${POSTGRES_PASSWORD_FILE:-}
       ConnectionStrings__Redis: luminapath-redis:6379
       Database__RunMigrationsOnStartup: ${RUN_MIGRATIONS_ON_STARTUP:-true}
       Https__Redirect: ${HTTPS_REDIRECT:-false}
@@ -32,7 +37,8 @@ services:
       # is brought up (when no admin user exists yet). Production startup
       # refuses the bundled placeholders.
       Admin__Email: ${LUMINAPATH_ADMIN_EMAIL:?Set LUMINAPATH_ADMIN_EMAIL in deploy/.env}
-      Admin__Password: ${LUMINAPATH_ADMIN_PASSWORD:?Set LUMINAPATH_ADMIN_PASSWORD in deploy/.env}
+      Admin__Password: ${LUMINAPATH_ADMIN_PASSWORD:-}
+      Admin__PasswordFile: ${LUMINAPATH_ADMIN_PASSWORD_FILE:-}
     expose:
       - "8080"
     volumes:
@@ -63,7 +69,7 @@ services:
       retries: 10
 
   luminapath-frontend:
-    image: ${LUMINAPATH_FRONTEND_IMAGE:-dominictosku/luminapath-frontend:latest}
+    image: ${LUMINAPATH_FRONTEND_IMAGE:-sekijuo/luminapath-frontend:latest}
     container_name: luminapath-frontend
     restart: unless-stopped
     environment:
@@ -82,7 +88,8 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-luminapath}
       POSTGRES_USER: ${POSTGRES_USER:-luminapath}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_PASSWORD_FILE: ${POSTGRES_PASSWORD_FILE:-}
     volumes:
       - luminapath-postgres:/var/lib/postgresql/data
     healthcheck:

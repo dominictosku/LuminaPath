@@ -9,6 +9,9 @@ LUMINAPATH_ADMIN_EMAIL=you@example.com
 LUMINAPATH_ADMIN_PASSWORD=your-strong-admin-password
 ```
 
+For file-based secrets, use `deploy/docker-compose.secrets.yml` and provide
+the password files instead of putting the password values in `.env`.
+
 Everything below is optional and has a default in Docker Compose or in the
 backend option classes.
 
@@ -30,16 +33,18 @@ keys where needed.
 
 | Variable | Used by | Default | Notes |
 |---|---|---|---|
-| `POSTGRES_PASSWORD` | Docker Postgres and backend connection string | none | Required. Compose refuses to start without it. |
+| `POSTGRES_PASSWORD` | Docker Postgres and backend connection string | none | Required unless you use `POSTGRES_PASSWORD_FILE` or the secrets overlay. |
 | `LUMINAPATH_ADMIN_EMAIL` | Bootstrap admin seed | none | Required for non-development startup. Used only when no admin exists. |
-| `LUMINAPATH_ADMIN_PASSWORD` | Bootstrap admin seed | none | Required for non-development startup. Must satisfy the production password policy. |
+| `LUMINAPATH_ADMIN_PASSWORD` | Bootstrap admin seed | none | Required unless you use `LUMINAPATH_ADMIN_PASSWORD_FILE` or the secrets overlay. Must satisfy the production password policy. |
+| `POSTGRES_PASSWORD_FILE` | Docker Postgres and backend connection string | empty | Container path to a mounted password file. |
+| `LUMINAPATH_ADMIN_PASSWORD_FILE` | Bootstrap admin seed | empty | Container path to a mounted admin password file. |
 
 ## Docker image and port overrides
 
 | Variable | Default | Notes |
 |---|---|---|
-| `LUMINAPATH_API_IMAGE` | Root: `luminapath-api:local`; deploy: `dominictosku/luminapath-api:latest` | Pin this to a release tag for stable installs. |
-| `LUMINAPATH_FRONTEND_IMAGE` | Root: `luminapath-frontend:local`; deploy: `dominictosku/luminapath-frontend:latest` | Pin this to the same release tag as the API. |
+| `LUMINAPATH_API_IMAGE` | Root: `luminapath-api:local`; deploy: `sekijuo/luminapath-api:latest` | Pin this to a release tag for stable installs. |
+| `LUMINAPATH_FRONTEND_IMAGE` | Root: `luminapath-frontend:local`; deploy: `sekijuo/luminapath-frontend:latest` | Pin this to the same release tag as the API. |
 | `BACKEND_HTTP_PORT` | `8080` | Host port for the API and Blazor admin. Deploy uses this only with `deploy/docker-compose.backend.yml`. |
 | `BACKEND_HTTP_BIND` | `127.0.0.1` | Deploy backend-port overlay bind address. Set `0.0.0.0` only when intentionally exposing the backend port. |
 | `FRONTEND_HTTP_PORT` | `4200` | Host port for the Angular frontend container. |
@@ -55,10 +60,48 @@ keys where needed.
 | `POSTGRES_DB` | `luminapath` | Docker database name. |
 | `POSTGRES_USER` | `luminapath` | Docker database user. |
 | `RUN_MIGRATIONS_ON_STARTUP` | Root: `false`; deploy: `true` | Convenient for self-hosted installs. Public production deployments should review migrations deliberately. |
-| `ConnectionStrings__Default` | Set by Compose | Use this directly only outside the provided Compose files. |
+| `ConnectionStrings__Default` | empty | Use this directly only outside the provided Compose files; otherwise the app builds it from the `Database__*` settings. |
+| `Database__Host` | Set by Compose | Database host when not using `ConnectionStrings__Default`. |
+| `Database__Port` | Set by Compose | Database port when not using `ConnectionStrings__Default`. |
+| `Database__Name` | Set by Compose | Database name when not using `ConnectionStrings__Default`. |
+| `Database__Username` | Set by Compose | Database user when not using `ConnectionStrings__Default`. |
+| `Database__Password` | `POSTGRES_PASSWORD` | Database password value. Prefer `Database__PasswordFile` for mounted secrets. |
+| `Database__PasswordFile` | `POSTGRES_PASSWORD_FILE` | Container path to a mounted database password file. |
 | `ConnectionStrings__Redis` | Set by Compose | Use this directly only outside the provided Compose files. |
 | `Redis__ConnectionString` | `localhost:6379` | Backend Redis cache connection outside Compose. |
 | `Redis__InstanceName` | `LuminaPath:` | Prefix for cache keys. |
+
+## File-based secrets
+
+The deploy folder includes `docker-compose.secrets.yml` for local Docker
+Compose secrets. Put the secrets in files that are not committed:
+
+```text
+deploy/secrets/postgres_password.txt
+deploy/secrets/admin_password.txt
+```
+
+Then keep `POSTGRES_PASSWORD` and `LUMINAPATH_ADMIN_PASSWORD` blank in `.env`
+and start with:
+
+```powershell
+docker compose --env-file .env -f docker-compose.yml -f docker-compose.secrets.yml up -d
+```
+
+You can override the host file paths with:
+
+```text
+POSTGRES_PASSWORD_SECRET_FILE=./secrets/postgres_password.txt
+LUMINAPATH_ADMIN_PASSWORD_SECRET_FILE=./secrets/admin_password.txt
+```
+
+For orchestrators that mount secrets themselves, set container-path variables
+directly:
+
+```text
+POSTGRES_PASSWORD_FILE=/run/secrets/luminapath_postgres_password
+LUMINAPATH_ADMIN_PASSWORD_FILE=/run/secrets/luminapath_admin_password
+```
 
 ## Auth, cookies and CORS
 

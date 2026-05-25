@@ -64,8 +64,7 @@ internal sealed record DeploymentConfigurationSummary(
 
         return new DeploymentConfigurationSummary(
             Environment: environment.EnvironmentName,
-            DatabaseConfigured: !string.IsNullOrWhiteSpace(
-                ConfigurationValues.FirstNonEmpty(config.GetConnectionString("Default"), config["POSTGRESQL_DB"])),
+            DatabaseConfigured: HasDatabaseConfiguration(config),
             RedisConfigured: !string.IsNullOrWhiteSpace(redisOptions.ConnectionString),
             StorageProvider: storageOptions.Provider,
             RunMigrationsOnStartup: config.GetValue("Database:RunMigrationsOnStartup", false),
@@ -75,6 +74,25 @@ internal sealed record DeploymentConfigurationSummary(
             RequireAdminApproval: authRegistrationOptions.RequireAdminApproval,
             AiProvider: config[AiChatOptions.SectionName + ":Provider"] ?? new AiChatOptions().Provider,
             ScheduledJobsEnabled: config.GetValue("BackgroundJobs:ScheduledJobsEnabled", new BackgroundJobOptions().ScheduledJobsEnabled));
+    }
+
+    private static bool HasDatabaseConfiguration(IConfiguration config)
+    {
+        if (!string.IsNullOrWhiteSpace(ConfigurationValues.FirstNonEmpty(
+                config.GetConnectionString("Default"),
+                config["POSTGRESQL_DB"])))
+        {
+            return true;
+        }
+
+        return !string.IsNullOrWhiteSpace(ConfigurationValues.FirstNonEmpty(config["Database:Host"], config["POSTGRES_HOST"]))
+            && !string.IsNullOrWhiteSpace(ConfigurationValues.FirstNonEmpty(config["Database:Name"], config["Database:Database"], config["POSTGRES_DB"]))
+            && !string.IsNullOrWhiteSpace(ConfigurationValues.FirstNonEmpty(config["Database:Username"], config["Database:User"], config["POSTGRES_USER"]))
+            && !string.IsNullOrWhiteSpace(ConfigurationValues.FirstNonEmpty(
+                config["Database:Password"],
+                config["Database:PasswordFile"],
+                config["POSTGRES_PASSWORD"],
+                config["POSTGRES_PASSWORD_FILE"]));
     }
 }
 

@@ -1,4 +1,5 @@
 ﻿using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure.Configuration;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Identity;
@@ -31,8 +32,12 @@ namespace LuminaPath.Infrastructure
             var adminEmail = configuration?["Admin:Email"]
                 ?? Environment.GetEnvironmentVariable("LUMINAPATH_ADMIN_EMAIL")
                 ?? DefaultAdminEmail;
-            var adminPassword = configuration?["Admin:Password"]
-                ?? Environment.GetEnvironmentVariable("LUMINAPATH_ADMIN_PASSWORD")
+            var adminPassword = SecretConfiguration.GetSecret(
+                    configuration,
+                    "Admin:Password",
+                    "Admin:PasswordFile",
+                    ["LUMINAPATH_ADMIN_PASSWORD"],
+                    ["LUMINAPATH_ADMIN_PASSWORD_FILE"])
                 ?? DefaultAdminPassword;
 
             if (string.Equals(adminEmail, DefaultAdminEmail, StringComparison.OrdinalIgnoreCase)
@@ -42,12 +47,12 @@ namespace LuminaPath.Infrastructure
                 {
                     throw new InvalidOperationException(
                         "Refusing to seed the bootstrap administrator with bundled default credentials. " +
-                        "Set Admin:Email and Admin:Password, or LUMINAPATH_ADMIN_EMAIL and LUMINAPATH_ADMIN_PASSWORD, before starting a non-development deployment.");
+                        "Set Admin:Email and Admin:Password/Admin:PasswordFile, or LUMINAPATH_ADMIN_EMAIL and LUMINAPATH_ADMIN_PASSWORD/LUMINAPATH_ADMIN_PASSWORD_FILE, before starting a non-development deployment.");
                 }
 
                 logger?.LogWarning(
                     "Seeding admin with bundled default credentials ({Email}). " +
-                    "Set Admin:Email / Admin:Password (or LUMINAPATH_ADMIN_EMAIL / LUMINAPATH_ADMIN_PASSWORD) before first boot.",
+                    "Set Admin:Email / Admin:Password or Admin:PasswordFile (or LUMINAPATH_ADMIN_EMAIL / LUMINAPATH_ADMIN_PASSWORD or LUMINAPATH_ADMIN_PASSWORD_FILE) before first boot.",
                     adminEmail);
             }
 

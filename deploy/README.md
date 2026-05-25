@@ -52,6 +52,29 @@ http://localhost:8080
 Set `BACKEND_HTTP_BIND=0.0.0.0` only when you intentionally want that backend
 port reachable from other machines.
 
+## File-based secrets
+
+For production, you can keep the database and bootstrap admin passwords out of
+`.env` by using the secrets overlay:
+
+```powershell
+New-Item -ItemType Directory -Force secrets
+Set-Content -NoNewline secrets/postgres_password.txt "your-strong-database-password"
+Set-Content -NoNewline secrets/admin_password.txt "your-strong-admin-password"
+```
+
+Then leave `POSTGRES_PASSWORD` and `LUMINAPATH_ADMIN_PASSWORD` blank in `.env`
+and start with:
+
+```powershell
+docker compose --env-file .env -f docker-compose.yml -f docker-compose.secrets.yml up -d
+```
+
+The app also supports direct container-path `_FILE` variables such as
+`POSTGRES_PASSWORD_FILE=/run/secrets/luminapath_postgres_password` and
+`LUMINAPATH_ADMIN_PASSWORD_FILE=/run/secrets/luminapath_admin_password` for
+orchestrators that mount secrets themselves.
+
 ## Homelab Domains
 
 The included frontend container uses `/api` and proxies requests to the
@@ -99,16 +122,17 @@ docker compose --env-file .env up -d
 For stable homelab installs, pin a release version instead of `latest`:
 
 ```text
-LUMINAPATH_API_IMAGE=dominictosku/luminapath-api:1.2.3
-LUMINAPATH_FRONTEND_IMAGE=dominictosku/luminapath-frontend:1.2.3
+LUMINAPATH_API_IMAGE=sekijuo/luminapath-api:1.2.3
+LUMINAPATH_FRONTEND_IMAGE=sekijuo/luminapath-frontend:1.2.3
 ```
 
 ## For developers
 
 ```powershell
-$env:LUMINAPATH_API_IMAGE="dominictosku/luminapath-api:latest"
-$env:LUMINAPATH_FRONTEND_IMAGE="dominictosku/luminapath-frontend:latest"
-docker compose --env-file .env -f docker-compose.yml -f docker-compose.frontend.yml build
-docker push dominictosku/luminapath-api:latest
-docker push dominictosku/luminapath-frontend:latest
+Set-Location ..
+$env:LUMINAPATH_API_IMAGE="sekijuo/luminapath-api:latest"
+$env:LUMINAPATH_FRONTEND_IMAGE="sekijuo/luminapath-frontend:latest"
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml build
+docker push sekijuo/luminapath-api:latest
+docker push sekijuo/luminapath-frontend:latest
 ```

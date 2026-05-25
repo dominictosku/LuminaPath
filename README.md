@@ -195,6 +195,10 @@ LUMINAPATH_ADMIN_EMAIL=you@example.com
 LUMINAPATH_ADMIN_PASSWORD=your-strong-admin-password
 ```
 
+For production installs, the deploy folder also supports a file-based secrets
+overlay so `POSTGRES_PASSWORD` and `LUMINAPATH_ADMIN_PASSWORD` can stay out of
+`.env`; see the configuration reference for the exact command.
+
 Common optional Docker variables:
 
 ```text
