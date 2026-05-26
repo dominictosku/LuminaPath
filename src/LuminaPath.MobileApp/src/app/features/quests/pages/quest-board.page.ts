@@ -1,6 +1,7 @@
 
 import { Component, OnDestroy, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import {
   IonBadge,
   IonContent,
@@ -13,6 +14,7 @@ import {
   ItemReorderEventDetail,
 } from '@ionic/angular/standalone';
 import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
+import { Subscription } from 'rxjs';
 import {
   AchievementInfo,
   Quest,
@@ -139,6 +141,7 @@ type SkillTreeUnlockPayload = {
 export class QuestBoardPage implements OnInit, OnDestroy {
   private questBoardService = inject(QuestBoardService);
   private myGameService = inject(MyGameService);
+  private route = inject(ActivatedRoute);
 
   readonly skillIconOptions = [
     { label: 'Code', icon: 'code-slash-outline' },
@@ -257,6 +260,8 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   private readonly prefsStorageKey = 'questboard.prefs.v1';
   private pendingDeletes = new Map<number, PendingDelete>();
   private undoToastTimer: number | undefined;
+  private routeSub?: Subscription;
+  private pendingFocusQuestId: number | null = null;
 
   /**
    * IDs of quests whose celebration animation is still in flight. The
@@ -282,10 +287,17 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   async ngOnInit() {
     this.loadPrefs();
+    this.routeSub = this.route.queryParamMap.subscribe((params) => {
+      const questId = Number(params.get('questId'));
+      this.pendingFocusQuestId = Number.isInteger(questId) && questId > 0 ? questId : null;
+      this.focusPendingQuest();
+    });
     await Promise.all([this.loadBoard(), this.loadLibrary()]);
+    this.focusPendingQuest();
   }
 
   ngOnDestroy(): void {
+    this.routeSub?.unsubscribe();
     for (const pending of this.pendingDeletes.values()) {
       window.clearTimeout(pending.timeoutId);
     }
@@ -340,6 +352,24 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   get selectedQuest(): Quest | null {
     if (this.expandedQuestId === null) return null;
     return this.quests.find((quest) => quest.id === this.expandedQuestId) ?? null;
+  }
+
+  private focusPendingQuest(): void {
+    if (this.pendingFocusQuestId === null || this.isLoading) return;
+
+    const quest = this.quests.find((item) => item.id === this.pendingFocusQuestId);
+    if (!quest) return;
+
+    this.mode = 'quests';
+    this.filter = 'all';
+    this.tagFilter = null;
+    this.searchQuery = '';
+
+    if (this.expandedQuestId !== quest.id) {
+      this.toggleExpand(quest);
+    }
+
+    this.pendingFocusQuestId = null;
   }
 
   get nextQueuedQuest(): Quest | null {

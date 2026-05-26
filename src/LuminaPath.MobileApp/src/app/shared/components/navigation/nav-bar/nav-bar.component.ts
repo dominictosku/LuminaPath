@@ -7,6 +7,7 @@ import { Subscription, filter, finalize } from 'rxjs';
 import { NotificationItem, NotificationsService } from 'src/app/shared/services/notifications.service';
 import { shouldHideAppNavigation } from 'src/app/shared/utils/app-shell-navigation';
 import { MediaMode, MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
+import { GlobalSearchService } from 'src/app/shared/services/global-search.service';
 
 @Component({
     selector: 'app-nav-bar',
@@ -19,6 +20,7 @@ export class NavBarComponent implements OnInit, OnDestroy {
   router = inject(Router);
   private notificationsService = inject(NotificationsService);
   private mediaModeService = inject(MediaModeService);
+  private globalSearch = inject(GlobalSearchService);
 
   isLoggingOut = false;
   openMenu: 'media' | 'notifications' | 'apps' | 'profile' | null = null;
@@ -71,6 +73,11 @@ export class NavBarComponent implements OnInit, OnDestroy {
 
   closeMenus() {
     this.openMenu = null;
+  }
+
+  openSearch(): void {
+    this.closeMenus();
+    this.globalSearch.open();
   }
 
   selectMediaMode(mode: MediaMode) {

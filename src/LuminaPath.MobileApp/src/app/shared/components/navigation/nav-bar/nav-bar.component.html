@@ -31,10 +31,6 @@
           <ion-icon name="sparkles-outline"></ion-icon>
           <span>Quests</span>
         </a>
-        <a [routerLink]="['/skill-tree']" [class.active]="isActive('/skill-tree')">
-          <ion-icon name="map-outline"></ion-icon>
-          <span>Skills</span>
-        </a>
       </div>
       <div class="menu-wrap media-mode-wrap">
         <button
@@ -67,6 +63,13 @@
         }
       </div>
       <div class="header-actions">
+        <button
+          type="button"
+          class="icon-action"
+          aria-label="Open search"
+          (click)="openSearch()">
+          <ion-icon name="search-outline"></ion-icon>
+        </button>
         <div class="menu-wrap">
           <button
             type="button"

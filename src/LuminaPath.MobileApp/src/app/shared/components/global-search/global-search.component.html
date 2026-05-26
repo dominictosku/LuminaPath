@@ -1,0 +1,65 @@
+@if (isOpen()) {
+  <div class="global-search" (click)="close()">
+    <section
+      class="global-search__panel"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Global search"
+      (click)="$event.stopPropagation()">
+      <label class="global-search__field">
+        <ion-icon name="search-outline"></ion-icon>
+        <input
+          #searchInput
+          type="search"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Search library, notes, quests"
+          [ngModel]="query"
+          (ngModelChange)="onQueryChange($event)" />
+      </label>
+
+      <div class="global-search__body">
+        @if (isLoading) {
+          <div class="global-search__state">
+            <ion-icon name="hourglass-outline"></ion-icon>
+            <span>Searching...</span>
+          </div>
+        } @else if (errorMessage) {
+          <div class="global-search__state global-search__state--error">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span>{{ errorMessage }}</span>
+          </div>
+        } @else if (query.trim().length < 2) {
+          <div class="global-search__state">
+            <ion-icon name="search-outline"></ion-icon>
+            <span>Type at least 2 characters.</span>
+          </div>
+        } @else if (!results.length) {
+          <div class="global-search__state">
+            <ion-icon name="search-outline"></ion-icon>
+            <span>No matches.</span>
+          </div>
+        } @else {
+          <div class="global-search__results">
+            @for (result of results; track trackByResult($index, result)) {
+              <button
+                type="button"
+                class="global-search__result"
+                (click)="select(result)">
+                <ion-icon [name]="result.icon || 'search-outline'"></ion-icon>
+                <span class="global-search__result-copy">
+                  <strong>{{ result.title }}</strong>
+                  <small>{{ result.subtitle }}</small>
+                  @if (result.matchedText) {
+                    <em>{{ result.matchedText }}</em>
+                  }
+                </span>
+                <span class="global-search__badge">{{ labelFor(result.kind) }}</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+}

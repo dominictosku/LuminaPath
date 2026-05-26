@@ -6,6 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import { NavBarComponent } from './shared/components/navigation/nav-bar/nav-bar.component'
 import { AiChatComponent } from './shared/components/ai-chat/ai-chat.component';
 import { ErrorBannerComponent } from './shared/components/error-banner/error-banner.component';
+import { GlobalSearchComponent } from './shared/components/global-search/global-search.component';
 import { ReleaseNotificationService } from './shared/services/release-notification.service';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
@@ -40,7 +41,7 @@ const ROOT_PAGES: ReadonlySet<string> = new Set([
     selector: 'app-root',
     templateUrl: 'app.component.html',
     styleUrls: ['app.component.scss'],
-    imports: [IonApp, IonRouterOutlet, NavBarComponent, AiChatComponent, ErrorBannerComponent]
+    imports: [IonApp, IonRouterOutlet, NavBarComponent, AiChatComponent, ErrorBannerComponent, GlobalSearchComponent]
 })
 export class AppComponent implements OnInit {
   private releaseNotifications = inject(ReleaseNotificationService);
