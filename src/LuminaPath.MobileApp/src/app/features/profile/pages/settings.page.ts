@@ -11,6 +11,7 @@ import {
 import { firstValueFrom, finalize } from 'rxjs';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
+import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { ThemePreferenceService } from 'src/app/shared/services/theme-preference.service';
 import { DataExportService } from '../services/data-export.service';
 import { ProfileService } from '../services/profile.service';
@@ -37,6 +38,7 @@ export class SettingsPage {
   private releaseNotifications = inject(ReleaseNotificationService);
   private dataExport = inject(DataExportService);
   private themePreference = inject(ThemePreferenceService);
+  private requestCache = inject(RequestCache);
   private authService = inject(AuthService);
   private router = inject(Router);
 
@@ -55,6 +57,9 @@ export class SettingsPage {
   exportState: 'idle' | 'working' = 'idle';
   exportMessage = '';
   exportMessageTone: 'success' | 'error' | 'neutral' = 'neutral';
+
+  offlineCacheState: 'idle' | 'working' = 'idle';
+  offlineCacheMessage = '';
 
   darkThemeEnabled = this.themePreference.darkMode;
 
@@ -130,6 +135,24 @@ export class SettingsPage {
 
   setDarkTheme(enabled: boolean): void {
     this.themePreference.setDarkMode(enabled);
+  }
+
+  /** Drop all persisted view snapshots (dashboard, statistic, library by
+   *  kind, media detail per id). Next visit refetches from the server.
+   *  Useful when the cached state diverged from the server (e.g. an
+   *  external import) or when freeing disk space. */
+  async clearOfflineCache(): Promise<void> {
+    if (this.offlineCacheState === 'working') return;
+    this.offlineCacheState = 'working';
+    this.offlineCacheMessage = '';
+    try {
+      this.requestCache.clear();
+      this.offlineCacheMessage = 'Offline cache cleared.';
+    } catch {
+      this.offlineCacheMessage = 'Could not clear the offline cache.';
+    } finally {
+      this.offlineCacheState = 'idle';
+    }
   }
 
   logout(): void {

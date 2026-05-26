@@ -7,6 +7,7 @@ import { NavBarComponent } from './shared/components/navigation/nav-bar/nav-bar.
 import { AiChatComponent } from './shared/components/ai-chat/ai-chat.component';
 import { ErrorBannerComponent } from './shared/components/error-banner/error-banner.component';
 import { GlobalSearchComponent } from './shared/components/global-search/global-search.component';
+import { OfflineBannerComponent } from './shared/components/offline-banner/offline-banner.component';
 import { ReleaseNotificationService } from './shared/services/release-notification.service';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
@@ -41,7 +42,7 @@ const ROOT_PAGES: ReadonlySet<string> = new Set([
     selector: 'app-root',
     templateUrl: 'app.component.html',
     styleUrls: ['app.component.scss'],
-    imports: [IonApp, IonRouterOutlet, NavBarComponent, AiChatComponent, ErrorBannerComponent, GlobalSearchComponent]
+    imports: [IonApp, IonRouterOutlet, NavBarComponent, AiChatComponent, ErrorBannerComponent, GlobalSearchComponent, OfflineBannerComponent]
 })
 export class AppComponent implements OnInit {
   private releaseNotifications = inject(ReleaseNotificationService);

@@ -210,12 +210,15 @@ export class StatisticPage implements OnInit {
         this.completeRefresh(event);
       },
       error: () => {
-        // Keep the cached paint if we had one; only wipe on a true cold-error.
+        // Keep the cached paint if we had one; only wipe on a true cold
+        // error. Suppress the error text when cached data is still on
+        // screen — the OfflineBanner covers it and a second alarm reads
+        // as duplicate noise.
         if (!cached) {
           this.items = [];
           this.buildStatistics();
+          this.errorMessage = 'Statistic data could not be loaded.';
         }
-        this.errorMessage = 'Statistic data could not be loaded.';
         this.isLoading = false;
         this.completeRefresh(event);
       },

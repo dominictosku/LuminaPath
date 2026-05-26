@@ -1,0 +1,16 @@
+@if (visible()) {
+  <aside class="offline-banner" role="status" aria-live="polite">
+    <ion-icon name="cloud-offline-outline" class="offline-banner__icon" aria-hidden="true"></ion-icon>
+    <div class="offline-banner__body">
+      <strong>You're offline</strong>
+      <span>Showing the last data we cached. Some actions are disabled.</span>
+    </div>
+    <button
+      type="button"
+      class="offline-banner__close"
+      aria-label="Dismiss offline notice"
+      (click)="dismiss()">
+      <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+    </button>
+  </aside>
+}

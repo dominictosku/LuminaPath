@@ -116,6 +116,32 @@
 
           <section class="settings-card">
             <header class="settings-card__header">
+              <ion-icon name="cloud-offline-outline"></ion-icon>
+              <div>
+                <h2>Offline data</h2>
+                <p>Library, dashboard, statistics, and detail pages keep the last data they loaded so the app works without a connection. Clearing forces a fresh fetch on the next visit.</p>
+              </div>
+            </header>
+
+            <div class="settings-card__actions">
+              <ion-button
+                shape="round"
+                fill="outline"
+                (click)="clearOfflineCache()"
+                [disabled]="offlineCacheState === 'working'">
+                <ion-icon slot="start" name="trash-outline"></ion-icon>
+                {{ offlineCacheState === 'working' ? 'Clearing…' : 'Clear offline cache' }}
+              </ion-button>
+              @if (offlineCacheMessage) {
+                <span class="settings-card__message">
+                  {{ offlineCacheMessage }}
+                </span>
+              }
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <header class="settings-card__header">
               <ion-icon name="notifications-outline"></ion-icon>
               <div>
                 <h2>Release reminders</h2>

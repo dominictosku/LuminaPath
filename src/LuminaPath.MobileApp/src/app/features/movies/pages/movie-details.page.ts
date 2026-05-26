@@ -25,6 +25,7 @@ import {
 } from 'src/app/features/library/components/library-create-dialog/library-create-dialog.model';
 import { MEDIA_MODE_OPTIONS, MediaModeOption } from 'src/app/shared/services/media-mode.service';
 import { MediaLibraryViewService } from 'src/app/features/library/services/media-library-view.service';
+import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
@@ -62,6 +63,7 @@ export class MovieDetailsPage implements OnInit {
   private readonly mediaStore = inject(MediaStore);
   private readonly alertController = inject(AlertController);
   private readonly mediaView = inject(MediaLibraryViewService);
+  private readonly cache = inject(RequestCache);
   readonly auth = inject(AuthService);
 
   /** Catalog dialog needs a MediaModeOption — this page is movies-only. */
@@ -134,11 +136,25 @@ export class MovieDetailsPage implements OnInit {
   }
 
   private async loadMovie(movieId: number): Promise<void> {
+    // Cache-first paint so detail deep links work offline. Refetch in
+    // the background and replace on success; on failure keep the cache.
+    const cacheKey = `media:movies:${movieId}`;
+    const cached = this.cache.get<Movie>(cacheKey);
+    if (cached) {
+      this.movie = cached;
+      this.syncMediaStore(movieId);
+      this.isLoading = false;
+    }
+
     try {
-      this.movie = await firstValueFrom(this.movieService.get(movieId));
+      const fresh = await firstValueFrom(this.movieService.get(movieId));
+      this.movie = fresh;
+      this.cache.set(cacheKey, fresh);
       this.syncMediaStore(movieId);
     } catch {
-      this.showError('Movie could not be loaded.');
+      if (!cached) {
+        this.showError('Movie could not be loaded.');
+      }
     } finally {
       this.isLoading = false;
     }

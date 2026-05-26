@@ -3,6 +3,7 @@ import { catchError, map, Observable, of, switchMap, tap, throwError } from 'rxj
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
+import { RequestCache } from 'src/app/shared/services/request-cache.service';
 
 export interface LoginResult {
   authenticated: boolean;
@@ -80,6 +81,7 @@ interface UserRolesResponse {
 export class AuthService {
   private http = inject(HttpClient);
   private apiEndpoint = inject(ApiEndpointService);
+  private requestCache = inject(RequestCache);
 
   private readonly authenticatedSignal = signal<boolean>(false);
   readonly isAuthenticated = this.authenticatedSignal.asReadonly();
@@ -183,10 +185,14 @@ export class AuthService {
       tap(() => {
         this.authenticatedSignal.set(false);
         this.rolesSignal.set([]);
+        // Wipe persisted snapshots so a second user on the same device
+        // can't see the previous user's library, dashboard, or stats.
+        this.requestCache.clear();
       }),
       catchError((error) => {
         this.authenticatedSignal.set(false);
         this.rolesSignal.set([]);
+        this.requestCache.clear();
         throw error;
       })
     );
@@ -217,6 +223,10 @@ export class AuthService {
   clearSession() {
     this.authenticatedSignal.set(false);
     this.rolesSignal.set([]);
+    // Mirror logout(): a session being torn down (e.g. 401 from an
+    // interceptor) should not leak cached snapshots to whoever signs
+    // in next on this device.
+    this.requestCache.clear();
   }
 
   private toLoginPayload(credentials: Credentials) {

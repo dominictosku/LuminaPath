@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { idbAll, idbClear, idbDelete, idbSet } from './idb';
 
 interface CacheEntry<T> {
   data: T;
@@ -6,23 +7,21 @@ interface CacheEntry<T> {
 }
 
 /**
- * Tiny in-memory cache for view-level data snapshots, used for the
- * stale-while-revalidate pattern on pages that do a lot of upfront fetching
- * (dashboard, statistic).
+ * View-level data snapshot cache with stale-while-revalidate semantics,
+ * used by dashboard / statistic / library where the page orchestrates its
+ * own fetching.
  *
- * Intended usage from a page that already orchestrates its own requests:
+ * Two tiers:
+ *  - **In-memory `Map`** — synchronous reads (`get` / `isFresh`) so existing
+ *    page code (`if (cached) apply() ...`) stays unchanged.
+ *  - **IndexedDB** — write-through on every `set()`, hydrated into memory
+ *    once at app bootstrap via `hydrate()` (called from `APP_INITIALIZER`).
+ *    Lets the app paint the last-known good state on a cold launch — the
+ *    foundation of read-only offline mode.
  *
- *   const cached = this.cache.get<MySnapshot>('home:v1');
- *   if (cached) {
- *     this.apply(cached);
- *     this.isLoading = false;
- *     if (this.cache.isFresh('home:v1')) return; // skip refetch
- *   }
- *   // …fire the real request and call cache.set() on success
- *
- * No Observable wrapping by design — pages stay in control of how they paint
- * cached vs. fresh data. The cache survives navigation but is cleared on
- * full page reload (it's just a Map).
+ * IDB writes are fire-and-forget; failure to persist never affects the
+ * in-memory result. `idb.ts` swallows IndexedDB errors so private-mode and
+ * unsupported environments degrade to memory-only without throwing.
  */
 @Injectable({ providedIn: 'root' })
 export class RequestCache {
@@ -30,6 +29,8 @@ export class RequestCache {
   static readonly DEFAULT_TTL_MS = 60_000;
 
   private readonly entries = new Map<string, CacheEntry<unknown>>();
+  /** Resolves once hydrate() has either completed or timed out. */
+  private hydratePromise: Promise<void> | null = null;
 
   /** Sync read. Returns the cached value regardless of age, or undefined. */
   get<T>(key: string): T | undefined {
@@ -47,9 +48,12 @@ export class RequestCache {
     return Date.now() - entry.fetchedAt < maxAgeMs;
   }
 
-  /** Store (or replace) a snapshot. Stamps fetchedAt to now. */
+  /** Store (or replace) a snapshot. Stamps fetchedAt to now and persists. */
   set<T>(key: string, data: T): void {
-    this.entries.set(key, { data, fetchedAt: Date.now() });
+    const fetchedAt = Date.now();
+    this.entries.set(key, { data, fetchedAt });
+    // Persist async; never block the caller. Errors are swallowed in idb.ts.
+    void idbSet(key, data, fetchedAt);
   }
 
   /** Drop one or many entries. String form matches by exact key or `prefix:*`. */
@@ -58,12 +62,37 @@ export class RequestCache {
       ? (key: string) => key === pattern || key.startsWith(pattern + ':')
       : (key: string) => pattern.test(key);
     for (const key of [...this.entries.keys()]) {
-      if (matches(key)) this.entries.delete(key);
+      if (matches(key)) {
+        this.entries.delete(key);
+        void idbDelete(key);
+      }
     }
   }
 
-  /** Wipe everything. Call on sign-out. */
+  /** Wipe everything (memory + IDB). Call on sign-out and from settings. */
   clear(): void {
     this.entries.clear();
+    void idbClear();
+  }
+
+  /**
+   * Load all persisted snapshots into the in-memory Map. Idempotent —
+   * subsequent calls return the same promise. Caller (APP_INITIALIZER)
+   * is responsible for adding a timeout so a stuck IDB never blocks
+   * bootstrap.
+   */
+  hydrate(): Promise<void> {
+    if (this.hydratePromise) return this.hydratePromise;
+    this.hydratePromise = (async () => {
+      const entries = await idbAll();
+      for (const { key, data, fetchedAt } of entries) {
+        // Don't clobber anything that was written between bootstrap and
+        // hydrate completing (unlikely but cheap to guard against).
+        if (!this.entries.has(key)) {
+          this.entries.set(key, { data, fetchedAt });
+        }
+      }
+    })();
+    return this.hydratePromise;
   }
 }

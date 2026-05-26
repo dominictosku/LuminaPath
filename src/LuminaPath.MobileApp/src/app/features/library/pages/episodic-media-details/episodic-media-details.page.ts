@@ -21,6 +21,7 @@ import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { MEDIA_MODE_OPTIONS, MediaModeOption } from 'src/app/shared/services/media-mode.service';
+import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { LibraryEntryDetails } from '../../models/media-item.model';
 import { MediaLibraryViewService } from '../../services/media-library-view.service';
 import { MediaStore } from '../../state/media.store';
@@ -74,6 +75,7 @@ export class EpisodicMediaDetailsPage implements OnInit {
   private readonly actionSheetController = inject(ActionSheetController);
   private readonly mediaStore = inject(MediaStore);
   private readonly mediaView = inject(MediaLibraryViewService);
+  private readonly cache = inject(RequestCache);
   readonly auth = inject(AuthService);
 
   /** Resolved at construction time from the kind on the supplied config. */
@@ -388,11 +390,25 @@ export class EpisodicMediaDetailsPage implements OnInit {
   }
 
   private async loadMedia(mediaId: number): Promise<void> {
+    // Cache-first paint. Key is per-kind (anime vs series) so the two
+    // adapters never collide on the same id.
+    const cacheKey = `media:${this.config.kind}:${mediaId}`;
+    const cached = this.cache.get<EpisodicMediaView>(cacheKey);
+    if (cached) {
+      this.media = cached;
+      this.syncMediaStore(mediaId);
+      this.isLoading = false;
+    }
+
     try {
-      this.media = await firstValueFrom(this.adapter.load(mediaId));
+      const fresh = await firstValueFrom(this.adapter.load(mediaId));
+      this.media = fresh;
+      this.cache.set(cacheKey, fresh);
       this.syncMediaStore(mediaId);
     } catch {
-      this.showError(this.config.loadErrorLabel);
+      if (!cached) {
+        this.showError(this.config.loadErrorLabel);
+      }
     } finally {
       this.isLoading = false;
     }

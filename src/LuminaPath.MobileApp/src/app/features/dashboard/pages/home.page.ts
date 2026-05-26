@@ -186,11 +186,13 @@ export class HomePage implements OnInit {
       error: () => {
         // Background refetch failed: keep the cached paint, surface the
         // error message so the user can pull-to-refresh. Only wipe data
-        // if we never had any to begin with.
+        // if we never had any to begin with. Suppress the error text when
+        // we still have a cached painting — the OfflineBanner already
+        // explains the staleness and we don't want to double up alarms.
         if (!cached) {
           this.applyDashboard(emptyDashboardSnapshot());
+          this.errorMessage = 'Dashboard data could not be loaded.';
         }
-        this.errorMessage = 'Dashboard data could not be loaded.';
         this.isLoading = false;
         this.completeRefresh(event);
       },

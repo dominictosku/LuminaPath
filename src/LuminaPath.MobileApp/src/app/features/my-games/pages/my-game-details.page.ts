@@ -31,6 +31,7 @@ import { GameForecast, GamingSessionService } from 'src/app/features/planning/se
 import { gameStatusLabel } from 'src/app/features/library/models/library-status.model';
 import { MediaStore } from 'src/app/features/library/state/media.store';
 import { MEDIA_MODE_OPTIONS, MediaModeOption } from 'src/app/shared/services/media-mode.service';
+import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { MediaLibraryViewService } from 'src/app/features/library/services/media-library-view.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatShortDate } from 'src/app/shared/utils/format';
@@ -87,6 +88,7 @@ export class MyGameDetailsPage implements OnInit {
   private readonly actionSheetController = inject(ActionSheetController);
   private readonly mediaStore = inject(MediaStore);
   private readonly mediaView = inject(MediaLibraryViewService);
+  private readonly cache = inject(RequestCache);
   readonly auth = inject(AuthService);
 
   /** Catalog dialog needs a MediaModeOption — this page is games-only. */
@@ -351,15 +353,33 @@ export class MyGameDetailsPage implements OnInit {
   }
 
   private async loadGameAndQuests(gameId: number): Promise<void> {
-    this.isLoading = true;
+    // Cache-first: paint the last-known good game (if any) so detail-page
+    // deep links work offline. Then refetch in the background and replace
+    // on success. On failure, keep the cached painting silently.
+    const cacheKey = `media:games:${gameId}`;
+    const cached = this.cache.get<GameWithFlexibleLibrary>(cacheKey);
+    if (cached) {
+      this.game = cached;
+      this.syncMediaStore(gameId);
+      this.isLoading = false;
+    } else {
+      this.isLoading = true;
+    }
     this.errorMessage = '';
 
     try {
-      this.game = await firstValueFrom(this.gameService.get(gameId));
+      const fresh = await firstValueFrom(this.gameService.get(gameId));
+      this.game = fresh;
+      this.cache.set(cacheKey, fresh);
       this.syncMediaStore(gameId);
       await this.refreshSideData();
     } catch {
-      this.showError('Game could not be loaded.');
+      if (!cached) {
+        this.showError('Game could not be loaded.');
+      }
+      // else: keep cached painting; OfflineBanner already explains the
+      // staleness. refreshSideData is skipped so we don't fire more
+      // requests that will fail.
     } finally {
       this.isLoading = false;
     }

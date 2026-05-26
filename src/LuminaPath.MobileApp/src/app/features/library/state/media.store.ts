@@ -70,9 +70,18 @@ export const MediaStore = signalStore(
      *  items and the statistic page's owned-item derivations. Expire both. */
     const invalidateDerivedCaches = () => cache.invalidate(/^(home|statistic):/);
 
+    /** Cache key for the persisted list of items for a given media kind.
+     *  Lives in RequestCache → IndexedDB so the list paints from cache on
+     *  cold launch / when offline. */
+    const listCacheKey = (kind: MediaKind) => `library:list:${kind}`;
+
     function ensureKind(kind: MediaKind): void {
       if (store.loadedKind() === kind) return;
-      patchState(store, setAllEntities<MediaItem>([]), {
+      // Hydrate from cache so cross-page detail navigation (and offline
+      // deep-links into /library/<kind>/:id) finds items via findById
+      // without waiting for a network refetch.
+      const cached = cache.get<MediaItem[]>(listCacheKey(kind));
+      patchState(store, setAllEntities<MediaItem>(cached ?? []), {
         ...initialMediaState,
         loadedKind: kind,
       });
@@ -80,6 +89,16 @@ export const MediaStore = signalStore(
 
     function patchEntry(mediaId: number, changes: Partial<MediaItem>): void {
       patchState(store, updateEntity<MediaItem>({ id: mediaId, changes }));
+      persistCurrentList();
+    }
+
+    /** Re-save the current list to the persistent cache so that offline
+     *  reads see the latest mutations. Cheap: one fire-and-forget IDB
+     *  put per call. Only persists when we have a loaded kind. */
+    function persistCurrentList(): void {
+      const kind = store.loadedKind();
+      if (!kind) return;
+      cache.set(listCacheKey(kind), store.entities());
     }
 
     const extractError = (error: unknown) => extractErrorMessage(error, 'Operation failed.');
@@ -93,18 +112,26 @@ export const MediaStore = signalStore(
       async loadCatalog(filter?: MediaFilter): Promise<void> {
         const kind = mediaMode.mode().id;
         ensureKind(kind);
-        patchState(store, { isLoading: true, error: null });
+        // If we already have something painted from the persisted cache,
+        // don't flash a skeleton — refetch silently in the background.
+        const hadCached = store.entities().length > 0;
+        patchState(store, { isLoading: !hadCached, error: null });
         try {
           const page = await firstValueFrom(facade.getAll(filter));
-          patchState(store, setAllEntities<MediaItem>(page.data ?? []), {
+          const items = page.data ?? [];
+          patchState(store, setAllEntities<MediaItem>(items), {
             isLoading: false,
             page: page.pageIndex ?? 1,
             totalPages: page.totalPages ?? 1,
           });
+          cache.set(listCacheKey(kind), items);
         } catch {
           patchState(store, {
             isLoading: false,
-            error: `${mediaMode.mode().label} could not be loaded.`,
+            // Suppress the error message when we have a cached painting
+            // to show — typical offline case. The OfflineBanner already
+            // tells the user something is wrong.
+            error: hadCached ? null : `${mediaMode.mode().label} could not be loaded.`,
           });
         }
       },
@@ -120,6 +147,7 @@ export const MediaStore = signalStore(
             page: page.pageIndex ?? store.page() + 1,
             totalPages: page.totalPages ?? store.totalPages(),
           });
+          persistCurrentList();
         } catch {
           patchState(store, {
             isLoading: false,
@@ -173,6 +201,7 @@ export const MediaStore = signalStore(
       upsertItem(item: MediaItem): void {
         ensureKind(item.kind);
         patchState(store, upsertEntity<MediaItem>(item));
+        persistCurrentList();
       },
 
       /** Replace just the libraryEntry on a cached item. No-op if not cached.
@@ -186,6 +215,7 @@ export const MediaStore = signalStore(
       /** Drop a cached item entirely. */
       removeItem(mediaId: number): void {
         patchState(store, removeEntity(mediaId));
+        persistCurrentList();
       },
 
       /** Synchronous lookup. Returns undefined if the item isn't cached. */
