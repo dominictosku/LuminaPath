@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
 
 import { QuestBoardPage } from './quest-board.page';
@@ -139,6 +140,15 @@ describe('QuestBoardPage', () => {
       providers: [
         { provide: QuestBoardService, useValue: questBoardService },
         { provide: MyGameService, useValue: myGameService },
+        // The page subscribes to `route.queryParamMap` in ngOnInit to
+        // pick up `?questId=` deep links. Provide an empty ParamMap so
+        // the subscription resolves without blowing up DI.
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParamMap: of(convertToParamMap({})),
+          },
+        },
       ],
     });
 
