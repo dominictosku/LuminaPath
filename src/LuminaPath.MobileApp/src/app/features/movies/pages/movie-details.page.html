@@ -82,6 +82,10 @@
           </div>
         </div>
       </section>
+      <app-media-availability
+        kind="movies"
+        [title]="movie.name"
+        [releaseDate]="movie.releaseDate" />
       <section class="library-card" [class.library-card--owned]="isInLibrary">
         <div>
           <span class="eyebrow">

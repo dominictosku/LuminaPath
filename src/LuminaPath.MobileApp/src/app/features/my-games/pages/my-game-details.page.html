@@ -187,6 +187,13 @@
         </ion-segment-button>
       </ion-segment>
 
+      @if (selectedTab === 'overview') {
+        <app-media-availability
+          kind="games"
+          [title]="game.name"
+          [releaseDate]="game.releaseDate" />
+      }
+
       @if (selectedTab === 'overview' && dlcs.length) {
         <app-game-dlc-list [dlcs]="dlcs" />
       }

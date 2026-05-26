@@ -22,6 +22,7 @@ import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { MEDIA_MODE_OPTIONS, MediaModeOption } from 'src/app/shared/services/media-mode.service';
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
+import { MediaAvailabilityComponent } from 'src/app/shared/components/media-availability/media-availability.component';
 import { LibraryEntryDetails } from '../../models/media-item.model';
 import { MediaLibraryViewService } from '../../services/media-library-view.service';
 import { MediaStore } from '../../state/media.store';
@@ -63,6 +64,7 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
     IonTitle,
     IonToolbar,
     LibraryCreateDialogComponent,
+    MediaAvailabilityComponent,
 ],
 })
 export class EpisodicMediaDetailsPage implements OnInit {

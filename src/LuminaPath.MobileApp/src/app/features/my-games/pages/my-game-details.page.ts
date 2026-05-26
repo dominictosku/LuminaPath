@@ -38,6 +38,7 @@ import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatShortDate } from 'src/app/shared/utils/format';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { LiveSessionTrackerService } from 'src/app/shared/services/live-session-tracker.service';
+import { MediaAvailabilityComponent } from 'src/app/shared/components/media-availability/media-availability.component';
 import { LibraryCreateDialogComponent } from 'src/app/features/library/components/library-create-dialog/library-create-dialog.component';
 import {
   CreateMediaForm,
@@ -74,6 +75,7 @@ import { GameDlcListComponent } from '../components/game-dlc-list/game-dlc-list.
     GameForecastComponent,
     GameTrophiesComponent,
     GameDlcListComponent,
+    MediaAvailabilityComponent,
     LibraryCreateDialogComponent,
     FormsModule,
   ],

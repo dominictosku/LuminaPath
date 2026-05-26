@@ -29,6 +29,7 @@ import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
+import { MediaAvailabilityComponent } from 'src/app/shared/components/media-availability/media-availability.component';
 
 const WATCH_STATUS_LABELS: Record<number, string> = {
   0: 'On hold',
@@ -53,6 +54,7 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
     IonTitle,
     IonToolbar,
     LibraryCreateDialogComponent,
+    MediaAvailabilityComponent,
 ],
 })
 export class MovieDetailsPage implements OnInit {
