@@ -1,0 +1,95 @@
+<ion-content [fullscreen]="true" class="skill-tree-shell">
+  <ion-refresher slot="fixed" (ionRefresh)="load($any($event))">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <main class="skill-tree-page mt-12">
+    <header class="skill-tree-hero">
+      <div>
+        <span class="eyebrow">
+          <ion-icon name="map-outline"></ion-icon>
+          Skill Tree
+        </span>
+        <h1>Mastery paths</h1>
+        <p>Unlock nodes from your quest skills without digging through the quest board.</p>
+      </div>
+      <div class="hero-actions">
+        <ion-button shape="round" fill="outline" routerLink="/quests">
+          <ion-icon slot="start" name="sparkles-outline"></ion-icon>
+          Manage skills
+        </ion-button>
+      </div>
+    </header>
+
+    <section class="summary-grid" aria-label="Skill tree summary">
+      <article>
+        <span>Skills</span>
+        <strong>{{ skills.length }}</strong>
+      </article>
+      <article>
+        <span>Nodes</span>
+        <strong>{{ unlockedNodeCount }}/{{ nodeCount }}</strong>
+      </article>
+      <article>
+        <span>XP</span>
+        <strong>{{ xp }}</strong>
+      </article>
+    </section>
+
+    @if (errorMessage) {
+      <div class="notice notice--error">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+    }
+
+    @if (isLoading) {
+      <div class="notice">
+        <ion-icon name="hourglass-outline"></ion-icon>
+        <span>Loading skill tree...</span>
+      </div>
+    }
+
+    @if (!isLoading) {
+      <section class="tree-stage" [class.tree-stage--saving]="isSaving">
+        <app-skill-tree
+          [branches]="skillTreeBranches"
+          [unlockedNodeIds]="skillTreeUnlockedNodeIds"
+          (nodeUnlocked)="handleSkillTreeNodeUnlocked($event)">
+        </app-skill-tree>
+      </section>
+    }
+
+    @if (!isLoading && !skillTreeBranches.length) {
+      <section class="empty-actions">
+        <ion-button shape="round" routerLink="/quests">
+          <ion-icon slot="start" name="add-outline"></ion-icon>
+          Create a skill path
+        </ion-button>
+      </section>
+    }
+
+    @if (skills.length) {
+      <section class="skill-list" aria-label="Skill progress">
+        @for (skill of skills; track trackBySkill($index, skill)) {
+          <article class="skill-row" [style.--skill-accent]="skill.color">
+            <ion-icon [name]="skill.icon || 'sparkles-outline'"></ion-icon>
+            <span>
+              <strong>{{ skill.name }}</strong>
+              <small>{{ skill.unlockedNodes.length }}/{{ skill.nodes.length }} nodes unlocked</small>
+            </span>
+            <em>{{ skill.xp }} XP</em>
+          </article>
+        }
+      </section>
+    }
+  </main>
+
+  @if (toastMessage) {
+    <div class="toast">
+      <ion-icon name="sparkles"></ion-icon>
+      <span>{{ toastMessage }}</span>
+    </div>
+  }
+</ion-content>
+

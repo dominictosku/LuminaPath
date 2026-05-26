@@ -31,6 +31,10 @@
           <ion-icon name="sparkles-outline"></ion-icon>
           <span>Quests</span>
         </a>
+        <a [routerLink]="['/skill-tree']" [class.active]="isActive('/skill-tree')">
+          <ion-icon name="map-outline"></ion-icon>
+          <span>Skills</span>
+        </a>
       </div>
       <div class="menu-wrap media-mode-wrap">
         <button
@@ -109,6 +113,16 @@
                   <span>Checking for updates…</span>
                 </div>
               }
+              <a
+                [routerLink]="['/notifications']"
+                class="notification-item notification-item--footer"
+                (click)="closeMenus()">
+                <ion-icon name="open-outline"></ion-icon>
+                <span>
+                  <strong>View all</strong>
+                  <small>History and category settings.</small>
+                </span>
+              </a>
             </section>
           }
         </div>
@@ -139,6 +153,14 @@
                 <a [routerLink]="['/friends']" (click)="closeMenus()">
                   <ion-icon name="people-outline"></ion-icon>
                   <span>Friends</span>
+                </a>
+                <a [routerLink]="['/notifications']" (click)="closeMenus()">
+                  <ion-icon name="notifications-outline"></ion-icon>
+                  <span>Alerts</span>
+                </a>
+                <a [routerLink]="['/skill-tree']" (click)="closeMenus()">
+                  <ion-icon name="map-outline"></ion-icon>
+                  <span>Skills</span>
                 </a>
               </div>
             </section>

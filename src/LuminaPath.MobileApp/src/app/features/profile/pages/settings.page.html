@@ -76,6 +76,13 @@
             <div class="settings-card__actions">
               <ion-button
                 shape="round"
+                fill="solid"
+                routerLink="/notifications">
+                <ion-icon slot="start" name="notifications-outline"></ion-icon>
+                Notification settings
+              </ion-button>
+              <ion-button
+                shape="round"
                 fill="outline"
                 (click)="clearReleaseNotifications()"
                 [disabled]="notificationsState === 'working'">

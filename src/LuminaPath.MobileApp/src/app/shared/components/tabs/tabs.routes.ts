@@ -87,6 +87,18 @@ export const routes: Routes = [
         canActivate: [AuthGuard],
       },
       {
+        path: 'skill-tree',
+        loadComponent: () =>
+          import('../../../features/skill-tree/pages/skill-tree.page').then((m) => m.SkillTreePage),
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'notifications',
+        loadComponent: () =>
+          import('../../../features/notifications/pages/notifications.page').then((m) => m.NotificationsPage),
+        canActivate: [AuthGuard],
+      },
+      {
         path: 'profile',
         loadComponent: () =>
           import('../../../features/profile/pages/profile.page').then((m) => m.ProfilePage),

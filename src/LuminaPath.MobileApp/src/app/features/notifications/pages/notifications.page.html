@@ -1,0 +1,149 @@
+<ion-content [fullscreen]="true" class="notifications-shell">
+  <ion-refresher slot="fixed" (ionRefresh)="load($any($event))">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <main class="notifications-page mt-12">
+    <header class="notifications-hero">
+      <span class="eyebrow">
+        <ion-icon name="notifications-outline"></ion-icon>
+        Notifications
+      </span>
+      <h1>Signal history</h1>
+      <p>Releases, sessions, and saved notification events in one place.</p>
+    </header>
+
+    <section class="summary-grid" aria-label="Notification summary">
+      <article>
+        <span>Active</span>
+        <strong>{{ activeItems.length }}</strong>
+      </article>
+      <article>
+        <span>History</span>
+        <strong>{{ historyItems.length }}</strong>
+      </article>
+      <article>
+        <span>Enabled</span>
+        <strong>{{ enabledCategoryCount }}/{{ preferences.length }}</strong>
+      </article>
+    </section>
+
+    @if (errorMessage) {
+      <div class="notice notice--error">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+    }
+
+    <section class="notification-panel">
+      <header class="panel-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="flash-outline"></ion-icon>
+            Now
+          </span>
+          <h2>Active notifications</h2>
+        </div>
+        <ion-badge>{{ activeItems.length }}</ion-badge>
+      </header>
+
+      @if (isLoading) {
+        <div class="notice">
+          <ion-icon name="hourglass-outline"></ion-icon>
+          <span>Checking for updates...</span>
+        </div>
+      }
+
+      @if (!isLoading && !activeItems.length) {
+        <div class="empty-state">
+          <ion-icon name="checkmark-circle-outline"></ion-icon>
+          <strong>All clear</strong>
+          <span>No enabled notification categories need attention.</span>
+        </div>
+      }
+
+      <div class="notification-list">
+        @for (item of activeItems; track trackByItem($index, item)) {
+          <a [routerLink]="item.link" class="notification-card" [attr.data-category]="item.category">
+            <ion-icon [name]="item.icon"></ion-icon>
+            <span class="notification-card__body">
+              <strong>{{ item.title }}</strong>
+              <small>{{ item.body }}</small>
+            </span>
+            <span class="notification-card__meta">
+              <em>{{ statusLabel(item) }}</em>
+              <time>{{ dateLabel(item) }}</time>
+            </span>
+          </a>
+        }
+      </div>
+    </section>
+
+    <section class="settings-panel">
+      <header class="panel-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="options-outline"></ion-icon>
+            Categories
+          </span>
+          <h2>Preferences</h2>
+        </div>
+      </header>
+
+      <div class="preference-list">
+        @for (pref of preferences; track trackByPreference($index, pref)) {
+          <article class="preference-row">
+            <ion-icon [name]="pref.icon"></ion-icon>
+            <span>
+              <strong>{{ pref.label }}</strong>
+              <small>{{ pref.description }}</small>
+            </span>
+            <ion-toggle
+              [checked]="pref.enabled"
+              [attr.aria-label]="pref.label"
+              (ionChange)="setPreference(pref.id, $any($event).detail.checked)">
+            </ion-toggle>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section class="notification-panel">
+      <header class="panel-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="time-outline"></ion-icon>
+            History
+          </span>
+          <h2>Recent notification events</h2>
+        </div>
+        <ion-badge>{{ historyItems.length }}</ion-badge>
+      </header>
+
+      @if (!historyItems.length) {
+        <div class="empty-state empty-state--compact">
+          <ion-icon name="notifications-off-outline"></ion-icon>
+          <strong>No history yet</strong>
+          <span>Events appear here after LuminaPath sees them once.</span>
+        </div>
+      }
+
+      <div class="notification-list">
+        @for (item of historyItems; track trackByItem($index, item)) {
+          <a [routerLink]="item.link" class="notification-card notification-card--history" [attr.data-category]="item.category">
+            <ion-icon [name]="item.icon"></ion-icon>
+            <span class="notification-card__body">
+              <strong>{{ item.title }}</strong>
+              <small>{{ item.body }}</small>
+            </span>
+            <span class="notification-card__meta">
+              <em>{{ statusLabel(item) }}</em>
+              <time>{{ dateLabel(item) }}</time>
+            </span>
+          </a>
+        }
+      </div>
+    </section>
+  </main>
+</ion-content>
+

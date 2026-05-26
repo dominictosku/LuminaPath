@@ -254,6 +254,12 @@
   cursor: pointer;
 }
 
+.notification-item--footer {
+  margin-top: 6px;
+  border-top: 1px solid var(--header-border);
+  border-radius: 0 0 16px 16px;
+}
+
 .notification-item--button:disabled {
   cursor: wait;
   opacity: 0.7;
