@@ -6,10 +6,13 @@ import {
   IonButton,
   IonContent,
   IonIcon,
+  IonToggle,
 } from '@ionic/angular/standalone';
 import { firstValueFrom, finalize } from 'rxjs';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
+import { ThemePreferenceService } from 'src/app/shared/services/theme-preference.service';
+import { DataExportService } from '../services/data-export.service';
 import { ProfileService } from '../services/profile.service';
 import { TwoFactorCardComponent } from '../components/two-factor-card/two-factor-card.component';
 
@@ -25,12 +28,15 @@ type FormState = 'idle' | 'saving' | 'success' | 'error';
     IonButton,
     IonContent,
     IonIcon,
+    IonToggle,
     TwoFactorCardComponent,
 ],
 })
 export class SettingsPage {
   private profileService = inject(ProfileService);
   private releaseNotifications = inject(ReleaseNotificationService);
+  private dataExport = inject(DataExportService);
+  private themePreference = inject(ThemePreferenceService);
   private authService = inject(AuthService);
   private router = inject(Router);
 
@@ -45,6 +51,12 @@ export class SettingsPage {
 
   notificationsState: 'idle' | 'working' = 'idle';
   notificationsMessage = '';
+
+  exportState: 'idle' | 'working' = 'idle';
+  exportMessage = '';
+  exportMessageTone: 'success' | 'error' | 'neutral' = 'neutral';
+
+  darkThemeEnabled = this.themePreference.darkMode;
 
   isLoggingOut = false;
 
@@ -96,6 +108,30 @@ export class SettingsPage {
     }
   }
 
+  async exportData(): Promise<void> {
+    if (this.exportState === 'working') return;
+
+    this.exportState = 'working';
+    this.exportMessage = '';
+    this.exportMessageTone = 'neutral';
+
+    try {
+      const download = await firstValueFrom(this.dataExport.downloadJson());
+      triggerDownload(download.blob, download.fileName);
+      this.exportMessage = 'Export downloaded.';
+      this.exportMessageTone = 'success';
+    } catch (error) {
+      this.exportMessage = errorTextFrom(error) ?? 'Could not export your data.';
+      this.exportMessageTone = 'error';
+    } finally {
+      this.exportState = 'idle';
+    }
+  }
+
+  setDarkTheme(enabled: boolean): void {
+    this.themePreference.setDarkMode(enabled);
+  }
+
   logout(): void {
     if (this.isLoggingOut) return;
 
@@ -110,6 +146,18 @@ export class SettingsPage {
         },
       });
   }
+}
+
+function triggerDownload(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.rel = 'noopener';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 function errorTextFrom(error: unknown): string | null {

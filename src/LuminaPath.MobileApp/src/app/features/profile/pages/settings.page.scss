@@ -1,6 +1,7 @@
 :host {
   --page-bg: #061329;
   --page-bg-soft: #0a1f42;
+  --page-bg-bottom: #030914;
   --card-bg: rgba(12, 31, 64, 0.84);
   --card-bg-strong: rgba(18, 43, 86, 0.94);
   --card-border: rgba(137, 180, 255, 0.18);
@@ -13,10 +14,25 @@
   color: var(--text);
 }
 
+:host-context(.theme-light) {
+  --page-bg: #edf5ff;
+  --page-bg-soft: #f8fbff;
+  --page-bg-bottom: #dbeafe;
+  --card-bg: rgba(255, 255, 255, 0.88);
+  --card-bg-strong: rgba(255, 255, 255, 0.96);
+  --card-border: rgba(37, 99, 235, 0.16);
+  --text: #0f172a;
+  --muted: #52627a;
+  --accent: #2563eb;
+  --accent-strong: #0284c7;
+  --success: #15803d;
+  --error: #be123c;
+}
+
 .settings-shell {
   --background:
     radial-gradient(circle at 20% 0%, rgba(38, 121, 255, 0.28), transparent 34%),
-    linear-gradient(180deg, var(--page-bg-soft), var(--page-bg) 48%, #030914);
+    linear-gradient(180deg, var(--page-bg-soft), var(--page-bg) 48%, var(--page-bg-bottom));
 }
 
 .settings-page {
@@ -148,6 +164,41 @@
 
   &--success {
     color: var(--success);
+  }
+}
+
+.settings-toggle-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid rgba(137, 180, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+
+  span {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  strong {
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  small {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  ion-toggle {
+    flex: 0 0 auto;
+    --track-background: rgba(148, 163, 184, 0.34);
+    --track-background-checked: var(--accent);
+    --handle-background: #ffffff;
+    --handle-background-checked: #ffffff;
   }
 }
 

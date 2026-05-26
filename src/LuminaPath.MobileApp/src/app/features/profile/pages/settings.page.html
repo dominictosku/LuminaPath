@@ -66,6 +66,56 @@
 
           <section class="settings-card">
             <header class="settings-card__header">
+              <ion-icon name="contrast-outline"></ion-icon>
+              <div>
+                <h2>Appearance</h2>
+                <p>Choose the app palette for this device.</p>
+              </div>
+            </header>
+
+            <label class="settings-toggle-row">
+              <span>
+                <strong>Dark theme</strong>
+                <small>{{ darkThemeEnabled() ? 'Enabled' : 'Disabled' }}</small>
+              </span>
+              <ion-toggle
+                [checked]="darkThemeEnabled()"
+                (ionChange)="setDarkTheme($any($event).detail.checked)">
+              </ion-toggle>
+            </label>
+          </section>
+
+          <section class="settings-card">
+            <header class="settings-card__header">
+              <ion-icon name="download-outline"></ion-icon>
+              <div>
+                <h2>Export data</h2>
+                <p>Download your library, notes, quests, sessions, achievements, and document metadata as JSON.</p>
+              </div>
+            </header>
+
+            <div class="settings-card__actions">
+              <ion-button
+                shape="round"
+                fill="solid"
+                (click)="exportData()"
+                [disabled]="exportState === 'working'">
+                <ion-icon slot="start" name="download-outline"></ion-icon>
+                {{ exportState === 'working' ? 'Exporting...' : 'Download JSON' }}
+              </ion-button>
+              @if (exportMessage) {
+                <span
+                  class="settings-card__message"
+                  [class.settings-card__message--error]="exportMessageTone === 'error'"
+                  [class.settings-card__message--success]="exportMessageTone === 'success'">
+                  {{ exportMessage }}
+                </span>
+              }
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <header class="settings-card__header">
               <ion-icon name="notifications-outline"></ion-icon>
               <div>
                 <h2>Release reminders</h2>

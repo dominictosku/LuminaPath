@@ -18,6 +18,7 @@ internal static class ModelServiceCollectionExtensions
         services.AddScoped<QuestService>();
         services.AddScoped<GamingSessionService>();
         services.AddScoped<DocumentService>();
+        services.AddScoped<UserDataExportService>();
         services.AddScoped<LuminaUserService>();
         services.AddScoped<FriendsService>();
         services.AddScoped<DirectMessageService>();

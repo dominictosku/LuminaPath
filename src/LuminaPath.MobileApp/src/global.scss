@@ -31,16 +31,13 @@
  * For more info, please see:
  * https://ionicframework.com/docs/theming/dark-mode
  *
- * `dark.always.css` (not `dark.system.css`) so the Ionic palette is dark
- * regardless of the OS preference. The rest of the app — including all
- * page-level token blocks — is committed to a single dark visual identity;
- * mixing OS-light Ionic chrome with always-dark page surfaces produced
- * the visible inconsistency this replaces.
+ * `dark.class.css` lets the app drive the palette from the saved user
+ * setting instead of binding it to the OS.
  */
 
-/* @import "@ionic/angular/css/palettes/dark.class.css"; */
+@import "@ionic/angular/css/palettes/dark.class.css";
 /* @import "@ionic/angular/css/palettes/dark.system.css"; */
-@import '@ionic/angular/css/palettes/dark.always.css';
+/* @import '@ionic/angular/css/palettes/dark.always.css'; */
 
 :root {
   --app-theme-accent: #60a5fa;
@@ -55,6 +52,16 @@
   --app-chrome-text: #eef6ff;
   --app-chrome-muted: #9fb6d4;
   --app-chrome-accent: #60a5fa;
+}
+
+:root.theme-light {
+  --app-theme-hero-start: rgba(248, 250, 252, 0.96);
+  --app-theme-hero-end: rgba(191, 219, 254, 0.9);
+  --app-chrome-bg: rgba(255, 255, 255, 0.88);
+  --app-chrome-bg-strong: rgba(248, 250, 252, 0.96);
+  --app-chrome-border: rgba(37, 99, 235, 0.16);
+  --app-chrome-text: #0f172a;
+  --app-chrome-muted: #52627a;
 }
 
 body.theme-animes {
@@ -94,6 +101,16 @@ body.theme-series {
   --app-chrome-bg-strong: rgba(54, 45, 18, 0.94);
   --app-chrome-border: rgba(253, 224, 71, 0.24);
   --app-chrome-accent: #facc15;
+}
+
+body.theme-light {
+  --app-theme-hero-start: rgba(248, 250, 252, 0.96);
+  --app-theme-hero-end: rgba(191, 219, 254, 0.9);
+  --app-chrome-bg: rgba(255, 255, 255, 0.88);
+  --app-chrome-bg-strong: rgba(248, 250, 252, 0.96);
+  --app-chrome-border: rgba(37, 99, 235, 0.16);
+  --app-chrome-text: #0f172a;
+  --app-chrome-muted: #52627a;
 }
 
 ion-header:not(.app-header) {

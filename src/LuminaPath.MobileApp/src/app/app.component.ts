@@ -13,6 +13,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { shouldHideAppNavigation } from './shared/utils/app-shell-navigation';
 import { MediaModeService } from './shared/services/media-mode.service';
 import { registerAppIcons } from './shared/icons/register-icons';
+import { ThemePreferenceService } from './shared/services/theme-preference.service';
 
 /**
  * Paths that count as "top-level" for back-button purposes — pressing back
@@ -45,6 +46,7 @@ export class AppComponent implements OnInit {
   private releaseNotifications = inject(ReleaseNotificationService);
   private router = inject(Router);
   private mediaMode = inject(MediaModeService);
+  private themePreference = inject(ThemePreferenceService);
   private renderer = inject(Renderer2);
   private document = inject<Document>(DOCUMENT);
   private platform = inject(Platform);
@@ -53,7 +55,7 @@ export class AppComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   title = 'web-app';
-  darkMode = signal<boolean>(true);
+  darkMode = this.themePreference.darkMode;
   showShellNavigation = signal<boolean>(true);
 
   /** Set when the user taps back on a root page; cleared after 2 s. */
@@ -67,6 +69,7 @@ export class AppComponent implements OnInit {
     // the foot-gun where each page had to remember every icon used by any
     // descendant. See shared/icons/register-icons.ts.
     registerAppIcons();
+    effect(() => this.applyColorTheme(this.darkMode()));
     effect(() => this.applyMediaTheme(this.mediaMode.mode().themeClass));
   }
 
@@ -157,5 +160,27 @@ export class AppComponent implements OnInit {
     }
 
     this.renderer.addClass(this.document.body, themeClass);
+  }
+
+  private applyColorTheme(darkMode: boolean): void {
+    const root = this.document.documentElement;
+    const body = this.document.body;
+
+    if (darkMode) {
+      this.renderer.addClass(root, 'dark');
+      this.renderer.addClass(root, 'ion-palette-dark');
+      this.renderer.removeClass(root, 'theme-light');
+      this.renderer.removeClass(body, 'theme-light');
+      this.renderer.addClass(body, 'theme-dark');
+      this.renderer.setStyle(root, 'color-scheme', 'dark');
+      return;
+    }
+
+    this.renderer.removeClass(root, 'dark');
+    this.renderer.removeClass(root, 'ion-palette-dark');
+    this.renderer.removeClass(body, 'theme-dark');
+    this.renderer.addClass(root, 'theme-light');
+    this.renderer.addClass(body, 'theme-light');
+    this.renderer.setStyle(root, 'color-scheme', 'light');
   }
 }
