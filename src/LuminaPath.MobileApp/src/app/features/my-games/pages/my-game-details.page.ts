@@ -39,6 +39,7 @@ import { formatShortDate } from 'src/app/shared/utils/format';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { LiveSessionTrackerService } from 'src/app/shared/services/live-session-tracker.service';
 import { MediaAvailabilityComponent } from 'src/app/shared/components/media-availability/media-availability.component';
+import { MediaVideosComponent } from 'src/app/shared/components/media-videos/media-videos.component';
 import { CompletionCardService } from 'src/app/shared/services/completion-card.service';
 import { LibraryCreateDialogComponent } from 'src/app/features/library/components/library-create-dialog/library-create-dialog.component';
 import {
@@ -77,6 +78,7 @@ import { GameDlcListComponent } from '../components/game-dlc-list/game-dlc-list.
     GameTrophiesComponent,
     GameDlcListComponent,
     MediaAvailabilityComponent,
+    MediaVideosComponent,
     LibraryCreateDialogComponent,
     FormsModule,
   ],

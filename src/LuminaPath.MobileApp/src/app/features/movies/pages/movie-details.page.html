@@ -86,6 +86,10 @@
         kind="movies"
         [title]="movie.name"
         [releaseDate]="movie.releaseDate" />
+      <app-media-videos
+        [mediaId]="movie.id"
+        mediaKind="movies"
+        [canEdit]="canEditCatalog" />
       <section class="library-card" [class.library-card--owned]="isInLibrary">
         <div>
           <span class="eyebrow">

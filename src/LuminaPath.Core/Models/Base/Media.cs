@@ -25,5 +25,7 @@ namespace LuminaPath.Core.Models.Base
         public MediaDocument? Image { get; set; }
 
         public List<MediaExternalId> ExternalIds { get; set; } = new();
+
+        public List<MediaVideo> Videos { get; set; } = new();
     }
 }

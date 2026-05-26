@@ -123,5 +123,6 @@ namespace LuminaPath.Infrastructure
         public DbSet<BackgroundJobRecord> BackgroundJobs { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<MediaExternalId> MediaExternalIds { get; set; }
+        public DbSet<MediaVideo> MediaVideos { get; set; }
     }
 }

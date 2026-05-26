@@ -23,6 +23,7 @@ import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { MEDIA_MODE_OPTIONS, MediaModeOption } from 'src/app/shared/services/media-mode.service';
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { MediaAvailabilityComponent } from 'src/app/shared/components/media-availability/media-availability.component';
+import { MediaVideosComponent } from 'src/app/shared/components/media-videos/media-videos.component';
 import { CompletionCardService } from 'src/app/shared/services/completion-card.service';
 import { LibraryEntryDetails } from '../../models/media-item.model';
 import { MediaLibraryViewService } from '../../services/media-library-view.service';
@@ -66,6 +67,7 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
     IonToolbar,
     LibraryCreateDialogComponent,
     MediaAvailabilityComponent,
+    MediaVideosComponent,
 ],
 })
 export class EpisodicMediaDetailsPage implements OnInit {

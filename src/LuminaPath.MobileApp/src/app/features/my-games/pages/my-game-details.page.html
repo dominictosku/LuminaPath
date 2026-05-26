@@ -208,6 +208,13 @@
           [releaseDate]="game.releaseDate" />
       }
 
+      @if (selectedTab === 'overview') {
+        <app-media-videos
+          [mediaId]="game.id"
+          mediaKind="games"
+          [canEdit]="canEditCatalog" />
+      }
+
       @if (selectedTab === 'overview' && dlcs.length) {
         <app-game-dlc-list [dlcs]="dlcs" />
       }

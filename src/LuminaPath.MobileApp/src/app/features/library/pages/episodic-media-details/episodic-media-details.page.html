@@ -122,6 +122,11 @@
         [title]="media.name"
         [releaseDate]="media.releaseDate" />
 
+      <app-media-videos
+        [mediaId]="media.id"
+        [mediaKind]="config.kind"
+        [canEdit]="canEditCatalog" />
+
       <section class="quick-actions">
         @if (!isInLibrary) {
           <ion-button
