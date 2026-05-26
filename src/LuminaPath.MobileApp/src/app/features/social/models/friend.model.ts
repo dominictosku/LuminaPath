@@ -24,3 +24,43 @@ export type DirectMessage = {
   sentAt: string;
   readAt: string | null;
 };
+
+export type FriendProfileStats = {
+  games: number;
+  animes: number;
+  movies: number;
+  series: number;
+  totalItems: number;
+  completedItems: number;
+  activeItems: number;
+  totalTrackedHours: number;
+  averageRating: number | null;
+};
+
+export type FriendLibraryItem = {
+  kind: 'games' | 'animes' | 'movies' | 'series' | string;
+  mediaId: number;
+  libraryEntryId: number;
+  title: string;
+  status: string;
+  rating: number | null;
+  timeSpend: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  imageUrl: string | null;
+};
+
+export type FriendActivityItem = {
+  kind: string;
+  verb: string;
+  occurredAt: string | null;
+  item: FriendLibraryItem;
+};
+
+export type FriendProfile = {
+  user: FriendUser;
+  stats: FriendProfileStats;
+  nowPlaying: FriendLibraryItem[];
+  recentCompletions: FriendLibraryItem[];
+  activity: FriendActivityItem[];
+};

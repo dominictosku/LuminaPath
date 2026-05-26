@@ -38,6 +38,17 @@ namespace LuminaPath.Infrastructure.Controllers
             return user == null ? LoginRequired() : Ok(await _service.SearchUsersAsync(user.Id, query));
         }
 
+        [HttpGet("{userId}/profile")]
+        [EnableRateLimiting(RateLimitPolicies.BroadReads)]
+        public async Task<ActionResult<FriendProfileDto>> Profile([FromRoute] string userId, [FromQuery] int limit = 6)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return LoginRequired();
+
+            var result = await _service.GetFriendProfileAsync(user.Id, userId, limit);
+            return result.Match<ActionResult>(Ok, failed => NotFound(failed));
+        }
+
         public class SendRequestDto
         {
             public string AddresseeId { get; set; } = string.Empty;

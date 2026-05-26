@@ -78,7 +78,7 @@
           <div class="person-grid">
             @for (f of friends; track f) {
               <article class="person-card">
-                <button class="person-main" type="button" (click)="openChat(f)">
+                <button class="person-main" type="button" (click)="openProfile(f)">
                   <span class="avatar-fallback">{{ initial(displayName(f.user)) }}</span>
                   <span>
                     <strong>{{ displayName(f.user) }}</strong>
@@ -86,6 +86,9 @@
                   </span>
                 </button>
                 <div class="person-actions">
+                  <ion-button fill="clear" class="icon-action" aria-label="View profile" (click)="openProfile(f)">
+                    <ion-icon slot="icon-only" name="person-circle-outline"></ion-icon>
+                  </ion-button>
                   <ion-button fill="clear" class="icon-action" aria-label="Open chat" (click)="openChat(f)">
                     <ion-icon slot="icon-only" name="chatbubble-ellipses-outline"></ion-icon>
                   </ion-button>
@@ -103,6 +106,127 @@
             <p>Search for users and send a request to start building your circle.</p>
             <ion-button fill="outline" (click)="setTab('find')">Find people</ion-button>
           </div>
+        }
+      </section>
+    }
+
+    @if (!isLoading && tab === 'friends' && activeProfileFriend) {
+      <section class="panel profile-panel">
+        <header class="panel-heading">
+          <div>
+            <span class="eyebrow">Shared profile</span>
+            <h2>{{ displayName(activeProfileFriend.user) }}</h2>
+          </div>
+          <div class="person-actions">
+            <ion-button fill="clear" class="icon-action" aria-label="Open chat" (click)="openChat(activeProfileFriend)">
+              <ion-icon slot="icon-only" name="chatbubble-ellipses-outline"></ion-icon>
+            </ion-button>
+            <ion-button fill="clear" class="icon-action" aria-label="Close profile" (click)="closeProfile()">
+              <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+            </ion-button>
+          </div>
+        </header>
+
+        @if (isProfileLoading) {
+          <div class="loading-state loading-state--inline">
+            <ion-spinner></ion-spinner>
+          </div>
+        }
+
+        @if (profileErrorMessage) {
+          <div class="notice notice--error">
+            {{ profileErrorMessage }}
+          </div>
+        }
+
+        @if (selectedProfile; as profile) {
+          <div class="profile-stats">
+            <article>
+              <span>Library</span>
+              <strong>{{ profile.stats.totalItems }}</strong>
+            </article>
+            <article>
+              <span>Completed</span>
+              <strong>{{ profile.stats.completedItems }}</strong>
+            </article>
+            <article>
+              <span>Now playing</span>
+              <strong>{{ profile.stats.activeItems }}</strong>
+            </article>
+            <article>
+              <span>Avg rating</span>
+              <strong>{{ profile.stats.averageRating ?? '--' }}</strong>
+            </article>
+            <article>
+              <span>Tracked</span>
+              <strong>{{ profile.stats.totalTrackedHours }}h</strong>
+            </article>
+          </div>
+
+          <div class="profile-columns">
+            <section class="profile-section">
+              <h3>Now playing</h3>
+              @if (profile.nowPlaying.length) {
+                <div class="profile-list">
+                  @for (item of profile.nowPlaying; track trackByLibraryItem($index, item)) {
+                    <article class="profile-item">
+                      <span class="profile-item__icon">
+                        <ion-icon name="play-outline"></ion-icon>
+                      </span>
+                      <span>
+                        <strong>{{ item.title }}</strong>
+                        <small>{{ kindLabel(item) }} - {{ itemMeta(item) }}</small>
+                      </span>
+                    </article>
+                  }
+                </div>
+              } @else {
+                <p class="profile-empty">Nothing active right now.</p>
+              }
+            </section>
+
+            <section class="profile-section">
+              <h3>Recent completions</h3>
+              @if (profile.recentCompletions.length) {
+                <div class="profile-list">
+                  @for (item of profile.recentCompletions; track trackByLibraryItem($index, item)) {
+                    <article class="profile-item">
+                      <span class="profile-item__icon profile-item__icon--done">
+                        <ion-icon name="checkmark-circle-outline"></ion-icon>
+                      </span>
+                      <span>
+                        <strong>{{ item.title }}</strong>
+                        <small>{{ kindLabel(item) }} - {{ itemMeta(item) }}</small>
+                      </span>
+                    </article>
+                  }
+                </div>
+              } @else {
+                <p class="profile-empty">No completions shared yet.</p>
+              }
+            </section>
+          </div>
+
+          <section class="profile-section">
+            <h3>Activity</h3>
+            @if (profile.activity.length) {
+              <div class="activity-list">
+                @for (activity of profile.activity; track trackByActivity($index, activity)) {
+                  <article class="activity-row">
+                    <span class="profile-item__icon">
+                      <ion-icon [name]="activity.kind === 'rating' ? 'star-outline' : 'checkmark-circle-outline'"></ion-icon>
+                    </span>
+                    <span>
+                      <strong>{{ displayName(profile.user) }} {{ activity.verb }} {{ activity.item.title }}</strong>
+                      <small>{{ kindLabel(activity.item) }}{{ dateLabel(activity.occurredAt) ? ' - ' + dateLabel(activity.occurredAt) : '' }}</small>
+                    </span>
+                  </article>
+                }
+              </div>
+            } @else {
+              <p class="profile-empty">No recent activity yet.</p>
+            }
+          </section>
         }
       </section>
     }

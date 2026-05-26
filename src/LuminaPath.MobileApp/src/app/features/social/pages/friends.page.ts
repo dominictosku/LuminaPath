@@ -15,7 +15,14 @@ import {
   IonSpinner,
 } from '@ionic/angular/standalone';
 import { Subject, Subscription, debounceTime, firstValueFrom, switchMap } from 'rxjs';
-import { DirectMessage, FriendUser, Friendship } from '../models/friend.model';
+import {
+  DirectMessage,
+  FriendActivityItem,
+  FriendLibraryItem,
+  FriendProfile,
+  FriendUser,
+  Friendship,
+} from '../models/friend.model';
 import { DirectMessagesService } from '../services/direct-messages.service';
 import { FriendsService } from '../services/friends.service';
 import { MessagesHubService } from '../services/messages-hub.service';
@@ -61,6 +68,10 @@ export class FriendsPage implements OnInit, OnDestroy, AfterViewChecked {
   isSearching = false;
 
   activeChat: Friendship | null = null;
+  activeProfileFriend: Friendship | null = null;
+  selectedProfile: FriendProfile | null = null;
+  isProfileLoading = false;
+  profileErrorMessage = '';
   currentUserId = '';
   messages: DirectMessage[] = [];
   draft = '';
@@ -158,7 +169,36 @@ export class FriendsPage implements OnInit, OnDestroy, AfterViewChecked {
     if (this.activeChat?.id === friendship.id) {
       this.closeChat();
     }
+    if (this.activeProfileFriend?.id === friendship.id) {
+      this.closeProfile();
+    }
     await this.refresh();
+  }
+
+  async openProfile(friendship: Friendship): Promise<void> {
+    if (this.activeProfileFriend?.id === friendship.id && this.selectedProfile) {
+      return;
+    }
+
+    this.activeProfileFriend = friendship;
+    this.selectedProfile = null;
+    this.profileErrorMessage = '';
+    this.isProfileLoading = true;
+
+    try {
+      this.selectedProfile = await firstValueFrom(this.friendsService.profile(friendship.user.id));
+    } catch {
+      this.profileErrorMessage = 'Could not load profile.';
+    } finally {
+      this.isProfileLoading = false;
+    }
+  }
+
+  closeProfile(): void {
+    this.activeProfileFriend = null;
+    this.selectedProfile = null;
+    this.profileErrorMessage = '';
+    this.isProfileLoading = false;
   }
 
   async openChat(friendship: Friendship): Promise<void> {
@@ -278,6 +318,51 @@ export class FriendsPage implements OnInit, OnDestroy, AfterViewChecked {
     return user.fullName || user.userName;
   }
 
+  kindLabel(item: FriendLibraryItem): string {
+    switch (item.kind) {
+      case 'games':
+        return 'Game';
+      case 'animes':
+        return 'Anime';
+      case 'movies':
+        return 'Movie';
+      case 'series':
+        return 'Series';
+      default:
+        return 'Library';
+    }
+  }
+
+  itemMeta(item: FriendLibraryItem): string {
+    const parts = [this.statusLabel(item.status)];
+    if (item.rating !== null && item.rating !== undefined) {
+      parts.push(`${item.rating}/10`);
+    }
+    if (item.timeSpend !== null && item.timeSpend !== undefined && item.timeSpend > 0) {
+      parts.push(`${Number(item.timeSpend.toFixed(1))}h`);
+    }
+    return parts.join(' - ');
+  }
+
+  dateLabel(value: string | null): string {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat('en', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  trackByLibraryItem(_: number, item: FriendLibraryItem): string {
+    return `${item.kind}:${item.libraryEntryId}`;
+  }
+
+  trackByActivity(_: number, item: FriendActivityItem): string {
+    return `${item.kind}:${item.item.kind}:${item.item.libraryEntryId}:${item.verb}`;
+  }
+
   ngAfterViewChecked(): void {
     if (this.shouldScrollChat) {
       this.shouldScrollChat = false;
@@ -365,5 +450,11 @@ export class FriendsPage implements OnInit, OnDestroy, AfterViewChecked {
 
   private clamp(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
+  }
+
+  private statusLabel(status: string): string {
+    return status
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/^./, (char) => char.toUpperCase());
   }
 }

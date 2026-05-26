@@ -331,6 +331,123 @@ ion-segment-button ion-badge {
   color: var(--muted);
 }
 
+.profile-panel {
+  gap: 18px;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.profile-stats article {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--friends-bg);
+}
+
+.profile-stats span,
+.profile-stats strong {
+  display: block;
+}
+
+.profile-stats span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.profile-stats strong {
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.profile-columns {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-section {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.profile-section h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 820;
+}
+
+.profile-list,
+.activity-list {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-item,
+.activity-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-solid);
+}
+
+.profile-item__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.profile-item__icon--done {
+  color: #047857;
+  background: var(--success-soft);
+}
+
+.profile-item strong,
+.profile-item small,
+.activity-row strong,
+.activity-row small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-item strong,
+.activity-row strong {
+  color: var(--ink);
+  font-weight: 780;
+}
+
+.profile-item small,
+.activity-row small,
+.profile-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .chat-modal {
   position: fixed;
   z-index: 50;
@@ -480,6 +597,14 @@ ion-segment-button ion-badge {
   }
 
   .person-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-stats {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .profile-columns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

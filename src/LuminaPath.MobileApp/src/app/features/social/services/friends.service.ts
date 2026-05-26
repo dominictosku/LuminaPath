@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiEndpointService } from 'src/app/shared/services/api-endpoint.service';
-import { FriendUser, Friendship } from '../models/friend.model';
+import { FriendProfile, FriendUser, Friendship } from '../models/friend.model';
 
 @Injectable({ providedIn: 'root' })
 export class FriendsService {
@@ -18,6 +18,14 @@ export class FriendsService {
   search(query: string): Observable<FriendUser[]> {
     const params = new HttpParams().set('query', query);
     return this.http.get<FriendUser[]>(this.apiEndpoint.url('friends/search'), { ...this.httpConfig, params });
+  }
+
+  profile(userId: string, limit = 6): Observable<FriendProfile> {
+    const params = new HttpParams().set('limit', String(limit));
+    return this.http.get<FriendProfile>(
+      this.apiEndpoint.url(`friends/${encodeURIComponent(userId)}/profile`),
+      { ...this.httpConfig, params },
+    );
   }
 
   sendRequest(addresseeId: string): Observable<Friendship> {
