@@ -10,7 +10,10 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
+  IonLabel,
   IonProgressBar,
+  IonSegment,
+  IonSegmentButton,
   IonSpinner,
   IonTitle,
   IonToolbar,
@@ -61,7 +64,10 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
     IonContent,
     IonHeader,
     IonIcon,
+    IonLabel,
     IonProgressBar,
+    IonSegment,
+    IonSegmentButton,
     IonSpinner,
     IonTitle,
     IonToolbar,
@@ -94,6 +100,7 @@ export class EpisodicMediaDetailsPage implements OnInit {
   errorMessage = '';
   isUpdatingLibrary = false;
   headerCondensed = false;
+  selectedTab: 'overview' | 'gallery' = 'overview';
   completionCardMessage = '';
 
   // Admin edit/delete state ----------------------------------------------------
@@ -113,6 +120,7 @@ export class EpisodicMediaDetailsPage implements OnInit {
 
       this.isLoading = true;
       this.errorMessage = '';
+      this.selectedTab = 'overview';
       await this.loadMedia(mediaId);
     });
   }
@@ -264,6 +272,10 @@ export class EpisodicMediaDetailsPage implements OnInit {
     } finally {
       this.isUpdatingLibrary = false;
     }
+  }
+
+  setDetailTab(value: unknown): void {
+    this.selectedTab = value === 'gallery' ? 'gallery' : 'overview';
   }
 
   async exportCompletionCard(): Promise<void> {

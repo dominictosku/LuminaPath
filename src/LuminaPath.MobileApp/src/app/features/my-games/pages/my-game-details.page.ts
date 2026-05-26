@@ -112,7 +112,7 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   isAchievementsLoading = false;
   errorMessage = '';
   achievementsErrorMessage = '';
-  selectedTab: 'overview' | 'progress' | 'news' = 'overview';
+  selectedTab: 'overview' | 'gallery' | 'progress' | 'news' = 'overview';
   isUpdatingLibrary = false;
   isSavingNotes = false;
   headerCondensed = false;
@@ -233,7 +233,13 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   }
 
   setDetailTab(value: unknown): void {
-    this.selectedTab = value === 'news' ? 'news' : value === 'progress' ? 'progress' : 'overview';
+    this.selectedTab = value === 'news'
+      ? 'news'
+      : value === 'progress'
+        ? 'progress'
+        : value === 'gallery'
+          ? 'gallery'
+          : 'overview';
   }
 
   onScroll(event: CustomEvent<{ scrollTop: number }>): void {

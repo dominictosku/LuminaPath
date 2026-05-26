@@ -117,108 +117,121 @@
         </div>
       </section>
 
-      <app-media-availability
-        [kind]="config.kind"
-        [title]="media.name"
-        [releaseDate]="media.releaseDate" />
+      <ion-segment class="detail-tabs" [value]="selectedTab" (ionChange)="setDetailTab($any($event).detail.value)">
+        <ion-segment-button value="overview">
+          <ion-label>Overview</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="gallery">
+          <ion-label>Gallery</ion-label>
+        </ion-segment-button>
+      </ion-segment>
 
-      <app-media-videos
-        [mediaId]="media.id"
-        [mediaKind]="config.kind"
-        [canEdit]="canEditCatalog" />
-
-      <section class="quick-actions">
-        @if (!isInLibrary) {
-          <ion-button
-            shape="round"
-            class="quick-action quick-action--primary"
-            [disabled]="isUpdatingLibrary"
-            (click)="addToLibrary()">
-            <ion-icon slot="start" name="add-outline"></ion-icon>
-            Add to library
-          </ion-button>
-        } @else {
-          <ion-button
-            shape="round"
-            class="quick-action quick-action--primary"
-            [disabled]="isUpdatingLibrary || primaryActionDisabled"
-            (click)="runPrimaryAction()">
-            <ion-icon slot="start" [name]="primaryActionIcon"></ion-icon>
-            {{ primaryActionLabel }}
-          </ion-button>
-          @if (canMarkComplete) {
+      @if (selectedTab === 'overview') {
+        <section class="quick-actions">
+          @if (!isInLibrary) {
             <ion-button
               shape="round"
-              fill="outline"
-              class="quick-action"
+              class="quick-action quick-action--primary"
               [disabled]="isUpdatingLibrary"
-              (click)="markComplete()">
-              <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
-              Mark complete
+              (click)="addToLibrary()">
+              <ion-icon slot="start" name="add-outline"></ion-icon>
+              Add to library
             </ion-button>
-          }
-          @if (canShareCompletionCard) {
+          } @else {
             <ion-button
               shape="round"
-              fill="outline"
-              class="quick-action"
-              [disabled]="isUpdatingLibrary"
-              (click)="exportCompletionCard()">
-              <ion-icon slot="start" name="download-outline"></ion-icon>
-              Completion card
+              class="quick-action quick-action--primary"
+              [disabled]="isUpdatingLibrary || primaryActionDisabled"
+              (click)="runPrimaryAction()">
+              <ion-icon slot="start" [name]="primaryActionIcon"></ion-icon>
+              {{ primaryActionLabel }}
             </ion-button>
-          }
-        }
-      </section>
-
-      @if (completionCardMessage) {
-        <p class="completion-card-message">{{ completionCardMessage }}</p>
-      }
-
-      @if (isInLibrary) {
-        <section class="quest-panel progress-panel">
-          <header class="section-header">
-            <div>
-              <span class="eyebrow">
-                <ion-icon [name]="config.progressEyebrowIcon"></ion-icon>
-                Watch progress
-              </span>
-              <h2>{{ episodeLabel }}</h2>
-            </div>
-            <ion-badge>{{ progress }}%</ion-badge>
-          </header>
-          <ion-progress-bar [value]="progress / 100"></ion-progress-bar>
-        </section>
-      }
-
-      @if (seasons.length) {
-        <section class="quest-panel dlc-panel">
-          <header class="section-header">
-            <div>
-              <span class="eyebrow">
-                <ion-icon name="layers-outline"></ion-icon>
-                Seasons
-              </span>
-              <h2>{{ seasons.length }} season{{ seasons.length === 1 ? '' : 's' }}</h2>
-            </div>
-          </header>
-
-          <div class="dlc-list">
-            @for (season of seasons; track season.id) {
-              <a
-                class="dlc-card"
-                [routerLink]="[config.seasonRouteBase, season.id]">
-                @if (season.image) {
-                  <img [src]="seasonImageUrl(season)" [alt]="season.name" loading="lazy" decoding="async" />
-                }
-                <div class="dlc-body">
-                  <h3>{{ season.name }}</h3>
-                  <span>{{ seasonReleaseLabel(season) }}</span>
-                </div>
-              </a>
+            @if (canMarkComplete) {
+              <ion-button
+                shape="round"
+                fill="outline"
+                class="quick-action"
+                [disabled]="isUpdatingLibrary"
+                (click)="markComplete()">
+                <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
+                Mark complete
+              </ion-button>
             }
-          </div>
+            @if (canShareCompletionCard) {
+              <ion-button
+                shape="round"
+                fill="outline"
+                class="quick-action"
+                [disabled]="isUpdatingLibrary"
+                (click)="exportCompletionCard()">
+                <ion-icon slot="start" name="download-outline"></ion-icon>
+                Completion card
+              </ion-button>
+            }
+          }
         </section>
+
+        @if (completionCardMessage) {
+          <p class="completion-card-message">{{ completionCardMessage }}</p>
+        }
+
+        @if (isInLibrary) {
+          <section class="quest-panel progress-panel">
+            <header class="section-header">
+              <div>
+                <span class="eyebrow">
+                  <ion-icon [name]="config.progressEyebrowIcon"></ion-icon>
+                  Watch progress
+                </span>
+                <h2>{{ episodeLabel }}</h2>
+              </div>
+              <ion-badge>{{ progress }}%</ion-badge>
+            </header>
+            <ion-progress-bar [value]="progress / 100"></ion-progress-bar>
+          </section>
+        }
+
+        @if (seasons.length) {
+          <section class="quest-panel dlc-panel">
+            <header class="section-header">
+              <div>
+                <span class="eyebrow">
+                  <ion-icon name="layers-outline"></ion-icon>
+                  Seasons
+                </span>
+                <h2>{{ seasons.length }} season{{ seasons.length === 1 ? '' : 's' }}</h2>
+              </div>
+            </header>
+
+            <div class="dlc-list">
+              @for (season of seasons; track season.id) {
+                <a
+                  class="dlc-card"
+                  [routerLink]="[config.seasonRouteBase, season.id]">
+                  @if (season.image) {
+                    <img [src]="seasonImageUrl(season)" [alt]="season.name" loading="lazy" decoding="async" />
+                  }
+                  <div class="dlc-body">
+                    <h3>{{ season.name }}</h3>
+                    <span>{{ seasonReleaseLabel(season) }}</span>
+                  </div>
+                </a>
+              }
+            </div>
+          </section>
+        }
+      }
+
+      @if (selectedTab === 'gallery') {
+        <app-media-availability
+          [kind]="config.kind"
+          [title]="media.name"
+          [releaseDate]="media.releaseDate" />
+
+        <app-media-videos
+          [mediaId]="media.id"
+          [mediaKind]="config.kind"
+          [canEdit]="canEditCatalog" />
       }
     </main>
   }

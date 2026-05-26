@@ -82,39 +82,54 @@
           </div>
         </div>
       </section>
-      <app-media-availability
-        kind="movies"
-        [title]="movie.name"
-        [releaseDate]="movie.releaseDate" />
-      <app-media-videos
-        [mediaId]="movie.id"
-        mediaKind="movies"
-        [canEdit]="canEditCatalog" />
-      <section class="library-card" [class.library-card--owned]="isInLibrary">
-        <div>
-          <span class="eyebrow">
-            <ion-icon name="film-outline"></ion-icon>
-            Progress
-          </span>
-          <h2>{{ isInLibrary ? 'Watch progress' : 'Add this movie to track progress' }}</h2>
-          <p>{{ isInLibrary ? watchedLabel + ' watched' : 'Your watch time tracking will show up here.' }}</p>
-        </div>
-        <ion-badge>{{ progress }}%</ion-badge>
-      </section>
-      @if (canShareCompletionCard) {
-        <section class="quick-actions">
-          <ion-button
-            shape="round"
-            fill="outline"
-            class="quick-action"
-            (click)="exportCompletionCard()">
-            <ion-icon slot="start" name="download-outline"></ion-icon>
-            Completion card
-          </ion-button>
+
+      <ion-segment class="detail-tabs" [value]="selectedTab" (ionChange)="setDetailTab($any($event).detail.value)">
+        <ion-segment-button value="overview">
+          <ion-label>Overview</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="gallery">
+          <ion-label>Gallery</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+
+      @if (selectedTab === 'overview') {
+        <section class="library-card" [class.library-card--owned]="isInLibrary">
+          <div>
+            <span class="eyebrow">
+              <ion-icon name="film-outline"></ion-icon>
+              Progress
+            </span>
+            <h2>{{ isInLibrary ? 'Watch progress' : 'Add this movie to track progress' }}</h2>
+            <p>{{ isInLibrary ? watchedLabel + ' watched' : 'Your watch time tracking will show up here.' }}</p>
+          </div>
+          <ion-badge>{{ progress }}%</ion-badge>
         </section>
+        @if (canShareCompletionCard) {
+          <section class="quick-actions">
+            <ion-button
+              shape="round"
+              fill="outline"
+              class="quick-action"
+              (click)="exportCompletionCard()">
+              <ion-icon slot="start" name="download-outline"></ion-icon>
+              Completion card
+            </ion-button>
+          </section>
+        }
+        @if (completionCardMessage) {
+          <p class="completion-card-message">{{ completionCardMessage }}</p>
+        }
       }
-      @if (completionCardMessage) {
-        <p class="completion-card-message">{{ completionCardMessage }}</p>
+
+      @if (selectedTab === 'gallery') {
+        <app-media-availability
+          kind="movies"
+          [title]="movie.name"
+          [releaseDate]="movie.releaseDate" />
+        <app-media-videos
+          [mediaId]="movie.id"
+          mediaKind="movies"
+          [canEdit]="canEditCatalog" />
       }
     </main>
   }

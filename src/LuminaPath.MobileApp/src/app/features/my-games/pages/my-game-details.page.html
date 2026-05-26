@@ -193,6 +193,9 @@
         <ion-segment-button value="overview">
           <ion-label>Overview</ion-label>
         </ion-segment-button>
+        <ion-segment-button value="gallery">
+          <ion-label>Gallery</ion-label>
+        </ion-segment-button>
         <ion-segment-button value="progress">
           <ion-label>Progress</ion-label>
         </ion-segment-button>
@@ -201,14 +204,14 @@
         </ion-segment-button>
       </ion-segment>
 
-      @if (selectedTab === 'overview') {
+      @if (selectedTab === 'gallery') {
         <app-media-availability
           kind="games"
           [title]="game.name"
           [releaseDate]="game.releaseDate" />
       }
 
-      @if (selectedTab === 'overview') {
+      @if (selectedTab === 'gallery') {
         <app-media-videos
           [mediaId]="game.id"
           mediaKind="games"

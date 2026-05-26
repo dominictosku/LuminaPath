@@ -9,6 +9,9 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
+  IonLabel,
+  IonSegment,
+  IonSegmentButton,
   IonSpinner,
   IonTitle,
   IonToolbar,
@@ -52,6 +55,9 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
     IonContent,
     IonHeader,
     IonIcon,
+    IonLabel,
+    IonSegment,
+    IonSegmentButton,
     IonSpinner,
     IonTitle,
     IonToolbar,
@@ -79,6 +85,7 @@ export class MovieDetailsPage implements OnInit {
   movie: Movie | null = null;
   isLoading = true;
   errorMessage = '';
+  selectedTab: 'overview' | 'gallery' = 'overview';
   completionCardMessage = '';
 
   // Admin edit/delete state ----------------------------------------------------
@@ -95,6 +102,7 @@ export class MovieDetailsPage implements OnInit {
       return;
     }
 
+    this.selectedTab = 'overview';
     await this.loadMovie(movieId);
   }
 
@@ -144,6 +152,10 @@ export class MovieDetailsPage implements OnInit {
     }
 
     void this.router.navigateByUrl('/library');
+  }
+
+  setDetailTab(value: unknown): void {
+    this.selectedTab = value === 'gallery' ? 'gallery' : 'overview';
   }
 
   async exportCompletionCard(): Promise<void> {
