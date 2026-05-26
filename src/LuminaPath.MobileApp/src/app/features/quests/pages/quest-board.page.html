@@ -177,7 +177,7 @@
                         <button
                           type="button"
                           class="quest-compact__folder"
-                          [class.quest-compact__folder--active]="quest.folderId != null"
+                          [class.quest-compact__folder--active]="(quest.folderId ?? null) !== null"
                           [attr.aria-label]="quest.folderName ? 'Move quest (currently in ' + quest.folderName + ')' : 'Move quest to folder'"
                           [attr.aria-haspopup]="true"
                           [attr.aria-expanded]="compactFolderPickerQuestId === quest.id"
@@ -192,8 +192,8 @@
                           <app-quest-folder-picker
                             [folders]="folders"
                             [currentFolderId]="quest.folderId ?? null"
-                            (select)="pickCompactFolder(quest, $event)"
-                            (close)="closeCompactFolderPicker()" />
+                            (selected)="pickCompactFolder(quest, $event)"
+                            (dismissed)="closeCompactFolderPicker()" />
                         }
                       </div>
                       <button
@@ -482,7 +482,7 @@
       [typeLabel]="typeLabelFn"
       [subtaskDraft]="subtaskDraftFn"
       (setSubtaskDraft)="setSubtaskDraft($event)"
-      (close)="cancelEdit()"
+      (dismissed)="cancelEdit()"
       (scheduleToday)="scheduleToday($event)"
       (scheduleTomorrow)="scheduleTomorrow($event)"
       (clearDueDate)="clearQuestDueDate($event)"
@@ -501,7 +501,7 @@
       [(nodeName)]="newNodeName"
       [skillIconOptions]="skillIconOptions"
       [skillColorOptions]="skillColorOptions"
-      (close)="closeModal()"
+      (dismissed)="closeModal()"
       (saveSkill)="saveSkill()"
       (addNode)="addNode()">
     </app-skill-modal>
@@ -512,10 +512,10 @@
       [mode]="state.mode"
       [folder]="state.folder"
       [sectionSuggestions]="knownSections"
-      (close)="closeFolderModal()"
+      (dismissed)="closeFolderModal()"
       (submitCreate)="createFolder($event)"
       (submitUpdate)="updateFolder($event.id, $event.patch)"
-      (delete)="deleteFolder($event)">
+      (deleteRequested)="deleteFolder($event)">
     </app-quest-folder-modal>
   }
 

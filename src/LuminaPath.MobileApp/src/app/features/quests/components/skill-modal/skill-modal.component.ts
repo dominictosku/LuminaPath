@@ -30,7 +30,7 @@ export class SkillModalComponent {
   readonly skillIconOptions = input<SkillIconOption[]>([]);
   readonly skillColorOptions = input<string[]>([]);
 
-  readonly close = output<void>();
+  readonly dismissed = output<void>();
   readonly saveSkill = output<void>();
   readonly addNode = output<void>();
 

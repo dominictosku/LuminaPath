@@ -38,9 +38,9 @@ export class QuestFolderPickerComponent {
   readonly currentFolderId = input<number | null>(null);
 
   /** Emits the selected folder id, or `null` to clear assignment. */
-  readonly select = output<number | null>();
+  readonly selected = output<number | null>();
   /** Emits when the user clicks outside / presses ESC. */
-  readonly close = output<void>();
+  readonly dismissed = output<void>();
 
   /**
    * Window-level click swallowed when it lands outside this component.
@@ -54,12 +54,12 @@ export class QuestFolderPickerComponent {
     if (target && this.hostRef.nativeElement.contains(target)) {
       return;
     }
-    this.close.emit();
+    this.dismissed.emit();
   }
 
   @HostListener('window:keydown.escape')
   protected onEscape(): void {
-    this.close.emit();
+    this.dismissed.emit();
   }
 
   protected isCurrent(folderId: number | null): boolean {
@@ -69,10 +69,10 @@ export class QuestFolderPickerComponent {
   protected pick(folderId: number | null): void {
     if (this.isCurrent(folderId)) {
       // Picking the already-selected folder = no-op; just close.
-      this.close.emit();
+      this.dismissed.emit();
       return;
     }
-    this.select.emit(folderId);
+    this.selected.emit(folderId);
   }
 
   protected trackByFolder(_: number, folder: QuestFolder): number {

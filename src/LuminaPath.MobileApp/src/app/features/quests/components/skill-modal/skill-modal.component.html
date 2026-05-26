@@ -1,6 +1,6 @@
-<div class="modal-backdrop" (click)="close.emit()">
+<div class="modal-backdrop" (click)="dismissed.emit()">
   <section class="quest-modal" (click)="$event.stopPropagation()">
-    <button type="button" class="modal-close" aria-label="Close" (click)="close.emit()">
+    <button type="button" class="modal-close" aria-label="Close" (click)="dismissed.emit()">
       <ion-icon name="close-outline"></ion-icon>
     </button>
     @if (mode() === 'skill') {

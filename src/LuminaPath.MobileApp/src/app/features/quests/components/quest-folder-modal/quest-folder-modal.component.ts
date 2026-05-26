@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   computed,
   input,
   output,
@@ -32,17 +33,17 @@ import {
   imports: [FormsModule, IonIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class QuestFolderModalComponent {
+export class QuestFolderModalComponent implements OnInit {
   readonly mode = input.required<'create' | 'edit'>();
   /** Required for `edit` mode; ignored for `create`. */
   readonly folder = input<QuestFolder | null>(null);
   /** Section-name suggestions: previously used section names across all folders. */
   readonly sectionSuggestions = input<readonly string[]>([]);
 
-  readonly close = output<void>();
+  readonly dismissed = output<void>();
   readonly submitCreate = output<QuestFolderCreate>();
   readonly submitUpdate = output<{ id: number; patch: QuestFolderUpdate }>();
-  readonly delete = output<QuestFolder>();
+  readonly deleteRequested = output<QuestFolder>();
 
   // Local form state — initialised from `folder` input when present.
   protected readonly name = signal('');
@@ -99,7 +100,7 @@ export class QuestFolderModalComponent {
   }
 
   protected onClose(): void {
-    this.close.emit();
+    this.dismissed.emit();
   }
 
   protected onSubmit(event: SubmitEvent): void {
@@ -136,7 +137,7 @@ export class QuestFolderModalComponent {
     const ok = window.confirm(
       `Delete "${folder.emoji} ${folder.name}"? Quests inside will stay but lose their folder.`,
     );
-    if (ok) this.delete.emit(folder);
+    if (ok) this.deleteRequested.emit(folder);
   }
 
   protected pickSuggestion(name: string): void {

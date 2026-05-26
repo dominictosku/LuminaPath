@@ -858,9 +858,9 @@ namespace LuminaPath.Core.Mapping
             return rating.HasValue ? Convert.ToByte(rating.Value) : null;
         }
 
-        private static int? ToDtoTimeSpend(double? timeSpend)
+        private static double? ToDtoTimeSpend(double? timeSpend)
         {
-            return timeSpend.HasValue ? Convert.ToInt32(timeSpend.Value) : null;
+            return timeSpend;
         }
 
         private static int? ResolveAnimePerEpisodeMinutes(int? perEpisodeMinutes, int? totalMinutes, int? episodeCount)

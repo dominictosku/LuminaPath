@@ -17,7 +17,7 @@ namespace LuminaPath.Core.Dtos
 
         public MediaStatus Status { get; set; }
 
-        public int? TimeSpend { get; set; }
+        public double? TimeSpend { get; set; }
 
         public int AnimeId { get; set; }
 

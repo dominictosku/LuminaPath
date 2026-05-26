@@ -170,7 +170,7 @@
     [isEditing]="isEditingSelectedGame()"
     [isSaving]="selectedGame ? isAdding(selectedGame) : false"
     (dismiss)="closeAddDialog()"
-    (submit)="submitAddGame()" />
+    (submitted)="submitAddGame()" />
 
   <app-library-create-dialog
     [(isOpen)]="isCreateDialogOpen"
@@ -180,5 +180,5 @@
     [isSaving]="isCreatingCatalogEntry"
     [errorMessage]="createErrorMessage"
     (dismiss)="closeCreateDialog()"
-    (submit)="submitCreate()" />
+    (submitted)="submitCreate()" />
 </ion-content>

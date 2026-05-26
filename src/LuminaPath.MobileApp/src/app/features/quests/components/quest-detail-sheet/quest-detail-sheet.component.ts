@@ -65,7 +65,7 @@ export class QuestDetailSheetComponent {
 
   readonly setSubtaskDraft = output<{ questId: number; value: string }>();
 
-  readonly close = output<void>();
+  readonly dismissed = output<void>();
   readonly scheduleToday = output<Quest>();
   readonly scheduleTomorrow = output<Quest>();
   readonly clearDueDate = output<Quest>();

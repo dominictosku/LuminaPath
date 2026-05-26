@@ -3,7 +3,7 @@
   [isOpen]="isOpen()"
   (didDismiss)="dismiss.emit()">
   <ng-template>
-    <form class="create-dialog" (ngSubmit)="submit.emit()" novalidate>
+    <form class="create-dialog" (ngSubmit)="submitted.emit()" novalidate>
       <header class="create-dialog__header">
         <div class="create-dialog__heading">
           <span class="create-dialog__eyebrow">

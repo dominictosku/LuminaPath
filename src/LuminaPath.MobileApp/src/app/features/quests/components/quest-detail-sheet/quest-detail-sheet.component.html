@@ -1,6 +1,6 @@
-<div class="modal-backdrop detail-backdrop" (click)="close.emit()">
+<div class="modal-backdrop detail-backdrop" (click)="dismissed.emit()">
   <section class="quest-detail-sheet" (click)="$event.stopPropagation()">
-    <button type="button" class="modal-close" aria-label="Close" (click)="close.emit()">
+    <button type="button" class="modal-close" aria-label="Close" (click)="dismissed.emit()">
       <ion-icon name="close-outline"></ion-icon>
     </button>
     <div class="detail-heading">
@@ -214,7 +214,7 @@
       }
 
       <div class="edit-actions">
-        <ion-button fill="clear" (click)="close.emit()">Cancel</ion-button>
+        <ion-button fill="clear" (click)="dismissed.emit()">Cancel</ion-button>
         <ion-button (click)="save.emit(quest())">Save</ion-button>
       </div>
     }

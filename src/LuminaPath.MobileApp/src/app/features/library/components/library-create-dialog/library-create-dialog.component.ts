@@ -54,7 +54,7 @@ export class LibraryCreateDialogComponent {
   readonly isEditing = input<boolean>(false);
 
   readonly dismiss = output<void>();
-  readonly submit = output<void>();
+  readonly submitted = output<void>();
 
   /** All available platforms — used to render the bitmask multi-select. */
   readonly platformChoices = Platforms;

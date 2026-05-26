@@ -37,6 +37,7 @@ import { MediaLibraryViewService } from 'src/app/features/library/services/media
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatShortDate } from 'src/app/shared/utils/format';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
+import { LiveSessionTrackerService } from 'src/app/shared/services/live-session-tracker.service';
 import { LibraryCreateDialogComponent } from 'src/app/features/library/components/library-create-dialog/library-create-dialog.component';
 import {
   CreateMediaForm,
@@ -49,12 +50,6 @@ import { GameHeroComponent } from '../components/game-hero/game-hero.component';
 import { GameForecastComponent } from '../components/game-forecast/game-forecast.component';
 import { GameTrophiesComponent } from '../components/game-trophies/game-trophies.component';
 import { GameDlcListComponent } from '../components/game-dlc-list/game-dlc-list.component';
-
-type LiveSessionSnapshot = {
-  startedAt: string;
-  myGameId: number;
-  notes: string;
-};
 
 @Component({
   selector: 'app-my-game-details',
@@ -97,6 +92,7 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   private readonly mediaStore = inject(MediaStore);
   private readonly mediaView = inject(MediaLibraryViewService);
   private readonly cache = inject(RequestCache);
+  private readonly liveSessionTracker = inject(LiveSessionTrackerService);
   readonly auth = inject(AuthService);
 
   /** Catalog dialog needs a MediaModeOption — this page is games-only. */
@@ -129,7 +125,6 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   isDeletingCatalogEntry = false;
   private liveSessionTimerId: number | null = null;
   private liveSessionGameId: number | null = null;
-  private readonly liveSessionStoragePrefix = 'luminapath.liveSession.games.';
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async (params) => {
@@ -312,7 +307,13 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     this.liveSessionNotes = '';
     this.liveSessionMessage = '';
     this.liveSessionMessageTone = 'neutral';
-    this.persistLiveSession();
+    this.liveSessionTracker.start({
+      gameId,
+      myGameId,
+      gameName: this.game?.name ?? null,
+      startedAt: this.liveSessionStartedAt,
+      notes: '',
+    });
     this.startLiveSessionTimer();
   }
 
@@ -388,17 +389,13 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
       return;
     }
 
-    const snapshot: LiveSessionSnapshot = {
-      startedAt: this.liveSessionStartedAt,
+    this.liveSessionTracker.start({
+      gameId,
       myGameId,
+      gameName: this.game?.name ?? null,
+      startedAt: this.liveSessionStartedAt,
       notes: this.liveSessionNotes,
-    };
-
-    try {
-      globalThis.localStorage?.setItem(this.liveSessionStorageKey(gameId), JSON.stringify(snapshot));
-    } catch {
-      // Live tracking still works for the current page when storage is blocked.
-    }
+    });
   }
 
   async openMoreMenu(): Promise<void> {
@@ -536,37 +533,21 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     this.liveSessionMessage = '';
     this.liveSessionMessageTone = 'neutral';
 
-    let raw: string | null = null;
-    try {
-      raw = globalThis.localStorage?.getItem(this.liveSessionStorageKey(gameId)) ?? null;
-    } catch {
-      raw = null;
-    }
-    if (!raw) {
+    const snapshot = this.liveSessionTracker.get(gameId);
+    if (!snapshot) {
       return;
     }
 
-    try {
-      const snapshot = JSON.parse(raw) as Partial<LiveSessionSnapshot>;
-      if (snapshot.myGameId !== this.myGameId) {
-        this.clearStoredLiveSession(gameId);
-        return;
-      }
-
-      const started = snapshot.startedAt ? new Date(snapshot.startedAt) : null;
-      if (!started || Number.isNaN(started.getTime())) {
-        this.clearStoredLiveSession(gameId);
-        return;
-      }
-
-      this.liveSessionGameId = gameId;
-      this.liveSessionStartedAt = started.toISOString();
-      this.liveSessionNotes = snapshot.notes ?? '';
-      this.updateLiveSessionElapsed();
-      this.startLiveSessionTimer();
-    } catch {
+    if (snapshot.myGameId !== this.myGameId) {
       this.clearStoredLiveSession(gameId);
+      return;
     }
+
+    this.liveSessionGameId = gameId;
+    this.liveSessionStartedAt = snapshot.startedAt;
+    this.liveSessionNotes = snapshot.notes;
+    this.updateLiveSessionElapsed();
+    this.startLiveSessionTimer();
   }
 
   private syncMediaStore(gameId: number): void {
@@ -678,20 +659,8 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     this.liveSessionElapsedSeconds = 0;
   }
 
-  private liveSessionStorageKey(gameId: number): string {
-    return `${this.liveSessionStoragePrefix}${gameId}`;
-  }
-
   private clearStoredLiveSession(gameId: number | null | undefined): void {
-    if (!gameId) {
-      return;
-    }
-
-    try {
-      globalThis.localStorage?.removeItem(this.liveSessionStorageKey(gameId));
-    } catch {
-      // Nothing to clean up when storage is blocked.
-    }
+    this.liveSessionTracker.clear(gameId);
   }
 
   private serializeDate(value: Date | string | null | undefined): string | null {

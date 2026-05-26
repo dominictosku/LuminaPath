@@ -70,6 +70,39 @@
           (click)="openSearch()">
           <ion-icon name="search-outline"></ion-icon>
         </button>
+        @if (liveSessions().length) {
+          <div class="menu-wrap">
+            <button
+              type="button"
+              class="icon-action live-session-button"
+              aria-label="Open live sessions"
+              [class.active]="openMenu === 'liveSessions'"
+              (click)="toggleMenu('liveSessions')">
+              <ion-icon name="timer-outline"></ion-icon>
+              <span class="live-session-count">{{ liveSessions().length }}</span>
+            </button>
+            @if (openMenu === 'liveSessions') {
+              <section class="dropdown-panel notification-panel live-session-panel">
+                <div class="dropdown-heading">
+                  <span>Live sessions</span>
+                  <strong>{{ liveSessions().length }} running</strong>
+                </div>
+                @for (session of liveSessions(); track trackByLiveSession($index, session)) {
+                  <a
+                    [routerLink]="['/library/games', session.gameId]"
+                    class="notification-item live-session-item"
+                    (click)="closeMenus()">
+                    <ion-icon name="timer-outline"></ion-icon>
+                    <span>
+                      <strong>{{ liveSessionTitle(session) }}</strong>
+                      <small>{{ liveSessionDurationLabel(session) }} - {{ liveSessionStartedLabel(session) }}</small>
+                    </span>
+                  </a>
+                }
+              </section>
+            }
+          </div>
+        }
         <div class="menu-wrap">
           <button
             type="button"

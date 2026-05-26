@@ -102,7 +102,7 @@
           <button
             type="button"
             class="quest-folder-trigger"
-            [class.quest-folder-trigger--active]="q.folderId != null"
+            [class.quest-folder-trigger--active]="(q.folderId ?? null) !== null"
             [attr.aria-haspopup]="true"
             [attr.aria-expanded]="folderPickerOpen()"
             (click)="openFolderPicker($event)">
@@ -113,8 +113,8 @@
             <app-quest-folder-picker
               [folders]="folders()"
               [currentFolderId]="q.folderId ?? null"
-              (select)="pickFolder($event)"
-              (close)="closeFolderPicker()" />
+              (selected)="pickFolder($event)"
+              (dismissed)="closeFolderPicker()" />
           }
         </div>
       </div>

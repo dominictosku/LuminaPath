@@ -41,7 +41,7 @@ export class LibraryAddDialogComponent {
   readonly isSaving = input<boolean>(false);
 
   readonly dismiss = output<void>();
-  readonly submit = output<void>();
+  readonly submitted = output<void>();
 
   imageFor(game: MediaItem): string {
     return mediaImageUrl(game.image);

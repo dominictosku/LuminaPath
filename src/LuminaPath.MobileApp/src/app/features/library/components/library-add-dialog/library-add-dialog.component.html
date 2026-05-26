@@ -4,7 +4,7 @@
   (didDismiss)="dismiss.emit()">
   <ng-template>
     @if (selectedGame(); as game) {
-      <form class="library-editor" (ngSubmit)="submit.emit()" novalidate>
+      <form class="library-editor" (ngSubmit)="submitted.emit()" novalidate>
         <section class="editor-cover" [style.background-image]="'url(' + imageFor(game) + ')'">
           <div class="editor-cover__shade"></div>
           <ion-button
