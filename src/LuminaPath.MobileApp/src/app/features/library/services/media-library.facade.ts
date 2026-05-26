@@ -21,6 +21,7 @@ type MediaStrategy = {
   list(filter?: MediaFilter): Observable<PaginateResult<MediaItem>>;
   add(mediaId: number, details: LibraryEntryDetails): Observable<UserMediaEntry>;
   update(libraryEntryId: number, mediaId: number, details: LibraryEntryDetails): Observable<UserMediaEntry>;
+  remove(libraryEntryId: number): Observable<void>;
 };
 
 @Injectable({
@@ -46,21 +47,25 @@ export class MediaLibraryFacade {
         list: (filter) => gameService.getAll(filter).pipe(map((page) => this.mapPage(page, (game) => this.mapGame(game)))),
         add: (id, details) => myGameService.addToLibrary(id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
         update: (libId, id, details) => myGameService.updateLibraryEntry(libId, id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
+        remove: (libId) => myGameService.delete(libId),
       },
       animes: {
         list: (filter) => animeService.getAll(filter).pipe(map((page) => this.mapPage(page, (anime) => this.mapAnime(anime)))),
         add: (id, details) => myAnimeService.addToLibrary(id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
         update: (libId, id, details) => myAnimeService.updateLibraryEntry(libId, id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
+        remove: (libId) => myAnimeService.delete(libId),
       },
       movies: {
         list: (filter) => movieService.getAll(filter).pipe(map((page) => this.mapPage(page, (movie) => this.mapMovie(movie)))),
         add: (id, details) => myMovieService.addToLibrary(id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
         update: (libId, id, details) => myMovieService.updateLibraryEntry(libId, id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
+        remove: (libId) => myMovieService.delete(libId),
       },
       series: {
         list: (filter) => seriesService.getAll(filter).pipe(map((page) => this.mapPage(page, (series) => this.mapSeries(series)))),
         add: (id, details) => mySeriesService.addToLibrary(id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
         update: (libId, id, details) => mySeriesService.updateLibraryEntry(libId, id, details).pipe(map((entry) => this.mapRequiredLibraryEntry(entry))),
+        remove: (libId) => mySeriesService.delete(libId),
       },
     };
   }
@@ -75,6 +80,10 @@ export class MediaLibraryFacade {
 
   updateLibraryEntry(libraryEntryId: number, mediaId: number, details: LibraryEntryDetails): Observable<UserMediaEntry> {
     return this.currentStrategy().update(libraryEntryId, mediaId, details);
+  }
+
+  removeFromLibrary(libraryEntryId: number): Observable<void> {
+    return this.currentStrategy().remove(libraryEntryId);
   }
 
   detailsRoute(item: MediaItem): unknown[] {

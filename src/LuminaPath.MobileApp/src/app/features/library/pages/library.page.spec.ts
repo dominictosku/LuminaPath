@@ -75,6 +75,7 @@ describe('LibraryPage', () => {
       'getAll',
       'addToLibrary',
       'updateLibraryEntry',
+      'removeFromLibrary',
       'detailsRoute',
     ]);
     releaseNotifications = jasmine.createSpyObj<ReleaseNotificationService>(
@@ -84,6 +85,7 @@ describe('LibraryPage', () => {
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
 
     mediaLibrary.getAll.and.returnValue(getAllResponse);
+    mediaLibrary.removeFromLibrary.and.returnValue(of(void 0));
     mediaLibrary.detailsRoute.and.callFake((item) => ['/library', item.kind, item.id]);
     releaseNotifications.syncForGames.and.resolveTo();
     router.navigate.and.resolveTo(true);
@@ -437,6 +439,81 @@ describe('LibraryPage', () => {
 
     expect(mediaLibrary.addToLibrary).not.toHaveBeenCalled();
     expect(mediaLibrary.updateLibraryEntry).not.toHaveBeenCalled();
+  });
+
+  it('bulkUpdateStatus updates selected library entries while preserving entry data', async () => {
+    const first = makeGame({
+      id: 7,
+      name: 'Hades',
+      libraryEntry: makeEntry({
+        id: 99,
+        status: GameStatus.Planned,
+        timeSpend: 12.5,
+        rating: 9,
+        startDate: '2026-05-01',
+      }),
+    });
+    const second = makeGame({
+      id: 8,
+      name: 'Celeste',
+      libraryEntry: makeEntry({
+        id: 100,
+        status: GameStatus.OnHold,
+        timeSpend: 3,
+        rating: 10,
+      }),
+    });
+    configure(of(pageOf([first, second])));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    TestBed.flushEffects();
+    mediaLibrary.updateLibraryEntry.and.callFake((libraryEntryId, mediaId, details) =>
+      of(makeEntry({ id: libraryEntryId, status: details.status, timeSpend: details.timeSpend })),
+    );
+
+    component.toggleItemSelection(first);
+    component.toggleItemSelection(second);
+    component.setBulkStatus(GameStatus.Playing);
+    await component.bulkUpdateStatus();
+    TestBed.flushEffects();
+
+    expect(mediaLibrary.updateLibraryEntry).toHaveBeenCalledTimes(2);
+    expect(mediaLibrary.updateLibraryEntry).toHaveBeenCalledWith(99, 7, jasmine.objectContaining({
+      status: GameStatus.Playing,
+      timeSpend: 12.5,
+      rating: 9,
+      startDate: '2026-05-01',
+    }));
+    expect(mediaLibrary.updateLibraryEntry).toHaveBeenCalledWith(100, 8, jasmine.objectContaining({
+      status: GameStatus.Playing,
+      timeSpend: 3,
+      rating: 10,
+    }));
+    expect(component.selectedCount).toBe(0);
+    expect(component.successMessage).toBe('2 games updated.');
+  });
+
+  it('bulkRemoveFromLibrary removes selected personal entries and keeps catalog items visible', async () => {
+    const owned = makeGame({
+      id: 7,
+      name: 'Hades',
+      libraryEntry: makeEntry({ id: 99, status: GameStatus.Completed }),
+    });
+    const catalog = makeGame({ id: 8, name: 'Catalog Only' });
+    configure(of(pageOf([owned, catalog])));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    TestBed.flushEffects();
+
+    component.toggleItemSelection(owned);
+    component.toggleItemSelection(catalog);
+    await component.bulkRemoveFromLibrary();
+    TestBed.flushEffects();
+
+    expect(mediaLibrary.removeFromLibrary).toHaveBeenCalledOnceWith(99);
+    expect(component.games.find((game) => game.id === 7)?.libraryEntry).toBeNull();
+    expect(component.games.find((game) => game.id === 8)).toBeTruthy();
+    expect(component.successMessage).toBe('1 game removed from your library.');
   });
 
   it('openDetails uses the facade route', () => {

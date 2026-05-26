@@ -59,6 +59,7 @@ describe('MediaStore', () => {
       'getAll',
       'addToLibrary',
       'updateLibraryEntry',
+      'removeFromLibrary',
       'detailsRoute',
     ]);
     TestBed.configureTestingModule({
@@ -167,6 +168,26 @@ describe('MediaStore', () => {
 
       expect(store.items()[0].libraryEntry).toBe(persisted);
       expect(store.items()[0].libraryEntry?.status).toBe(3);
+    });
+  });
+
+  describe('removeFromLibrary', () => {
+    beforeEach(async () => {
+      facade.getAll.and.returnValue(
+        of(pageOf([makeItem({ id: 1, libraryEntry: makeEntry({ id: 100, status: 1 }) })])),
+      );
+      await store.loadCatalog();
+    });
+
+    it('clears the cached library entry but keeps the catalog item', async () => {
+      facade.removeFromLibrary.and.returnValue(of(void 0));
+
+      await store.removeFromLibrary(100, 1);
+
+      expect(facade.removeFromLibrary).toHaveBeenCalledOnceWith(100);
+      expect(store.items()[0].id).toBe(1);
+      expect(store.items()[0].libraryEntry).toBeNull();
+      expect(store.catalogOnlyItems().map((item) => item.id)).toEqual([1]);
     });
   });
 

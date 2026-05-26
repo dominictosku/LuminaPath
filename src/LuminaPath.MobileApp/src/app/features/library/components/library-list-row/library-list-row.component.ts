@@ -18,11 +18,27 @@ export class LibraryListRowComponent {
   @Input({ required: true }) item!: MediaItem;
   @Input({ required: true }) mediaMode!: MediaModeOption;
   @Input() isAdding = false;
+  @Input() selectionMode = false;
+  @Input() selected = false;
+  @Input() selectable = false;
 
   @Output() edit = new EventEmitter<MediaItem>();
   @Output() details = new EventEmitter<MediaItem>();
+  @Output() selectionChange = new EventEmitter<MediaItem>();
 
   imageFor(item: MediaItem): string {
     return mediaImageUrl(item.image);
+  }
+
+  openOrSelect(item: MediaItem): void {
+    if (this.selectionMode) {
+      if (this.selectable) {
+        this.selectionChange.emit(item);
+      }
+
+      return;
+    }
+
+    this.details.emit(item);
   }
 }

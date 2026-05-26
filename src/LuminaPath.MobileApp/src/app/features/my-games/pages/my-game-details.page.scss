@@ -410,6 +410,13 @@
   }
 }
 
+.completion-card-message {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 720;
+}
+
 .overflow-button {
   --color: var(--text);
   --border-radius: 999px;

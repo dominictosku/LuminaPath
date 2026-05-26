@@ -30,6 +30,7 @@ import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { MediaAvailabilityComponent } from 'src/app/shared/components/media-availability/media-availability.component';
+import { CompletionCardService } from 'src/app/shared/services/completion-card.service';
 
 const WATCH_STATUS_LABELS: Record<number, string> = {
   0: 'On hold',
@@ -66,6 +67,7 @@ export class MovieDetailsPage implements OnInit {
   private readonly alertController = inject(AlertController);
   private readonly mediaView = inject(MediaLibraryViewService);
   private readonly cache = inject(RequestCache);
+  private readonly completionCard = inject(CompletionCardService);
   readonly auth = inject(AuthService);
 
   /** Catalog dialog needs a MediaModeOption — this page is movies-only. */
@@ -75,6 +77,7 @@ export class MovieDetailsPage implements OnInit {
   movie: Movie | null = null;
   isLoading = true;
   errorMessage = '';
+  completionCardMessage = '';
 
   // Admin edit/delete state ----------------------------------------------------
   isEditDialogOpen = false;
@@ -124,6 +127,10 @@ export class MovieDetailsPage implements OnInit {
     return expected > 0 ? Math.min(100, Math.round((watched / expected) * 100)) : 0;
   }
 
+  get canShareCompletionCard(): boolean {
+    return this.isInLibrary && Number(this.movie?.myMovies?.status ?? -1) === 3;
+  }
+
   imageUrl(): string {
     return mediaImageUrl(this.movie?.image);
   }
@@ -135,6 +142,32 @@ export class MovieDetailsPage implements OnInit {
     }
 
     void this.router.navigateByUrl('/library');
+  }
+
+  async exportCompletionCard(): Promise<void> {
+    if (!this.movie || !this.canShareCompletionCard) {
+      return;
+    }
+
+    this.completionCardMessage = '';
+    try {
+      const fileName = await this.completionCard.export({
+        title: this.movie.name,
+        kindLabel: 'Movie',
+        statusLabel: this.statusLabel,
+        coverUrl: this.imageUrl(),
+        rating: this.movie.myMovies?.rating ?? null,
+        completedAt: this.movie.myMovies?.endDate ?? null,
+        detailLines: [
+          this.releaseLabel,
+          this.watchTimeLabel,
+          this.watchedLabel,
+        ],
+      });
+      this.completionCardMessage = `Saved ${fileName}.`;
+    } catch (error) {
+      this.completionCardMessage = extractErrorMessage(error, 'Completion card could not be exported.');
+    }
   }
 
   private async loadMovie(movieId: number): Promise<void> {

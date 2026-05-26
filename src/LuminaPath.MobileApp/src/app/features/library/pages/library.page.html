@@ -98,7 +98,68 @@
               Create
             </ion-button>
           }
+          @if (visibleLibraryItems.length) {
+            <ion-button fill="clear" size="small" (click)="toggleSelectionMode()">
+              <ion-icon slot="start" name="checkbox-outline"></ion-icon>
+              {{ selectionMode ? 'Done' : 'Select' }}
+            </ion-button>
+          }
           <ion-button fill="clear" size="small" (click)="clearFilters()">Reset</ion-button>
+        </div>
+      </section>
+    }
+
+    @if (!isLoading && selectionMode) {
+      <section class="bulk-actions">
+        <div class="bulk-actions__summary">
+          <span class="eyebrow">
+            <ion-icon name="checkbox-outline"></ion-icon>
+            Bulk actions
+          </span>
+          <h2>{{ bulkSelectionSummary }}</h2>
+        </div>
+        <div class="bulk-actions__controls">
+          <ion-button
+            fill="outline"
+            size="small"
+            [disabled]="!visibleLibraryItems.length || isBulkMutating"
+            (click)="selectVisibleLibraryItems()">
+            Select visible
+          </ion-button>
+          <ion-button
+            fill="clear"
+            size="small"
+            [disabled]="!selectedCount || isBulkMutating"
+            (click)="clearSelection()">
+            Clear
+          </ion-button>
+          <label class="bulk-status-field">
+            <span>Status</span>
+            <select
+              [value]="bulkStatusValue"
+              [disabled]="!selectedCount || isBulkMutating"
+              (change)="setBulkStatus($any($event.target).value)">
+              @for (option of statusOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+          <ion-button
+            size="small"
+            [disabled]="!selectedCount || isBulkMutating"
+            (click)="bulkUpdateStatus()">
+            <ion-icon slot="start" name="save-outline"></ion-icon>
+            {{ isBulkMutating ? 'Working...' : 'Apply' }}
+          </ion-button>
+          <ion-button
+            fill="outline"
+            color="danger"
+            size="small"
+            [disabled]="!selectedCount || isBulkMutating"
+            (click)="confirmBulkRemove()">
+            <ion-icon slot="start" name="trash-outline"></ion-icon>
+            Remove
+          </ion-button>
         </div>
       </section>
     }
@@ -110,8 +171,12 @@
             [item]="game"
             [mediaMode]="mediaMode"
             [isAdding]="isAdding(game)"
+            [selectionMode]="selectionMode"
+            [selectable]="isSelectable(game)"
+            [selected]="isSelected(game)"
             (edit)="openGameListDialog($event)"
-            (details)="openDetails($event)">
+            (details)="openDetails($event)"
+            (selectionChange)="toggleItemSelection($event)">
           </app-library-card>
         }
       </section>
@@ -131,8 +196,12 @@
             [item]="game"
             [mediaMode]="mediaMode"
             [isAdding]="isAdding(game)"
+            [selectionMode]="selectionMode"
+            [selectable]="isSelectable(game)"
+            [selected]="isSelected(game)"
             (edit)="openGameListDialog($event)"
             (details)="openDetails($event)"
+            (selectionChange)="toggleItemSelection($event)"
             [style.top.px]="(visibleListWindow().start + i) * listRowStride">
           </app-library-list-row>
         }

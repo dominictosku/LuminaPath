@@ -16,6 +16,15 @@
   backdrop-filter: blur(18px);
 }
 
+.list-row--selecting {
+  cursor: pointer;
+}
+
+.list-row--selected {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px var(--accent-soft), 0 18px 46px rgba(16, 24, 40, 0.08);
+}
+
 .quick-add-button {
   position: absolute;
   top: 10px;
@@ -54,6 +63,37 @@
 }
 
 .list-row__add {
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+}
+
+.selection-button {
+  z-index: 2;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: var(--muted);
+  background: rgba(17, 24, 39, 0.86);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
+  backdrop-filter: blur(16px);
+
+  ion-icon {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.selection-button--selected {
+  color: #ecfdf5;
+  background: rgba(16, 185, 129, 0.9);
+}
+
+.list-row__select {
+  position: absolute;
   top: 50%;
   right: 10px;
   transform: translateY(-50%);

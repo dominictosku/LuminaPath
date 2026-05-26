@@ -39,6 +39,7 @@ import { formatShortDate } from 'src/app/shared/utils/format';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { LiveSessionTrackerService } from 'src/app/shared/services/live-session-tracker.service';
 import { MediaAvailabilityComponent } from 'src/app/shared/components/media-availability/media-availability.component';
+import { CompletionCardService } from 'src/app/shared/services/completion-card.service';
 import { LibraryCreateDialogComponent } from 'src/app/features/library/components/library-create-dialog/library-create-dialog.component';
 import {
   CreateMediaForm,
@@ -95,6 +96,7 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   private readonly mediaView = inject(MediaLibraryViewService);
   private readonly cache = inject(RequestCache);
   private readonly liveSessionTracker = inject(LiveSessionTrackerService);
+  private readonly completionCard = inject(CompletionCardService);
   readonly auth = inject(AuthService);
 
   /** Catalog dialog needs a MediaModeOption — this page is games-only. */
@@ -118,6 +120,7 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   isSavingLiveSession = false;
   liveSessionMessage = '';
   liveSessionMessageTone: 'success' | 'error' | 'neutral' = 'neutral';
+  completionCardMessage = '';
 
   // Admin edit/delete state ----------------------------------------------------
   isEditDialogOpen = false;
@@ -210,6 +213,11 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     return `Started ${started.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   }
 
+  get canShareCompletionCard(): boolean {
+    const status = Number(this.libraryEntry?.status ?? -1);
+    return this.isInLibrary && (status === 3 || status === 4);
+  }
+
   get dlcs() {
     return this.game?.dlcs ?? [];
   }
@@ -293,6 +301,32 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
       // silent — user can retry
     } finally {
       this.isUpdatingLibrary = false;
+    }
+  }
+
+  async exportCompletionCard(): Promise<void> {
+    if (!this.game || !this.canShareCompletionCard) {
+      return;
+    }
+
+    this.completionCardMessage = '';
+    try {
+      const fileName = await this.completionCard.export({
+        title: this.game.name,
+        kindLabel: 'Game',
+        statusLabel: this.statusLabel,
+        coverUrl: this.imageUrl(),
+        rating: this.libraryEntry?.rating ?? null,
+        completedAt: this.libraryEntry?.endDate ?? null,
+        detailLines: [
+          this.platformLabel,
+          this.playtimeLabel,
+          this.trackedHoursLabel(),
+        ],
+      });
+      this.completionCardMessage = `Saved ${fileName}.`;
+    } catch (error) {
+      this.completionCardMessage = extractErrorMessage(error, 'Completion card could not be exported.');
     }
   }
 
@@ -626,6 +660,11 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   private nextTrackedHours(durationMinutes: number): number {
     const current = Number(this.libraryEntry?.timeSpend ?? 0);
     return Math.round((current + durationMinutes / 60) * 100) / 100;
+  }
+
+  private trackedHoursLabel(): string {
+    const hours = Number(this.libraryEntry?.timeSpend ?? 0);
+    return hours > 0 ? `${Math.round(hours * 10) / 10}h tracked` : '';
   }
 
   private startLiveSessionTimer(): void {

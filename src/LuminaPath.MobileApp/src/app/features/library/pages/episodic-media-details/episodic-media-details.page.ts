@@ -23,6 +23,7 @@ import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { MEDIA_MODE_OPTIONS, MediaModeOption } from 'src/app/shared/services/media-mode.service';
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { MediaAvailabilityComponent } from 'src/app/shared/components/media-availability/media-availability.component';
+import { CompletionCardService } from 'src/app/shared/services/completion-card.service';
 import { LibraryEntryDetails } from '../../models/media-item.model';
 import { MediaLibraryViewService } from '../../services/media-library-view.service';
 import { MediaStore } from '../../state/media.store';
@@ -78,6 +79,7 @@ export class EpisodicMediaDetailsPage implements OnInit {
   private readonly mediaStore = inject(MediaStore);
   private readonly mediaView = inject(MediaLibraryViewService);
   private readonly cache = inject(RequestCache);
+  private readonly completionCard = inject(CompletionCardService);
   readonly auth = inject(AuthService);
 
   /** Resolved at construction time from the kind on the supplied config. */
@@ -90,6 +92,7 @@ export class EpisodicMediaDetailsPage implements OnInit {
   errorMessage = '';
   isUpdatingLibrary = false;
   headerCondensed = false;
+  completionCardMessage = '';
 
   // Admin edit/delete state ----------------------------------------------------
   isEditDialogOpen = false;
@@ -207,6 +210,10 @@ export class EpisodicMediaDetailsPage implements OnInit {
     return false;
   }
 
+  get canShareCompletionCard(): boolean {
+    return this.isInLibrary && Number(this.libraryEntry?.status ?? -1) === 3;
+  }
+
   get canMarkComplete(): boolean {
     const status = Number(this.libraryEntry?.status ?? 1);
     if (status === 3) return false;
@@ -254,6 +261,32 @@ export class EpisodicMediaDetailsPage implements OnInit {
       // silent
     } finally {
       this.isUpdatingLibrary = false;
+    }
+  }
+
+  async exportCompletionCard(): Promise<void> {
+    if (!this.media || !this.canShareCompletionCard) {
+      return;
+    }
+
+    this.completionCardMessage = '';
+    try {
+      const fileName = await this.completionCard.export({
+        title: this.media.name,
+        kindLabel: this.mediaMode.singular,
+        statusLabel: this.statusLabel,
+        coverUrl: this.imageUrl(),
+        rating: this.libraryEntry?.rating ?? null,
+        completedAt: this.libraryEntry?.endDate ?? null,
+        detailLines: [
+          this.episodeLabel,
+          this.genreLabel,
+          this.fourthMetaLabel,
+        ],
+      });
+      this.completionCardMessage = `Saved ${fileName}.`;
+    } catch (error) {
+      this.completionCardMessage = extractErrorMessage(error, 'Completion card could not be exported.');
     }
   }
 

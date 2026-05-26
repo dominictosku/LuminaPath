@@ -97,6 +97,21 @@
         </div>
         <ion-badge>{{ progress }}%</ion-badge>
       </section>
+      @if (canShareCompletionCard) {
+        <section class="quick-actions">
+          <ion-button
+            shape="round"
+            fill="outline"
+            class="quick-action"
+            (click)="exportCompletionCard()">
+            <ion-icon slot="start" name="download-outline"></ion-icon>
+            Completion card
+          </ion-button>
+        </section>
+      }
+      @if (completionCardMessage) {
+        <p class="completion-card-message">{{ completionCardMessage }}</p>
+      }
     </main>
   }
 

@@ -14,6 +14,7 @@ import {
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
+  AlertController,
   IonButton,
   IonContent,
   IonIcon,
@@ -36,7 +37,7 @@ import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { MediaLibraryFacade } from '../services/media-library.facade';
 import { MediaStore } from '../state/media.store';
-import { MediaItem } from '../models/media-item.model';
+import { LibraryEntryDetails, MediaItem, UserMediaEntry } from '../models/media-item.model';
 import { MediaLibraryForm } from '../models/media-library-form.model';
 import { MediaLibraryViewService } from '../services/media-library-view.service';
 import { GameStatus } from '../models/library-status.model';
@@ -88,6 +89,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   private mediaLibrary = inject(MediaLibraryFacade);
   private mediaStore = inject(MediaStore);
   private releaseNotifications = inject(ReleaseNotificationService);
+  private alertController = inject(AlertController);
   private router = inject(Router);
   private mediaModeService = inject(MediaModeService);
   readonly mediaView = inject(MediaLibraryViewService);
@@ -130,6 +132,10 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   errorMessage = '';
   successMessage = '';
   addingGameIds = new Set<number>();
+  selectionMode = false;
+  selectedItemIds = new Set<number>();
+  bulkStatusValue = GameStatus.Playing;
+  isBulkMutating = false;
   selectedGame: MediaItem | null = null;
   isAddDialogOpen = false;
   addGameForm: MediaLibraryForm = {
@@ -254,6 +260,9 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
       this.mediaMode = mode;
       if (mode.id !== previousModeId) {
         previousModeId = mode.id;
+        this.selectionMode = false;
+        this.clearSelection();
+        this.bulkStatusValue = this.mediaView.statusOptions(mode)[0]?.value ?? GameStatus.Planned;
         this.clearFilters(false);
         this.loadSavedPresets();
         this.loadGames();
@@ -383,6 +392,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   private applyLoadedGames(): void {
     this.refreshLibraryIntelligence();
     this.filteredGames.set(this.games);
+    this.pruneSelectedItems();
   }
 
   clearFilters(apply = true) {
@@ -553,6 +563,32 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     return this.mediaView.statusOptions(this.mediaMode);
   }
 
+  get visibleLibraryItems(): MediaItem[] {
+    return this.filteredGames().filter((item) => !!item.libraryEntry);
+  }
+
+  get selectedItems(): MediaItem[] {
+    return this.games.filter((item) => this.selectedItemIds.has(item.id));
+  }
+
+  get selectedLibraryItems(): MediaItem[] {
+    return this.selectedItems.filter((item) => !!item.libraryEntry);
+  }
+
+  get selectedCount(): number {
+    return this.selectedLibraryItems.length;
+  }
+
+  get bulkSelectionSummary(): string {
+    if (!this.visibleLibraryItems.length) {
+      return `No ${this.mediaMode.label.toLowerCase()} from this result set are in your library.`;
+    }
+
+    return this.selectedCount === 1
+      ? `1 ${this.mediaMode.singular} selected`
+      : `${this.selectedCount} ${this.mediaMode.label.toLowerCase()} selected`;
+  }
+
   get heroTitle(): string {
     return this.mediaView.heroTitle(this.mediaMode);
   }
@@ -578,6 +614,146 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     this.shortGameCount = summary.shortGameCount;
     this.abandonedGameCount = summary.abandonedGameCount;
     this.nextBestGame = summary.nextBestGame;
+  }
+
+  toggleSelectionMode(): void {
+    this.selectionMode = !this.selectionMode;
+    if (!this.selectionMode) {
+      this.clearSelection();
+    }
+  }
+
+  toggleItemSelection(item: MediaItem): void {
+    if (!this.isSelectable(item)) {
+      return;
+    }
+
+    const next = new Set(this.selectedItemIds);
+    if (next.has(item.id)) {
+      next.delete(item.id);
+    } else {
+      next.add(item.id);
+    }
+    this.selectedItemIds = next;
+  }
+
+  selectVisibleLibraryItems(): void {
+    const next = new Set(this.selectedItemIds);
+    for (const item of this.visibleLibraryItems) {
+      next.add(item.id);
+    }
+    this.selectedItemIds = next;
+  }
+
+  clearSelection(): void {
+    this.selectedItemIds = new Set<number>();
+  }
+
+  isSelected(item: MediaItem): boolean {
+    return this.selectedItemIds.has(item.id);
+  }
+
+  isSelectable(item: MediaItem): boolean {
+    return !!item.libraryEntry;
+  }
+
+  setBulkStatus(value: string | number): void {
+    const next = Number(value);
+    if (Number.isFinite(next)) {
+      this.bulkStatusValue = next;
+    }
+  }
+
+  async bulkUpdateStatus(): Promise<void> {
+    const selected = this.selectedLibraryItems;
+    if (!selected.length || this.isBulkMutating) {
+      return;
+    }
+
+    this.isBulkMutating = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    try {
+      for (const item of selected) {
+        const entry = item.libraryEntry;
+        if (!entry) {
+          continue;
+        }
+
+        await this.mediaStore.updateLibraryEntry(
+          entry.id,
+          item.id,
+          this.detailsWithStatus(entry, this.bulkStatusValue),
+        );
+      }
+
+      this.successMessage = this.bulkSuccessMessage(selected.length, 'updated');
+      this.clearSelection();
+    } catch (error) {
+      this.errorMessage = extractErrorMessage(
+        error,
+        `Selected ${this.mediaMode.label.toLowerCase()} could not be updated.`,
+      );
+    } finally {
+      this.isBulkMutating = false;
+    }
+  }
+
+  async confirmBulkRemove(): Promise<void> {
+    const selected = this.selectedLibraryItems;
+    if (!selected.length || this.isBulkMutating) {
+      return;
+    }
+
+    const count = selected.length;
+    const alert = await this.alertController.create({
+      header: `Remove ${count} ${count === 1 ? this.mediaMode.singular : this.mediaMode.label.toLowerCase()}?`,
+      message: `This removes the selected ${this.mediaMode.label.toLowerCase()} from your personal library. Catalog entries stay available.`,
+      cssClass: 'media-confirm-alert',
+      buttons: [
+        { text: 'Keep', role: 'cancel' },
+        {
+          text: 'Remove',
+          role: 'destructive',
+          cssClass: 'media-confirm-alert__destructive',
+          handler: () => {
+            void this.bulkRemoveFromLibrary();
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  async bulkRemoveFromLibrary(): Promise<void> {
+    const selected = this.selectedLibraryItems;
+    if (!selected.length || this.isBulkMutating) {
+      return;
+    }
+
+    this.isBulkMutating = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    try {
+      for (const item of selected) {
+        const entry = item.libraryEntry;
+        if (entry) {
+          await this.mediaStore.removeFromLibrary(entry.id, item.id);
+        }
+      }
+
+      this.successMessage = this.bulkSuccessMessage(selected.length, 'removed from your library');
+      this.clearSelection();
+    } catch (error) {
+      this.errorMessage = extractErrorMessage(
+        error,
+        `Selected ${this.mediaMode.label.toLowerCase()} could not be removed.`,
+      );
+    } finally {
+      this.isBulkMutating = false;
+    }
   }
 
   // Only the three labels used by the inline "finish-pick" section remain
@@ -641,6 +817,45 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     return this.mediaView.libraryEntry(game);
   }
 
+  private detailsWithStatus(entry: UserMediaEntry, status: number): LibraryEntryDetails {
+    return {
+      status,
+      timeSpend: entry.timeSpend ?? null,
+      rating: entry.rating ?? null,
+      startDate: this.serializeDate(entry.startDate),
+      endDate: this.serializeDate(entry.endDate),
+      personalNotes: entry.personalNotes ?? null,
+      currentEpisode: this.isEpisodeMode ? entry.currentEpisode ?? null : null,
+    };
+  }
+
+  private serializeDate(value: Date | string | null | undefined): string | null {
+    if (!value) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value.toISOString();
+    }
+
+    return value;
+  }
+
+  private pruneSelectedItems(): void {
+    if (!this.selectedItemIds.size) {
+      return;
+    }
+
+    const availableIds = new Set(this.games.filter((item) => item.libraryEntry).map((item) => item.id));
+    const next = new Set<number>();
+    for (const id of this.selectedItemIds) {
+      if (availableIds.has(id)) {
+        next.add(id);
+      }
+    }
+    this.selectedItemIds = next;
+  }
+
   private loadSavedPresets(): void {
     this.savedPresets = this.libraryFilterPresets.load(this.mediaMode.id);
   }
@@ -651,6 +866,11 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
 
   private addGameErrorMessage(error: unknown): string {
     return extractErrorMessage(error, `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`);
+  }
+
+  private bulkSuccessMessage(count: number, action: string): string {
+    const subject = count === 1 ? this.mediaMode.singular : this.mediaMode.label.toLowerCase();
+    return `${count} ${subject} ${action}.`;
   }
 
   private capitalize(value: string): string {

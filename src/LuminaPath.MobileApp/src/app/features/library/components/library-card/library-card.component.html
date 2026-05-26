@@ -1,17 +1,29 @@
-<article class="game-card">
-  <ion-button
-    fill="clear"
-    class="quick-add-button"
-    [class.quick-add-button--edit]="view.hasLibraryEntry(item)"
-    [disabled]="isAdding"
-    [attr.aria-label]="(view.hasLibraryEntry(item) ? 'Edit ' : 'Add ') + item.name + (view.hasLibraryEntry(item) ? ' in my library' : ' to my library')"
-    (click)="edit.emit(item)">
-    <ion-icon slot="icon-only" [name]="isAdding ? 'hourglass-outline' : (view.hasLibraryEntry(item) ? 'create-outline' : 'add-outline')"></ion-icon>
-  </ion-button>
+<article class="game-card" [class.game-card--selected]="selected" [class.game-card--selecting]="selectionMode">
+  @if (selectionMode && selectable) {
+    <button
+      type="button"
+      class="selection-button"
+      [class.selection-button--selected]="selected"
+      [attr.aria-pressed]="selected"
+      [attr.aria-label]="(selected ? 'Deselect ' : 'Select ') + item.name"
+      (click)="selectionChange.emit(item)">
+      <ion-icon [name]="selected ? 'checkbox-outline' : 'ellipse-outline'"></ion-icon>
+    </button>
+  } @else if (!selectionMode) {
+    <ion-button
+      fill="clear"
+      class="quick-add-button"
+      [class.quick-add-button--edit]="view.hasLibraryEntry(item)"
+      [disabled]="isAdding"
+      [attr.aria-label]="(view.hasLibraryEntry(item) ? 'Edit ' : 'Add ') + item.name + (view.hasLibraryEntry(item) ? ' in my library' : ' to my library')"
+      (click)="edit.emit(item)">
+      <ion-icon slot="icon-only" [name]="isAdding ? 'hourglass-outline' : (view.hasLibraryEntry(item) ? 'create-outline' : 'add-outline')"></ion-icon>
+    </ion-button>
+  }
 
-  <img [src]="imageFor(item)" alt="" loading="lazy" decoding="async" (click)="details.emit(item)" />
+  <img [src]="imageFor(item)" alt="" loading="lazy" decoding="async" (click)="openOrSelect(item)" />
 
-  <div class="game-card__content" (click)="details.emit(item)">
+  <div class="game-card__content" (click)="openOrSelect(item)">
     <div class="badge-row">
       <ion-badge>{{ view.statusLabel(item, mediaMode) }}</ion-badge>
       <span>{{ view.mediaTypeLabel(item, mediaMode) }}</span>

@@ -192,6 +192,20 @@ export const MediaStore = signalStore(
         }
       },
 
+      /** Remove an item from the user's personal library and keep the catalog card visible. */
+      async removeFromLibrary(libraryEntryId: number, mediaId: number): Promise<void> {
+        patchState(store, { isMutating: true, error: null });
+        try {
+          await firstValueFrom(facade.removeFromLibrary(libraryEntryId));
+          patchEntry(mediaId, { libraryEntry: null });
+          patchState(store, { isMutating: false });
+          invalidateDerivedCaches();
+        } catch (error) {
+          patchState(store, { isMutating: false, error: extractError(error) });
+          throw error;
+        }
+      },
+
       // -----------------------------------------------------------------------
       // Detail-page cache hooks: no service call, just keep the cache in sync.
       // Use these from per-kind detail pages that own their typed services.
