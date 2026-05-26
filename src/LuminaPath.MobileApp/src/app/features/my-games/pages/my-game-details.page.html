@@ -111,6 +111,70 @@
         }
       </section>
 
+      @if (isInLibrary) {
+        <section class="live-session-card" [class.live-session-card--running]="liveSessionActive">
+          <header class="live-session-card__header">
+            <span class="live-session-card__icon">
+              <ion-icon [name]="liveSessionActive ? 'time-outline' : 'play-outline'"></ion-icon>
+            </span>
+            <div>
+              <h2>Live session</h2>
+              <p>{{ liveSessionStartedLabel }}</p>
+            </div>
+            <strong>{{ liveSessionDurationLabel }}</strong>
+          </header>
+
+          @if (liveSessionActive) {
+            <textarea
+              class="live-session-card__notes"
+              rows="2"
+              placeholder="Session notes"
+              [(ngModel)]="liveSessionNotes"
+              (ngModelChange)="persistLiveSession()">
+            </textarea>
+            <div class="live-session-card__actions">
+              <ion-button
+                shape="round"
+                class="quick-action quick-action--primary"
+                [disabled]="isSavingLiveSession"
+                (click)="stopLiveSession()">
+                <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
+                {{ isSavingLiveSession ? 'Saving...' : 'Stop & log' }}
+              </ion-button>
+              <ion-button
+                shape="round"
+                fill="outline"
+                class="quick-action"
+                [disabled]="isSavingLiveSession"
+                (click)="discardLiveSession()">
+                <ion-icon slot="start" name="close-outline"></ion-icon>
+                Discard
+              </ion-button>
+            </div>
+          } @else {
+            <div class="live-session-card__actions">
+              <ion-button
+                shape="round"
+                class="quick-action quick-action--primary"
+                [disabled]="isSavingLiveSession"
+                (click)="startLiveSession()">
+                <ion-icon slot="start" name="play-outline"></ion-icon>
+                Start session
+              </ion-button>
+            </div>
+          }
+
+          @if (liveSessionMessage) {
+            <p
+              class="live-session-card__message"
+              [class.live-session-card__message--success]="liveSessionMessageTone === 'success'"
+              [class.live-session-card__message--error]="liveSessionMessageTone === 'error'">
+              {{ liveSessionMessage }}
+            </p>
+          }
+        </section>
+      }
+
       <ion-segment class="detail-tabs" [value]="selectedTab" (ionChange)="setDetailTab($any($event).detail.value)">
         <ion-segment-button value="overview">
           <ion-label>Overview</ion-label>

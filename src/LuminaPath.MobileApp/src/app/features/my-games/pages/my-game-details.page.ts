@@ -1,5 +1,6 @@
 import { Location } from '@angular/common';
-import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   ActionSheetController,
@@ -49,6 +50,12 @@ import { GameForecastComponent } from '../components/game-forecast/game-forecast
 import { GameTrophiesComponent } from '../components/game-trophies/game-trophies.component';
 import { GameDlcListComponent } from '../components/game-dlc-list/game-dlc-list.component';
 
+type LiveSessionSnapshot = {
+  startedAt: string;
+  myGameId: number;
+  notes: string;
+};
+
 @Component({
   selector: 'app-my-game-details',
   templateUrl: './my-game-details.page.html',
@@ -73,9 +80,10 @@ import { GameDlcListComponent } from '../components/game-dlc-list/game-dlc-list.
     GameTrophiesComponent,
     GameDlcListComponent,
     LibraryCreateDialogComponent,
+    FormsModule,
   ],
 })
-export class MyGameDetailsPage implements OnInit {
+export class MyGameDetailsPage implements OnInit, OnDestroy {
   @ViewChild(GameNotesComponent) notesComponent?: GameNotesComponent;
 
   private readonly route = inject(ActivatedRoute);
@@ -106,6 +114,12 @@ export class MyGameDetailsPage implements OnInit {
   isUpdatingLibrary = false;
   isSavingNotes = false;
   headerCondensed = false;
+  liveSessionStartedAt: string | null = null;
+  liveSessionNotes = '';
+  liveSessionElapsedSeconds = 0;
+  isSavingLiveSession = false;
+  liveSessionMessage = '';
+  liveSessionMessageTone: 'success' | 'error' | 'neutral' = 'neutral';
 
   // Admin edit/delete state ----------------------------------------------------
   isEditDialogOpen = false;
@@ -113,6 +127,9 @@ export class MyGameDetailsPage implements OnInit {
   editErrorMessage = '';
   editForm: CreateMediaForm = emptyCreateForm();
   isDeletingCatalogEntry = false;
+  private liveSessionTimerId: number | null = null;
+  private liveSessionGameId: number | null = null;
+  private readonly liveSessionStoragePrefix = 'luminapath.liveSession.games.';
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async (params) => {
@@ -124,7 +141,12 @@ export class MyGameDetailsPage implements OnInit {
 
       this.selectedTab = 'overview';
       await this.loadGameAndQuests(gameId);
+      this.restoreLiveSession(gameId);
     });
+  }
+
+  ngOnDestroy(): void {
+    this.clearLiveSessionTimer();
   }
 
   get libraryEntry(): GameLibraryEntry | null {
@@ -168,6 +190,27 @@ export class MyGameDetailsPage implements OnInit {
 
   get playtimeLabel(): string {
     return this.game?.playtime ? `${this.game.playtime}h estimated` : 'No estimate';
+  }
+
+  get liveSessionActive(): boolean {
+    return this.liveSessionStartedAt !== null;
+  }
+
+  get liveSessionDurationLabel(): string {
+    return formatLiveDuration(this.liveSessionElapsedSeconds);
+  }
+
+  get liveSessionStartedLabel(): string {
+    if (!this.liveSessionStartedAt) {
+      return 'Ready';
+    }
+
+    const started = new Date(this.liveSessionStartedAt);
+    if (Number.isNaN(started.getTime())) {
+      return 'Running';
+    }
+
+    return `Started ${started.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   }
 
   get dlcs() {
@@ -253,6 +296,108 @@ export class MyGameDetailsPage implements OnInit {
       // silent — user can retry
     } finally {
       this.isUpdatingLibrary = false;
+    }
+  }
+
+  startLiveSession(now = new Date()): void {
+    const gameId = this.game?.id;
+    const myGameId = this.myGameId;
+    if (!gameId || myGameId == null || this.liveSessionActive || this.isSavingLiveSession) {
+      return;
+    }
+
+    this.liveSessionGameId = gameId;
+    this.liveSessionStartedAt = now.toISOString();
+    this.liveSessionElapsedSeconds = 0;
+    this.liveSessionNotes = '';
+    this.liveSessionMessage = '';
+    this.liveSessionMessageTone = 'neutral';
+    this.persistLiveSession();
+    this.startLiveSessionTimer();
+  }
+
+  async stopLiveSession(now = new Date()): Promise<void> {
+    const gameId = this.game?.id ?? this.liveSessionGameId;
+    const myGameId = this.myGameId;
+    const startedAt = this.liveSessionStartedAt;
+    if (!gameId || myGameId == null || !startedAt || this.isSavingLiveSession) {
+      return;
+    }
+
+    const started = new Date(startedAt);
+    if (Number.isNaN(started.getTime())) {
+      this.discardLiveSession();
+      return;
+    }
+
+    const durationMinutes = Math.max(1, Math.round((now.getTime() - started.getTime()) / 60000));
+    const note = this.liveSessionNotes.trim() || null;
+
+    this.isSavingLiveSession = true;
+    this.liveSessionMessage = '';
+    this.liveSessionMessageTone = 'neutral';
+
+    try {
+      await firstValueFrom(this.sessionService.create({
+        myGameId,
+        scheduledAt: started.toISOString(),
+        durationMinutes,
+        completed: true,
+        completedAt: now.toISOString(),
+        notes: note,
+      }));
+
+      let playtimeUpdated = true;
+      try {
+        await firstValueFrom(
+          this.myGameService.updateLibraryEntry(myGameId, gameId, this.libraryUpdateDetails({
+            status: this.liveSessionNextStatus(),
+            timeSpend: this.nextTrackedHours(durationMinutes),
+          })),
+        );
+      } catch {
+        playtimeUpdated = false;
+      }
+
+      this.clearStoredLiveSession(gameId);
+      this.resetLiveSessionState();
+      await this.loadGameAndQuests(gameId);
+      this.liveSessionMessage = playtimeUpdated
+        ? `Logged ${formatLiveDuration(durationMinutes * 60)}.`
+        : 'Session logged. Playtime could not be updated.';
+      this.liveSessionMessageTone = playtimeUpdated ? 'success' : 'error';
+    } catch (error) {
+      this.liveSessionMessage = extractErrorMessage(error, 'Session could not be logged.');
+      this.liveSessionMessageTone = 'error';
+    } finally {
+      this.isSavingLiveSession = false;
+    }
+  }
+
+  discardLiveSession(): void {
+    this.clearStoredLiveSession(this.game?.id ?? this.liveSessionGameId);
+    this.resetLiveSessionState();
+    this.liveSessionMessage = 'Session discarded.';
+    this.liveSessionMessageTone = 'neutral';
+  }
+
+  persistLiveSession(): void {
+    const gameId = this.game?.id ?? this.liveSessionGameId;
+    const myGameId = this.myGameId;
+    if (!gameId || myGameId == null || !this.liveSessionStartedAt) {
+      return;
+    }
+
+    const snapshot: LiveSessionSnapshot = {
+      startedAt: this.liveSessionStartedAt,
+      myGameId,
+      notes: this.liveSessionNotes,
+    };
+
+    try {
+      globalThis.localStorage?.setItem(this.liveSessionStorageKey(gameId), JSON.stringify(snapshot));
+    } catch {
+      // Live tracking still works for the current page when storage is blocked.
     }
   }
 
@@ -385,6 +530,45 @@ export class MyGameDetailsPage implements OnInit {
     }
   }
 
+  private restoreLiveSession(gameId: number): void {
+    this.clearLiveSessionTimer();
+    this.resetLiveSessionState();
+    this.liveSessionMessage = '';
+    this.liveSessionMessageTone = 'neutral';
+
+    let raw: string | null = null;
+    try {
+      raw = globalThis.localStorage?.getItem(this.liveSessionStorageKey(gameId)) ?? null;
+    } catch {
+      raw = null;
+    }
+    if (!raw) {
+      return;
+    }
+
+    try {
+      const snapshot = JSON.parse(raw) as Partial<LiveSessionSnapshot>;
+      if (snapshot.myGameId !== this.myGameId) {
+        this.clearStoredLiveSession(gameId);
+        return;
+      }
+
+      const started = snapshot.startedAt ? new Date(snapshot.startedAt) : null;
+      if (!started || Number.isNaN(started.getTime())) {
+        this.clearStoredLiveSession(gameId);
+        return;
+      }
+
+      this.liveSessionGameId = gameId;
+      this.liveSessionStartedAt = started.toISOString();
+      this.liveSessionNotes = snapshot.notes ?? '';
+      this.updateLiveSessionElapsed();
+      this.startLiveSessionTimer();
+    } catch {
+      this.clearStoredLiveSession(gameId);
+    }
+  }
+
   private syncMediaStore(gameId: number): void {
     const entry = this.libraryEntry;
     this.mediaStore.setLibraryEntry(gameId, entry ? {
@@ -449,6 +633,65 @@ export class MyGameDetailsPage implements OnInit {
       personalNotes: entry.personalNotes ?? null,
       ...overrides,
     };
+  }
+
+  private liveSessionNextStatus(): number {
+    const status = Number(this.libraryEntry?.status ?? 1);
+    return status === 1 ? 2 : status;
+  }
+
+  private nextTrackedHours(durationMinutes: number): number {
+    const current = Number(this.libraryEntry?.timeSpend ?? 0);
+    return Math.round((current + durationMinutes / 60) * 100) / 100;
+  }
+
+  private startLiveSessionTimer(): void {
+    this.clearLiveSessionTimer();
+    this.updateLiveSessionElapsed();
+    this.liveSessionTimerId = window.setInterval(() => this.updateLiveSessionElapsed(), 1000);
+  }
+
+  private updateLiveSessionElapsed(): void {
+    if (!this.liveSessionStartedAt) {
+      this.liveSessionElapsedSeconds = 0;
+      return;
+    }
+
+    const started = new Date(this.liveSessionStartedAt);
+    this.liveSessionElapsedSeconds = Number.isNaN(started.getTime())
+      ? 0
+      : Math.max(0, Math.floor((Date.now() - started.getTime()) / 1000));
+  }
+
+  private clearLiveSessionTimer(): void {
+    if (this.liveSessionTimerId !== null) {
+      window.clearInterval(this.liveSessionTimerId);
+      this.liveSessionTimerId = null;
+    }
+  }
+
+  private resetLiveSessionState(): void {
+    this.clearLiveSessionTimer();
+    this.liveSessionStartedAt = null;
+    this.liveSessionGameId = null;
+    this.liveSessionNotes = '';
+    this.liveSessionElapsedSeconds = 0;
+  }
+
+  private liveSessionStorageKey(gameId: number): string {
+    return `${this.liveSessionStoragePrefix}${gameId}`;
+  }
+
+  private clearStoredLiveSession(gameId: number | null | undefined): void {
+    if (!gameId) {
+      return;
+    }
+
+    try {
+      globalThis.localStorage?.removeItem(this.liveSessionStorageKey(gameId));
+    } catch {
+      // Nothing to clean up when storage is blocked.
+    }
   }
 
   private serializeDate(value: Date | string | null | undefined): string | null {
@@ -620,4 +863,17 @@ export class MyGameDetailsPage implements OnInit {
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
+}
+
+function formatLiveDuration(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+  }
+
+  return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
 }

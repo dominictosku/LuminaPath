@@ -40,7 +40,7 @@ describe('MyGameDetailsPage', () => {
       'deleteQuest',
       'getQuestsForGame',
     ]);
-    sessionService = jasmine.createSpyObj<GamingSessionService>('GamingSessionService', ['forecast']);
+    sessionService = jasmine.createSpyObj<GamingSessionService>('GamingSessionService', ['forecast', 'create']);
     myGameService = jasmine.createSpyObj<MyGameService>('MyGameService', [
       'addToLibrary',
       'updateLibraryEntry',
@@ -56,6 +56,17 @@ describe('MyGameDetailsPage', () => {
     gameService.getNews.and.returnValue(of([]));
     questBoardService.getQuestsForGame.and.resolveTo([]);
     sessionService.forecast.and.returnValue(of(null as any));
+    sessionService.create.and.returnValue(of({
+      id: 99,
+      myGameId: 7,
+      gameName: 'Hades',
+      scheduledAt: '2026-05-26T10:00:00.000Z',
+      durationMinutes: 75,
+      completed: true,
+      completedAt: '2026-05-26T11:15:00.000Z',
+      notes: 'Boss run',
+      createdAt: '2026-05-26T11:15:00.000Z',
+    }));
     myGameService.updateLibraryEntry.and.returnValue(of(new MyGame(1)));
     myGameService.getAchievements.and.returnValue(of([]));
 
@@ -82,6 +93,11 @@ describe('MyGameDetailsPage', () => {
     fixture = TestBed.createComponent(MyGameDetailsPage);
     component = fixture.componentInstance;
   }
+
+  afterEach(() => {
+    fixture?.destroy();
+    window.localStorage.clear();
+  });
 
   async function initialize(): Promise<void> {
     component.ngOnInit();
@@ -189,6 +205,50 @@ describe('MyGameDetailsPage', () => {
       personalNotes: '# Build\n- Shield run',
     }));
     expect(component.isSavingNotes).toBeFalse();
+  });
+
+  it('logs a live session and adds the elapsed time to playtime', async () => {
+    const myGame = Object.assign(makeMyGame(7, 42), {
+      status: 1,
+      timeSpend: 2.5,
+    });
+    const game = makeGame({ id: 42, name: 'Hades', myGames: myGame });
+    configure('42', game);
+
+    await initialize();
+    component.startLiveSession(new Date('2026-05-26T10:00:00.000Z'));
+    component.liveSessionNotes = 'Boss run';
+    await component.stopLiveSession(new Date('2026-05-26T11:15:00.000Z'));
+
+    expect(sessionService.create).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+      myGameId: 7,
+      durationMinutes: 75,
+      completed: true,
+      notes: 'Boss run',
+    }));
+    expect(myGameService.updateLibraryEntry).toHaveBeenCalledWith(7, 42, jasmine.objectContaining({
+      status: 2,
+      timeSpend: 3.75,
+    }));
+    expect(component.liveSessionActive).toBeFalse();
+    expect(component.liveSessionMessage).toBe('Logged 1:15:00.');
+  });
+
+  it('restores an active live session for the current library entry', async () => {
+    const game = makeGame({ id: 42, name: 'Hades', myGames: makeMyGame(7, 42) });
+    window.localStorage.setItem('luminapath.liveSession.games.42', JSON.stringify({
+      startedAt: '2026-05-26T10:00:00.000Z',
+      myGameId: 7,
+      notes: 'Paused at Elysium',
+    }));
+    configure('42', game);
+    component.liveSessionMessage = 'Logged 1:15:00.';
+
+    await initialize();
+
+    expect(component.liveSessionActive).toBeTrue();
+    expect(component.liveSessionNotes).toBe('Paused at Elysium');
+    expect(component.liveSessionMessage).toBe('');
   });
 
   it('goBack navigates to the library', () => {
