@@ -30,6 +30,8 @@ import {
   QuestSubtask,
   QuestType,
 } from '../services/quest-board.service';
+import { QuestBoardFeedbackService } from '../services/quest-board-feedback.service';
+import { QuestBoardPreferencesService } from '../services/quest-board-preferences.service';
 import { MyGameService } from 'src/app/features/my-games/services/my-game.service';
 import { MyGame } from 'src/app/features/games/models/games.model';
 import { SkillTreeComponent } from 'src/app/features/skill-tree/components/skill-tree.component';
@@ -61,37 +63,18 @@ import {
   filterQuests,
   nextQueuedQuest,
 } from '../quest-sections.builder';
-
-type PageMode = 'quests' | 'folders' | 'skills' | 'tree';
-type ModalMode = 'skill' | 'node' | null;
-
-type LibraryGame = {
-  myGameId: number;
-  gameName: string;
-};
-
-type FilterOption = {
-  value: QuestFilter;
-  label: string;
-  icon: string;
-};
-
-type PriorityOption = {
-  value: QuestPriority;
-  label: string;
-  weight: number;
-};
-
-type TypeOption = {
-  value: QuestType;
-  label: string;
-  icon: string;
-};
-
-type RecurrenceOption = {
-  value: QuestRecurrence;
-  label: string;
-};
+import {
+  LibraryGame,
+  ModalMode,
+  PageMode,
+  QUEST_FILTER_OPTIONS,
+  QUEST_PRIORITY_OPTIONS,
+  QUEST_RECURRENCE_OPTIONS,
+  QUEST_TYPE_OPTIONS,
+  SKILL_COLOR_OPTIONS,
+  SKILL_ICON_OPTIONS,
+} from '../models/quest-board-view.model';
+import { buildQuestBoardStats } from '../domain/quest-board-stats';
 
 type PendingDelete = {
   quest: Quest;
@@ -108,6 +91,7 @@ type SkillTreeUnlockPayload = {
   selector: 'app-quest-board',
   templateUrl: './quest-board.page.html',
   styleUrls: ['./quest-board.page.scss'],
+  providers: [QuestBoardFeedbackService],
   // Quest-board ships a single coherent visual system whose selectors are well
   // namespaced (`.quest-*`, `.skill-*`). Loading them globally on this route
   // lets all sub-components share the styling without duplicating SCSS.
@@ -140,44 +124,17 @@ type SkillTreeUnlockPayload = {
 })
 export class QuestBoardPage implements OnInit, OnDestroy {
   private questBoardService = inject(QuestBoardService);
+  private feedback = inject(QuestBoardFeedbackService);
+  private preferences = inject(QuestBoardPreferencesService);
   private myGameService = inject(MyGameService);
   private route = inject(ActivatedRoute);
 
-  readonly skillIconOptions = [
-    { label: 'Code', icon: 'code-slash-outline' },
-    { label: 'Art', icon: 'brush-outline' },
-    { label: 'Cook', icon: 'restaurant-outline' },
-    { label: 'Study', icon: 'book-outline' },
-    { label: 'Craft', icon: 'school-outline' },
-  ];
-
-  readonly skillColorOptions = ['#2563eb', '#0891b2', '#0f766e', '#7c3aed', '#be123c'];
-
-  readonly typeOptions: TypeOption[] = [
-    { value: 'main', label: 'Main', icon: 'map-outline' },
-    { value: 'sub', label: 'Sub', icon: 'flag-outline' },
-    { value: 'faction', label: 'Faction', icon: 'shield-checkmark-outline' },
-  ];
-
-  readonly priorityOptions: PriorityOption[] = [
-    { value: 'low', label: 'Low', weight: 0 },
-    { value: 'medium', label: 'Medium', weight: 1 },
-    { value: 'high', label: 'High', weight: 2 },
-  ];
-
-  readonly recurrenceOptions: RecurrenceOption[] = [
-    { value: 'none', label: 'No repeat' },
-    { value: 'daily', label: 'Daily' },
-    { value: 'weekly', label: 'Weekly' },
-    { value: 'monthly', label: 'Monthly' },
-  ];
-
-  readonly filterOptions: FilterOption[] = [
-    { value: 'today', label: 'Focus', icon: 'today-outline' },
-    { value: 'upcoming', label: 'Upcoming', icon: 'calendar-outline' },
-    { value: 'inbox', label: 'Inbox', icon: 'library-outline' },
-    { value: 'all', label: 'All', icon: 'filter-outline' },
-  ];
+  readonly skillIconOptions = [...SKILL_ICON_OPTIONS];
+  readonly skillColorOptions = [...SKILL_COLOR_OPTIONS];
+  readonly typeOptions = [...QUEST_TYPE_OPTIONS];
+  readonly priorityOptions = [...QUEST_PRIORITY_OPTIONS];
+  readonly recurrenceOptions = [...QUEST_RECURRENCE_OPTIONS];
+  readonly filterOptions = [...QUEST_FILTER_OPTIONS];
 
   mode: PageMode = 'quests';
   filter: QuestFilter = 'today';
@@ -202,8 +159,6 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   overdueCount = 0;
   currentStreakDays = 0;
   longestStreakDays = 0;
-  toastMessage = '';
-  achievementToast: AchievementInfo | null = null;
   isLoading = true;
   errorMessage = '';
 
@@ -256,22 +211,9 @@ export class QuestBoardPage implements OnInit, OnDestroy {
 
   library: LibraryGame[] = [];
 
-  private readonly xpPerLevel = 200;
-  private readonly prefsStorageKey = 'questboard.prefs.v1';
   private pendingDeletes = new Map<number, PendingDelete>();
-  private undoToastTimer: number | undefined;
   private routeSub?: Subscription;
   private pendingFocusQuestId: number | null = null;
-
-  /**
-   * IDs of quests whose celebration animation is still in flight. The
-   * card reads this via `[recentlyCompleted]` to add a CSS class that
-   * runs the scale+glow keyframe and the floating "+XP" badge. Cleared
-   * per-id by `celebrationTimers` after the animation duration.
-   */
-  recentlyCompletedIds = new Set<number>();
-  private celebrationTimers = new Map<number, number>();
-  private static readonly CELEBRATION_MS = 1200;
 
   // Bound callables passed to presentational sub-components so their templates
   // can reach helper logic that depends on parent state (e.g. label lookups,
@@ -284,6 +226,14 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   readonly subtaskDraftFn = (questId: number) => this.subtaskDraft(questId);
   readonly activeLinkedQuestCountFn = (skill: QuestSkill) => this.activeLinkedQuestCount(skill);
   readonly linkedQuestCountFn = (skill: QuestSkill) => this.linkedQuestCount(skill);
+
+  get toastMessage(): string {
+    return this.feedback.toastMessage();
+  }
+
+  get achievementToast(): AchievementInfo | null {
+    return this.feedback.achievementToast();
+  }
 
   async ngOnInit() {
     this.loadPrefs();
@@ -302,37 +252,15 @@ export class QuestBoardPage implements OnInit, OnDestroy {
       window.clearTimeout(pending.timeoutId);
     }
     this.pendingDeletes.clear();
-    for (const timerId of this.celebrationTimers.values()) {
-      window.clearTimeout(timerId);
-    }
-    this.celebrationTimers.clear();
-    if (this.undoToastTimer) {
-      window.clearTimeout(this.undoToastTimer);
-    }
+    this.feedback.clearTimers();
   }
 
   private triggerCelebration(questId: number): void {
-    // If the user re-completes the same quest before the previous
-    // celebration finishes, reset the timer so the animation re-runs
-    // cleanly rather than truncating.
-    const existing = this.celebrationTimers.get(questId);
-    if (existing !== undefined) {
-      window.clearTimeout(existing);
-    }
-    // Re-create the Set so OnPush descendants see a new reference if
-    // we later swap to a signal-backed equivalent.
-    this.recentlyCompletedIds = new Set(this.recentlyCompletedIds).add(questId);
-    const timerId = window.setTimeout(() => {
-      const next = new Set(this.recentlyCompletedIds);
-      next.delete(questId);
-      this.recentlyCompletedIds = next;
-      this.celebrationTimers.delete(questId);
-    }, QuestBoardPage.CELEBRATION_MS);
-    this.celebrationTimers.set(questId, timerId);
+    this.feedback.triggerCelebration(questId);
   }
 
   isRecentlyCompleted(questId: number): boolean {
-    return this.recentlyCompletedIds.has(questId);
+    return this.feedback.isRecentlyCompleted(questId);
   }
 
   // -------- Filters & sorting (delegated to quest-sections.builder) --------
@@ -669,7 +597,7 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     this.pendingDeletes.delete(id);
     this.quests = [pending.quest, ...this.quests];
     this.rebuildStats();
-    this.toastMessage = '';
+    this.feedback.clearToast();
   }
 
   private async commitDelete(id: number): Promise<void> {
@@ -991,16 +919,11 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   }
 
   closeAchievementToast(): void {
-    this.achievementToast = null;
+    this.feedback.closeAchievementToast();
   }
 
   private showAchievementToast(achievement: AchievementInfo): void {
-    this.achievementToast = achievement;
-    window.setTimeout(() => {
-      if (this.achievementToast?.code === achievement.code) {
-        this.achievementToast = null;
-      }
-    }, 4500);
+    this.feedback.showAchievementToast(achievement);
   }
 
   private async loadBoard() {
@@ -1347,35 +1270,16 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   }
 
   private rebuildStats() {
-    const today = startOfDay(new Date());
-    const tomorrow = addDays(today, 1);
-
-    this.level = Math.floor(this.xp / this.xpPerLevel) + 1;
-    this.xpIntoLevel = this.xp % this.xpPerLevel;
-    this.xpProgress = this.xpIntoLevel / this.xpPerLevel;
-    this.title = this.titleForLevel(this.level);
-    this.completedQuestCount = this.quests.filter((quest) => quest.completed).length;
-    this.activeQuestCount = this.quests.filter((quest) => !quest.completed).length;
-    this.unlockedNodeCount = this.skills.reduce((sum, skill) => sum + skill.unlockedNodes.length, 0);
-
-    this.todayCount = this.quests.filter((quest) => {
-      if (quest.completed || !quest.dueDate) return false;
-      const due = new Date(quest.dueDate);
-      return due >= today && due < tomorrow;
-    }).length;
-
-    this.overdueCount = this.quests.filter((quest) => {
-      if (quest.completed || !quest.dueDate) return false;
-      return new Date(quest.dueDate) < today;
-    }).length;
-  }
-
-  private titleForLevel(level: number): string {
-    if (level >= 15) return 'Legend';
-    if (level >= 10) return 'Master';
-    if (level >= 6) return 'Adept';
-    if (level >= 3) return 'Apprentice';
-    return 'Initiate';
+    const stats = buildQuestBoardStats(this.xp, this.quests, this.skills);
+    this.level = stats.level;
+    this.xpIntoLevel = stats.xpIntoLevel;
+    this.xpProgress = stats.xpProgress;
+    this.title = stats.title;
+    this.completedQuestCount = stats.completedQuestCount;
+    this.activeQuestCount = stats.activeQuestCount;
+    this.unlockedNodeCount = stats.unlockedNodeCount;
+    this.todayCount = stats.todayCount;
+    this.overdueCount = stats.overdueCount;
   }
 
   private emptySkillForm(): SkillForm {
@@ -1387,74 +1291,32 @@ export class QuestBoardPage implements OnInit, OnDestroy {
   }
 
   private loadPrefs(): void {
-    if (typeof window === 'undefined' || !window.localStorage) return;
-    try {
-      const raw = window.localStorage.getItem(this.prefsStorageKey);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as {
-        filter?: QuestFilter | 'overdue';
-        quickAddType?: QuestType;
-        quickAddPriority?: QuestPriority;
-        quickAddRecurrence?: QuestRecurrence;
-        questViewMode?: QuestViewMode;
-      };
-      if (parsed.filter === 'overdue') {
-        this.filter = 'today';
-      } else if (parsed.filter && ['today', 'upcoming', 'inbox', 'all'].includes(parsed.filter)) {
-        this.filter = parsed.filter;
-      }
-      if (parsed.questViewMode === 'cards' || parsed.questViewMode === 'compact') {
-        this.questViewMode = parsed.questViewMode;
-      }
-      if (parsed.quickAddType && ['main', 'sub', 'faction'].includes(parsed.quickAddType)) {
-        this.quickAddType = parsed.quickAddType;
-      }
-      if (parsed.quickAddPriority && ['low', 'medium', 'high'].includes(parsed.quickAddPriority)) {
-        this.quickAddPriority = parsed.quickAddPriority;
-      }
-      if (parsed.quickAddRecurrence && ['none', 'daily', 'weekly', 'monthly'].includes(parsed.quickAddRecurrence)) {
-        this.quickAddRecurrence = parsed.quickAddRecurrence;
-      }
-    } catch {
-      // ignore corrupt prefs
-    }
+    const preferences = this.preferences.load();
+    this.filter = preferences.filter;
+    this.questViewMode = preferences.questViewMode;
+    this.quickAddType = preferences.quickAddType;
+    this.quickAddPriority = preferences.quickAddPriority;
+    this.quickAddRecurrence = preferences.quickAddRecurrence;
   }
 
   private savePrefs(): void {
-    if (typeof window === 'undefined' || !window.localStorage) return;
-    try {
-      window.localStorage.setItem(
-        this.prefsStorageKey,
-        JSON.stringify({
-          filter: this.filter,
-          quickAddType: this.quickAddType,
-          quickAddPriority: this.quickAddPriority,
-          quickAddRecurrence: this.quickAddRecurrence,
-          questViewMode: this.questViewMode,
-        })
-      );
-    } catch {
-      // ignore quota errors
-    }
+    this.preferences.save({
+      filter: this.filter,
+      quickAddType: this.quickAddType,
+      quickAddPriority: this.quickAddPriority,
+      quickAddRecurrence: this.quickAddRecurrence,
+      questViewMode: this.questViewMode,
+    });
   }
 
   private showToast(message: string) {
-    this.toastMessage = message;
-    if (this.undoToastTimer) {
-      window.clearTimeout(this.undoToastTimer);
-    }
-    this.undoToastTimer = window.setTimeout(() => {
-      this.toastMessage = '';
-    }, 2600);
+    this.feedback.showToast(message);
   }
 
   // Undo toast uses pendingDelete state in the template instead of toastMessage,
   // so it can render an undo button. Keep this lightweight.
   private showUndoToast(_quest: Quest) {
-    this.toastMessage = '';
-    if (this.undoToastTimer) {
-      window.clearTimeout(this.undoToastTimer);
-    }
+    this.feedback.clearToast();
   }
 
   get pendingDeleteList(): Quest[] {

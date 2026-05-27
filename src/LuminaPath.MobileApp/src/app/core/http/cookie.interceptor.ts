@@ -19,9 +19,9 @@ export class CookieInterceptor implements HttpInterceptor {
 
 
   intercept(
-    request: HttpRequest<any>,
+    request: HttpRequest<unknown>,
     next: HttpHandler
-  ): Observable<HttpEvent<any>> {
+  ): Observable<HttpEvent<unknown>> {
     const isAuthRequest =
       request.url.includes('/login') || request.url.includes('/logout');
     let credentialsRequest = request.withCredentials

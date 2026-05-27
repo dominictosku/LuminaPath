@@ -16,7 +16,7 @@ import {
   withInterceptorsFromDi,
 } from '@angular/common/http';
 import { routes } from '../app/app.routes';
-import { CookieInterceptor } from './core/middleware/CookieInterceptor.service';
+import { CookieInterceptor } from './core/http/cookie.interceptor';
 import { GlobalErrorHandler } from './shared/services/global-error-handler';
 import { RequestCache } from './shared/services/request-cache.service';
 

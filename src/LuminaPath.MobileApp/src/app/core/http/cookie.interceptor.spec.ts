@@ -2,7 +2,7 @@ import { HttpHandler, HttpRequest } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { CookieInterceptor } from './CookieInterceptor.service';
+import { CookieInterceptor } from './cookie.interceptor';
 
 function setup() {
   const router = jasmine.createSpyObj<Router>('Router', ['navigate']);

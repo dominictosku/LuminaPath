@@ -53,6 +53,10 @@ describe('App routes smoke', () => {
 
   it('keeps the critical authenticated tab routes registered behind the auth guard', async () => {
     const tabRoutes = await loadTabRoutes();
+    const shell = tabRoutes.find((item) => item.path === '');
+    expect(shell?.canActivate?.length).withContext('tabs shell canActivate').toBeGreaterThan(0);
+    expect(shell?.canActivateChild?.length).withContext('tabs shell canActivateChild').toBeGreaterThan(0);
+
     const protectedPaths = [
       'home',
       'library',
@@ -70,7 +74,7 @@ describe('App routes smoke', () => {
 
     for (const path of protectedPaths) {
       const route = tabChildRoute(tabRoutes, path);
-      expect(route.canActivate?.length).withContext(path).toBeGreaterThan(0);
+      expect(route.loadComponent).withContext(path).toEqual(jasmine.any(Function));
     }
   });
 
