@@ -63,6 +63,20 @@ import {
 } from '../models/library-filter.model';
 import { LibraryFilterPresetService } from '../services/library-filter-preset.service';
 import { buildPageFilter, LibraryFilterState } from '../library-filter.helpers';
+import {
+  LIBRARY_LIST_ROW_HEIGHT,
+  LIBRARY_LIST_ROW_STRIDE,
+  computeLibraryListWindow,
+} from '../domain/library-virtual-list';
+import {
+  bulkSelectionSummary,
+  pruneSelectedMediaIds,
+  selectVisibleLibraryItemIds,
+  selectableLibraryItems,
+  selectedLibraryItems,
+  selectedMediaItems,
+  toggleSelectedMediaId,
+} from '../domain/library-selection';
 
 @Component({
   selector: 'app-library',
@@ -175,15 +189,9 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   // pull-to-refresh + infinite-scroll keep working). The list container gets
   // an explicit height matching the *full* row count; only rows in the
   // visible window are rendered, absolutely positioned at their natural Y.
-  private static readonly LIST_ROW_HEIGHT = 96;
-  private static readonly LIST_ROW_GAP = 10;
-  private static readonly LIST_ROW_STRIDE =
-    LibraryPage.LIST_ROW_HEIGHT + LibraryPage.LIST_ROW_GAP;
-  private static readonly LIST_BUFFER_ROWS = 4;
-
   /** Exposed for the template's `[style.top.px]` math. */
-  protected readonly listRowStride = LibraryPage.LIST_ROW_STRIDE;
-  protected readonly listRowHeight = LibraryPage.LIST_ROW_HEIGHT;
+  protected readonly listRowStride = LIBRARY_LIST_ROW_STRIDE;
+  protected readonly listRowHeight = LIBRARY_LIST_ROW_HEIGHT;
 
   private readonly contentRef = viewChild<IonContent>(IonContent);
   private readonly listAnchorRef = viewChild<ElementRef<HTMLElement>>('listAnchor');
@@ -197,36 +205,13 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   private readonly listOffsetTop = signal(0);
 
   protected readonly visibleListWindow = computed(() => {
-    const games = this.filteredGames();
-    const total = games.length;
-    const totalHeight =
-      total === 0
-        ? 0
-        : total * LibraryPage.LIST_ROW_HEIGHT +
-          (total - 1) * LibraryPage.LIST_ROW_GAP;
+    return computeLibraryListWindow({
+      totalItems: this.filteredGames().length,
+      scrollTop: this.listScrollTop(),
+      viewportHeight: this.listViewportHeight(),
+      offsetTop: this.listOffsetTop(),
+    });
 
-    if (total === 0) {
-      return { start: 0, end: 0, totalHeight };
-    }
-
-    const stride = LibraryPage.LIST_ROW_STRIDE;
-    const buffer = LibraryPage.LIST_BUFFER_ROWS;
-    const top = this.listScrollTop();
-    const height = this.listViewportHeight();
-    const offset = this.listOffsetTop();
-
-    // Before the first measurement we don't know where the list starts in
-    // scroll-coords yet — render an initial slab so the user sees content
-    // immediately. The measurement effect will tighten this within a frame.
-    if (offset === 0) {
-      return { start: 0, end: Math.min(total, 24), totalHeight };
-    }
-
-    const startY = Math.max(0, top - offset);
-    const endY = startY + height;
-    const start = Math.max(0, Math.floor(startY / stride) - buffer);
-    const end = Math.min(total, Math.ceil(endY / stride) + buffer);
-    return { start, end, totalHeight };
   });
 
   protected readonly visibleGames = computed(() =>
@@ -503,7 +488,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   async submitAddGame(): Promise<void> {
     const game = this.selectedGame;
 
-  if (!game || this.addingGameIds.has(game.id)) {
+    if (!game || this.addingGameIds.has(game.id)) {
       return;
     }
 
@@ -564,15 +549,15 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get visibleLibraryItems(): MediaItem[] {
-    return this.filteredGames().filter((item) => !!item.libraryEntry);
+    return selectableLibraryItems(this.filteredGames());
   }
 
   get selectedItems(): MediaItem[] {
-    return this.games.filter((item) => this.selectedItemIds.has(item.id));
+    return selectedMediaItems(this.games, this.selectedItemIds);
   }
 
   get selectedLibraryItems(): MediaItem[] {
-    return this.selectedItems.filter((item) => !!item.libraryEntry);
+    return selectedLibraryItems(this.games, this.selectedItemIds);
   }
 
   get selectedCount(): number {
@@ -580,13 +565,12 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get bulkSelectionSummary(): string {
-    if (!this.visibleLibraryItems.length) {
-      return `No ${this.mediaMode.label.toLowerCase()} from this result set are in your library.`;
-    }
-
-    return this.selectedCount === 1
-      ? `1 ${this.mediaMode.singular} selected`
-      : `${this.selectedCount} ${this.mediaMode.label.toLowerCase()} selected`;
+    return bulkSelectionSummary(
+      this.visibleLibraryItems.length,
+      this.selectedCount,
+      this.mediaMode.singular,
+      this.mediaMode.label.toLowerCase(),
+    );
   }
 
   get heroTitle(): string {
@@ -624,25 +608,11 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   toggleItemSelection(item: MediaItem): void {
-    if (!this.isSelectable(item)) {
-      return;
-    }
-
-    const next = new Set(this.selectedItemIds);
-    if (next.has(item.id)) {
-      next.delete(item.id);
-    } else {
-      next.add(item.id);
-    }
-    this.selectedItemIds = next;
+    this.selectedItemIds = toggleSelectedMediaId(this.selectedItemIds, item);
   }
 
   selectVisibleLibraryItems(): void {
-    const next = new Set(this.selectedItemIds);
-    for (const item of this.visibleLibraryItems) {
-      next.add(item.id);
-    }
-    this.selectedItemIds = next;
+    this.selectedItemIds = selectVisibleLibraryItemIds(this.selectedItemIds, this.filteredGames());
   }
 
   clearSelection(): void {
@@ -846,14 +816,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const availableIds = new Set(this.games.filter((item) => item.libraryEntry).map((item) => item.id));
-    const next = new Set<number>();
-    for (const id of this.selectedItemIds) {
-      if (availableIds.has(id)) {
-        next.add(id);
-      }
-    }
-    this.selectedItemIds = next;
+    this.selectedItemIds = pruneSelectedMediaIds(this.selectedItemIds, this.games);
   }
 
   private loadSavedPresets(): void {
