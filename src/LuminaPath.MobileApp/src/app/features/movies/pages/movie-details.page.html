@@ -83,14 +83,10 @@
         </div>
       </section>
 
-      <ion-segment class="detail-tabs" [value]="selectedTab" (ionChange)="setDetailTab($any($event).detail.value)">
-        <ion-segment-button value="overview">
-          <ion-label>Overview</ion-label>
-        </ion-segment-button>
-        <ion-segment-button value="gallery">
-          <ion-label>Gallery</ion-label>
-        </ion-segment-button>
-      </ion-segment>
+      <app-detail-tabs
+        [tabs]="detailTabs"
+        [value]="selectedTab"
+        (valueChange)="setDetailTab($event)" />
 
       @if (selectedTab === 'overview') {
         <section class="library-card" [class.library-card--owned]="isInLibrary">

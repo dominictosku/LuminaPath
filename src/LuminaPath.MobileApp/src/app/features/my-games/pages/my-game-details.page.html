@@ -189,20 +189,10 @@
         </section>
       }
 
-      <ion-segment class="detail-tabs" [value]="selectedTab" (ionChange)="setDetailTab($any($event).detail.value)">
-        <ion-segment-button value="overview">
-          <ion-label>Overview</ion-label>
-        </ion-segment-button>
-        <ion-segment-button value="gallery">
-          <ion-label>Gallery</ion-label>
-        </ion-segment-button>
-        <ion-segment-button value="progress">
-          <ion-label>Progress</ion-label>
-        </ion-segment-button>
-        <ion-segment-button value="news">
-          <ion-label>News</ion-label>
-        </ion-segment-button>
-      </ion-segment>
+      <app-detail-tabs
+        [tabs]="detailTabs"
+        [value]="selectedTab"
+        (valueChange)="setDetailTab($event)" />
 
       @if (selectedTab === 'gallery') {
         <app-media-availability

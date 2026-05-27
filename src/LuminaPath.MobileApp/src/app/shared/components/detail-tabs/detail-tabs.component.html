@@ -1,0 +1,7 @@
+<ion-segment class="detail-tabs" [value]="value" (ionChange)="onTabChange($any($event).detail.value)">
+  @for (tab of tabs; track tab.value) {
+    <ion-segment-button [value]="tab.value" [disabled]="tab.disabled">
+      <ion-label>{{ tab.label }}</ion-label>
+    </ion-segment-button>
+  }
+</ion-segment>

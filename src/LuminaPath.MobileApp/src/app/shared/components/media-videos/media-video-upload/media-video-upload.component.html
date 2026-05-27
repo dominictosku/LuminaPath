@@ -1,0 +1,58 @@
+<form class="video-upload" (submit)="submit($event)">
+  <div class="video-upload__fields">
+    <label>
+      <span>Title</span>
+      <input
+        type="text"
+        maxlength="120"
+        name="videoTitle"
+        [(ngModel)]="uploadTitle" />
+    </label>
+
+    <label>
+      <span>Type</span>
+      <select name="videoKind" [(ngModel)]="uploadKind">
+        @for (option of kindOptions; track option.value) {
+          <option [ngValue]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="video-upload__description">
+      <span>Description</span>
+      <textarea
+        rows="2"
+        maxlength="500"
+        name="videoDescription"
+        [(ngModel)]="uploadDescription">
+      </textarea>
+    </label>
+  </div>
+
+  <div class="video-upload__file-row">
+    <label class="file-picker">
+      <input
+        #videoFileInput
+        type="file"
+        accept="video/mp4,video/webm,video/quicktime,video/x-m4v,.mp4,.webm,.mov,.m4v"
+        (change)="onFileSelected($event)" />
+      <span>
+        <ion-icon name="cloud-upload-outline"></ion-icon>
+        Choose video
+      </span>
+    </label>
+    <span class="video-upload__filename">{{ selectedFileName }}</span>
+    <ion-button
+      type="submit"
+      shape="round"
+      class="video-upload__submit"
+      [disabled]="uploadDisabled">
+      <ion-icon slot="start" name="cloud-upload-outline"></ion-icon>
+      {{ isUploading ? 'Uploading...' : 'Upload' }}
+    </ion-button>
+  </div>
+
+  @if (message) {
+    <p class="video-upload__message">{{ message }}</p>
+  }
+</form>

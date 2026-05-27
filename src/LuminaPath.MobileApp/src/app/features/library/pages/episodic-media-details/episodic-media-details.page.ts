@@ -10,10 +10,7 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
-  IonLabel,
   IonProgressBar,
-  IonSegment,
-  IonSegmentButton,
   IonSpinner,
   IonTitle,
   IonToolbar,
@@ -25,6 +22,7 @@ import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { MEDIA_MODE_OPTIONS, MediaModeOption } from 'src/app/shared/services/media-mode.service';
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
+import { DetailTabOption, DetailTabsComponent } from 'src/app/shared/components/detail-tabs/detail-tabs.component';
 import { MediaAvailabilityComponent } from 'src/app/shared/components/media-availability/media-availability.component';
 import { MediaVideosComponent } from 'src/app/shared/components/media-videos/media-videos.component';
 import { CompletionCardService } from 'src/app/shared/services/completion-card.service';
@@ -64,13 +62,11 @@ const WATCH_STATUS_LABELS: Record<number, string> = {
     IonContent,
     IonHeader,
     IonIcon,
-    IonLabel,
     IonProgressBar,
-    IonSegment,
-    IonSegmentButton,
     IonSpinner,
     IonTitle,
     IonToolbar,
+    DetailTabsComponent,
     LibraryCreateDialogComponent,
     MediaAvailabilityComponent,
     MediaVideosComponent,
@@ -94,6 +90,10 @@ export class EpisodicMediaDetailsPage implements OnInit {
   readonly mediaMode: MediaModeOption =
     MEDIA_MODE_OPTIONS.find((option) => option.id === inject(EPISODIC_MEDIA_CONFIG).kind)
       ?? MEDIA_MODE_OPTIONS[0];
+  readonly detailTabs: readonly DetailTabOption[] = [
+    { value: 'overview', label: 'Overview' },
+    { value: 'gallery', label: 'Gallery' },
+  ];
 
   media: EpisodicMediaView | null = null;
   isLoading = true;

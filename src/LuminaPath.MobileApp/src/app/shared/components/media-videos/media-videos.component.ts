@@ -1,37 +1,30 @@
-import { Component, ElementRef, Input, OnChanges, SimpleChanges, ViewChild, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { AlertController, IonBadge, IonButton, IonIcon, IonSpinner } from '@ionic/angular/standalone';
+import { Component, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
+import { AlertController, IonIcon, IonSpinner } from '@ionic/angular/standalone';
 import { firstValueFrom } from 'rxjs';
 import {
   MediaVideo,
   MediaVideoContext,
-  MediaVideoKind,
+  MediaVideoDraft,
+  MediaVideoUpdate,
 } from '../../models/media-video.model';
 import { MediaVideoService } from '../../services/media-video.service';
 import { extractErrorMessage } from '../../utils/extract-error';
-
-interface VideoKindOption {
-  label: string;
-  value: MediaVideoKind;
-}
+import { MediaVideoCardComponent } from './media-video-card/media-video-card.component';
+import { MediaVideoUploadComponent } from './media-video-upload/media-video-upload.component';
 
 @Component({
   selector: 'app-media-videos',
   templateUrl: './media-videos.component.html',
   styleUrls: ['./media-videos.component.scss'],
-  imports: [FormsModule, IonBadge, IonButton, IonIcon, IonSpinner],
+  imports: [IonIcon, IonSpinner, MediaVideoCardComponent, MediaVideoUploadComponent],
 })
 export class MediaVideosComponent implements OnChanges {
   @Input({ required: true }) mediaId: number | null = null;
   @Input() mediaKind: MediaVideoContext = 'games';
   @Input() canEdit = false;
 
-  @ViewChild('videoFileInput') private readonly fileInput?: ElementRef<HTMLInputElement>;
-
   private readonly mediaVideoService = inject(MediaVideoService);
   private readonly alertController = inject(AlertController);
-
-  readonly MediaVideoKind = MediaVideoKind;
 
   videos: MediaVideo[] = [];
   isLoading = false;
@@ -39,62 +32,17 @@ export class MediaVideosComponent implements OnChanges {
   isMutating = false;
   errorMessage = '';
   uploadMessage = '';
-  uploadTitle = '';
-  uploadDescription = '';
-  uploadKind: MediaVideoKind = MediaVideoKind.Clip;
-  selectedFile: File | null = null;
-  editingVideoId: number | null = null;
-  editTitle = '';
-  editDescription = '';
-  editKind: MediaVideoKind = MediaVideoKind.Clip;
+  uploadResetKey = 0;
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['mediaKind']) {
-      this.uploadKind = this.defaultKind;
-    }
-
     if (changes['mediaId']) {
       void this.loadVideos();
     }
   }
 
-  get kindOptions(): VideoKindOption[] {
-    if (this.mediaKind === 'games') {
-      return [
-        { label: 'Clip', value: MediaVideoKind.Clip },
-        { label: 'Guide', value: MediaVideoKind.Guide },
-      ];
-    }
-
-    return [
-      { label: 'Scene clip', value: MediaVideoKind.SceneClip },
-    ];
-  }
-
   get headerTitle(): string {
     const count = this.videos.length;
     return count === 1 ? '1 video' : `${count} videos`;
-  }
-
-  get uploadDisabled(): boolean {
-    return !this.canEdit
-      || this.isUploading
-      || this.mediaId == null
-      || this.selectedFile == null;
-  }
-
-  get selectedFileName(): string {
-    return this.selectedFile?.name ?? 'No file selected';
-  }
-
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement | null;
-    this.selectedFile = input?.files?.[0] ?? null;
-    this.uploadMessage = '';
-
-    if (!this.uploadTitle.trim() && this.selectedFile) {
-      this.uploadTitle = this.selectedFile.name.replace(/\.[^.]+$/, '');
-    }
   }
 
   async loadVideos(): Promise<void> {
@@ -115,11 +63,9 @@ export class MediaVideosComponent implements OnChanges {
     }
   }
 
-  async uploadVideo(event?: Event): Promise<void> {
-    event?.preventDefault();
+  async uploadVideo(draft: MediaVideoDraft): Promise<void> {
     const mediaId = this.mediaId;
-    const file = this.selectedFile;
-    if (this.uploadDisabled || mediaId == null || !file) {
+    if (!this.canEdit || this.isUploading || mediaId == null) {
       return;
     }
 
@@ -129,13 +75,13 @@ export class MediaVideosComponent implements OnChanges {
     try {
       await firstValueFrom(this.mediaVideoService.upload({
         mediaId,
-        file,
-        title: this.uploadTitle.trim(),
-        description: this.uploadDescription.trim(),
-        kind: this.uploadKind,
+        file: draft.file,
+        title: draft.title,
+        description: draft.description,
+        kind: draft.kind,
       }));
       this.uploadMessage = 'Video uploaded.';
-      this.resetUploadForm();
+      this.uploadResetKey++;
       await this.loadVideos();
     } catch (error) {
       this.uploadMessage = extractErrorMessage(error, 'Video could not be uploaded.');
@@ -144,40 +90,17 @@ export class MediaVideosComponent implements OnChanges {
     }
   }
 
-  startEdit(video: MediaVideo): void {
-    if (!this.canEdit || this.isMutating) {
-      return;
-    }
-
-    this.editingVideoId = video.id;
-    this.editTitle = video.title;
-    this.editDescription = video.description ?? '';
-    this.editKind = video.kind;
-  }
-
-  cancelEdit(): void {
-    this.editingVideoId = null;
-    this.editTitle = '';
-    this.editDescription = '';
-    this.editKind = this.defaultKind;
-  }
-
-  async saveEdit(video: MediaVideo): Promise<void> {
-    if (!this.canEdit || this.isMutating || !this.editTitle.trim()) {
+  async saveVideo(video: MediaVideo, update: MediaVideoUpdate): Promise<void> {
+    if (!this.canEdit || this.isMutating || !update.title.trim()) {
       return;
     }
 
     this.isMutating = true;
     this.errorMessage = '';
     try {
-      const updated = await firstValueFrom(this.mediaVideoService.update(video.id, {
-        title: this.editTitle.trim(),
-        description: this.editDescription.trim() || null,
-        kind: this.editKind,
-      }));
+      const updated = await firstValueFrom(this.mediaVideoService.update(video.id, update));
       this.videos = this.videos.map((item) => item.id === video.id ? updated : item)
         .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
-      this.cancelEdit();
     } catch (error) {
       this.errorMessage = extractErrorMessage(error, 'Video could not be saved.');
     } finally {
@@ -241,49 +164,16 @@ export class MediaVideosComponent implements OnChanges {
     return this.mediaVideoService.streamUrl(video);
   }
 
-  kindLabel(kind: MediaVideoKind): string {
-    return this.kindOptions.find((option) => option.value === kind)?.label
-      ?? (kind === MediaVideoKind.Guide ? 'Guide' : kind === MediaVideoKind.SceneClip ? 'Scene clip' : 'Clip');
-  }
-
-  formatFileSize(sizeBytes: number): string {
-    if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {
-      return 'Unknown size';
-    }
-
-    const megabytes = sizeBytes / 1024 / 1024;
-    if (megabytes >= 1) {
-      return `${Math.round(megabytes * 10) / 10} MB`;
-    }
-
-    return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
-  }
-
   private async deleteVideo(video: MediaVideo): Promise<void> {
     this.isMutating = true;
     this.errorMessage = '';
     try {
       await firstValueFrom(this.mediaVideoService.delete(video.id));
       this.videos = this.videos.filter((item) => item.id !== video.id);
-      this.cancelEdit();
     } catch (error) {
       this.errorMessage = extractErrorMessage(error, 'Video could not be deleted.');
     } finally {
       this.isMutating = false;
     }
-  }
-
-  private resetUploadForm(): void {
-    this.uploadTitle = '';
-    this.uploadDescription = '';
-    this.uploadKind = this.defaultKind;
-    this.selectedFile = null;
-    if (this.fileInput?.nativeElement) {
-      this.fileInput.nativeElement.value = '';
-    }
-  }
-
-  private get defaultKind(): MediaVideoKind {
-    return this.mediaKind === 'games' ? MediaVideoKind.Clip : MediaVideoKind.SceneClip;
   }
 }

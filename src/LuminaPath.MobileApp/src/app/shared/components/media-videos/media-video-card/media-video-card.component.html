@@ -1,0 +1,102 @@
+<article class="video-card">
+  <div class="video-card__player">
+    <video [src]="streamUrl" controls preload="metadata"></video>
+  </div>
+
+  @if (isEditing) {
+    <div class="video-card__edit">
+      <label>
+        <span>Title</span>
+        <input
+          type="text"
+          maxlength="120"
+          name="editVideoTitle{{ video.id }}"
+          [(ngModel)]="editTitle" />
+      </label>
+      <label>
+        <span>Type</span>
+        <select name="editVideoKind{{ video.id }}" [(ngModel)]="editKind">
+          @for (option of kindOptions; track option.value) {
+            <option [ngValue]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Description</span>
+        <textarea
+          rows="2"
+          maxlength="500"
+          name="editVideoDescription{{ video.id }}"
+          [(ngModel)]="editDescription">
+        </textarea>
+      </label>
+      <div class="video-card__actions">
+        <ion-button
+          size="small"
+          shape="round"
+          [disabled]="isMutating || !editTitle.trim()"
+          (click)="saveEdit()">
+          <ion-icon slot="start" name="save-outline"></ion-icon>
+          Save
+        </ion-button>
+        <ion-button
+          size="small"
+          shape="round"
+          fill="outline"
+          [disabled]="isMutating"
+          (click)="cancelEdit()">
+          Cancel
+        </ion-button>
+      </div>
+    </div>
+  } @else {
+    <div class="video-card__body">
+      <div class="video-card__title-row">
+        <h3>{{ video.title }}</h3>
+        <ion-badge>{{ kindLabel }}</ion-badge>
+      </div>
+      @if (video.description) {
+        <p>{{ video.description }}</p>
+      }
+      <span class="video-card__meta">{{ fileSizeLabel }}</span>
+    </div>
+
+    @if (canEdit) {
+      <div class="video-card__actions">
+        <ion-button
+          fill="clear"
+          size="small"
+          aria-label="Move video up"
+          [disabled]="isFirst || isMutating"
+          (click)="move.emit(-1)">
+          <ion-icon slot="icon-only" name="chevron-up-outline"></ion-icon>
+        </ion-button>
+        <ion-button
+          fill="clear"
+          size="small"
+          aria-label="Move video down"
+          [disabled]="isLast || isMutating"
+          (click)="move.emit(1)">
+          <ion-icon slot="icon-only" name="chevron-down-outline"></ion-icon>
+        </ion-button>
+        <ion-button
+          fill="clear"
+          size="small"
+          aria-label="Edit video"
+          [disabled]="isMutating"
+          (click)="startEdit()">
+          <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+        </ion-button>
+        <ion-button
+          fill="clear"
+          size="small"
+          class="video-card__danger"
+          aria-label="Delete video"
+          [disabled]="isMutating"
+          (click)="delete.emit(video)">
+          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+        </ion-button>
+      </div>
+    }
+  }
+</article>

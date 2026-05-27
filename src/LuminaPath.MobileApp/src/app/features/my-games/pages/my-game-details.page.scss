@@ -474,24 +474,6 @@
   padding: 18px;
 }
 
-.detail-tabs {
-  min-height: 46px;
-  padding: 4px;
-  border: 1px solid var(--card-border);
-  border-radius: 18px;
-  background: rgba(12, 31, 64, 0.72);
-  backdrop-filter: blur(18px);
-
-  ion-segment-button {
-    --border-radius: 14px;
-    --color: var(--muted);
-    --color-checked: var(--text);
-    --indicator-color: rgba(96, 165, 250, 0.28);
-    min-height: 38px;
-    font-weight: 800;
-  }
-}
-
 .forecast-summary {
   margin: 0;
   color: var(--muted);

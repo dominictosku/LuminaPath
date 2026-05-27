@@ -13,64 +13,13 @@
   </header>
 
   @if (canEdit) {
-    <form class="video-upload" (submit)="uploadVideo($event)">
-      <div class="video-upload__fields">
-        <label>
-          <span>Title</span>
-          <input
-            type="text"
-            maxlength="120"
-            name="videoTitle"
-            [(ngModel)]="uploadTitle" />
-        </label>
-
-        <label>
-          <span>Type</span>
-          <select name="videoKind" [(ngModel)]="uploadKind">
-            @for (option of kindOptions; track option.value) {
-              <option [ngValue]="option.value">{{ option.label }}</option>
-            }
-          </select>
-        </label>
-
-        <label class="video-upload__description">
-          <span>Description</span>
-          <textarea
-            rows="2"
-            maxlength="500"
-            name="videoDescription"
-            [(ngModel)]="uploadDescription">
-          </textarea>
-        </label>
-      </div>
-
-      <div class="video-upload__file-row">
-        <label class="file-picker">
-          <input
-            #videoFileInput
-            type="file"
-            accept="video/mp4,video/webm,video/quicktime,video/x-m4v,.mp4,.webm,.mov,.m4v"
-            (change)="onFileSelected($event)" />
-          <span>
-            <ion-icon name="cloud-upload-outline"></ion-icon>
-            Choose video
-          </span>
-        </label>
-        <span class="video-upload__filename">{{ selectedFileName }}</span>
-        <ion-button
-          type="submit"
-          shape="round"
-          class="video-upload__submit"
-          [disabled]="uploadDisabled">
-          <ion-icon slot="start" name="cloud-upload-outline"></ion-icon>
-          {{ isUploading ? 'Uploading...' : 'Upload' }}
-        </ion-button>
-      </div>
-
-      @if (uploadMessage) {
-        <p class="video-upload__message">{{ uploadMessage }}</p>
-      }
-    </form>
+    <app-media-video-upload
+      [mediaKind]="mediaKind"
+      [disabled]="mediaId === null"
+      [isUploading]="isUploading"
+      [message]="uploadMessage"
+      [resetKey]="uploadResetKey"
+      (upload)="uploadVideo($event)" />
   }
 
   @if (errorMessage) {
@@ -87,108 +36,17 @@
   @if (videos.length) {
     <div class="media-videos__grid">
       @for (video of videos; track video.id; let first = $first; let last = $last) {
-        <article class="video-card">
-          <div class="video-card__player">
-            <video [src]="streamUrl(video)" controls preload="metadata"></video>
-          </div>
-
-          @if (editingVideoId === video.id) {
-            <div class="video-card__edit">
-              <label>
-                <span>Title</span>
-                <input
-                  type="text"
-                  maxlength="120"
-                  name="editVideoTitle{{ video.id }}"
-                  [(ngModel)]="editTitle" />
-              </label>
-              <label>
-                <span>Type</span>
-                <select name="editVideoKind{{ video.id }}" [(ngModel)]="editKind">
-                  @for (option of kindOptions; track option.value) {
-                    <option [ngValue]="option.value">{{ option.label }}</option>
-                  }
-                </select>
-              </label>
-              <label>
-                <span>Description</span>
-                <textarea
-                  rows="2"
-                  maxlength="500"
-                  name="editVideoDescription{{ video.id }}"
-                  [(ngModel)]="editDescription">
-                </textarea>
-              </label>
-              <div class="video-card__actions">
-                <ion-button
-                  size="small"
-                  shape="round"
-                  [disabled]="isMutating || !editTitle.trim()"
-                  (click)="saveEdit(video)">
-                  <ion-icon slot="start" name="save-outline"></ion-icon>
-                  Save
-                </ion-button>
-                <ion-button
-                  size="small"
-                  shape="round"
-                  fill="outline"
-                  [disabled]="isMutating"
-                  (click)="cancelEdit()">
-                  Cancel
-                </ion-button>
-              </div>
-            </div>
-          } @else {
-            <div class="video-card__body">
-              <div class="video-card__title-row">
-                <h3>{{ video.title }}</h3>
-                <ion-badge>{{ kindLabel(video.kind) }}</ion-badge>
-              </div>
-              @if (video.description) {
-                <p>{{ video.description }}</p>
-              }
-              <span class="video-card__meta">{{ formatFileSize(video.sizeBytes) }}</span>
-            </div>
-
-            @if (canEdit) {
-              <div class="video-card__actions">
-                <ion-button
-                  fill="clear"
-                  size="small"
-                  aria-label="Move video up"
-                  [disabled]="first || isMutating"
-                  (click)="moveVideo(video, -1)">
-                  <ion-icon slot="icon-only" name="chevron-up-outline"></ion-icon>
-                </ion-button>
-                <ion-button
-                  fill="clear"
-                  size="small"
-                  aria-label="Move video down"
-                  [disabled]="last || isMutating"
-                  (click)="moveVideo(video, 1)">
-                  <ion-icon slot="icon-only" name="chevron-down-outline"></ion-icon>
-                </ion-button>
-                <ion-button
-                  fill="clear"
-                  size="small"
-                  aria-label="Edit video"
-                  [disabled]="isMutating"
-                  (click)="startEdit(video)">
-                  <ion-icon slot="icon-only" name="create-outline"></ion-icon>
-                </ion-button>
-                <ion-button
-                  fill="clear"
-                  size="small"
-                  class="video-card__danger"
-                  aria-label="Delete video"
-                  [disabled]="isMutating"
-                  (click)="confirmDelete(video)">
-                  <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
-                </ion-button>
-              </div>
-            }
-          }
-        </article>
+        <app-media-video-card
+          [video]="video"
+          [streamUrl]="streamUrl(video)"
+          [mediaKind]="mediaKind"
+          [canEdit]="canEdit"
+          [isFirst]="first"
+          [isLast]="last"
+          [isMutating]="isMutating"
+          (move)="moveVideo(video, $event)"
+          (save)="saveVideo(video, $event)"
+          (delete)="confirmDelete($event)" />
       }
     </div>
   }

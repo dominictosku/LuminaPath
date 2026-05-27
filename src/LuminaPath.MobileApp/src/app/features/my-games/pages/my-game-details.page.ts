@@ -10,9 +10,6 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
-  IonLabel,
-  IonSegment,
-  IonSegmentButton,
   IonSpinner,
   IonTitle,
   IonToolbar,
@@ -38,6 +35,7 @@ import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatShortDate } from 'src/app/shared/utils/format';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { LiveSessionTrackerService } from 'src/app/shared/services/live-session-tracker.service';
+import { DetailTabOption, DetailTabsComponent } from 'src/app/shared/components/detail-tabs/detail-tabs.component';
 import { MediaAvailabilityComponent } from 'src/app/shared/components/media-availability/media-availability.component';
 import { MediaVideosComponent } from 'src/app/shared/components/media-videos/media-videos.component';
 import { CompletionCardService } from 'src/app/shared/services/completion-card.service';
@@ -64,9 +62,6 @@ import { GameDlcListComponent } from '../components/game-dlc-list/game-dlc-list.
     IonContent,
     IonHeader,
     IonIcon,
-    IonLabel,
-    IonSegment,
-    IonSegmentButton,
     IonSpinner,
     IonTitle,
     IonToolbar,
@@ -77,6 +72,7 @@ import { GameDlcListComponent } from '../components/game-dlc-list/game-dlc-list.
     GameForecastComponent,
     GameTrophiesComponent,
     GameDlcListComponent,
+    DetailTabsComponent,
     MediaAvailabilityComponent,
     MediaVideosComponent,
     LibraryCreateDialogComponent,
@@ -104,6 +100,12 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   /** Catalog dialog needs a MediaModeOption — this page is games-only. */
   readonly gamesMode: MediaModeOption =
     MEDIA_MODE_OPTIONS.find((option) => option.id === 'games') ?? MEDIA_MODE_OPTIONS[0];
+  readonly detailTabs: readonly DetailTabOption[] = [
+    { value: 'overview', label: 'Overview' },
+    { value: 'gallery', label: 'Gallery' },
+    { value: 'progress', label: 'Progress' },
+    { value: 'news', label: 'News' },
+  ];
 
   game: GameWithFlexibleLibrary | null = null;
   forecast: GameForecast | null = null;
