@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { formatHoursMinutes } from 'src/app/shared/utils/format';
+import { capitalize, formatHoursMinutes } from 'src/app/shared/utils/format';
 import { platformLabelFromValue } from '../../games/models/games.model';
 import { LibraryEntryDetails, MediaItem, UserMediaEntry } from '../models/media-item.model';
 import { MediaLibraryForm, MediaStatusOption } from '../models/media-library-form.model';
@@ -142,7 +142,7 @@ export class MediaLibraryViewService {
       return this.episodeLabel(item, mode);
     }
 
-    return this.capitalize(item.kind.slice(0, -1) || mode.singular);
+    return capitalize(item.kind.slice(0, -1) || mode.singular);
   }
 
   hasLibraryEntry(item: MediaItem): boolean {
@@ -216,7 +216,4 @@ export class MediaLibraryViewService {
     return Number.isFinite(numericValue) ? numericValue : null;
   }
 
-  private capitalize(value: string): string {
-    return `${value[0]?.toUpperCase() ?? ''}${value.slice(1)}`;
-  }
 }

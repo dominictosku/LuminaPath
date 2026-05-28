@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { DashboardMediaItem } from '../../models/dashboard.model';
-import { playedLabel, remainingLabel } from '../../dashboard-view.helpers';
+import { playedLabel, remainingLabel } from '../../domain/dashboard-view.helpers';
 
 /** Biggest backlog commitments (highest remaining hours among planned items). */
 @Component({

@@ -14,10 +14,10 @@ import {
   sumRemainingHours,
   topPlayingItems,
 } from './dashboard.derivations';
-import { DashboardMediaItem } from './models/dashboard.model';
-import { GameStatus } from '../library/models/library-status.model';
-import { GamingSession } from '../planning/services/gaming-session.service';
-import { Quest, QuestBoardState } from '../quests/services/quest-board.service';
+import { DashboardMediaItem } from '../models/dashboard.model';
+import { GameStatus } from '../../library/models/library-status.model';
+import { GamingSession } from '../../planning/services/gaming-session.service';
+import { Quest, QuestBoardState } from '../../quests/services/quest-board.service';
 
 const NOW = new Date(2026, 4, 22);
 

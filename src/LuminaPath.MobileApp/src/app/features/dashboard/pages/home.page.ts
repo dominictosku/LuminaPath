@@ -25,8 +25,8 @@ import {
   DashboardMetric,
 } from '../models/dashboard.model';
 import { addDays, startOfDay } from 'src/app/shared/utils/date-helpers';
-import { progressOf } from '../dashboard-view.helpers';
-import { fromAnime, fromGame, fromMovie, fromSeries } from '../dashboard.mappers';
+import { progressOf } from '../domain/dashboard-view.helpers';
+import { fromAnime, fromGame, fromMovie, fromSeries } from '../domain/dashboard.mappers';
 import {
   buildActivityItems,
   buildFocusItems,
@@ -39,7 +39,7 @@ import {
   sumPlayedHours,
   sumRemainingHours,
   topPlayingItems,
-} from '../dashboard.derivations';
+} from '../domain/dashboard.derivations';
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { DashboardHeroComponent } from '../components/dashboard-hero/dashboard-hero.component';
 import { DashboardMetricsComponent } from '../components/dashboard-metrics/dashboard-metrics.component';

@@ -34,6 +34,8 @@ import { SeriesService } from '../../series/services/series.service';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
 import { MediaMode, MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
+import { capitalize } from 'src/app/shared/utils/format';
+import { normalizeIsoDate, parseDateOrNull, serializeDate } from 'src/app/shared/utils/date-helpers';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { MediaLibraryFacade } from '../services/media-library.facade';
 import { MediaStore } from '../state/media.store';
@@ -62,7 +64,7 @@ import {
   ViewMode,
 } from '../models/library-filter.model';
 import { LibraryFilterPresetService } from '../services/library-filter-preset.service';
-import { buildPageFilter, LibraryFilterState } from '../library-filter.helpers';
+import { buildPageFilter, LibraryFilterState } from '../domain/library-filter.helpers';
 import {
   LIBRARY_LIST_ROW_HEIGHT,
   LIBRARY_LIST_ROW_STRIDE,
@@ -792,23 +794,11 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
       status,
       timeSpend: entry.timeSpend ?? null,
       rating: entry.rating ?? null,
-      startDate: this.serializeDate(entry.startDate),
-      endDate: this.serializeDate(entry.endDate),
+      startDate: serializeDate(entry.startDate),
+      endDate: serializeDate(entry.endDate),
       personalNotes: entry.personalNotes ?? null,
       currentEpisode: this.isEpisodeMode ? entry.currentEpisode ?? null : null,
     };
-  }
-
-  private serializeDate(value: Date | string | null | undefined): string | null {
-    if (!value) {
-      return null;
-    }
-
-    if (value instanceof Date) {
-      return Number.isNaN(value.getTime()) ? null : value.toISOString();
-    }
-
-    return value;
   }
 
   private pruneSelectedItems(): void {
@@ -828,16 +818,12 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private addGameErrorMessage(error: unknown): string {
-    return extractErrorMessage(error, `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`);
+    return extractErrorMessage(error, `${capitalize(this.mediaMode.singular)} could not be added to your list.`);
   }
 
   private bulkSuccessMessage(count: number, action: string): string {
     const subject = count === 1 ? this.mediaMode.singular : this.mediaMode.label.toLowerCase();
     return `${count} ${subject} ${action}.`;
-  }
-
-  private capitalize(value: string): string {
-    return `${value[0]?.toUpperCase() ?? ''}${value.slice(1)}`;
   }
 
   private gamesForReleaseNotifications() {
@@ -891,8 +877,8 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
           status: this.createForm.libraryEntry.status,
           timeSpend: this.createForm.libraryEntry.timeSpend ?? 0,
           rating: this.createForm.libraryEntry.rating,
-          startDate: this.normalizeIsoDate(this.createForm.libraryEntry.startDate),
-          endDate: this.normalizeIsoDate(this.createForm.libraryEntry.endDate),
+          startDate: normalizeIsoDate(this.createForm.libraryEntry.startDate),
+          endDate: normalizeIsoDate(this.createForm.libraryEntry.endDate),
           personalNotes: this.createForm.libraryEntry.personalNotes,
           currentEpisode: this.createForm.libraryEntry.currentEpisode,
         });
@@ -904,7 +890,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     } catch (error) {
       this.createErrorMessage = extractErrorMessage(
         error,
-        `${this.capitalize(this.mediaMode.singular)} could not be created.`,
+        `${capitalize(this.mediaMode.singular)} could not be created.`,
       );
     } finally {
       this.isCreatingCatalogEntry = false;
@@ -914,7 +900,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   /** Dispatch to the right typed service per media mode, returning the
    *  freshly-created entity (so we can chain MyGame/MyAnime/MySeries). */
   private async createCatalogEntry(name: string): Promise<{ id: number }> {
-    const releaseDate = this.parseDateOrNull(this.createForm.releaseDate);
+    const releaseDate = parseDateOrNull(this.createForm.releaseDate);
     const cover = this.createForm.cover;
     switch (this.mediaMode.id) {
       case 'games': {
@@ -960,17 +946,4 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private parseDateOrNull(value: string): Date | null {
-    if (!value) return null;
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-
-  private normalizeIsoDate(value: string | Date | null | undefined): string | null {
-    if (!value) return null;
-    if (value instanceof Date) {
-      return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
-    }
-    return value || null;
-  }
 }

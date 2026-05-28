@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonBadge, IonIcon } from '@ionic/angular/standalone';
 
 import { BacklogItem } from '../../models/statistic.model';
-import { formatHours } from '../../statistic.computations';
+import { formatHours } from '../../domain/statistic.computations';
 
 /** Short backlog items (under 12h) the user could realistically finish soon. */
 @Component({

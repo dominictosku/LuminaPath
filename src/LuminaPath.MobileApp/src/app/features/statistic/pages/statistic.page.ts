@@ -29,7 +29,7 @@ import {
   TimeBar,
   TrendData,
 } from '../models/statistic.model';
-import { fromAnime, fromGame, fromMovie, fromSeries } from '../statistic.mappers';
+import { fromAnime, fromGame, fromMovie, fromSeries } from '../domain/statistic.mappers';
 import {
   computeBreakdown,
   computeDonut,
@@ -41,7 +41,7 @@ import {
   computeStatusSlices,
   computeTimeBars,
   computeTrend,
-} from '../statistic.computations';
+} from '../domain/statistic.computations';
 import { StatisticHeroComponent } from '../components/statistic-hero/statistic-hero.component';
 import { StatisticMetricsComponent } from '../components/statistic-metrics/statistic-metrics.component';
 import { StatisticMediaMixComponent } from '../components/statistic-media-mix/statistic-media-mix.component';

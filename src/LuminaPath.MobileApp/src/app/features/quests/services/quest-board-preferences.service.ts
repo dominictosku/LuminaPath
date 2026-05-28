@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 
 import { QuestPriority, QuestRecurrence, QuestType } from './quest-board.service';
 import { QuestViewMode } from '../components/quest-board-toolbar/quest-board-toolbar.component';
-import { QuestFilter } from '../quest-sections.builder';
+import { QuestFilter } from '../domain/quest-sections.builder';
 
 export type QuestBoardPreferences = {
   filter: QuestFilter;

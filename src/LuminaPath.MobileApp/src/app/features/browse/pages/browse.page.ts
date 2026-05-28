@@ -24,7 +24,7 @@ import { BrowseGroup, BrowseItem, BrowseKind } from '../models/browse.model';
 import { BrowseService } from '../services/browse.service';
 import { addMonths, startOfMonth } from 'src/app/shared/utils/date-helpers';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
-import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
+import { capitalize, formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
 
 const SEASONS = [
   { name: 'Winter', startMonth: 0 },
@@ -446,11 +446,7 @@ export class BrowsePage implements OnInit {
   }
 
   private addGameErrorMessage(error: unknown): string {
-    return extractErrorMessage(error, `${this.capitalize(this.mediaMode.singular)} could not be added to your list.`);
-  }
-
-  private capitalize(value: string): string {
-    return `${value[0]?.toUpperCase() ?? ''}${value.slice(1)}`;
+    return extractErrorMessage(error, `${capitalize(this.mediaMode.singular)} could not be added to your list.`);
   }
 
   private releaseDate(item: BrowseItem): Date | null {

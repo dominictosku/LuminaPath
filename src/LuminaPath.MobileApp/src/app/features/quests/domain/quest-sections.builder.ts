@@ -1,7 +1,7 @@
 import { addDays, startOfDay } from 'src/app/shared/utils/date-helpers';
 
-import { isDueByEndOfToday, dueState } from './quest-due';
-import { Quest, QuestPriority } from './services/quest-board.service';
+import { isDueByEndOfToday, dueState } from '../util/quest-due';
+import { Quest, QuestPriority } from '../services/quest-board.service';
 
 export type QuestFilter = 'today' | 'upcoming' | 'inbox' | 'all';
 

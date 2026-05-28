@@ -33,6 +33,7 @@ import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { MediaLibraryViewService } from 'src/app/features/library/services/media-library-view.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatShortDate } from 'src/app/shared/utils/format';
+import { parseDateOrNull, serializeDate } from 'src/app/shared/utils/date-helpers';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { LiveSessionTrackerService } from 'src/app/shared/services/live-session-tracker.service';
 import { DetailTabOption, DetailTabsComponent } from 'src/app/shared/components/detail-tabs/detail-tabs.component';
@@ -655,8 +656,8 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
       status: Number(entry.status ?? 1),
       timeSpend: entry.timeSpend ?? null,
       rating: entry.rating ?? null,
-      startDate: this.serializeDate(entry.startDate),
-      endDate: this.serializeDate(entry.endDate),
+      startDate: serializeDate(entry.startDate),
+      endDate: serializeDate(entry.endDate),
       personalNotes: entry.personalNotes ?? null,
       ...overrides,
     };
@@ -712,13 +713,6 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
 
   private clearStoredLiveSession(gameId: number | null | undefined): void {
     this.liveSessionTracker.clear(gameId);
-  }
-
-  private serializeDate(value: Date | string | null | undefined): string | null {
-    if (!value) {
-      return null;
-    }
-    return value instanceof Date ? value.toISOString() : value;
   }
 
   private showError(message: string): void {
@@ -777,7 +771,7 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
         id: gameId,
         name,
         description: this.editForm.description,
-        releaseDate: this.parseDateOrNull(this.editForm.releaseDate) ?? this.game.releaseDate,
+        releaseDate: parseDateOrNull(this.editForm.releaseDate) ?? this.game.releaseDate,
         genre: this.editForm.genre,
         platforms: this.editForm.platforms,
         playtime: this.editForm.playtime ?? 0,
@@ -878,11 +872,6 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     return `${y}-${m}-${d}`;
   }
 
-  private parseDateOrNull(value: string): Date | null {
-    if (!value) return null;
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
 }
 
 function formatLiveDuration(totalSeconds: number): string {

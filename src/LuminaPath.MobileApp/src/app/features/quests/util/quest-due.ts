@@ -1,6 +1,6 @@
 import { addDays, startOfDay } from 'src/app/shared/utils/date-helpers';
 
-import { Quest } from './services/quest-board.service';
+import { Quest } from '../services/quest-board.service';
 
 export type QuestDueState = 'overdue' | 'today' | 'soon' | 'later' | 'none';
 

@@ -7,7 +7,7 @@ import {
   filterQuests,
   nextQueuedQuest,
 } from './quest-sections.builder';
-import { Quest } from './services/quest-board.service';
+import { Quest } from '../services/quest-board.service';
 
 function isoDate(now: Date, offsetDays: number): string {
   const d = new Date(now);

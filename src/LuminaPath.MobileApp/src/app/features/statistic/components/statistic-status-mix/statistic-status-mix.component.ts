@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { StatusSlice } from '../../models/statistic.model';
-import { statusClass } from '../../statistic.computations';
+import { statusClass } from '../../domain/statistic.computations';
 
 /** Horizontal status bar + matching legend. Hidden by the parent when empty. */
 @Component({

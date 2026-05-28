@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon, IonProgressBar } from '@ionic/angular/standalone';
 
 import { KindBreakdown } from '../../models/statistic.model';
-import { formatHours } from '../../statistic.computations';
+import { formatHours } from '../../domain/statistic.computations';
 
 /** Per-media-type breakdown card grid at the bottom of the page. */
 @Component({

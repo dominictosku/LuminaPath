@@ -3,7 +3,7 @@ import { IonIcon, IonSkeletonText } from '@ionic/angular/standalone';
 
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { DashboardMediaItem } from '../../models/dashboard.model';
-import { playedLabel, statusLabel } from '../../dashboard-view.helpers';
+import { playedLabel, statusLabel } from '../../domain/dashboard-view.helpers';
 
 /**
  * Hero card at the top of the dashboard: featured media artwork, name, status,

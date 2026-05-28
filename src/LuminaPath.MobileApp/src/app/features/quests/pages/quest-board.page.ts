@@ -42,7 +42,7 @@ import {
   unlockedNodeIdsFor,
 } from 'src/app/features/skill-tree/util/skill-adapter';
 import { addDays, startOfDay, toISODate } from 'src/app/shared/utils/date-helpers';
-import { QuestDueState, dueDateLabel, dueState } from '../quest-due';
+import { QuestDueState, dueDateLabel, dueState } from '../util/quest-due';
 import { QuestBoardHeroComponent } from '../components/quest-board-hero/quest-board-hero.component';
 import { QuestQuickAddComponent, QuestQuickAddPreset, QuestQuickAddSubmit } from '../components/quest-quick-add/quest-quick-add.component';
 import { QuestBoardToolbarComponent, QuestViewMode } from '../components/quest-board-toolbar/quest-board-toolbar.component';
@@ -62,7 +62,7 @@ import {
   countQuestsByFilter,
   filterQuests,
   nextQueuedQuest,
-} from '../quest-sections.builder';
+} from '../domain/quest-sections.builder';
 import {
   LibraryGame,
   ModalMode,

@@ -3,7 +3,7 @@ import { IonBadge, IonIcon } from '@ionic/angular/standalone';
 
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { DashboardMediaItem } from '../../models/dashboard.model';
-import { progressOf, remainingLabel } from '../../dashboard-view.helpers';
+import { progressOf, remainingLabel } from '../../domain/dashboard-view.helpers';
 
 /** Horizontally scrolling rail of "currently active" media (status === Playing). */
 @Component({

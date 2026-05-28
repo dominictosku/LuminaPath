@@ -1,15 +1,15 @@
-import { Anime } from '../animes/models/animes.model';
-import { Game, platformLabelFromValue } from '../games/models/games.model';
-import { Movie } from '../movies/models/movies.model';
-import { Series } from '../series/models/series.model';
+import { Anime } from '../../animes/models/animes.model';
+import { Game, platformLabelFromValue } from '../../games/models/games.model';
+import { Movie } from '../../movies/models/movies.model';
+import { Series } from '../../series/models/series.model';
 import {
   estimatedHoursOfGame,
   gameStatusOf,
   playedHoursOfGame,
   remainingHoursOfGame,
-} from '../games/domain/game-library-metrics';
+} from '../../games/domain/game-library-metrics';
 
-import { DashboardMediaItem, DashboardMediaKind } from './models/dashboard.model';
+import { DashboardMediaItem, DashboardMediaKind } from '../models/dashboard.model';
 
 /**
  * Normalize the four raw media API shapes (Game / Anime / Movie / Series)

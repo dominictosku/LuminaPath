@@ -33,3 +33,36 @@ export function toISODate(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+/**
+ * Coerce a Date/ISO-string/nullish into a full ISO string (or null).
+ * Strings pass through unchanged; invalid Dates collapse to null.
+ */
+export function serializeDate(value: Date | string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  }
+  return value;
+}
+
+/** Parse a string into a Date, returning null for empty or invalid input. */
+export function parseDateOrNull(value: string): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/**
+ * Coerce a Date/ISO-string/nullish into a `YYYY-MM-DD` date string (or null).
+ * Strings pass through unchanged; invalid Dates collapse to null.
+ */
+export function normalizeIsoDate(value: string | Date | null | undefined): string | null {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+  }
+  return value || null;
+}

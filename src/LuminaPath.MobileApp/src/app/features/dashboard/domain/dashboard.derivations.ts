@@ -1,6 +1,6 @@
-import { GamingSession } from '../planning/services/gaming-session.service';
-import { Quest, QuestBoardState } from '../quests/services/quest-board.service';
-import { GameStatus, isGameBacklogStatus } from '../library/models/library-status.model';
+import { GamingSession } from '../../planning/services/gaming-session.service';
+import { Quest, QuestBoardState } from '../../quests/services/quest-board.service';
+import { GameStatus, isGameBacklogStatus } from '../../library/models/library-status.model';
 import { addDays, startOfDay } from 'src/app/shared/utils/date-helpers';
 
 import {
@@ -8,7 +8,7 @@ import {
   DashboardFocusItem,
   DashboardMediaItem,
   DashboardMetric,
-} from './models/dashboard.model';
+} from '../models/dashboard.model';
 import { daysUntil, progressOf, releaseDateOf, remainingLabel, statusLabel } from './dashboard-view.helpers';
 
 /**

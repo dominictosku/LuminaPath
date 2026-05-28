@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 import { DashboardMediaItem } from '../../models/dashboard.model';
-import { daysUntil, releaseLabel } from '../../dashboard-view.helpers';
+import { daysUntil, releaseLabel } from '../../domain/dashboard-view.helpers';
 
 /** Vertical list of the next upcoming media releases. */
 @Component({

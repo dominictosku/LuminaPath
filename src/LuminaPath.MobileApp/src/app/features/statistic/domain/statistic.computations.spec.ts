@@ -21,7 +21,7 @@ import {
   KindBreakdown,
   StatisticKind,
   TREND_MONTHS,
-} from './models/statistic.model';
+} from '../models/statistic.model';
 
 /** Minimal factory so tests stay focused on the field(s) under test. */
 function makeItem(overrides: Partial<BacklogItem> = {}): BacklogItem {

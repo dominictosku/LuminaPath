@@ -18,7 +18,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
-import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
+import { capitalize, formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { MEDIA_MODE_OPTIONS, MediaModeOption } from 'src/app/shared/services/media-mode.service';
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
@@ -544,7 +544,7 @@ export class EpisodicMediaDetailsPage implements OnInit {
     } catch (error) {
       this.editErrorMessage = extractErrorMessage(
         error,
-        `${this.capitalize(this.mediaMode.singular)} could not be updated.`,
+        `${capitalize(this.mediaMode.singular)} could not be updated.`,
       );
     } finally {
       this.isSavingCatalogEdit = false;
@@ -590,7 +590,7 @@ export class EpisodicMediaDetailsPage implements OnInit {
     } catch (error) {
       this.errorMessage = extractErrorMessage(
         error,
-        `${this.capitalize(this.mediaMode.singular)} could not be deleted.`,
+        `${capitalize(this.mediaMode.singular)} could not be deleted.`,
       );
     } finally {
       this.isDeletingCatalogEntry = false;
@@ -625,7 +625,4 @@ export class EpisodicMediaDetailsPage implements OnInit {
     return `${y}-${m}-${d}`;
   }
 
-  private capitalize(value: string): string {
-    return `${value[0]?.toUpperCase() ?? ''}${value.slice(1)}`;
-  }
 }

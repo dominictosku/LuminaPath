@@ -1,3 +1,8 @@
+/** Upper-case the first character, leaving the rest untouched. Empty-safe. */
+export function capitalize(value: string): string {
+  return `${value[0]?.toUpperCase() ?? ''}${value.slice(1)}`;
+}
+
 /**
  * Format a duration in minutes as "Xh Ym", "Xh", or "Ym".
  * Returns the fallback string when the value is null/undefined/zero/negative.

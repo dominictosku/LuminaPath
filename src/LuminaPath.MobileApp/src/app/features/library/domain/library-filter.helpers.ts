@@ -6,7 +6,7 @@ import {
   ReleaseDateFilter,
   SmartFilter,
   SortMode,
-} from './models/library-filter.model';
+} from '../models/library-filter.model';
 
 export type LibraryFilterState = {
   searchTerm: string;

@@ -1,7 +1,7 @@
-import { GameStatus, gameStatusLabel } from '../library/models/library-status.model';
-import { releaseDateOfGame } from '../games/domain/game-library-metrics';
+import { GameStatus, gameStatusLabel } from '../../library/models/library-status.model';
+import { releaseDateOfGame } from '../../games/domain/game-library-metrics';
 import { startOfDay } from 'src/app/shared/utils/date-helpers';
-import { DashboardMediaItem } from './models/dashboard.model';
+import { DashboardMediaItem } from '../models/dashboard.model';
 
 /** Calendar date of the media item's release, or `Invalid Date` if unset. */
 export function releaseDateOf(item: DashboardMediaItem): Date {

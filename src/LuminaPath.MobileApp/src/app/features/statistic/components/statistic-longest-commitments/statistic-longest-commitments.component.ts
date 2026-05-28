@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon, IonProgressBar } from '@ionic/angular/standalone';
 
 import { BacklogItem } from '../../models/statistic.model';
-import { formatHours } from '../../statistic.computations';
+import { formatHours } from '../../domain/statistic.computations';
 
 /** Top time sinks: the items consuming the largest share of remaining hours. */
 @Component({

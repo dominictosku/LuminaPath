@@ -3,7 +3,7 @@ import { IonIcon, IonProgressBar, IonReorder } from '@ionic/angular/standalone';
 
 import { addDays, startOfDay, toISODate } from 'src/app/shared/utils/date-helpers';
 import { Quest, QuestFolder, QuestPriority, QuestRecurrence, QuestType } from '../../services/quest-board.service';
-import { QuestDueState, dueDateLabel, dueState } from '../../quest-due';
+import { QuestDueState, dueDateLabel, dueState } from '../../util/quest-due';
 import { QuestFolderPickerComponent } from '../quest-folder-picker/quest-folder-picker.component';
 
 export type { QuestDueState };

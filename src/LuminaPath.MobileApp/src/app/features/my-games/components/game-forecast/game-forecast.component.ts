@@ -10,7 +10,7 @@ import {
   forecastProgress,
   forecastSummary,
   forecastWidth,
-} from '../../forecast.helpers';
+} from '../../domain/forecast.helpers';
 
 /**
  * Completion-forecast panel: three-segment bar (played/scheduled/remaining)

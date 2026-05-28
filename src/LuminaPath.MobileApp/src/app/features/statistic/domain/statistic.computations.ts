@@ -22,7 +22,7 @@ import {
   TREND_WIDTH,
   TrendData,
   TrendPoint,
-} from './models/statistic.model';
+} from '../models/statistic.model';
 
 /**
  * Pure derivations over the normalized backlog rows. Each export takes the

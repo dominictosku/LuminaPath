@@ -1,8 +1,8 @@
-import { Anime } from '../animes/models/animes.model';
-import { Game } from '../games/models/games.model';
-import { Movie } from '../movies/models/movies.model';
-import { Series } from '../series/models/series.model';
-import { BacklogItem, StatisticKind } from './models/statistic.model';
+import { Anime } from '../../animes/models/animes.model';
+import { Game } from '../../games/models/games.model';
+import { Movie } from '../../movies/models/movies.model';
+import { Series } from '../../series/models/series.model';
+import { BacklogItem, StatisticKind } from '../models/statistic.model';
 
 /**
  * Convert raw API entities to the normalized {@link BacklogItem} shape used by
