@@ -88,20 +88,20 @@
           <h2>{{ resultTitle }}</h2>
         </div>
         <div class="results-heading__actions">
-          @if (canCreateCatalogEntry) {
+          @if (creator.canCreate) {
             <ion-button
               class="create-button"
               size="small"
               aria-label="Create new catalog entry"
-              (click)="openCreateDialog()">
+              (click)="creator.open()">
               <ion-icon slot="start" name="add-circle-outline"></ion-icon>
               Create
             </ion-button>
           }
-          @if (visibleLibraryItems.length) {
-            <ion-button fill="clear" size="small" (click)="toggleSelectionMode()">
+          @if (bulk.visibleLibraryItems.length) {
+            <ion-button fill="clear" size="small" (click)="bulk.toggleSelectionMode()">
               <ion-icon slot="start" name="checkbox-outline"></ion-icon>
-              {{ selectionMode ? 'Done' : 'Select' }}
+              {{ bulk.selectionMode ? 'Done' : 'Select' }}
             </ion-button>
           }
           <ion-button fill="clear" size="small" (click)="clearFilters()">Reset</ion-button>
@@ -109,36 +109,36 @@
       </section>
     }
 
-    @if (!isLoading && selectionMode) {
+    @if (!isLoading && bulk.selectionMode) {
       <section class="bulk-actions">
         <div class="bulk-actions__summary">
           <span class="eyebrow">
             <ion-icon name="checkbox-outline"></ion-icon>
             Bulk actions
           </span>
-          <h2>{{ bulkSelectionSummary }}</h2>
+          <h2>{{ bulk.selectionSummary }}</h2>
         </div>
         <div class="bulk-actions__controls">
           <ion-button
             fill="outline"
             size="small"
-            [disabled]="!visibleLibraryItems.length || isBulkMutating"
-            (click)="selectVisibleLibraryItems()">
+            [disabled]="!bulk.visibleLibraryItems.length || bulk.isBulkMutating"
+            (click)="bulk.selectVisible()">
             Select visible
           </ion-button>
           <ion-button
             fill="clear"
             size="small"
-            [disabled]="!selectedCount || isBulkMutating"
-            (click)="clearSelection()">
+            [disabled]="!bulk.selectedCount || bulk.isBulkMutating"
+            (click)="bulk.clearSelection()">
             Clear
           </ion-button>
           <label class="bulk-status-field">
             <span>Status</span>
             <select
-              [value]="bulkStatusValue"
-              [disabled]="!selectedCount || isBulkMutating"
-              (change)="setBulkStatus($any($event.target).value)">
+              [value]="bulk.bulkStatusValue"
+              [disabled]="!bulk.selectedCount || bulk.isBulkMutating"
+              (change)="bulk.setBulkStatus($any($event.target).value)">
               @for (option of statusOptions; track option.value) {
                 <option [value]="option.value">{{ option.label }}</option>
               }
@@ -146,17 +146,17 @@
           </label>
           <ion-button
             size="small"
-            [disabled]="!selectedCount || isBulkMutating"
-            (click)="bulkUpdateStatus()">
+            [disabled]="!bulk.selectedCount || bulk.isBulkMutating"
+            (click)="bulk.bulkUpdateStatus()">
             <ion-icon slot="start" name="save-outline"></ion-icon>
-            {{ isBulkMutating ? 'Working...' : 'Apply' }}
+            {{ bulk.isBulkMutating ? 'Working...' : 'Apply' }}
           </ion-button>
           <ion-button
             fill="outline"
             color="danger"
             size="small"
-            [disabled]="!selectedCount || isBulkMutating"
-            (click)="confirmBulkRemove()">
+            [disabled]="!bulk.selectedCount || bulk.isBulkMutating"
+            (click)="bulk.confirmBulkRemove()">
             <ion-icon slot="start" name="trash-outline"></ion-icon>
             Remove
           </ion-button>
@@ -171,12 +171,12 @@
             [item]="game"
             [mediaMode]="mediaMode"
             [isAdding]="isAdding(game)"
-            [selectionMode]="selectionMode"
-            [selectable]="isSelectable(game)"
-            [selected]="isSelected(game)"
+            [selectionMode]="bulk.selectionMode"
+            [selectable]="bulk.isSelectable(game)"
+            [selected]="bulk.isSelected(game)"
             (edit)="openGameListDialog($event)"
             (details)="openDetails($event)"
-            (selectionChange)="toggleItemSelection($event)">
+            (selectionChange)="bulk.toggleItemSelection($event)">
           </app-library-card>
         }
       </section>
@@ -189,20 +189,20 @@
       <section
         #listAnchor
         class="game-list"
-        [style.height.px]="visibleListWindow().totalHeight">
-        @for (game of visibleGames(); track trackByGameId($index, game); let i = $index) {
+        [style.height.px]="scroll.window().totalHeight">
+        @for (game of scroll.visibleItems(); track trackByGameId($index, game); let i = $index) {
           <app-library-list-row
             class="game-list__virtual-row"
             [item]="game"
             [mediaMode]="mediaMode"
             [isAdding]="isAdding(game)"
-            [selectionMode]="selectionMode"
-            [selectable]="isSelectable(game)"
-            [selected]="isSelected(game)"
+            [selectionMode]="bulk.selectionMode"
+            [selectable]="bulk.isSelectable(game)"
+            [selected]="bulk.isSelected(game)"
             (edit)="openGameListDialog($event)"
             (details)="openDetails($event)"
-            (selectionChange)="toggleItemSelection($event)"
-            [style.top.px]="(visibleListWindow().start + i) * listRowStride">
+            (selectionChange)="bulk.toggleItemSelection($event)"
+            [style.top.px]="(scroll.window().start + i) * listRowStride">
           </app-library-list-row>
         }
       </section>
@@ -242,12 +242,12 @@
     (submitted)="submitAddGame()" />
 
   <app-library-create-dialog
-    [(isOpen)]="isCreateDialogOpen"
-    [(form)]="createForm"
+    [(isOpen)]="creator.isOpen"
+    [(form)]="creator.form"
     [mediaMode]="mediaMode"
     [statusOptions]="statusOptions"
-    [isSaving]="isCreatingCatalogEntry"
-    [errorMessage]="createErrorMessage"
-    (dismiss)="closeCreateDialog()"
+    [isSaving]="creator.isSaving"
+    [errorMessage]="creator.errorMessage"
+    (dismiss)="creator.close()"
     (submitted)="submitCreate()" />
 </ion-content>

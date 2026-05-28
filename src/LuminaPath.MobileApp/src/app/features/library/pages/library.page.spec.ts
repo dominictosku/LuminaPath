@@ -471,10 +471,10 @@ describe('LibraryPage', () => {
       of(makeEntry({ id: libraryEntryId, status: details.status, timeSpend: details.timeSpend })),
     );
 
-    component.toggleItemSelection(first);
-    component.toggleItemSelection(second);
-    component.setBulkStatus(GameStatus.Playing);
-    await component.bulkUpdateStatus();
+    component.bulk.toggleItemSelection(first);
+    component.bulk.toggleItemSelection(second);
+    component.bulk.setBulkStatus(GameStatus.Playing);
+    await component.bulk.bulkUpdateStatus();
     TestBed.flushEffects();
 
     expect(mediaLibrary.updateLibraryEntry).toHaveBeenCalledTimes(2);
@@ -489,7 +489,7 @@ describe('LibraryPage', () => {
       timeSpend: 3,
       rating: 10,
     }));
-    expect(component.selectedCount).toBe(0);
+    expect(component.bulk.selectedCount).toBe(0);
     expect(component.successMessage).toBe('2 games updated.');
   });
 
@@ -505,9 +505,9 @@ describe('LibraryPage', () => {
     await fixture.whenStable();
     TestBed.flushEffects();
 
-    component.toggleItemSelection(owned);
-    component.toggleItemSelection(catalog);
-    await component.bulkRemoveFromLibrary();
+    component.bulk.toggleItemSelection(owned);
+    component.bulk.toggleItemSelection(catalog);
+    await component.bulk.bulkRemoveFromLibrary();
     TestBed.flushEffects();
 
     expect(mediaLibrary.removeFromLibrary).toHaveBeenCalledOnceWith(99);
@@ -532,7 +532,7 @@ describe('LibraryPage', () => {
       fixture.detectChanges();
 
       authIsAdmin.set(false);
-      expect(component.canCreateCatalogEntry).toBeFalse();
+      expect(component.creator.canCreate).toBeFalse();
     });
 
     it('canCreateCatalogEntry is true for admins on creatable modes', () => {
@@ -541,7 +541,7 @@ describe('LibraryPage', () => {
 
       authIsAdmin.set(true);
       // Default media mode is games — creatable.
-      expect(component.canCreateCatalogEntry).toBeTrue();
+      expect(component.creator.canCreate).toBeTrue();
     });
 
     it('openCreateDialog is a no-op when the user is not an admin', () => {
@@ -549,8 +549,8 @@ describe('LibraryPage', () => {
       fixture.detectChanges();
 
       authIsAdmin.set(false);
-      component.openCreateDialog();
-      expect(component.isCreateDialogOpen).toBeFalse();
+      component.creator.open();
+      expect(component.creator.isOpen).toBeFalse();
     });
 
     it('openCreateDialog resets the form and opens the modal for admins', () => {
@@ -558,12 +558,12 @@ describe('LibraryPage', () => {
       fixture.detectChanges();
 
       authIsAdmin.set(true);
-      component.createForm.name = 'leftover';
-      component.openCreateDialog();
+      component.creator.form.name = 'leftover';
+      component.creator.open();
 
-      expect(component.isCreateDialogOpen).toBeTrue();
-      expect(component.createForm.name).toBe('');
-      expect(component.createForm.createLibraryEntry).toBeFalse();
+      expect(component.creator.isOpen).toBeTrue();
+      expect(component.creator.form.name).toBe('');
+      expect(component.creator.form.createLibraryEntry).toBeFalse();
     });
 
     it('submitCreate flags a missing title without calling the service', fakeAsync(() => {
@@ -571,13 +571,13 @@ describe('LibraryPage', () => {
       fixture.detectChanges();
 
       authIsAdmin.set(true);
-      component.openCreateDialog();
-      component.createForm.name = '   ';
+      component.creator.open();
+      component.creator.form.name = '   ';
 
       component.submitCreate();
       tick();
 
-      expect(component.createErrorMessage).toBe('Title is required.');
+      expect(component.creator.errorMessage).toBe('Title is required.');
       expect(gameService.post).not.toHaveBeenCalled();
     }));
 
@@ -586,11 +586,11 @@ describe('LibraryPage', () => {
       fixture.detectChanges();
 
       authIsAdmin.set(true);
-      component.openCreateDialog();
-      component.createForm.name = 'Hades';
-      component.createForm.description = 'Escape the underworld';
-      component.createForm.platforms = 8;
-      component.createForm.playtime = 25;
+      component.creator.open();
+      component.creator.form.name = 'Hades';
+      component.creator.form.description = 'Escape the underworld';
+      component.creator.form.platforms = 8;
+      component.creator.form.playtime = 25;
 
       const created = Object.assign(new Game(), { id: 101, name: 'Hades' });
       gameService.post.and.returnValue(of(created));
@@ -605,9 +605,9 @@ describe('LibraryPage', () => {
       expect(sent.platforms).toBe(8);
       expect(sent.playtime).toBe(25);
 
-      expect(component.isCreateDialogOpen).toBeFalse();
+      expect(component.creator.isOpen).toBeFalse();
       expect(component.successMessage).toBe('Hades was created.');
-      expect(component.isCreatingCatalogEntry).toBeFalse();
+      expect(component.creator.isSaving).toBeFalse();
     }));
 
     it('submitCreate surfaces backend errors and keeps the dialog open', fakeAsync(() => {
@@ -615,17 +615,17 @@ describe('LibraryPage', () => {
       fixture.detectChanges();
 
       authIsAdmin.set(true);
-      component.openCreateDialog();
-      component.createForm.name = 'Hades';
+      component.creator.open();
+      component.creator.form.name = 'Hades';
 
       gameService.post.and.returnValue(throwError(() => ({ error: 'Game already exists' })));
 
       component.submitCreate();
       tick();
 
-      expect(component.createErrorMessage).toBe('Game already exists');
-      expect(component.isCreateDialogOpen).toBeTrue();
-      expect(component.isCreatingCatalogEntry).toBeFalse();
+      expect(component.creator.errorMessage).toBe('Game already exists');
+      expect(component.creator.isOpen).toBeTrue();
+      expect(component.creator.isSaving).toBeFalse();
     }));
 
     it('submitCreate also POSTs the library entry when the toggle is on', fakeAsync(() => {
@@ -633,10 +633,10 @@ describe('LibraryPage', () => {
       fixture.detectChanges();
 
       authIsAdmin.set(true);
-      component.openCreateDialog();
-      component.createForm.name = 'Hades';
-      component.createForm.createLibraryEntry = true;
-      component.createForm.libraryEntry = {
+      component.creator.open();
+      component.creator.form.name = 'Hades';
+      component.creator.form.createLibraryEntry = true;
+      component.creator.form.libraryEntry = {
         status: 2,
         timeSpend: 7,
         rating: 9,
