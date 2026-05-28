@@ -1,0 +1,169 @@
+<app-quest-quick-add
+  [typeOptions]="typeOptions"
+  [priorityOptions]="priorityOptions"
+  [recurrenceOptions]="recurrenceOptions"
+  [library]="store.library()"
+  [skills]="store.skills()"
+  [preset]="store.quickAddPreset()"
+  [quickAddType]="store.quickAddType()"
+  (quickAddTypeChange)="store.setQuickAddType($event)"
+  [quickAddPriority]="store.quickAddPriority()"
+  (quickAddPriorityChange)="store.setQuickAddPriority($event)"
+  [quickAddRecurrence]="store.quickAddRecurrence()"
+  (quickAddRecurrenceChange)="store.setQuickAddRecurrence($event)"
+  (submitQuest)="store.createQuest($event)">
+</app-quest-quick-add>
+
+<app-quest-board-toolbar
+  [filterOptions]="filterOptions"
+  [filter]="store.filter()"
+  [searchQuery]="store.searchQuery()"
+  (searchQueryChange)="store.setSearchQuery($event)"
+  [availableTags]="store.availableTags()"
+  [tagFilter]="store.tagFilter()"
+  [filterCount]="filterCountFn"
+  [viewMode]="store.questViewMode()"
+  (filterChange)="store.setFilter($event)"
+  (tagToggle)="store.selectTag($event)"
+  (tagClear)="store.clearTagFilter()"
+  (searchClear)="store.clearSearch()"
+  (viewModeChange)="store.setViewMode($event)">
+</app-quest-board-toolbar>
+
+<section class="quest-board">
+  @if (!store.isLoading() && !store.visibleQuests().length) {
+    <app-empty-state
+      icon="sparkles-outline"
+      title="Nothing needs your attention here"
+      message="Capture a quest above, or switch lanes to see what is scheduled elsewhere.">
+      @if (store.nextQueuedQuest(); as nextQuest) {
+        <div class="empty-actions">
+          <button type="button" (click)="store.pullNextQuestToToday()">
+            Pull "{{ nextQuest.title }}" into today
+          </button>
+        </div>
+      }
+    </app-empty-state>
+  }
+  @for (section of store.questSections(); track trackByQuestSection($index, section)) {
+    <section class="quest-section quest-section--{{ section.tone }}">
+      <header class="quest-section__header">
+        <div class="section-icon">
+          <ion-icon [name]="section.icon"></ion-icon>
+        </div>
+        <div>
+          <h2>{{ section.title }}</h2>
+          <p>{{ section.subtitle }}</p>
+        </div>
+        <ion-badge>{{ section.quests.length }}</ion-badge>
+      </header>
+      @defer (on viewport; prefetch on idle) {
+        @if (store.questViewMode() === 'cards') {
+          <ion-reorder-group
+            class="quest-stack"
+            [disabled]="!store.isManualOrderActive()"
+            (ionItemReorder)="handleReorder($any($event), section.quests)">
+            @for (quest of section.quests; track trackByQuest($index, quest); let i = $index) {
+              <app-quest-card
+                [quest]="quest"
+                [expanded]="store.expandedQuestId() === quest.id"
+                [manualOrderActive]="store.isManualOrderActive()"
+                [recentlyCompleted]="store.isRecentlyCompleted(quest.id)"
+                [folders]="store.folders()"
+                [typeIcon]="typeIcon"
+                [typeLabel]="typeLabel"
+                [priorityLabel]="priorityLabel"
+                [recurrenceLabel]="recurrenceLabel"
+                [style.--enter-index]="i"
+                (toggleComplete)="store.toggleQuest($event)"
+                (expand)="store.toggleExpand($event)"
+                (scheduleToday)="store.scheduleToday($event)"
+                (scheduleTomorrow)="store.scheduleTomorrow($event)"
+                (clearDueDate)="store.clearQuestDueDate($event)"
+                (assignFolder)="store.assignFolderToQuest($event.quest, $event.folderId)"
+                (requestDelete)="store.beginDelete($event)" />
+            }
+          </ion-reorder-group>
+        } @else {
+          <ul class="quest-compact">
+            @for (quest of section.quests; track trackByQuest($index, quest)) {
+              <li
+                class="quest-compact__row"
+                [class.quest-compact__row--done]="quest.completed"
+                [attr.data-due]="dueStateOf(quest)"
+                [attr.data-type]="quest.type">
+                <button
+                  type="button"
+                  class="quest-compact__check"
+                  aria-label="Toggle complete"
+                  (click)="store.toggleQuest(quest)">
+                  <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'ellipse-outline'"></ion-icon>
+                </button>
+                <button
+                  type="button"
+                  class="quest-compact__body"
+                  (click)="store.toggleExpand(quest)">
+                  <span class="quest-compact__title">{{ quest.title }}</span>
+                  <span class="quest-compact__meta">
+                    <ion-icon [name]="typeIcon(quest.type)" aria-hidden="true"></ion-icon>
+                    <span>{{ typeLabel(quest.type) }}</span>
+                    @if (quest.dueDate) {
+                      <span class="quest-compact__dot" aria-hidden="true"></span>
+                      <span class="quest-compact__due" [attr.data-state]="dueStateOf(quest)">
+                        {{ dueLabelOf(quest) }}
+                      </span>
+                    }
+                    @if (quest.subtasks.length) {
+                      <span class="quest-compact__dot" aria-hidden="true"></span>
+                      <span>{{ subtaskCompletedCount(quest) }}/{{ quest.subtasks.length }}</span>
+                    }
+                  </span>
+                </button>
+                <div class="quest-folder-anchor quest-compact__folder-anchor">
+                  <button
+                    type="button"
+                    class="quest-compact__folder"
+                    [class.quest-compact__folder--active]="(quest.folderId ?? null) !== null"
+                    [attr.aria-label]="quest.folderName ? 'Move quest (currently in ' + quest.folderName + ')' : 'Move quest to folder'"
+                    [attr.aria-haspopup]="true"
+                    [attr.aria-expanded]="compactFolderPickerQuestId === quest.id"
+                    (click)="openCompactFolderPicker(quest, $event)">
+                    @if (quest.folderEmoji) {
+                      <span aria-hidden="true">{{ quest.folderEmoji }}</span>
+                    } @else {
+                      <ion-icon name="albums-outline"></ion-icon>
+                    }
+                  </button>
+                  @if (compactFolderPickerQuestId === quest.id) {
+                    <app-quest-folder-picker
+                      [folders]="store.folders()"
+                      [currentFolderId]="quest.folderId ?? null"
+                      (selected)="pickCompactFolder(quest, $event)"
+                      (dismissed)="closeCompactFolderPicker()" />
+                  }
+                </div>
+                <button
+                  type="button"
+                  class="quest-compact__delete"
+                  aria-label="Delete quest"
+                  (click)="store.beginDelete(quest)">
+                  <ion-icon name="trash-outline"></ion-icon>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      } @placeholder (minimum 100ms) {
+        <div class="quest-stack quest-stack--deferred" aria-hidden="true">
+          @for (_ of section.quests.slice(0, 3); track $index) {
+            <div class="quest-stack__skeleton"></div>
+          }
+        </div>
+      }
+    </section>
+  }
+</section>
+
+@if (store.achievements().length) {
+  <app-quest-achievements [achievements]="store.achievements()"></app-quest-achievements>
+}

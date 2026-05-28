@@ -78,3 +78,23 @@ export const QUEST_FILTER_OPTIONS: readonly FilterOption[] = [
   { value: 'inbox', label: 'Inbox', icon: 'library-outline' },
   { value: 'all', label: 'All', icon: 'filter-outline' },
 ];
+
+// ---- Label / icon lookups -------------------------------------------------
+// Pure helpers shared by the page shell (detail sheet) and the quest-list
+// view so the option arrays are the single source of truth for display text.
+
+export function questTypeLabel(type: QuestType): string {
+  return QUEST_TYPE_OPTIONS.find((option) => option.value === type)?.label ?? type;
+}
+
+export function questTypeIcon(type: QuestType): string {
+  return QUEST_TYPE_OPTIONS.find((option) => option.value === type)?.icon ?? 'flag-outline';
+}
+
+export function questPriorityLabel(priority: QuestPriority): string {
+  return QUEST_PRIORITY_OPTIONS.find((option) => option.value === priority)?.label ?? 'Medium';
+}
+
+export function questRecurrenceLabel(recurrence: QuestRecurrence): string {
+  return QUEST_RECURRENCE_OPTIONS.find((option) => option.value === recurrence)?.label ?? 'No repeat';
+}

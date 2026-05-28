@@ -1,0 +1,50 @@
+@if (store.mode() === 'skills') {
+  <app-skills-list
+    [skills]="store.skills()"
+    [activeLinkedQuestCount]="activeLinkedQuestCountFn"
+    [linkedQuestCount]="linkedQuestCountFn"
+    (addSkill)="openSkillModal()"
+    (editSkill)="openEditSkillModal($event)"
+    (deleteSkill)="store.deleteSkill($event)"
+    (addNode)="openNodeModal($event)"
+    (trainSkill)="store.trainSkill($event)"
+    (unlockNode)="store.unlockNode($event)"
+    (startNodeQuest)="store.startNodeQuest($event)">
+  </app-skills-list>
+}
+
+@if (store.mode() === 'tree') {
+  <section class="skills-layout">
+    @defer (on viewport) {
+      <app-skill-tree
+        [branches]="store.skillTreeBranches()"
+        [unlockedNodeIds]="store.skillTreeUnlockedNodeIds()"
+        (nodeUnlocked)="store.handleSkillTreeNodeUnlocked($event)">
+      </app-skill-tree>
+    } @placeholder {
+      <app-empty-state
+        icon="sparkles-outline"
+        title="Skill tree is ready when you are"
+        message="The 3D view will load once this panel is visible." />
+    } @loading (minimum 300ms) {
+      <app-empty-state
+        [loading]="true"
+        title="Loading skill tree"
+        message="Preparing the 3D path view." />
+    }
+  </section>
+}
+
+@if (modalMode) {
+  <app-skill-modal
+    [mode]="modalMode"
+    [editingSkillId]="editingSkillId"
+    [(skillForm)]="newSkill"
+    [(nodeName)]="newNodeName"
+    [skillIconOptions]="skillIconOptions"
+    [skillColorOptions]="skillColorOptions"
+    (dismissed)="closeModal()"
+    (saveSkill)="saveSkill()"
+    (addNode)="addNode()">
+  </app-skill-modal>
+}

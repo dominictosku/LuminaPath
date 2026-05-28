@@ -1,0 +1,216 @@
+<section class="folders-panel">
+  <header class="folders-panel__head">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="albums-outline"></ion-icon>
+        Folders
+      </span>
+      <h2>Organise quests</h2>
+      <p>
+        Group quests into your own lists — Projects, Errands, Reading.
+        Add a section name to bundle related folders under a heading.
+      </p>
+    </div>
+    <div class="folders-panel__actions">
+      @if (store.folders().length > 1) {
+        <button
+          type="button"
+          class="folders-panel__reorder"
+          [class.folders-panel__reorder--active]="store.folderReorderActive()"
+          (click)="store.toggleFolderReorder()">
+          <ion-icon [name]="store.folderReorderActive() ? 'checkmark-outline' : 'swap-vertical-outline'"></ion-icon>
+          {{ store.folderReorderActive() ? 'Done' : 'Reorder' }}
+        </button>
+      }
+      <button type="button" class="folders-panel__new" (click)="openCreateFolderModal()">
+        <ion-icon name="add-outline"></ion-icon>
+        New folder
+      </button>
+    </div>
+  </header>
+
+  @if (!store.folders().length) {
+    <app-empty-state
+      icon="albums-outline"
+      title="No folders yet"
+      message="Create a folder to organise quests outside the Today / Upcoming / Inbox split.">
+      <div class="empty-actions">
+        <button type="button" (click)="openCreateFolderModal()">
+          Create your first folder
+        </button>
+      </div>
+    </app-empty-state>
+  }
+
+  @if (store.folderReorderActive() && store.folders().length) {
+    <!-- Reorder mode: flat list, sections suppressed so dragging
+         operates on a single uninterrupted axis. The section
+         grouping below re-derives once the user taps Done. -->
+    <ion-reorder-group
+      class="folder-reorder-list"
+      [disabled]="false"
+      (ionItemReorder)="handleFolderReorder($any($event))">
+      @for (folder of store.folders(); track trackByFolder($index, folder)) {
+        <article class="folder-reorder-row" [style.--folder-accent]="folder.color || 'var(--accent)'">
+          <span class="folder-reorder-row__rail" aria-hidden="true"></span>
+          <span class="folder-reorder-row__emoji" aria-hidden="true">{{ folder.emoji }}</span>
+          <span class="folder-reorder-row__name">{{ folder.name }}</span>
+          @if (folder.sectionName) {
+            <span class="folder-reorder-row__section">{{ folder.sectionName }}</span>
+          }
+          <ion-reorder class="folder-reorder-row__handle"></ion-reorder>
+        </article>
+      }
+    </ion-reorder-group>
+  }
+
+  @if (!store.folderReorderActive()) {
+  @for (group of store.folderGroups(); track trackByFolderGroup($index, group)) {
+    <div class="folder-group">
+      @if (group.section) {
+        <div class="folder-group__heading">{{ group.section }}</div>
+      }
+      @for (folder of group.folders; track trackByFolder($index, folder)) {
+        <article
+          class="folder-card"
+          [class.folder-card--collapsed]="store.isFolderCollapsed(folder.id)"
+          [style.--folder-accent]="folder.color || 'var(--accent)'">
+          <header class="folder-card__head">
+            <button
+              type="button"
+              class="folder-card__toggle"
+              [attr.aria-expanded]="!store.isFolderCollapsed(folder.id)"
+              (click)="store.toggleFolderCollapsed(folder.id)">
+              <span class="folder-card__chevron" aria-hidden="true">
+                <ion-icon [name]="store.isFolderCollapsed(folder.id) ? 'chevron-forward-outline' : 'chevron-down-outline'"></ion-icon>
+              </span>
+              <span class="folder-card__emoji" aria-hidden="true">{{ folder.emoji }}</span>
+              <span class="folder-card__title">{{ folder.name }}</span>
+              <span class="folder-card__count">{{ store.questsInFolder(folder.id).length }}</span>
+            </button>
+            <button
+              type="button"
+              class="folder-card__edit"
+              aria-label="Edit folder"
+              (click)="openEditFolderModal(folder)">
+              <ion-icon name="create-outline"></ion-icon>
+            </button>
+          </header>
+
+          @if (!store.isFolderCollapsed(folder.id)) {
+            <!-- Always render the list as a cdkDropList so it can
+                 receive drops even when currently empty. CDK needs
+                 the host element present at drop time; an empty
+                 <ul> still works as a target. -->
+            <ul
+              class="folder-card__list"
+              cdkDropList
+              [id]="folderDropListId(folder.id)"
+              [cdkDropListData]="$any(folder.id)"
+              [cdkDropListConnectedTo]="store.questDropListIds()"
+              (cdkDropListDropped)="handleQuestDropToFolder($any($event))">
+              @for (quest of store.questsInFolder(folder.id); track trackByQuest($index, quest)) {
+                <li
+                  cdkDrag
+                  [cdkDragData]="quest"
+                  class="folder-card__row"
+                  [class.folder-card__row--done]="quest.completed"
+                  [attr.data-type]="quest.type">
+                  <button
+                    type="button"
+                    class="folder-card__check"
+                    aria-label="Toggle complete"
+                    (click)="store.toggleQuest(quest)">
+                    <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'ellipse-outline'"></ion-icon>
+                  </button>
+                  <button type="button" class="folder-card__row-body" (click)="store.toggleExpand(quest)">
+                    <span class="folder-card__row-title">{{ quest.title }}</span>
+                    @if (quest.dueDate) {
+                      <span class="folder-card__row-due" [attr.data-state]="dueStateOf(quest)">
+                        <ion-icon name="calendar-outline"></ion-icon>
+                        {{ dueLabelOf(quest) }}
+                      </span>
+                    }
+                  </button>
+                </li>
+              }
+              @if (!store.questsInFolder(folder.id).length) {
+                <p class="folder-card__empty">Drop a quest here, or move one from its detail view.</p>
+              }
+            </ul>
+          }
+        </article>
+      }
+    </div>
+  }
+
+  @if (store.unfiledQuestCount() > 0 || store.folders().length) {
+    <article class="folder-card folder-card--unfiled" [class.folder-card--collapsed]="store.unfiledCollapsed()">
+      <header class="folder-card__head">
+        <button
+          type="button"
+          class="folder-card__toggle"
+          [attr.aria-expanded]="!store.unfiledCollapsed()"
+          (click)="store.toggleUnfiledCollapsed()">
+          <span class="folder-card__chevron" aria-hidden="true">
+            <ion-icon [name]="store.unfiledCollapsed() ? 'chevron-forward-outline' : 'chevron-down-outline'"></ion-icon>
+          </span>
+          <span class="folder-card__emoji" aria-hidden="true">📥</span>
+          <span class="folder-card__title">Unfiled</span>
+          <span class="folder-card__count">{{ store.unfiledQuestCount() }}</span>
+        </button>
+      </header>
+      @if (!store.unfiledCollapsed()) {
+        <ul
+          class="folder-card__list"
+          cdkDropList
+          [id]="folderDropListId(null)"
+          [cdkDropListData]="$any(null)"
+          [cdkDropListConnectedTo]="store.questDropListIds()"
+          (cdkDropListDropped)="handleQuestDropToFolder($event)">
+          @for (quest of store.questsInFolder(null); track trackByQuest($index, quest)) {
+            <li
+              cdkDrag
+              [cdkDragData]="quest"
+              class="folder-card__row"
+              [class.folder-card__row--done]="quest.completed"
+              [attr.data-type]="quest.type">
+              <button
+                type="button"
+                class="folder-card__check"
+                aria-label="Toggle complete"
+                (click)="store.toggleQuest(quest)">
+                <ion-icon [name]="quest.completed ? 'checkmark-circle' : 'ellipse-outline'"></ion-icon>
+              </button>
+              <button type="button" class="folder-card__row-body" (click)="store.toggleExpand(quest)">
+                <span class="folder-card__row-title">{{ quest.title }}</span>
+                @if (quest.dueDate) {
+                  <span class="folder-card__row-due" [attr.data-state]="dueStateOf(quest)">
+                    <ion-icon name="calendar-outline"></ion-icon>
+                    {{ dueLabelOf(quest) }}
+                  </span>
+                }
+              </button>
+            </li>
+          }
+          @if (!store.unfiledQuestCount()) {
+            <p class="folder-card__empty">Quests without a folder land here. Drag one back to send it to Unfiled.</p>
+          }
+        </ul>
+      }
+    </article>
+  }
+  } <!-- /@if !folderReorderActive -->
+</section>
+
+@if (folderModalState; as state) {
+  <app-quest-folder-modal
+    [mode]="state.mode"
+    [folder]="state.folder"
+    [sectionSuggestions]="store.knownSections()"
+    (dismissed)="closeFolderModal()"
+    (submitCreate)="createFolder($event)"
+    (submitUpdate)="updateFolder($event.id, $event.patch)"
+    (deleteRequested)="deleteFolder($event)">
+  </app-quest-folder-modal>
+}
