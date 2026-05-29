@@ -18,6 +18,7 @@ import { Movie } from '../models/movies.model';
 import { MovieService } from '../services/movie.service';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
 import { MediaStore } from 'src/app/features/library/state/media.store';
+import { CatalogEditController } from 'src/app/features/library/services/catalog-edit.controller';
 import { LibraryCreateDialogComponent } from 'src/app/features/library/components/library-create-dialog/library-create-dialog.component';
 import {
   CreateMediaForm,
@@ -28,19 +29,14 @@ import { MediaLibraryViewService } from 'src/app/features/library/services/media
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatHoursMinutes, formatShortDate } from 'src/app/shared/utils/format';
+import { toDateInputValue } from 'src/app/shared/utils/date-helpers';
+import { goBackOrHome } from 'src/app/shared/utils/navigation';
+import { watchStatusLabel } from 'src/app/features/library/models/library-status.model';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { DetailTabOption, DetailTabsComponent } from 'src/app/shared/components/detail-tabs/detail-tabs.component';
 import { MediaAvailabilityComponent } from 'src/app/shared/components/media-availability/media-availability.component';
 import { MediaVideosComponent } from 'src/app/shared/components/media-videos/media-videos.component';
 import { CompletionCardService } from 'src/app/shared/services/completion-card.service';
-
-const WATCH_STATUS_LABELS: Record<number, string> = {
-  0: 'On hold',
-  1: 'Planned',
-  2: 'Watching',
-  3: 'Completed',
-  4: 'Dropped',
-};
 
 @Component({
   selector: 'app-movie-details',
@@ -88,12 +84,25 @@ export class MovieDetailsPage implements OnInit {
   selectedTab: 'overview' | 'gallery' = 'overview';
   completionCardMessage = '';
 
-  // Admin edit/delete state ----------------------------------------------------
-  isEditDialogOpen = false;
-  isSavingCatalogEdit = false;
-  editErrorMessage = '';
-  editForm: CreateMediaForm = emptyCreateForm();
-  isDeletingCatalogEntry = false;
+  /** Owns the admin edit-dialog + delete-confirm flow for the catalog movie. */
+  readonly catalogEdit = new CatalogEditController<Movie>(
+    this.alertController,
+    this.mediaStore,
+    this.router,
+    {
+      canEdit: () => this.canEditCatalog,
+      entity: () => this.movie,
+      id: (movie) => movie.id,
+      name: (movie) => movie.name,
+      isInLibrary: () => this.isInLibrary,
+      toForm: (movie) => this.movieToCreateForm(movie),
+      saveEdit: (movie, name, form) => this.movieService.put(movie.id, this.buildCatalogPut(movie, name, form)),
+      deleteEntity: (movie) => this.movieService.delete(movie.id),
+      reload: (movie) => this.loadMovie(movie.id),
+      reportError: (message) => { this.errorMessage = message; },
+      labels: { singular: 'movie' },
+    },
+  );
 
   async ngOnInit(): Promise<void> {
     const movieId = Number(this.route.snapshot.paramMap.get('movieId'));
@@ -116,7 +125,7 @@ export class MovieDetailsPage implements OnInit {
 
   get statusLabel(): string {
     const status = this.movie?.myMovies?.status;
-    return status == null ? 'Catalog' : WATCH_STATUS_LABELS[Number(status)] ?? 'Catalog';
+    return status == null ? 'Catalog' : watchStatusLabel(Number(status));
   }
 
   get releaseLabel(): string {
@@ -146,12 +155,7 @@ export class MovieDetailsPage implements OnInit {
   }
 
   goBack(): void {
-    if (window.history.length > 1) {
-      this.location.back();
-      return;
-    }
-
-    void this.router.navigateByUrl('/library');
+    goBackOrHome(this.location, this.router);
   }
 
   setDetailTab(value: unknown): void {
@@ -241,102 +245,22 @@ export class MovieDetailsPage implements OnInit {
     return this.auth.canEditCatalog();
   }
 
-  openEditDialog(): void {
-    if (!this.canEditCatalog || !this.movie) return;
-    this.editErrorMessage = '';
-    this.editForm = this.movieToCreateForm(this.movie);
-    this.isEditDialogOpen = true;
-  }
-
-  closeEditDialog(): void {
-    if (this.isSavingCatalogEdit) return;
-    this.isEditDialogOpen = false;
-  }
-
-  /** Commit catalog edits via MovieService.put, then refetch the page. */
-  async submitCatalogEdit(): Promise<void> {
-    if (!this.canEditCatalog || !this.movie || this.isSavingCatalogEdit) return;
-    const name = this.editForm.name.trim();
-    if (!name) {
-      this.editErrorMessage = 'Title is required.';
-      return;
-    }
-
-    this.isSavingCatalogEdit = true;
-    this.editErrorMessage = '';
-    const movieId = this.movie.id;
-
-    try {
-      // Build the PUT payload from scratch — do NOT spread `this.movie`.
-      // Same lesson as the games edit flow: echoing back the navigation
-      // collections (myMovies) makes EF try to upsert personal entries
-      // and trips FK_MyMovies_AspNetUsers_LuminaUserId.
-      const updated = Object.assign(new Movie(), {
-        id: movieId,
-        name,
-        description: this.editForm.description,
-        releaseDate: this.editForm.releaseDate || this.movie.releaseDate,
-        genre: this.editForm.genre,
-        expectedWatchTimeMinutes: this.editForm.expectedWatchTimeMinutes,
-        image: this.editForm.cover ?? this.movie.image,
-        myMovies: null,
-      });
-
-      await firstValueFrom(this.movieService.put(movieId, updated));
-      this.isEditDialogOpen = false;
-      await this.loadMovie(movieId);
-    } catch (error) {
-      this.editErrorMessage = extractErrorMessage(
-        error,
-        'Movie could not be updated.',
-      );
-    } finally {
-      this.isSavingCatalogEdit = false;
-    }
-  }
-
-  /** Confirm + delete the catalog movie. On success, navigate back to /library. */
-  async confirmDeleteCatalogEntry(): Promise<void> {
-    if (!this.canEditCatalog || !this.movie || this.isDeletingCatalogEntry) return;
-
-    const libraryWarning = this.isInLibrary
-      ? ' It is currently referenced by your personal library entry.'
-      : '';
-
-    const alert = await this.alertController.create({
-      header: `Delete "${this.movie.name}"?`,
-      message:
-        `This removes the shared catalog movie, including its metadata and cover link.${libraryWarning} This cannot be undone.`,
-      cssClass: 'media-confirm-alert',
-      buttons: [
-        { text: 'Keep', role: 'cancel' },
-        {
-          text: 'Delete',
-          role: 'destructive',
-          cssClass: 'media-confirm-alert__destructive',
-          handler: () => {
-            void this.deleteCatalogEntry();
-          },
-        },
-      ],
+  /**
+   * Build the PUT payload from scratch — do NOT spread `this.movie`.
+   * Echoing back the navigation collections (myMovies) makes EF try to
+   * upsert personal entries and trips FK_MyMovies_AspNetUsers_LuminaUserId.
+   */
+  private buildCatalogPut(movie: Movie, name: string, form: CreateMediaForm): Movie {
+    return Object.assign(new Movie(), {
+      id: movie.id,
+      name,
+      description: form.description,
+      releaseDate: form.releaseDate || movie.releaseDate,
+      genre: form.genre,
+      expectedWatchTimeMinutes: form.expectedWatchTimeMinutes,
+      image: form.cover ?? movie.image,
+      myMovies: null,
     });
-    await alert.present();
-  }
-
-  private async deleteCatalogEntry(): Promise<void> {
-    if (!this.canEditCatalog || !this.movie || this.isDeletingCatalogEntry) return;
-    const movieId = this.movie.id;
-    this.isDeletingCatalogEntry = true;
-
-    try {
-      await firstValueFrom(this.movieService.delete(movieId));
-      this.mediaStore.removeItem(movieId);
-      void this.router.navigateByUrl('/library');
-    } catch (error) {
-      this.errorMessage = extractErrorMessage(error, 'Movie could not be deleted.');
-    } finally {
-      this.isDeletingCatalogEntry = false;
-    }
   }
 
   /** Maps the loaded Movie into the create-dialog form draft for editing. */
@@ -346,23 +270,12 @@ export class MovieDetailsPage implements OnInit {
       ...blank,
       name: movie.name ?? '',
       description: movie.description ?? '',
-      releaseDate: this.toDateInputValue(movie.releaseDate),
+      releaseDate: toDateInputValue(movie.releaseDate),
       genre: movie.genre ?? '',
       expectedWatchTimeMinutes: movie.expectedWatchTimeMinutes ?? null,
       createLibraryEntry: false,
       cover: movie.image ?? null,
       coverPreviewUrl: null,
     };
-  }
-
-  /** Coerce the Movie's releaseDate (Date | string) into a YYYY-MM-DD value. */
-  private toDateInputValue(value: Date | string | null | undefined): string {
-    if (!value) return '';
-    const date = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
   }
 }

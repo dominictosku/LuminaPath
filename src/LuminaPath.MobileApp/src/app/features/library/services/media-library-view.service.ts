@@ -4,7 +4,7 @@ import { platformLabelFromValue } from '../../games/models/games.model';
 import { LibraryEntryDetails, MediaItem, UserMediaEntry } from '../models/media-item.model';
 import { MediaLibraryForm, MediaStatusOption } from '../models/media-library-form.model';
 import { MediaModeOption } from 'src/app/shared/services/media-mode.service';
-import { GameStatus } from '../models/library-status.model';
+import { GameStatus, WATCH_STATUS_LABELS, WatchStatus } from '../models/library-status.model';
 import {
   expectedHoursOf,
   isEpisodeMode,
@@ -30,11 +30,11 @@ export class MediaLibraryViewService {
   ];
 
   readonly watchStatusOptions: MediaStatusOption[] = [
-    { label: 'On hold', value: 0 },
-    { label: 'Planned', value: 1 },
-    { label: 'Watching', value: 2 },
-    { label: 'Completed', value: 3 },
-    { label: 'Dropped', value: 4 },
+    { label: WATCH_STATUS_LABELS[WatchStatus.OnHold], value: WatchStatus.OnHold },
+    { label: WATCH_STATUS_LABELS[WatchStatus.Planned], value: WatchStatus.Planned },
+    { label: WATCH_STATUS_LABELS[WatchStatus.Watching], value: WatchStatus.Watching },
+    { label: WATCH_STATUS_LABELS[WatchStatus.Completed], value: WatchStatus.Completed },
+    { label: WATCH_STATUS_LABELS[WatchStatus.Dropped], value: WatchStatus.Dropped },
   ];
 
   isGamesMode(mode: MediaModeOption): boolean {

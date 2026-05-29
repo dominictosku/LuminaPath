@@ -35,6 +35,16 @@ export function toISODate(date: Date): string {
 }
 
 /**
+ * Coerce a Date/ISO-string/nullish into a `YYYY-MM-DD` value for an
+ * `<input type="date">`. Returns '' for empty or invalid input.
+ */
+export function toDateInputValue(value: Date | string | null | undefined): string {
+  if (!value) return '';
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : toISODate(date);
+}
+
+/**
  * Coerce a Date/ISO-string/nullish into a full ISO string (or null).
  * Strings pass through unchanged; invalid Dates collapse to null.
  */

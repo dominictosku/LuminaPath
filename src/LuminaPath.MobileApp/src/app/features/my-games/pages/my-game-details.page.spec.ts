@@ -216,9 +216,9 @@ describe('MyGameDetailsPage', () => {
     configure('42', game);
 
     await initialize();
-    component.startLiveSession(new Date('2026-05-26T10:00:00.000Z'));
-    component.liveSessionNotes = 'Boss run';
-    await component.stopLiveSession(new Date('2026-05-26T11:15:00.000Z'));
+    component.liveSession.start(new Date('2026-05-26T10:00:00.000Z'));
+    component.liveSession.notes = 'Boss run';
+    await component.liveSession.stop(new Date('2026-05-26T11:15:00.000Z'));
 
     expect(sessionService.create).toHaveBeenCalledOnceWith(jasmine.objectContaining({
       myGameId: 7,
@@ -230,8 +230,8 @@ describe('MyGameDetailsPage', () => {
       status: 2,
       timeSpend: 3.75,
     }));
-    expect(component.liveSessionActive).toBeFalse();
-    expect(component.liveSessionMessage).toBe('Logged 1:15:00.');
+    expect(component.liveSession.active).toBeFalse();
+    expect(component.liveSession.message).toBe('Logged 1:15:00.');
   });
 
   it('restores an active live session for the current library entry', async () => {
@@ -242,13 +242,13 @@ describe('MyGameDetailsPage', () => {
       notes: 'Paused at Elysium',
     }));
     configure('42', game);
-    component.liveSessionMessage = 'Logged 1:15:00.';
+    component.liveSession.message = 'Logged 1:15:00.';
 
     await initialize();
 
-    expect(component.liveSessionActive).toBeTrue();
-    expect(component.liveSessionNotes).toBe('Paused at Elysium');
-    expect(component.liveSessionMessage).toBe('');
+    expect(component.liveSession.active).toBeTrue();
+    expect(component.liveSession.notes).toBe('Paused at Elysium');
+    expect(component.liveSession.message).toBe('');
   });
 
   it('goBack navigates to the library', () => {

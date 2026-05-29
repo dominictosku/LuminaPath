@@ -28,12 +28,14 @@ import {
 import { GameForecast, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
 import { gameStatusLabel } from 'src/app/features/library/models/library-status.model';
 import { MediaStore } from 'src/app/features/library/state/media.store';
+import { CatalogEditController } from 'src/app/features/library/services/catalog-edit.controller';
 import { MEDIA_MODE_OPTIONS, MediaModeOption } from 'src/app/shared/services/media-mode.service';
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { MediaLibraryViewService } from 'src/app/features/library/services/media-library-view.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatShortDate } from 'src/app/shared/utils/format';
-import { parseDateOrNull } from 'src/app/shared/utils/date-helpers';
+import { parseDateOrNull, toDateInputValue } from 'src/app/shared/utils/date-helpers';
+import { goBackOrHome } from 'src/app/shared/utils/navigation';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { LiveSessionTrackerService } from 'src/app/shared/services/live-session-tracker.service';
 import { DetailTabOption, DetailTabsComponent } from 'src/app/shared/components/detail-tabs/detail-tabs.component';
@@ -52,10 +54,9 @@ import { GameHeroComponent } from '../components/game-hero/game-hero.component';
 import { GameForecastComponent } from '../components/game-forecast/game-forecast.component';
 import { GameTrophiesComponent } from '../components/game-trophies/game-trophies.component';
 import { GameDlcListComponent } from '../components/game-dlc-list/game-dlc-list.component';
+import { LiveSessionController } from '../services/live-session.controller';
 import {
-  addTrackedHours,
   buildLibraryUpdate,
-  nextLiveSessionStatus,
   trackedHoursLabel as formatTrackedHours,
 } from './my-game-details.helpers';
 
@@ -125,22 +126,41 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   isUpdatingLibrary = false;
   isSavingNotes = false;
   headerCondensed = false;
-  liveSessionStartedAt: string | null = null;
-  liveSessionNotes = '';
-  liveSessionElapsedSeconds = 0;
-  isSavingLiveSession = false;
-  liveSessionMessage = '';
-  liveSessionMessageTone: 'success' | 'error' | 'neutral' = 'neutral';
   completionCardMessage = '';
 
-  // Admin edit/delete state ----------------------------------------------------
-  isEditDialogOpen = false;
-  isSavingCatalogEdit = false;
-  editErrorMessage = '';
-  editForm: CreateMediaForm = emptyCreateForm();
-  isDeletingCatalogEntry = false;
-  private liveSessionTimerId: number | null = null;
-  private liveSessionGameId: number | null = null;
+  /** Owns the admin edit-dialog + delete-confirm flow for the catalog game. */
+  readonly catalogEdit = new CatalogEditController<GameWithFlexibleLibrary>(
+    this.alertController,
+    this.mediaStore,
+    this.router,
+    {
+      canEdit: () => this.canEditCatalog,
+      entity: () => this.game,
+      id: (game) => game.id,
+      name: (game) => game.name,
+      isInLibrary: () => this.isInLibrary,
+      toForm: (game) => this.gameToCreateForm(game),
+      saveEdit: (game, name, form) => this.gameService.put(game.id, this.buildCatalogPut(game, name, form)),
+      deleteEntity: (game) => this.gameService.delete(game.id),
+      reload: (game) => this.loadGameAndQuests(game.id),
+      reportError: (message) => { this.errorMessage = message; },
+      labels: { singular: 'game', deleteCascade: ', cover link, achievements, and any dependent records' },
+    },
+  );
+
+  /** Owns the live-session timer card (start/stop/discard/restore). */
+  readonly liveSession = new LiveSessionController(
+    this.liveSessionTracker,
+    this.sessionService,
+    this.myGameService,
+    {
+      gameId: () => this.game?.id ?? null,
+      myGameId: () => this.myGameId,
+      gameName: () => this.game?.name ?? null,
+      libraryEntry: () => this.libraryEntry,
+      reload: (gameId) => this.loadGameAndQuests(gameId),
+    },
+  );
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async (params) => {
@@ -152,12 +172,12 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
 
       this.selectedTab = 'overview';
       await this.loadGameAndQuests(gameId);
-      this.restoreLiveSession(gameId);
+      this.liveSession.restore(gameId);
     });
   }
 
   ngOnDestroy(): void {
-    this.clearLiveSessionTimer();
+    this.liveSession.destroy();
   }
 
   get libraryEntry(): GameLibraryEntry | null {
@@ -201,27 +221,6 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
 
   get playtimeLabel(): string {
     return this.game?.playtime ? `${this.game.playtime}h estimated` : 'No estimate';
-  }
-
-  get liveSessionActive(): boolean {
-    return this.liveSessionStartedAt !== null;
-  }
-
-  get liveSessionDurationLabel(): string {
-    return formatLiveDuration(this.liveSessionElapsedSeconds);
-  }
-
-  get liveSessionStartedLabel(): string {
-    if (!this.liveSessionStartedAt) {
-      return 'Ready';
-    }
-
-    const started = new Date(this.liveSessionStartedAt);
-    if (Number.isNaN(started.getTime())) {
-      return 'Running';
-    }
-
-    return `Started ${started.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   }
 
   get canShareCompletionCard(): boolean {
@@ -347,110 +346,6 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     }
   }
 
-  startLiveSession(now = new Date()): void {
-    const gameId = this.game?.id;
-    const myGameId = this.myGameId;
-    if (!gameId || myGameId == null || this.liveSessionActive || this.isSavingLiveSession) {
-      return;
-    }
-
-    this.liveSessionGameId = gameId;
-    this.liveSessionStartedAt = now.toISOString();
-    this.liveSessionElapsedSeconds = 0;
-    this.liveSessionNotes = '';
-    this.liveSessionMessage = '';
-    this.liveSessionMessageTone = 'neutral';
-    this.liveSessionTracker.start({
-      gameId,
-      myGameId,
-      gameName: this.game?.name ?? null,
-      startedAt: this.liveSessionStartedAt,
-      notes: '',
-    });
-    this.startLiveSessionTimer();
-  }
-
-  async stopLiveSession(now = new Date()): Promise<void> {
-    const gameId = this.game?.id ?? this.liveSessionGameId;
-    const myGameId = this.myGameId;
-    const startedAt = this.liveSessionStartedAt;
-    if (!gameId || myGameId == null || !startedAt || this.isSavingLiveSession) {
-      return;
-    }
-
-    const started = new Date(startedAt);
-    if (Number.isNaN(started.getTime())) {
-      this.discardLiveSession();
-      return;
-    }
-
-    const durationMinutes = Math.max(1, Math.round((now.getTime() - started.getTime()) / 60000));
-    const note = this.liveSessionNotes.trim() || null;
-
-    this.isSavingLiveSession = true;
-    this.liveSessionMessage = '';
-    this.liveSessionMessageTone = 'neutral';
-
-    try {
-      await firstValueFrom(this.sessionService.create({
-        myGameId,
-        scheduledAt: started.toISOString(),
-        durationMinutes,
-        completed: true,
-        completedAt: now.toISOString(),
-        notes: note,
-      }));
-
-      let playtimeUpdated = true;
-      try {
-        await firstValueFrom(
-          this.myGameService.updateLibraryEntry(myGameId, gameId, this.libraryUpdateDetails({
-            status: this.liveSessionNextStatus(),
-            timeSpend: this.nextTrackedHours(durationMinutes),
-          })),
-        );
-      } catch {
-        playtimeUpdated = false;
-      }
-
-      this.clearStoredLiveSession(gameId);
-      this.resetLiveSessionState();
-      await this.loadGameAndQuests(gameId);
-      this.liveSessionMessage = playtimeUpdated
-        ? `Logged ${formatLiveDuration(durationMinutes * 60)}.`
-        : 'Session logged. Playtime could not be updated.';
-      this.liveSessionMessageTone = playtimeUpdated ? 'success' : 'error';
-    } catch (error) {
-      this.liveSessionMessage = extractErrorMessage(error, 'Session could not be logged.');
-      this.liveSessionMessageTone = 'error';
-    } finally {
-      this.isSavingLiveSession = false;
-    }
-  }
-
-  discardLiveSession(): void {
-    this.clearStoredLiveSession(this.game?.id ?? this.liveSessionGameId);
-    this.resetLiveSessionState();
-    this.liveSessionMessage = 'Session discarded.';
-    this.liveSessionMessageTone = 'neutral';
-  }
-
-  persistLiveSession(): void {
-    const gameId = this.game?.id ?? this.liveSessionGameId;
-    const myGameId = this.myGameId;
-    if (!gameId || myGameId == null || !this.liveSessionStartedAt) {
-      return;
-    }
-
-    this.liveSessionTracker.start({
-      gameId,
-      myGameId,
-      gameName: this.game?.name ?? null,
-      startedAt: this.liveSessionStartedAt,
-      notes: this.liveSessionNotes,
-    });
-  }
-
   async openMoreMenu(): Promise<void> {
     if (!this.isInLibrary) return;
 
@@ -539,12 +434,7 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    if (window.history.length > 1) {
-      this.location.back();
-      return;
-    }
-
-    void this.router.navigateByUrl('/library');
+    goBackOrHome(this.location, this.router);
   }
 
   private async loadGameAndQuests(gameId: number): Promise<void> {
@@ -578,29 +468,6 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     } finally {
       this.isLoading = false;
     }
-  }
-
-  private restoreLiveSession(gameId: number): void {
-    this.clearLiveSessionTimer();
-    this.resetLiveSessionState();
-    this.liveSessionMessage = '';
-    this.liveSessionMessageTone = 'neutral';
-
-    const snapshot = this.liveSessionTracker.get(gameId);
-    if (!snapshot) {
-      return;
-    }
-
-    if (snapshot.myGameId !== this.myGameId) {
-      this.clearStoredLiveSession(gameId);
-      return;
-    }
-
-    this.liveSessionGameId = gameId;
-    this.liveSessionStartedAt = snapshot.startedAt;
-    this.liveSessionNotes = snapshot.notes;
-    this.updateLiveSessionElapsed();
-    this.startLiveSessionTimer();
   }
 
   private syncMediaStore(gameId: number): void {
@@ -653,53 +520,8 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     return buildLibraryUpdate(this.libraryEntry, overrides);
   }
 
-  private liveSessionNextStatus(): number {
-    return nextLiveSessionStatus(this.libraryEntry);
-  }
-
-  private nextTrackedHours(durationMinutes: number): number {
-    return addTrackedHours(this.libraryEntry, durationMinutes);
-  }
-
   private trackedHoursLabel(): string {
     return formatTrackedHours(this.libraryEntry);
-  }
-
-  private startLiveSessionTimer(): void {
-    this.clearLiveSessionTimer();
-    this.updateLiveSessionElapsed();
-    this.liveSessionTimerId = window.setInterval(() => this.updateLiveSessionElapsed(), 1000);
-  }
-
-  private updateLiveSessionElapsed(): void {
-    if (!this.liveSessionStartedAt) {
-      this.liveSessionElapsedSeconds = 0;
-      return;
-    }
-
-    const started = new Date(this.liveSessionStartedAt);
-    this.liveSessionElapsedSeconds = Number.isNaN(started.getTime())
-      ? 0
-      : Math.max(0, Math.floor((Date.now() - started.getTime()) / 1000));
-  }
-
-  private clearLiveSessionTimer(): void {
-    if (this.liveSessionTimerId !== null) {
-      window.clearInterval(this.liveSessionTimerId);
-      this.liveSessionTimerId = null;
-    }
-  }
-
-  private resetLiveSessionState(): void {
-    this.clearLiveSessionTimer();
-    this.liveSessionStartedAt = null;
-    this.liveSessionGameId = null;
-    this.liveSessionNotes = '';
-    this.liveSessionElapsedSeconds = 0;
-  }
-
-  private clearStoredLiveSession(gameId: number | null | undefined): void {
-    this.liveSessionTracker.clear(gameId);
   }
 
   private showError(message: string): void {
@@ -721,112 +543,30 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     return this.auth.canEditCatalog();
   }
 
-  openEditDialog(): void {
-    if (!this.canEditCatalog || !this.game) return;
-    this.editErrorMessage = '';
-    this.editForm = this.gameToCreateForm(this.game);
-    this.isEditDialogOpen = true;
-  }
-
-  closeEditDialog(): void {
-    if (this.isSavingCatalogEdit) return;
-    this.isEditDialogOpen = false;
-  }
-
-  /** Commit catalog edits via GameService.put, then refetch the page. */
-  async submitCatalogEdit(): Promise<void> {
-    if (!this.canEditCatalog || !this.game || this.isSavingCatalogEdit) return;
-    const name = this.editForm.name.trim();
-    if (!name) {
-      this.editErrorMessage = 'Title is required.';
-      return;
-    }
-
-    this.isSavingCatalogEdit = true;
-    this.editErrorMessage = '';
-    const gameId = this.game.id;
-
-    try {
-      // Build the PUT payload from scratch — DO NOT spread `this.game`.
-      // The loaded Game includes `myGames` (personal library entries) and
-      // `dlcs` / `parentGame` navigation collections. Echoing them back
-      // makes EF Core try to upsert them, which violates
-      // FK_MyGames_AspNetUsers_LuminaUserId because the frontend never
-      // sees the owner's user id. The catalog PUT only cares about the
-      // shared metadata + the cover.
-      const updated = Object.assign(new Game(), {
-        id: gameId,
-        name,
-        description: this.editForm.description,
-        releaseDate: parseDateOrNull(this.editForm.releaseDate) ?? this.game.releaseDate,
-        genre: this.editForm.genre,
-        platforms: this.editForm.platforms,
-        playtime: this.editForm.playtime ?? 0,
-        parentGameId: this.game.parentGameId ?? null,
-        parentGameName: this.game.parentGameName ?? null,
-        image: this.editForm.cover ?? this.game.image,
-        // Explicitly null the personal-library + child-DLC collections so
-        // the server treats this as a pure catalog update.
-        myGames: null,
-        dlcs: null,
-      });
-
-      await firstValueFrom(this.gameService.put(gameId, updated));
-      this.isEditDialogOpen = false;
-      await this.loadGameAndQuests(gameId);
-    } catch (error) {
-      this.editErrorMessage = extractErrorMessage(
-        error,
-        'Game could not be updated.',
-      );
-    } finally {
-      this.isSavingCatalogEdit = false;
-    }
-  }
-
-  /** Confirm + delete the catalog game. On success, navigates back to /library. */
-  async confirmDeleteCatalogEntry(): Promise<void> {
-    if (!this.canEditCatalog || !this.game || this.isDeletingCatalogEntry) return;
-
-    const libraryCount = this.isInLibrary ? 1 : 0;
-    const libraryWarning = libraryCount > 0
-      ? ' It is currently referenced by your personal library entry.'
-      : '';
-
-    const alert = await this.alertController.create({
-      header: `Delete "${this.game.name}"?`,
-      message:
-        `This removes the shared catalog game, including its metadata, cover link, achievements, and any dependent records.${libraryWarning} This cannot be undone.`,
-      cssClass: 'media-confirm-alert',
-      buttons: [
-        { text: 'Keep', role: 'cancel' },
-        {
-          text: 'Delete',
-          role: 'destructive',
-          cssClass: 'media-confirm-alert__destructive',
-          handler: () => {
-            void this.deleteCatalogEntry();
-          },
-        },
-      ],
+  /**
+   * Build the PUT payload from scratch — DO NOT spread `this.game`.
+   * The loaded Game includes `myGames` (personal library entries) and
+   * `dlcs` / `parentGame` navigation collections. Echoing them back makes
+   * EF Core try to upsert them, which violates
+   * FK_MyGames_AspNetUsers_LuminaUserId because the frontend never sees the
+   * owner's user id. The catalog PUT only cares about the shared metadata +
+   * the cover, so null the personal-library + child-DLC collections.
+   */
+  private buildCatalogPut(game: GameWithFlexibleLibrary, name: string, form: CreateMediaForm): Game {
+    return Object.assign(new Game(), {
+      id: game.id,
+      name,
+      description: form.description,
+      releaseDate: parseDateOrNull(form.releaseDate) ?? game.releaseDate,
+      genre: form.genre,
+      platforms: form.platforms,
+      playtime: form.playtime ?? 0,
+      parentGameId: game.parentGameId ?? null,
+      parentGameName: game.parentGameName ?? null,
+      image: form.cover ?? game.image,
+      myGames: null,
+      dlcs: null,
     });
-    await alert.present();
-  }
-
-  private async deleteCatalogEntry(): Promise<void> {
-    if (!this.canEditCatalog || !this.game || this.isDeletingCatalogEntry) return;
-    const gameId = this.game.id;
-    this.isDeletingCatalogEntry = true;
-
-    try {
-      await firstValueFrom(this.gameService.delete(gameId));
-      this.mediaStore.removeItem(gameId);
-      void this.router.navigateByUrl('/library');
-    } catch (error) {
-      this.errorMessage = extractErrorMessage(error, 'Game could not be deleted.');
-    } finally {
-      this.isDeletingCatalogEntry = false;
-    }
   }
 
   /** Maps the loaded Game into the create-dialog form draft for editing. */
@@ -836,7 +576,7 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
       ...blank,
       name: game.name ?? '',
       description: game.description ?? '',
-      releaseDate: this.toDateInputValue(game.releaseDate),
+      releaseDate: toDateInputValue(game.releaseDate),
       genre: game.genre ?? '',
       platforms: Number(game.platforms ?? 0),
       playtime: game.playtime ?? null,
@@ -848,28 +588,4 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     };
   }
 
-  /** Coerce the Game's releaseDate (Date | string) into a YYYY-MM-DD value. */
-  private toDateInputValue(value: Date | string | null | undefined): string {
-    if (!value) return '';
-    const date = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
-
-}
-
-function formatLiveDuration(totalSeconds: number): string {
-  const seconds = Math.max(0, Math.floor(totalSeconds));
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = seconds % 60;
-
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
-  }
-
-  return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
 }

@@ -28,6 +28,18 @@ export function gameStatusLabel(status: number, fallback = 'Catalog'): string {
   return GAME_STATUS_LABELS[status as GameStatus] ?? fallback;
 }
 
+export const WATCH_STATUS_LABELS: Record<WatchStatus, string> = {
+  [WatchStatus.OnHold]: 'On hold',
+  [WatchStatus.Planned]: 'Planned',
+  [WatchStatus.Watching]: 'Watching',
+  [WatchStatus.Completed]: 'Completed',
+  [WatchStatus.Dropped]: 'Dropped',
+};
+
+export function watchStatusLabel(status: number, fallback = 'Catalog'): string {
+  return WATCH_STATUS_LABELS[status as WatchStatus] ?? fallback;
+}
+
 export function isGameBacklogStatus(status: number): boolean {
   return status === GameStatus.Planned
     || status === GameStatus.MainGame

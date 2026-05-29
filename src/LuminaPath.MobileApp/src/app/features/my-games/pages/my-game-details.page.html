@@ -22,16 +22,16 @@
             fill="clear"
             class="admin-action-button"
             aria-label="Edit game"
-            [disabled]="isSavingCatalogEdit || isDeletingCatalogEntry"
-            (click)="openEditDialog()">
+            [disabled]="catalogEdit.isSavingCatalogEdit || catalogEdit.isDeletingCatalogEntry"
+            (click)="catalogEdit.openEditDialog()">
             <ion-icon slot="icon-only" name="create-outline"></ion-icon>
           </ion-button>
           <ion-button
             fill="clear"
             class="admin-action-button admin-action-button--danger"
             aria-label="Delete game"
-            [disabled]="isSavingCatalogEdit || isDeletingCatalogEntry"
-            (click)="confirmDeleteCatalogEntry()">
+            [disabled]="catalogEdit.isSavingCatalogEdit || catalogEdit.isDeletingCatalogEntry"
+            (click)="catalogEdit.confirmDeleteCatalogEntry()">
             <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
           </ion-button>
         }
@@ -126,41 +126,41 @@
       }
 
       @if (isInLibrary) {
-        <section class="live-session-card" [class.live-session-card--running]="liveSessionActive">
+        <section class="live-session-card" [class.live-session-card--running]="liveSession.active">
           <header class="live-session-card__header">
             <span class="live-session-card__icon">
-              <ion-icon [name]="liveSessionActive ? 'time-outline' : 'play-outline'"></ion-icon>
+              <ion-icon [name]="liveSession.active ? 'time-outline' : 'play-outline'"></ion-icon>
             </span>
             <div>
               <h2>Live session</h2>
-              <p>{{ liveSessionStartedLabel }}</p>
+              <p>{{ liveSession.startedLabel }}</p>
             </div>
-            <strong>{{ liveSessionDurationLabel }}</strong>
+            <strong>{{ liveSession.durationLabel }}</strong>
           </header>
 
-          @if (liveSessionActive) {
+          @if (liveSession.active) {
             <textarea
               class="live-session-card__notes"
               rows="2"
               placeholder="Session notes"
-              [(ngModel)]="liveSessionNotes"
-              (ngModelChange)="persistLiveSession()">
+              [(ngModel)]="liveSession.notes"
+              (ngModelChange)="liveSession.persist()">
             </textarea>
             <div class="live-session-card__actions">
               <ion-button
                 shape="round"
                 class="quick-action quick-action--primary"
-                [disabled]="isSavingLiveSession"
-                (click)="stopLiveSession()">
+                [disabled]="liveSession.isSaving"
+                (click)="liveSession.stop()">
                 <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
-                {{ isSavingLiveSession ? 'Saving...' : 'Stop & log' }}
+                {{ liveSession.isSaving ? 'Saving...' : 'Stop & log' }}
               </ion-button>
               <ion-button
                 shape="round"
                 fill="outline"
                 class="quick-action"
-                [disabled]="isSavingLiveSession"
-                (click)="discardLiveSession()">
+                [disabled]="liveSession.isSaving"
+                (click)="liveSession.discard()">
                 <ion-icon slot="start" name="close-outline"></ion-icon>
                 Discard
               </ion-button>
@@ -170,20 +170,20 @@
               <ion-button
                 shape="round"
                 class="quick-action quick-action--primary"
-                [disabled]="isSavingLiveSession"
-                (click)="startLiveSession()">
+                [disabled]="liveSession.isSaving"
+                (click)="liveSession.start()">
                 <ion-icon slot="start" name="play-outline"></ion-icon>
                 Start session
               </ion-button>
             </div>
           }
 
-          @if (liveSessionMessage) {
+          @if (liveSession.message) {
             <p
               class="live-session-card__message"
-              [class.live-session-card__message--success]="liveSessionMessageTone === 'success'"
-              [class.live-session-card__message--error]="liveSessionMessageTone === 'error'">
-              {{ liveSessionMessage }}
+              [class.live-session-card__message--success]="liveSession.messageTone === 'success'"
+              [class.live-session-card__message--error]="liveSession.messageTone === 'error'">
+              {{ liveSession.message }}
             </p>
           }
         </section>
@@ -247,14 +247,14 @@
 
   @if (canEditCatalog) {
     <app-library-create-dialog
-      [(isOpen)]="isEditDialogOpen"
-      [(form)]="editForm"
+      [(isOpen)]="catalogEdit.isEditDialogOpen"
+      [(form)]="catalogEdit.editForm"
       [mediaMode]="gamesMode"
       [statusOptions]="gameStatusOptions"
-      [isSaving]="isSavingCatalogEdit"
-      [errorMessage]="editErrorMessage"
+      [isSaving]="catalogEdit.isSavingCatalogEdit"
+      [errorMessage]="catalogEdit.editErrorMessage"
       [isEditing]="true"
-      (dismiss)="closeEditDialog()"
-      (submitted)="submitCatalogEdit()" />
+      (dismiss)="catalogEdit.closeEditDialog()"
+      (submitted)="catalogEdit.submitCatalogEdit()" />
   }
 </ion-content>
