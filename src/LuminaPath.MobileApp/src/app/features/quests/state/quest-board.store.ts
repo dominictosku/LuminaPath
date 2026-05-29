@@ -13,7 +13,6 @@ import {
 import { addDays, startOfDay, toISODate } from 'src/app/shared/utils/date-helpers';
 
 import {
-  AchievementInfo,
   Quest,
   QuestBoardService,
   QuestBoardState,
@@ -29,8 +28,8 @@ import { QuestBoardPreferencesService } from '../services/quest-board-preference
 import { QuestViewMode } from '../components/quest-board-toolbar/quest-board-toolbar.component';
 import { QuestEditDraft } from '../components/quest-detail-sheet/quest-detail-sheet.component';
 import { SkillForm } from '../components/skill-modal/skill-modal.component';
-import { QuestQuickAddPreset, QuestQuickAddSubmit } from '../components/quest-quick-add/quest-quick-add.component';
-import { LibraryGame, PageMode } from '../models/quest-board-view.model';
+import { QuestQuickAddSubmit } from '../components/quest-quick-add/quest-quick-add.component';
+import { PageMode } from '../models/quest-board-view.model';
 import {
   QuestFilter,
   buildQuestSections,
@@ -40,6 +39,12 @@ import {
   nextQueuedQuest as selectNextQueuedQuest,
 } from '../domain/quest-sections.builder';
 import { buildQuestBoardStats } from '../domain/quest-board-stats';
+import {
+  DELETE_GRACE_MS,
+  initialState,
+  nextTemporaryId,
+  SkillNodeState,
+} from './quest-board.state';
 
 /**
  * Single source of truth for the quest board: persisted board data (quests,
@@ -53,87 +58,6 @@ import { buildQuestBoardStats } from '../domain/quest-board-stats';
  * {@link QuestBoardFeedbackService} for toasts/celebrations, and there is no
  * cross-page consistency requirement like {@link MediaStore} has.
  */
-
-type SkillNodeState = 'completed' | 'available' | 'locked';
-
-interface QuestBoardStateShape {
-  // ----- persisted board data -----
-  xp: number;
-  currentStreakDays: number;
-  longestStreakDays: number;
-  quests: Quest[];
-  skills: QuestSkill[];
-  folders: QuestFolder[];
-  achievements: AchievementInfo[];
-  library: LibraryGame[];
-
-  // ----- load state -----
-  isLoading: boolean;
-  errorMessage: string;
-
-  // ----- shared view / preference state -----
-  mode: PageMode;
-  filter: QuestFilter;
-  searchQuery: string;
-  tagFilter: string | null;
-  questViewMode: QuestViewMode;
-  quickAddType: Quest['type'];
-  quickAddPriority: Quest['priority'];
-  quickAddRecurrence: Quest['recurrence'];
-  /** New object reference each time → quick-add child re-applies its prefill. */
-  quickAddPreset: QuestQuickAddPreset | null;
-
-  // ----- inline edit (shared by the Quests and Overview views) -----
-  expandedQuestId: number | null;
-  editDraft: QuestEditDraft | null;
-  newSubtaskTitle: Record<number, string>;
-
-  // ----- folder (Overview) view state -----
-  collapsedFolderIds: ReadonlySet<number>;
-  unfiledCollapsed: boolean;
-  folderReorderActive: boolean;
-
-  /** Quests pending deletion, kept around so the undo toast can render. */
-  pendingDeletes: Quest[];
-  /** Deep link target: expand this quest once the board has loaded. */
-  focusQuestId: number | null;
-}
-
-const initialState: QuestBoardStateShape = {
-  xp: 0,
-  currentStreakDays: 0,
-  longestStreakDays: 0,
-  quests: [],
-  skills: [],
-  folders: [],
-  achievements: [],
-  library: [],
-  isLoading: true,
-  errorMessage: '',
-  mode: 'quests',
-  filter: 'today',
-  searchQuery: '',
-  tagFilter: null,
-  questViewMode: 'cards',
-  quickAddType: 'sub',
-  quickAddPriority: 'medium',
-  quickAddRecurrence: 'none',
-  quickAddPreset: null,
-  expandedQuestId: null,
-  editDraft: null,
-  newSubtaskTitle: {},
-  collapsedFolderIds: new Set<number>(),
-  unfiledCollapsed: false,
-  folderReorderActive: false,
-  pendingDeletes: [],
-  focusQuestId: null,
-};
-
-const DELETE_GRACE_MS = 5000;
-
-function nextTemporaryId(): number {
-  return -Math.floor(Math.random() * 1_000_000_000);
-}
 
 export const QuestBoardStore = signalStore(
   withState(initialState),

@@ -33,7 +33,7 @@ import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { MediaLibraryViewService } from 'src/app/features/library/services/media-library-view.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { formatShortDate } from 'src/app/shared/utils/format';
-import { parseDateOrNull, serializeDate } from 'src/app/shared/utils/date-helpers';
+import { parseDateOrNull } from 'src/app/shared/utils/date-helpers';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { LiveSessionTrackerService } from 'src/app/shared/services/live-session-tracker.service';
 import { DetailTabOption, DetailTabsComponent } from 'src/app/shared/components/detail-tabs/detail-tabs.component';
@@ -52,6 +52,12 @@ import { GameHeroComponent } from '../components/game-hero/game-hero.component';
 import { GameForecastComponent } from '../components/game-forecast/game-forecast.component';
 import { GameTrophiesComponent } from '../components/game-trophies/game-trophies.component';
 import { GameDlcListComponent } from '../components/game-dlc-list/game-dlc-list.component';
+import {
+  addTrackedHours,
+  buildLibraryUpdate,
+  nextLiveSessionStatus,
+  trackedHoursLabel as formatTrackedHours,
+} from './my-game-details.helpers';
 
 @Component({
   selector: 'app-my-game-details',
@@ -643,39 +649,20 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     void this.router.navigateByUrl('/planning');
   }
 
-  private libraryUpdateDetails(overrides: Partial<{
-    status: number;
-    timeSpend: number | null;
-    rating: number | null;
-    startDate: string | null;
-    endDate: string | null;
-    personalNotes: string | null;
-  }> = {}) {
-    const entry = this.libraryEntry ?? {};
-    return {
-      status: Number(entry.status ?? 1),
-      timeSpend: entry.timeSpend ?? null,
-      rating: entry.rating ?? null,
-      startDate: serializeDate(entry.startDate),
-      endDate: serializeDate(entry.endDate),
-      personalNotes: entry.personalNotes ?? null,
-      ...overrides,
-    };
+  private libraryUpdateDetails(overrides: Parameters<typeof buildLibraryUpdate>[1] = {}) {
+    return buildLibraryUpdate(this.libraryEntry, overrides);
   }
 
   private liveSessionNextStatus(): number {
-    const status = Number(this.libraryEntry?.status ?? 1);
-    return status === 1 ? 2 : status;
+    return nextLiveSessionStatus(this.libraryEntry);
   }
 
   private nextTrackedHours(durationMinutes: number): number {
-    const current = Number(this.libraryEntry?.timeSpend ?? 0);
-    return Math.round((current + durationMinutes / 60) * 100) / 100;
+    return addTrackedHours(this.libraryEntry, durationMinutes);
   }
 
   private trackedHoursLabel(): string {
-    const hours = Number(this.libraryEntry?.timeSpend ?? 0);
-    return hours > 0 ? `${Math.round(hours * 10) / 10}h tracked` : '';
+    return formatTrackedHours(this.libraryEntry);
   }
 
   private startLiveSessionTimer(): void {
