@@ -22,12 +22,6 @@ try
         .Enrich.FromLogContext()
         .Enrich.WithProperty("Application", "LuminaPath"));
 
-    builder.Services.AddSpaStaticFiles(configuration =>
-    {
-        configuration.RootPath = "../LuminaPath.WebApp/www";
-    });
-
-
     // Add services to the container.
     builder.Services
         .AddInfrastructure(builder.Configuration)
@@ -73,12 +67,6 @@ try
             }
         };
     });
-
-    //app.UseSpaStaticFiles();
-    //app.UseSpa(spa =>
-    //{
-    //    spa.Options.SourcePath = "../LuminaPath.WebApp";
-    //});
 
     await app.ConfigureInfrastructure();
     app.ConfigureServer();
