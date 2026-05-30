@@ -156,6 +156,22 @@ want to pin a specific proxy:
 | `ForwardedHeaders__KnownProxies__0` | empty | Exact proxy IP allowlist; repeat the index for multiple entries. |
 | `ForwardedHeaders__ForwardLimit` | `1` | Number of trusted proxy hops; raise for chained proxies. |
 
+## Security headers
+
+The backend always emits `X-Content-Type-Options`, `X-Frame-Options`,
+`Referrer-Policy` and `Permissions-Policy`. It also emits a
+Content-Security-Policy, which ships in **report-only** mode by default so a
+mistuned policy surfaces as browser-console warnings instead of a broken UI.
+Watch the console (or a `report-uri` collector) on the Blazor app, then flip
+to enforcing once it is clean.
+
+| Variable | Default | Notes |
+|---|---|---|
+| `SecurityHeaders__EnableContentSecurityPolicy` | `true` | Set false to drop the CSP header entirely. |
+| `SecurityHeaders__ContentSecurityPolicyReportOnly` | `true` | Set false to enforce (send `Content-Security-Policy` instead of `…-Report-Only`). |
+| `SecurityHeaders__ContentSecurityPolicy` | tuned default | Override the full policy string. The default allows same-origin scripts, inline styles (MudBlazor/Radzen) and Google Fonts. |
+| `SecurityHeaders__ReportUri` | empty | Optional endpoint appended as a `report-uri` directive. |
+
 ## Storage
 
 File-system storage is the default.

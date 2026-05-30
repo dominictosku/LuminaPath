@@ -151,7 +151,7 @@ namespace LuminaPath.Infrastructure
             // Defense-in-depth headers go BEFORE CORS / auth so they
             // apply to every response, including preflight 204s, the
             // SPA static bundle, and any 401/403/500 error path.
-            app.UseSecurityHeaders();
+            app.UseSecurityHeaders(SecurityHeadersOptions.FromConfiguration(app.Configuration));
 
             app.UseCors(MyAllowSpecificOrigins);
             app.UseMiddleware<ApiClientHeaderMiddleware>();
