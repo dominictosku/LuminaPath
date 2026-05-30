@@ -12,13 +12,13 @@ using LuminaPath.Infrastructure.Services.ThirdParty;
 using LuminaPath.Infrastructure.Validators;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace LuminaPath.Infrastructure
 {
@@ -88,7 +88,11 @@ namespace LuminaPath.Infrastructure
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine("Error when migrating: ", e);
+                // Fail loudly: a half-applied or un-applied schema must stop
+                // startup rather than let the app serve a broken database.
+                // The top-level handler in Program.cs logs Fatal and exits.
+                app.Logger.LogCritical(e, "Database migration or seeding failed during startup.");
+                throw;
             }
         }
 
@@ -112,11 +116,6 @@ namespace LuminaPath.Infrastructure
 
         private static async Task ConfigureEnvironment(WebApplication app)
         {
-            app.UseForwardedHeaders(new ForwardedHeadersOptions
-            {
-                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
-            });
-
             if (app.Environment.IsDevelopment())
             {
                 app.MapOpenApi();
@@ -140,6 +139,13 @@ namespace LuminaPath.Infrastructure
 
         public static async Task ConfigureInfrastructure(this WebApplication app)
         {
+            // Forwarded headers MUST run first: every downstream check that
+            // reads Request.Scheme / IsHttps / RemoteIpAddress (HTTPS
+            // redirect, per-IP rate limiting, request logging) needs the
+            // real client values rather than the proxy hop. See
+            // ForwardedHeadersConfiguration for the trusted-proxy set.
+            app.UseForwardedHeaders(ForwardedHeadersConfiguration.Build(app.Configuration));
+
             app.UseMiddleware<AuthorizationStatusMiddleware>();
 
             // Defense-in-depth headers go BEFORE CORS / auth so they

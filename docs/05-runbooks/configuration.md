@@ -138,6 +138,24 @@ email/password.
 | `HTTPS_REDIRECT` | `false` in Compose | Keep false when TLS terminates at a reverse proxy and the backend receives plain HTTP internally. |
 | `Https__Redirect` | Production default is on unless explicitly disabled | Raw .NET key outside Compose. |
 
+### Forwarded headers (`X-Forwarded-Proto` / `X-Forwarded-For`)
+
+The backend honours `X-Forwarded-*` headers so HTTPS scheme detection and
+per-IP rate limiting see the real client rather than the proxy hop. By
+default it trusts those headers only when the immediate peer is on a
+private network (RFC1918 + loopback + IPv6 ULA/link-local), which covers
+the nginx → backend hop inside Docker. A directly internet-exposed backend
+sees a public peer address outside that set, so spoofed headers are ignored.
+
+Override the trust set when your proxy is on a non-private network or you
+want to pin a specific proxy:
+
+| Variable | Default | Notes |
+|---|---|---|
+| `ForwardedHeaders__KnownNetworks__0` | private ranges | CIDR allowlist; repeat the index for multiple entries. |
+| `ForwardedHeaders__KnownProxies__0` | empty | Exact proxy IP allowlist; repeat the index for multiple entries. |
+| `ForwardedHeaders__ForwardLimit` | `1` | Number of trusted proxy hops; raise for chained proxies. |
+
 ## Storage
 
 File-system storage is the default.
