@@ -172,6 +172,32 @@ to enforcing once it is clean.
 | `SecurityHeaders__ContentSecurityPolicy` | tuned default | Override the full policy string. The default allows same-origin scripts, inline styles (MudBlazor/Radzen) and Google Fonts. |
 | `SecurityHeaders__ReportUri` | empty | Optional endpoint appended as a `report-uri` directive. |
 
+## Email (SMTP)
+
+Email delivery is **optional**. Without it, the app keeps a no-op sender that
+shows account-confirmation links on-screen (development convenience), and
+self-service password reset cannot deliver mail. Configure SMTP to turn on
+real password-reset and email-confirmation messages.
+
+| Variable | Default | Notes |
+|---|---|---|
+| `Email__Smtp__Host` | empty | SMTP server host. Setting this enables the real sender. |
+| `Email__Smtp__Port` | `587` | SMTP port. |
+| `Email__Smtp__User` | empty | SMTP username; omit for unauthenticated relays. |
+| `Email__Smtp__Password` | empty | SMTP password. Prefer a secret/env over `appsettings.json`. |
+| `Email__Smtp__UseStartTls` | `true` | STARTTLS (maps to `SmtpClient.EnableSsl`); the common port-587 setup. |
+| `Email__FromAddress` | empty | Required once a host is set; must be a valid address. |
+| `Email__FromName` | `LuminaPath` | Display name on outgoing mail. |
+
+Startup validation fails fast if `Email__Smtp__Host` is set but
+`Email__FromAddress` is missing/invalid or the port is out of range. Delivery
+failures are logged but never surfaced to the requester, so a broken SMTP
+relay can't be used to enumerate which email addresses have accounts.
+
+Note: password reset requires the target account to have a confirmed email.
+Admin-created and seeded users are confirmed automatically; self-registered
+users confirm via the link sent once SMTP is configured.
+
 ## Storage
 
 File-system storage is the default.

@@ -81,7 +81,7 @@ public class RouteAndDependencyInjectionTests
     public void AddBlazor_DefaultsDetailedErrorsOff()
     {
         var services = CreateBlazorServices();
-        services.AddBlazor();
+        services.AddBlazor(new ConfigurationBuilder().Build());
 
         using var provider = services.BuildServiceProvider();
 
@@ -92,7 +92,7 @@ public class RouteAndDependencyInjectionTests
     public void AddBlazor_EnablesDetailedErrors_WhenRequested()
     {
         var services = CreateBlazorServices();
-        services.AddBlazor(detailedErrors: true);
+        services.AddBlazor(new ConfigurationBuilder().Build(), detailedErrors: true);
 
         using var provider = services.BuildServiceProvider();
 
@@ -353,7 +353,7 @@ public class RouteAndDependencyInjectionTests
         builder.Services
             .AddInfrastructure(builder.Configuration)
             .AddServer()
-            .AddBlazor();
+            .AddBlazor(builder.Configuration);
 
         var app = builder.Build();
         app.ConfigureServer();

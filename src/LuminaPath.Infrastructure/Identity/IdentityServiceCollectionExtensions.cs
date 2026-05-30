@@ -1,3 +1,4 @@
+using LuminaPath.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
@@ -24,6 +25,27 @@ internal static class IdentityServiceCollectionExtensions
         // request.
         services.AddOptions<AuthRegistrationOptions>()
             .Bind(config.GetSection(AuthRegistrationOptions.SectionName));
+
+        // Optional SMTP email delivery. Validation only fires once an SMTP
+        // host is set, so the default (no email) configuration still boots.
+        services.AddOptions<EmailOptions>()
+            .Bind(config.GetSection(EmailOptions.SectionName))
+            .Validate(
+                EmailOptions.HasValidFromAddressWhenConfigured,
+                "Email:FromAddress must be a valid email address when Email:Smtp:Host is set.")
+            .Validate(
+                EmailOptions.HasValidPortWhenConfigured,
+                "Email:Smtp:Port must be between 1 and 65535 when Email:Smtp:Host is set.")
+            .ValidateOnStart();
+
+        // Wire a real SMTP sender only when configured; otherwise the web
+        // app's TryAddSingleton fallback keeps the on-screen-link no-op
+        // sender. This is what makes self-service password reset actually
+        // deliver mail.
+        if (EmailOptions.FromConfiguration(config).IsConfigured)
+        {
+            services.AddSingleton<IEmailSender<LuminaUser>, SmtpEmailSender>();
+        }
 
         services.AddAuthorization(options =>
         {

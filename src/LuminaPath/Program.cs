@@ -26,7 +26,7 @@ try
     builder.Services
         .AddInfrastructure(builder.Configuration)
         .AddServer()
-        .AddBlazor(builder.Environment.IsDevelopment());
+        .AddBlazor(builder.Configuration, builder.Environment.IsDevelopment());
 
     builder.Services.AddMudServices();
     builder.Services.AddRadzenComponents();

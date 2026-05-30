@@ -4,7 +4,11 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 
 namespace LuminaPath.Features.Auth.Account
 {
-    // Remove the "else if (EmailSender is IdentityNoOpEmailSender)" block from RegisterConfirmation.razor after updating with a real implementation.
+    // Fallback sender used when no SMTP is configured (see EmailOptions /
+    // SmtpEmailSender). RegisterConfirmation.razor deliberately keys off
+    // "EmailSender is IdentityNoOpEmailSender" to show the confirmation link
+    // on-screen only while this no-op fallback is active; once SMTP is
+    // configured the real sender is used and that branch is skipped.
     internal sealed class IdentityNoOpEmailSender : IEmailSender<LuminaUser>
     {
         private readonly IEmailSender emailSender = new NoOpEmailSender();

@@ -1,8 +1,10 @@
 using LuminaPath.Core.Mapping;
 using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Configuration;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.Storage;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -29,6 +31,7 @@ public class ConfigurationOptionsValidationTests
     [InlineData("GameNews:GoogleNewsBaseUrl", "not-a-url", "GameNews Google News")]
     [InlineData("Steam:ApiBaseUrl", "ftp://steam.example", "Steam base URLs")]
     [InlineData("PSN:ApiBaseUrl", "not-a-url", "PSN base URLs")]
+    [InlineData("Email:Smtp:Host", "smtp.example.com", "Email:FromAddress")]
     public async Task AddInfrastructure_InvalidConfiguration_FailsStartupOptionsValidation(
         string key,
         string value,
@@ -166,6 +169,43 @@ public class ConfigurationOptionsValidationTests
         Assert.NotNull(policy);
         Assert.Equal(["http://localhost:4200"], policy!.Origins);
         Assert.True(policy.SupportsCredentials);
+    }
+
+    [Fact]
+    public async Task AddInfrastructure_WithSmtpConfigured_RegistersSmtpEmailSender()
+    {
+        await using var provider = BuildProvider(new Dictionary<string, string?>
+        {
+            ["Email:Smtp:Host"] = "smtp.example.com",
+            ["Email:FromAddress"] = "noreply@example.com",
+        });
+
+        var sender = provider.GetRequiredService<IEmailSender<LuminaUser>>();
+
+        Assert.IsType<SmtpEmailSender>(sender);
+    }
+
+    [Fact]
+    public async Task AddInfrastructure_WithoutSmtp_DoesNotRegisterSmtpEmailSender()
+    {
+        // Without SMTP config, infrastructure must not force the SMTP sender;
+        // the on-screen-link no-op fallback is wired up by the web app's
+        // AddBlazor (not exercised by this infrastructure-only harness).
+        await using var provider = BuildProvider();
+
+        var sender = provider.GetService<IEmailSender<LuminaUser>>();
+
+        Assert.False(sender is SmtpEmailSender);
+    }
+
+    [Fact]
+    public void EmailOptions_DefaultsToNotConfigured()
+    {
+        var options = new EmailOptions();
+
+        Assert.False(options.IsConfigured);
+        Assert.Equal(587, options.Smtp.Port);
+        Assert.True(options.Smtp.UseStartTls);
     }
 
     [Fact]
