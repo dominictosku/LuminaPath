@@ -64,7 +64,7 @@ LuminaPath is a personal media library, backlog planner, playtime tracker, socia
     <td><strong>Imports</strong><br />Bring in data from Excel, PlayStation Network and Steam.</td>
   </tr>
   <tr>
-    <td><strong>AI Assistant</strong><br />Streaming chat with read-only DB tools and MCP server support.</td>
+    <td><strong>AI Assistant</strong><br />Streaming chat with user-scoped DB tools (reads + confirm-first writes) and MCP server support.</td>
     <td><strong>Release Calendar</strong><br />Browse upcoming releases and plan ahead.</td>
     <td><strong>Self-hosting</strong><br />Run the backend, database and optional Angular app through Docker.</td>
   </tr>
@@ -332,7 +332,7 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk
 
 ## AI Assistant
 
-The Angular app ships with a floating chat panel (bottom-right) that streams replies token-by-token from a backend endpoint at `POST /api/chat/stream`. The agent has access to read-only database tools scoped to the signed-in user, plus optional MCP tools for external information.
+The Angular app ships with a floating chat panel (bottom-right) that streams replies token-by-token from a backend endpoint at `POST /api/chat/stream`. The agent has access to database tools scoped to the signed-in user (reads plus a confirm-first quest-create write), plus optional MCP tools for external information.
 
 ### Pick a provider
 
@@ -429,15 +429,16 @@ OPENAI_MODEL=...          # falls into OpenAi:Model
 
 ### Built-in database tools
 
-The agent can call these tools (all read-only and scoped to the authenticated user):
+All tools are scoped to the authenticated user, so the agent can only ever see or change the signed-in user's own data:
 
-| Tool | Purpose |
-| --- | --- |
-| `list_upcoming_releases` | Future game releases, optional month/year filter, optional `only_my_library` |
-| `search_my_library` | Search games in the user's library by name fragment, status or platform |
-| `library_summary` | Counts by status, total logged hours, estimated backlog hours |
-| `my_quests` | Quests for the user, filterable by `open` / `completed` / `all` |
-| `my_gaming_sessions` | Scheduled sessions in a date window (default: next 14 days) |
+| Tool | Access | Purpose |
+| --- | --- | --- |
+| `list_upcoming_releases` | read | Future game releases, optional month/year filter, optional `only_my_library` |
+| `search_my_library` | read | Search games in the user's library by name fragment, status or platform |
+| `library_summary` | read | Counts by status, total logged hours, estimated backlog hours |
+| `my_quests` | read | Quests for the user, filterable by `open` / `completed` / `all` |
+| `my_gaming_sessions` | read | Scheduled sessions in a date window (default: next 14 days) |
+| `create_quest` | write | Create a quest on the user's board. The agent is instructed to confirm the details with the user before calling it. |
 
 Tool use works with both Anthropic and any OpenAI-compatible model that supports the `tools` / `tool_calls` API.
 

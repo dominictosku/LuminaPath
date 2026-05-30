@@ -69,6 +69,7 @@ internal static class AiChatServiceCollectionExtensions
         services.AddSingleton<IChatTool, MyQuestsTool>();
         services.AddSingleton<IChatTool, MyGamingSessionsTool>();
         services.AddSingleton<IChatTool, LibrarySummaryTool>();
+        services.AddSingleton<IChatTool, CreateQuestTool>();
 
         services.AddSingleton<ChatToolRegistry>();
         services.AddScoped<ChatService>();

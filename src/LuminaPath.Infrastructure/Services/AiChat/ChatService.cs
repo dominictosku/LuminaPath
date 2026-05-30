@@ -19,6 +19,13 @@ public sealed class ChatService
         - For questions about general gaming info or upcoming releases not in the database, prefer MCP tools when available.
         - Today's date is provided in the conversation; use it for relative date questions like "this month".
         - Keep responses concise and skim-friendly. Use short paragraphs or compact lists.
+
+        Write actions:
+        - Some tools change the user's data (their names say so, e.g. "create_quest").
+        - NEVER call a write tool unless the user has clearly asked for that change in the conversation.
+        - Before writing, restate exactly what you will create or change and get the user's explicit "yes".
+          Do not assume consent from an ambiguous request.
+        - After a successful write, briefly confirm what changed.
         """;
 
     private readonly IAiProvider _provider;
