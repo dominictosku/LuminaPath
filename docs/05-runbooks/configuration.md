@@ -198,6 +198,19 @@ Azure__BlobContainerName=media
 |---|---|---|
 | `LUMINAPATH_API_ENDPOINT` | `/api` | Browser-facing API endpoint. Keep `/api` with the included frontend container. |
 | `LUMINAPATH_API_PROXY_TARGET` | Root: `http://api:8080`; deploy: `http://luminapath-api:8080` | Nginx target inside the Docker network. |
+| `LUMINAPATH_CSP` | enforcing default | Full Content-Security-Policy for the served SPA. The frontend nginx also sends `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy` and `Permissions-Policy`. |
+
+The frontend container serves the SPA with an **enforcing** CSP. The default
+locks scripts to same-origin, allows inline styles (Angular/Ionic inject
+`<style>` tags at runtime), permits `https:`/`data:` images for external
+cover art, and keeps `connect-src 'self'` because the API is proxied
+same-origin. If the SPA talks to a **different** API origin (custom
+`LUMINAPATH_API_ENDPOINT`), override `LUMINAPATH_CSP` to add that origin to
+`connect-src`, e.g.:
+
+```text
+LUMINAPATH_CSP=default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.example.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'
+```
 
 The deploy frontend also proxies `/Account`, `/Admin`, `/_blazor`,
 `/_content` and `/_framework` to the backend. This keeps the default deploy
