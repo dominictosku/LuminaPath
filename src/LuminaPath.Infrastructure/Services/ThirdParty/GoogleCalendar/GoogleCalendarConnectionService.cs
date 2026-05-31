@@ -46,26 +46,31 @@ public sealed class GoogleCalendarConnectionService
         _utcNow = utcNow;
     }
 
-    /// <summary>Consent URL carrying a signed state that encodes the user id.</summary>
-    public string BuildConnectUrl(string userId, string redirectUri)
+    /// <summary>
+    /// Consent URL carrying a signed state that encodes the user id and the
+    /// SPA/Blazor path to return to after the callback (so the shared callback
+    /// can serve both the Angular settings page and the Blazor manage page).
+    /// </summary>
+    public string BuildConnectUrl(string userId, string returnPath, string redirectUri)
     {
-        var state = _stateProtector.Protect(userId, StateLifetime);
+        var state = _stateProtector.Protect($"{userId}\n{returnPath}", StateLifetime);
         return _oauth.BuildAuthorizationUrl(redirectUri, state);
     }
 
+    /// <summary>
+    /// Best-effort extraction of the signed return path (also works on
+    /// consent-denied callbacks, where Google still echoes our state).
+    /// Returns null when the state is missing or tampered.
+    /// </summary>
+    public string? PeekReturnPath(string? state)
+        => string.IsNullOrEmpty(state) ? null : ParseState(state)?.ReturnPath;
+
     public async Task CompleteConnectionAsync(string userId, string code, string state, string redirectUri, CancellationToken cancellationToken)
     {
-        string stateUserId;
-        try
-        {
-            stateUserId = _stateProtector.Unprotect(state);
-        }
-        catch
-        {
-            throw new InvalidOperationException("The Google sign-in link was invalid or expired. Please try again.");
-        }
+        var parsed = ParseState(state)
+            ?? throw new InvalidOperationException("The Google sign-in link was invalid or expired. Please try again.");
 
-        if (!string.Equals(stateUserId, userId, StringComparison.Ordinal))
+        if (!string.Equals(parsed.UserId, userId, StringComparison.Ordinal))
         {
             throw new InvalidOperationException("The Google sign-in did not match the signed-in user.");
         }
@@ -127,5 +132,19 @@ public sealed class GoogleCalendarConnectionService
 
         db.CalendarIntegrations.Remove(link);
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private (string UserId, string ReturnPath)? ParseState(string state)
+    {
+        try
+        {
+            var payload = _stateProtector.Unprotect(state);
+            var parts = payload.Split('\n', 2);
+            return parts.Length == 2 ? (parts[0], parts[1]) : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

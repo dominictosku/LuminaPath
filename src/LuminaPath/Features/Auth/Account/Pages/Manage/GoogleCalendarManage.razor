@@ -1,0 +1,116 @@
+@page "/Account/Manage/GoogleCalendar"
+
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Options
+@using LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar
+
+@inject UserManager<LuminaUser> UserManager
+@inject IdentityUserAccessor UserAccessor
+@inject IdentityRedirectManager RedirectManager
+@inject GoogleCalendarConnectionService Connection
+@inject GoogleCalendarSyncService Sync
+@inject IOptions<GoogleCalendarOptions> Options
+@inject ILogger<GoogleCalendarManage> Logger
+
+<PageTitle>Google Calendar</PageTitle>
+
+<h3>Google Calendar</h3>
+<StatusMessage Message="@returnMessage" />
+
+@if (!Options.Value.IsConfigured)
+{
+    <div class="alert alert-secondary" role="alert">
+        Google Calendar isn't configured on this server. An administrator needs to set
+        <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code>.
+    </div>
+}
+else if (status.Connected)
+{
+    <p>
+        Your library's upcoming releases and dated quests are pushed to a dedicated
+        <strong>@Options.Value.CalendarName</strong> calendar.
+    </p>
+
+    <dl class="row">
+        <dt class="col-sm-3">Connected account</dt>
+        <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(status.Email) ? "Google account" : status.Email)</dd>
+        <dt class="col-sm-3">Last synced</dt>
+        <dd class="col-sm-9">@(status.LastSyncedAt is { } at ? at.ToString("g") + " UTC" : "Never")</dd>
+    </dl>
+
+    <div class="d-flex gap-2">
+        <form @formname="gcal-sync" @onsubmit="SyncAsync" method="post">
+            <AntiforgeryToken />
+            <button class="btn btn-primary" type="submit">Sync now</button>
+        </form>
+        <form @formname="gcal-disconnect" @onsubmit="DisconnectAsync" method="post">
+            <AntiforgeryToken />
+            <button class="btn btn-outline-danger" type="submit">Disconnect</button>
+        </form>
+    </div>
+}
+else
+{
+    <p>Link your Google account to push upcoming releases and dated quests into your calendar.</p>
+    <a class="btn btn-primary" href="@ConnectHref">Connect Google Calendar</a>
+}
+
+@code {
+    private const string ManagePath = "/Account/Manage/GoogleCalendar";
+
+    private LuminaUser user = default!;
+    private CalendarConnectionStatus status = new(false, null, null);
+    private string? returnMessage;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    private string ConnectHref => $"/api/integrations/google/connect?returnPath={Uri.EscapeDataString(ManagePath)}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+
+        if (Options.Value.IsConfigured)
+        {
+            status = await Connection.GetStatusAsync(user.Id, HttpContext.RequestAborted);
+        }
+
+        returnMessage = HttpContext.Request.Query["google"].ToString() switch
+        {
+            "connected" => "Google Calendar connected.",
+            "unavailable" => "Error: Google Calendar isn't configured on this server.",
+            "error" => "Error: Could not connect Google Calendar. Please try again.",
+            _ => null,
+        };
+    }
+
+    private async Task SyncAsync()
+    {
+        try
+        {
+            var result = await Sync.SyncAsync(user.Id, HttpContext.RequestAborted);
+            RedirectManager.RedirectToWithStatus(
+                ManagePath.TrimStart('/'),
+                $"Synced {result.ReleaseEvents} release(s) and {result.QuestEvents} quest(s).",
+                HttpContext);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Manual Google Calendar sync failed for user {UserId}.", user.Id);
+            RedirectManager.RedirectToWithStatus(
+                ManagePath.TrimStart('/'),
+                "Error: Sync failed. Try reconnecting your Google account.",
+                HttpContext);
+        }
+    }
+
+    private async Task DisconnectAsync()
+    {
+        await Connection.DisconnectAsync(user.Id, HttpContext.RequestAborted);
+        RedirectManager.RedirectToWithStatus(
+            ManagePath.TrimStart('/'),
+            "Google Calendar disconnected.",
+            HttpContext);
+    }
+}

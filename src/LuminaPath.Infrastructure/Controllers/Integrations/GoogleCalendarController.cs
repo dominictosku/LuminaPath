@@ -41,20 +41,22 @@ public sealed class GoogleCalendarController : AuthorizedControllerBase
     }
 
     [HttpGet("connect")]
-    public IActionResult Connect()
+    public IActionResult Connect([FromQuery] string? returnPath)
     {
+        var safeReturn = ResolveReturnPath(returnPath);
+
         if (!_options.IsConfigured)
         {
-            return SettingsRedirect("unavailable");
+            return Redirect(BuildReturn(safeReturn, "unavailable"));
         }
 
         var userId = CurrentUserId;
         if (string.IsNullOrWhiteSpace(userId))
         {
-            return SettingsRedirect("error");
+            return Redirect(BuildReturn(safeReturn, "error"));
         }
 
-        var url = _connection.BuildConnectUrl(userId, ResolveRedirectUri());
+        var url = _connection.BuildConnectUrl(userId, safeReturn, ResolveRedirectUri());
         return Redirect(url);
     }
 
@@ -65,22 +67,26 @@ public sealed class GoogleCalendarController : AuthorizedControllerBase
         [FromQuery] string? error,
         CancellationToken cancellationToken)
     {
+        // The return path is signed into the state, so it survives the round
+        // trip (and is honoured even on consent-denied callbacks).
+        var returnPath = ResolveReturnPath(_connection.PeekReturnPath(state));
         var userId = CurrentUserId;
+
         if (!string.IsNullOrWhiteSpace(error) || string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state)
             || string.IsNullOrWhiteSpace(userId))
         {
-            return SettingsRedirect("error");
+            return Redirect(BuildReturn(returnPath, "error"));
         }
 
         try
         {
             await _connection.CompleteConnectionAsync(userId, code, state, ResolveRedirectUri(), cancellationToken);
-            return SettingsRedirect("connected");
+            return Redirect(BuildReturn(returnPath, "connected"));
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Google Calendar connection failed.");
-            return SettingsRedirect("error");
+            return Redirect(BuildReturn(returnPath, "error"));
         }
     }
 
@@ -161,8 +167,15 @@ public sealed class GoogleCalendarController : AuthorizedControllerBase
             ? $"{Request.Scheme}://{Request.Host}/api/integrations/google/callback"
             : _options.RedirectUri;
 
-    // Relative redirect so the browser resolves it against the SPA origin
-    // (the frontend that proxies /api), not the backend.
-    private IActionResult SettingsRedirect(string status)
-        => Redirect($"{_options.SettingsReturnPath}?google={status}");
+    // Only allow same-origin relative return paths (defends against open
+    // redirects via a crafted ?returnPath). Falls back to the SPA settings page.
+    private string ResolveReturnPath(string? candidate)
+        => !string.IsNullOrWhiteSpace(candidate) && Url.IsLocalUrl(candidate)
+            ? candidate
+            : _options.SettingsReturnPath;
+
+    // Relative redirect so the browser resolves it against the current origin
+    // (the SPA frontend that proxies /api, or the Blazor app), not a fixed host.
+    private static string BuildReturn(string returnPath, string status)
+        => $"{returnPath}?google={status}";
 }

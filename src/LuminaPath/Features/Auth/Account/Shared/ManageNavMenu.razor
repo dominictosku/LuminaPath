@@ -1,7 +1,10 @@
 ﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Options
+@using LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar
 
 
 @inject SignInManager<LuminaUser> SignInManager
+@inject IOptions<GoogleCalendarOptions> GoogleCalendarOptions
 
 <ul class="nav nav-pills flex-column">
     <li class="nav-item">
@@ -25,6 +28,12 @@
     <li class="nav-item">
         <NavLink class="nav-link" href="Account/Manage/PersonalData">Personal data</NavLink>
     </li>
+    @if (GoogleCalendarOptions.Value.IsConfigured)
+    {
+        <li class="nav-item">
+            <NavLink class="nav-link" href="Account/Manage/GoogleCalendar">Google Calendar</NavLink>
+        </li>
+    }
 </ul>
 
 @code {

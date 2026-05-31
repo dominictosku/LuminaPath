@@ -295,15 +295,19 @@ need them.
 
 ## Google Calendar integration
 
-Optional. When configured, users can link their Google account from
-**Settings → Google Calendar** and push their library's upcoming releases and
-dated quests into a dedicated "LuminaPath" calendar with **Sync now**. The
-Settings card is hidden entirely until the server is configured.
+Optional. When configured, users can link their Google account from the Angular
+app's **Settings → Google Calendar** card or the Blazor **Account → Manage →
+Google Calendar** page, and push their library's upcoming releases and dated
+quests into a dedicated "LuminaPath" calendar with **Sync now**. Both surfaces
+are hidden until the server is configured.
 
 Operator setup: create a Google Cloud **OAuth 2.0 Web** client, enable the
 **Google Calendar API**, and register the redirect URI
 `https://<your-frontend-host>/api/integrations/google/callback`. The frontend
-proxies `/api` to the backend, so use the public frontend origin.
+proxies `/api` to the backend, so use the public frontend origin. If users also
+link from the Blazor admin on a different origin, add that origin's
+`/api/integrations/google/callback` too (Google allows multiple redirect URIs),
+or pin a single one with `GoogleCalendar__RedirectUri`.
 
 | Variable | Default | Notes |
 |---|---|---|
