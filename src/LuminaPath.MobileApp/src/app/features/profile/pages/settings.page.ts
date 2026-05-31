@@ -16,6 +16,7 @@ import { ThemePreferenceService } from 'src/app/shared/services/theme-preference
 import { DataExportService } from '../services/data-export.service';
 import { ProfileService } from '../services/profile.service';
 import { TwoFactorCardComponent } from '../components/two-factor-card/two-factor-card.component';
+import { GoogleCalendarCardComponent } from '../components/google-calendar-card/google-calendar-card.component';
 
 type FormState = 'idle' | 'saving' | 'success' | 'error';
 
@@ -31,6 +32,7 @@ type FormState = 'idle' | 'saving' | 'success' | 'error';
     IonIcon,
     IonToggle,
     TwoFactorCardComponent,
+    GoogleCalendarCardComponent,
 ],
 })
 export class SettingsPage {

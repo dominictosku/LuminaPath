@@ -77,6 +77,7 @@ LuminaPath is a personal media library, backlog planner, playtime tracker, socia
 - Manual playtime and third-party playtime stay separate, while the UI shows a combined total.
 - Excel import/export for library and play history data.
 - PlayStation Network and Steam import flows.
+- Optional Google Calendar integration: link a Google account from Settings and push your library's upcoming releases and dated quests into a dedicated calendar.
 - Browse and release-calendar views for discovering and planning upcoming titles.
 - Social layer: friends, direct messages and scheduled co-op gaming sessions.
 - Media document management for uploaded covers and files.

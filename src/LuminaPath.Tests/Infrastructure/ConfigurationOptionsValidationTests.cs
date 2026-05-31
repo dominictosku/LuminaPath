@@ -32,6 +32,7 @@ public class ConfigurationOptionsValidationTests
     [InlineData("Steam:ApiBaseUrl", "ftp://steam.example", "Steam base URLs")]
     [InlineData("PSN:ApiBaseUrl", "not-a-url", "PSN base URLs")]
     [InlineData("Email:Smtp:Host", "smtp.example.com", "Email:FromAddress")]
+    [InlineData("GoogleCalendar:ClientId", "client-id-without-secret", "GoogleCalendar:ClientSecret")]
     public async Task AddInfrastructure_InvalidConfiguration_FailsStartupOptionsValidation(
         string key,
         string value,

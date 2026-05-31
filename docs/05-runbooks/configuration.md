@@ -293,6 +293,36 @@ need them.
 | `PSN__ProfileBaseUrl` | built in | Override only if Sony endpoints change. |
 | `PSN__ApiBaseUrl` | built in | Override only if Sony endpoints change. |
 
+## Google Calendar integration
+
+Optional. When configured, users can link their Google account from
+**Settings → Google Calendar** and push their library's upcoming releases and
+dated quests into a dedicated "LuminaPath" calendar with **Sync now**. The
+Settings card is hidden entirely until the server is configured.
+
+Operator setup: create a Google Cloud **OAuth 2.0 Web** client, enable the
+**Google Calendar API**, and register the redirect URI
+`https://<your-frontend-host>/api/integrations/google/callback`. The frontend
+proxies `/api` to the backend, so use the public frontend origin.
+
+| Variable | Default | Notes |
+|---|---|---|
+| `GOOGLE_CLIENT_ID` | empty | OAuth client id. Setting this enables the integration. |
+| `GOOGLE_CLIENT_SECRET` | empty | OAuth client secret (or `GoogleCalendar__ClientSecretFile`). |
+| `GoogleCalendar__CalendarName` | `LuminaPath` | Name of the dedicated calendar created on first sync. |
+| `GoogleCalendar__RedirectUri` | derived from request | Override only if the auto-derived `{scheme}://{host}/api/integrations/google/callback` is wrong (e.g. local dev without the proxy). |
+| `GoogleCalendar__SettingsReturnPath` | `/settings` | SPA path the callback returns to. |
+
+Notes:
+
+- Sync is one-way (LuminaPath → Google) and manual. It upserts events with
+  stable ids (so re-syncing never duplicates) and removes events whose release
+  or open quest no longer applies.
+- The OAuth refresh token is encrypted at rest with ASP.NET Data Protection.
+  In Docker the Data Protection key ring is container-local by default — if it
+  isn't persisted, links become unreadable after a redeploy and users must
+  reconnect. Persist the key ring (volume) for durable links.
+
 ## Background jobs and backups
 
 | Variable | Default | Notes |

@@ -1,0 +1,79 @@
+@if (isLoading()) {
+  <section class="settings-card google-calendar-card">
+    <div class="google-calendar-card__loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Loading…</span>
+    </div>
+  </section>
+} @else if (configured()) {
+  <section class="settings-card google-calendar-card">
+    <header class="settings-card__header">
+      <ion-icon name="calendar-outline"></ion-icon>
+      <div class="google-calendar-card__title">
+        <h2>Google Calendar</h2>
+        <p>
+          @if (connected()) {
+            Push your library's upcoming releases and dated quests to a dedicated
+            "LuminaPath" calendar.
+          } @else {
+            Link your Google account to push upcoming releases and dated quests
+            into your calendar.
+          }
+        </p>
+      </div>
+      <span
+        class="google-calendar-card__badge"
+        [class.google-calendar-card__badge--on]="connected()"
+        [class.google-calendar-card__badge--off]="!connected()">
+        {{ connected() ? 'Connected' : 'Not linked' }}
+      </span>
+    </header>
+
+    @if (connected()) {
+      <dl class="google-calendar-card__meta">
+        @if (email(); as account) {
+          <div>
+            <dt>Account</dt>
+            <dd>{{ account }}</dd>
+          </div>
+        }
+        <div>
+          <dt>Last synced</dt>
+          <dd>{{ lastSyncedAt() ? (lastSyncedAt() | date: 'medium') : 'Never' }}</dd>
+        </div>
+      </dl>
+
+      <div class="settings-card__actions">
+        <ion-button shape="round" (click)="syncNow()" [disabled]="isSyncing() || isDisconnecting()">
+          <ion-icon slot="start" name="sync-outline"></ion-icon>
+          {{ isSyncing() ? 'Syncing…' : 'Sync now' }}
+        </ion-button>
+        <ion-button
+          shape="round"
+          fill="outline"
+          color="medium"
+          (click)="confirmDisconnect()"
+          [disabled]="isSyncing() || isDisconnecting()">
+          <ion-icon slot="start" name="unlink-outline"></ion-icon>
+          Disconnect
+        </ion-button>
+      </div>
+    } @else {
+      <div class="settings-card__actions">
+        <ion-button shape="round" [href]="connectHref()">
+          <ion-icon slot="start" name="logo-google"></ion-icon>
+          Connect Google Calendar
+        </ion-button>
+      </div>
+    }
+
+    @if (message()) {
+      <span
+        class="settings-card__message"
+        [class.settings-card__message--error]="messageTone() === 'error'"
+        [class.settings-card__message--success]="messageTone() === 'success'">
+        {{ message() }}
+      </span>
+    }
+  </section>
+}

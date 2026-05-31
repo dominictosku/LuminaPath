@@ -1,0 +1,67 @@
+/* Local styling only. The `.settings-card` chrome (border, padding, gap) comes
+   from the host settings page; we add Google-Calendar-specific extras here and
+   stay theme-aware via Ionic CSS vars. */
+
+:host {
+  display: contents;
+}
+
+.google-calendar-card__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.google-calendar-card__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.google-calendar-card__badge--on {
+  background: rgba(45, 211, 111, 0.16);
+  color: var(--ion-color-success, #2dd36f);
+}
+
+.google-calendar-card__badge--off {
+  background: var(--ion-color-step-100, rgba(127, 127, 127, 0.12));
+  color: var(--ion-color-medium, #92949c);
+}
+
+.google-calendar-card__loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ion-color-medium, #92949c);
+}
+
+.google-calendar-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin: 0;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  dt {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ion-color-medium, #92949c);
+  }
+
+  dd {
+    margin: 0;
+    font-size: 0.95rem;
+    word-break: break-word;
+  }
+}

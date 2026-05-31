@@ -59,6 +59,9 @@ namespace LuminaPath.Infrastructure
                 .HasOne<LuminaUser>().WithMany().HasForeignKey(e => e.SenderId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<DirectMessage>()
                 .HasOne<LuminaUser>().WithMany().HasForeignKey(e => e.RecipientId).OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CalendarIntegration>()
+                .HasOne<LuminaUser>().WithMany().HasForeignKey(e => e.LuminaUserId).OnDelete(DeleteBehavior.Cascade);
         }
 
         public override int SaveChanges()
@@ -124,5 +127,6 @@ namespace LuminaPath.Infrastructure
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<MediaExternalId> MediaExternalIds { get; set; }
         public DbSet<MediaVideo> MediaVideos { get; set; }
+        public DbSet<CalendarIntegration> CalendarIntegrations { get; set; }
     }
 }

@@ -1,0 +1,132 @@
+using LuminaPath.Core.Models.ThirdParty;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+
+namespace LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar;
+
+/// <summary>
+/// One-way push of the user's library releases and dated quests into their
+/// dedicated "LuminaPath" Google Calendar. Idempotent: events use deterministic
+/// ids so a re-sync updates in place, and events no longer backed by a release
+/// or open quest are deleted (safe — the calendar is exclusively ours).
+/// </summary>
+public sealed class GoogleCalendarSyncService
+{
+    public const string Provider = "google";
+    private const string ReleaseIdPrefix = "lprel";
+    private const string QuestIdPrefix = "lpquest";
+
+    private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
+    private readonly IGoogleOAuthClient _oauth;
+    private readonly IGoogleCalendarApi _calendar;
+    private readonly ICalendarTokenProtector _protector;
+    private readonly GoogleCalendarOptions _options;
+    private readonly Func<DateTime> _utcNow;
+
+    public GoogleCalendarSyncService(
+        IDbContextFactory<LuminaPathDbContext> dbContextFactory,
+        IGoogleOAuthClient oauth,
+        IGoogleCalendarApi calendar,
+        ICalendarTokenProtector protector,
+        IOptions<GoogleCalendarOptions> options)
+        : this(dbContextFactory, oauth, calendar, protector, options, () => DateTime.UtcNow)
+    {
+    }
+
+    public GoogleCalendarSyncService(
+        IDbContextFactory<LuminaPathDbContext> dbContextFactory,
+        IGoogleOAuthClient oauth,
+        IGoogleCalendarApi calendar,
+        ICalendarTokenProtector protector,
+        IOptions<GoogleCalendarOptions> options,
+        Func<DateTime> utcNow)
+    {
+        _dbContextFactory = dbContextFactory;
+        _oauth = oauth;
+        _calendar = calendar;
+        _protector = protector;
+        _options = options.Value;
+        _utcNow = utcNow;
+    }
+
+    public async Task<CalendarSyncResult> SyncAsync(string userId, CancellationToken cancellationToken)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var link = await db.CalendarIntegrations
+            .FirstOrDefaultAsync(c => c.LuminaUserId == userId && c.Provider == Provider, cancellationToken)
+            ?? throw new InvalidOperationException("Google Calendar is not connected for this user.");
+
+        var refreshToken = _protector.Unprotect(link.EncryptedRefreshToken);
+        var token = await _oauth.RefreshAccessTokenAsync(refreshToken, cancellationToken);
+
+        var calendarId = await _calendar.EnsureCalendarAsync(token.AccessToken, _options.CalendarName, link.CalendarId, cancellationToken);
+        if (!string.Equals(calendarId, link.CalendarId, StringComparison.Ordinal))
+        {
+            link.CalendarId = calendarId;
+        }
+
+        var releases = await BuildReleaseEventsAsync(db, userId, cancellationToken);
+        var quests = await BuildQuestEventsAsync(db, userId, cancellationToken);
+        var desired = releases.Concat(quests).ToList();
+
+        var existingIds = await _calendar.ListEventIdsAsync(token.AccessToken, calendarId, cancellationToken);
+
+        foreach (var calendarEvent in desired)
+        {
+            await _calendar.UpsertEventAsync(token.AccessToken, calendarId, calendarEvent, cancellationToken);
+        }
+
+        var desiredIds = desired.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        var stale = existingIds.Where(id => !desiredIds.Contains(id)).ToList();
+        foreach (var staleId in stale)
+        {
+            await _calendar.DeleteEventAsync(token.AccessToken, calendarId, staleId, cancellationToken);
+        }
+
+        link.LastSyncedAt = _utcNow();
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new CalendarSyncResult(releases.Count, quests.Count, stale.Count);
+    }
+
+    private async Task<List<CalendarEventInput>> BuildReleaseEventsAsync(LuminaPathDbContext db, string userId, CancellationToken cancellationToken)
+    {
+        var today = DateOnly.FromDateTime(_utcNow().Date);
+
+        var rows = await db.MyGames
+            .AsNoTracking()
+            .Where(m => m.LuminaUserId == userId && m.Game!.ReleaseDate.HasValue && m.Game.ReleaseDate.Value >= _utcNow().Date)
+            .Select(m => new { m.Game!.Id, m.Game.Name, m.Game.ReleaseDate })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            // One game can appear once; collapse any duplicate library rows.
+            .GroupBy(r => r.Id)
+            .Select(group => group.First())
+            .Select(r => new CalendarEventInput(
+                Id: ReleaseIdPrefix + r.Id,
+                Summary: $"🎮 {r.Name} releases",
+                Description: "Game release tracked in your LuminaPath library.",
+                Date: DateOnly.FromDateTime(r.ReleaseDate!.Value)))
+            .Where(e => e.Date >= today)
+            .ToList();
+    }
+
+    private async Task<List<CalendarEventInput>> BuildQuestEventsAsync(LuminaPathDbContext db, string userId, CancellationToken cancellationToken)
+    {
+        var rows = await db.Quests
+            .AsNoTracking()
+            .Where(q => q.LuminaUserId == userId && q.DueDate.HasValue && !q.Completed)
+            .Select(q => new { q.Id, q.Title, q.DueDate })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .Select(q => new CalendarEventInput(
+                Id: QuestIdPrefix + q.Id,
+                Summary: $"📜 {q.Title}",
+                Description: "Quest due date from your LuminaPath quest board.",
+                Date: DateOnly.FromDateTime(q.DueDate!.Value)))
+            .ToList();
+    }
+}

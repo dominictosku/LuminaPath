@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using LuminaPath.Infrastructure.Configuration;
+using LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar;
 
 namespace LuminaPath.Infrastructure.Services.ThirdParty;
 
@@ -48,6 +49,45 @@ internal static class ThirdPartyServiceCollectionExtensions
         services.AddScoped<ISteamAchievementClient>(sp => sp.GetRequiredService<SteamService>());
         services.AddScoped<AchievementSyncService>();
 
+        AddGoogleCalendar(services, config);
+
         return services;
+    }
+
+    private static void AddGoogleCalendar(IServiceCollection services, IConfiguration config)
+    {
+        // Ensures the token/state protectors resolve even outside a web host
+        // (e.g. the options-validation test harness). Idempotent in the app.
+        services.AddDataProtection();
+
+        services.AddOptions<GoogleCalendarOptions>()
+            .Bind(config.GetSection(GoogleCalendarOptions.SectionName))
+            .PostConfigure(options =>
+            {
+                options.ClientId.UseEnvironmentFallback(value => options.ClientId = value, "GOOGLE_CLIENT_ID");
+                var secret = SecretConfiguration.GetSecret(
+                    config,
+                    valueKey: $"{GoogleCalendarOptions.SectionName}:ClientSecret",
+                    fileKey: $"{GoogleCalendarOptions.SectionName}:ClientSecretFile",
+                    alternateValueKeys: ["GOOGLE_CLIENT_SECRET"]);
+                if (!string.IsNullOrWhiteSpace(secret))
+                {
+                    options.ClientSecret = secret;
+                }
+            })
+            .Validate(GoogleCalendarOptions.HasSecretWhenClientIdSet, "GoogleCalendar:ClientSecret is required when GoogleCalendar:ClientId is set.")
+            .Validate(GoogleCalendarOptions.HasValidEndpoints, "GoogleCalendar endpoints must be absolute HTTP or HTTPS URLs.")
+            .Validate(GoogleCalendarOptions.HasValidRedirectUriWhenSet, "GoogleCalendar:RedirectUri must be an absolute HTTP or HTTPS URL.")
+            .ValidateOnStart();
+
+        services.AddSingleton<ICalendarTokenProtector, CalendarTokenProtector>();
+
+        services.AddHttpClient<GoogleOAuthClient>();
+        services.AddScoped<IGoogleOAuthClient>(sp => sp.GetRequiredService<GoogleOAuthClient>());
+        services.AddHttpClient<GoogleCalendarApiClient>();
+        services.AddScoped<IGoogleCalendarApi>(sp => sp.GetRequiredService<GoogleCalendarApiClient>());
+
+        services.AddScoped<GoogleCalendarConnectionService>();
+        services.AddScoped<GoogleCalendarSyncService>();
     }
 }
