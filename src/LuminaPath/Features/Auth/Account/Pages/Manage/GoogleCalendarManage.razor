@@ -1,7 +1,6 @@
 @page "/Account/Manage/GoogleCalendar"
 
 @using Microsoft.AspNetCore.Identity
-@using Microsoft.Extensions.Options
 @using LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar
 
 @inject UserManager<LuminaUser> UserManager
@@ -9,7 +8,7 @@
 @inject IdentityRedirectManager RedirectManager
 @inject GoogleCalendarConnectionService Connection
 @inject GoogleCalendarSyncService Sync
-@inject IOptions<GoogleCalendarOptions> Options
+@inject GoogleCalendarSettingsResolver Settings
 @inject ILogger<GoogleCalendarManage> Logger
 
 <PageTitle>Google Calendar</PageTitle>
@@ -17,18 +16,19 @@
 <h3>Google Calendar</h3>
 <StatusMessage Message="@returnMessage" />
 
-@if (!Options.Value.IsConfigured)
+@if (!configured)
 {
     <div class="alert alert-secondary" role="alert">
-        Google Calendar isn't configured on this server. An administrator needs to set
-        <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code>.
+        Google Calendar isn't configured on this server. An administrator needs to configure it
+        on the <strong>Settings → Google Calendar</strong> page (or set
+        <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code>).
     </div>
 }
 else if (status.Connected)
 {
     <p>
         Your library's upcoming releases and dated quests are pushed to a dedicated
-        <strong>@Options.Value.CalendarName</strong> calendar.
+        <strong>@calendarName</strong> calendar.
     </p>
 
     <dl class="row">
@@ -61,6 +61,8 @@ else
     private LuminaUser user = default!;
     private CalendarConnectionStatus status = new(false, null, null);
     private string? returnMessage;
+    private bool configured;
+    private string calendarName = "LuminaPath";
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -71,7 +73,11 @@ else
     {
         user = await UserAccessor.GetRequiredUserAsync(HttpContext);
 
-        if (Options.Value.IsConfigured)
+        var settings = await Settings.GetAsync(HttpContext.RequestAborted);
+        configured = settings.IsConfigured;
+        calendarName = settings.CalendarName;
+
+        if (configured)
         {
             status = await Connection.GetStatusAsync(user.Id, HttpContext.RequestAborted);
         }

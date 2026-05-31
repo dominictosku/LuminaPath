@@ -1,10 +1,9 @@
 ﻿@using Microsoft.AspNetCore.Identity
-@using Microsoft.Extensions.Options
 @using LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar
 
 
 @inject SignInManager<LuminaUser> SignInManager
-@inject IOptions<GoogleCalendarOptions> GoogleCalendarOptions
+@inject GoogleCalendarSettingsResolver GoogleCalendarSettings
 
 <ul class="nav nav-pills flex-column">
     <li class="nav-item">
@@ -28,7 +27,7 @@
     <li class="nav-item">
         <NavLink class="nav-link" href="Account/Manage/PersonalData">Personal data</NavLink>
     </li>
-    @if (GoogleCalendarOptions.Value.IsConfigured)
+    @if (googleCalendarConfigured)
     {
         <li class="nav-item">
             <NavLink class="nav-link" href="Account/Manage/GoogleCalendar">Google Calendar</NavLink>
@@ -38,9 +37,11 @@
 
 @code {
     private bool hasExternalLogins;
+    private bool googleCalendarConfigured;
 
     protected override async Task OnInitializedAsync()
     {
         hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
+        googleCalendarConfigured = (await GoogleCalendarSettings.GetAsync()).IsConfigured;
     }
 }

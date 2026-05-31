@@ -51,10 +51,10 @@ public sealed class GoogleCalendarConnectionService
     /// SPA/Blazor path to return to after the callback (so the shared callback
     /// can serve both the Angular settings page and the Blazor manage page).
     /// </summary>
-    public string BuildConnectUrl(string userId, string returnPath, string redirectUri)
+    public async Task<string> BuildConnectUrlAsync(string userId, string returnPath, string redirectUri, CancellationToken cancellationToken)
     {
         var state = _stateProtector.Protect($"{userId}\n{returnPath}", StateLifetime);
-        return _oauth.BuildAuthorizationUrl(redirectUri, state);
+        return await _oauth.BuildAuthorizationUrlAsync(redirectUri, state, cancellationToken);
     }
 
     /// <summary>

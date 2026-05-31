@@ -1,0 +1,108 @@
+@using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar
+@using Microsoft.Extensions.Options
+@inject ApplicationSettingsService ApplicationSettingsService
+@inject IOptions<GoogleCalendarOptions> Options
+@inject ISnackbar Snackbar
+
+<section class="settings-panel settings-panel--primary">
+	<div class="settings-panel__header">
+		<div>
+			<MudText Typo="Typo.overline">Integrations</MudText>
+			<MudText Typo="Typo.h5">Google Calendar</MudText>
+			<MudText Typo="Typo.body2">
+				OAuth credentials for the Google Calendar integration. Values saved here override the
+				<code>GOOGLE_CLIENT_ID</code> / <code>GOOGLE_CLIENT_SECRET</code> environment variables.
+			</MudText>
+		</div>
+		<div class="settings-panel__icon settings-panel__icon--green">
+			<MudIcon Icon="@Icons.Material.Filled.CalendarMonth" />
+		</div>
+	</div>
+
+	<div class="settings-form">
+		<MudTextField @bind-Value="clientId"
+					  Label="Google OAuth client ID"
+					  Variant="MudBlazor.Variant.Outlined"
+					  HelperText="From your Google Cloud OAuth 2.0 Web client."
+					  Immediate="true" />
+
+		<MudTextField @bind-Value="clientSecret"
+					  Label="Google OAuth client secret"
+					  Variant="MudBlazor.Variant.Outlined"
+					  InputType="@secretInputType"
+					  Adornment="Adornment.End"
+					  AdornmentIcon="@SecretVisibilityIcon"
+					  OnAdornmentClick="ToggleSecretVisibility"
+					  Immediate="true" />
+
+		<MudTextField @bind-Value="calendarName"
+					  Label="Calendar name"
+					  Variant="MudBlazor.Variant.Outlined"
+					  HelperText="Dedicated calendar created in each user's Google account for LuminaPath events."
+					  Immediate="true" />
+
+		<div class="settings-action-row">
+			<MudButton OnClick="Save"
+					   Variant="MudBlazor.Variant.Filled"
+					   Color="Color.Secondary"
+					   StartIcon="@Icons.Material.Filled.Save"
+					   Disabled="@saving">
+				Save Google Calendar Settings
+			</MudButton>
+		</div>
+	</div>
+</section>
+
+<section class="settings-panel settings-help-panel">
+	<MudIcon Icon="@Icons.Material.Filled.Info" />
+	<div>
+		<MudText Typo="Typo.h6">Setup</MudText>
+		<MudText Typo="Typo.body2">
+			Create a Google Cloud OAuth 2.0 <strong>Web</strong> client, enable the Calendar API, and register the
+			redirect URI <code>{your-origin}/api/integrations/google/callback</code>. Once credentials are saved, users
+			can link their account from Settings → Connections or Account → Google Calendar — no restart required.
+		</MudText>
+	</div>
+</section>
+
+@code {
+	private string clientId = string.Empty;
+	private string clientSecret = string.Empty;
+	private string calendarName = string.Empty;
+	private bool showSecret;
+	private bool saving;
+
+	private InputType secretInputType => showSecret ? InputType.Text : InputType.Password;
+	private string SecretVisibilityIcon => showSecret ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
+
+	protected override async Task OnInitializedAsync()
+	{
+		var settings = await ApplicationSettingsService.GetGoogleCalendarSettingsAsync();
+		clientId = string.IsNullOrWhiteSpace(settings.ClientId) ? Options.Value.ClientId ?? string.Empty : settings.ClientId;
+		clientSecret = string.IsNullOrWhiteSpace(settings.ClientSecret) ? Options.Value.ClientSecret ?? string.Empty : settings.ClientSecret;
+		calendarName = string.IsNullOrWhiteSpace(settings.CalendarName) ? Options.Value.CalendarName : settings.CalendarName;
+	}
+
+	private async Task Save()
+	{
+		saving = true;
+		try
+		{
+			await ApplicationSettingsService.SaveGoogleCalendarSettingsAsync(new GoogleCalendarSettings(
+				clientId,
+				clientSecret,
+				calendarName));
+			Snackbar.Add("Saved Google Calendar settings", Severity.Success);
+		}
+		finally
+		{
+			saving = false;
+		}
+	}
+
+	private void ToggleSecretVisibility()
+	{
+		showSecret = !showSecret;
+	}
+}

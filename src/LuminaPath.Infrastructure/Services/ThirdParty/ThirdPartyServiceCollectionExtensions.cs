@@ -82,6 +82,9 @@ internal static class ThirdPartyServiceCollectionExtensions
 
         services.AddSingleton<ICalendarTokenProtector, CalendarTokenProtector>();
 
+        // Effective credentials = admin-saved ApplicationSettings over env/config.
+        services.AddScoped<GoogleCalendarSettingsResolver>();
+
         services.AddHttpClient<GoogleOAuthClient>();
         services.AddScoped<IGoogleOAuthClient>(sp => sp.GetRequiredService<GoogleOAuthClient>());
         services.AddHttpClient<GoogleCalendarApiClient>();

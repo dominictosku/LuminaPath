@@ -1,6 +1,5 @@
 using LuminaPath.Core.Models.ThirdParty;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar;
 
@@ -20,7 +19,7 @@ public sealed class GoogleCalendarSyncService
     private readonly IGoogleOAuthClient _oauth;
     private readonly IGoogleCalendarApi _calendar;
     private readonly ICalendarTokenProtector _protector;
-    private readonly GoogleCalendarOptions _options;
+    private readonly GoogleCalendarSettingsResolver _resolver;
     private readonly Func<DateTime> _utcNow;
 
     public GoogleCalendarSyncService(
@@ -28,8 +27,8 @@ public sealed class GoogleCalendarSyncService
         IGoogleOAuthClient oauth,
         IGoogleCalendarApi calendar,
         ICalendarTokenProtector protector,
-        IOptions<GoogleCalendarOptions> options)
-        : this(dbContextFactory, oauth, calendar, protector, options, () => DateTime.UtcNow)
+        GoogleCalendarSettingsResolver resolver)
+        : this(dbContextFactory, oauth, calendar, protector, resolver, () => DateTime.UtcNow)
     {
     }
 
@@ -38,14 +37,14 @@ public sealed class GoogleCalendarSyncService
         IGoogleOAuthClient oauth,
         IGoogleCalendarApi calendar,
         ICalendarTokenProtector protector,
-        IOptions<GoogleCalendarOptions> options,
+        GoogleCalendarSettingsResolver resolver,
         Func<DateTime> utcNow)
     {
         _dbContextFactory = dbContextFactory;
         _oauth = oauth;
         _calendar = calendar;
         _protector = protector;
-        _options = options.Value;
+        _resolver = resolver;
         _utcNow = utcNow;
     }
 
@@ -57,10 +56,11 @@ public sealed class GoogleCalendarSyncService
             .FirstOrDefaultAsync(c => c.LuminaUserId == userId && c.Provider == Provider, cancellationToken)
             ?? throw new InvalidOperationException("Google Calendar is not connected for this user.");
 
+        var settings = await _resolver.GetAsync(cancellationToken);
         var refreshToken = _protector.Unprotect(link.EncryptedRefreshToken);
         var token = await _oauth.RefreshAccessTokenAsync(refreshToken, cancellationToken);
 
-        var calendarId = await _calendar.EnsureCalendarAsync(token.AccessToken, _options.CalendarName, link.CalendarId, cancellationToken);
+        var calendarId = await _calendar.EnsureCalendarAsync(token.AccessToken, settings.CalendarName, link.CalendarId, cancellationToken);
         if (!string.Equals(calendarId, link.CalendarId, StringComparison.Ordinal))
         {
             link.CalendarId = calendarId;

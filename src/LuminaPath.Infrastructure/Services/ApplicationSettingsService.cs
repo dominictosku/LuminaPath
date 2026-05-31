@@ -25,13 +25,17 @@ public sealed class ApplicationSettingsService
     public const string BackgroundJobsJobHistoryRetentionDays = "BackgroundJobs.JobHistoryRetentionDays";
     public const string NewsEnabled = "News.Enabled";
     public const string NewsCustomRssUrl = "News.CustomRssUrl";
+    public const string GoogleCalendarClientId = "GoogleCalendar.ClientId";
+    public const string GoogleCalendarClientSecret = "GoogleCalendar.ClientSecret";
+    public const string GoogleCalendarName = "GoogleCalendar.CalendarName";
 
     private static readonly HashSet<string> SensitiveKeys = new(StringComparer.OrdinalIgnoreCase)
     {
         SteamApiKey,
         PsnBearerToken,
         MetadataIgdbClientSecret,
-        MetadataRawgApiKey
+        MetadataRawgApiKey,
+        GoogleCalendarClientSecret
     };
 
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
@@ -118,6 +122,29 @@ public sealed class ApplicationSettingsService
         await SaveValueAsync(MetadataIgdbClientId, settings.IgdbClientId.Trim(), cancellationToken);
         await SaveValueAsync(MetadataIgdbClientSecret, settings.IgdbClientSecret.Trim(), cancellationToken);
         await SaveValueAsync(MetadataRawgApiKey, settings.RawgApiKey.Trim(), cancellationToken);
+    }
+
+    public async Task<GoogleCalendarSettings> GetGoogleCalendarSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var settings = await context.ApplicationSettings
+            .AsNoTracking()
+            .Where(setting => setting.Key == GoogleCalendarClientId
+                || setting.Key == GoogleCalendarClientSecret
+                || setting.Key == GoogleCalendarName)
+            .ToDictionaryAsync(setting => setting.Key, setting => setting.Value, cancellationToken);
+
+        return new GoogleCalendarSettings(
+            settings.GetValueOrDefault(GoogleCalendarClientId) ?? string.Empty,
+            settings.GetValueOrDefault(GoogleCalendarClientSecret) ?? string.Empty,
+            settings.GetValueOrDefault(GoogleCalendarName) ?? string.Empty);
+    }
+
+    public async Task SaveGoogleCalendarSettingsAsync(GoogleCalendarSettings settings, CancellationToken cancellationToken = default)
+    {
+        await SaveValueAsync(GoogleCalendarClientId, settings.ClientId.Trim(), cancellationToken);
+        await SaveValueAsync(GoogleCalendarClientSecret, settings.ClientSecret.Trim(), cancellationToken);
+        await SaveValueAsync(GoogleCalendarName, settings.CalendarName.Trim(), cancellationToken);
     }
 
     public async Task<bool> GetNewsEnabledAsync(CancellationToken cancellationToken = default)
@@ -252,6 +279,11 @@ public sealed record GameMetadataSettings(
     string IgdbClientId,
     string IgdbClientSecret,
     string RawgApiKey);
+
+public sealed record GoogleCalendarSettings(
+    string ClientId,
+    string ClientSecret,
+    string CalendarName);
 
 public sealed record BackgroundJobStoredSettings(
     string ScheduledJobsEnabled,

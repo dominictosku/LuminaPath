@@ -23,12 +23,14 @@ public sealed class GoogleCalendarController : AuthorizedControllerBase
 {
     private readonly GoogleCalendarConnectionService _connection;
     private readonly GoogleCalendarSyncService _sync;
+    private readonly GoogleCalendarSettingsResolver _resolver;
     private readonly GoogleCalendarOptions _options;
     private readonly ILogger<GoogleCalendarController> _logger;
 
     public GoogleCalendarController(
         GoogleCalendarConnectionService connection,
         GoogleCalendarSyncService sync,
+        GoogleCalendarSettingsResolver resolver,
         IOptions<GoogleCalendarOptions> options,
         UserManager<LuminaUser> userManager,
         ILogger<GoogleCalendarController> logger)
@@ -36,16 +38,18 @@ public sealed class GoogleCalendarController : AuthorizedControllerBase
     {
         _connection = connection;
         _sync = sync;
+        _resolver = resolver;
         _options = options.Value;
         _logger = logger;
     }
 
     [HttpGet("connect")]
-    public IActionResult Connect([FromQuery] string? returnPath)
+    public async Task<IActionResult> Connect([FromQuery] string? returnPath, CancellationToken cancellationToken)
     {
         var safeReturn = ResolveReturnPath(returnPath);
 
-        if (!_options.IsConfigured)
+        var settings = await _resolver.GetAsync(cancellationToken);
+        if (!settings.IsConfigured)
         {
             return Redirect(BuildReturn(safeReturn, "unavailable"));
         }
@@ -56,7 +60,7 @@ public sealed class GoogleCalendarController : AuthorizedControllerBase
             return Redirect(BuildReturn(safeReturn, "error"));
         }
 
-        var url = _connection.BuildConnectUrl(userId, safeReturn, ResolveRedirectUri());
+        var url = await _connection.BuildConnectUrlAsync(userId, safeReturn, ResolveRedirectUri(), cancellationToken);
         return Redirect(url);
     }
 
@@ -100,10 +104,11 @@ public sealed class GoogleCalendarController : AuthorizedControllerBase
             return Unauthorized();
         }
 
+        var settings = await _resolver.GetAsync(cancellationToken);
         var status = await _connection.GetStatusAsync(userId, cancellationToken);
         return Ok(new
         {
-            configured = _options.IsConfigured,
+            configured = settings.IsConfigured,
             connected = status.Connected,
             email = status.Email,
             lastSyncedAt = status.LastSyncedAt,
@@ -114,7 +119,8 @@ public sealed class GoogleCalendarController : AuthorizedControllerBase
     [EnableRateLimiting(RateLimitPolicies.Imports)]
     public async Task<IActionResult> Sync(CancellationToken cancellationToken)
     {
-        if (!_options.IsConfigured)
+        var settings = await _resolver.GetAsync(cancellationToken);
+        if (!settings.IsConfigured)
         {
             return Problem("Google Calendar is not configured on the server.", statusCode: 503);
         }

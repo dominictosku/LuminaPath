@@ -11,12 +11,12 @@ public class GoogleCalendarConnectionServiceTests
     private const string RedirectUri = "https://app.example/api/integrations/google/callback";
 
     [Fact]
-    public void BuildConnectUrl_signsReturnPathInto_State_thatPeekRoundTrips()
+    public async Task BuildConnectUrl_signsReturnPathInto_State_thatPeekRoundTrips()
     {
         var oauth = new CapturingOAuth();
         var service = NewService(Test.Utilities.DbContext.TestDbContextOptions(), oauth);
 
-        service.BuildConnectUrl("user-1", "/Account/Manage/GoogleCalendar", RedirectUri);
+        await service.BuildConnectUrlAsync("user-1", "/Account/Manage/GoogleCalendar", RedirectUri, CancellationToken.None);
 
         Assert.Equal("/Account/Manage/GoogleCalendar", service.PeekReturnPath(oauth.LastState));
     }
@@ -27,7 +27,7 @@ public class GoogleCalendarConnectionServiceTests
         var options = Test.Utilities.DbContext.TestDbContextOptions();
         var oauth = new CapturingOAuth();
         var service = NewService(options, oauth);
-        service.BuildConnectUrl("user-1", "/settings", RedirectUri);
+        await service.BuildConnectUrlAsync("user-1", "/settings", RedirectUri, CancellationToken.None);
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.CompleteConnectionAsync("attacker", "code", oauth.LastState!, RedirectUri, CancellationToken.None));
@@ -42,7 +42,7 @@ public class GoogleCalendarConnectionServiceTests
         var options = Test.Utilities.DbContext.TestDbContextOptions();
         var oauth = new CapturingOAuth();
         var service = NewService(options, oauth);
-        service.BuildConnectUrl("user-1", "/settings", RedirectUri);
+        await service.BuildConnectUrlAsync("user-1", "/settings", RedirectUri, CancellationToken.None);
 
         await service.CompleteConnectionAsync("user-1", "code", oauth.LastState!, RedirectUri, CancellationToken.None);
 
@@ -66,10 +66,10 @@ public class GoogleCalendarConnectionServiceTests
     {
         public string? LastState { get; private set; }
 
-        public string BuildAuthorizationUrl(string redirectUri, string state)
+        public Task<string> BuildAuthorizationUrlAsync(string redirectUri, string state, CancellationToken ct)
         {
             LastState = state;
-            return $"https://accounts.google/o/oauth2?state={state}";
+            return Task.FromResult($"https://accounts.google/o/oauth2?state={state}");
         }
 
         public Task<GoogleTokenResult> ExchangeCodeAsync(string code, string redirectUri, CancellationToken ct)

@@ -2,6 +2,7 @@ using LuminaPath.Core.Enums;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.ThirdParty;
 using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -120,12 +121,15 @@ public class GoogleCalendarSyncServiceTests
             new FakeOAuth(),
             calendar,
             new IdentityTokenProtector(),
-            Options.Create(new GoogleCalendarOptions { CalendarName = "LuminaPath" }),
+            new GoogleCalendarSettingsResolver(
+                Options.Create(new GoogleCalendarOptions { CalendarName = "LuminaPath" }),
+                new ApplicationSettingsService(new TestDbContextFactory(options))),
             () => Now);
 
     private sealed class FakeOAuth : IGoogleOAuthClient
     {
-        public string BuildAuthorizationUrl(string redirectUri, string state) => "https://auth.example";
+        public Task<string> BuildAuthorizationUrlAsync(string redirectUri, string state, CancellationToken ct)
+            => Task.FromResult("https://auth.example");
         public Task<GoogleTokenResult> ExchangeCodeAsync(string code, string redirectUri, CancellationToken ct)
             => Task.FromResult(new GoogleTokenResult("access", "refresh", "user@example.com"));
         public Task<GoogleTokenResult> RefreshAccessTokenAsync(string refreshToken, CancellationToken ct)

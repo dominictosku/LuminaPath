@@ -1,7 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Options;
 
 namespace LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar;
 
@@ -12,7 +11,7 @@ namespace LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar;
 /// </summary>
 public interface IGoogleOAuthClient
 {
-    string BuildAuthorizationUrl(string redirectUri, string state);
+    Task<string> BuildAuthorizationUrlAsync(string redirectUri, string state, CancellationToken cancellationToken);
     Task<GoogleTokenResult> ExchangeCodeAsync(string code, string redirectUri, CancellationToken cancellationToken);
     Task<GoogleTokenResult> RefreshAccessTokenAsync(string refreshToken, CancellationToken cancellationToken);
     Task RevokeAsync(string token, CancellationToken cancellationToken);
@@ -21,22 +20,23 @@ public interface IGoogleOAuthClient
 public sealed class GoogleOAuthClient : IGoogleOAuthClient
 {
     private readonly HttpClient _http;
-    private readonly GoogleCalendarOptions _options;
+    private readonly GoogleCalendarSettingsResolver _resolver;
 
-    public GoogleOAuthClient(HttpClient http, IOptions<GoogleCalendarOptions> options)
+    public GoogleOAuthClient(HttpClient http, GoogleCalendarSettingsResolver resolver)
     {
         _http = http;
-        _options = options.Value;
+        _resolver = resolver;
     }
 
-    public string BuildAuthorizationUrl(string redirectUri, string state)
+    public async Task<string> BuildAuthorizationUrlAsync(string redirectUri, string state, CancellationToken cancellationToken)
     {
+        var settings = await _resolver.GetAsync(cancellationToken);
         var query = new Dictionary<string, string?>
         {
-            ["client_id"] = _options.ClientId,
+            ["client_id"] = settings.ClientId,
             ["redirect_uri"] = redirectUri,
             ["response_type"] = "code",
-            ["scope"] = _options.Scope,
+            ["scope"] = settings.Scope,
             ["access_type"] = "offline",
             ["include_granted_scopes"] = "true",
             // Force a refresh token even on re-consent.
@@ -48,15 +48,16 @@ public sealed class GoogleOAuthClient : IGoogleOAuthClient
             .Where(kv => !string.IsNullOrEmpty(kv.Value))
             .Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value!)}"));
 
-        return $"{_options.AuthorizationEndpoint}?{encoded}";
+        return $"{settings.AuthorizationEndpoint}?{encoded}";
     }
 
     public async Task<GoogleTokenResult> ExchangeCodeAsync(string code, string redirectUri, CancellationToken cancellationToken)
     {
-        using var response = await PostFormAsync(_options.TokenEndpoint, new Dictionary<string, string>
+        var settings = await _resolver.GetAsync(cancellationToken);
+        using var response = await PostFormAsync(settings.TokenEndpoint, new Dictionary<string, string>
         {
-            ["client_id"] = _options.ClientId ?? string.Empty,
-            ["client_secret"] = _options.ClientSecret ?? string.Empty,
+            ["client_id"] = settings.ClientId ?? string.Empty,
+            ["client_secret"] = settings.ClientSecret ?? string.Empty,
             ["code"] = code,
             ["grant_type"] = "authorization_code",
             ["redirect_uri"] = redirectUri,
@@ -74,10 +75,11 @@ public sealed class GoogleOAuthClient : IGoogleOAuthClient
 
     public async Task<GoogleTokenResult> RefreshAccessTokenAsync(string refreshToken, CancellationToken cancellationToken)
     {
-        using var response = await PostFormAsync(_options.TokenEndpoint, new Dictionary<string, string>
+        var settings = await _resolver.GetAsync(cancellationToken);
+        using var response = await PostFormAsync(settings.TokenEndpoint, new Dictionary<string, string>
         {
-            ["client_id"] = _options.ClientId ?? string.Empty,
-            ["client_secret"] = _options.ClientSecret ?? string.Empty,
+            ["client_id"] = settings.ClientId ?? string.Empty,
+            ["client_secret"] = settings.ClientSecret ?? string.Empty,
             ["refresh_token"] = refreshToken,
             ["grant_type"] = "refresh_token",
         }, cancellationToken);
@@ -95,7 +97,8 @@ public sealed class GoogleOAuthClient : IGoogleOAuthClient
 
     public async Task RevokeAsync(string token, CancellationToken cancellationToken)
     {
-        using var response = await PostFormAsync(_options.RevokeEndpoint, new Dictionary<string, string>
+        var settings = await _resolver.GetAsync(cancellationToken);
+        using var response = await PostFormAsync(settings.RevokeEndpoint, new Dictionary<string, string>
         {
             ["token"] = token,
         }, cancellationToken);

@@ -309,11 +309,19 @@ link from the Blazor admin on a different origin, add that origin's
 `/api/integrations/google/callback` too (Google allows multiple redirect URIs),
 or pin a single one with `GoogleCalendar__RedirectUri`.
 
+The client id, client secret, and calendar name can be set **without an
+environment variable or restart** from the Blazor admin **Settings → Google
+Calendar** panel. Stored values are kept in `ApplicationSettings` (the secret as
+plaintext, matching the IGDB client secret convention) and **override** the
+environment variables below; the env vars remain as the fallback/default. The
+integration is considered configured when an effective client id *and* secret
+are present from either source.
+
 | Variable | Default | Notes |
 |---|---|---|
-| `GOOGLE_CLIENT_ID` | empty | OAuth client id. Setting this enables the integration. |
-| `GOOGLE_CLIENT_SECRET` | empty | OAuth client secret (or `GoogleCalendar__ClientSecretFile`). |
-| `GoogleCalendar__CalendarName` | `LuminaPath` | Name of the dedicated calendar created on first sync. |
+| `GOOGLE_CLIENT_ID` | empty | OAuth client id. Setting this (or the admin Settings panel) enables the integration. |
+| `GOOGLE_CLIENT_SECRET` | empty | OAuth client secret (or `GoogleCalendar__ClientSecretFile`, or the admin Settings panel). |
+| `GoogleCalendar__CalendarName` | `LuminaPath` | Name of the dedicated calendar created on first sync (also editable in the admin Settings panel). |
 | `GoogleCalendar__RedirectUri` | derived from request | Override only if the auto-derived `{scheme}://{host}/api/integrations/google/callback` is wrong (e.g. local dev without the proxy). |
 | `GoogleCalendar__SettingsReturnPath` | `/settings` | SPA path the callback returns to. |
 
