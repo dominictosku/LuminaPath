@@ -45,9 +45,14 @@ describe('QuestBoardPage', () => {
     fixture = TestBed.createComponent(QuestBoardPage);
   });
 
-  it('creates the shell and loads the board via the store', () => {
+  it('creates the shell and loads the board on view enter', () => {
     fixture.detectChanges();
     expect(fixture.componentInstance).toBeTruthy();
+    // The board loads on ionViewWillEnter (not ngOnInit), so it refreshes
+    // every time the user returns to the kept-alive page.
+    expect(questBoardService.getBoard).not.toHaveBeenCalled();
+
+    fixture.componentInstance.ionViewWillEnter();
     expect(questBoardService.getBoard).toHaveBeenCalled();
   });
 });

@@ -871,8 +871,12 @@ export const QuestBoardStore = signalStore(
   }),
   withHooks({
     onInit(store) {
+      // Only the local view preferences load once here. The board data is
+      // (re)loaded by the page on every `ionViewWillEnter`, because Ionic
+      // keeps this page alive in the router outlet — so quests created
+      // elsewhere (e.g. on a game's detail page) would otherwise never
+      // appear until a full reload.
       store.loadPrefs();
-      void store.load();
     },
     onDestroy(store) {
       store.clearDeleteTimers();

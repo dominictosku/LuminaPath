@@ -73,6 +73,13 @@ export class QuestBoardPage implements OnInit, OnDestroy {
     });
   }
 
+  // Ionic keeps this page alive in the router outlet, so ngOnInit only runs
+  // once. Reload the board on every entry so quests created on other pages
+  // (e.g. a game's detail page) appear when the user returns here.
+  ionViewWillEnter(): void {
+    void this.store.load();
+  }
+
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
   }
