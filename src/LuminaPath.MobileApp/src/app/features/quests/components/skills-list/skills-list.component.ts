@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { IonButton, IonIcon, IonProgressBar } from '@ionic/angular/standalone';
 
 import { QuestSkill } from '../../services/quest-board.service';
-
-type SkillNodeState = 'completed' | 'available' | 'locked';
+import type { SkillNodeState } from '../../state/quest-board.state';
+import { getSkillNodeState } from '../../state/quest-board.store-helpers';
 
 export type SkillNodeAction = { skill: QuestSkill; nodeIndex: number };
 export type SkillNodeQuestAction = { skill: QuestSkill; node: string };
@@ -57,8 +57,7 @@ export class SkillsListComponent {
   }
 
   skillNodeState(skill: QuestSkill, nodeIndex: number): SkillNodeState {
-    if (skill.unlockedNodes.includes(nodeIndex)) return 'completed';
-    return nodeIndex === this.nextNodeIndex(skill) ? 'available' : 'locked';
+    return getSkillNodeState(skill, nodeIndex);
   }
 
   /** Active = not-yet-completed quests linked to this skill. Provided by parent

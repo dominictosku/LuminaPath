@@ -43,8 +43,25 @@ import {
   DELETE_GRACE_MS,
   initialState,
   nextTemporaryId,
-  SkillNodeState,
 } from './quest-board.state';
+import {
+  buildEditedQuest,
+  buildOptimisticQuest,
+  buildOptimisticSubtask,
+  buildQuestCreateInput,
+  buildQuestDropListIds,
+  buildQuestEditDraft,
+  buildQuestUpdateFromDraft,
+  collectKnownSectionsFromFolders,
+  gameNameFor,
+  getSkillNodeState,
+  groupFoldersBySection,
+  parseQuestTags,
+  replaceQuest,
+  replaceSkill,
+  skillNameFor,
+  QuestFolderGroup,
+} from './quest-board.store-helpers';
 
 /**
  * Single source of truth for the quest board: persisted board data (quests,
@@ -91,45 +108,11 @@ export const QuestBoardStore = signalStore(
     ),
     skillTreeBranches: computed<SkillTreeBranch[]>(() => questSkillsToBranches(store.skills())),
     skillTreeUnlockedNodeIds: computed<string[]>(() => unlockedNodeIdsFor(store.skills())),
-    /**
-     * Folders grouped by SectionName (case-insensitive). The unlabelled
-     * group sorts first; within a section, folders keep server SortOrder.
-     */
-    folderGroups: computed<{ section: string | null; folders: QuestFolder[] }[]>(() => {
-      const map = new Map<string, { section: string | null; folders: QuestFolder[] }>();
-      const orderedKeys: string[] = [];
-      for (const folder of store.folders()) {
-        const key = (folder.sectionName ?? '').trim().toLowerCase();
-        if (!map.has(key)) {
-          map.set(key, { section: folder.sectionName ?? null, folders: [] });
-          orderedKeys.push(key);
-        }
-        map.get(key)!.folders.push(folder);
-      }
-      orderedKeys.sort((a, b) => (a === '' ? -1 : b === '' ? 1 : 0));
-      return orderedKeys.map((key) => map.get(key)!);
-    }),
-    /** Distinct, first-seen section names — chip suggestions for the folder modal. */
-    knownSections: computed<string[]>(() => {
-      const seen = new Set<string>();
-      const out: string[] = [];
-      for (const folder of store.folders()) {
-        const name = (folder.sectionName ?? '').trim();
-        if (!name) continue;
-        const key = name.toLowerCase();
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push(name);
-      }
-      return out;
-    }),
+    folderGroups: computed<QuestFolderGroup[]>(() => groupFoldersBySection(store.folders())),
+    knownSections: computed<string[]>(() => collectKnownSectionsFromFolders(store.folders())),
   })),
   withComputed((store) => ({
-    /** CDK drop-list ids: one per folder plus the Unfiled bucket. */
-    questDropListIds: computed<string[]>(() => [
-      ...store.folders().map((folder) => `quest-drop-folder-${folder.id}`),
-      'quest-drop-unfiled',
-    ]),
+    questDropListIds: computed<string[]>(() => buildQuestDropListIds(store.folders())),
   })),
   withMethods((store) => {
     const service = inject(QuestBoardService);
@@ -143,18 +126,16 @@ export const QuestBoardStore = signalStore(
 
     // ---- internal helpers -------------------------------------------------
 
-    const gameNameFor = (myGameId: number): string =>
-      store.library().find((game) => game.myGameId === myGameId)?.gameName ?? 'Unknown game';
+    const gameNameForId = (myGameId: number): string => gameNameFor(store.library(), myGameId);
 
-    const skillNameFor = (skillId: number): string =>
-      store.skills().find((skill) => skill.id === skillId)?.name ?? 'Skill';
+    const skillNameForId = (skillId: number): string => skillNameFor(store.skills(), skillId);
 
-    const replaceQuest = (id: number, updated: Quest): void => {
-      patchState(store, { quests: store.quests().map((quest) => (quest.id === id ? updated : quest)) });
+    const replaceQuestInStore = (id: number, updated: Quest): void => {
+      patchState(store, { quests: replaceQuest(store.quests(), id, updated) });
     };
 
-    const replaceSkill = (id: number, updated: QuestSkill): void => {
-      patchState(store, { skills: store.skills().map((skill) => (skill.id === id ? updated : skill)) });
+    const replaceSkillInStore = (id: number, updated: QuestSkill): void => {
+      patchState(store, { skills: replaceSkill(store.skills(), id, updated) });
     };
 
     const savePrefs = (): void => {
@@ -193,12 +174,6 @@ export const QuestBoardStore = signalStore(
       if (fresh.length) {
         feedback.showAchievementToast(fresh[fresh.length - 1]);
       }
-    };
-
-    const skillNodeState = (skill: QuestSkill, nodeIndex: number): SkillNodeState => {
-      if (skill.unlockedNodes.includes(nodeIndex)) return 'completed';
-      const next = skill.nodes.findIndex((_, index) => !skill.unlockedNodes.includes(index));
-      return nodeIndex === next ? 'available' : 'locked';
     };
 
     const persistSkills = async (): Promise<boolean> => {
@@ -259,18 +234,7 @@ export const QuestBoardStore = signalStore(
       }
       patchState(store, {
         expandedQuestId: quest.id,
-        editDraft: {
-          title: quest.title,
-          notes: quest.notes ?? '',
-          type: quest.type,
-          priority: quest.priority,
-          recurrence: quest.recurrence,
-          dueDate: quest.dueDate ? toISODate(new Date(quest.dueDate)) : null,
-          tags: (quest.tags ?? []).join(', '),
-          myGameId: quest.myGameId ?? null,
-          skillId: quest.skillId ?? null,
-          folderId: quest.folderId ?? null,
-        },
+        editDraft: buildQuestEditDraft(quest),
       });
     };
 
@@ -289,7 +253,7 @@ export const QuestBoardStore = signalStore(
 
     const scheduleQuest = async (quest: Quest, dueDate: string | null, label: string): Promise<void> => {
       const previousDue = quest.dueDate ?? null;
-      replaceQuest(quest.id, { ...quest, dueDate });
+      replaceQuestInStore(quest.id, { ...quest, dueDate });
       if (store.expandedQuestId() === quest.id && store.editDraft()) {
         patchState(store, { editDraft: { ...store.editDraft()!, dueDate } });
       }
@@ -298,11 +262,11 @@ export const QuestBoardStore = signalStore(
           dueDate: dueDate ?? undefined,
           clearDueDate: dueDate === null,
         });
-        replaceQuest(quest.id, mutation.quest);
+        replaceQuestInStore(quest.id, mutation.quest);
         applyMutationMeta(mutation);
         feedback.showToast(label);
       } catch {
-        replaceQuest(quest.id, quest);
+        replaceQuestInStore(quest.id, quest);
         if (store.expandedQuestId() === quest.id && store.editDraft()) {
           patchState(store, { editDraft: { ...store.editDraft()!, dueDate: previousDue } });
         }
@@ -332,11 +296,11 @@ export const QuestBoardStore = signalStore(
 
     const unlockNode = async (skill: QuestSkill, nodeIndex: number): Promise<void> => {
       if (skill.unlockedNodes.includes(nodeIndex)) return;
-      if (skillNodeState(skill, nodeIndex) === 'locked') {
+      if (getSkillNodeState(skill, nodeIndex) === 'locked') {
         feedback.showToast('Unlock the previous node first');
         return;
       }
-      replaceSkill(skill.id, { ...skill, unlockedNodes: [...skill.unlockedNodes, nodeIndex], xp: skill.xp + 25 });
+      replaceSkillInStore(skill.id, { ...skill, unlockedNodes: [...skill.unlockedNodes, nodeIndex], xp: skill.xp + 25 });
       patchState(store, { xp: store.xp() + 25 });
       feedback.showToast(`${skill.nodes[nodeIndex]} unlocked`);
       await persistSkills();
@@ -444,39 +408,18 @@ export const QuestBoardStore = signalStore(
 
         const tempId = nextTemporaryId();
         const now = new Date().toISOString();
-        const optimistic: Quest = {
-          id: tempId,
-          title: payload.title,
-          notes: null,
-          type: payload.type,
-          priority: payload.priority,
-          recurrence: payload.recurrence,
-          dueDate: payload.dueDate ?? null,
-          tags: [],
-          completed: false,
-          createdAt: now,
-          updatedAt: now,
-          rewardXp: 0,
-          sortOrder: 0,
-          myGameId: payload.myGameId ?? null,
-          gameName: payload.myGameId == null ? null : gameNameFor(payload.myGameId),
-          skillId: payload.skillId ?? null,
-          skillName: payload.skillId == null ? null : skillNameFor(payload.skillId),
-          subtasks: [],
-        };
+        const optimistic = buildOptimisticQuest(
+          payload,
+          tempId,
+          now,
+          payload.myGameId == null ? null : gameNameForId(payload.myGameId),
+          payload.skillId == null ? null : skillNameForId(payload.skillId),
+        );
         patchState(store, { quests: [optimistic, ...store.quests()] });
 
         try {
-          const mutation = await service.createQuest({
-            title: payload.title,
-            type: payload.type,
-            priority: payload.priority,
-            recurrence: payload.recurrence,
-            dueDate: payload.dueDate ?? null,
-            myGameId: payload.myGameId ?? null,
-            skillId: payload.skillId ?? null,
-          });
-          replaceQuest(tempId, mutation.quest);
+          const mutation = await service.createQuest(buildQuestCreateInput(payload));
+          replaceQuestInStore(tempId, mutation.quest);
           applyMutationMeta(mutation);
           savePrefs();
         } catch {
@@ -487,7 +430,7 @@ export const QuestBoardStore = signalStore(
 
       async toggleQuest(quest: Quest): Promise<void> {
         const completed = !quest.completed;
-        replaceQuest(quest.id, {
+        replaceQuestInStore(quest.id, {
           ...quest,
           completed,
           completedAt: completed ? new Date().toISOString() : undefined,
@@ -495,7 +438,7 @@ export const QuestBoardStore = signalStore(
 
         try {
           const mutation = await service.updateQuest(quest.id, { completed });
-          replaceQuest(quest.id, mutation.quest);
+          replaceQuestInStore(quest.id, mutation.quest);
           if (mutation.spawnedQuest) {
             patchState(store, { quests: [mutation.spawnedQuest, ...store.quests()] });
           }
@@ -512,7 +455,7 @@ export const QuestBoardStore = signalStore(
             feedback.showToast(parts.join(' · '));
           }
         } catch {
-          replaceQuest(quest.id, quest);
+          replaceQuestInStore(quest.id, quest);
           feedback.showToast('Could not update quest');
         }
       },
@@ -523,53 +466,30 @@ export const QuestBoardStore = signalStore(
         const title = draft.title.trim();
         if (!title) return;
 
-        const tags = draft.tags
-          .split(',')
-          .map((tag) => tag.trim())
-          .filter((tag) => tag.length > 0);
+        const tags = parseQuestTags(draft.tags);
         const draftFolder = draft.folderId == null ? null : store.folders().find((f) => f.id === draft.folderId) ?? null;
         const notes = draft.notes.trim() ? draft.notes.trim() : null;
 
-        replaceQuest(quest.id, {
-          ...quest,
-          title,
-          notes,
-          type: draft.type,
-          priority: draft.priority,
-          recurrence: draft.recurrence,
-          dueDate: draft.dueDate,
-          tags,
-          myGameId: draft.myGameId ?? null,
-          gameName: draft.myGameId == null ? null : gameNameFor(draft.myGameId),
-          skillId: draft.skillId ?? null,
-          skillName: draft.skillId == null ? null : skillNameFor(draft.skillId),
-          folderId: draft.folderId ?? null,
-          folderName: draftFolder?.name ?? null,
-          folderEmoji: draftFolder?.emoji ?? null,
-        });
+        replaceQuestInStore(
+          quest.id,
+          buildEditedQuest(
+            quest,
+            draft,
+            tags,
+            notes,
+            draft.myGameId == null ? null : gameNameForId(draft.myGameId),
+            draft.skillId == null ? null : skillNameForId(draft.skillId),
+            draftFolder,
+          ),
+        );
         patchState(store, { expandedQuestId: null, editDraft: null });
 
         try {
-          const mutation = await service.updateQuest(quest.id, {
-            title,
-            notes,
-            type: draft.type,
-            priority: draft.priority,
-            recurrence: draft.recurrence,
-            dueDate: draft.dueDate,
-            clearDueDate: draft.dueDate == null,
-            tags,
-            myGameId: draft.myGameId ?? undefined,
-            clearMyGame: draft.myGameId == null,
-            skillId: draft.skillId ?? undefined,
-            clearSkill: draft.skillId == null,
-            folderId: draft.folderId ?? undefined,
-            clearFolder: draft.folderId == null,
-          });
-          replaceQuest(quest.id, mutation.quest);
+          const mutation = await service.updateQuest(quest.id, buildQuestUpdateFromDraft(draft, tags, notes));
+          replaceQuestInStore(quest.id, mutation.quest);
           applyMutationMeta(mutation);
         } catch {
-          replaceQuest(quest.id, quest);
+          replaceQuestInStore(quest.id, quest);
           feedback.showToast('Could not save changes');
         }
       },
@@ -639,21 +559,16 @@ export const QuestBoardStore = signalStore(
         const draft = (store.newSubtaskTitle()[quest.id] ?? '').trim();
         if (!draft) return;
 
-        const optimistic: QuestSubtask = {
-          id: nextTemporaryId(),
-          title: draft,
-          completed: false,
-          sortOrder: quest.subtasks.length,
-        };
-        replaceQuest(quest.id, { ...quest, subtasks: [...quest.subtasks, optimistic] });
+        const optimistic = buildOptimisticSubtask(nextTemporaryId(), draft, quest.subtasks.length);
+        replaceQuestInStore(quest.id, { ...quest, subtasks: [...quest.subtasks, optimistic] });
         patchState(store, { newSubtaskTitle: { ...store.newSubtaskTitle(), [quest.id]: '' } });
 
         try {
           const mutation = await service.addSubtask(quest.id, draft);
-          replaceQuest(quest.id, mutation.quest);
+          replaceQuestInStore(quest.id, mutation.quest);
           applyMutationMeta(mutation);
         } catch {
-          replaceQuest(quest.id, quest);
+          replaceQuestInStore(quest.id, quest);
           feedback.showToast('Could not add subtask');
         }
       },
@@ -664,33 +579,33 @@ export const QuestBoardStore = signalStore(
           completed,
           completedAt: completed ? new Date().toISOString() : undefined,
         };
-        replaceQuest(quest.id, {
+        replaceQuestInStore(quest.id, {
           ...quest,
           subtasks: quest.subtasks.map((s) => (s.id === subtask.id ? updatedSubtask : s)),
         });
 
         try {
           const mutation = await service.updateSubtask(quest.id, subtask.id, { completed });
-          replaceQuest(quest.id, mutation.quest);
+          replaceQuestInStore(quest.id, mutation.quest);
           applyMutationMeta(mutation);
         } catch {
-          replaceQuest(quest.id, quest);
+          replaceQuestInStore(quest.id, quest);
           feedback.showToast('Could not update subtask');
         }
       },
       async deleteSubtask({ quest, subtask }: { quest: Quest; subtask: QuestSubtask }): Promise<void> {
-        replaceQuest(quest.id, { ...quest, subtasks: quest.subtasks.filter((s) => s.id !== subtask.id) });
+        replaceQuestInStore(quest.id, { ...quest, subtasks: quest.subtasks.filter((s) => s.id !== subtask.id) });
         try {
           await service.deleteSubtask(quest.id, subtask.id);
         } catch {
-          replaceQuest(quest.id, quest);
+          replaceQuestInStore(quest.id, quest);
           feedback.showToast('Could not delete subtask');
         }
       },
 
       // ===== skills ========================================================
       async trainSkill(skill: QuestSkill): Promise<void> {
-        replaceSkill(skill.id, { ...skill, xp: skill.xp + 40 });
+        replaceSkillInStore(skill.id, { ...skill, xp: skill.xp + 40 });
         patchState(store, { xp: store.xp() + 15 });
         feedback.showToast(`${skill.name} training complete`);
         await persistSkills();
@@ -705,7 +620,7 @@ export const QuestBoardStore = signalStore(
         if (editingSkillId !== null) {
           const skill = store.skills().find((item) => item.id === editingSkillId);
           if (!skill) return;
-          replaceSkill(editingSkillId, { ...skill, name, icon: form.icon, color: form.color });
+          replaceSkillInStore(editingSkillId, { ...skill, name, icon: form.icon, color: form.color });
           feedback.showToast(`${name} updated`);
           await persistSkills();
           return;
@@ -734,7 +649,7 @@ export const QuestBoardStore = signalStore(
         const skill = store.skills().find((item) => item.id === skillId);
         const name = nodeName.trim();
         if (!skill || !name) return;
-        replaceSkill(skillId, { ...skill, nodes: [...skill.nodes, name] });
+        replaceSkillInStore(skillId, { ...skill, nodes: [...skill.nodes, name] });
         feedback.showToast(`${name} added`);
         await persistSkills();
       },
@@ -825,7 +740,7 @@ export const QuestBoardStore = signalStore(
         const previousFolderId = quest.folderId ?? null;
         if (previousFolderId === folderId) return;
         const folder = folderId == null ? null : store.folders().find((f) => f.id === folderId) ?? null;
-        replaceQuest(quest.id, {
+        replaceQuestInStore(quest.id, {
           ...quest,
           folderId,
           folderName: folder?.name ?? null,
@@ -836,10 +751,10 @@ export const QuestBoardStore = signalStore(
             folderId: folderId ?? undefined,
             clearFolder: folderId == null,
           });
-          replaceQuest(quest.id, mutation.quest);
+          replaceQuestInStore(quest.id, mutation.quest);
           applyMutationMeta(mutation);
         } catch {
-          replaceQuest(quest.id, quest);
+          replaceQuestInStore(quest.id, quest);
           feedback.showToast('Could not move quest');
         }
       },
