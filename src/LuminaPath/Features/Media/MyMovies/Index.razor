@@ -227,10 +227,10 @@ else
         return movies;
     }
 
-    public override async Task<MyMovie> GetById(int id) => await ModelService.GetById(id, ModelService.Includes);
+    public override async Task<MyMovie> GetById(int id) => await ModelService.GetById(id, User?.Id ?? throw new InvalidOperationException("User not loaded."), ModelService.Includes);
     public override async Task Save(MyMovie entity) => await ModelService.PostAsync(entity, User);
     public override async Task Update(MyMovie entity) => await ModelService.PutAsync(entity, User);
-    public override async Task DeleteMedia(MyMovie entity) => await ModelService.DeleteAsync(entity.Id);
+    public override async Task DeleteMedia(MyMovie entity) => await ModelService.DeleteAsync(entity.Id, User);
 
     private string Cover(MyMovie? myMovie)
     {

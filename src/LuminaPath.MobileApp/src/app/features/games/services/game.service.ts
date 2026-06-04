@@ -15,21 +15,12 @@ export class GameService extends ApiService<Game> {
     const apiEndpoint = inject(ApiEndpointService);
 
     super(httpClient, apiEndpoint, 'games');
-  
+
     this.httpClient = httpClient;
   }
 
   public labels = ['Title', 'Description', 'Status', 'Release'];
   Id: string = 'games';
-
-  createMedia(media: Game, endPoint: string) {
-    if (media.id == 0) {
-      this.post(media);
-    } else {
-      this.put(media.id, media);
-    }
-    return;
-  }
 
   getNews(gameId: number, refresh = false) {
     const params = refresh ? new HttpParams().set('refresh', 'true') : undefined;

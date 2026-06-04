@@ -133,7 +133,7 @@ public partial class Index
 
     public override async Task<MyGame> GetById(int id)
     {
-        return await ModelService.GetById(id, ModelService.Includes);
+        return await ModelService.GetById(id, User?.Id ?? throw new InvalidOperationException("User not loaded."), ModelService.Includes);
     }
 
     public override async Task Save(MyGame entity)
@@ -148,7 +148,7 @@ public partial class Index
 
     public override async Task DeleteMedia(MyGame entity)
     {
-        await ModelService.DeleteAsync(entity.Id);
+        await ModelService.DeleteAsync(entity.Id, User);
     }
 
     protected override string GetDeleteTitle(MyGame myGame) => $"Remove \"{myGame.Game?.Name ?? "this game"}\" from your library?";

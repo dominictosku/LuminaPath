@@ -9,7 +9,7 @@ Once the API is running (see [local setup](../05-runbooks/local-setup.md)):
 | Surface | URL |
 |---|---|
 | Swagger UI (interactive) | <http://localhost:8080/swagger> |
-| OpenAPI JSON | <http://localhost:8080/swagger/v1/swagger.json> |
+| OpenAPI JSON | <http://localhost:8080/openapi/v1.json> |
 
 The launch profile already opens `/swagger` when you `dotnet run` the API project locally.
 
@@ -41,7 +41,7 @@ If you want a typed TypeScript client for the mobile app, generate from the Open
 
 ```bash
 npx @openapitools/openapi-generator-cli generate \
-  -i http://localhost:8080/swagger/v1/swagger.json \
+  -i http://localhost:8080/openapi/v1.json \
   -g typescript-angular \
   -o src/LuminaPath.MobileApp/src/app/api-client
 ```

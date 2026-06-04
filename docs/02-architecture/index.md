@@ -39,7 +39,6 @@ LuminaPath/
 │   ├── LuminaPath.Core/           # Domain models, DTOs, mappings
 │   ├── LuminaPath.Infrastructure/ # EF Core, repositories, integrations
 │   ├── LuminaPath.MobileApp/      # Angular + Ionic frontend
-│   ├── LuminaPath.UI.Shared/      # Shared Razor components
 │   └── LuminaPath.Tests/          # Backend unit + integration tests
 ├── docker-compose.yml             # API + DB + Redis (production-shape)
 ├── docker-compose.frontend.yml    # Adds the Angular dev server

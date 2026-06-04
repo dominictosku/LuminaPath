@@ -45,8 +45,16 @@ namespace LuminaPath.Infrastructure.Controllers.Base
                 return LoginRequired();
             }
 
-            var result = await _service.GetById(id, Includes);
-            if (result.LuminaUserId != user.Id)
+            TEntity result;
+            try
+            {
+                result = await _service.GetById(id, user.Id, Includes);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (ArgumentNullException)
             {
                 return NotFound();
             }
@@ -85,25 +93,15 @@ namespace LuminaPath.Infrastructure.Controllers.Base
                 return LoginRequired();
             }
 
-            // IDOR guard: load the existing row and confirm it belongs
-            // to the caller BEFORE we hand the mapped entity to the
-            // service. Without this check, the service would just stamp
-            // LuminaUserId = current user and update — meaning anyone
-            // could PUT /api/<resource>/<id> against another user's
-            // record and silently take it over. Returning NotFound
-            // (rather than Forbid) keeps the existence of the row
-            // opaque to outsiders.
-            TEntity existing;
             try
             {
-                existing = await _service.GetById(id);
+                _ = await _service.GetById(id, user.Id);
             }
             catch (KeyNotFoundException)
             {
                 return NotFound();
             }
-
-            if (existing.LuminaUserId != user.Id)
+            catch (ArgumentNullException)
             {
                 return NotFound();
             }
@@ -124,22 +122,20 @@ namespace LuminaPath.Infrastructure.Controllers.Base
                 return LoginRequired();
             }
 
-            TEntity entity;
             try
             {
-                entity = await _service.GetById(id);
+                _ = await _service.GetById(id, user.Id);
             }
             catch (KeyNotFoundException)
             {
                 return NotFound(new FailedResult("Entry not found"));
             }
-
-            if (entity.LuminaUserId != user.Id)
+            catch (ArgumentNullException)
             {
-                return NotFound();
+                return NotFound(new FailedResult("Entry not found"));
             }
 
-            var result = await _service.DeleteAsync(id);
+            var result = await _service.DeleteAsync(id, user);
             return result.Match<IActionResult>(
                 m => Ok(),
                 f => NotFound(f));

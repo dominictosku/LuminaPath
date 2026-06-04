@@ -232,6 +232,54 @@ namespace Test.Services
         }
 
         [Fact]
+        public async Task PutAsync_ReturnsFailure_WhenEntryBelongsToAnotherUser()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string ownerId = "owner";
+            const string otherUserId = "other-user";
+            int myGameId;
+            int gameId;
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.AddRange(NewUser(ownerId), NewUser(otherUserId));
+                var game = new Game { Name = "Disco Elysium", Description = "RPG" };
+                dbContext.Games.Add(game);
+                var myGame = new MyGame
+                {
+                    Game = game,
+                    LuminaUserId = ownerId,
+                    Status = GameStatus.Planned,
+                    Priority = 1
+                };
+                dbContext.MyGames.Add(myGame);
+                await dbContext.SaveChangesAsync();
+                myGameId = myGame.Id;
+                gameId = game.Id;
+            }
+
+            var service = new MyGameService(new TestDbContextFactory(options), new ObjectMapper());
+
+            var result = await service.PutAsync(
+                new MyGame
+                {
+                    Id = myGameId,
+                    GameId = gameId,
+                    Status = GameStatus.Completed,
+                    Priority = 5
+                },
+                new LuminaUser { Id = otherUserId });
+
+            Assert.False(result.IsSuccess);
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            var unchanged = await assertContext.MyGames.SingleAsync(m => m.Id == myGameId);
+            Assert.Equal(ownerId, unchanged.LuminaUserId);
+            Assert.Equal(GameStatus.Planned, unchanged.Status);
+            Assert.Equal(1, unchanged.Priority);
+        }
+
+        [Fact]
         public async Task DeleteAsync_RemovesEntry_WhenIdExists()
         {
             var options = Utilities.DbContext.TestDbContextOptions();
@@ -257,7 +305,7 @@ namespace Test.Services
 
             var service = new MyGameService(new TestDbContextFactory(options), new ObjectMapper());
 
-            var result = await service.DeleteAsync(myGameId);
+            var result = await service.DeleteAsync(myGameId, new LuminaUser { Id = userId });
 
             Assert.True(result.IsSuccess);
 
@@ -271,7 +319,7 @@ namespace Test.Services
             var options = Utilities.DbContext.TestDbContextOptions();
             var service = new MyGameService(new TestDbContextFactory(options), new ObjectMapper());
 
-            var result = await service.DeleteAsync(null);
+            var result = await service.DeleteAsync(null, new LuminaUser { Id = "user-1" });
 
             Assert.False(result.IsSuccess);
         }
@@ -282,9 +330,45 @@ namespace Test.Services
             var options = Utilities.DbContext.TestDbContextOptions();
             var service = new MyGameService(new TestDbContextFactory(options), new ObjectMapper());
 
-            var result = await service.DeleteAsync(9999);
+            var result = await service.DeleteAsync(9999, new LuminaUser { Id = "user-1" });
 
             Assert.False(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ReturnsFailure_WhenEntryBelongsToAnotherUser()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string ownerId = "owner";
+            const string otherUserId = "other-user";
+            int myGameId;
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.AddRange(NewUser(ownerId), NewUser(otherUserId));
+                var game = new Game { Name = "Return of the Obra Dinn", Description = "Mystery" };
+                dbContext.Games.Add(game);
+                var myGame = new MyGame
+                {
+                    Game = game,
+                    LuminaUserId = ownerId,
+                    Status = GameStatus.Completed,
+                    Priority = 1
+                };
+                dbContext.MyGames.Add(myGame);
+                await dbContext.SaveChangesAsync();
+                myGameId = myGame.Id;
+            }
+
+            var service = new MyGameService(new TestDbContextFactory(options), new ObjectMapper());
+
+            var result = await service.DeleteAsync(myGameId, new LuminaUser { Id = otherUserId });
+
+            Assert.False(result.IsSuccess);
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            var remaining = await assertContext.MyGames.SingleAsync();
+            Assert.Equal(ownerId, remaining.LuminaUserId);
         }
 
         [Fact]

@@ -81,7 +81,7 @@ jobs:
         run: docker compose -f docker-compose.yml -f docker-compose.frontend.yml -f docker-compose.tools.yml config
 
       - name: Build API Image
-        run: docker build -t luminapath-api:ci -f Dockerfile .
+        run: docker build -t luminapath-api:ci -f src/LuminaPath/Dockerfile .
 
       - name: Build Frontend Image
         run: docker build -t luminapath-frontend:ci -f src/LuminaPath.MobileApp/Dockerfile src/LuminaPath.MobileApp

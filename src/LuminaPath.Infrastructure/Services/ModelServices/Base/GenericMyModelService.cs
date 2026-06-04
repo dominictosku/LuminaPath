@@ -83,10 +83,12 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             return PaginationFactory.FromMapped(paginatedEntities, mappedEntities, mediaFilter.Paging);
         }
 
-        public virtual async Task<TEntity> GetById(int? id, IEnumerable<string>? includes = null)
+        public virtual async Task<TEntity> GetById(int? id, string userId, IEnumerable<string>? includes = null)
         {
             if (id == null)
                 throw new ArgumentNullException(nameof(id), "No id given");
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new KeyNotFoundException("Entity not found");
 
             await using (var dbContext = await GetDbContextAsync())
             {
@@ -96,7 +98,8 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
                     entities = includes.Aggregate(entities, (current, include) => current.Include(include));
                 }
 
-                return await entities.FirstOrDefaultAsync(e => e.Id == id) ?? throw new KeyNotFoundException("Entity not found");
+                return await entities.FirstOrDefaultAsync(e => e.Id == id && e.LuminaUserId == userId)
+                    ?? throw new KeyNotFoundException("Entity not found");
             }
         }
 
@@ -124,7 +127,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             }
             viewModel.LuminaUserId = user.Id;
             await PrepareForSave(viewModel, user);
-            return await PutAsync(viewModel);
+            return await PutAsync(viewModel, user.Id);
         }
 
         protected virtual Task PrepareForSave(TEntity viewModel, ILuminaUser user)
@@ -149,14 +152,14 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             return entity;
         }
 
-        private async Task<Result<TEntity, FailedResult>> PutAsync(TEntity entity)
+        private async Task<Result<TEntity, FailedResult>> PutAsync(TEntity entity, string userId)
         {
             var id = entity.Id;
 
             await using (var dbContext = await GetDbContextAsync())
             {
                 var entities = GetEntities(dbContext);
-                if (!await entities.AsNoTracking().AnyAsync(e => e.Id == id))
+                if (!await entities.AsNoTracking().AnyAsync(e => e.Id == id && e.LuminaUserId == userId))
                 {
                     return new FailedResult("Entity not found");
                 }
@@ -183,15 +186,17 @@ namespace LuminaPath.Infrastructure.Services.ModelServices.Base
             }
         }
 
-        public virtual async Task<Result<int, FailedResult>> DeleteAsync(int? id)
+        public virtual async Task<Result<int, FailedResult>> DeleteAsync(int? id, ILuminaUser? user)
         {
             if (id == null)
                 return new FailedResult("Entry not found");
+            if (user == null)
+                return new FailedResult("User not found, please login");
 
             await using (var dbContext = await GetDbContextAsync())
             {
                 var entities = GetEntities(dbContext);
-                var entity = await entities.FirstOrDefaultAsync(entity => entity.Id == id.Value);
+                var entity = await entities.FirstOrDefaultAsync(entity => entity.Id == id.Value && entity.LuminaUserId == user.Id);
                 if (entity == null)
                 {
                     return new FailedResult("Entry not found");
