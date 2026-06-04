@@ -2,12 +2,15 @@ using System.Globalization;
 using System.Text.Json;
 using LuminaPath.Core.Models;
 using LuminaPath.Core.Models.Base;
+using LuminaPath.Core.Models.ThirdParty;
 using Microsoft.EntityFrameworkCore;
 
 namespace LuminaPath.Infrastructure.Services.ModelServices;
 
 public sealed class UserDataExportService
 {
+    private const int CurrentSchemaVersion = 2;
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true
@@ -38,14 +41,16 @@ public sealed class UserDataExportService
             .FirstOrDefaultAsync(user => user.Id == userId, cancellationToken);
 
         var snapshot = new UserDataExportSnapshot(
-            SchemaVersion: 1,
+            SchemaVersion: CurrentSchemaVersion,
             GeneratedAt: generatedAt,
             User: MapUser(user, userId),
             Library: await ExportLibraryAsync(dbContext, userId, cancellationToken),
             Quests: await ExportQuestsAsync(dbContext, userId, cancellationToken),
             GamingSessions: await ExportGamingSessionsAsync(dbContext, userId, cancellationToken),
             GameAchievements: await ExportGameAchievementsAsync(dbContext, userId, cancellationToken),
-            Documents: await ExportDocumentsAsync(dbContext, userId, cancellationToken));
+            Documents: await ExportDocumentsAsync(dbContext, userId, cancellationToken),
+            Social: await ExportSocialAsync(dbContext, userId, cancellationToken),
+            CalendarIntegrations: await ExportCalendarIntegrationsAsync(dbContext, userId, cancellationToken));
 
         var content = JsonSerializer.SerializeToUtf8Bytes(snapshot, JsonOptions);
         var fileName = $"LuminaPath-export-{generatedAt.ToString("yyyyMMdd-HHmmss'Z'", CultureInfo.InvariantCulture)}.json";
@@ -229,6 +234,45 @@ public sealed class UserDataExportService
             .ToListAsync(cancellationToken);
 
         return documents.Select(MapUserDocument).ToList();
+    }
+
+    private static async Task<SocialExport> ExportSocialAsync(
+        LuminaPathDbContext dbContext,
+        string userId,
+        CancellationToken cancellationToken)
+    {
+        var friendships = await dbContext.Friendships
+            .AsNoTracking()
+            .Where(friendship => friendship.RequesterId == userId || friendship.AddresseeId == userId)
+            .OrderByDescending(friendship => friendship.CreatedAt)
+            .ThenBy(friendship => friendship.Id)
+            .ToListAsync(cancellationToken);
+
+        var directMessages = await dbContext.DirectMessages
+            .AsNoTracking()
+            .Where(message => message.SenderId == userId || message.RecipientId == userId)
+            .OrderBy(message => message.SentAt)
+            .ThenBy(message => message.Id)
+            .ToListAsync(cancellationToken);
+
+        return new SocialExport(
+            Friendships: friendships.Select(MapFriendship).ToList(),
+            DirectMessages: directMessages.Select(MapDirectMessage).ToList());
+    }
+
+    private static async Task<IReadOnlyList<CalendarIntegrationExport>> ExportCalendarIntegrationsAsync(
+        LuminaPathDbContext dbContext,
+        string userId,
+        CancellationToken cancellationToken)
+    {
+        var integrations = await dbContext.CalendarIntegrations
+            .AsNoTracking()
+            .Where(integration => integration.LuminaUserId == userId)
+            .OrderBy(integration => integration.Provider)
+            .ThenBy(integration => integration.Id)
+            .ToListAsync(cancellationToken);
+
+        return integrations.Select(MapCalendarIntegration).ToList();
     }
 
     private static GameLibraryExport MapGameLibraryEntry(MyGame myGame)
@@ -522,267 +566,37 @@ public sealed class UserDataExportService
             Url: document.Url,
             Album: document.Album);
     }
+
+    private static FriendshipExport MapFriendship(Friendship friendship)
+    {
+        return new FriendshipExport(
+            Id: friendship.Id,
+            RequesterId: friendship.RequesterId,
+            AddresseeId: friendship.AddresseeId,
+            Status: friendship.Status.ToString(),
+            CreatedAt: friendship.CreatedAt,
+            RespondedAt: friendship.RespondedAt);
+    }
+
+    private static DirectMessageExport MapDirectMessage(DirectMessage message)
+    {
+        return new DirectMessageExport(
+            Id: message.Id,
+            SenderId: message.SenderId,
+            RecipientId: message.RecipientId,
+            Content: message.Content,
+            SentAt: message.SentAt,
+            ReadAt: message.ReadAt);
+    }
+
+    private static CalendarIntegrationExport MapCalendarIntegration(CalendarIntegration integration)
+    {
+        return new CalendarIntegrationExport(
+            Id: integration.Id,
+            Provider: integration.Provider,
+            CalendarId: integration.CalendarId,
+            AccountEmail: integration.AccountEmail,
+            ConnectedAt: integration.ConnectedAt,
+            LastSyncedAt: integration.LastSyncedAt);
+    }
 }
-
-public sealed record UserDataExportFile(byte[] Content, string FileName);
-
-public sealed record UserDataExportSnapshot(
-    int SchemaVersion,
-    DateTime GeneratedAt,
-    UserExport User,
-    LibraryExport Library,
-    QuestsExport Quests,
-    IReadOnlyList<GamingSessionExport> GamingSessions,
-    IReadOnlyList<UserGameAchievementExport> GameAchievements,
-    IReadOnlyList<UserDocumentExport> Documents);
-
-public sealed record UserExport(
-    string Id,
-    string? UserName,
-    string? Email,
-    string FullName,
-    bool IsActive,
-    PsnProfileExport? Psn,
-    SteamProfileExport? Steam);
-
-public sealed record PsnProfileExport(
-    string OnlineId,
-    string AccountId,
-    int TrophyLevel,
-    int Bronze,
-    int Silver,
-    int Gold,
-    int Platinum);
-
-public sealed record SteamProfileExport(
-    string SteamId,
-    string PersonaName,
-    string ProfileUrl,
-    string AvatarUrl);
-
-public sealed record LibraryExport(
-    IReadOnlyList<GameLibraryExport> Games,
-    IReadOnlyList<AnimeLibraryExport> Animes,
-    IReadOnlyList<MovieLibraryExport> Movies,
-    IReadOnlyList<SeriesLibraryExport> Series);
-
-public sealed record GameLibraryExport(
-    int Id,
-    string Status,
-    short? Rating,
-    int Priority,
-    DateTime? StartDate,
-    DateTime? EndDate,
-    double? TimeSpend,
-    int GameId,
-    string? PersonalNotes,
-    MyGameInfoExport? GameInfo,
-    GameMediaExport? Game);
-
-public sealed record AnimeLibraryExport(
-    int Id,
-    string Status,
-    short? Rating,
-    int Priority,
-    DateTime? StartDate,
-    DateTime? EndDate,
-    double? TimeSpend,
-    int AnimeId,
-    int? CurrentWatchTimeMinutes,
-    int? CurrentEpisode,
-    EpisodeMediaExport? Anime);
-
-public sealed record MovieLibraryExport(
-    int Id,
-    string Status,
-    short? Rating,
-    int Priority,
-    DateTime? StartDate,
-    DateTime? EndDate,
-    double? TimeSpend,
-    int MovieId,
-    int? CurrentWatchTimeMinutes,
-    MovieMediaExport? Movie);
-
-public sealed record SeriesLibraryExport(
-    int Id,
-    string Status,
-    short? Rating,
-    int Priority,
-    DateTime? StartDate,
-    DateTime? EndDate,
-    double? TimeSpend,
-    int SeriesId,
-    int? CurrentWatchTimeMinutes,
-    int? CurrentEpisode,
-    EpisodeMediaExport? Series);
-
-public sealed record MyGameInfoExport(
-    double TrackedHours,
-    DateTime FirstPlayed,
-    DateTime LastPlayed);
-
-public sealed record GameMediaExport(
-    MediaExport Media,
-    string Platforms,
-    int? Playtime,
-    int? ParentGameId);
-
-public sealed record EpisodeMediaExport(
-    MediaExport Media,
-    int? ExpectedWatchTimePerEpisodeMinutes,
-    int? EpisodeCount,
-    int? ExpectedWatchTimeMinutes,
-    int? ParentId);
-
-public sealed record MovieMediaExport(
-    MediaExport Media,
-    int? ExpectedWatchTimeMinutes);
-
-public sealed record MediaExport(
-    int Id,
-    string Name,
-    string? Description,
-    IReadOnlyList<string> Genres,
-    DateTime? ReleaseDate,
-    string Source,
-    DocumentExport? Image,
-    IReadOnlyList<ExternalIdExport> ExternalIds);
-
-public sealed record ExternalIdExport(string Provider, string ExternalId);
-
-public sealed record DocumentExport(
-    int Id,
-    string? Name,
-    string? StorageName,
-    string? Description,
-    string? Path,
-    string? ContentType,
-    string DocumentType,
-    string Url);
-
-public sealed record QuestsExport(
-    QuestProfileExport? Profile,
-    IReadOnlyList<QuestFolderExport> Folders,
-    IReadOnlyList<QuestSkillExport> Skills,
-    IReadOnlyList<QuestItemExport> Items);
-
-public sealed record QuestProfileExport(
-    int Id,
-    int TotalXp,
-    int CurrentStreakDays,
-    int LongestStreakDays,
-    DateOnly? LastCompletionDate,
-    DateTime CreatedAt,
-    DateTime UpdatedAt,
-    IReadOnlyList<QuestAchievementExport> Achievements);
-
-public sealed record QuestAchievementExport(
-    int Id,
-    string Code,
-    DateTime UnlockedAt);
-
-public sealed record QuestFolderExport(
-    int Id,
-    string Name,
-    string Emoji,
-    string? Color,
-    string? SectionName,
-    int SortOrder,
-    DateTime CreatedAt,
-    DateTime UpdatedAt);
-
-public sealed record QuestSkillExport(
-    int Id,
-    string Name,
-    string Icon,
-    string Color,
-    int Xp,
-    DateTime CreatedAt,
-    int SortOrder,
-    IReadOnlyList<QuestSkillNodeExport> Nodes);
-
-public sealed record QuestSkillNodeExport(
-    int Id,
-    string Name,
-    bool Unlocked,
-    DateTime? UnlockedAt,
-    int SortOrder);
-
-public sealed record QuestItemExport(
-    int Id,
-    string Title,
-    string? Notes,
-    string Type,
-    string Priority,
-    string Recurrence,
-    DateTime? DueDate,
-    IReadOnlyList<string> Tags,
-    int RewardXp,
-    bool Completed,
-    DateTime? CompletedAt,
-    DateTime CreatedAt,
-    DateTime UpdatedAt,
-    int SortOrder,
-    int? MyGameId,
-    string? GameName,
-    int? SkillId,
-    string? SkillName,
-    int? QuestFolderId,
-    string? QuestFolderName,
-    IReadOnlyList<QuestSubtaskExport> Subtasks);
-
-public sealed record QuestSubtaskExport(
-    int Id,
-    string Title,
-    bool Completed,
-    DateTime? CompletedAt,
-    DateTime CreatedAt,
-    int SortOrder);
-
-public sealed record GamingSessionExport(
-    int Id,
-    int? MyGameId,
-    string? GameName,
-    DateTime ScheduledAt,
-    int DurationMinutes,
-    bool Completed,
-    DateTime? CompletedAt,
-    string? Notes,
-    DateTime CreatedAt);
-
-public sealed record UserGameAchievementExport(
-    int Id,
-    string Provider,
-    string SourceAchievementId,
-    DateTime? UnlockedAt,
-    DateTime SyncedAt,
-    GameAchievementExport? Achievement);
-
-public sealed record GameAchievementExport(
-    int Id,
-    int GameId,
-    string? GameName,
-    string CanonicalKey,
-    string Title,
-    string? Description,
-    string? IconUrl,
-    bool IsHidden,
-    DateTime LastSyncedAt,
-    string? SteamApiName,
-    string? SteamDisplayName,
-    int? PsnTrophyId,
-    string? PsnGroupId,
-    string? PsnTrophyType,
-    string? PrimaryProvider);
-
-public sealed record UserDocumentExport(
-    int Id,
-    string? Name,
-    string? StorageName,
-    string? Description,
-    string? Path,
-    string? ContentType,
-    string DocumentType,
-    string Url,
-    string Album);
