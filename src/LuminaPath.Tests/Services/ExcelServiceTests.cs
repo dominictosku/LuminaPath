@@ -2,6 +2,7 @@ using ClosedXML.Excel;
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Extensions;
 using LuminaPath.Core.Models;
+using LuminaPath.Core.Models.ThirdParty;
 using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services;
@@ -102,6 +103,155 @@ namespace Test.Services
             Assert.Equal("New", row.ChangeType);
             Assert.Equal("PSN-ODS", row.PsnId);
             Assert.Equal(3.25, row.TrackedHours);
+        }
+
+        [Fact]
+        public async Task ExportGamesAsync_WritesCurrentLibraryWorkbook()
+        {
+            var options = CreateOptions();
+            var user = await SeedUser(options);
+            var service = CreateService(options);
+
+            await using (var context = new LuminaPathDbContext(options))
+            {
+                context.MyGames.Add(new MyGame
+                {
+                    LuminaUserId = user.Id,
+                    Status = GameStatus.Playing,
+                    Priority = 2,
+                    Rating = 9,
+                    PersonalNotes = "Try heat 16",
+                    StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    TimeSpend = 14.5,
+                    MyGameInfo = new MyGameInfo
+                    {
+                        TrackedHours = 12.25,
+                        FirstPlayed = new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc),
+                        LastPlayed = new DateTime(2024, 1, 3, 0, 0, 0, DateTimeKind.Utc)
+                    },
+                    Game = new Game
+                    {
+                        Name = "Hades",
+                        Source = "Steam",
+                        Genres = ["Action", "Roguelike"],
+                        Platforms = Platforms.PC | Platforms.Switch,
+                        Playtime = 30,
+                        ParentGameId = 99,
+                        Image = new MediaDocument { StorageName = "hades.png" },
+                        ExternalIds =
+                        [
+                            new MediaExternalId { Provider = ExternalMediaProvider.Psn, ExternalId = "PSN-HADES" },
+                            new MediaExternalId { Provider = ExternalMediaProvider.Steam, ExternalId = "1145360" },
+                            new MediaExternalId { Provider = ExternalMediaProvider.Igdb, ExternalId = "IGDB-HADES" },
+                            new MediaExternalId { Provider = ExternalMediaProvider.Rawg, ExternalId = "RAWG-HADES" }
+                        ]
+                    }
+                });
+                context.MyAnimes.Add(new MyAnime
+                {
+                    LuminaUserId = user.Id,
+                    Status = MediaStatus.Watching,
+                    Priority = 3,
+                    Rating = 10,
+                    CurrentEpisode = 4,
+                    CurrentWatchTimeMinutes = 100,
+                    Anime = new Anime
+                    {
+                        Name = "Frieren",
+                        Source = "AniList",
+                        Genres = ["Fantasy"],
+                        EpisodeCount = 28,
+                        ExpectedWatchTimePerEpisodeMinutes = 25,
+                        ParentAnimeId = 7,
+                        Image = new MediaDocument { StorageName = "frieren.jpg" },
+                        ExternalIds =
+                        [
+                            new MediaExternalId { Provider = ExternalMediaProvider.Anilist, ExternalId = "154587" },
+                            new MediaExternalId { Provider = ExternalMediaProvider.Mal, ExternalId = "52991" }
+                        ]
+                    }
+                });
+                context.MyMovies.Add(new MyMovie
+                {
+                    LuminaUserId = user.Id,
+                    Status = MediaStatus.Planned,
+                    CurrentWatchTimeMinutes = 45,
+                    Movie = new Movie
+                    {
+                        Name = "Dune",
+                        Source = "TMDB",
+                        ExpectedWatchTimeMinutes = 155,
+                        ExternalIds = [new MediaExternalId { Provider = ExternalMediaProvider.Tmdb, ExternalId = "438631" }]
+                    }
+                });
+                context.MySeries.Add(new MySeries
+                {
+                    LuminaUserId = user.Id,
+                    Status = MediaStatus.Watching,
+                    CurrentEpisode = 5,
+                    CurrentWatchTimeMinutes = 250,
+                    Series = new Series
+                    {
+                        Name = "Severance",
+                        Source = "TMDB",
+                        EpisodeCount = 9,
+                        ExpectedWatchTimePerEpisodeMinutes = 50,
+                        ParentSeriesId = 12,
+                        ExternalIds = [new MediaExternalId { Provider = ExternalMediaProvider.Tmdb, ExternalId = "95396" }]
+                    }
+                });
+                context.MyGames.Add(new MyGame
+                {
+                    LuminaUserId = "other-user",
+                    Game = new Game { Name = "Other user game", Source = "Manual" }
+                });
+                await context.SaveChangesAsync();
+            }
+
+            var bytes = await service.ExportGamesAsync(user);
+
+            using var workbook = new XLWorkbook(new MemoryStream(bytes));
+            Assert.Contains("Games", workbook.Worksheets.Select(sheet => sheet.Name));
+            Assert.Contains("Animes", workbook.Worksheets.Select(sheet => sheet.Name));
+            Assert.Contains("Movies", workbook.Worksheets.Select(sheet => sheet.Name));
+            Assert.Contains("Series", workbook.Worksheets.Select(sheet => sheet.Name));
+
+            var games = workbook.Worksheet("Games");
+            var gameHeaders = HeaderMap(games);
+            Assert.Equal("Hades", games.Cell(2, gameHeaders["Name"]).GetString());
+            Assert.Equal("Try heat 16", games.Cell(2, gameHeaders["Personal Notes"]).GetString());
+            Assert.Equal("1145360", games.Cell(2, gameHeaders["SteamId"]).GetString());
+            Assert.Equal("IGDB-HADES", games.Cell(2, gameHeaders["IGDBId"]).GetString());
+            Assert.Equal("RAWG-HADES", games.Cell(2, gameHeaders["RAWGId"]).GetString());
+            Assert.Equal("api/files/hades.png", games.Cell(2, gameHeaders["Image Url"]).GetString());
+            Assert.Equal(99, games.Cell(2, gameHeaders["Parent Game Id"]).GetValue<int>());
+            Assert.True(games.Cell(3, gameHeaders["Name"]).IsEmpty());
+
+            var animes = workbook.Worksheet("Animes");
+            var animeHeaders = HeaderMap(animes);
+            Assert.Equal("Frieren", animes.Cell(2, animeHeaders["Name"]).GetString());
+            Assert.Equal("154587", animes.Cell(2, animeHeaders["AniListId"]).GetString());
+            Assert.Equal("52991", animes.Cell(2, animeHeaders["MALId"]).GetString());
+            Assert.Equal(28, animes.Cell(2, animeHeaders["Episode Count"]).GetValue<int>());
+            Assert.Equal(700, animes.Cell(2, animeHeaders["Expected Watch Time Minutes"]).GetValue<int>());
+            Assert.Equal(4, animes.Cell(2, animeHeaders["Current Episode"]).GetValue<int>());
+            Assert.Equal(100, animes.Cell(2, animeHeaders["Current Watch Time Minutes"]).GetValue<int>());
+
+            var movies = workbook.Worksheet("Movies");
+            var movieHeaders = HeaderMap(movies);
+            Assert.Equal("Dune", movies.Cell(2, movieHeaders["Name"]).GetString());
+            Assert.Equal("438631", movies.Cell(2, movieHeaders["TMDBId"]).GetString());
+            Assert.Equal(155, movies.Cell(2, movieHeaders["Expected Watch Time Minutes"]).GetValue<int>());
+            Assert.Equal(45, movies.Cell(2, movieHeaders["Current Watch Time Minutes"]).GetValue<int>());
+
+            var series = workbook.Worksheet("Series");
+            var seriesHeaders = HeaderMap(series);
+            Assert.Equal("Severance", series.Cell(2, seriesHeaders["Name"]).GetString());
+            Assert.Equal("95396", series.Cell(2, seriesHeaders["TMDBId"]).GetString());
+            Assert.Equal(9, series.Cell(2, seriesHeaders["Episode Count"]).GetValue<int>());
+            Assert.Equal(450, series.Cell(2, seriesHeaders["Expected Watch Time Minutes"]).GetValue<int>());
+            Assert.Equal(5, series.Cell(2, seriesHeaders["Current Episode"]).GetValue<int>());
+            Assert.Equal(250, series.Cell(2, seriesHeaders["Current Watch Time Minutes"]).GetValue<int>());
         }
 
         private static DbContextOptions<LuminaPathDbContext> CreateOptions()
@@ -221,6 +371,13 @@ namespace Test.Services
 
             stream.Position = 0;
             return stream;
+        }
+
+        private static Dictionary<string, int> HeaderMap(IXLWorksheet worksheet)
+        {
+            return worksheet.Row(1)
+                .CellsUsed()
+                .ToDictionary(cell => cell.GetString(), cell => cell.Address.ColumnNumber);
         }
 
         private sealed class TestDbContextFactory : IDbContextFactory<LuminaPathDbContext>

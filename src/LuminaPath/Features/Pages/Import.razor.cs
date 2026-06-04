@@ -367,14 +367,14 @@ public partial class Import
     {
         if (User is null)
         {
-            Snackbar.Add("Please sign in before exporting games", Severity.Info);
+            Snackbar.Add("Please sign in before exporting your library", Severity.Info);
             return;
         }
 
         var fileStream = new MemoryStream(await excelService.ExportGamesAsync(User));
         using var streamRef = new DotNetStreamReference(stream: fileStream);
 
-        await JS.InvokeVoidAsync("downloadFileFromStream", "LuminaDatabase.xlsx", streamRef);
+        await JS.InvokeVoidAsync("downloadFileFromStream", "LuminaLibrary.xlsx", streamRef);
     }
 
     async Task PreviewExcel(IBrowserFile file)
