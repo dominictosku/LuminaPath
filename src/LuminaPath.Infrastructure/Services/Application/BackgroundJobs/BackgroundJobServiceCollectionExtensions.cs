@@ -22,6 +22,22 @@ internal static class BackgroundJobServiceCollectionExtensions
         services.AddScoped<IBackgroundJobRunner, DatabaseBackupJobRunner>();
         services.AddScoped<IBackgroundJobRunner, MaintenanceCleanupJobRunner>();
         services.AddScoped<IBackgroundJobRunner, OrphanedBlobCleanupJobRunner>();
+        services.AddScoped<IBackgroundJobRunner>(sp => new MetadataRefreshJobRunner(
+            sp.GetRequiredService<MetadataRefreshMaintenanceService>(),
+            BackgroundJobTypes.MetadataRefreshGames,
+            MetadataRefreshMediaTypes.Games));
+        services.AddScoped<IBackgroundJobRunner>(sp => new MetadataRefreshJobRunner(
+            sp.GetRequiredService<MetadataRefreshMaintenanceService>(),
+            BackgroundJobTypes.MetadataRefreshAnimes,
+            MetadataRefreshMediaTypes.Animes));
+        services.AddScoped<IBackgroundJobRunner>(sp => new MetadataRefreshJobRunner(
+            sp.GetRequiredService<MetadataRefreshMaintenanceService>(),
+            BackgroundJobTypes.MetadataRefreshMovies,
+            MetadataRefreshMediaTypes.Movies));
+        services.AddScoped<IBackgroundJobRunner>(sp => new MetadataRefreshJobRunner(
+            sp.GetRequiredService<MetadataRefreshMaintenanceService>(),
+            BackgroundJobTypes.MetadataRefreshSeries,
+            MetadataRefreshMediaTypes.Series));
         services.AddHostedService<QueuedBackgroundJobService>();
         services.AddHostedService<BackgroundJobSchedulerService>();
         return services;

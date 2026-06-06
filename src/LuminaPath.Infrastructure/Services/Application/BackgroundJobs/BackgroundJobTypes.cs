@@ -5,4 +5,8 @@ public static class BackgroundJobTypes
     public const string DatabaseBackup = "DatabaseBackup";
     public const string MaintenanceCleanup = "MaintenanceCleanup";
     public const string OrphanedBlobCleanup = "OrphanedBlobCleanup";
+    public const string MetadataRefreshGames = "MetadataRefreshGames";
+    public const string MetadataRefreshAnimes = "MetadataRefreshAnimes";
+    public const string MetadataRefreshMovies = "MetadataRefreshMovies";
+    public const string MetadataRefreshSeries = "MetadataRefreshSeries";
 }

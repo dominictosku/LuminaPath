@@ -1,11 +1,13 @@
 @page "/settings"
 @using LuminaPath.Features.Admin.Components
 @using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.Application
 @using LuminaPath.Infrastructure.Services.ThirdParty
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Administrator")]
 @inject PSNService psnService
 @inject ApplicationSettingsService applicationSettingsService
+@inject IntegrationConnectionTestService ConnectionTestService
 @inject IJSRuntime Js
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -193,7 +195,25 @@
 							   Disabled="@string.IsNullOrWhiteSpace(result)">
 						Use Response
 					</MudButton>
+					<MudButton OnClick="TestPsnConnection"
+							   Variant="MudBlazor.Variant.Outlined"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.Link"
+							   Disabled="@(testingPsnConnection || string.IsNullOrWhiteSpace(bearerToken))">
+						@(testingPsnConnection ? "Testing Connection" : "Test Connection")
+					</MudButton>
 				</div>
+
+				@if (psnConnectionResult is not null)
+				{
+					<MudAlert Severity="@(psnConnectionResult.Succeeded ? Severity.Success : Severity.Error)" Variant="MudBlazor.Variant.Outlined">
+						@psnConnectionResult.Message
+						@if (!string.IsNullOrWhiteSpace(psnConnectionResult.Details))
+						{
+							<MudText Typo="Typo.body2">@psnConnectionResult.Details</MudText>
+						}
+					</MudAlert>
+				}
 			</div>
 		</section>
 
@@ -242,6 +262,8 @@
 	private bool newsEnabled = true;
 	private bool showNpsso;
 	private bool showBearer;
+	private bool testingPsnConnection;
+	private IntegrationConnectionTestResult? psnConnectionResult;
 
 	private string BearerStatus => string.IsNullOrWhiteSpace(bearerToken) ? "Missing" : "Saved";
 	private string NewsStatus => newsEnabled ? "Enabled" : "Off";
@@ -306,6 +328,21 @@
 
 		bearerToken = result;
 		Snackbar.Add("Copied response into saved token field", Severity.Info);
+	}
+
+	async Task TestPsnConnection()
+	{
+		testingPsnConnection = true;
+		psnConnectionResult = null;
+		try
+		{
+			psnConnectionResult = await ConnectionTestService.TestPsnAsync(bearerToken);
+			Snackbar.Add(psnConnectionResult.Message, psnConnectionResult.Succeeded ? Severity.Success : Severity.Error);
+		}
+		finally
+		{
+			testingPsnConnection = false;
+		}
 	}
 
 	void ToggleNpssoVisibility()

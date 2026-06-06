@@ -34,6 +34,22 @@
 			<span>Database backup</span>
 			<strong>@FormatJob(lastDatabaseBackup)</strong>
 		</div>
+		<div class="maintenance-status-card">
+			<span>Game metadata</span>
+			<strong>@FormatJob(lastGameMetadataRefresh)</strong>
+		</div>
+		<div class="maintenance-status-card">
+			<span>Anime metadata</span>
+			<strong>@FormatJob(lastAnimeMetadataRefresh)</strong>
+		</div>
+		<div class="maintenance-status-card">
+			<span>Movie metadata</span>
+			<strong>@FormatJob(lastMovieMetadataRefresh)</strong>
+		</div>
+		<div class="maintenance-status-card">
+			<span>Series metadata</span>
+			<strong>@FormatJob(lastSeriesMetadataRefresh)</strong>
+		</div>
 	</div>
 
 	<div class="maintenance-preview-grid">
@@ -87,11 +103,39 @@
 				   Disabled="@runningDiagnostics">
 			@(runningDiagnostics ? "Checking Integrity" : "Run Diagnostics")
 		</MudButton>
+		<MudButton OnClick="@(() => QueueMetadataRefresh(MetadataRefreshMediaTypes.Games))"
+				   Variant="MudBlazor.Variant.Filled"
+				   Color="Color.Secondary"
+				   StartIcon="@Icons.Material.Filled.TravelExplore"
+				   Disabled="@queueingMetadataRefresh">
+			Refresh Game Metadata
+		</MudButton>
+		<MudButton OnClick="@(() => QueueMetadataRefresh(MetadataRefreshMediaTypes.Animes))"
+				   Variant="MudBlazor.Variant.Outlined"
+				   Color="Color.Primary"
+				   StartIcon="@Icons.Material.Filled.Animation"
+				   Disabled="@queueingMetadataRefresh">
+			Refresh Anime Metadata
+		</MudButton>
+		<MudButton OnClick="@(() => QueueMetadataRefresh(MetadataRefreshMediaTypes.Movies))"
+				   Variant="MudBlazor.Variant.Outlined"
+				   Color="Color.Primary"
+				   StartIcon="@Icons.Material.Filled.Movie"
+				   Disabled="@queueingMetadataRefresh">
+			Refresh Movie Metadata
+		</MudButton>
+		<MudButton OnClick="@(() => QueueMetadataRefresh(MetadataRefreshMediaTypes.Series))"
+				   Variant="MudBlazor.Variant.Outlined"
+				   Color="Color.Primary"
+				   StartIcon="@Icons.Material.Filled.LiveTv"
+				   Disabled="@queueingMetadataRefresh">
+			Refresh Series Metadata
+		</MudButton>
 		<MudButton OnClick="LoadStatus"
 				   Variant="MudBlazor.Variant.Outlined"
 				   Color="Color.Primary"
 				   StartIcon="@Icons.Material.Filled.Refresh"
-				   Disabled="@(queueingMaintenance || queueingOrphanedBlobCleanup)">
+				   Disabled="@(queueingMaintenance || queueingOrphanedBlobCleanup || queueingMetadataRefresh)">
 			Refresh Status
 		</MudButton>
 	</div>
@@ -109,6 +153,67 @@
 			Library entries missing media: @diagnostics.LibraryEntriesMissingMedia.
 			Documents missing storage name: @diagnostics.DocumentsMissingStorageName.
 		</MudAlert>
+
+		@if (diagnostics.DuplicateExternalIds.Any())
+		{
+			<div class="diagnostics-detail">
+				<MudText Typo="Typo.h6">Duplicate external IDs</MudText>
+				<MudTable Items="diagnostics.DuplicateExternalIds" Dense="true" Hover="true" Class="maintenance-table">
+					<HeaderContent>
+						<MudTh>Provider</MudTh>
+						<MudTh>External ID</MudTh>
+						<MudTh>Rows</MudTh>
+						<MudTh>Media</MudTh>
+					</HeaderContent>
+					<RowTemplate>
+						<MudTd>@context.Provider</MudTd>
+						<MudTd>@context.ExternalId</MudTd>
+						<MudTd>@context.Count</MudTd>
+						<MudTd>@FormatDuplicateMedia(context)</MudTd>
+					</RowTemplate>
+				</MudTable>
+			</div>
+		}
+
+		@if (diagnostics.BrokenReferences.Any())
+		{
+			<div class="diagnostics-detail">
+				<MudText Typo="Typo.h6">Broken library references</MudText>
+				<MudTable Items="diagnostics.BrokenReferences" Dense="true" Hover="true" Class="maintenance-table">
+					<HeaderContent>
+						<MudTh>Type</MudTh>
+						<MudTh>Library ID</MudTh>
+						<MudTh>Missing media ID</MudTh>
+						<MudTh>User</MudTh>
+					</HeaderContent>
+					<RowTemplate>
+						<MudTd>@context.MediaType</MudTd>
+						<MudTd>@context.LibraryEntryId</MudTd>
+						<MudTd>@context.MissingMediaId</MudTd>
+						<MudTd>@context.UserId</MudTd>
+					</RowTemplate>
+				</MudTable>
+			</div>
+		}
+
+		@if (diagnostics.DocumentsMissingStorage.Any())
+		{
+			<div class="diagnostics-detail">
+				<MudText Typo="Typo.h6">Documents missing storage name</MudText>
+				<MudTable Items="diagnostics.DocumentsMissingStorage" Dense="true" Hover="true" Class="maintenance-table">
+					<HeaderContent>
+						<MudTh>Document ID</MudTh>
+						<MudTh>Name</MudTh>
+						<MudTh>Type</MudTh>
+					</HeaderContent>
+					<RowTemplate>
+						<MudTd>@context.DocumentId</MudTd>
+						<MudTd>@context.Name</MudTd>
+						<MudTd>@context.DocumentType</MudTd>
+					</RowTemplate>
+				</MudTable>
+			</div>
+		}
 	}
 </section>
 
@@ -164,6 +269,18 @@
 		margin-top: 14px;
 	}
 
+	.diagnostics-detail {
+		display: grid;
+		gap: 10px;
+		margin-top: 14px;
+	}
+
+	.maintenance-table {
+		overflow: hidden;
+		border: 1px solid rgba(59, 130, 246, .14);
+		border-radius: 12px;
+	}
+
 	@@media (max-width: 680px) {
 		.maintenance-actions {
 			display: grid;
@@ -175,11 +292,16 @@
 	private BackgroundJobRecord? lastMaintenanceCleanup;
 	private BackgroundJobRecord? lastOrphanedBlobCleanup;
 	private BackgroundJobRecord? lastDatabaseBackup;
+	private BackgroundJobRecord? lastGameMetadataRefresh;
+	private BackgroundJobRecord? lastAnimeMetadataRefresh;
+	private BackgroundJobRecord? lastMovieMetadataRefresh;
+	private BackgroundJobRecord? lastSeriesMetadataRefresh;
 	private BackgroundMaintenancePreviewResult? maintenancePreview;
 	private OrphanedBlobCleanupPreviewResult? blobPreview;
 	private LibraryIntegrityDiagnosticsResult? diagnostics;
 	private bool queueingMaintenance;
 	private bool queueingOrphanedBlobCleanup;
+	private bool queueingMetadataRefresh;
 	private bool previewingMaintenance;
 	private bool previewingOrphanedBlobCleanup;
 	private bool runningDiagnostics;
@@ -204,6 +326,10 @@
 		lastMaintenanceCleanup = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.MaintenanceCleanup);
 		lastOrphanedBlobCleanup = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.OrphanedBlobCleanup);
 		lastDatabaseBackup = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.DatabaseBackup);
+		lastGameMetadataRefresh = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.MetadataRefreshGames);
+		lastAnimeMetadataRefresh = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.MetadataRefreshAnimes);
+		lastMovieMetadataRefresh = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.MetadataRefreshMovies);
+		lastSeriesMetadataRefresh = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.MetadataRefreshSeries);
 	}
 
 	private async Task PreviewMaintenanceCleanup()
@@ -279,6 +405,27 @@
 		{
 			queueingOrphanedBlobCleanup = false;
 		}
+	}
+
+	private async Task QueueMetadataRefresh(string mediaType)
+	{
+		queueingMetadataRefresh = true;
+		try
+		{
+			var job = await BackgroundJobService.EnqueueMetadataRefreshAsync(mediaType);
+			Snackbar.Add($"Queued {mediaType} metadata refresh job #{job.Id}", Severity.Success);
+			await LoadStatus();
+		}
+		finally
+		{
+			queueingMetadataRefresh = false;
+		}
+	}
+
+	private static string FormatDuplicateMedia(DuplicateExternalIdDiagnostic diagnostic)
+	{
+		return string.Join("; ", diagnostic.Media.Select(item =>
+			$"{item.MediaType} #{item.MediaId} {item.MediaName} (external row #{item.ExternalIdRowId})"));
 	}
 
 	private static string FormatJob(BackgroundJobRecord? job)

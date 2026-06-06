@@ -1,8 +1,10 @@
 @using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.Application
 @using LuminaPath.Infrastructure.Services.ThirdParty
 @using Microsoft.Extensions.Options
 @inject ApplicationSettingsService ApplicationSettingsService
 @inject IOptions<GameMetadataOptions> MetadataOptions
+@inject IntegrationConnectionTestService ConnectionTestService
 @inject ISnackbar Snackbar
 
 <section class="settings-panel settings-panel--primary">
@@ -58,10 +60,35 @@
 					   Variant="MudBlazor.Variant.Filled"
 					   Color="Color.Secondary"
 					   StartIcon="@Icons.Material.Filled.Save"
-					   Disabled="@saving">
+					   Disabled="@(saving || testingIgdb || testingRawg)">
 				Save Metadata Settings
 			</MudButton>
+			<MudButton OnClick="TestIgdbConnection"
+					   Variant="MudBlazor.Variant.Outlined"
+					   Color="Color.Primary"
+					   StartIcon="@Icons.Material.Filled.Link"
+					   Disabled="@(saving || testingIgdb || testingRawg)">
+				@(testingIgdb ? "Testing IGDB" : "Test IGDB")
+			</MudButton>
+			<MudButton OnClick="TestRawgConnection"
+					   Variant="MudBlazor.Variant.Outlined"
+					   Color="Color.Primary"
+					   StartIcon="@Icons.Material.Filled.Link"
+					   Disabled="@(saving || testingIgdb || testingRawg)">
+				@(testingRawg ? "Testing RAWG" : "Test RAWG")
+			</MudButton>
 		</div>
+
+		@if (connectionResult is not null)
+		{
+			<MudAlert Severity="@(connectionResult.Succeeded ? Severity.Success : Severity.Error)" Variant="MudBlazor.Variant.Outlined">
+				@connectionResult.Provider: @connectionResult.Message
+				@if (!string.IsNullOrWhiteSpace(connectionResult.Details))
+				{
+					<MudText Typo="Typo.body2">@connectionResult.Details</MudText>
+				}
+			</MudAlert>
+		}
 	</div>
 </section>
 
@@ -83,6 +110,9 @@
 	private bool showIgdbSecret;
 	private bool showRawgKey;
 	private bool saving;
+	private bool testingIgdb;
+	private bool testingRawg;
+	private IntegrationConnectionTestResult? connectionResult;
 
 	private InputType igdbSecretInputType => showIgdbSecret ? InputType.Text : InputType.Password;
 	private InputType rawgKeyInputType => showRawgKey ? InputType.Text : InputType.Password;
@@ -105,17 +135,52 @@
 		saving = true;
 		try
 		{
-			await ApplicationSettingsService.SaveGameMetadataSettingsAsync(new GameMetadataSettings(
-				provider,
-				igdbClientId,
-				igdbClientSecret,
-				rawgApiKey));
+			await ApplicationSettingsService.SaveGameMetadataSettingsAsync(CreateSettings());
 			Snackbar.Add("Saved metadata provider settings", Severity.Success);
 		}
 		finally
 		{
 			saving = false;
 		}
+	}
+
+	private async Task TestIgdbConnection()
+	{
+		testingIgdb = true;
+		connectionResult = null;
+		try
+		{
+			connectionResult = await ConnectionTestService.TestIgdbAsync(CreateSettings());
+			Snackbar.Add(connectionResult.Message, connectionResult.Succeeded ? Severity.Success : Severity.Error);
+		}
+		finally
+		{
+			testingIgdb = false;
+		}
+	}
+
+	private async Task TestRawgConnection()
+	{
+		testingRawg = true;
+		connectionResult = null;
+		try
+		{
+			connectionResult = await ConnectionTestService.TestRawgAsync(CreateSettings());
+			Snackbar.Add(connectionResult.Message, connectionResult.Succeeded ? Severity.Success : Severity.Error);
+		}
+		finally
+		{
+			testingRawg = false;
+		}
+	}
+
+	private GameMetadataSettings CreateSettings()
+	{
+		return new GameMetadataSettings(
+			provider,
+			igdbClientId,
+			igdbClientSecret,
+			rawgApiKey);
 	}
 
 	private void ToggleIgdbSecretVisibility()

@@ -1,5 +1,7 @@
 @using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.Application
 @inject ApplicationSettingsService ApplicationSettingsService
+@inject IntegrationConnectionTestService ConnectionTestService
 @inject ISnackbar Snackbar
 
 <section class="settings-panel settings-panel--steam">
@@ -32,10 +34,28 @@
 					   Variant="MudBlazor.Variant.Filled"
 					   Color="Color.Secondary"
 					   StartIcon="@Icons.Material.Filled.Save"
-					   Disabled="@(steamSaving || string.IsNullOrWhiteSpace(steamApiKey))">
+					   Disabled="@(steamSaving || testingConnection || string.IsNullOrWhiteSpace(steamApiKey))">
 				Save Key
 			</MudButton>
+			<MudButton OnClick="TestSteamConnection"
+					   Variant="MudBlazor.Variant.Outlined"
+					   Color="Color.Primary"
+					   StartIcon="@Icons.Material.Filled.Link"
+					   Disabled="@(steamSaving || testingConnection || string.IsNullOrWhiteSpace(steamApiKey))">
+				@(testingConnection ? "Testing Connection" : "Test Connection")
+			</MudButton>
 		</div>
+
+		@if (connectionResult is not null)
+		{
+			<MudAlert Severity="@(connectionResult.Succeeded ? Severity.Success : Severity.Error)" Variant="MudBlazor.Variant.Outlined">
+				@connectionResult.Message
+				@if (!string.IsNullOrWhiteSpace(connectionResult.Details))
+				{
+					<MudText Typo="Typo.body2">@connectionResult.Details</MudText>
+				}
+			</MudAlert>
+		}
 	</div>
 </section>
 
@@ -44,6 +64,8 @@
 	private bool showSteamApiKey;
 	private bool steamKeySaved;
 	private bool steamSaving;
+	private bool testingConnection;
+	private IntegrationConnectionTestResult? connectionResult;
 
 	private InputType steamApiKeyInputType => showSteamApiKey ? InputType.Text : InputType.Password;
 	private string SteamApiKeyVisibilityIcon => showSteamApiKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
@@ -75,6 +97,21 @@
 		finally
 		{
 			steamSaving = false;
+		}
+	}
+
+	private async Task TestSteamConnection()
+	{
+		testingConnection = true;
+		connectionResult = null;
+		try
+		{
+			connectionResult = await ConnectionTestService.TestSteamAsync(steamApiKey);
+			Snackbar.Add(connectionResult.Message, connectionResult.Succeeded ? Severity.Success : Severity.Error);
+		}
+		finally
+		{
+			testingConnection = false;
 		}
 	}
 

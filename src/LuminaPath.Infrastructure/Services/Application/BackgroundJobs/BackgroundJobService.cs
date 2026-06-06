@@ -101,6 +101,22 @@ public sealed partial class BackgroundJobService
             cancellationToken);
     }
 
+    public async Task<BackgroundJobRecord> EnqueueMetadataRefreshAsync(
+        string mediaType,
+        CancellationToken cancellationToken = default)
+    {
+        var (jobType, displayName) = mediaType.Trim().ToLowerInvariant() switch
+        {
+            "game" or "games" => (BackgroundJobTypes.MetadataRefreshGames, "Refresh missing game metadata"),
+            "anime" or "animes" => (BackgroundJobTypes.MetadataRefreshAnimes, "Refresh missing anime metadata"),
+            "movie" or "movies" => (BackgroundJobTypes.MetadataRefreshMovies, "Refresh missing movie metadata"),
+            "series" => (BackgroundJobTypes.MetadataRefreshSeries, "Refresh missing series metadata"),
+            _ => throw new ArgumentOutOfRangeException(nameof(mediaType), mediaType, "Unsupported metadata refresh media type.")
+        };
+
+        return await EnqueueSingletonAsync(jobType, displayName, cancellationToken);
+    }
+
     public async Task<BackgroundJobRecord?> GetByIdAsync(int jobId, CancellationToken cancellationToken = default)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);

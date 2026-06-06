@@ -1,7 +1,9 @@
 @using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.Application
 @using LuminaPath.Infrastructure.Services.AiChat
 @inject ApplicationSettingsService ApplicationSettingsService
 @inject AiChatRuntimeSettingsResolver RuntimeSettingsResolver
+@inject IntegrationConnectionTestService ConnectionTestService
 @inject ISnackbar Snackbar
 
 <section class="settings-panel settings-panel--primary">
@@ -121,10 +123,28 @@
 					   Variant="MudBlazor.Variant.Outlined"
 					   Color="Color.Primary"
 					   StartIcon="@Icons.Material.Filled.Refresh"
-					   Disabled="@saving">
+					   Disabled="@(saving || testingConnection)">
 				Reload
 			</MudButton>
+			<MudButton OnClick="TestConnection"
+					   Variant="MudBlazor.Variant.Outlined"
+					   Color="Color.Primary"
+					   StartIcon="@Icons.Material.Filled.Link"
+					   Disabled="@(saving || testingConnection)">
+				@(testingConnection ? "Testing Connection" : "Test Connection")
+			</MudButton>
 		</div>
+
+		@if (connectionResult is not null)
+		{
+			<MudAlert Severity="@(connectionResult.Succeeded ? Severity.Success : Severity.Error)" Variant="MudBlazor.Variant.Outlined">
+				@connectionResult.Message
+				@if (!string.IsNullOrWhiteSpace(connectionResult.Details))
+				{
+					<MudText Typo="Typo.body2">@connectionResult.Details</MudText>
+				}
+			</MudAlert>
+		}
 	</div>
 </section>
 
@@ -174,6 +194,8 @@
 	private bool showAnthropicApiKey;
 	private bool showOpenAiApiKey;
 	private bool saving;
+	private bool testingConnection;
+	private IntegrationConnectionTestResult? connectionResult;
 
 	private InputType anthropicApiKeyInputType => showAnthropicApiKey ? InputType.Text : InputType.Password;
 	private InputType openAiApiKeyInputType => showOpenAiApiKey ? InputType.Text : InputType.Password;
@@ -211,28 +233,48 @@
 		saving = true;
 		try
 		{
-			await ApplicationSettingsService.SaveAiChatSettingsAsync(new AiChatStoredSettings(
-				enabled.ToString(),
-				provider,
-				Math.Clamp(maxToolIterations, 1, 32).ToString(),
-				enableMcpTools.ToString(),
-				enableWriteTools.ToString(),
-				anthropicApiKey,
-				anthropicModel,
-				Math.Clamp(anthropicMaxTokens, 256, 200000).ToString(),
-				anthropicBaseUrl,
-				anthropicVersion,
-				openAiApiKey,
-				openAiBaseUrl,
-				openAiModel,
-				openAiToolChoice,
-				Math.Clamp(openAiMaxTokens, 256, 200000).ToString()));
+			await ApplicationSettingsService.SaveAiChatSettingsAsync(CreateStoredSettings());
 			Snackbar.Add("Saved AI settings", Severity.Success);
 		}
 		finally
 		{
 			saving = false;
 		}
+	}
+
+	private async Task TestConnection()
+	{
+		testingConnection = true;
+		connectionResult = null;
+		try
+		{
+			connectionResult = await ConnectionTestService.TestAiAsync(CreateStoredSettings());
+			Snackbar.Add(connectionResult.Message, connectionResult.Succeeded ? Severity.Success : Severity.Error);
+		}
+		finally
+		{
+			testingConnection = false;
+		}
+	}
+
+	private AiChatStoredSettings CreateStoredSettings()
+	{
+		return new AiChatStoredSettings(
+			enabled.ToString(),
+			provider,
+			Math.Clamp(maxToolIterations, 1, 32).ToString(),
+			enableMcpTools.ToString(),
+			enableWriteTools.ToString(),
+			anthropicApiKey,
+			anthropicModel,
+			Math.Clamp(anthropicMaxTokens, 256, 200000).ToString(),
+			anthropicBaseUrl,
+			anthropicVersion,
+			openAiApiKey,
+			openAiBaseUrl,
+			openAiModel,
+			openAiToolChoice,
+			Math.Clamp(openAiMaxTokens, 256, 200000).ToString());
 	}
 
 	private void ToggleAnthropicKeyVisibility()

@@ -19,6 +19,8 @@ internal static class ApplicationFeatureServiceCollectionExtensions
         services.AddScoped<MediaImportService>();
         services.AddScoped<NewsAggregationService>();
         services.AddScoped<GameMetadataRefreshService>();
+        services.AddScoped<MetadataRefreshMaintenanceService>();
+        services.AddScoped<IntegrationConnectionTestService>();
         services.AddScoped<DatabaseBackupService>();
         return services;
     }

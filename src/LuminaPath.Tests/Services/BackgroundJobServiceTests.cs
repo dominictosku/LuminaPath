@@ -206,6 +206,31 @@ public class BackgroundJobServiceTests
         Assert.Equal([job.Id], queue.QueuedJobIds);
     }
 
+    [Theory]
+    [InlineData("games", BackgroundJobTypes.MetadataRefreshGames, "Refresh missing game metadata")]
+    [InlineData("animes", BackgroundJobTypes.MetadataRefreshAnimes, "Refresh missing anime metadata")]
+    [InlineData("movies", BackgroundJobTypes.MetadataRefreshMovies, "Refresh missing movie metadata")]
+    [InlineData("series", BackgroundJobTypes.MetadataRefreshSeries, "Refresh missing series metadata")]
+    public async Task EnqueueMetadataRefreshAsync_PersistsPendingMetadataRefreshJob(
+        string mediaType,
+        string expectedJobType,
+        string expectedDisplayName)
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        var queue = new CapturingBackgroundJobQueue();
+        var service = new BackgroundJobService(
+            new TestDbContextFactory(options),
+            queue,
+            () => new DateTime(2026, 5, 17, 10, 0, 0, DateTimeKind.Utc));
+
+        var job = await service.EnqueueMetadataRefreshAsync(mediaType);
+
+        Assert.Equal(expectedJobType, job.JobType);
+        Assert.Equal(expectedDisplayName, job.DisplayName);
+        Assert.Equal(BackgroundJobStatus.Pending, job.Status);
+        Assert.Equal([job.Id], queue.QueuedJobIds);
+    }
+
     [Fact]
     public async Task EnqueueAsync_WritesAuditLog_WhenAuditServiceIsProvided()
     {

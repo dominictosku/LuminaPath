@@ -1,8 +1,10 @@
 @using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.Application
 @using LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar
 @using Microsoft.Extensions.Options
 @inject ApplicationSettingsService ApplicationSettingsService
 @inject IOptions<GoogleCalendarOptions> Options
+@inject IntegrationConnectionTestService ConnectionTestService
 @inject ISnackbar Snackbar
 
 <section class="settings-panel settings-panel--primary">
@@ -47,10 +49,28 @@
 					   Variant="MudBlazor.Variant.Filled"
 					   Color="Color.Secondary"
 					   StartIcon="@Icons.Material.Filled.Save"
-					   Disabled="@saving">
+					   Disabled="@(saving || testingConnection)">
 				Save Google Calendar Settings
 			</MudButton>
+			<MudButton OnClick="TestConnection"
+					   Variant="MudBlazor.Variant.Outlined"
+					   Color="Color.Primary"
+					   StartIcon="@Icons.Material.Filled.Link"
+					   Disabled="@(saving || testingConnection)">
+				@(testingConnection ? "Testing Connection" : "Test Connection")
+			</MudButton>
 		</div>
+
+		@if (connectionResult is not null)
+		{
+			<MudAlert Severity="@(connectionResult.Succeeded ? Severity.Success : Severity.Error)" Variant="MudBlazor.Variant.Outlined">
+				@connectionResult.Message
+				@if (!string.IsNullOrWhiteSpace(connectionResult.Details))
+				{
+					<MudText Typo="Typo.body2">@connectionResult.Details</MudText>
+				}
+			</MudAlert>
+		}
 	</div>
 </section>
 
@@ -72,6 +92,8 @@
 	private string calendarName = string.Empty;
 	private bool showSecret;
 	private bool saving;
+	private bool testingConnection;
+	private IntegrationConnectionTestResult? connectionResult;
 
 	private InputType secretInputType => showSecret ? InputType.Text : InputType.Password;
 	private string SecretVisibilityIcon => showSecret ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
@@ -89,16 +111,36 @@
 		saving = true;
 		try
 		{
-			await ApplicationSettingsService.SaveGoogleCalendarSettingsAsync(new GoogleCalendarSettings(
-				clientId,
-				clientSecret,
-				calendarName));
+			await ApplicationSettingsService.SaveGoogleCalendarSettingsAsync(CreateSettings());
 			Snackbar.Add("Saved Google Calendar settings", Severity.Success);
 		}
 		finally
 		{
 			saving = false;
 		}
+	}
+
+	private async Task TestConnection()
+	{
+		testingConnection = true;
+		connectionResult = null;
+		try
+		{
+			connectionResult = await ConnectionTestService.TestGoogleCalendarAsync(CreateSettings());
+			Snackbar.Add(connectionResult.Message, connectionResult.Succeeded ? Severity.Success : Severity.Error);
+		}
+		finally
+		{
+			testingConnection = false;
+		}
+	}
+
+	private GoogleCalendarSettings CreateSettings()
+	{
+		return new GoogleCalendarSettings(
+			clientId,
+			clientSecret,
+			calendarName);
 	}
 
 	private void ToggleSecretVisibility()
