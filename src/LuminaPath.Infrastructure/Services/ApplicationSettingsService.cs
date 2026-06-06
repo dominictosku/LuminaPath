@@ -13,13 +13,6 @@ public sealed class ApplicationSettingsService
     public const string MetadataIgdbClientSecret = "Metadata.IgdbClientSecret";
     public const string MetadataRawgApiKey = "Metadata.RawgApiKey";
     public const string BackgroundJobsScheduledJobsEnabled = "BackgroundJobs.ScheduledJobsEnabled";
-    /// <summary>
-    /// Legacy key kept for backward compatibility. Read-only fallback when
-    /// <see cref="BackgroundJobsScheduledJobsEnabled"/> isn't set yet — the
-    /// previous toggle was named "ScheduledBackupsEnabled" and only covered
-    /// the database backup job.
-    /// </summary>
-    public const string BackgroundJobsScheduledBackupsEnabled = "BackgroundJobs.ScheduledBackupsEnabled";
     public const string BackgroundJobsBackupIntervalHours = "BackgroundJobs.BackupIntervalHours";
     public const string BackgroundJobsBackupRetentionCount = "BackgroundJobs.BackupRetentionCount";
     public const string BackgroundJobsJobHistoryRetentionDays = "BackgroundJobs.JobHistoryRetentionDays";
@@ -159,22 +152,13 @@ public sealed class ApplicationSettingsService
         var settings = await context.ApplicationSettings
             .AsNoTracking()
             .Where(setting => setting.Key == BackgroundJobsScheduledJobsEnabled
-                || setting.Key == BackgroundJobsScheduledBackupsEnabled
                 || setting.Key == BackgroundJobsBackupIntervalHours
                 || setting.Key == BackgroundJobsBackupRetentionCount
                 || setting.Key == BackgroundJobsJobHistoryRetentionDays)
             .ToDictionaryAsync(setting => setting.Key, setting => setting.Value, cancellationToken);
 
-        // Prefer the new master-switch key; fall back to the legacy
-        // backups-only key so existing installs keep their saved value.
-        var scheduledJobsEnabled = settings.GetValueOrDefault(BackgroundJobsScheduledJobsEnabled);
-        if (string.IsNullOrWhiteSpace(scheduledJobsEnabled))
-        {
-            scheduledJobsEnabled = settings.GetValueOrDefault(BackgroundJobsScheduledBackupsEnabled);
-        }
-
         return new BackgroundJobStoredSettings(
-            scheduledJobsEnabled ?? string.Empty,
+            settings.GetValueOrDefault(BackgroundJobsScheduledJobsEnabled) ?? string.Empty,
             settings.GetValueOrDefault(BackgroundJobsBackupIntervalHours) ?? string.Empty,
             settings.GetValueOrDefault(BackgroundJobsBackupRetentionCount) ?? string.Empty,
             settings.GetValueOrDefault(BackgroundJobsJobHistoryRetentionDays) ?? string.Empty);

@@ -48,37 +48,6 @@ public sealed class OrphanedBlobCleanupServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task RunAsync_TreatsLegacyDocumentsThatStoreBlobNameOnlyInName_AsReferenced()
-    {
-        // Some historical Document rows have StorageName=null and the blob
-        // name lives in Name. The janitor must respect that — otherwise it
-        // would delete real cover art on the first run.
-        var storage = CreateStorage();
-        await UploadBlob(storage, "legacy.png", "image/png");
-
-        var dbOptions = Utilities.DbContext.TestDbContextOptions();
-        await using (var context = new LuminaPathDbContext(dbOptions))
-        {
-            context.MediaDocuments.Add(new MediaDocument
-            {
-                Name = "legacy.png",
-                StorageName = null,
-                ContentType = "image/png",
-                DocumentType = DocumentType.Image,
-            });
-            await context.SaveChangesAsync();
-        }
-
-        var service = CreateService(storage, dbOptions);
-
-        var result = await service.RunAsync();
-
-        Assert.Equal(1, result.Inspected);
-        Assert.Equal(0, result.Deleted);
-        Assert.True(File.Exists(Path.Combine(_storagePath, "legacy.png")));
-    }
-
-    [Fact]
     public async Task RunAsync_WithNoBlobs_ReturnsEmptyResultWithoutTouchingTheDatabase()
     {
         var storage = CreateStorage();

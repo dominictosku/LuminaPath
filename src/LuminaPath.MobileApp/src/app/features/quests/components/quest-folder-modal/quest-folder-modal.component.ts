@@ -37,7 +37,7 @@ export class QuestFolderModalComponent implements OnInit {
   readonly mode = input.required<'create' | 'edit'>();
   /** Required for `edit` mode; ignored for `create`. */
   readonly folder = input<QuestFolder | null>(null);
-  /** Section-name suggestions: previously used section names across all folders. */
+  /** Section-name suggestions from existing folders. */
   readonly sectionSuggestions = input<readonly string[]>([]);
 
   readonly dismissed = output<void>();

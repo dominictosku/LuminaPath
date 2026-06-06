@@ -130,7 +130,7 @@ export class LibraryToolbarComponent implements OnDestroy {
     const next = this.smartFilter() === target ? 'none' : target;
     this.smartFilter.set(next);
     // "best" is special: it pre-configures the other filters so the result
-    // is meaningful. The page's old setSmartFilter did the same.
+    // is meaningful instead of just changing the sort mode.
     if (next === 'best') {
       this.ownershipFilter.set('mine');
       this.statusFilter.set('all');

@@ -51,8 +51,7 @@ internal static class ForwardedHeadersConfiguration
         };
 
         // Replace the loopback-only default with our configurable trust set.
-        // KnownIPNetworks (System.Net.IPNetwork) is the .NET 8+ replacement
-        // for the deprecated KnownNetworks property.
+        // KnownIPNetworks (System.Net.IPNetwork) is the current .NET API.
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
 

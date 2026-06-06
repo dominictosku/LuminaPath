@@ -56,7 +56,7 @@ public sealed class SecurityHeadersMiddleware
         // resource IDs) to third-party sites.
         headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
 
-        // Block opt-in to legacy browser sensors / geo / camera /
+        // Block opt-in to browser sensors / geo / camera /
         // mic / payment APIs we never use. Cheap defense-in-depth
         // against future XSS.
         headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()";

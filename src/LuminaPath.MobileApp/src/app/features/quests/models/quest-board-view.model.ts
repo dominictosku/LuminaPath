@@ -1,7 +1,7 @@
 import { QuestPriority, QuestRecurrence, QuestType } from '../services/quest-board.service';
 import { QuestFilter } from '../domain/quest-sections.builder';
 
-export type PageMode = 'quests' | 'folders' | 'skills' | 'tree';
+export type PageMode = 'quests' | 'overview' | 'skills' | 'tree';
 export type ModalMode = 'skill' | 'node' | null;
 
 export type LibraryGame = {

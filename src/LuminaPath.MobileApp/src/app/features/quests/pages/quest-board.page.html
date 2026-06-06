@@ -18,12 +18,7 @@
            narrow viewports — segment buttons opt out of even-flex sizing
            and the segment becomes horizontally scrollable instead. -->
       <ion-segment scrollable="true" [ngModel]="store.mode()" (ngModelChange)="store.setMode($event)">
-        <!--
-          "Overview" used to be "Folders". Internal mode value kept as
-          `folders` so every code path that branches on the mode keeps
-          working — only the label and tab position changed.
-        -->
-        <ion-segment-button value="folders">
+        <ion-segment-button value="overview">
           <ion-label>Overview</ion-label>
         </ion-segment-button>
         <ion-segment-button value="quests">
@@ -42,7 +37,7 @@
       @case ('quests') {
         <app-quest-list-view />
       }
-      @case ('folders') {
+      @case ('overview') {
         <app-quest-folders-view />
       }
       @default {

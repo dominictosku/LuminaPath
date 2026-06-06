@@ -28,7 +28,7 @@ const recurrences: readonly QuestRecurrence[] = ['none', 'daily', 'weekly', 'mon
 const viewModes: readonly QuestViewMode[] = ['cards', 'compact'];
 
 type StoredPreferences = Partial<Omit<QuestBoardPreferences, 'filter'>> & {
-  filter?: QuestFilter | 'overdue';
+  filter?: QuestFilter;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -44,7 +44,7 @@ export class QuestBoardPreferencesService {
 
       const parsed = JSON.parse(raw) as StoredPreferences;
       return {
-        filter: this.validFilter(parsed.filter) ?? preferences.filter,
+        filter: this.validValue(parsed.filter, filters) ?? preferences.filter,
         quickAddType: this.validValue(parsed.quickAddType, types) ?? preferences.quickAddType,
         quickAddPriority: this.validValue(parsed.quickAddPriority, priorities) ?? preferences.quickAddPriority,
         quickAddRecurrence: this.validValue(parsed.quickAddRecurrence, recurrences) ?? preferences.quickAddRecurrence,
@@ -64,11 +64,6 @@ export class QuestBoardPreferencesService {
     } catch {
       // Ignore quota and storage-access failures; preferences are non-critical.
     }
-  }
-
-  private validFilter(value: StoredPreferences['filter']): QuestFilter | null {
-    if (value === 'overdue') return 'today';
-    return this.validValue(value, filters);
   }
 
   private validValue<T extends string>(value: unknown, allowed: readonly T[]): T | null {

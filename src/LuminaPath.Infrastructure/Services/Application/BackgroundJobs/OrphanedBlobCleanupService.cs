@@ -40,11 +40,8 @@ public sealed class OrphanedBlobCleanupService
             return OrphanedBlobCleanupResult.Empty;
         }
 
-        // Pull the full referenced-name set once. Documents can store the
-        // blob name in either `StorageName` (modern uploads) or `Name`
-        // (legacy rows that never had StorageName populated). Both have to
-        // be treated as "referenced" or we'd delete files that are still
-        // wired to a catalog entry.
+        // Pull the full referenced-name set once so storage scans can use
+        // O(1) lookups while deciding which blobs are safe to remove.
         var referencedNames = await GetReferencedStorageNamesAsync(cancellationToken);
 
         var inspected = 0;
@@ -99,24 +96,13 @@ public sealed class OrphanedBlobCleanupService
     private async Task<HashSet<string>> GetReferencedStorageNamesAsync(CancellationToken cancellationToken)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-        var rows = await context.Documents
+        var names = await context.Documents
             .AsNoTracking()
-            .Select(doc => new { doc.StorageName, doc.Name })
+            .Where(doc => !string.IsNullOrWhiteSpace(doc.StorageName))
+            .Select(doc => doc.StorageName!)
             .ToListAsync(cancellationToken);
 
-        var set = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var row in rows)
-        {
-            if (!string.IsNullOrWhiteSpace(row.StorageName))
-            {
-                set.Add(row.StorageName);
-            }
-            else if (!string.IsNullOrWhiteSpace(row.Name))
-            {
-                set.Add(row.Name);
-            }
-        }
-        return set;
+        return new HashSet<string>(names, StringComparer.Ordinal);
     }
 
     private Task AuditOrphanAsync(string blobName, string outcome, string? errorMessage = null)

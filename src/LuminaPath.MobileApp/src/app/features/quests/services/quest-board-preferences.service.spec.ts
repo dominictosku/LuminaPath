@@ -39,8 +39,8 @@ describe('QuestBoardPreferencesService', () => {
     });
   });
 
-  it('normalizes legacy overdue filters to today', () => {
-    localStorage.setItem('questboard.prefs.v1', JSON.stringify({ filter: 'overdue' }));
+  it('falls back to defaults for invalid stored values', () => {
+    localStorage.setItem('questboard.prefs.v1', JSON.stringify({ filter: 'not-a-filter' }));
 
     expect(service.load().filter).toBe('today');
   });
