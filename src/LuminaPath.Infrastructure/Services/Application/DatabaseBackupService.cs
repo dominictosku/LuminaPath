@@ -75,18 +75,7 @@ public sealed class DatabaseBackupService
 
     public Task<int> DeleteOldBackupsAsync(int keepCount, CancellationToken cancellationToken = default)
     {
-        var directory = GetBackupDirectory();
-        if (!Directory.Exists(directory))
-        {
-            return Task.FromResult(0);
-        }
-
-        var backupsToDelete = Directory
-            .EnumerateFiles(directory, "*.dump", SearchOption.TopDirectoryOnly)
-            .Select(CreateBackupInfo)
-            .OrderByDescending(backup => backup.LastModifiedAt)
-            .Skip(Math.Max(keepCount, 0))
-            .ToList();
+        var backupsToDelete = GetOldBackups(keepCount);
 
         var deleted = 0;
         foreach (var backup in backupsToDelete)
@@ -104,6 +93,12 @@ public sealed class DatabaseBackupService
         }
 
         return Task.FromResult(deleted);
+    }
+
+    public Task<int> CountOldBackupsAsync(int keepCount, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(GetOldBackups(keepCount).Count);
     }
 
     public async Task<Result<DatabaseBackupInfo, FailedResult>> CreateBackupAsync(CancellationToken cancellationToken = default)
@@ -246,6 +241,22 @@ public sealed class DatabaseBackupService
     private string GetBackupDirectory()
     {
         return Path.GetFullPath(_options.Directory);
+    }
+
+    private List<DatabaseBackupInfo> GetOldBackups(int keepCount)
+    {
+        var directory = GetBackupDirectory();
+        if (!Directory.Exists(directory))
+        {
+            return new List<DatabaseBackupInfo>();
+        }
+
+        return Directory
+            .EnumerateFiles(directory, "*.dump", SearchOption.TopDirectoryOnly)
+            .Select(CreateBackupInfo)
+            .OrderByDescending(backup => backup.LastModifiedAt)
+            .Skip(Math.Max(keepCount, 0))
+            .ToList();
     }
 
     private string CreateBackupFileName(string databaseName)

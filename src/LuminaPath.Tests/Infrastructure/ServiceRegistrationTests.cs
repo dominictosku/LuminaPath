@@ -45,6 +45,7 @@ public class ServiceRegistrationTests
         Assert.NotNull(scopedServices.GetRequiredService<ExcelService>());
         Assert.NotNull(scopedServices.GetRequiredService<GameImportPipeline>());
         Assert.NotNull(scopedServices.GetRequiredService<BrowseLibraryService>());
+        Assert.NotNull(scopedServices.GetRequiredService<LibraryIntegrityDiagnosticsService>());
         Assert.NotNull(scopedServices.GetRequiredService<DatabaseBackupService>());
         Assert.NotNull(scopedServices.GetRequiredService<ApplicationSettingsService>());
         Assert.NotNull(scopedServices.GetRequiredService<AiChatRuntimeSettingsResolver>());

@@ -144,6 +144,16 @@ public sealed partial class BackgroundJobService
         return oldJobs.Count;
     }
 
+    public async Task<int> CountHistoryCleanupCandidatesAsync(int retentionDays, CancellationToken cancellationToken = default)
+    {
+        var cutoff = _now().AddDays(-Math.Max(retentionDays, 1));
+        await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        return await context.BackgroundJobs
+            .CountAsync(job => job.Status != BackgroundJobStatus.Pending
+                && job.Status != BackgroundJobStatus.Running
+                && (job.CompletedAt ?? job.CreatedAt) < cutoff, cancellationToken);
+    }
+
     public async Task<Result<BackgroundJobRecord, FailedResult>> RetryAsync(int jobId, CancellationToken cancellationToken = default)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);

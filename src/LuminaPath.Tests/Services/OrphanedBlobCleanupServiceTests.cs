@@ -61,6 +61,37 @@ public sealed class OrphanedBlobCleanupServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PreviewAsync_CountsOrphansWithoutDeletingBlobs()
+    {
+        var storage = CreateStorage();
+        await UploadBlob(storage, "referenced.png", "image/png");
+        await UploadBlob(storage, "orphan.png", "image/png");
+
+        var dbOptions = Utilities.DbContext.TestDbContextOptions();
+        await using (var context = new LuminaPathDbContext(dbOptions))
+        {
+            context.MediaDocuments.Add(new MediaDocument
+            {
+                Name = "Cover",
+                StorageName = "referenced.png",
+                ContentType = "image/png",
+                DocumentType = DocumentType.Image,
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var service = CreateService(storage, dbOptions);
+
+        var preview = await service.PreviewAsync();
+
+        Assert.Equal(2, preview.Inspected);
+        Assert.Equal(1, preview.WouldDelete);
+        Assert.Equal(["orphan.png"], preview.OrphanedBlobNames);
+        Assert.True(File.Exists(Path.Combine(_storagePath, "referenced.png")));
+        Assert.True(File.Exists(Path.Combine(_storagePath, "orphan.png")));
+    }
+
+    [Fact]
     public async Task OrphanedBlobCleanupJobRunner_ReturnsSummaryMessage()
     {
         var storage = CreateStorage();

@@ -2,6 +2,7 @@ using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.AiChat;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Test.Utilities;
 
@@ -55,6 +56,39 @@ public class AiChatRuntimeSettingsResolverTests
         Assert.True(settings.EnableWriteTools);
         Assert.Equal("claude-test", settings.Anthropic.Model);
         Assert.Equal("openai-test", settings.OpenAi.Model);
+    }
+
+    [Fact]
+    public async Task GetAsync_CachesValuesUntilCacheIsCleared()
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        await using (var context = new LuminaPathDbContext(options))
+        {
+            context.ApplicationSettings.Add(new ApplicationSetting
+            {
+                Key = ApplicationSettingsService.AiChatProvider,
+                Value = "anthropic"
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var resolver = CreateResolver(options);
+        var first = await resolver.GetAsync();
+
+        await using (var context = new LuminaPathDbContext(options))
+        {
+            var setting = await context.ApplicationSettings.SingleAsync();
+            setting.Value = "openai";
+            await context.SaveChangesAsync();
+        }
+
+        var cached = await resolver.GetAsync();
+        resolver.ClearCache();
+        var refreshed = await resolver.GetAsync();
+
+        Assert.Equal("anthropic", first.Provider);
+        Assert.Equal("anthropic", cached.Provider);
+        Assert.Equal("openai", refreshed.Provider);
     }
 
     private static AiChatRuntimeSettingsResolver CreateResolver(

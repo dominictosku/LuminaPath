@@ -1,6 +1,10 @@
 @using LuminaPath.Core.Models
+@using LuminaPath.Infrastructure.Services.Application
 @using LuminaPath.Infrastructure.Services.Application.BackgroundJobs
 @inject BackgroundJobService BackgroundJobService
+@inject BackgroundJobMaintenanceService MaintenanceService
+@inject OrphanedBlobCleanupService OrphanedBlobCleanupService
+@inject LibraryIntegrityDiagnosticsService DiagnosticsService
 @inject ISnackbar Snackbar
 
 <section class="settings-panel settings-panel--primary">
@@ -32,7 +36,29 @@
 		</div>
 	</div>
 
+	<div class="maintenance-preview-grid">
+		<div class="maintenance-preview-card">
+			<span>Retention preview</span>
+			<strong>@RetentionPreviewText</strong>
+		</div>
+		<div class="maintenance-preview-card">
+			<span>Blob preview</span>
+			<strong>@BlobPreviewText</strong>
+		</div>
+		<div class="maintenance-preview-card">
+			<span>Integrity issues</span>
+			<strong>@DiagnosticsText</strong>
+		</div>
+	</div>
+
 	<div class="maintenance-actions">
+		<MudButton OnClick="PreviewMaintenanceCleanup"
+				   Variant="MudBlazor.Variant.Outlined"
+				   Color="Color.Primary"
+				   StartIcon="@Icons.Material.Filled.Preview"
+				   Disabled="@previewingMaintenance">
+			@(previewingMaintenance ? "Scanning Retention" : "Preview Retention")
+		</MudButton>
 		<MudButton OnClick="QueueMaintenanceCleanup"
 				   Variant="MudBlazor.Variant.Filled"
 				   Color="Color.Secondary"
@@ -40,12 +66,26 @@
 				   Disabled="@queueingMaintenance">
 			@(queueingMaintenance ? "Queueing Cleanup" : "Run Retention Cleanup")
 		</MudButton>
+		<MudButton OnClick="PreviewOrphanedBlobCleanup"
+				   Variant="MudBlazor.Variant.Outlined"
+				   Color="Color.Primary"
+				   StartIcon="@Icons.Material.Filled.Preview"
+				   Disabled="@previewingOrphanedBlobCleanup">
+			@(previewingOrphanedBlobCleanup ? "Scanning Blobs" : "Preview Blobs")
+		</MudButton>
 		<MudButton OnClick="QueueOrphanedBlobCleanup"
 				   Variant="MudBlazor.Variant.Filled"
 				   Color="Color.Primary"
 				   StartIcon="@Icons.Material.Filled.FolderDelete"
 				   Disabled="@queueingOrphanedBlobCleanup">
 			@(queueingOrphanedBlobCleanup ? "Queueing Blob Cleanup" : "Run Blob Cleanup")
+		</MudButton>
+		<MudButton OnClick="RunDiagnostics"
+				   Variant="MudBlazor.Variant.Outlined"
+				   Color="Color.Primary"
+				   StartIcon="@Icons.Material.Filled.FactCheck"
+				   Disabled="@runningDiagnostics">
+			@(runningDiagnostics ? "Checking Integrity" : "Run Diagnostics")
 		</MudButton>
 		<MudButton OnClick="LoadStatus"
 				   Variant="MudBlazor.Variant.Outlined"
@@ -55,6 +95,21 @@
 			Refresh Status
 		</MudButton>
 	</div>
+
+	@if (blobPreview?.OrphanedBlobNames.Any() == true)
+	{
+		<MudAlert Severity="Severity.Warning" Variant="MudBlazor.Variant.Outlined" Class="maintenance-alert">
+			First orphaned blobs: @string.Join(", ", blobPreview.OrphanedBlobNames.Take(5))
+		</MudAlert>
+	}
+	@if (diagnostics is not null)
+	{
+		<MudAlert Severity="@(diagnostics.TotalIssues == 0 ? Severity.Success : Severity.Warning)" Variant="MudBlazor.Variant.Outlined" Class="maintenance-alert">
+			Duplicate external ID groups: @diagnostics.DuplicateExternalIdGroups.
+			Library entries missing media: @diagnostics.LibraryEntriesMissingMedia.
+			Documents missing storage name: @diagnostics.DocumentsMissingStorageName.
+		</MudAlert>
+	}
 </section>
 
 <section class="settings-panel settings-help-panel">
@@ -68,14 +123,16 @@
 </section>
 
 <style>
-	.maintenance-status-grid {
+	.maintenance-status-grid,
+	.maintenance-preview-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 		gap: 12px;
 		margin-bottom: 16px;
 	}
 
-	.maintenance-status-card {
+	.maintenance-status-card,
+	.maintenance-preview-card {
 		display: grid;
 		gap: 6px;
 		padding: 14px;
@@ -84,14 +141,16 @@
 		background: rgba(255, 255, 255, .04);
 	}
 
-	.maintenance-status-card span {
+	.maintenance-status-card span,
+	.maintenance-preview-card span {
 		color: var(--mud-palette-text-secondary);
 		font-size: .78rem;
 		font-weight: 800;
 		text-transform: uppercase;
 	}
 
-	.maintenance-status-card strong {
+	.maintenance-status-card strong,
+	.maintenance-preview-card strong {
 		font-size: 1rem;
 	}
 
@@ -99,6 +158,10 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 10px;
+	}
+
+	.maintenance-alert {
+		margin-top: 14px;
 	}
 
 	@@media (max-width: 680px) {
@@ -112,8 +175,24 @@
 	private BackgroundJobRecord? lastMaintenanceCleanup;
 	private BackgroundJobRecord? lastOrphanedBlobCleanup;
 	private BackgroundJobRecord? lastDatabaseBackup;
+	private BackgroundMaintenancePreviewResult? maintenancePreview;
+	private OrphanedBlobCleanupPreviewResult? blobPreview;
+	private LibraryIntegrityDiagnosticsResult? diagnostics;
 	private bool queueingMaintenance;
 	private bool queueingOrphanedBlobCleanup;
+	private bool previewingMaintenance;
+	private bool previewingOrphanedBlobCleanup;
+	private bool runningDiagnostics;
+
+	private string RetentionPreviewText => maintenancePreview is null
+		? "Not scanned"
+		: $"{maintenancePreview.OldJobRecords} jobs, {maintenancePreview.OldBackupFiles} backups";
+	private string BlobPreviewText => blobPreview is null
+		? "Not scanned"
+		: $"{blobPreview.WouldDelete} orphan(s) of {blobPreview.Inspected} scanned";
+	private string DiagnosticsText => diagnostics is null
+		? "Not checked"
+		: diagnostics.TotalIssues == 0 ? "Clean" : diagnostics.TotalIssues.ToString();
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -125,6 +204,51 @@
 		lastMaintenanceCleanup = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.MaintenanceCleanup);
 		lastOrphanedBlobCleanup = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.OrphanedBlobCleanup);
 		lastDatabaseBackup = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.DatabaseBackup);
+	}
+
+	private async Task PreviewMaintenanceCleanup()
+	{
+		previewingMaintenance = true;
+		try
+		{
+			maintenancePreview = await MaintenanceService.PreviewCleanupAsync();
+			Snackbar.Add("Retention cleanup preview updated", Severity.Info);
+		}
+		finally
+		{
+			previewingMaintenance = false;
+		}
+	}
+
+	private async Task PreviewOrphanedBlobCleanup()
+	{
+		previewingOrphanedBlobCleanup = true;
+		try
+		{
+			blobPreview = await OrphanedBlobCleanupService.PreviewAsync();
+			Snackbar.Add("Orphaned blob preview updated", Severity.Info);
+		}
+		finally
+		{
+			previewingOrphanedBlobCleanup = false;
+		}
+	}
+
+	private async Task RunDiagnostics()
+	{
+		runningDiagnostics = true;
+		try
+		{
+			diagnostics = await DiagnosticsService.RunAsync();
+			Snackbar.Add(diagnostics.TotalIssues == 0
+				? "Integrity diagnostics found no issues"
+				: $"Integrity diagnostics found {diagnostics.TotalIssues} issue(s)",
+				diagnostics.TotalIssues == 0 ? Severity.Success : Severity.Warning);
+		}
+		finally
+		{
+			runningDiagnostics = false;
+		}
 	}
 
 	private async Task QueueMaintenanceCleanup()

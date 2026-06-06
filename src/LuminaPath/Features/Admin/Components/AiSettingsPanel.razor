@@ -187,6 +187,7 @@
 
 	private async Task Load()
 	{
+		RuntimeSettingsResolver.ClearCache();
 		var settings = await RuntimeSettingsResolver.GetAsync();
 		enabled = settings.Enabled;
 		enableMcpTools = settings.EnableMcpTools;

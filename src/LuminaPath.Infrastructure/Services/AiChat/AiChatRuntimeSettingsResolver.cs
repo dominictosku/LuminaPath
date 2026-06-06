@@ -9,6 +9,7 @@ public sealed class AiChatRuntimeSettingsResolver
     private readonly AnthropicOptions _anthropicOptions;
     private readonly OpenAiOptions _openAiOptions;
     private readonly ApplicationSettingsService _settings;
+    private AiChatRuntimeSettings? _cachedSettings;
 
     public AiChatRuntimeSettingsResolver(
         IOptions<AiChatOptions> chatOptions,
@@ -24,9 +25,14 @@ public sealed class AiChatRuntimeSettingsResolver
 
     public async Task<AiChatRuntimeSettings> GetAsync(CancellationToken cancellationToken = default)
     {
+        if (_cachedSettings is not null)
+        {
+            return _cachedSettings;
+        }
+
         var stored = await _settings.GetAiChatSettingsAsync(cancellationToken);
 
-        return new AiChatRuntimeSettings(
+        _cachedSettings = new AiChatRuntimeSettings(
             Enabled: ParseBool(stored.Enabled, fallback: true),
             Provider: NormalizeProvider(FirstNonEmpty(stored.Provider, _chatOptions.Provider, "anthropic")),
             MaxToolIterations: ParseInt(stored.MaxToolIterations, _chatOptions.MaxToolIterations, 1, 32),
@@ -44,6 +50,12 @@ public sealed class AiChatRuntimeSettingsResolver
                 Model: FirstNonEmpty(stored.OpenAiModel, _openAiOptions.Model, "llama3.2"),
                 ToolChoice: FirstNonEmpty(stored.OpenAiToolChoice, _openAiOptions.ToolChoice),
                 MaxTokens: ParseInt(stored.OpenAiMaxTokens, _openAiOptions.MaxTokens, 256, 200_000)));
+        return _cachedSettings;
+    }
+
+    public void ClearCache()
+    {
+        _cachedSettings = null;
     }
 
     private static bool ParseBool(string value, bool fallback)

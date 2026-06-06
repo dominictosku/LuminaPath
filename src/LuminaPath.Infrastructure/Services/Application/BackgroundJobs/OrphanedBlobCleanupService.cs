@@ -34,6 +34,19 @@ public sealed class OrphanedBlobCleanupService
 
     public async Task<OrphanedBlobCleanupResult> RunAsync(CancellationToken cancellationToken = default)
     {
+        return await ScanAsync(deleteOrphans: true, cancellationToken);
+    }
+
+    public async Task<OrphanedBlobCleanupPreviewResult> PreviewAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await ScanAsync(deleteOrphans: false, cancellationToken);
+        return new OrphanedBlobCleanupPreviewResult(result.Inspected, result.Deleted, result.OrphanedBlobNames);
+    }
+
+    private async Task<OrphanedBlobCleanupResult> ScanAsync(
+        bool deleteOrphans,
+        CancellationToken cancellationToken)
+    {
         var blobs = await _storage.ListAsync();
         if (blobs.Count == 0)
         {
@@ -47,6 +60,7 @@ public sealed class OrphanedBlobCleanupService
         var inspected = 0;
         var deleted = 0;
         var failed = 0;
+        var orphanedNames = new List<string>();
 
         foreach (var blob in blobs)
         {
@@ -62,6 +76,13 @@ public sealed class OrphanedBlobCleanupService
 
             if (referencedNames.Contains(name))
             {
+                continue;
+            }
+
+            orphanedNames.Add(name);
+            if (!deleteOrphans)
+            {
+                deleted++;
                 continue;
             }
 
@@ -90,7 +111,7 @@ public sealed class OrphanedBlobCleanupService
                 inspected);
         }
 
-        return new OrphanedBlobCleanupResult(inspected, deleted, failed);
+        return new OrphanedBlobCleanupResult(inspected, deleted, failed, orphanedNames);
     }
 
     private async Task<HashSet<string>> GetReferencedStorageNamesAsync(CancellationToken cancellationToken)
@@ -129,7 +150,16 @@ public sealed class OrphanedBlobCleanupService
     }
 }
 
-public sealed record OrphanedBlobCleanupResult(int Inspected, int Deleted, int Failed)
+public sealed record OrphanedBlobCleanupResult(
+    int Inspected,
+    int Deleted,
+    int Failed,
+    IReadOnlyList<string> OrphanedBlobNames)
 {
-    public static readonly OrphanedBlobCleanupResult Empty = new(0, 0, 0);
+    public static readonly OrphanedBlobCleanupResult Empty = new(0, 0, 0, Array.Empty<string>());
 }
+
+public sealed record OrphanedBlobCleanupPreviewResult(
+    int Inspected,
+    int WouldDelete,
+    IReadOnlyList<string> OrphanedBlobNames);

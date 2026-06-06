@@ -24,6 +24,17 @@ public sealed class BackgroundJobMaintenanceService
 
         return new BackgroundMaintenanceResult(deletedJobs, deletedBackups);
     }
+
+    public async Task<BackgroundMaintenancePreviewResult> PreviewCleanupAsync(CancellationToken cancellationToken = default)
+    {
+        var settings = await _settingsResolver.GetAsync(cancellationToken);
+        var oldJobs = await _jobService.CountHistoryCleanupCandidatesAsync(settings.JobHistoryRetentionDays, cancellationToken);
+        var oldBackups = await _backupService.CountOldBackupsAsync(settings.BackupRetentionCount, cancellationToken);
+
+        return new BackgroundMaintenancePreviewResult(oldJobs, oldBackups);
+    }
 }
 
 public sealed record BackgroundMaintenanceResult(int DeletedJobs, int DeletedBackups);
+
+public sealed record BackgroundMaintenancePreviewResult(int OldJobRecords, int OldBackupFiles);

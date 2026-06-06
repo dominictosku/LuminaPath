@@ -16,6 +16,7 @@ internal static class ApplicationServiceCollectionExtensions
         services.AddModelServices();
         services.AddImportServices();
         services.AddApplicationFeatureServices(config);
+        services.AddScoped<LibraryIntegrityDiagnosticsService>();
         services.AddBackgroundJobServices(config);
         services.AddScoped<ApplicationSettingsService>();
         return services;
