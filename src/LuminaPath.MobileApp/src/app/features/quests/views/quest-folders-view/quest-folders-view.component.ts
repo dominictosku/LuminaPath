@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, ViewEncapsulation, inject } from '@angular/core';
 import { IonIcon, IonReorder, IonReorderGroup, ItemReorderEventDetail } from '@ionic/angular/standalone';
 import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 
@@ -23,6 +23,7 @@ type FolderModalState = { mode: 'create' | 'edit'; folder: QuestFolder | null };
 @Component({
   selector: 'app-quest-folders-view',
   templateUrl: './quest-folders-view.component.html',
+  styleUrls: ['./quest-folders-view.component.scss'],
   imports: [
     IonIcon,
     IonReorder,
@@ -32,6 +33,10 @@ type FolderModalState = { mode: 'create' | 'edit'; folder: QuestFolder | null };
     EmptyStateComponent,
     QuestFolderModalComponent,
   ],
+  // CDK drag preview/placeholder classes are attached dynamically during
+  // drag-drop; keeping these namespace-specific styles global preserves the
+  // previous page-level behaviour after the stylesheet split.
+  encapsulation: ViewEncapsulation.None,
 })
 export class QuestFoldersViewComponent {
   protected readonly store = inject(QuestBoardStore);

@@ -16,19 +16,6 @@ export type SkillTreeBranch = {
   nodes: SkillTreeNode[];
 };
 
-export type SkillTreeQuest = {
-  id: string;
-  branchId: string;
-  text: string;
-  xp: number;
-  done: boolean;
-};
-
-export type SkillTreeState = {
-  unlockedNodeIds: string[];
-  quests: SkillTreeQuest[];
-};
-
 export type SkillTreeNodeStatus = 'locked' | 'available' | 'unlocked';
 
 export type SkillTreePickedNode = {

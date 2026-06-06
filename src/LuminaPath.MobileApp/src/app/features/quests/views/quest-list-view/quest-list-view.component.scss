@@ -1,0 +1,131 @@
+.quest-compact {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quest-compact__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 30px 30px;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.quest-compact__row[data-type="main"] { border-left: 3px solid #fbbf24; }
+.quest-compact__row[data-type="sub"] { border-left: 3px solid #60a5fa; }
+.quest-compact__row[data-type="faction"] { border-left: 3px solid #a78bfa; }
+.quest-compact__row[data-due="overdue"] { border-left: 3px solid var(--danger); }
+
+.quest-compact__row--done .quest-compact__title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.quest-compact__check,
+.quest-compact__delete {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.quest-compact__delete { color: var(--muted); }
+
+.quest-compact__check ion-icon,
+.quest-compact__delete ion-icon {
+  font-size: 1.05rem;
+}
+
+.quest-compact__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.quest-compact__title {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 720;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quest-compact__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quest-compact__meta ion-icon {
+  font-size: 0.82rem;
+}
+
+.quest-compact__dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.quest-compact__due[data-state="overdue"] { color: #fecdd3; }
+.quest-compact__due[data-state="today"] { color: #fde68a; }
+.quest-compact__due[data-state="soon"] { color: var(--accent); }
+
+.quest-folder-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.quest-compact__folder {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.quest-compact__folder:hover {
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.quest-compact__folder ion-icon {
+  font-size: 1rem;
+}
+
+.quest-compact__folder--active {
+  color: var(--accent);
+}

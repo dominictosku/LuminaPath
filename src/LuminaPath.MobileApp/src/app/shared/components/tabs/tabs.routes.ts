@@ -62,11 +62,6 @@ export const routes: Routes = [
           import('../../../features/planning/pages/planning.page').then((m) => m.PlanningPage),
       },
       {
-        path: 'planing',
-        redirectTo: 'planning',
-        pathMatch: 'full',
-      },
-      {
         path: 'statistic',
         loadComponent: () =>
           import('../../../features/statistic/pages/statistic.page').then((m) => m.StatisticPage),

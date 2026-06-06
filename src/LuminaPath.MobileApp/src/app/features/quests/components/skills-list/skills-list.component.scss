@@ -1,0 +1,197 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.skill-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.skill-card {
+  --skill-color: var(--accent);
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 24px 54px rgba(8, 22, 48, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.skill-card header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.skill-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 17px;
+  color: #fff;
+  background: var(--skill-color);
+  font-size: 1.3rem;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--skill-color) 36%, transparent);
+}
+
+.skill-card header h3 {
+  color: var(--ink);
+  font-size: 1.08rem;
+  font-weight: 830;
+  line-height: 1.2;
+}
+
+.skill-card header p {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.skill-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skill-card-actions button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.14);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.skill-card-actions button:hover {
+  color: var(--ink);
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.skill-card-actions button:first-child {
+  color: var(--skill-color);
+}
+
+.skill-card ion-progress-bar {
+  --background: rgba(148, 163, 184, 0.2);
+  --progress-background: var(--skill-color);
+  height: 6px;
+  border-radius: 999px;
+}
+
+.skill-card > ion-progress-bar:last-child,
+.skill-next,
+.node small {
+  display: none;
+}
+
+.skill-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.skill-actions ion-button {
+  margin: 0;
+  --border-radius: 999px;
+  --color: var(--skill-color);
+  --background: transparent;
+  font-size: 0.78rem;
+  font-weight: 820;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.skill-actions ion-button:first-child {
+  --background: var(--skill-color);
+  --background-hover: color-mix(in srgb, var(--skill-color) 86%, white);
+  --color: #fff;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  height: 36px;
+}
+
+.node-list {
+  display: grid;
+  gap: 8px;
+}
+
+.node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px dashed rgba(148, 163, 184, 0.32);
+  border-radius: 14px;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.06);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.node ion-icon {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.node strong {
+  color: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.node--unlocked {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--skill-color) 40%, transparent);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--skill-color) 14%, transparent);
+}
+
+.node--unlocked ion-icon {
+  color: var(--skill-color);
+}
+
+.node--available {
+  border-style: solid;
+  border-color: var(--accent-border);
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.node--available ion-icon {
+  color: var(--accent);
+}
+
+.node-quest-button {
+  margin-left: auto;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--skill-color);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+@media (min-width: 760px) {
+  .skill-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

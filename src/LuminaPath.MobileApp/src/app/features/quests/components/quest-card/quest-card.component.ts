@@ -17,13 +17,13 @@ export type { QuestDueState };
  * Rendered inside `<ion-reorder-group>`: keeps `<ion-reorder>` at the host
  * level so drag reordering still works through the custom element.
  *
- * Note: the page that hosts this card uses ViewEncapsulation.None and ships
- * the `.quest-card`, `.quest-body`, `.meta-pill*`, etc. styles globally —
- * this component intentionally has no SCSS so it keeps the page's look.
+ * The card owns the gamified row treatment, including the completion animation
+ * and per-type accent variables. Shared board chrome still lives on the page.
  */
 @Component({
   selector: 'app-quest-card',
   templateUrl: './quest-card.component.html',
+  styleUrls: ['./quest-card.component.scss'],
   imports: [IonIcon, IonProgressBar, IonReorder, QuestFolderPickerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

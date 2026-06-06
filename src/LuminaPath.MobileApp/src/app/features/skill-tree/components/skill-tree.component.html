@@ -51,62 +51,6 @@
         <span>{{ prev.subtitle }}</span>
       </button>
     }
-    <aside class="todo-panel">
-      <div class="todo-head">
-        <h3>Quests</h3>
-        <span class="todo-count">{{ openQuestCount }} OPEN</span>
-      </div>
-      <ul class="todo-list">
-        @for (quest of branchQuests; track trackByQuest($index, quest)) {
-          <li
-            class="todo-item"
-            [class.done]="quest.done"
-            (click)="toggleQuest(quest)">
-            <span class="todo-check"></span>
-            <div class="todo-body">
-              <div class="todo-text">{{ quest.text }}</div>
-              <div class="todo-meta">
-                <span class="todo-skill highlighted">{{ branch.subtitle }}</span>
-                <span class="todo-xp">+{{ quest.xp }} XP</span>
-              </div>
-            </div>
-          </li>
-        }
-        @if (branchQuests.length && otherQuests.length) {
-          <li class="todo-divider">Other paths</li>
-        }
-        @for (quest of otherQuests; track trackByQuest($index, quest)) {
-          <li
-            class="todo-item"
-            [class.done]="quest.done"
-            (click)="toggleQuest(quest)">
-            <span class="todo-check"></span>
-            <div class="todo-body">
-              <div class="todo-text">{{ quest.text }}</div>
-              <div class="todo-meta">
-                <span class="todo-skill">{{ branchSubtitle(quest.branchId) }}</span>
-                <span class="todo-xp">+{{ quest.xp }} XP</span>
-              </div>
-            </div>
-          </li>
-        }
-        @if (!quests.length) {
-          <li class="todo-empty">Add a quest below to get started.</li>
-        }
-      </ul>
-      <form class="todo-add" (submit)="$event.preventDefault(); addQuest()">
-        <input
-          type="text"
-          [(ngModel)]="newQuestText"
-          name="newQuestText"
-          placeholder="Add a quest…" />
-          <select [(ngModel)]="newQuestBranchId" name="newQuestBranchId">
-            @for (b of branches; track trackByBranch($index, b)) {
-              <option [value]="b.id">{{ b.subtitle }}</option>
-            }
-          </select>
-        </form>
-      </aside>
       @if (nextBranch; as next) {
         <button
           type="button"

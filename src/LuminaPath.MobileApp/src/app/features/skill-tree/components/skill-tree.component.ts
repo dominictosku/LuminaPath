@@ -1,18 +1,14 @@
 
 import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, NgZone, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
 import {
   SkillTreeBranch,
   SkillTreeNode,
   SkillTreeNodeStatus,
   SkillTreePickedNode,
-  SkillTreeQuest,
 } from '../models/skill-tree.model';
 import { SkillTreeAudioService } from '../services/skill-tree-audio.service';
 import { SkillTreeScene } from '../services/skill-tree-scene';
-
-const QUESTS_STORAGE_KEY = 'luminapath.skill-tree.quests.v2';
 
 export interface NodeUnlockEvent {
   branchId: string;
@@ -24,7 +20,7 @@ export interface NodeUnlockEvent {
   selector: 'app-skill-tree',
   templateUrl: './skill-tree.component.html',
   styleUrls: ['./skill-tree.component.scss'],
-  imports: [FormsModule, IonIcon],
+  imports: [IonIcon],
 })
 export class SkillTreeComponent implements AfterViewInit, OnChanges, OnDestroy {
   private audio = inject(SkillTreeAudioService);
@@ -45,10 +41,6 @@ export class SkillTreeComponent implements AfterViewInit, OnChanges, OnDestroy {
   hoveredNode: SkillTreePickedNode | null = null;
   selectedNode: SkillTreePickedNode | null = null;
 
-  quests: SkillTreeQuest[] = [];
-  newQuestText = '';
-  newQuestBranchId = '';
-
   private scene: SkillTreeScene | null = null;
   private viewReady = false;
   private keyHandler = (e: KeyboardEvent) => this.onKey(e);
@@ -59,12 +51,8 @@ export class SkillTreeComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   ngAfterViewInit(): void {
     this.viewReady = true;
-    this.quests = this.loadQuests();
     if (this.branches.length) {
       this.startScene();
-    }
-    if (!this.newQuestBranchId && this.branches.length) {
-      this.newQuestBranchId = this.branches[0].id;
     }
 
     window.addEventListener('keydown', this.keyHandler);
@@ -73,7 +61,7 @@ export class SkillTreeComponent implements AfterViewInit, OnChanges, OnDestroy {
     window.addEventListener('mousemove', this.dragHandlerMove);
     window.addEventListener('mouseup', this.dragHandlerUp);
 
-  setTimeout(() => {
+    setTimeout(() => {
       this.loading = false;
       this.cdr.detectChanges();
     }, 600);
@@ -91,20 +79,9 @@ export class SkillTreeComponent implements AfterViewInit, OnChanges, OnDestroy {
         this.hoveredNode = null;
         this.restartScene();
       }
-      // Drop quests whose branch was deleted, and seed select if empty.
-      const validBranchIds = new Set(this.branches.map((b) => b.id));
-      const filtered = this.quests.filter((q) => validBranchIds.has(q.branchId));
-      if (filtered.length !== this.quests.length) {
-        this.quests = filtered;
-        this.persistQuests();
-      }
-      if (!validBranchIds.has(this.newQuestBranchId) && this.branches.length) {
-        this.newQuestBranchId = this.branches[0].id;
-      }
-      return;
     }
 
-  if (changes['unlockedNodeIds'] && this.scene && this.viewReady) {
+    if (changes['unlockedNodeIds'] && this.scene && this.viewReady) {
       this.zone.runOutsideAngular(() => this.scene?.setUnlocked(this.unlockedNodeIds));
     }
   }
@@ -225,74 +202,6 @@ export class SkillTreeComponent implements AfterViewInit, OnChanges, OnDestroy {
   trackByBranch(_: number, b: SkillTreeBranch) { return b.id; }
   trackByNode(_: number, n: SkillTreeNode) { return n.id; }
   trackByPrereq(_: number, p: { id: string }) { return p.id; }
-  trackByQuest(_: number, q: SkillTreeQuest) { return q.id; }
-
-  get branchQuests(): SkillTreeQuest[] {
-    const branchId = this.currentBranch?.id;
-    return branchId ? this.quests.filter((q) => q.branchId === branchId) : [];
-  }
-
-  get otherQuests(): SkillTreeQuest[] {
-    const branchId = this.currentBranch?.id;
-    return branchId ? this.quests.filter((q) => q.branchId !== branchId) : this.quests;
-  }
-
-  get openQuestCount(): number {
-    return this.quests.filter((q) => !q.done).length;
-  }
-
-  branchSubtitle(branchId: string): string {
-    return this.branches.find((b) => b.id === branchId)?.subtitle ?? '';
-  }
-
-  toggleQuest(quest: SkillTreeQuest): void {
-    quest.done = !quest.done;
-    if (quest.done) {
-      this.audio.complete();
-    } else {
-      this.audio.click();
-    }
-    this.persistQuests();
-  }
-
-  addQuest(): void {
-    const text = this.newQuestText.trim();
-    if (!text || !this.newQuestBranchId) return;
-    this.quests = [
-      {
-        id: 'q-' + Math.random().toString(36).slice(2, 10),
-        branchId: this.newQuestBranchId,
-        text,
-        xp: 20,
-        done: false,
-      },
-      ...this.quests,
-    ];
-    this.newQuestText = '';
-    this.persistQuests();
-  }
-
-  private loadQuests(): SkillTreeQuest[] {
-    try {
-      const raw = localStorage.getItem(QUESTS_STORAGE_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
-      return parsed
-        .filter((q) => q && typeof q.id === 'string' && typeof q.branchId === 'string' && typeof q.text === 'string')
-        .map((q) => ({ id: q.id, branchId: q.branchId, text: q.text, xp: Number(q.xp) || 20, done: !!q.done }));
-    } catch {
-      return [];
-    }
-  }
-
-  private persistQuests(): void {
-    try {
-      localStorage.setItem(QUESTS_STORAGE_KEY, JSON.stringify(this.quests));
-    } catch {
-      // ignore quota / private mode
-    }
-  }
 
   private startScene(): void {
     this.zone.runOutsideAngular(() => {

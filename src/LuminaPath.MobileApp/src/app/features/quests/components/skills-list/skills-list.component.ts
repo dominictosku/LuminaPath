@@ -15,6 +15,7 @@ export type SkillNodeQuestAction = { skill: QuestSkill; node: string };
 @Component({
   selector: 'app-skills-list',
   templateUrl: './skills-list.component.html',
+  styleUrls: ['./skills-list.component.scss'],
   imports: [IonButton, IonIcon, IonProgressBar],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

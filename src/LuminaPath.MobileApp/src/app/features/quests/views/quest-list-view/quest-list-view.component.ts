@@ -30,6 +30,7 @@ import { QuestFolderPickerComponent } from '../../components/quest-folder-picker
 @Component({
   selector: 'app-quest-list-view',
   templateUrl: './quest-list-view.component.html',
+  styleUrls: ['./quest-list-view.component.scss'],
   imports: [
     IonBadge,
     IonIcon,
