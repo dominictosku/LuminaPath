@@ -2,7 +2,6 @@
 @using LuminaPath.Infrastructure.Services.Application.BackgroundJobs
 @using Microsoft.Extensions.Options
 @inject ApplicationSettingsService ApplicationSettingsService
-@inject BackgroundJobService BackgroundJobService
 @inject IOptions<BackgroundJobOptions> Options
 @inject ISnackbar Snackbar
 
@@ -49,6 +48,18 @@
 							 Variant="MudBlazor.Variant.Outlined"
 							 Min="1"
 							 Max="3650" />
+
+			<MudNumericField @bind-Value="maintenanceIntervalHours"
+							 Label="Maintenance interval hours"
+							 Variant="MudBlazor.Variant.Outlined"
+							 Min="1"
+							 Max="720" />
+
+			<MudNumericField @bind-Value="orphanedBlobCleanupIntervalHours"
+							 Label="Orphaned blob interval hours"
+							 Variant="MudBlazor.Variant.Outlined"
+							 Min="0"
+							 Max="720" />
 		</div>
 
 		<div class="settings-action-row">
@@ -58,13 +69,6 @@
 					   StartIcon="@Icons.Material.Filled.Save"
 					   Disabled="@saving">
 				Save Job Settings
-			</MudButton>
-			<MudButton OnClick="RunCleanup"
-					   Variant="MudBlazor.Variant.Outlined"
-					   Color="Color.Primary"
-					   StartIcon="@Icons.Material.Filled.CleaningServices"
-					   Disabled="@(saving || cleaning)">
-				@(cleaning ? "Queueing Cleanup" : "Run Cleanup Now")
 			</MudButton>
 		</div>
 	</div>
@@ -177,8 +181,9 @@
 	private int backupIntervalHours;
 	private int backupRetentionCount;
 	private int jobHistoryRetentionDays;
+	private int maintenanceIntervalHours;
+	private int orphanedBlobCleanupIntervalHours;
 	private bool saving;
-	private bool cleaning;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -187,6 +192,8 @@
 		backupIntervalHours = ParseInt(stored.BackupIntervalHours, Options.Value.BackupIntervalHours, 1, 720);
 		backupRetentionCount = ParseInt(stored.BackupRetentionCount, Options.Value.BackupRetentionCount, 1, 500);
 		jobHistoryRetentionDays = ParseInt(stored.JobHistoryRetentionDays, Options.Value.JobHistoryRetentionDays, 1, 3650);
+		maintenanceIntervalHours = ParseInt(stored.MaintenanceIntervalHours, Options.Value.MaintenanceIntervalHours, 1, 720);
+		orphanedBlobCleanupIntervalHours = ParseInt(stored.OrphanedBlobCleanupIntervalHours, Options.Value.OrphanedBlobCleanupIntervalHours, 0, 720);
 	}
 
 	private async Task Save()
@@ -198,26 +205,14 @@
 				scheduledJobsEnabled.ToString(),
 				Math.Clamp(backupIntervalHours, 1, 720).ToString(),
 				Math.Clamp(backupRetentionCount, 1, 500).ToString(),
-				Math.Clamp(jobHistoryRetentionDays, 1, 3650).ToString()));
+				Math.Clamp(jobHistoryRetentionDays, 1, 3650).ToString(),
+				Math.Clamp(maintenanceIntervalHours, 1, 720).ToString(),
+				Math.Clamp(orphanedBlobCleanupIntervalHours, 0, 720).ToString()));
 			Snackbar.Add("Saved background job settings", Severity.Success);
 		}
 		finally
 		{
 			saving = false;
-		}
-	}
-
-	private async Task RunCleanup()
-	{
-		cleaning = true;
-		try
-		{
-			var job = await BackgroundJobService.EnqueueMaintenanceCleanupAsync();
-			Snackbar.Add($"Queued cleanup job #{job.Id}", Severity.Success);
-		}
-		finally
-		{
-			cleaning = false;
 		}
 	}
 

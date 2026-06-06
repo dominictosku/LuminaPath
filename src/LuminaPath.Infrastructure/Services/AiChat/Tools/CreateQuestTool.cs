@@ -18,6 +18,8 @@ public sealed class CreateQuestTool : IChatTool
 {
     public string Name => "create_quest";
 
+    public bool IsWriteAction => true;
+
     public string Description =>
         "Create a new quest on the current user's quest board. This WRITES data, so only call it " +
         "after the user has explicitly asked to create a quest and confirmed the details in the conversation. " +

@@ -22,8 +22,8 @@ public sealed class BackgroundJobSettingsResolver
             ParseInt(stored.BackupIntervalHours, _options.BackupIntervalHours, 1, 24 * 30),
             ParseInt(stored.BackupRetentionCount, _options.BackupRetentionCount, 1, 500),
             ParseInt(stored.JobHistoryRetentionDays, _options.JobHistoryRetentionDays, 1, 3650),
-            Math.Clamp(_options.MaintenanceIntervalHours, 1, 24 * 30),
-            Math.Clamp(_options.OrphanedBlobCleanupIntervalHours, 0, 24 * 30));
+            ParseInt(stored.MaintenanceIntervalHours, _options.MaintenanceIntervalHours, 1, 24 * 30),
+            ParseInt(stored.OrphanedBlobCleanupIntervalHours, _options.OrphanedBlobCleanupIntervalHours, 0, 24 * 30));
     }
 
     private static bool ParseBool(string value, bool fallback)

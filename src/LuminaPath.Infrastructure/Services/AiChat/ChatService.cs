@@ -2,7 +2,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace LuminaPath.Infrastructure.Services.AiChat;
 
@@ -29,18 +28,18 @@ public sealed class ChatService
         """;
 
     private readonly IAiProvider _provider;
-    private readonly AiChatOptions _options;
+    private readonly AiChatRuntimeSettingsResolver _settingsResolver;
     private readonly ChatToolRegistry _tools;
     private readonly ILogger<ChatService> _logger;
 
     public ChatService(
         IAiProvider provider,
-        IOptions<AiChatOptions> options,
+        AiChatRuntimeSettingsResolver settingsResolver,
         ChatToolRegistry tools,
         ILogger<ChatService> logger)
     {
         _provider = provider;
-        _options = options.Value;
+        _settingsResolver = settingsResolver;
         _tools = tools;
         _logger = logger;
     }
@@ -50,6 +49,14 @@ public sealed class ChatService
         ChatToolContext toolContext,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        var settings = await _settingsResolver.GetAsync(cancellationToken);
+        if (!settings.Enabled)
+        {
+            yield return new ChatErrorEvent("AI chat is disabled by an administrator.");
+            yield return new ChatDoneEvent();
+            yield break;
+        }
+
         if (!_provider.IsConfigured)
         {
             yield return new ChatErrorEvent($"AI provider '{_provider.Name}' is not configured.");
@@ -58,13 +65,20 @@ public sealed class ChatService
         }
 
         var messages = BuildInitialMessages(request);
-        var toolDefs = _tools.All
+        var availableTools = _tools.All
+            .Where(tool => settings.EnableMcpTools || !tool.Name.StartsWith("mcp__", StringComparison.OrdinalIgnoreCase))
+            .Where(tool => settings.EnableWriteTools || !tool.IsWriteAction)
+            .ToList();
+        var availableToolNames = new HashSet<string>(
+            availableTools.Select(tool => tool.Name),
+            StringComparer.OrdinalIgnoreCase);
+        var toolDefs = availableTools
             .Select(t => new AnthropicToolDefinition(t.Name, Truncate(t.Description, 1024), t.InputSchema))
             .ToList();
 
         var system = SystemPrompt + "\n\nToday's date: " + DateTime.UtcNow.ToString("yyyy-MM-dd");
 
-        for (var iteration = 0; iteration < _options.MaxToolIterations; iteration++)
+        for (var iteration = 0; iteration < settings.MaxToolIterations; iteration++)
         {
             var assistantBlocks = new List<AnthropicContentBlock>();
             var toolUseBuffers = new Dictionary<int, ToolUseBuffer>();
@@ -133,6 +147,12 @@ public sealed class ChatService
                 if (!_tools.TryGet(block.Name, out var tool))
                 {
                     toolResults.Add(new ToolResultBlock(block.Id, $"Tool '{block.Name}' is not available.", IsError: true));
+                    continue;
+                }
+
+                if (!availableToolNames.Contains(block.Name))
+                {
+                    toolResults.Add(new ToolResultBlock(block.Id, $"Tool '{block.Name}' is disabled.", IsError: true));
                     continue;
                 }
 

@@ -2,6 +2,7 @@ using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.Application;
 using LuminaPath.Infrastructure.Services.Application.BackgroundJobs;
+using LuminaPath.Infrastructure.Services.AiChat;
 using LuminaPath.Infrastructure.Services.Auditing;
 using LuminaPath.Infrastructure.Services.Imports;
 using LuminaPath.Infrastructure.Services.ModelServices;
@@ -46,6 +47,8 @@ public class ServiceRegistrationTests
         Assert.NotNull(scopedServices.GetRequiredService<BrowseLibraryService>());
         Assert.NotNull(scopedServices.GetRequiredService<DatabaseBackupService>());
         Assert.NotNull(scopedServices.GetRequiredService<ApplicationSettingsService>());
+        Assert.NotNull(scopedServices.GetRequiredService<AiChatRuntimeSettingsResolver>());
+        Assert.IsType<RuntimeAiProvider>(scopedServices.GetRequiredService<IAiProvider>());
         Assert.NotNull(scopedServices.GetRequiredService<BackgroundJobService>());
         Assert.NotEmpty(scopedServices.GetRequiredService<IEnumerable<IBackgroundJobRunner>>());
         Assert.NotNull(provider.GetRequiredService<IBackgroundJobQueue>());

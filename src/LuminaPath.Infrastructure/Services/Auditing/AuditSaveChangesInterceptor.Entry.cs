@@ -20,7 +20,10 @@ public sealed partial class AuditSaveChangesInterceptor
         ApplicationSettingsService.SteamApiKey,
         ApplicationSettingsService.PsnBearerToken,
         ApplicationSettingsService.MetadataIgdbClientSecret,
-        ApplicationSettingsService.MetadataRawgApiKey
+        ApplicationSettingsService.MetadataRawgApiKey,
+        ApplicationSettingsService.GoogleCalendarClientSecret,
+        ApplicationSettingsService.AnthropicApiKey,
+        ApplicationSettingsService.OpenAiApiKey
     };
 
     private static readonly Dictionary<Type, HashSet<string>> TrackedProperties = new()

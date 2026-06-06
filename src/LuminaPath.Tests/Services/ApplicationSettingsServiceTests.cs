@@ -76,4 +76,44 @@ public class ApplicationSettingsServiceTests
         Assert.Equal("new-secret", settings[ApplicationSettingsService.MetadataIgdbClientSecret]);
         Assert.Equal("rawg-key", settings[ApplicationSettingsService.MetadataRawgApiKey]);
     }
+
+    [Fact]
+    public async Task SaveAiChatSettingsAsync_PersistsValuesAndRedactsSecretsInAudit()
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        var factory = new TestDbContextFactory(options);
+        var service = new ApplicationSettingsService(factory, new AuditLogService(factory));
+
+        await service.SaveAiChatSettingsAsync(new AiChatStoredSettings(
+            "True",
+            "openai",
+            "6",
+            "False",
+            "False",
+            "anthropic-secret",
+            "claude-test",
+            "4096",
+            "https://api.anthropic.com",
+            "2023-06-01",
+            "openai-secret",
+            "http://localhost:1234/v1",
+            "local-model",
+            "auto",
+            "2048"));
+
+        await using var context = new LuminaPathDbContext(options);
+        var settings = await context.ApplicationSettings.ToDictionaryAsync(setting => setting.Key, setting => setting.Value);
+
+        Assert.Equal("openai", settings[ApplicationSettingsService.AiChatProvider]);
+        Assert.Equal("False", settings[ApplicationSettingsService.AiChatEnableWriteTools]);
+        Assert.Equal("local-model", settings[ApplicationSettingsService.OpenAiModel]);
+        Assert.Equal("openai-secret", settings[ApplicationSettingsService.OpenAiApiKey]);
+
+        var auditJson = string.Join("\n", await context.AuditLogs
+            .Where(log => log.TargetId == ApplicationSettingsService.OpenAiApiKey)
+            .Select(log => log.ChangesJson)
+            .ToListAsync());
+        Assert.Contains("\"new\":\"set\"", auditJson);
+        Assert.DoesNotContain("openai-secret", auditJson);
+    }
 }

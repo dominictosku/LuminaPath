@@ -19,7 +19,8 @@ public class BackgroundJobSettingsResolverTests
             BackupIntervalHours = 12,
             BackupRetentionCount = 5,
             JobHistoryRetentionDays = 14,
-            MaintenanceIntervalHours = 3
+            MaintenanceIntervalHours = 3,
+            OrphanedBlobCleanupIntervalHours = 8
         });
 
         var settings = await resolver.GetAsync();
@@ -29,6 +30,7 @@ public class BackgroundJobSettingsResolverTests
         Assert.Equal(5, settings.BackupRetentionCount);
         Assert.Equal(14, settings.JobHistoryRetentionDays);
         Assert.Equal(3, settings.MaintenanceIntervalHours);
+        Assert.Equal(8, settings.OrphanedBlobCleanupIntervalHours);
     }
 
     [Fact]
@@ -41,7 +43,9 @@ public class BackgroundJobSettingsResolverTests
                 new ApplicationSetting { Key = ApplicationSettingsService.BackgroundJobsScheduledJobsEnabled, Value = "true" },
                 new ApplicationSetting { Key = ApplicationSettingsService.BackgroundJobsBackupIntervalHours, Value = "48" },
                 new ApplicationSetting { Key = ApplicationSettingsService.BackgroundJobsBackupRetentionCount, Value = "7" },
-                new ApplicationSetting { Key = ApplicationSettingsService.BackgroundJobsJobHistoryRetentionDays, Value = "90" });
+                new ApplicationSetting { Key = ApplicationSettingsService.BackgroundJobsJobHistoryRetentionDays, Value = "90" },
+                new ApplicationSetting { Key = ApplicationSettingsService.BackgroundJobsMaintenanceIntervalHours, Value = "4" },
+                new ApplicationSetting { Key = ApplicationSettingsService.BackgroundJobsOrphanedBlobCleanupIntervalHours, Value = "12" });
             await context.SaveChangesAsync();
         }
 
@@ -53,6 +57,8 @@ public class BackgroundJobSettingsResolverTests
         Assert.Equal(48, settings.BackupIntervalHours);
         Assert.Equal(7, settings.BackupRetentionCount);
         Assert.Equal(90, settings.JobHistoryRetentionDays);
+        Assert.Equal(4, settings.MaintenanceIntervalHours);
+        Assert.Equal(12, settings.OrphanedBlobCleanupIntervalHours);
     }
 
     private static BackgroundJobSettingsResolver CreateResolver(

@@ -1,0 +1,166 @@
+@using LuminaPath.Core.Models
+@using LuminaPath.Infrastructure.Services.Application.BackgroundJobs
+@inject BackgroundJobService BackgroundJobService
+@inject ISnackbar Snackbar
+
+<section class="settings-panel settings-panel--primary">
+	<div class="settings-panel__header">
+		<div>
+			<MudText Typo="Typo.overline">Maintenance</MudText>
+			<MudText Typo="Typo.h5">Manual operations</MudText>
+			<MudText Typo="Typo.body2">
+				Queue maintenance work without waiting for the scheduler. Jobs run through the normal background-job queue and audit trail.
+			</MudText>
+		</div>
+		<div class="settings-panel__icon">
+			<MudIcon Icon="@Icons.Material.Filled.Handyman" />
+		</div>
+	</div>
+
+	<div class="maintenance-status-grid">
+		<div class="maintenance-status-card">
+			<span>Retention cleanup</span>
+			<strong>@FormatJob(lastMaintenanceCleanup)</strong>
+		</div>
+		<div class="maintenance-status-card">
+			<span>Orphaned blobs</span>
+			<strong>@FormatJob(lastOrphanedBlobCleanup)</strong>
+		</div>
+		<div class="maintenance-status-card">
+			<span>Database backup</span>
+			<strong>@FormatJob(lastDatabaseBackup)</strong>
+		</div>
+	</div>
+
+	<div class="maintenance-actions">
+		<MudButton OnClick="QueueMaintenanceCleanup"
+				   Variant="MudBlazor.Variant.Filled"
+				   Color="Color.Secondary"
+				   StartIcon="@Icons.Material.Filled.CleaningServices"
+				   Disabled="@queueingMaintenance">
+			@(queueingMaintenance ? "Queueing Cleanup" : "Run Retention Cleanup")
+		</MudButton>
+		<MudButton OnClick="QueueOrphanedBlobCleanup"
+				   Variant="MudBlazor.Variant.Filled"
+				   Color="Color.Primary"
+				   StartIcon="@Icons.Material.Filled.FolderDelete"
+				   Disabled="@queueingOrphanedBlobCleanup">
+			@(queueingOrphanedBlobCleanup ? "Queueing Blob Cleanup" : "Run Blob Cleanup")
+		</MudButton>
+		<MudButton OnClick="LoadStatus"
+				   Variant="MudBlazor.Variant.Outlined"
+				   Color="Color.Primary"
+				   StartIcon="@Icons.Material.Filled.Refresh"
+				   Disabled="@(queueingMaintenance || queueingOrphanedBlobCleanup)">
+			Refresh Status
+		</MudButton>
+	</div>
+</section>
+
+<section class="settings-panel settings-help-panel">
+	<MudIcon Icon="@Icons.Material.Filled.Info" />
+	<div>
+		<MudText Typo="Typo.h6">What runs here</MudText>
+		<MudText Typo="Typo.body2">
+			Retention cleanup removes old completed job records and old backup files. Blob cleanup removes storage files no longer referenced by any document row.
+		</MudText>
+	</div>
+</section>
+
+<style>
+	.maintenance-status-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+		gap: 12px;
+		margin-bottom: 16px;
+	}
+
+	.maintenance-status-card {
+		display: grid;
+		gap: 6px;
+		padding: 14px;
+		border: 1px solid rgba(59, 130, 246, .18);
+		border-radius: 12px;
+		background: rgba(255, 255, 255, .04);
+	}
+
+	.maintenance-status-card span {
+		color: var(--mud-palette-text-secondary);
+		font-size: .78rem;
+		font-weight: 800;
+		text-transform: uppercase;
+	}
+
+	.maintenance-status-card strong {
+		font-size: 1rem;
+	}
+
+	.maintenance-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+
+	@@media (max-width: 680px) {
+		.maintenance-actions {
+			display: grid;
+		}
+	}
+</style>
+
+@code {
+	private BackgroundJobRecord? lastMaintenanceCleanup;
+	private BackgroundJobRecord? lastOrphanedBlobCleanup;
+	private BackgroundJobRecord? lastDatabaseBackup;
+	private bool queueingMaintenance;
+	private bool queueingOrphanedBlobCleanup;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadStatus();
+	}
+
+	private async Task LoadStatus()
+	{
+		lastMaintenanceCleanup = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.MaintenanceCleanup);
+		lastOrphanedBlobCleanup = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.OrphanedBlobCleanup);
+		lastDatabaseBackup = await BackgroundJobService.GetLastSuccessfulJobAsync(BackgroundJobTypes.DatabaseBackup);
+	}
+
+	private async Task QueueMaintenanceCleanup()
+	{
+		queueingMaintenance = true;
+		try
+		{
+			var job = await BackgroundJobService.EnqueueMaintenanceCleanupAsync();
+			Snackbar.Add($"Queued maintenance cleanup job #{job.Id}", Severity.Success);
+			await LoadStatus();
+		}
+		finally
+		{
+			queueingMaintenance = false;
+		}
+	}
+
+	private async Task QueueOrphanedBlobCleanup()
+	{
+		queueingOrphanedBlobCleanup = true;
+		try
+		{
+			var job = await BackgroundJobService.EnqueueOrphanedBlobCleanupAsync();
+			Snackbar.Add($"Queued orphaned blob cleanup job #{job.Id}", Severity.Success);
+			await LoadStatus();
+		}
+		finally
+		{
+			queueingOrphanedBlobCleanup = false;
+		}
+	}
+
+	private static string FormatJob(BackgroundJobRecord? job)
+	{
+		return job is null
+			? "Never"
+			: (job.CompletedAt ?? job.CreatedAt).ToLocalTime().ToString("dd.MM.yyyy HH:mm");
+	}
+}

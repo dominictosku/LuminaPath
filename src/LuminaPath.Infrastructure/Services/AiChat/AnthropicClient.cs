@@ -35,23 +35,43 @@ public sealed class AnthropicClient : IAiProvider
         IReadOnlyList<AnthropicToolDefinition>? tools,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        if (!IsConfigured)
+        var options = new AnthropicRuntimeSettings(
+            _options.ApiKey ?? string.Empty,
+            _options.Model,
+            _options.MaxTokens,
+            _options.BaseUrl,
+            _options.AnthropicVersion);
+
+        await foreach (var ev in StreamAsync(messages, system, tools, options, cancellationToken))
+        {
+            yield return ev;
+        }
+    }
+
+    public async IAsyncEnumerable<AnthropicStreamEvent> StreamAsync(
+        IReadOnlyList<AnthropicMessage> messages,
+        string? system,
+        IReadOnlyList<AnthropicToolDefinition>? tools,
+        AnthropicRuntimeSettings options,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(options.ApiKey))
         {
             yield return new StreamErrorEvent("Anthropic API key is not configured.");
             yield break;
         }
 
         var request = new AnthropicMessageRequest(
-            Model: _options.Model,
-            MaxTokens: _options.MaxTokens,
+            Model: options.Model,
+            MaxTokens: options.MaxTokens,
             Messages: messages,
             System: system,
             Tools: tools is { Count: > 0 } ? tools : null,
             Stream: true);
 
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{_options.BaseUrl.TrimEnd('/')}/v1/messages");
-        httpRequest.Headers.Add("x-api-key", _options.ApiKey);
-        httpRequest.Headers.Add("anthropic-version", _options.AnthropicVersion);
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{options.BaseUrl.TrimEnd('/')}/v1/messages");
+        httpRequest.Headers.Add("x-api-key", options.ApiKey);
+        httpRequest.Headers.Add("anthropic-version", options.AnthropicVersion);
         httpRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
         httpRequest.Content = JsonContent.Create(request, options: SerializerOptions);
 

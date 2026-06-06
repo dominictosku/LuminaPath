@@ -1,0 +1,246 @@
+@using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.AiChat
+@inject ApplicationSettingsService ApplicationSettingsService
+@inject AiChatRuntimeSettingsResolver RuntimeSettingsResolver
+@inject ISnackbar Snackbar
+
+<section class="settings-panel settings-panel--primary">
+	<div class="settings-panel__header">
+		<div>
+			<MudText Typo="Typo.overline">AI assistant</MudText>
+			<MudText Typo="Typo.h5">Runtime model options</MudText>
+			<MudText Typo="Typo.body2">
+				Choose the active provider and model options without restarting the app. Empty secret fields fall back to deployment configuration.
+			</MudText>
+		</div>
+		<div class="settings-panel__icon">
+			<MudIcon Icon="@Icons.Material.Filled.AutoAwesome" />
+		</div>
+	</div>
+
+	<div class="settings-form ai-settings-form">
+		<div class="ai-toggle-row">
+			<MudSwitch @bind-Value="enabled"
+					   Color="Color.Primary"
+					   Label="Enable AI chat" />
+			<MudSwitch @bind-Value="enableMcpTools"
+					   Color="Color.Primary"
+					   Label="Enable MCP tools" />
+			<MudSwitch @bind-Value="enableWriteTools"
+					   Color="Color.Warning"
+					   Label="Enable write tools" />
+		</div>
+
+		<div class="ai-settings-fields">
+			<MudSelect @bind-Value="provider"
+					   Label="Provider"
+					   Variant="MudBlazor.Variant.Outlined">
+				<MudSelectItem Value="@("anthropic")">Anthropic</MudSelectItem>
+				<MudSelectItem Value="@("openai")">OpenAI-compatible</MudSelectItem>
+				<MudSelectItem Value="@("ollama")">Ollama</MudSelectItem>
+			</MudSelect>
+
+			<MudNumericField @bind-Value="maxToolIterations"
+							 Label="Max tool iterations"
+							 Variant="MudBlazor.Variant.Outlined"
+							 Min="1"
+							 Max="32" />
+		</div>
+
+		<MudTabs Class="ai-provider-tabs" Rounded="true">
+			<MudTabPanel Text="Anthropic" Icon="@Icons.Material.Filled.Psychology">
+				<div class="ai-provider-grid">
+					<MudTextField @bind-Value="anthropicApiKey"
+								  Label="API key"
+								  Variant="MudBlazor.Variant.Outlined"
+								  InputType="@anthropicApiKeyInputType"
+								  Adornment="Adornment.End"
+								  AdornmentIcon="@AnthropicKeyVisibilityIcon"
+								  OnAdornmentClick="ToggleAnthropicKeyVisibility"
+								  Immediate="true" />
+					<MudTextField @bind-Value="anthropicModel"
+								  Label="Model"
+								  Variant="MudBlazor.Variant.Outlined"
+								  Immediate="true" />
+					<MudTextField @bind-Value="anthropicBaseUrl"
+								  Label="Base URL"
+								  Variant="MudBlazor.Variant.Outlined"
+								  Immediate="true" />
+					<MudTextField @bind-Value="anthropicVersion"
+								  Label="Anthropic version"
+								  Variant="MudBlazor.Variant.Outlined"
+								  Immediate="true" />
+					<MudNumericField @bind-Value="anthropicMaxTokens"
+									 Label="Max tokens"
+									 Variant="MudBlazor.Variant.Outlined"
+									 Min="256"
+									 Max="200000" />
+				</div>
+			</MudTabPanel>
+
+			<MudTabPanel Text="OpenAI-compatible" Icon="@Icons.Material.Filled.Hub">
+				<div class="ai-provider-grid">
+					<MudTextField @bind-Value="openAiApiKey"
+								  Label="API key"
+								  Variant="MudBlazor.Variant.Outlined"
+								  InputType="@openAiApiKeyInputType"
+								  Adornment="Adornment.End"
+								  AdornmentIcon="@OpenAiKeyVisibilityIcon"
+								  OnAdornmentClick="ToggleOpenAiKeyVisibility"
+								  Immediate="true" />
+					<MudTextField @bind-Value="openAiBaseUrl"
+								  Label="Base URL"
+								  Variant="MudBlazor.Variant.Outlined"
+								  Immediate="true" />
+					<MudTextField @bind-Value="openAiModel"
+								  Label="Model"
+								  Variant="MudBlazor.Variant.Outlined"
+								  Immediate="true" />
+					<MudTextField @bind-Value="openAiToolChoice"
+								  Label="Tool choice"
+								  Variant="MudBlazor.Variant.Outlined"
+								  Immediate="true" />
+					<MudNumericField @bind-Value="openAiMaxTokens"
+									 Label="Max tokens"
+									 Variant="MudBlazor.Variant.Outlined"
+									 Min="256"
+									 Max="200000" />
+				</div>
+			</MudTabPanel>
+		</MudTabs>
+
+		<div class="settings-action-row">
+			<MudButton OnClick="Save"
+					   Variant="MudBlazor.Variant.Filled"
+					   Color="Color.Secondary"
+					   StartIcon="@Icons.Material.Filled.Save"
+					   Disabled="@saving">
+				Save AI Settings
+			</MudButton>
+			<MudButton OnClick="Load"
+					   Variant="MudBlazor.Variant.Outlined"
+					   Color="Color.Primary"
+					   StartIcon="@Icons.Material.Filled.Refresh"
+					   Disabled="@saving">
+				Reload
+			</MudButton>
+		</div>
+	</div>
+</section>
+
+<style>
+	.ai-settings-form {
+		display: grid;
+		gap: 16px;
+	}
+
+	.ai-toggle-row,
+	.ai-settings-fields,
+	.ai-provider-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 12px;
+	}
+
+	.ai-toggle-row {
+		align-items: center;
+		padding: 12px 14px;
+		border: 1px solid rgba(59, 130, 246, .16);
+		border-radius: 12px;
+		background: rgba(255, 255, 255, .04);
+	}
+
+	.ai-provider-tabs {
+		min-width: 0;
+	}
+</style>
+
+@code {
+	private bool enabled;
+	private bool enableMcpTools;
+	private bool enableWriteTools;
+	private string provider = "anthropic";
+	private int maxToolIterations = 8;
+	private string anthropicApiKey = string.Empty;
+	private string anthropicModel = string.Empty;
+	private int anthropicMaxTokens = 4096;
+	private string anthropicBaseUrl = string.Empty;
+	private string anthropicVersion = string.Empty;
+	private string openAiApiKey = string.Empty;
+	private string openAiBaseUrl = string.Empty;
+	private string openAiModel = string.Empty;
+	private string openAiToolChoice = string.Empty;
+	private int openAiMaxTokens = 4096;
+	private bool showAnthropicApiKey;
+	private bool showOpenAiApiKey;
+	private bool saving;
+
+	private InputType anthropicApiKeyInputType => showAnthropicApiKey ? InputType.Text : InputType.Password;
+	private InputType openAiApiKeyInputType => showOpenAiApiKey ? InputType.Text : InputType.Password;
+	private string AnthropicKeyVisibilityIcon => showAnthropicApiKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
+	private string OpenAiKeyVisibilityIcon => showOpenAiApiKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await Load();
+	}
+
+	private async Task Load()
+	{
+		var settings = await RuntimeSettingsResolver.GetAsync();
+		enabled = settings.Enabled;
+		enableMcpTools = settings.EnableMcpTools;
+		enableWriteTools = settings.EnableWriteTools;
+		provider = settings.Provider;
+		maxToolIterations = settings.MaxToolIterations;
+		anthropicApiKey = settings.Anthropic.ApiKey;
+		anthropicModel = settings.Anthropic.Model;
+		anthropicMaxTokens = settings.Anthropic.MaxTokens;
+		anthropicBaseUrl = settings.Anthropic.BaseUrl;
+		anthropicVersion = settings.Anthropic.AnthropicVersion;
+		openAiApiKey = settings.OpenAi.ApiKey;
+		openAiBaseUrl = settings.OpenAi.BaseUrl;
+		openAiModel = settings.OpenAi.Model;
+		openAiToolChoice = settings.OpenAi.ToolChoice;
+		openAiMaxTokens = settings.OpenAi.MaxTokens;
+	}
+
+	private async Task Save()
+	{
+		saving = true;
+		try
+		{
+			await ApplicationSettingsService.SaveAiChatSettingsAsync(new AiChatStoredSettings(
+				enabled.ToString(),
+				provider,
+				Math.Clamp(maxToolIterations, 1, 32).ToString(),
+				enableMcpTools.ToString(),
+				enableWriteTools.ToString(),
+				anthropicApiKey,
+				anthropicModel,
+				Math.Clamp(anthropicMaxTokens, 256, 200000).ToString(),
+				anthropicBaseUrl,
+				anthropicVersion,
+				openAiApiKey,
+				openAiBaseUrl,
+				openAiModel,
+				openAiToolChoice,
+				Math.Clamp(openAiMaxTokens, 256, 200000).ToString()));
+			Snackbar.Add("Saved AI settings", Severity.Success);
+		}
+		finally
+		{
+			saving = false;
+		}
+	}
+
+	private void ToggleAnthropicKeyVisibility()
+	{
+		showAnthropicApiKey = !showAnthropicApiKey;
+	}
+
+	private void ToggleOpenAiKeyVisibility()
+	{
+		showOpenAiApiKey = !showOpenAiApiKey;
+	}
+}

@@ -1,7 +1,11 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using LuminaPath.Core.Models;
+using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.AiChat;
 using LuminaPath.Infrastructure.Services.AiChat.Mcp;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -92,6 +96,48 @@ public class ChatServiceTests
         Assert.True(toolResult.IsError);
         Assert.Contains("missing_tool", toolResult.Content);
         Assert.Contains("not available", toolResult.Content);
+    }
+
+    [Fact]
+    public async Task StreamAsync_WriteToolsDisabled_AddsDisabledResultWithoutCallingTool()
+    {
+        var tool = new ScriptedTool("create_quest", _ => "created", isWriteAction: true);
+        var provider = new ScriptedProvider(
+            configured: true,
+            ToolTurn("call-1", "create_quest", "{}"),
+            TextTurn("ok"));
+        var service = CreateService(provider, enableWriteTools: false, tools: tool);
+
+        var events = await CollectAsync(service);
+
+        Assert.DoesNotContain(events, e => e is ChatToolCallEvent);
+        Assert.Contains(events, e => e is ChatTextEvent t && t.Text == "ok");
+        Assert.Equal(0, tool.CallCount);
+
+        var toolResult = SingleToolResult(provider.Calls[1]);
+        Assert.True(toolResult.IsError);
+        Assert.Contains("disabled", toolResult.Content);
+    }
+
+    [Fact]
+    public async Task StreamAsync_McpToolsDisabled_AddsDisabledResultWithoutCallingTool()
+    {
+        var tool = new ScriptedTool("mcp__brave__search", _ => "result");
+        var provider = new ScriptedProvider(
+            configured: true,
+            ToolTurn("call-1", "mcp__brave__search", "{}"),
+            TextTurn("ok"));
+        var service = CreateService(provider, enableMcpTools: false, tools: tool);
+
+        var events = await CollectAsync(service);
+
+        Assert.DoesNotContain(events, e => e is ChatToolCallEvent);
+        Assert.Contains(events, e => e is ChatTextEvent t && t.Text == "ok");
+        Assert.Equal(0, tool.CallCount);
+
+        var toolResult = SingleToolResult(provider.Calls[1]);
+        Assert.True(toolResult.IsError);
+        Assert.Contains("disabled", toolResult.Content);
     }
 
     [Fact]
@@ -195,14 +241,55 @@ public class ChatServiceTests
     private static ChatService CreateService(
         IAiProvider provider,
         int maxIterations = 8,
+        bool enableMcpTools = true,
+        bool enableWriteTools = true,
         params IChatTool[] tools)
     {
         var mcp = new McpHostService(
             Options.Create(new McpOptions()),
             new Mock<ILogger<McpHostService>>().Object);
         var registry = new ChatToolRegistry(tools, mcp);
-        var options = Options.Create(new AiChatOptions { MaxToolIterations = maxIterations });
-        return new ChatService(provider, options, registry, new Mock<ILogger<ChatService>>().Object);
+        var resolver = CreateSettingsResolver(maxIterations, enableMcpTools, enableWriteTools);
+        return new ChatService(provider, resolver, registry, new Mock<ILogger<ChatService>>().Object);
+    }
+
+    private static AiChatRuntimeSettingsResolver CreateSettingsResolver(
+        int maxIterations,
+        bool enableMcpTools,
+        bool enableWriteTools)
+    {
+        var dbOptions = new DbContextOptionsBuilder<LuminaPathDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        using (var context = new LuminaPathDbContext(dbOptions))
+        {
+            context.ApplicationSettings.Add(new ApplicationSetting
+            {
+                Key = ApplicationSettingsService.AiChatMaxToolIterations,
+                Value = maxIterations.ToString(),
+                UpdatedAt = DateTime.UtcNow
+            });
+            context.ApplicationSettings.Add(new ApplicationSetting
+            {
+                Key = ApplicationSettingsService.AiChatEnableMcpTools,
+                Value = enableMcpTools.ToString(),
+                UpdatedAt = DateTime.UtcNow
+            });
+            context.ApplicationSettings.Add(new ApplicationSetting
+            {
+                Key = ApplicationSettingsService.AiChatEnableWriteTools,
+                Value = enableWriteTools.ToString(),
+                UpdatedAt = DateTime.UtcNow
+            });
+            context.SaveChanges();
+        }
+
+        var settings = new ApplicationSettingsService(new TestDbContextFactory(dbOptions));
+        return new AiChatRuntimeSettingsResolver(
+            Options.Create(new AiChatOptions { MaxToolIterations = maxIterations }),
+            Options.Create(new AnthropicOptions()),
+            Options.Create(new OpenAiOptions()),
+            settings);
     }
 
     private static async Task<List<ChatEvent>> CollectAsync(ChatService service)
@@ -289,10 +376,11 @@ public class ChatServiceTests
         private static readonly JsonElement ObjectSchema = ParseObjectSchema();
         private readonly Func<JsonElement, string> _handler;
 
-        public ScriptedTool(string name, Func<JsonElement, string> handler)
+        public ScriptedTool(string name, Func<JsonElement, string> handler, bool isWriteAction = false)
         {
             Name = name;
             _handler = handler;
+            IsWriteAction = isWriteAction;
         }
 
         public string Name { get; }
@@ -300,6 +388,8 @@ public class ChatServiceTests
         public string Description => "scripted test tool";
 
         public JsonElement InputSchema => ObjectSchema;
+
+        public bool IsWriteAction { get; }
 
         public int CallCount { get; private set; }
 
@@ -316,6 +406,26 @@ public class ChatServiceTests
         {
             using var doc = JsonDocument.Parse("{\"type\":\"object\"}");
             return doc.RootElement.Clone();
+        }
+    }
+
+    private sealed class TestDbContextFactory : IDbContextFactory<LuminaPathDbContext>
+    {
+        private readonly DbContextOptions<LuminaPathDbContext> _options;
+
+        public TestDbContextFactory(DbContextOptions<LuminaPathDbContext> options)
+        {
+            _options = options;
+        }
+
+        public LuminaPathDbContext CreateDbContext()
+        {
+            return new LuminaPathDbContext(_options);
+        }
+
+        public ValueTask<LuminaPathDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        {
+            return new ValueTask<LuminaPathDbContext>(CreateDbContext());
         }
     }
 }

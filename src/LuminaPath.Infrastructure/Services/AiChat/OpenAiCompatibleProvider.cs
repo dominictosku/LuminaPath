@@ -43,18 +43,38 @@ public sealed class OpenAiCompatibleProvider : IAiProvider
         IReadOnlyList<AnthropicToolDefinition>? tools,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        if (!IsConfigured)
+        var options = new OpenAiRuntimeSettings(
+            _options.ApiKey ?? string.Empty,
+            _options.BaseUrl,
+            _options.Model,
+            _options.ToolChoice ?? string.Empty,
+            _options.MaxTokens);
+
+        await foreach (var ev in StreamAsync(messages, system, tools, options, cancellationToken))
+        {
+            yield return ev;
+        }
+    }
+
+    public async IAsyncEnumerable<AnthropicStreamEvent> StreamAsync(
+        IReadOnlyList<AnthropicMessage> messages,
+        string? system,
+        IReadOnlyList<AnthropicToolDefinition>? tools,
+        OpenAiRuntimeSettings options,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(options.BaseUrl))
         {
             yield return new StreamErrorEvent("OpenAI-compatible base URL is not configured.");
             yield break;
         }
 
-        var body = BuildRequestBody(messages, system, tools);
+        var body = BuildRequestBody(messages, system, tools, options);
 
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{_options.BaseUrl.TrimEnd('/')}/chat/completions");
-        if (!string.IsNullOrWhiteSpace(_options.ApiKey))
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{options.BaseUrl.TrimEnd('/')}/chat/completions");
+        if (!string.IsNullOrWhiteSpace(options.ApiKey))
         {
-            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
+            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", options.ApiKey);
         }
         httpRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
         httpRequest.Content = JsonContent.Create(body, options: SerializerOptions);
@@ -67,7 +87,7 @@ public sealed class OpenAiCompatibleProvider : IAiProvider
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogError(ex, "Failed to call OpenAI-compatible endpoint at {Url}", _options.BaseUrl);
+            _logger.LogError(ex, "Failed to call OpenAI-compatible endpoint at {Url}", options.BaseUrl);
             sendError = "Could not reach the AI service.";
         }
 
@@ -236,15 +256,16 @@ public sealed class OpenAiCompatibleProvider : IAiProvider
     private object BuildRequestBody(
         IReadOnlyList<AnthropicMessage> messages,
         string? system,
-        IReadOnlyList<AnthropicToolDefinition>? tools)
+        IReadOnlyList<AnthropicToolDefinition>? tools,
+        OpenAiRuntimeSettings options)
     {
         var translated = TranslateMessages(messages, system);
 
         var body = new Dictionary<string, object?>
         {
-            ["model"] = _options.Model,
+            ["model"] = options.Model,
             ["messages"] = translated,
-            ["max_tokens"] = _options.MaxTokens,
+            ["max_tokens"] = options.MaxTokens,
             ["stream"] = true,
         };
 
@@ -261,9 +282,9 @@ public sealed class OpenAiCompatibleProvider : IAiProvider
                 },
             }).ToArray();
 
-            if (!string.IsNullOrWhiteSpace(_options.ToolChoice))
+            if (!string.IsNullOrWhiteSpace(options.ToolChoice))
             {
-                body["tool_choice"] = _options.ToolChoice;
+                body["tool_choice"] = options.ToolChoice;
             }
         }
 

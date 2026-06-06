@@ -3,7 +3,6 @@ using LuminaPath.Infrastructure.Services.AiChat.Mcp;
 using LuminaPath.Infrastructure.Services.AiChat.Tools;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace LuminaPath.Infrastructure.Services.AiChat;
 
@@ -50,16 +49,8 @@ internal static class AiChatServiceCollectionExtensions
 
         services.AddHttpClient<AnthropicClient>();
         services.AddHttpClient<OpenAiCompatibleProvider>();
-
-        services.AddSingleton<IAiProvider>(sp =>
-        {
-            var chatOptions = sp.GetRequiredService<IOptions<AiChatOptions>>().Value;
-            return chatOptions.Provider?.ToLowerInvariant() switch
-            {
-                "openai" or "ollama" => sp.GetRequiredService<OpenAiCompatibleProvider>(),
-                _ => sp.GetRequiredService<AnthropicClient>(),
-            };
-        });
+        services.AddScoped<AiChatRuntimeSettingsResolver>();
+        services.AddScoped<IAiProvider, RuntimeAiProvider>();
 
         services.AddSingleton<McpHostService>();
         services.AddHostedService(sp => sp.GetRequiredService<McpHostService>());
