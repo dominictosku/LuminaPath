@@ -51,9 +51,7 @@ public partial class Quests
     private int XpIntoLevel => _board.Xp % 200;
     private int XpProgress => XpIntoLevel * 100 / 200;
     private string Title => Level >= 15 ? "Legend" : Level >= 10 ? "Master" : Level >= 6 ? "Adept" : Level >= 3 ? "Apprentice" : "Initiate";
-    private int ActiveQuestCount => _board.Quests.Count(quest => !quest.Completed);
     private int CompletedQuestCount => _board.Quests.Count(quest => quest.Completed);
-    private int UnlockedNodeCount => _board.Skills.Sum(skill => skill.Nodes.Count(node => node.Unlocked));
     private int TodayCount => _board.Quests.Count(quest => !quest.Completed && IsToday(quest.DueDate));
     private int OverdueCount => _board.Quests.Count(quest => !quest.Completed && IsOverdue(quest.DueDate));
     private bool IsQuickAddDueToday => IsToday(_quickAddDue);
