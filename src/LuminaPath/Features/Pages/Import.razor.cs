@@ -20,8 +20,8 @@ public partial class Import
     AchievementSyncResult? steamAchievementSyncResult;
     AchievementSyncResult? psnAchievementSyncResult;
     GameImportPreviewResult? psnPreview;
-    ExcelService.GameExcelImportResult? _excelResult;
-    ExcelService.GameExcelPreviewResult? _excelPreview;
+    ExcelService.LibraryExcelImportResult? _excelResult;
+    ExcelService.LibraryExcelPreviewResult? _excelPreview;
     byte[]? _excelImportBytes;
     string? _excelFileName;
     bool _excelImporting;
@@ -371,7 +371,7 @@ public partial class Import
             return;
         }
 
-        var fileStream = new MemoryStream(await excelService.ExportGamesAsync(User));
+        var fileStream = new MemoryStream(await excelService.ExportLibraryWorkbookAsync(User));
         using var streamRef = new DotNetStreamReference(stream: fileStream);
 
         await JS.InvokeVoidAsync("downloadFileFromStream", "LuminaLibrary.xlsx", streamRef);
@@ -381,7 +381,7 @@ public partial class Import
     {
         if (User is null)
         {
-            Snackbar.Add("Please sign in before importing games", Severity.Info);
+            Snackbar.Add("Please sign in before importing your library", Severity.Info);
             return;
         }
 
@@ -396,7 +396,7 @@ public partial class Import
             using var importStream = await CopyToMemoryStream(file);
             _excelImportBytes = importStream.ToArray();
             importStream.Position = 0;
-            _excelPreview = await excelService.PreviewGamesAsync(importStream, User, file.Name);
+            _excelPreview = await excelService.PreviewLibraryWorkbookAsync(importStream, User);
             ShowExcelPreviewResult(_excelPreview);
         }
         catch (Exception ex)
@@ -415,7 +415,7 @@ public partial class Import
     {
         if (User is null)
         {
-            Snackbar.Add("Please sign in before importing games", Severity.Info);
+            Snackbar.Add("Please sign in before importing your library", Severity.Info);
             return;
         }
 
@@ -437,7 +437,7 @@ public partial class Import
         try
         {
             using var importStream = new MemoryStream(_excelImportBytes);
-            _excelResult = await excelService.ImportGamesAsync(importStream, User, _excelFileName);
+            _excelResult = await excelService.ImportLibraryWorkbookAsync(importStream, User);
             ShowExcelImportResult(_excelResult);
         }
         catch (Exception ex)
@@ -483,7 +483,7 @@ public partial class Import
         };
     }
 
-    void ShowExcelImportResult(ExcelService.GameExcelImportResult result)
+    void ShowExcelImportResult(ExcelService.LibraryExcelImportResult result)
     {
         if (result.Errors.Any())
         {
@@ -494,7 +494,7 @@ public partial class Import
         Snackbar.Add($"Imported {result.RowsImported} rows", Severity.Success);
     }
 
-    void ShowExcelPreviewResult(ExcelService.GameExcelPreviewResult result)
+    void ShowExcelPreviewResult(ExcelService.LibraryExcelPreviewResult result)
     {
         if (result.Errors.Any())
         {

@@ -27,7 +27,8 @@ public partial class ExcelService
 
     private static GameImportItem BuildImportItem(IXLWorksheet worksheet, int row, Dictionary<string, int> headerMap, string name)
     {
-        var psnId = GetText(worksheet, row, headerMap, "psnid", "psn id", "psn");
+        var externalIds = GetGameExternalIds(worksheet, row, headerMap);
+        var primaryExternalId = GetPrimaryExternalId(externalIds);
         var platform = GetText(worksheet, row, headerMap, "Platform", "platform");
         var genres = GetText(worksheet, row, headerMap, "genre", "genres");
         var status = GetText(worksheet, row, headerMap, "status");
@@ -42,8 +43,9 @@ public partial class ExcelService
             Platforms = string.IsNullOrWhiteSpace(platform) ? 0 : ParsePlatforms(platform),
             Genres = string.IsNullOrWhiteSpace(genres) ? new List<string>() : SplitList(genres).ToList(),
             Playtime = GetInt(worksheet, row, headerMap, "playtime", "estimatedplaytime"),
-            ExternalProvider = string.IsNullOrWhiteSpace(psnId) ? null : ExternalMediaProvider.Psn,
-            ExternalId = psnId,
+            ExternalProvider = primaryExternalId?.Key,
+            ExternalId = primaryExternalId?.Value,
+            ExternalIds = externalIds,
             Status = string.IsNullOrWhiteSpace(status) ? GameStatus.Planned : ParseStatus(status),
             Priority = GetInt(worksheet, row, headerMap, "priority", "Priority") ?? 0,
             Rating = GetShort(worksheet, row, headerMap, "rating"),
@@ -54,6 +56,19 @@ public partial class ExcelService
             LastPlayed = ToUtcDate(GetDate(worksheet, row, headerMap, "lastplayed")),
             TrackedHours = GetDouble(worksheet, row, headerMap, "trackedhours", "playtimeinhours"),
         };
+    }
+
+    private static Dictionary<ExternalMediaProvider, string> GetGameExternalIds(
+        IXLWorksheet worksheet,
+        int row,
+        Dictionary<string, int> headerMap)
+    {
+        var externalIds = new Dictionary<ExternalMediaProvider, string>();
+        AddExternalId(externalIds, ExternalMediaProvider.Psn, GetText(worksheet, row, headerMap, "psnid", "psn id", "psn"));
+        AddExternalId(externalIds, ExternalMediaProvider.Steam, GetText(worksheet, row, headerMap, "steamid", "steam id", "steam"));
+        AddExternalId(externalIds, ExternalMediaProvider.Igdb, GetText(worksheet, row, headerMap, "igdbid", "igdb id", "igdb"));
+        AddExternalId(externalIds, ExternalMediaProvider.Rawg, GetText(worksheet, row, headerMap, "rawgid", "rawg id", "rawg"));
+        return externalIds;
     }
 
     private static string? GetText(IXLWorksheet worksheet, int row, Dictionary<string, int> headerMap, params string[] headers)

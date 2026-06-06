@@ -8,34 +8,20 @@ using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services;
 using LuminaPath.Infrastructure.Services.Imports;
 using Microsoft.EntityFrameworkCore;
-using System.IO.Compression;
-using System.Text;
 
 namespace Test.Services
 {
     public class ExcelServiceTests
     {
         [Fact]
-        public async Task ImportGamesAsync_CreatesGameAndMyGame_FromWorkbook()
+        public async Task ImportLibraryWorkbookAsync_CreatesGameAndMyGame_FromWorkbook()
         {
             var options = CreateOptions();
-            var user = new LuminaUser
-            {
-                Id = "user-1",
-                UserName = "test@example.com",
-                FullName = "Test User"
-            };
-
-            await using (var context = new LuminaPathDbContext(options))
-            {
-                context.Users.Add(user);
-                await context.SaveChangesAsync();
-            }
-
-            var dbContextFactory = new TestDbContextFactory(options);
-            var service = new ExcelService(dbContextFactory, new GameImportPipeline(dbContextFactory));
+            var user = await SeedUser(options);
+            var service = CreateService(options);
             using var stream = CreateWorkbookStream();
-            var result = await service.ImportGamesAsync(stream, user);
+            var result = await service.ImportLibraryWorkbookAsync(stream, user);
+
             await using var assertContext = new LuminaPathDbContext(options);
             var game = await assertContext.Games
                 .Include(g => g.ExternalIds)
@@ -45,6 +31,8 @@ namespace Test.Services
             var myGame = game.MyGames!.Single();
             Assert.Empty(result.Errors);
             Assert.Equal(1, result.RowsImported);
+            Assert.Equal(1, result.CreatedMedia);
+            Assert.Equal(1, result.CreatedLibraryItems);
             Assert.Equal("Test Game", game.Name);
             Assert.Equal("PSN-123", game.ExternalIds.GetExternalId(ExternalMediaProvider.Psn));
             Assert.Equal(GameStatus.Playing, myGame.Status);
@@ -57,14 +45,14 @@ namespace Test.Services
         }
 
         [Fact]
-        public async Task PreviewGamesAsync_MarksDuplicateRows_FromWorkbook()
+        public async Task PreviewLibraryWorkbookAsync_MarksDuplicateRows_FromWorkbook()
         {
             var options = CreateOptions();
             var user = await SeedUser(options);
             var service = CreateService(options);
             using var stream = CreateWorkbookStream(includeDuplicate: true);
 
-            var preview = await service.PreviewGamesAsync(stream, user, "games.xlsx");
+            var preview = await service.PreviewLibraryWorkbookAsync(stream, user);
 
             Assert.Equal(2, preview.RowsDetected);
             Assert.Equal(1, preview.DuplicateRows);
@@ -73,14 +61,14 @@ namespace Test.Services
         }
 
         [Fact]
-        public async Task ImportGamesAsync_SkipsDuplicateRows_FromWorkbook()
+        public async Task ImportLibraryWorkbookAsync_SkipsDuplicateRows_FromWorkbook()
         {
             var options = CreateOptions();
             var user = await SeedUser(options);
             var service = CreateService(options);
             using var stream = CreateWorkbookStream(includeDuplicate: true);
 
-            var result = await service.ImportGamesAsync(stream, user, "games.xlsx");
+            var result = await service.ImportLibraryWorkbookAsync(stream, user);
 
             await using var assertContext = new LuminaPathDbContext(options);
             Assert.Equal(1, result.RowsImported);
@@ -89,24 +77,7 @@ namespace Test.Services
         }
 
         [Fact]
-        public async Task PreviewGamesAsync_ReadsOdsWorkbook()
-        {
-            var options = CreateOptions();
-            var user = await SeedUser(options);
-            var service = CreateService(options);
-            using var stream = CreateOdsStream();
-
-            var preview = await service.PreviewGamesAsync(stream, user, "games.ods");
-
-            var row = Assert.Single(preview.Rows);
-            Assert.Equal("ODS Game", row.Name);
-            Assert.Equal("New", row.ChangeType);
-            Assert.Equal("PSN-ODS", row.PsnId);
-            Assert.Equal(3.25, row.TrackedHours);
-        }
-
-        [Fact]
-        public async Task ExportGamesAsync_WritesCurrentLibraryWorkbook()
+        public async Task ExportLibraryWorkbookAsync_WritesCurrentLibraryWorkbook()
         {
             var options = CreateOptions();
             var user = await SeedUser(options);
@@ -208,7 +179,7 @@ namespace Test.Services
                 await context.SaveChangesAsync();
             }
 
-            var bytes = await service.ExportGamesAsync(user);
+            var bytes = await service.ExportLibraryWorkbookAsync(user);
 
             using var workbook = new XLWorkbook(new MemoryStream(bytes));
             Assert.Contains("Games", workbook.Worksheets.Select(sheet => sheet.Name));
@@ -252,6 +223,92 @@ namespace Test.Services
             Assert.Equal(450, series.Cell(2, seriesHeaders["Expected Watch Time Minutes"]).GetValue<int>());
             Assert.Equal(5, series.Cell(2, seriesHeaders["Current Episode"]).GetValue<int>());
             Assert.Equal(250, series.Cell(2, seriesHeaders["Current Watch Time Minutes"]).GetValue<int>());
+        }
+
+        [Fact]
+        public async Task PreviewLibraryWorkbookAsync_ReadsCurrentLibrarySheets()
+        {
+            var options = CreateOptions();
+            var user = await SeedUser(options);
+            var service = CreateService(options);
+            using var stream = CreateLibraryWorkbookStream();
+
+            var preview = await service.PreviewLibraryWorkbookAsync(stream, user);
+
+            Assert.Empty(preview.Errors);
+            Assert.Equal(4, preview.RowsDetected);
+            Assert.Equal(4, preview.CreatedMedia);
+            Assert.Equal(4, preview.CreatedLibraryItems);
+            Assert.Contains(preview.Rows, row => row.MediaType == "Game" && row.ExternalId == "Psn:PSN-ROUNDTRIP");
+            Assert.Contains(preview.Rows, row => row.MediaType == "Anime" && row.ExternalId == "Anilist:154587");
+            Assert.Contains(preview.Rows, row => row.MediaType == "Movie" && row.ExternalId == "Tmdb:438631");
+            Assert.Contains(preview.Rows, row => row.MediaType == "Series" && row.ExternalId == "Tmdb:95396");
+        }
+
+        [Fact]
+        public async Task ImportLibraryWorkbookAsync_CreatesCurrentLibraryMedia()
+        {
+            var options = CreateOptions();
+            var user = await SeedUser(options);
+            var service = CreateService(options);
+            using var stream = CreateLibraryWorkbookStream();
+
+            var result = await service.ImportLibraryWorkbookAsync(stream, user);
+
+            Assert.Empty(result.Errors);
+            Assert.Equal(4, result.RowsImported);
+            Assert.Equal(4, result.CreatedMedia);
+            Assert.Equal(4, result.CreatedLibraryItems);
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            var game = await assertContext.Games
+                .Include(item => item.ExternalIds)
+                .Include(item => item.MyGames!)
+                    .ThenInclude(item => item.MyGameInfo)
+                .SingleAsync(item => item.Name == "Roundtrip Game");
+            var myGame = game.MyGames!.Single();
+            Assert.Equal("PSN-ROUNDTRIP", game.ExternalIds.GetExternalId(ExternalMediaProvider.Psn));
+            Assert.Equal("12345", game.ExternalIds.GetExternalId(ExternalMediaProvider.Steam));
+            Assert.Equal("IGDB-ROUNDTRIP", game.ExternalIds.GetExternalId(ExternalMediaProvider.Igdb));
+            Assert.Equal("RAWG-ROUNDTRIP", game.ExternalIds.GetExternalId(ExternalMediaProvider.Rawg));
+            Assert.Equal(GameStatus.Playing, myGame.Status);
+            Assert.Equal((short)8, myGame.Rating);
+            Assert.Equal(11.5, myGame.MyGameInfo!.TrackedHours);
+
+            var anime = await assertContext.Animes
+                .Include(item => item.ExternalIds)
+                .Include(item => item.MyAnimes)
+                .SingleAsync(item => item.Name == "Frieren");
+            var myAnime = anime.MyAnimes!.Single();
+            Assert.Equal("154587", anime.ExternalIds.GetExternalId(ExternalMediaProvider.Anilist));
+            Assert.Equal("52991", anime.ExternalIds.GetExternalId(ExternalMediaProvider.Mal));
+            Assert.Equal(28, anime.EpisodeCount);
+            Assert.Equal(25, anime.ExpectedWatchTimePerEpisodeMinutes);
+            Assert.Equal(MediaStatus.Watching, myAnime.Status);
+            Assert.Equal(4, myAnime.CurrentEpisode);
+            Assert.Equal(100, myAnime.CurrentWatchTimeMinutes);
+
+            var movie = await assertContext.Movies
+                .Include(item => item.ExternalIds)
+                .Include(item => item.MyMovies)
+                .SingleAsync(item => item.Name == "Dune");
+            var myMovie = movie.MyMovies!.Single();
+            Assert.Equal("438631", movie.ExternalIds.GetExternalId(ExternalMediaProvider.Tmdb));
+            Assert.Equal(155, movie.ExpectedWatchTimeMinutes);
+            Assert.Equal(MediaStatus.Planned, myMovie.Status);
+            Assert.Equal(45, myMovie.CurrentWatchTimeMinutes);
+
+            var series = await assertContext.Series
+                .Include(item => item.ExternalIds)
+                .Include(item => item.MySeries)
+                .SingleAsync(item => item.Name == "Severance");
+            var mySeries = series.MySeries!.Single();
+            Assert.Equal("95396", series.ExternalIds.GetExternalId(ExternalMediaProvider.Tmdb));
+            Assert.Equal(9, series.EpisodeCount);
+            Assert.Equal(50, series.ExpectedWatchTimePerEpisodeMinutes);
+            Assert.Equal(MediaStatus.Watching, mySeries.Status);
+            Assert.Equal(5, mySeries.CurrentEpisode);
+            Assert.Equal(250, mySeries.CurrentWatchTimeMinutes);
         }
 
         private static DbContextOptions<LuminaPathDbContext> CreateOptions()
@@ -326,51 +383,190 @@ namespace Test.Services
             return stream;
         }
 
-        private static MemoryStream CreateOdsStream()
+        private static MemoryStream CreateLibraryWorkbookStream()
         {
-            const string content = """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <office:document-content
-                    xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
-                    xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0"
-                    xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0">
-                    <office:body>
-                        <office:spreadsheet>
-                            <table:table table:name="Games">
-                                <table:table-row>
-                                    <table:table-cell><text:p>Name</text:p></table:table-cell>
-                                    <table:table-cell><text:p>Status</text:p></table:table-cell>
-                                    <table:table-cell><text:p>PSNId</text:p></table:table-cell>
-                                    <table:table-cell><text:p>Tracked Hours</text:p></table:table-cell>
-                                </table:table-row>
-                                <table:table-row>
-                                    <table:table-cell><text:p>ODS Game</text:p></table:table-cell>
-                                    <table:table-cell><text:p>Playing</text:p></table:table-cell>
-                                    <table:table-cell><text:p>PSN-ODS</text:p></table:table-cell>
-                                    <table:table-cell office:value-type="float" office:value="3.25"><text:p>3.25</text:p></table:table-cell>
-                                </table:table-row>
-                            </table:table>
-                        </office:spreadsheet>
-                    </office:body>
-                </office:document-content>
-                """;
+            using var workbook = new XLWorkbook();
+            AddWorksheet(workbook, "Games",
+            [
+                "Name",
+                "Status",
+                "Priority",
+                "Release Date",
+                "Platform",
+                "Genre",
+                "Source",
+                "Description",
+                "Playtime",
+                "PSNId",
+                "SteamId",
+                "IGDBId",
+                "RAWGId",
+                "Rating",
+                "Start Date",
+                "End Date",
+                "Time Spend",
+                "First Played",
+                "Last Played",
+                "Tracked Hours"
+            ],
+            [
+                "Roundtrip Game",
+                "In-Progress",
+                2,
+                new DateTime(2024, 1, 5),
+                "PC, Switch",
+                "Action, Roguelike",
+                "Excel",
+                "Roundtrip description",
+                30,
+                "PSN-ROUNDTRIP",
+                "12345",
+                "IGDB-ROUNDTRIP",
+                "RAWG-ROUNDTRIP",
+                8,
+                new DateTime(2024, 1, 6),
+                new DateTime(2024, 1, 7),
+                12.75,
+                new DateTime(2024, 1, 8),
+                new DateTime(2024, 1, 9),
+                11.5
+            ]);
+
+            AddWorksheet(workbook, "Animes",
+            [
+                "Name",
+                "Status",
+                "Priority",
+                "Release Date",
+                "Genre",
+                "Source",
+                "Description",
+                "AniListId",
+                "MALId",
+                "Episode Count",
+                "Expected Minutes Per Episode",
+                "Expected Watch Time Minutes",
+                "Rating",
+                "Start Date",
+                "End Date",
+                "Time Spend",
+                "Current Episode",
+                "Current Watch Time Minutes"
+            ],
+            [
+                "Frieren",
+                "Watching",
+                3,
+                new DateTime(2023, 9, 29),
+                "Fantasy",
+                "AniList",
+                "Beyond journey's end",
+                "154587",
+                "52991",
+                28,
+                25,
+                700,
+                10,
+                new DateTime(2024, 2, 1),
+                null,
+                1.7,
+                4,
+                100
+            ]);
+
+            AddWorksheet(workbook, "Movies",
+            [
+                "Name",
+                "Status",
+                "Priority",
+                "Release Date",
+                "Genre",
+                "Source",
+                "Description",
+                "TMDBId",
+                "Expected Watch Time Minutes",
+                "Rating",
+                "Start Date",
+                "End Date",
+                "Time Spend",
+                "Current Watch Time Minutes"
+            ],
+            [
+                "Dune",
+                "Planned",
+                1,
+                new DateTime(2021, 9, 3),
+                "Sci-Fi",
+                "TMDB",
+                "Arrakis awaits",
+                "438631",
+                155,
+                null,
+                null,
+                null,
+                0.75,
+                45
+            ]);
+
+            AddWorksheet(workbook, "Series",
+            [
+                "Name",
+                "Status",
+                "Priority",
+                "Release Date",
+                "Genre",
+                "Source",
+                "Description",
+                "TMDBId",
+                "Episode Count",
+                "Expected Minutes Per Episode",
+                "Expected Watch Time Minutes",
+                "Rating",
+                "Start Date",
+                "End Date",
+                "Time Spend",
+                "Current Episode",
+                "Current Watch Time Minutes"
+            ],
+            [
+                "Severance",
+                "Watching",
+                4,
+                new DateTime(2022, 2, 18),
+                "Drama, Mystery",
+                "TMDB",
+                "Work-life balance",
+                "95396",
+                9,
+                50,
+                450,
+                9,
+                new DateTime(2024, 3, 1),
+                null,
+                4.2,
+                5,
+                250
+            ]);
 
             var stream = new MemoryStream();
-            using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
-            {
-                var mimetype = archive.CreateEntry("mimetype");
-                using (var writer = new StreamWriter(mimetype.Open(), Encoding.UTF8))
-                {
-                    writer.Write("application/vnd.oasis.opendocument.spreadsheet");
-                }
-
-                var contentEntry = archive.CreateEntry("content.xml");
-                using var contentWriter = new StreamWriter(contentEntry.Open(), Encoding.UTF8);
-                contentWriter.Write(content);
-            }
-
+            workbook.SaveAs(stream);
             stream.Position = 0;
             return stream;
+        }
+
+        private static void AddWorksheet(XLWorkbook workbook, string name, IReadOnlyList<string> headers, IReadOnlyList<object?> values)
+        {
+            var worksheet = workbook.Worksheets.Add(name);
+            for (var index = 0; index < headers.Count; index++)
+            {
+                worksheet.Cell(1, index + 1).Value = headers[index];
+                worksheet.Cell(2, index + 1).Value = values[index] switch
+                {
+                    null => Blank.Value,
+                    DateTime date => date,
+                    _ => XLCellValue.FromObject(values[index])
+                };
+            }
         }
 
         private static Dictionary<string, int> HeaderMap(IXLWorksheet worksheet)

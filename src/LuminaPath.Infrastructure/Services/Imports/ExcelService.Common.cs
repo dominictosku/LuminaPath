@@ -6,6 +6,18 @@ namespace LuminaPath.Infrastructure.Services;
 
 public partial class ExcelService
 {
+    private static readonly ExternalMediaProvider[] ExternalIdDisplayOrder =
+    [
+        ExternalMediaProvider.Psn,
+        ExternalMediaProvider.Steam,
+        ExternalMediaProvider.Igdb,
+        ExternalMediaProvider.Rawg,
+        ExternalMediaProvider.Anilist,
+        ExternalMediaProvider.Mal,
+        ExternalMediaProvider.Tmdb,
+        ExternalMediaProvider.Excel
+    ];
+
     private static void ValidateWorkbookSize(Stream stream)
     {
         if (stream.CanSeek && stream.Length > MaxWorkbookBytes)
@@ -37,6 +49,46 @@ public partial class ExcelService
         return value.Split([',', ';', '|'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
+    private static void AddExternalId(
+        IDictionary<ExternalMediaProvider, string> externalIds,
+        ExternalMediaProvider provider,
+        string? externalId)
+    {
+        var normalizedExternalId = NormalizeExternalId(externalId);
+        if (!string.IsNullOrWhiteSpace(normalizedExternalId))
+        {
+            externalIds[provider] = normalizedExternalId;
+        }
+    }
+
+    private static KeyValuePair<ExternalMediaProvider, string>? GetPrimaryExternalId(
+        IReadOnlyDictionary<ExternalMediaProvider, string> externalIds)
+    {
+        foreach (var provider in ExternalIdDisplayOrder)
+        {
+            if (externalIds.TryGetValue(provider, out var externalId)
+                && !string.IsNullOrWhiteSpace(externalId))
+            {
+                return new KeyValuePair<ExternalMediaProvider, string>(provider, externalId);
+            }
+        }
+
+        return null;
+    }
+
+    private static string? NormalizeExternalId(string? externalId)
+    {
+        return string.IsNullOrWhiteSpace(externalId) ? null : externalId.Trim();
+    }
+
+    private static string FormatExternalId(IReadOnlyDictionary<ExternalMediaProvider, string> externalIds)
+    {
+        var primaryExternalId = GetPrimaryExternalId(externalIds);
+        return primaryExternalId.HasValue
+            ? $"{primaryExternalId.Value.Key}:{primaryExternalId.Value.Value}"
+            : string.Empty;
+    }
+
     private static string FormatStatus(GameStatus status)
     {
         return status switch
@@ -45,6 +97,15 @@ public partial class ExcelService
             GameStatus.Playing => "In-Progress",
             GameStatus.StoryComplete => "Story Complete",
             GameStatus.MainGame => "Main Game",
+            _ => status.ToString()
+        };
+    }
+
+    private static string FormatStatus(MediaStatus status)
+    {
+        return status switch
+        {
+            MediaStatus.OnHold => "On-Hold",
             _ => status.ToString()
         };
     }
@@ -61,6 +122,20 @@ public partial class ExcelService
             "completed" or "complete" => GameStatus.Completed,
             "maingame" => GameStatus.MainGame,
             _ => Enum.TryParse<GameStatus>(value, true, out var status) ? status : GameStatus.Planned
+        };
+    }
+
+    private static MediaStatus ParseMediaStatus(string value)
+    {
+        var normalized = NormalizeToken(value);
+        return normalized switch
+        {
+            "onhold" => MediaStatus.OnHold,
+            "planned" => MediaStatus.Planned,
+            "watching" or "playing" or "inprogress" => MediaStatus.Watching,
+            "completed" or "complete" => MediaStatus.Completed,
+            "dropped" => MediaStatus.Dropped,
+            _ => Enum.TryParse<MediaStatus>(value, true, out var status) ? status : MediaStatus.Planned
         };
     }
 

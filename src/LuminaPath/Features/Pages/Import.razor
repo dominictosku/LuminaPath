@@ -355,7 +355,7 @@
 						<div>
 							<MudText Typo="Typo.overline">Step 1</MudText>
 							<MudText Typo="Typo.h5">Load workbook</MudText>
-							<MudText Typo="Typo.body2">Upload an .xlsx or .ods export to preview which games and library entries will be created, updated, or skipped as duplicates.</MudText>
+							<MudText Typo="Typo.body2">Upload an .xlsx library export to preview which media and library entries will be created, updated, or skipped as duplicates.</MudText>
 						</div>
 						<div class="excel-emblem">
 							<MudIcon Icon="@Icons.Material.Filled.TableView" />
@@ -371,7 +371,7 @@
 						</MudButton>
 
 						<MudFileUpload T="IBrowserFile"
-									   Accept=".xlsx,.ods"
+									   Accept=".xlsx"
 									   FilesChanged="PreviewExcel">
 							<CustomContent Context="fileUpload">
 								<MudButton OnClick="@fileUpload.OpenFilePickerAsync"
@@ -419,7 +419,7 @@
 									   Color="Color.Secondary"
 									   StartIcon="@Icons.Material.Filled.LibraryAdd"
 									   Disabled="@(!CanSaveExcelImport)">
-								Import Games
+								Import Library
 							</MudButton>
 						</div>
 					</div>
@@ -427,8 +427,8 @@
 					@if (_excelPreview is not null)
 					{
 						<MudAlert Severity="@(_excelPreview.Errors.Any() ? Severity.Warning : Severity.Info)" Variant="MudBlazor.Variant.Outlined" Class="steam-alert">
-							Detected @_excelPreview.RowsDetected rows. Games: @_excelPreview.CreatedGames created, @_excelPreview.UpdatedGames updated.
-							My games: @_excelPreview.CreatedMyGames created, @_excelPreview.UpdatedMyGames updated.
+							Detected @_excelPreview.RowsDetected rows. Media: @_excelPreview.CreatedMedia created, @_excelPreview.UpdatedMedia updated.
+							Library entries: @_excelPreview.CreatedLibraryItems created, @_excelPreview.UpdatedLibraryItems updated.
 							Duplicates skipped: @_excelPreview.DuplicateRows.
 						</MudAlert>
 					}
@@ -436,8 +436,8 @@
 					@if (_excelResult is not null)
 					{
 						<MudAlert Severity="@(_excelResult.Errors.Any() ? Severity.Warning : Severity.Success)" Variant="MudBlazor.Variant.Filled" Class="steam-alert">
-							Imported @_excelResult.RowsImported rows. Games: @_excelResult.CreatedGames created, @_excelResult.UpdatedGames updated.
-							My games: @_excelResult.CreatedMyGames created, @_excelResult.UpdatedMyGames updated.
+							Imported @_excelResult.RowsImported rows. Media: @_excelResult.CreatedMedia created, @_excelResult.UpdatedMedia updated.
+							Library entries: @_excelResult.CreatedLibraryItems created, @_excelResult.UpdatedLibraryItems updated.
 						</MudAlert>
 					}
 
@@ -455,10 +455,12 @@
 											Data="@_excelPreview.Rows"
 											Class="psn-games-grid">
 								<Columns>
-									<RadzenDataGridColumn Width="90px" Property="@nameof(ExcelService.GameExcelPreviewRow.RowNumber)" Title="Row" />
-									<RadzenDataGridColumn Width="260px" Property="@nameof(ExcelService.GameExcelPreviewRow.Name)" Title="Title" />
-									<RadzenDataGridColumn Width="130px" Property="@nameof(ExcelService.GameExcelPreviewRow.GameAction)" Title="Game" />
-									<RadzenDataGridColumn Width="130px" Property="@nameof(ExcelService.GameExcelPreviewRow.LibraryAction)" Title="Library" />
+									<RadzenDataGridColumn Width="120px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.SheetName)" Title="Sheet" />
+									<RadzenDataGridColumn Width="100px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.RowNumber)" Title="Row" />
+									<RadzenDataGridColumn Width="110px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.MediaType)" Title="Type" />
+									<RadzenDataGridColumn Width="260px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.Name)" Title="Title" />
+									<RadzenDataGridColumn Width="130px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.MediaAction)" Title="Media" />
+									<RadzenDataGridColumn Width="130px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.LibraryAction)" Title="Library" />
 									<RadzenDataGridColumn Width="130px" Title="Change">
 										<Template Context="row">
 											<MudChip T="string"
@@ -469,10 +471,9 @@
 											</MudChip>
 										</Template>
 									</RadzenDataGridColumn>
-									<RadzenDataGridColumn Width="140px" Property="@nameof(ExcelService.GameExcelPreviewRow.Status)" Title="Status" />
-									<RadzenDataGridColumn Width="140px" Property="@nameof(ExcelService.GameExcelPreviewRow.Platform)" Title="Platform" />
-									<RadzenDataGridColumn Width="150px" Property="@nameof(ExcelService.GameExcelPreviewRow.TrackedHours)" Title="Tracked hours" />
-									<RadzenDataGridColumn Width="180px" Property="@nameof(ExcelService.GameExcelPreviewRow.PsnId)" Title="PSN ID" />
+									<RadzenDataGridColumn Width="140px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.Status)" Title="Status" />
+									<RadzenDataGridColumn Width="170px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.Source)" Title="Source" />
+									<RadzenDataGridColumn Width="220px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.ExternalId)" Title="External ID" />
 								</Columns>
 							</RadzenDataGrid>
 						}

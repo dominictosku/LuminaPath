@@ -2,38 +2,53 @@ namespace LuminaPath.Infrastructure.Services;
 
 public partial class ExcelService
 {
-    public class GameExcelImportResult
+    public class LibraryExcelImportResult
     {
         public int RowsImported { get; set; }
-        public int CreatedGames { get; set; }
-        public int UpdatedGames { get; set; }
-        public int CreatedMyGames { get; set; }
-        public int UpdatedMyGames { get; set; }
+        public int DuplicateRows { get; set; }
+        public int CreatedMedia { get; set; }
+        public int UpdatedMedia { get; set; }
+        public int CreatedLibraryItems { get; set; }
+        public int UpdatedLibraryItems { get; set; }
         public List<string> Errors { get; } = new();
+        public List<LibraryExcelSheetResult> Sheets { get; } = new();
     }
 
-    public class GameExcelPreviewResult
+    public class LibraryExcelPreviewResult
     {
         public int RowsDetected { get; set; }
         public int DuplicateRows { get; set; }
-        public int CreatedGames { get; set; }
-        public int UpdatedGames { get; set; }
-        public int CreatedMyGames { get; set; }
-        public int UpdatedMyGames { get; set; }
+        public int CreatedMedia { get; set; }
+        public int UpdatedMedia { get; set; }
+        public int CreatedLibraryItems { get; set; }
+        public int UpdatedLibraryItems { get; set; }
         public List<string> Errors { get; } = new();
-        public List<GameExcelPreviewRow> Rows { get; } = new();
+        public List<LibraryExcelSheetResult> Sheets { get; } = new();
+        public List<LibraryExcelPreviewRow> Rows { get; } = new();
     }
 
-    public class GameExcelPreviewRow
+    public class LibraryExcelSheetResult
     {
+        public string SheetName { get; set; } = string.Empty;
+        public string MediaType { get; set; } = string.Empty;
+        public int Rows { get; set; }
+        public int DuplicateRows { get; set; }
+        public int CreatedMedia { get; set; }
+        public int UpdatedMedia { get; set; }
+        public int CreatedLibraryItems { get; set; }
+        public int UpdatedLibraryItems { get; set; }
+    }
+
+    public class LibraryExcelPreviewRow
+    {
+        public string SheetName { get; set; } = string.Empty;
+        public string MediaType { get; set; } = string.Empty;
         public int RowNumber { get; set; }
         public string Name { get; set; } = string.Empty;
-        public string Platform { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public string Source { get; set; } = string.Empty;
-        public string PsnId { get; set; } = string.Empty;
-        public double? TrackedHours { get; set; }
-        public string GameAction { get; set; } = string.Empty;
+        public string ExternalId { get; set; } = string.Empty;
+        public string MediaAction { get; set; } = string.Empty;
         public string LibraryAction { get; set; } = string.Empty;
         public string ChangeType { get; set; } = string.Empty;
         public string Error { get; set; } = string.Empty;

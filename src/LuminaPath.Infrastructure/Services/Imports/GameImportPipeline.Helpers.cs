@@ -8,6 +8,15 @@ namespace LuminaPath.Infrastructure.Services.Imports;
 
 public sealed partial class GameImportPipeline
 {
+    private static readonly ExternalMediaProvider[] ExternalIdImportOrder =
+    [
+        ExternalMediaProvider.Psn,
+        ExternalMediaProvider.Steam,
+        ExternalMediaProvider.Igdb,
+        ExternalMediaProvider.Rawg,
+        ExternalMediaProvider.Excel
+    ];
+
     private static IQueryable<Game> LoadGames(LuminaPathDbContext context)
     {
         return context.Games
@@ -18,19 +27,17 @@ public sealed partial class GameImportPipeline
 
     private static Game? FindGame(IEnumerable<Game> games, GameImportItem item)
     {
-        var normalizedExternalId = NormalizeExternalId(item.ExternalId);
-        if (item.ExternalProvider is not null && !string.IsNullOrWhiteSpace(normalizedExternalId))
+        foreach (var candidateExternalId in GetExternalIds(item))
         {
             var byExternalId = games.FirstOrDefault(game =>
                 game.ExternalIds.Any(externalId =>
-                    externalId.Provider == item.ExternalProvider
-                    && externalId.ExternalId.Equals(normalizedExternalId, StringComparison.OrdinalIgnoreCase)));
+                    externalId.Provider == candidateExternalId.Key
+                    && externalId.ExternalId.Equals(candidateExternalId.Value, StringComparison.OrdinalIgnoreCase)));
 
             if (byExternalId is not null)
             {
                 return byExternalId;
             }
-
         }
 
         return games.FirstOrDefault(game => game.Name.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
@@ -38,9 +45,14 @@ public sealed partial class GameImportPipeline
 
     private static Game CreateGame(GameImportItem item, HashSet<string> names)
     {
+        var primaryExternalId = GetExternalIds(item).FirstOrDefault();
         var game = new Game
         {
-            Name = ResolveUniqueName(item.Name.Trim(), names, item.ExternalProvider, item.ExternalId),
+            Name = ResolveUniqueName(
+                item.Name.Trim(),
+                names,
+                primaryExternalId.Key == default ? null : primaryExternalId.Key,
+                primaryExternalId.Value),
             Source = item.Source,
         };
 
@@ -94,36 +106,74 @@ public sealed partial class GameImportPipeline
 
     private static void EnsureExternalId(Game game, GameImportItem item)
     {
-        var normalizedExternalId = NormalizeExternalId(item.ExternalId);
-        if (item.ExternalProvider is null || string.IsNullOrWhiteSpace(normalizedExternalId))
-        {
-            return;
-        }
-
         game.ExternalIds ??= new List<MediaExternalId>();
-        if (game.ExternalIds.Any(externalId =>
-                externalId.Provider == item.ExternalProvider
-                && externalId.ExternalId.Equals(normalizedExternalId, StringComparison.OrdinalIgnoreCase)))
+        foreach (var candidateExternalId in GetExternalIds(item))
         {
-            return;
-        }
+            if (game.ExternalIds.Any(externalId =>
+                    externalId.Provider == candidateExternalId.Key
+                    && externalId.ExternalId.Equals(candidateExternalId.Value, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
 
-        game.ExternalIds.Add(new MediaExternalId
-        {
-            Provider = item.ExternalProvider.Value,
-            ExternalId = normalizedExternalId
-        });
+            game.ExternalIds.Add(new MediaExternalId
+            {
+                Provider = candidateExternalId.Key,
+                ExternalId = candidateExternalId.Value
+            });
+        }
     }
 
     private static string? NormalizeExternalId(string? externalId)
         => string.IsNullOrWhiteSpace(externalId) ? null : externalId.Trim();
 
+    private static IEnumerable<KeyValuePair<ExternalMediaProvider, string>> GetExternalIds(GameImportItem item)
+    {
+        var returnedProviders = new HashSet<ExternalMediaProvider>();
+
+        foreach (var provider in ExternalIdImportOrder)
+        {
+            if (item.ExternalIds.TryGetValue(provider, out var externalId))
+            {
+                var normalizedExternalId = NormalizeExternalId(externalId);
+                if (!string.IsNullOrWhiteSpace(normalizedExternalId))
+                {
+                    returnedProviders.Add(provider);
+                    yield return new KeyValuePair<ExternalMediaProvider, string>(provider, normalizedExternalId);
+                }
+            }
+        }
+
+        foreach (var externalId in item.ExternalIds)
+        {
+            if (returnedProviders.Contains(externalId.Key))
+            {
+                continue;
+            }
+
+            var normalizedExternalId = NormalizeExternalId(externalId.Value);
+            if (!string.IsNullOrWhiteSpace(normalizedExternalId))
+            {
+                returnedProviders.Add(externalId.Key);
+                yield return new KeyValuePair<ExternalMediaProvider, string>(externalId.Key, normalizedExternalId);
+            }
+        }
+
+        var fallbackExternalId = NormalizeExternalId(item.ExternalId);
+        if (item.ExternalProvider is not null
+            && !returnedProviders.Contains(item.ExternalProvider.Value)
+            && !string.IsNullOrWhiteSpace(fallbackExternalId))
+        {
+            yield return new KeyValuePair<ExternalMediaProvider, string>(item.ExternalProvider.Value, fallbackExternalId);
+        }
+    }
+
     private static string GetImportKey(GameImportItem item)
     {
-        var externalId = NormalizeExternalId(item.ExternalId);
-        if (item.ExternalProvider is not null && !string.IsNullOrWhiteSpace(externalId))
+        var externalId = GetExternalIds(item).FirstOrDefault();
+        if (externalId.Key != default && !string.IsNullOrWhiteSpace(externalId.Value))
         {
-            return $"{item.ExternalProvider}:{externalId}";
+            return $"{externalId.Key}:{externalId.Value}";
         }
 
         return $"name:{item.Name.Trim()}";

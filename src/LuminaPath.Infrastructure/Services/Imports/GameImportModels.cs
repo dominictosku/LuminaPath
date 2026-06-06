@@ -24,6 +24,8 @@ public sealed class GameImportItem
 
     public string? ExternalId { get; set; }
 
+    public Dictionary<ExternalMediaProvider, string> ExternalIds { get; set; } = new();
+
     public GameStatus Status { get; set; } = GameStatus.Planned;
 
     public int Priority { get; set; }

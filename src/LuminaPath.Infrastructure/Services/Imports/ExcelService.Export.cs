@@ -108,7 +108,7 @@ public partial class ExcelService
         "Current Watch Time Minutes"
     ];
 
-    public async Task<byte[]> ExportGamesAsync(LuminaUser user)
+    public async Task<byte[]> ExportLibraryWorkbookAsync(LuminaUser user)
     {
         using var context = await _dbContextFactory.CreateDbContextAsync();
         var myGames = await context.MyGames
@@ -241,7 +241,7 @@ public partial class ExcelService
                 continue;
             }
 
-            var column = WriteCommonLibraryColumns(worksheet, row, anime, myAnime.Status.ToString(), myAnime.Priority);
+            var column = WriteCommonLibraryColumns(worksheet, row, anime, FormatStatus(myAnime.Status), myAnime.Priority);
             worksheet.Cell(row, column++).Value = anime.ExternalIds.GetExternalId(ExternalMediaProvider.Anilist);
             worksheet.Cell(row, column++).Value = anime.ExternalIds.GetExternalId(ExternalMediaProvider.Mal);
             SetInt(worksheet.Cell(row, column++), anime.EpisodeCount);
@@ -272,7 +272,7 @@ public partial class ExcelService
                 continue;
             }
 
-            var column = WriteCommonLibraryColumns(worksheet, row, movie, myMovie.Status.ToString(), myMovie.Priority);
+            var column = WriteCommonLibraryColumns(worksheet, row, movie, FormatStatus(myMovie.Status), myMovie.Priority);
             worksheet.Cell(row, column++).Value = movie.ExternalIds.GetExternalId(ExternalMediaProvider.Tmdb);
             SetInt(worksheet.Cell(row, column++), movie.ExpectedWatchTimeMinutes);
             worksheet.Cell(row, column++).Value = movie.Image?.Url;
@@ -298,7 +298,7 @@ public partial class ExcelService
                 continue;
             }
 
-            var column = WriteCommonLibraryColumns(worksheet, row, series, mySeriesEntry.Status.ToString(), mySeriesEntry.Priority);
+            var column = WriteCommonLibraryColumns(worksheet, row, series, FormatStatus(mySeriesEntry.Status), mySeriesEntry.Priority);
             worksheet.Cell(row, column++).Value = series.ExternalIds.GetExternalId(ExternalMediaProvider.Tmdb);
             SetInt(worksheet.Cell(row, column++), series.EpisodeCount);
             SetInt(worksheet.Cell(row, column++), series.ExpectedWatchTimePerEpisodeMinutes);
