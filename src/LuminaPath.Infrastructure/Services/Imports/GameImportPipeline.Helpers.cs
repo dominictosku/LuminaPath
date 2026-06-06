@@ -22,7 +22,8 @@ public sealed partial class GameImportPipeline
         return context.Games
             .Include(game => game.ExternalIds)
             .Include(game => game.MyGames!)
-                .ThenInclude(myGame => myGame.MyGameInfo);
+                .ThenInclude(myGame => myGame.MyGameInfo)
+            .AsSplitQuery();
     }
 
     private static Game? FindGame(IEnumerable<Game> games, GameImportItem item)

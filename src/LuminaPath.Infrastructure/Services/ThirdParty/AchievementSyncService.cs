@@ -207,6 +207,7 @@ public sealed partial class AchievementSyncService
             .Include(game => game.ExternalIds)
             .Include(game => game.Achievements!)
                 .ThenInclude(achievement => achievement.UserAchievements)
+            .AsSplitQuery()
             .Where(game => game.MyGames!.Any(myGame => myGame.LuminaUserId == userId))
             .ToListAsync(cancellationToken);
     }

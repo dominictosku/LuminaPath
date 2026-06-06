@@ -54,6 +54,25 @@ namespace Test.Infrastructure
         }
 
         [Fact]
+        public async Task QueryablePagination_OrdersById_WhenQueryHasNoExplicitOrdering()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            await using var dbContext = new LuminaPathDbContext(options);
+            dbContext.Games.AddRange(
+                CreateGame("Inserted first"),
+                CreateGame("Inserted second"),
+                CreateGame("Inserted third"));
+            await dbContext.SaveChangesAsync();
+
+            var page = await dbContext.Games
+                .Where(game => game.Name.Contains("Inserted"))
+                .ToPaginatedListAsync(pageIndex: 2, pageSize: 1);
+
+            Assert.Single(page);
+            Assert.Equal("Inserted second", page[0].Name);
+        }
+
+        [Fact]
         public async Task GenericModelService_UsesRequestedPage_WhenPageSizeIsSet()
         {
             var options = Utilities.DbContext.TestDbContextOptions();

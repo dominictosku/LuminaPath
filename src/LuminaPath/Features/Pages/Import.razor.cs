@@ -1,3 +1,4 @@
+using LuminaPath.Components.Dialogs;
 using LuminaPath.Core.Dtos;
 using LuminaPath.Core.Models.ThirdParty;
 using LuminaPath.Infrastructure.Services;
@@ -425,8 +426,7 @@ public partial class Import
             return;
         }
 
-        bool? confirm = await dialogService.Confirm("Import the previewed Excel rows?", "Import Excel");
-        if (confirm != true)
+        if (!await ConfirmExcelImport())
         {
             return;
         }
@@ -448,6 +448,39 @@ public partial class Import
         {
             _excelSaving = false;
         }
+    }
+
+    async Task<bool> ConfirmExcelImport()
+    {
+        var detail = _excelPreview is null
+            ? null
+            : $"Rows: {_excelPreview.RowsDetected}. Media: {_excelPreview.CreatedMedia} created, {_excelPreview.UpdatedMedia} updated. "
+                + $"Library entries: {_excelPreview.CreatedLibraryItems} created, {_excelPreview.UpdatedLibraryItems} updated. "
+                + $"Duplicates skipped: {_excelPreview.DuplicateRows}. Warnings: {_excelPreview.Errors.Count}.";
+
+        var parameters = new DialogParameters<ConfirmationDialog>
+        {
+            { dialog => dialog.TitleText, "Import Excel" },
+            { dialog => dialog.SubtitleText, ExcelFileLabel },
+            { dialog => dialog.ContentText, "Import the previewed workbook rows into your LuminaPath library?" },
+            { dialog => dialog.DetailText, detail },
+            { dialog => dialog.ConfirmText, "Import Library" },
+            { dialog => dialog.Icon, Icons.Material.Filled.TableView },
+            { dialog => dialog.ConfirmIcon, Icons.Material.Filled.LibraryAdd },
+            { dialog => dialog.ConfirmColor, Color.Secondary },
+            { dialog => dialog.Severity, Severity.Info }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Import Excel", parameters, options);
+        var result = await dialog.Result;
+        return result is { Canceled: false };
     }
 
     static async Task<MemoryStream> CopyToMemoryStream(IBrowserFile file)

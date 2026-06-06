@@ -559,7 +559,8 @@ public partial class ExcelService
             BuildAnimeItem,
             context => context.Animes
                 .Include(anime => anime.ExternalIds)
-                .Include(anime => anime.MyAnimes),
+                .Include(anime => anime.MyAnimes)
+                .AsSplitQuery(),
             name => new Anime { Name = name },
             ApplyAnimeValues,
             anime => anime.MyAnimes is null ? Enumerable.Empty<MyAnime>() : anime.MyAnimes,
@@ -577,7 +578,8 @@ public partial class ExcelService
             BuildMovieItem,
             context => context.Movies
                 .Include(movie => movie.ExternalIds)
-                .Include(movie => movie.MyMovies),
+                .Include(movie => movie.MyMovies)
+                .AsSplitQuery(),
             name => new Movie { Name = name },
             ApplyMovieValues,
             movie => movie.MyMovies is null ? Enumerable.Empty<MyMovie>() : movie.MyMovies,
@@ -595,7 +597,8 @@ public partial class ExcelService
             BuildSeriesItem,
             context => context.Series
                 .Include(series => series.ExternalIds)
-                .Include(series => series.MySeries),
+                .Include(series => series.MySeries)
+                .AsSplitQuery(),
             name => new Series { Name = name },
             ApplySeriesValues,
             series => series.MySeries is null ? Enumerable.Empty<MySeries>() : series.MySeries,
