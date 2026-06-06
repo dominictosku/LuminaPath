@@ -1,9 +1,5 @@
 :host {
-  /* Always-dark palette — matches the rest of the app (settings, profile,
-     statistic, planning, quest-board, login). Previously this page had a
-     light default with a dark media-query override; that produced visible
-     mismatch on light-mode OS users against the always-dark surfaces
-     elsewhere. See `global.scss` for the matching Ionic palette switch. */
+  /* Always-dark palette matching the rest of the app and global.scss. */
   --library-bg: #070b12;
   --ink: #eef2ff;
   --muted: #98a2b3;
@@ -26,12 +22,9 @@
   padding: 16px 14px 96px;
 }
 
-/* The hero / toolbar live in their own components but their wrapping
-   <app-…> host elements would otherwise become the direct grid children
-   of .library-page (breaking the grid + the responsive `grid-column: 1 / -1`
-   rules below). `display: contents` makes the hosts layout-transparent so
-   the inner `<section class="hero">` / `<section class="toolbar-panel">`
-   participate in the grid exactly as they did pre-split. */
+/* The hero / toolbar live in their own components. `display: contents`
+   keeps their host elements layout-transparent so the inner sections
+   participate directly in the .library-page grid. */
 app-library-hero,
 app-library-toolbar {
   display: contents;

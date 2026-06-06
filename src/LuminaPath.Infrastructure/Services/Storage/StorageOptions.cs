@@ -41,14 +41,12 @@ public sealed partial class StorageOptions
         options.AzureBlobConnectionString = ConfigurationValues.FirstNonEmpty(
                 config.GetSection(SectionName)["AzureBlobConnectionString"],
                 config.GetSection("Azure")["BlobConnectionString"],
-                config["AZURE_CONNECTIONSTRING"],
                 options.AzureBlobConnectionString)
             ?? string.Empty;
 
         options.AzureBlobContainerName = ConfigurationValues.FirstNonEmpty(
                 config.GetSection(SectionName)["AzureBlobContainerName"],
                 config.GetSection("Azure")["BlobContainerName"],
-                config["AZURE_CONTAINER_NAME"],
                 options.AzureBlobContainerName,
                 "media")
             ?? "media";

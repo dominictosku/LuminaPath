@@ -533,7 +533,7 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   // Admin / editor catalog actions
   // ---------------------------------------------------------------------------
 
-  /** Status options bound to the (unused-in-edit-mode) library toggle. */
+  /** Status options passed through the shared catalog dialog input contract. */
   get gameStatusOptions() {
     return this.mediaView.statusOptions(this.gamesMode);
   }

@@ -51,7 +51,6 @@ internal static class ConfigurationValues
         return NormalizeOrigins(config.GetSection("Cors:AllowedOrigins").Get<string[]>())
             ?? NormalizeOrigins(config.GetSection("FrontendUrls").Get<string[]>())
             ?? NormalizeOrigins(SplitList(config["LUMINAPATH_CORS_ORIGINS"]))
-            ?? NormalizeOrigins(SplitList(config["FrontendUrl"]))
             ?? [];
     }
 

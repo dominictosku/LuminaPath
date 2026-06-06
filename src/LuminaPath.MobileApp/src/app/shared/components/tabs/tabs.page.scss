@@ -1,7 +1,5 @@
 :host {
-  /* Always-dark tokens (the app-wide commitment from global.scss / the
-     library page). Previously this had a light default with a dark
-     media-query override. */
+  /* Always-dark tokens matching the app-wide palette from global.scss. */
   --tab-surface: rgba(17, 24, 39, 0.82);
   --tab-border: rgba(255, 255, 255, 0.1);
   --tab-ink: #98a2b3;
@@ -192,4 +190,3 @@
     transition: none;
   }
 }
-

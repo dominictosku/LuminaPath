@@ -1,6 +1,5 @@
-/* Mirrors the .empty-state styles in my-game-details.page.scss so pages
-   can adopt the shared component without depending on page-level SCSS.
-   Once all sites migrate, the duplicates in page SCSS can be removed. */
+/* Base .empty-state styling for shared component call sites. Feature pages
+   can still add local modifiers for their own layout needs. */
 .empty-state {
   display: grid;
   place-items: center;

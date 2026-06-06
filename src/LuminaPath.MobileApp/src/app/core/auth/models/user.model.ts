@@ -38,21 +38,21 @@ export interface IUserInfo {
   roles?: string[]
 }
 
-export const ADMIN_ROLE_NAMES = ['Administrator', 'Admin'] as const;
-export const EDITOR_ROLE_NAMES = ['Editor'] as const;
+const ADMIN_ROLE_NAME = 'Administrator';
+const CATALOG_EDITOR_ROLE_NAMES = [ADMIN_ROLE_NAME, 'Editor'] as const;
 
 export function hasAdminRole(roles: readonly string[] | null | undefined): boolean {
-  if (!roles?.length) return false;
-  const lowered = roles.map((role) => role.toLowerCase());
-  return ADMIN_ROLE_NAMES.some((name) => lowered.includes(name.toLowerCase()));
+  return hasAnyRole(roles, [ADMIN_ROLE_NAME]);
 }
 
 export function canEditCatalog(roles: readonly string[] | null | undefined): boolean {
+  return hasAnyRole(roles, CATALOG_EDITOR_ROLE_NAMES);
+}
+
+function hasAnyRole(roles: readonly string[] | null | undefined, allowedRoles: readonly string[]): boolean {
   if (!roles?.length) return false;
-  const lowered = roles.map((role) => role.toLowerCase());
-  return [...ADMIN_ROLE_NAMES, ...EDITOR_ROLE_NAMES].some((name) =>
-    lowered.includes(name.toLowerCase()),
-  );
+  const allowed = new Set(allowedRoles.map((role) => role.toLowerCase()));
+  return roles.some((role) => allowed.has(role.toLowerCase()));
 }
 
 export interface ICredentials {

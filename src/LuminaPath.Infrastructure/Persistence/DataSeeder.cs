@@ -117,7 +117,7 @@ namespace LuminaPath.Infrastructure
 
                 if (result.Succeeded)
                 {
-                    // Assign the "Admin" role to the admin user
+                    // Assign the Administrator role to the bootstrap user.
                     await userManager.AddToRoleAsync(adminUser, "Administrator");
                 }
                 else

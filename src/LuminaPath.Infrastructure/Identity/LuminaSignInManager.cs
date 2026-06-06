@@ -23,8 +23,8 @@ namespace LuminaPath.Infrastructure.Identity;
 /// <para>
 /// When the flag is false we also write an audit log entry so admins can
 /// see "X tried to log in while inactive" — useful when newly-registered
-/// users hit the admin-approval gate, or when a previously-active user
-/// is later locked.
+/// users hit the admin-approval gate, or when an admin disables an
+/// account after prior use.
 /// </para>
 /// </summary>
 public sealed class LuminaSignInManager : SignInManager<LuminaUser>

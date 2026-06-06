@@ -15,8 +15,9 @@ namespace LuminaPath.Infrastructure.Identity
         /// <c>LuminaSignInManager.CanSignInAsync</c>. Distinct from
         /// Identity's <c>LockoutEnd</c> (which is for failed-login auto-
         /// lockouts that auto-expire); this flag stays false until an
-        /// admin flips it. Defaults to true so existing rows after the
-        /// migration remain signable.
+        /// admin flips it. Defaults to true for code paths that do not
+        /// require admin approval; the self-registration gate overrides it
+        /// when approval is enabled.
         /// </summary>
         public bool IsActive { get; set; } = true;
 

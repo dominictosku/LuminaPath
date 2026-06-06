@@ -490,7 +490,7 @@ export class EpisodicMediaDetailsPage implements OnInit {
   // Admin / editor catalog actions
   // ---------------------------------------------------------------------------
 
-  /** Status options bound to the (unused-in-edit-mode) library toggle. */
+  /** Status options passed through the shared catalog dialog input contract. */
   get watchStatusOptions() {
     return this.mediaView.statusOptions(this.mediaMode);
   }

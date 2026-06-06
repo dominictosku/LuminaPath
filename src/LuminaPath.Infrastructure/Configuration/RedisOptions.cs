@@ -22,7 +22,6 @@ public sealed class RedisOptions
         options.ConnectionString = ConfigurationValues.FirstNonEmpty(
                 config[$"{SectionName}:ConnectionString"],
                 config.GetConnectionString("Redis"),
-                config["REDIS_CONNECTIONSTRING"],
                 options.ConnectionString,
                 "localhost:6379")
             ?? string.Empty;
