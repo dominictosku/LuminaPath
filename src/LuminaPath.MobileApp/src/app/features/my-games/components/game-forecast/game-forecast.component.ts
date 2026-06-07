@@ -27,7 +27,7 @@ import {
 })
 export class GameForecastComponent {
   readonly forecast = input.required<GameForecast>();
-  readonly goToPlanning = output<void>();
+  readonly openSessions = output<void>();
 
   readonly bar = computed<ForecastBarParts>(() => forecastBarParts(this.forecast()));
   readonly summary = computed(() => forecastSummary(this.forecast()));

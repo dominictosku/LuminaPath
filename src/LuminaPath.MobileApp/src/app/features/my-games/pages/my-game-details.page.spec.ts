@@ -40,7 +40,13 @@ describe('MyGameDetailsPage', () => {
       'deleteQuest',
       'getQuestsForGame',
     ]);
-    sessionService = jasmine.createSpyObj<GamingSessionService>('GamingSessionService', ['forecast', 'create']);
+    sessionService = jasmine.createSpyObj<GamingSessionService>('GamingSessionService', [
+      'forecast',
+      'list',
+      'create',
+      'update',
+      'remove',
+    ]);
     myGameService = jasmine.createSpyObj<MyGameService>('MyGameService', [
       'addToLibrary',
       'updateLibraryEntry',
@@ -56,6 +62,7 @@ describe('MyGameDetailsPage', () => {
     gameService.getNews.and.returnValue(of([]));
     questBoardService.getQuestsForGame.and.resolveTo([]);
     sessionService.forecast.and.returnValue(of(null as any));
+    sessionService.list.and.returnValue(of([]));
     sessionService.create.and.returnValue(of({
       id: 99,
       myGameId: 7,
@@ -176,6 +183,14 @@ describe('MyGameDetailsPage', () => {
     expect(component.selectedTab).toBe('progress');
     // The parent no longer touches the news service; that's the GameNewsComponent's job.
     expect(gameService.getNews).not.toHaveBeenCalled();
+  });
+
+  it('opens the sessions tab from game detail actions', () => {
+    configure('42', makeGame({ id: 42, name: 'Hades', myGames: makeMyGame(7, 42) }));
+
+    component.openSessionsTab();
+
+    expect(component.selectedTab).toBe('sessions');
   });
 
   it('does not query achievements when the game is not yet in the library', async () => {

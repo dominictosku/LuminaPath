@@ -50,6 +50,7 @@ import {
 import { GameNewsComponent } from '../components/game-news/game-news.component';
 import { GameNotesComponent } from '../components/game-notes/game-notes.component';
 import { GameQuestsComponent } from '../components/game-quests/game-quests.component';
+import { GameSessionsComponent } from '../components/game-sessions/game-sessions.component';
 import { GameHeroComponent } from '../components/game-hero/game-hero.component';
 import { GameForecastComponent } from '../components/game-forecast/game-forecast.component';
 import { GameTrophiesComponent } from '../components/game-trophies/game-trophies.component';
@@ -76,6 +77,7 @@ import {
     GameNewsComponent,
     GameNotesComponent,
     GameQuestsComponent,
+    GameSessionsComponent,
     GameHeroComponent,
     GameForecastComponent,
     GameTrophiesComponent,
@@ -89,6 +91,7 @@ import {
 })
 export class MyGameDetailsPage implements OnInit, OnDestroy {
   @ViewChild(GameNotesComponent) notesComponent?: GameNotesComponent;
+  @ViewChild(GameSessionsComponent) sessionsComponent?: GameSessionsComponent;
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -110,6 +113,7 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     MEDIA_MODE_OPTIONS.find((option) => option.id === 'games') ?? MEDIA_MODE_OPTIONS[0];
   readonly detailTabs: readonly DetailTabOption[] = [
     { value: 'overview', label: 'Overview' },
+    { value: 'sessions', label: 'Sessions' },
     { value: 'gallery', label: 'Gallery' },
     { value: 'progress', label: 'Progress' },
     { value: 'news', label: 'News' },
@@ -122,7 +126,7 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   isAchievementsLoading = false;
   errorMessage = '';
   achievementsErrorMessage = '';
-  selectedTab: 'overview' | 'gallery' | 'progress' | 'news' = 'overview';
+  selectedTab: 'overview' | 'sessions' | 'gallery' | 'progress' | 'news' = 'overview';
   isUpdatingLibrary = false;
   isSavingNotes = false;
   headerCondensed = false;
@@ -247,7 +251,9 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
         ? 'progress'
         : value === 'gallery'
           ? 'gallery'
-          : 'overview';
+          : value === 'sessions'
+            ? 'sessions'
+            : 'overview';
   }
 
   onScroll(event: CustomEvent<{ scrollTop: number }>): void {
@@ -458,6 +464,7 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
       this.cache.set(cacheKey, fresh);
       this.syncMediaStore(gameId);
       await this.refreshSideData();
+      await this.sessionsComponent?.refresh();
     } catch {
       if (!cached) {
         this.showError('Game could not be loaded.');
@@ -512,8 +519,12 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
     }
   }
 
-  goToPlanning(): void {
-    void this.router.navigateByUrl('/planning');
+  openSessionsTab(): void {
+    this.selectedTab = 'sessions';
+  }
+
+  protected async refreshSessionData(): Promise<void> {
+    await this.refreshSideData();
   }
 
   private libraryUpdateDetails(overrides: Parameters<typeof buildLibraryUpdate>[1] = {}) {

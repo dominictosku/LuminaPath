@@ -104,7 +104,7 @@
             shape="round"
             fill="outline"
             class="quick-action"
-            (click)="goToPlanning()">
+            (click)="openSessionsTab()">
             <ion-icon slot="start" name="calendar-clear-outline"></ion-icon>
             Plan sessions
           </ion-button>
@@ -215,7 +215,15 @@
       @if (selectedTab === 'overview' && forecast) {
         <app-game-forecast
           [forecast]="forecast"
-          (goToPlanning)="goToPlanning()" />
+          (openSessions)="openSessionsTab()" />
+      }
+
+      @if (selectedTab === 'sessions') {
+        <app-game-sessions
+          [myGameId]="myGameId"
+          [isInLibrary]="isInLibrary"
+          [gameName]="game.name"
+          (sessionsChanged)="refreshSessionData()" />
       }
 
       @if (selectedTab === 'progress' && isInLibrary) {

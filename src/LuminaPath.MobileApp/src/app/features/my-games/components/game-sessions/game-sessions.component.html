@@ -1,0 +1,114 @@
+<section class="quest-panel game-sessions-panel">
+  <header class="section-header sessions-header">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="time-outline"></ion-icon>
+        Sessions
+      </span>
+      <h2>Plan play time</h2>
+    </div>
+    <ion-segment
+      class="session-range-filter"
+      [ngModel]="sessionRange"
+      (ngModelChange)="setSessionRange($event)">
+      <ion-segment-button value="upcoming">Upcoming</ion-segment-button>
+      <ion-segment-button value="past">Past</ion-segment-button>
+      <ion-segment-button value="all">All</ion-segment-button>
+    </ion-segment>
+  </header>
+
+  @if (isInLibrary()) {
+    <section class="session-form">
+      <div class="session-form__grid">
+        <label>
+          <span>Date</span>
+          <input type="date" [(ngModel)]="draft.scheduledDate" />
+        </label>
+        <label>
+          <span>Time</span>
+          <input type="time" [(ngModel)]="draft.scheduledTime" />
+        </label>
+        <label>
+          <span>Duration (min)</span>
+          <input type="number" min="15" step="15" [(ngModel)]="draft.durationMinutes" />
+        </label>
+        <label class="session-form__notes">
+          <span>Notes</span>
+          <input type="text" placeholder="Optional" [(ngModel)]="draft.notes" />
+        </label>
+      </div>
+      <div class="session-form__actions">
+        <ion-button shape="round" (click)="addSession()">
+          <ion-icon slot="start" name="add-outline"></ion-icon>
+          Add session
+        </ion-button>
+        @if (errorMessage) {
+          <span class="session-form__error">{{ errorMessage }}</span>
+        }
+      </div>
+    </section>
+
+    <section class="session-list-section">
+      <header class="session-list-heading">
+        <div>
+          <span class="eyebrow">
+            <ion-icon name="calendar-clear-outline"></ion-icon>
+            Calendar
+          </span>
+          <h3>{{ sessionListTitle() }}</h3>
+        </div>
+      </header>
+
+      @if (isLoading) {
+        <div class="empty-state">
+          <ion-spinner name="crescent"></ion-spinner>
+          <strong>Loading sessions</strong>
+        </div>
+      } @else if (!buckets.length) {
+        <app-empty-state
+          icon="calendar-clear-outline"
+          [title]="sessionEmptyTitle()"
+          [message]="sessionEmptyMessage()" />
+      } @else {
+        @for (bucket of buckets; track trackByBucket($index, bucket)) {
+          <article class="day-bucket">
+            <header>
+              <h3>{{ bucket.label }}</h3>
+            </header>
+            <div class="session-list">
+              @for (session of bucket.sessions; track trackBySession($index, session)) {
+                <article class="session-card" [class.session-card--done]="session.completed">
+                  <button
+                    type="button"
+                    class="icon-action icon-action--complete"
+                    [attr.aria-label]="session.completed ? 'Mark not done' : 'Mark done'"
+                    (click)="toggleComplete(session)">
+                    <ion-icon [name]="session.completed ? 'checkmark-circle' : 'checkmark-circle-outline'"></ion-icon>
+                  </button>
+                  <div class="session-body">
+                    <h4>{{ sessionTitle(session) }}</h4>
+                    <p>
+                      {{ formatTime(session.scheduledAt) }} · {{ formatDuration(session.durationMinutes) }}
+                      @if (session.notes) {
+                        <span> · {{ session.notes }}</span>
+                      }
+                    </p>
+                  </div>
+                  <button type="button" class="icon-action" aria-label="Delete session" (click)="removeSession(session)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </button>
+                </article>
+              }
+            </div>
+          </article>
+        }
+      }
+    </section>
+  } @else {
+    <app-empty-state
+      variant="locked"
+      icon="game-controller-outline"
+      [title]="sessionEmptyTitle()"
+      [message]="sessionEmptyMessage()" />
+  }
+</section>
