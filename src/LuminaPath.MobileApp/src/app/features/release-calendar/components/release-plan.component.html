@@ -1,121 +1,123 @@
-<section class="capacity-card">
-  <span>Weekly capacity</span>
-  <strong>{{ weeklyHours }}h</strong>
-  <ion-range
-    min="1"
-    max="40"
-    step="1"
-    [(ngModel)]="weeklyHours"
-    (ionChange)="updateWeeklyHours()">
-  </ion-range>
-</section>
-
-@if (errorMessage) {
-  <section class="notice">
-    <ion-icon name="flame-outline"></ion-icon>
-    <span>{{ errorMessage }}</span>
+<div class="release-plan">
+  <section class="release-plan__capacity">
+    <span>Weekly capacity</span>
+    <strong>{{ weeklyHours }}h</strong>
+    <ion-range
+      min="1"
+      max="40"
+      step="1"
+      [(ngModel)]="weeklyHours"
+      (ionChange)="updateWeeklyHours()">
+    </ion-range>
   </section>
-}
 
-@if (!isLoading) {
-  <section class="metric-grid">
-    @for (metric of metrics; track metric) {
-      <article class="metric">
-        <div class="metric__icon">
-          <ion-icon [name]="metric.icon"></ion-icon>
+  @if (errorMessage) {
+    <section class="release-plan__notice">
+      <ion-icon name="flame-outline"></ion-icon>
+      <span>{{ errorMessage }}</span>
+    </section>
+  }
+
+  @if (!isLoading) {
+    <section class="release-plan__metrics">
+      @for (metric of metrics; track metric) {
+        <article class="release-plan-metric">
+          <div class="release-plan-metric__icon">
+            <ion-icon [name]="metric.icon"></ion-icon>
+          </div>
+          <span>{{ metric.label }}</span>
+          <strong>{{ metric.value }}</strong>
+          <small>{{ metric.detail }}</small>
+        </article>
+      }
+    </section>
+  } @else {
+    <section class="release-plan__metrics">
+      @for (item of [1, 2, 3, 4]; track item) {
+        <article class="release-plan-metric release-plan-metric--loading">
+          <ion-skeleton-text animated></ion-skeleton-text>
+        </article>
+      }
+    </section>
+  }
+
+  <section class="release-plan__mode">
+    <ion-segment [(ngModel)]="mode">
+      <ion-segment-button value="week">Week</ion-segment-button>
+      <ion-segment-button value="backlog">Backlog</ion-segment-button>
+    </ion-segment>
+  </section>
+
+  @if (mode === 'week') {
+    <section class="release-plan__section">
+      <div class="release-plan__section-heading">
+        <div>
+          <span class="release-plan__eyebrow">
+            <ion-icon name="game-controller-outline"></ion-icon>
+            This week
+          </span>
+          <h2>Active Queue</h2>
         </div>
-        <span>{{ metric.label }}</span>
-        <strong>{{ metric.value }}</strong>
-        <small>{{ metric.detail }}</small>
-      </article>
-    }
-  </section>
-} @else {
-  <section class="metric-grid">
-    @for (item of [1, 2, 3, 4]; track item) {
-      <article class="metric metric--loading">
-        <ion-skeleton-text animated></ion-skeleton-text>
-      </article>
-    }
-  </section>
-}
-
-<section class="mode-panel">
-  <ion-segment [(ngModel)]="mode">
-    <ion-segment-button value="week">Week</ion-segment-button>
-    <ion-segment-button value="backlog">Backlog</ion-segment-button>
-  </ion-segment>
-</section>
-
-@if (mode === 'week') {
-  <section class="section-block">
-    <div class="section-heading">
-      <div>
-        <span class="eyebrow">
-          <ion-icon name="game-controller-outline"></ion-icon>
-          This week
-        </span>
-        <h2>Active Queue</h2>
+        <ion-badge>{{ playingGames.length }}</ion-badge>
       </div>
-      <ion-badge>{{ playingGames.length }}</ion-badge>
-    </div>
-    @if (playingGames.length) {
-      <div class="timeline">
-        @for (game of playingGames; track trackByGameId($index, game)) {
-          <article class="timeline-item">
-            <img [src]="imageFor(game)" alt="" loading="lazy" decoding="async" />
-            <div class="timeline-item__body">
-              <div class="badge-row">
-                <ion-badge>{{ statusLabel(game) }}</ion-badge>
-                <span>{{ platformLabel(game.platforms) }}</span>
+      @if (playingGames.length) {
+        <div class="release-plan__timeline">
+          @for (game of playingGames; track trackByGameId($index, game)) {
+            <article class="release-plan-game">
+              <img [src]="imageFor(game)" alt="" loading="lazy" decoding="async" />
+              <div class="release-plan-game__body">
+                <div class="release-plan__badge-row">
+                  <ion-badge>{{ statusLabel(game) }}</ion-badge>
+                  <span>{{ platformLabel(game.platforms) }}</span>
+                </div>
+                <h3>{{ game.name }}</h3>
+                <p>{{ remainingLabel(game) }} · about {{ weeksFor(game) }} week{{ weeksFor(game) === 1 ? '' : 's' }}</p>
+                <ion-progress-bar [value]="progressOf(game)"></ion-progress-bar>
               </div>
-              <h3>{{ game.name }}</h3>
-              <p>{{ remainingLabel(game) }} · about {{ weeksFor(game) }} week{{ weeksFor(game) === 1 ? '' : 's' }}</p>
-              <ion-progress-bar [value]="progressOf(game)"></ion-progress-bar>
-            </div>
-          </article>
-        }
-      </div>
-    } @else {
-      <app-empty-state
-        icon="game-controller-outline"
-        title="No active game"
-        message="Mark something as Playing to build a weekly queue." />
-    }
-  </section>
-}
+            </article>
+          }
+        </div>
+      } @else {
+        <app-empty-state
+          icon="game-controller-outline"
+          title="No active game"
+          message="Mark something as Playing to build a weekly queue." />
+      }
+    </section>
+  }
 
-@if (mode === 'backlog') {
-  <section class="section-block">
-    <div class="section-heading">
-      <div>
-        <span class="eyebrow">
-          <ion-icon name="layers-outline"></ion-icon>
-          Backlog
-        </span>
-        <h2>Longest Commitments</h2>
+  @if (mode === 'backlog') {
+    <section class="release-plan__section">
+      <div class="release-plan__section-heading">
+        <div>
+          <span class="release-plan__eyebrow">
+            <ion-icon name="layers-outline"></ion-icon>
+            Backlog
+          </span>
+          <h2>Longest Commitments</h2>
+        </div>
+        <ion-badge>{{ backlogGames.length }}</ion-badge>
       </div>
-      <ion-badge>{{ backlogGames.length }}</ion-badge>
-    </div>
-    @if (backlogGames.length) {
-      <div class="backlog-list">
-        @for (game of backlogGames; track trackByGameId($index, game)) {
-          <article class="backlog-item">
-            <img [src]="imageFor(game)" alt="" loading="lazy" decoding="async" />
-            <div>
-              <ion-badge>{{ statusLabel(game) }}</ion-badge>
-              <h3>{{ game.name }}</h3>
-              <p>{{ remainingLabel(game) }} · {{ weeksFor(game) }} week{{ weeksFor(game) === 1 ? '' : 's' }} at {{ weeklyHours }}h/week</p>
-            </div>
-            <strong>{{ game.playtime || 0 }}h</strong>
-          </article>
-        }
-      </div>
-    } @else {
-      <app-empty-state
-        icon="checkmark-circle-outline"
-        title="No planned backlog"
-        message="Your planned/on-hold list is clear." />
-    }
-  </section>
-}
+      @if (backlogGames.length) {
+        <div class="release-plan__backlog">
+          @for (game of backlogGames; track trackByGameId($index, game)) {
+            <article class="release-plan-backlog-game">
+              <img [src]="imageFor(game)" alt="" loading="lazy" decoding="async" />
+              <div>
+                <ion-badge>{{ statusLabel(game) }}</ion-badge>
+                <h3>{{ game.name }}</h3>
+                <p>{{ remainingLabel(game) }} · {{ weeksFor(game) }} week{{ weeksFor(game) === 1 ? '' : 's' }} at {{ weeklyHours }}h/week</p>
+              </div>
+              <strong>{{ game.playtime || 0 }}h</strong>
+            </article>
+          }
+        </div>
+      } @else {
+        <app-empty-state
+          icon="checkmark-circle-outline"
+          title="No planned backlog"
+          message="Your planned/on-hold list is clear." />
+      }
+    </section>
+  }
+</div>
