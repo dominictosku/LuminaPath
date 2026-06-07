@@ -1,0 +1,314 @@
+<ion-content [fullscreen]="true" class="weekly-schedule-shell">
+  <main class="weekly-schedule-page">
+    <header class="schedule-topbar">
+      <div class="schedule-title">
+        <span class="schedule-eyebrow">
+          <ion-icon name="calendar-clear-outline"></ion-icon>
+          Weekly schedule
+        </span>
+        <h1>{{ title }}</h1>
+      </div>
+
+      <div class="schedule-nav">
+        <button type="button" class="schedule-icon-button" aria-label="Previous week" (click)="shift(-1)">
+          <ion-icon name="chevron-back-outline"></ion-icon>
+        </button>
+        <button type="button" class="schedule-nav__today" (click)="today()">Today</button>
+        <button type="button" class="schedule-icon-button" aria-label="Next week" (click)="shift(1)">
+          <ion-icon name="chevron-forward-outline"></ion-icon>
+        </button>
+      </div>
+    </header>
+
+    @if (errorMessage) {
+      <section class="schedule-alert">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <span>{{ errorMessage }}</span>
+      </section>
+    }
+
+    <section class="weekly-schedule-layout">
+      <aside class="schedule-sidebar">
+        <section class="sidebar-section">
+          <header>
+            <h2>Calendars</h2>
+          </header>
+          <div class="calendar-group-list">
+            @for (group of calendarGroups(); track group.id) {
+              <label class="calendar-group">
+                <input
+                  type="checkbox"
+                  [checked]="groupVisibility[group.id]"
+                  (change)="toggleGroup(group.id)" />
+                <span class="calendar-group__swatch" [style.background]="group.color"></span>
+                <ion-icon [name]="group.icon"></ion-icon>
+                <span>{{ group.label }}</span>
+                <strong>{{ group.count }}</strong>
+              </label>
+            }
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-section--quests">
+          <header>
+            <h2>Quests</h2>
+          </header>
+          <label class="schedule-search">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="search" placeholder="Search quests" [(ngModel)]="questSearch" />
+          </label>
+
+          <div class="sidebar-scroll">
+            @for (group of sidebarQuestGroups(); track trackByQuestGroup($index, group)) {
+              <section class="quest-folder-group">
+                <header>
+                  <span class="quest-folder-group__swatch" [style.background]="folderColor(group.folder?.id)"></span>
+                  <strong>{{ folderName(group.folder) }}</strong>
+                  <small>{{ group.quests.length }}</small>
+                </header>
+                <div class="sidebar-quest-list">
+                  @for (quest of group.quests; track trackByQuest($index, quest)) {
+                    <article
+                      class="sidebar-quest"
+                      [class.sidebar-quest--scheduled]="quest.scheduledStartAt"
+                      draggable="true"
+                      (dragstart)="dragQuest($event, quest)"
+                      (dragend)="endDrag()">
+                      <div>
+                        <strong>{{ quest.title }}</strong>
+                        <span>{{ quest.gameName || quest.skillName || quest.priority }}</span>
+                      </div>
+                      @if (quest.scheduledStartAt && quest.scheduledEndAt) {
+                        <small>{{ questScheduleLabel(quest) }}</small>
+                      } @else {
+                        <ion-icon name="time-outline"></ion-icon>
+                      }
+                    </article>
+                  }
+                </div>
+              </section>
+            } @empty {
+              <div class="sidebar-empty">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                <span>No open quests</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-section--games">
+          <header>
+            <h2>Games</h2>
+          </header>
+          <label class="schedule-search">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="search" placeholder="Search games" [(ngModel)]="gameSearch" />
+          </label>
+          <div class="game-list">
+            @for (game of visibleGames(); track trackByGame($index, game)) {
+              <article
+                class="sidebar-game"
+                [class.sidebar-game--active]="pendingGameId === game.myGameId"
+                draggable="true"
+                (click)="selectGameForNextQuest(game)"
+                (dragstart)="dragGame($event, game)"
+                (dragend)="endDrag()">
+                <ion-icon name="game-controller-outline"></ion-icon>
+                <div>
+                  <strong>{{ game.gameName }}</strong>
+                  <span>{{ game.playtime ? game.playtime + 'h estimate' : 'Library game' }}</span>
+                </div>
+              </article>
+            } @empty {
+              <div class="sidebar-empty">
+                <ion-icon name="library-outline"></ion-icon>
+                <span>No games found</span>
+              </div>
+            }
+          </div>
+        </section>
+      </aside>
+
+      <section class="week-calendar">
+        @if (isLoading) {
+          <div class="schedule-loading">
+            <ion-spinner name="crescent"></ion-spinner>
+          </div>
+        } @else {
+          <div class="week-calendar__header">
+            <div class="time-gutter time-gutter--header">GMT</div>
+            @for (day of weekDays; track trackByDay($index, day)) {
+              <div class="day-heading" [class.day-heading--today]="day.isToday">
+                <span>{{ day.label }}</span>
+                <strong>{{ day.dayNumber }}</strong>
+              </div>
+            }
+          </div>
+
+          <div class="week-calendar__scroll">
+            <div class="time-gutter" [style.height.px]="dayHeight">
+              @for (hour of hours; track hour) {
+                <span class="time-label" [style.top.px]="slotTop(hour * 60)">{{ hourLabel(hour) }}</span>
+              }
+            </div>
+
+            <div class="week-calendar__days">
+              @for (day of weekDays; track trackByDay($index, day)) {
+                <div class="day-column" [class.day-column--today]="day.isToday" [style.height.px]="dayHeight">
+                  @for (hour of hours; track hour) {
+                    <span class="hour-line" [style.top.px]="slotTop(hour * 60)"></span>
+                  }
+                  @for (minutes of slots; track minutes) {
+                    <button
+                      type="button"
+                      class="schedule-slot"
+                      [style.top.px]="slotTop(minutes)"
+                      [style.height.px]="slotHeight"
+                      (click)="openCreateQuest(day, minutes)"
+                      (dragover)="allowDrop($event)"
+                      (drop)="dropOnSlot($event, day, minutes)">
+                    </button>
+                  }
+                  @if (isCurrentWeek() && day.isToday) {
+                    <span class="current-time-line" [style.top.px]="currentTimeTop()"></span>
+                  }
+                  @for (block of blocksForDay(day); track trackByBlock($index, block)) {
+                    <article
+                      class="schedule-block"
+                      [class.schedule-block--session]="block.kind === 'session'"
+                      [class.schedule-block--done]="block.completed"
+                      [style.--block-color]="block.color"
+                      [style.top.px]="blockTop(block)"
+                      [style.height.px]="blockHeight(block)"
+                      [style.left]="blockLeft(block)"
+                      [style.width]="blockWidth(block)"
+                      (click)="openQuest(block)">
+                      <strong>{{ block.title }}</strong>
+                      <span>{{ formatBlockTime(block) }}</span>
+                      <small>{{ block.subtitle }}</small>
+                    </article>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </section>
+    </section>
+
+    @if (draft) {
+      <div class="schedule-modal-backdrop" (click)="closeDraft()">
+        <section class="schedule-modal" (click)="$event.stopPropagation()">
+          <header>
+            <div>
+              <span class="schedule-eyebrow">
+                <ion-icon name="sparkles-outline"></ion-icon>
+                {{ draft.mode === 'create' ? 'New quest' : 'Quest details' }}
+              </span>
+              <h2>{{ draft.mode === 'create' ? 'Create scheduled quest' : 'Edit scheduled quest' }}</h2>
+            </div>
+            <button type="button" class="schedule-icon-button" aria-label="Close" (click)="closeDraft()">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
+          </header>
+
+          <div class="schedule-form-grid">
+            <label class="schedule-field schedule-field--wide">
+              <span>Title</span>
+              <input type="text" [(ngModel)]="draft.title" />
+            </label>
+            <label class="schedule-field">
+              <span>Date</span>
+              <input type="date" [(ngModel)]="draft.scheduledDate" />
+            </label>
+            <label class="schedule-field">
+              <span>Start</span>
+              <input type="time" step="900" [(ngModel)]="draft.startTime" />
+            </label>
+            <label class="schedule-field">
+              <span>End</span>
+              <input type="time" step="900" [(ngModel)]="draft.endTime" />
+            </label>
+            <label class="schedule-field">
+              <span>Type</span>
+              <select [(ngModel)]="draft.type">
+                <option value="sub">Sub</option>
+                <option value="main">Main</option>
+                <option value="faction">Faction</option>
+              </select>
+            </label>
+            <label class="schedule-field">
+              <span>Priority</span>
+              <select [(ngModel)]="draft.priority">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <label class="schedule-field">
+              <span>Repeat</span>
+              <select [(ngModel)]="draft.recurrence">
+                <option value="none">None</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </label>
+            <label class="schedule-field">
+              <span>Folder</span>
+              <select [(ngModel)]="draft.folderId">
+                <option [ngValue]="null">Unfiled</option>
+                @for (folder of folderOptions(); track folder.id) {
+                  <option [ngValue]="folder.id">{{ folder.emoji }} {{ folder.name }}</option>
+                }
+              </select>
+            </label>
+            <label class="schedule-field">
+              <span>Game</span>
+              <select [(ngModel)]="draft.myGameId">
+                <option [ngValue]="null">None</option>
+                @for (game of gameOptions(); track trackByGame($index, game)) {
+                  <option [ngValue]="game.myGameId">{{ game.gameName }}</option>
+                }
+              </select>
+            </label>
+            <label class="schedule-field schedule-field--wide">
+              <span>Notes</span>
+              <textarea rows="3" [(ngModel)]="draft.notes"></textarea>
+            </label>
+          </div>
+
+          @if (draftError) {
+            <div class="schedule-modal__error">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              <span>{{ draftError }}</span>
+            </div>
+          }
+
+          <footer>
+            @if (draft.mode === 'edit') {
+              <button type="button" class="ghost-button" (click)="toggleDraftComplete()" [disabled]="isSaving">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                {{ selectedQuest()?.completed ? 'Reopen' : 'Complete' }}
+              </button>
+              <button type="button" class="ghost-button" (click)="clearDraftSchedule()" [disabled]="isSaving">
+                <ion-icon name="return-up-back-outline"></ion-icon>
+                Clear time
+              </button>
+              <button type="button" class="danger-button" (click)="deleteDraftQuest()" [disabled]="isSaving">
+                <ion-icon name="trash-outline"></ion-icon>
+                Delete
+              </button>
+            }
+            <span class="modal-spacer"></span>
+            <button type="button" class="ghost-button" (click)="closeDraft()" [disabled]="isSaving">Cancel</button>
+            <button type="button" class="primary-button" (click)="saveDraft()" [disabled]="isSaving">
+              <ion-icon name="save-outline"></ion-icon>
+              {{ isSaving ? 'Saving' : 'Save' }}
+            </button>
+          </footer>
+        </section>
+      </div>
+    }
+  </main>
+</ion-content>

@@ -114,6 +114,8 @@ export function buildOptimisticQuest(
     priority: payload.priority,
     recurrence: payload.recurrence,
     dueDate: payload.dueDate ?? null,
+    scheduledStartAt: null,
+    scheduledEndAt: null,
     tags: [],
     completed: false,
     createdAt: nowIso,

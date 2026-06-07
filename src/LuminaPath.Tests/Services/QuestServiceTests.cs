@@ -84,6 +84,38 @@ namespace Test.Services
         }
 
         [Fact]
+        public async Task CreateAsync_PersistsScheduleAndAlignsDueDate()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string userId = "user-1";
+            var start = new DateTime(2026, 6, 8, 18, 30, 0, DateTimeKind.Utc);
+            var end = start.AddMinutes(90);
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.Add(NewUser(userId));
+                await dbContext.SaveChangesAsync();
+            }
+
+            var service = new QuestService(new TestDbContextFactory(options));
+            var created = Success(await service.CreateAsync(userId, new QuestCreateDto
+            {
+                Title = "Evening boss run",
+                ScheduledStartAt = start,
+                ScheduledEndAt = end
+            }));
+
+            Assert.Equal(start, created.Quest.ScheduledStartAt);
+            Assert.Equal(end, created.Quest.ScheduledEndAt);
+            Assert.Equal(start.Date, created.Quest.DueDate);
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            var persisted = await assertContext.Quests.SingleAsync(quest => quest.LuminaUserId == userId);
+            Assert.Equal(start, persisted.ScheduledStartAt);
+            Assert.Equal(end, persisted.ScheduledEndAt);
+        }
+
+        [Fact]
         public async Task UpdateAsync_CompletesQuestAwardsXpSkillXpAndSpawnsRecurringQuest()
         {
             var options = Utilities.DbContext.TestDbContextOptions();
@@ -91,11 +123,14 @@ namespace Test.Services
             int questId;
             int skillId;
             var dueDate = new DateTime(2026, 5, 16, 0, 0, 0, DateTimeKind.Utc);
+            var scheduledStart = new DateTime(2026, 5, 16, 18, 0, 0, DateTimeKind.Utc);
+            var scheduledEnd = scheduledStart.AddHours(2);
 
             await using (var dbContext = new LuminaPathDbContext(options))
             {
                 dbContext.Users.Add(NewUser(userId));
                 var skill = new QuestSkill { LuminaUserId = userId, Name = "Programming", Icon = "code-slash-outline", Color = "#2563eb" };
+                var folder = new QuestFolder { LuminaUserId = userId, Name = "Weekly", Emoji = "W", Color = "#7c3aed" };
                 var quest = new Quest
                 {
                     LuminaUserId = userId,
@@ -104,8 +139,11 @@ namespace Test.Services
                     Priority = QuestPriority.Medium,
                     Recurrence = QuestRecurrence.Daily,
                     DueDate = dueDate,
+                    ScheduledStartAt = scheduledStart,
+                    ScheduledEndAt = scheduledEnd,
                     RewardXp = 75,
                     Skill = skill,
+                    QuestFolder = folder,
                     Tags = []
                 };
                 dbContext.Quests.Add(quest);
@@ -127,10 +165,48 @@ namespace Test.Services
             Assert.NotNull(result.SpawnedQuest);
             Assert.False(result.SpawnedQuest!.Completed);
             Assert.Equal(dueDate.AddDays(1), result.SpawnedQuest.DueDate);
+            Assert.Equal(scheduledStart.AddDays(1), result.SpawnedQuest.ScheduledStartAt);
+            Assert.Equal(scheduledEnd.AddDays(1), result.SpawnedQuest.ScheduledEndAt);
+            Assert.Equal("Weekly", result.SpawnedQuest.FolderName);
 
             await using var assertContext = new LuminaPathDbContext(options);
             var persistedSkill = await assertContext.QuestSkills.SingleAsync(s => s.Id == skillId);
             Assert.Equal(15, persistedSkill.Xp);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_ReschedulesAndClearsQuestBlock()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string userId = "user-1";
+            int questId;
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.Add(NewUser(userId));
+                var quest = NewQuest(userId, "Plan dungeon", QuestType.Sub, 0);
+                dbContext.Quests.Add(quest);
+                await dbContext.SaveChangesAsync();
+                questId = quest.Id;
+            }
+
+            var service = new QuestService(new TestDbContextFactory(options));
+            var start = new DateTime(2026, 6, 9, 19, 0, 0, DateTimeKind.Utc);
+            var scheduled = Success(await service.UpdateAsync(userId, questId, new QuestUpdateDto
+            {
+                ScheduledStartAt = start,
+                ScheduledEndAt = start.AddMinutes(45)
+            }));
+
+            Assert.Equal(start, scheduled.Quest.ScheduledStartAt);
+            Assert.Equal(start.AddMinutes(45), scheduled.Quest.ScheduledEndAt);
+            Assert.Equal(start.Date, scheduled.Quest.DueDate);
+
+            var cleared = Success(await service.UpdateAsync(userId, questId, new QuestUpdateDto { ClearSchedule = true }));
+
+            Assert.Null(cleared.Quest.ScheduledStartAt);
+            Assert.Null(cleared.Quest.ScheduledEndAt);
+            Assert.Equal(start.Date, cleared.Quest.DueDate);
         }
 
         [Fact]

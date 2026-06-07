@@ -18,6 +18,8 @@ export type Quest = {
   priority: QuestPriority;
   recurrence: QuestRecurrence;
   dueDate?: string | null;
+  scheduledStartAt?: string | null;
+  scheduledEndAt?: string | null;
   tags: string[];
   completed: boolean;
   completedAt?: string;
@@ -76,6 +78,8 @@ export type QuestCreate = {
   priority?: QuestPriority;
   recurrence?: QuestRecurrence;
   dueDate?: string | null;
+  scheduledStartAt?: string | null;
+  scheduledEndAt?: string | null;
   tags?: string[];
   myGameId?: number | null;
   skillId?: number | null;
@@ -90,6 +94,9 @@ export type QuestUpdate = {
   recurrence?: QuestRecurrence;
   dueDate?: string | null;
   clearDueDate?: boolean;
+  scheduledStartAt?: string | null;
+  scheduledEndAt?: string | null;
+  clearSchedule?: boolean;
   tags?: string[];
   completed?: boolean;
   myGameId?: number | null;
@@ -180,6 +187,8 @@ type ApiQuest = {
   priority: ApiQuestPriority;
   recurrence: ApiQuestRecurrence;
   dueDate?: string | null;
+  scheduledStartAt?: string | null;
+  scheduledEndAt?: string | null;
   tags: string[];
   rewardXp: number;
   completed: boolean;
@@ -281,6 +290,8 @@ export class QuestBoardService {
       priority: this.toApiPriority(input.priority ?? 'medium'),
       recurrence: this.toApiRecurrence(input.recurrence ?? 'none'),
       dueDate: input.dueDate ?? null,
+      scheduledStartAt: input.scheduledStartAt ?? null,
+      scheduledEndAt: input.scheduledEndAt ?? null,
       tags: input.tags ?? [],
       myGameId: input.myGameId ?? null,
       skillId: input.skillId ?? null,
@@ -300,6 +311,9 @@ export class QuestBoardService {
     if (input.recurrence !== undefined) payload['recurrence'] = this.toApiRecurrence(input.recurrence);
     if (input.dueDate !== undefined) payload['dueDate'] = input.dueDate;
     if (input.clearDueDate !== undefined) payload['clearDueDate'] = input.clearDueDate;
+    if (input.scheduledStartAt !== undefined) payload['scheduledStartAt'] = input.scheduledStartAt;
+    if (input.scheduledEndAt !== undefined) payload['scheduledEndAt'] = input.scheduledEndAt;
+    if (input.clearSchedule !== undefined) payload['clearSchedule'] = input.clearSchedule;
     if (input.tags !== undefined) payload['tags'] = input.tags;
     if (input.completed !== undefined) payload['completed'] = input.completed;
     if (input.myGameId !== undefined) payload['myGameId'] = input.myGameId;
@@ -462,6 +476,8 @@ export class QuestBoardService {
       priority: this.toPriority(apiQuest.priority),
       recurrence: this.toRecurrence(apiQuest.recurrence ?? 0),
       dueDate: apiQuest.dueDate ?? null,
+      scheduledStartAt: apiQuest.scheduledStartAt ?? null,
+      scheduledEndAt: apiQuest.scheduledEndAt ?? null,
       tags: apiQuest.tags ?? [],
       completed: apiQuest.completed,
       completedAt: apiQuest.completedAt,

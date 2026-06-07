@@ -97,13 +97,13 @@ public partial class QuestService
     private static async Task<Quest> SpawnNextRecurrenceAsync(LuminaPathDbContext dbContext, string userId, Quest source, DateTime now)
     {
         var anchor = source.DueDate ?? source.CompletedAt ?? now;
-        var nextDue = source.Recurrence switch
-        {
-            QuestRecurrence.Daily => anchor.AddDays(1),
-            QuestRecurrence.Weekly => anchor.AddDays(7),
-            QuestRecurrence.Monthly => anchor.AddMonths(1),
-            _ => anchor
-        };
+        var nextDue = ShiftForRecurrence(anchor, source.Recurrence);
+        var nextScheduledStart = source.ScheduledStartAt.HasValue
+            ? ShiftForRecurrence(source.ScheduledStartAt.Value, source.Recurrence)
+            : (DateTime?)null;
+        var nextScheduledEnd = source.ScheduledEndAt.HasValue
+            ? ShiftForRecurrence(source.ScheduledEndAt.Value, source.Recurrence)
+            : (DateTime?)null;
 
         var nextSort = await dbContext.Quests
             .Where(q => q.LuminaUserId == userId && q.Type == source.Type)
@@ -119,6 +119,8 @@ public partial class QuestService
             Priority = source.Priority,
             Recurrence = source.Recurrence,
             DueDate = NormalizeDate(nextDue),
+            ScheduledStartAt = nextScheduledStart,
+            ScheduledEndAt = nextScheduledEnd,
             Tags = new List<string>(source.Tags ?? new List<string>()),
             RewardXp = source.RewardXp,
             Completed = false,
@@ -126,11 +128,23 @@ public partial class QuestService
             UpdatedAt = now,
             SortOrder = nextSort + 1,
             MyGameId = source.MyGameId,
-            SkillId = source.SkillId
+            SkillId = source.SkillId,
+            QuestFolderId = source.QuestFolderId
         };
 
         await dbContext.Quests.AddAsync(clone);
         return clone;
+    }
+
+    private static DateTime ShiftForRecurrence(DateTime value, QuestRecurrence recurrence)
+    {
+        return recurrence switch
+        {
+            QuestRecurrence.Daily => value.AddDays(1),
+            QuestRecurrence.Weekly => value.AddDays(7),
+            QuestRecurrence.Monthly => value.AddMonths(1),
+            _ => value
+        };
     }
 
     private static async Task<QuestProfile> GetOrCreateProfileAsync(LuminaPathDbContext dbContext, string userId, DateTime now)
@@ -166,6 +180,48 @@ public partial class QuestService
             : DateTime.SpecifyKind(date.ToUniversalTime(), DateTimeKind.Utc);
     }
 
+    private static DateTime? ScheduleDueDate(DateTime? scheduledStartAt)
+    {
+        if (!scheduledStartAt.HasValue)
+        {
+            return null;
+        }
+
+        var start = NormalizeDate(scheduledStartAt)!.Value;
+        return DateTime.SpecifyKind(start.Date, DateTimeKind.Utc);
+    }
+
+    private static bool TryBuildSchedule(
+        DateTime? scheduledStartAt,
+        DateTime? scheduledEndAt,
+        out DateTime? normalizedStart,
+        out DateTime? normalizedEnd,
+        out string error)
+    {
+        normalizedStart = NormalizeDate(scheduledStartAt);
+        normalizedEnd = NormalizeDate(scheduledEndAt);
+        error = string.Empty;
+
+        if (!normalizedStart.HasValue && !normalizedEnd.HasValue)
+        {
+            return true;
+        }
+
+        if (!normalizedStart.HasValue || !normalizedEnd.HasValue)
+        {
+            error = "Scheduled start and end are required together";
+            return false;
+        }
+
+        if (normalizedEnd.Value <= normalizedStart.Value)
+        {
+            error = "Scheduled end must be after scheduled start";
+            return false;
+        }
+
+        return true;
+    }
+
     private static List<string> NormalizeTags(List<string> tags)
     {
         return (tags ?? new())
@@ -187,6 +243,8 @@ public partial class QuestService
             Priority = quest.Priority,
             Recurrence = quest.Recurrence,
             DueDate = quest.DueDate,
+            ScheduledStartAt = quest.ScheduledStartAt,
+            ScheduledEndAt = quest.ScheduledEndAt,
             Tags = quest.Tags ?? new(),
             RewardXp = quest.RewardXp,
             Completed = quest.Completed,

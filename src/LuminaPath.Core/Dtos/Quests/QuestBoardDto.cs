@@ -23,6 +23,8 @@ namespace LuminaPath.Core.Dtos
         public QuestPriority Priority { get; set; } = QuestPriority.Medium;
         public QuestRecurrence Recurrence { get; set; } = QuestRecurrence.None;
         public DateTime? DueDate { get; set; }
+        public DateTime? ScheduledStartAt { get; set; }
+        public DateTime? ScheduledEndAt { get; set; }
         public List<string> Tags { get; set; } = [];
         public int RewardXp { get; set; }
         public bool Completed { get; set; }
@@ -69,6 +71,8 @@ namespace LuminaPath.Core.Dtos
         public QuestPriority Priority { get; set; } = QuestPriority.Medium;
         public QuestRecurrence Recurrence { get; set; } = QuestRecurrence.None;
         public DateTime? DueDate { get; set; }
+        public DateTime? ScheduledStartAt { get; set; }
+        public DateTime? ScheduledEndAt { get; set; }
         public List<string> Tags { get; set; } = [];
         public int? MyGameId { get; set; }
         public int? SkillId { get; set; }
@@ -84,6 +88,9 @@ namespace LuminaPath.Core.Dtos
         public QuestRecurrence? Recurrence { get; set; }
         public DateTime? DueDate { get; set; }
         public bool? ClearDueDate { get; set; }
+        public DateTime? ScheduledStartAt { get; set; }
+        public DateTime? ScheduledEndAt { get; set; }
+        public bool? ClearSchedule { get; set; }
         public List<string>? Tags { get; set; }
         public bool? Completed { get; set; }
         public int? MyGameId { get; set; }

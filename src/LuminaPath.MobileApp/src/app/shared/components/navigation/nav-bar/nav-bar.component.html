@@ -182,6 +182,10 @@
                   <ion-icon name="calendar-clear-outline"></ion-icon>
                   <span>Plan</span>
                 </a>
+                <a [routerLink]="['/weekly-schedule']" (click)="closeMenus()">
+                  <ion-icon name="calendar-outline"></ion-icon>
+                  <span>Schedule</span>
+                </a>
                 <a [routerLink]="['/statistic']" (click)="closeMenus()">
                   <ion-icon name="bar-chart-outline"></ion-icon>
                   <span>Stats</span>

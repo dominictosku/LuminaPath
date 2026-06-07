@@ -84,6 +84,10 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             var myGameId = await ResolveOwnedMyGameIdAsync(dbContext, userId, dto.MyGameId);
             var skillId = await ResolveOwnedSkillIdAsync(dbContext, userId, dto.SkillId);
             var folderId = await ResolveOwnedFolderIdAsync(dbContext, userId, dto.QuestFolderId);
+            if (!TryBuildSchedule(dto.ScheduledStartAt, dto.ScheduledEndAt, out var scheduledStartAt, out var scheduledEndAt, out var scheduleError))
+            {
+                return new FailedResult(scheduleError);
+            }
 
             var nextSort = await dbContext.Quests
                 .Where(q => q.LuminaUserId == userId && q.Type == dto.Type)
@@ -99,7 +103,9 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 Type = dto.Type,
                 Priority = dto.Priority,
                 Recurrence = dto.Recurrence,
-                DueDate = NormalizeDate(dto.DueDate),
+                DueDate = ScheduleDueDate(scheduledStartAt) ?? NormalizeDate(dto.DueDate),
+                ScheduledStartAt = scheduledStartAt,
+                ScheduledEndAt = scheduledEndAt,
                 Tags = NormalizeTags(dto.Tags),
                 RewardXp = RewardFor(dto.Type),
                 Completed = false,
@@ -173,6 +179,25 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             else if (dto.DueDate.HasValue)
             {
                 quest.DueDate = NormalizeDate(dto.DueDate);
+            }
+
+            if (dto.ClearSchedule == true)
+            {
+                quest.ScheduledStartAt = null;
+                quest.ScheduledEndAt = null;
+            }
+            else if (dto.ScheduledStartAt.HasValue || dto.ScheduledEndAt.HasValue)
+            {
+                var nextStart = dto.ScheduledStartAt ?? quest.ScheduledStartAt;
+                var nextEnd = dto.ScheduledEndAt ?? quest.ScheduledEndAt;
+                if (!TryBuildSchedule(nextStart, nextEnd, out var scheduledStartAt, out var scheduledEndAt, out var scheduleError))
+                {
+                    return new FailedResult(scheduleError);
+                }
+
+                quest.ScheduledStartAt = scheduledStartAt;
+                quest.ScheduledEndAt = scheduledEndAt;
+                quest.DueDate = ScheduleDueDate(scheduledStartAt);
             }
 
             if (dto.Tags is not null)

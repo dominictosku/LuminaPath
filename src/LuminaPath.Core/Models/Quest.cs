@@ -12,6 +12,8 @@ namespace LuminaPath.Core.Models
         public QuestPriority Priority { get; set; } = QuestPriority.Medium;
         public QuestRecurrence Recurrence { get; set; } = QuestRecurrence.None;
         public DateTime? DueDate { get; set; }
+        public DateTime? ScheduledStartAt { get; set; }
+        public DateTime? ScheduledEndAt { get; set; }
         public List<string> Tags { get; set; } = new();
         public int RewardXp { get; set; }
         public bool Completed { get; set; }

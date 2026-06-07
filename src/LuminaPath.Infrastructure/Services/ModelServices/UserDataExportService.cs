@@ -479,6 +479,8 @@ public sealed class UserDataExportService
             Priority: quest.Priority.ToString(),
             Recurrence: quest.Recurrence.ToString(),
             DueDate: quest.DueDate,
+            ScheduledStartAt: quest.ScheduledStartAt,
+            ScheduledEndAt: quest.ScheduledEndAt,
             Tags: quest.Tags.ToList(),
             RewardXp: quest.RewardXp,
             Completed: quest.Completed,

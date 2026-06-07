@@ -195,6 +195,8 @@ public sealed record QuestItemExport(
     string Priority,
     string Recurrence,
     DateTime? DueDate,
+    DateTime? ScheduledStartAt,
+    DateTime? ScheduledEndAt,
     IReadOnlyList<string> Tags,
     int RewardXp,
     bool Completed,

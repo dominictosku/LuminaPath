@@ -31,6 +31,7 @@ const ROOT_PAGES: ReadonlySet<string> = new Set([
   '/quests',
   '/skill-tree',
   '/planning',
+  '/weekly-schedule',
   '/statistic',
   '/profile',
   '/friends',

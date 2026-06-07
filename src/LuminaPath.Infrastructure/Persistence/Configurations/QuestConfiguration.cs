@@ -44,6 +44,7 @@ namespace LuminaPath.Infrastructure.ModelConfiguration
                     list => list == null ? new List<string>() : list.ToList()));
 
             builder.HasIndex(quest => new { quest.LuminaUserId, quest.Completed, quest.DueDate });
+            builder.HasIndex(quest => new { quest.LuminaUserId, quest.ScheduledStartAt });
             builder.HasIndex(quest => new { quest.LuminaUserId, quest.SortOrder });
         }
 
