@@ -40,16 +40,16 @@
 }
 
 .schedule-topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
 }
 
 .schedule-title {
   display: grid;
   gap: 4px;
+  min-width: 0;
 }
 
 .schedule-eyebrow {
@@ -84,6 +84,7 @@
 
 .schedule-nav {
   gap: 10px;
+  justify-self: end;
 }
 
 .schedule-view-toggle {
@@ -95,6 +96,7 @@
   border: 1px solid var(--schedule-border);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.045);
+  justify-self: center;
 }
 
 .schedule-view-toggle button {
@@ -975,11 +977,16 @@ button:disabled {
   }
 
   .schedule-topbar {
-    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .schedule-nav {
     justify-content: stretch;
+    justify-self: stretch;
+  }
+
+  .schedule-view-toggle {
+    justify-self: stretch;
   }
 
   .overview-toolbar {
