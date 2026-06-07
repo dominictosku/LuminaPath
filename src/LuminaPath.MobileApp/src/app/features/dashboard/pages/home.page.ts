@@ -18,6 +18,7 @@ import { SeriesService } from '../../series/services/series.service';
 import { GamingSession, GamingSessionService } from '../../planning/services/gaming-session.service';
 import { QuestBoardService, QuestBoardState } from '../../quests/services/quest-board.service';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
+import { PaginateResult } from 'src/app/core/entities/paginatedResult';
 import {
   DashboardActivityItem,
   DashboardFocusItem,
@@ -50,6 +51,7 @@ import { DashboardActiveRailComponent } from '../components/dashboard-active-rai
 import { DashboardReleasesComponent } from '../components/dashboard-releases/dashboard-releases.component';
 import { DashboardBacklogComponent } from '../components/dashboard-backlog/dashboard-backlog.component';
 import { DashboardRecentComponent } from '../components/dashboard-recent/dashboard-recent.component';
+import { ReleasePlanComponent } from '../../release-calendar/components/release-plan.component';
 
 /** Raw fetched data for the dashboard. Stored in RequestCache so repeat
  *  visits paint immediately, then refetch in the background. */
@@ -58,6 +60,7 @@ type DashboardSnapshot = {
   animes: Anime[];
   movies: Movie[];
   series: Series[];
+  releasePlanGames: Game[];
   libraryTotal: number;
   sessions: GamingSession[];
   questBoard: QuestBoardState | null;
@@ -71,10 +74,15 @@ function emptyDashboardSnapshot(): DashboardSnapshot {
     animes: [],
     movies: [],
     series: [],
+    releasePlanGames: [],
     libraryTotal: 0,
     sessions: [],
     questBoard: null,
   };
+}
+
+function emptyPage<T>(): PaginateResult<T> {
+  return new PaginateResult<T>();
 }
 
 @Component({
@@ -95,6 +103,7 @@ function emptyDashboardSnapshot(): DashboardSnapshot {
     DashboardReleasesComponent,
     DashboardBacklogComponent,
     DashboardRecentComponent,
+    ReleasePlanComponent,
   ],
 })
 export class HomePage implements OnInit {
@@ -110,6 +119,7 @@ export class HomePage implements OnInit {
   animes: Anime[] = [];
   movies: Movie[] = [];
   series: Series[] = [];
+  releasePlanGames: Game[] = [];
   sessions: GamingSession[] = [];
   questBoard: QuestBoardState | null = null;
   mediaItems: DashboardMediaItem[] = [];
@@ -155,12 +165,14 @@ export class HomePage implements OnInit {
     const animesFilter = this.dashboardLibraryFilter();
     const moviesFilter = this.dashboardLibraryFilter();
     const seriesFilter = this.dashboardLibraryFilter();
+    const releasePlanFilter = this.releasePlanFilter();
 
-  forkJoin({
+    forkJoin({
       games: this.gameService.getAll(gamesFilter),
       animes: this.animeService.getAll(animesFilter),
       movies: this.movieService.getAll(moviesFilter),
       series: this.seriesService.getAll(seriesFilter),
+      releasePlanGames: this.gameService.getAll(releasePlanFilter).pipe(catchError(() => of(emptyPage<Game>()))),
       sessions: this.sessionService.list({ from: today, to: addDays(today, 14) }).pipe(catchError(() => of([]))),
       board: from(this.questBoardService.getBoard()).pipe(catchError(() => of(null))),
     }).subscribe({
@@ -170,6 +182,7 @@ export class HomePage implements OnInit {
           animes: result.animes.data ?? [],
           movies: result.movies.data ?? [],
           series: result.series.data ?? [],
+          releasePlanGames: result.releasePlanGames.data ?? [],
           libraryTotal:
             this.totalOf(result.games) +
             this.totalOf(result.animes) +
@@ -204,6 +217,7 @@ export class HomePage implements OnInit {
     this.animes = snapshot.animes;
     this.movies = snapshot.movies;
     this.series = snapshot.series;
+    this.releasePlanGames = snapshot.releasePlanGames;
     this.libraryTotal = snapshot.libraryTotal;
     this.sessions = snapshot.sessions;
     this.questBoard = snapshot.questBoard;
@@ -257,6 +271,12 @@ export class HomePage implements OnInit {
     filter.Ownership = 'mine';
     filter.SortBy = 'recently-added';
     filter.setCount(1000);
+    return filter;
+  }
+
+  private releasePlanFilter(): MediaFilter {
+    const filter = new MediaFilter();
+    filter.Paging.Count = 500;
     return filter;
   }
 

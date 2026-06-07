@@ -1,22 +1,12 @@
 <ion-content [fullscreen]="true" class="planning-shell">
-  <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
-    <ion-refresher-content></ion-refresher-content>
-  </ion-refresher>
-
   <main class="planning-page mt-12">
-    <header class="planning-hero">
+    <section class="planning-empty">
       <span class="eyebrow">
         <ion-icon name="rocket-outline"></ion-icon>
-        Release plan
+        Moved
       </span>
-      <h1>Plan around upcoming releases</h1>
-      <p>Balance active games, backlog commitments, and release dates in one lightweight view.</p>
-    </header>
-
-    <app-release-plan
-      [games]="allGames"
-      [isLoading]="isLoading"
-      [errorMessage]="errorMessage">
-    </app-release-plan>
+      <h1>Planning moved to Home</h1>
+      <p>Release planning now lives at the bottom of Home. Game sessions live inside each game detail page.</p>
+    </section>
   </main>
 </ion-content>

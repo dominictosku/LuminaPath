@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideIonicAngular } from '@ionic/angular/standalone';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { HomePage } from './home.page';
 import { GameService } from '../../games/services/game.service';
@@ -168,10 +168,84 @@ describe('HomePage', () => {
     fixture.detectChanges();
     tick();
 
-    const gameFilter = gameService.getAll.calls.mostRecent().args[0];
+    const gameFilter = gameService.getAll.calls.allArgs().find(([filter]) => filter?.MyMedia)?.[0];
     expect(gameFilter?.MyMedia).toBeTrue();
     expect(gameFilter?.Paging.Count).toBe(1000);
     expect(component.libraryTotal).toBe(132);
     expect(component.metrics.find((metric) => metric.label === 'Library')?.value).toBe('132');
+  }));
+
+  it('loads a wider game catalog for the release plan', fakeAsync(() => {
+    const ownedGame = {
+      id: 1,
+      name: 'Owned Game',
+      description: '',
+      releaseDate: new Date(),
+      genre: 'Action',
+      platforms: 2,
+      playtime: 10,
+      parentGameId: null,
+      parentGameName: null,
+      dlcs: null,
+      image: null,
+      myGames: { status: 2 },
+    } as never;
+    const catalogRelease = {
+      id: 2,
+      name: 'Catalog Release',
+      description: '',
+      releaseDate: new Date(),
+      genre: 'RPG',
+      platforms: 2,
+      playtime: 30,
+      parentGameId: null,
+      parentGameName: null,
+      dlcs: null,
+      image: null,
+      myGames: null,
+    } as never;
+
+    gameService.getAll.and.returnValues(
+      of(pageOf([ownedGame])),
+      of(pageOf([catalogRelease]))
+    );
+
+    fixture.detectChanges();
+    tick();
+
+    expect(component.games).toEqual([ownedGame]);
+    expect(component.releasePlanGames).toEqual([catalogRelease]);
+    const releasePlanFilter = gameService.getAll.calls.mostRecent().args[0];
+    expect(releasePlanFilter?.MyMedia).toBeFalse();
+    expect(releasePlanFilter?.Paging.Count).toBe(500);
+  }));
+
+  it('keeps the dashboard loaded when the release-plan catalog fails', fakeAsync(() => {
+    const ownedGame = {
+      id: 3,
+      name: 'Still Loaded',
+      description: '',
+      releaseDate: new Date(),
+      genre: 'Action',
+      platforms: 2,
+      playtime: 10,
+      parentGameId: null,
+      parentGameName: null,
+      dlcs: null,
+      image: null,
+      myGames: { status: 2 },
+    } as never;
+
+    gameService.getAll.and.returnValues(
+      of(pageOf([ownedGame])),
+      throwError(() => new Error('catalog offline'))
+    );
+
+    fixture.detectChanges();
+    tick();
+
+    expect(component.games).toEqual([ownedGame]);
+    expect(component.releasePlanGames).toEqual([]);
+    expect(component.errorMessage).toBe('');
   }));
 });

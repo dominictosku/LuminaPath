@@ -58,5 +58,12 @@
       class="dash-cell dash-cell--half"
       [items]="recentItems">
     </app-dashboard-recent>
+
+    <app-release-plan
+      class="dash-cell dash-cell--wide dashboard-release-plan"
+      [games]="releasePlanGames"
+      [isLoading]="isLoading"
+      [errorMessage]="errorMessage">
+    </app-release-plan>
   </main>
 </ion-content>
