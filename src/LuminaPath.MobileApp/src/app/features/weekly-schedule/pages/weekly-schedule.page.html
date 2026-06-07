@@ -1,5 +1,5 @@
 <ion-content [fullscreen]="true" class="weekly-schedule-shell">
-  <main class="weekly-schedule-page">
+  <main class="weekly-schedule-page" [class.weekly-schedule-page--dragging]="dragPreview !== null">
     <header class="schedule-topbar">
       <div class="schedule-title">
         <span class="schedule-eyebrow">
@@ -71,6 +71,7 @@
                     <article
                       class="sidebar-quest"
                       [class.sidebar-quest--scheduled]="quest.scheduledStartAt"
+                      [class.sidebar-item--dragging]="isDraggingItem('quest-' + quest.id)"
                       draggable="true"
                       (dragstart)="dragQuest($event, quest)"
                       (dragend)="endDrag()">
@@ -109,6 +110,7 @@
               <article
                 class="sidebar-game"
                 [class.sidebar-game--active]="pendingGameId === game.myGameId"
+                [class.sidebar-item--dragging]="isDraggingItem('game-' + game.myGameId)"
                 draggable="true"
                 (click)="selectGameForNextQuest(game)"
                 (dragstart)="dragGame($event, game)"
@@ -165,7 +167,9 @@
                       [style.top.px]="slotTop(minutes)"
                       [style.height.px]="slotHeight"
                       (click)="openCreateQuest(day, minutes)"
-                      (dragover)="allowDrop($event)"
+                      [class.schedule-slot--drop-target]="isActiveDropSlot(day, minutes)"
+                      (dragover)="allowDrop($event, day, minutes)"
+                      (dragleave)="clearDropSlot(slotKey(day, minutes))"
                       (drop)="dropOnSlot($event, day, minutes)">
                     </button>
                   }
@@ -177,6 +181,7 @@
                       class="schedule-block"
                       [class.schedule-block--session]="block.kind === 'session'"
                       [class.schedule-block--done]="block.completed"
+                      [class.schedule-block--dragging]="isDraggingItem(block.id)"
                       draggable="true"
                       [style.--block-color]="block.color"
                       [style.top.px]="blockTop(block)"
@@ -382,6 +387,19 @@
             </button>
           </footer>
         </section>
+      </div>
+    }
+
+    @if (dragPreview) {
+      <div
+        class="schedule-drag-preview"
+        [class.schedule-drag-preview--game]="dragPreview.kind === 'game'"
+        [class.schedule-drag-preview--session]="dragPreview.kind === 'session'"
+        [style.--preview-color]="dragPreview.color"
+        [style.transform]="dragPreviewTransform()">
+        <span>{{ dragPreview.action }}</span>
+        <strong>{{ dragPreview.title }}</strong>
+        <small>{{ dragPreview.subtitle }}</small>
       </div>
     }
   </main>

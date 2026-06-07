@@ -80,6 +80,16 @@ type DragPayload =
   | { type: 'game'; myGameId: number }
   | { type: 'session'; sessionId: number };
 
+type DragPreview = {
+  kind: 'quest' | 'game' | 'session';
+  title: string;
+  subtitle: string;
+  action: string;
+  color: string;
+  x: number;
+  y: number;
+};
+
 @Component({
   selector: 'app-weekly-schedule',
   templateUrl: './weekly-schedule.page.html',
@@ -120,6 +130,8 @@ export class WeeklySchedulePage implements OnInit {
   protected draftError = '';
   protected sessionDraftError = '';
   protected pendingGameId: number | null = null;
+  protected dragPreview: DragPreview | null = null;
+  protected activeDropKey: string | null = null;
   protected readonly groupVisibility: Record<CalendarGroupId, boolean> = {
     quests: true,
     sessions: true,
@@ -130,6 +142,8 @@ export class WeeklySchedulePage implements OnInit {
   private sessions: GamingSession[] = [];
   private games: LibraryGameOption[] = [];
   private dragged: DragPayload | null = null;
+  private draggingId: string | null = null;
+  private transparentDragImage: HTMLCanvasElement | null = null;
   protected blocksByDay = new Map<string, WeekScheduleBlock[]>();
 
   async ngOnInit(): Promise<void> {
@@ -491,44 +505,60 @@ export class WeeklySchedulePage implements OnInit {
   }
 
   protected dragQuest(event: DragEvent, quest: Quest): void {
-    this.dragged = { type: 'quest', questId: quest.id };
-    event.dataTransfer?.setData('text/plain', `quest:${quest.id}`);
-    event.dataTransfer?.setDragImage?.(event.currentTarget as Element, 16, 16);
+    this.beginDrag(event, { type: 'quest', questId: quest.id }, {
+      kind: 'quest',
+      title: quest.title,
+      subtitle: quest.gameName ?? quest.folderName ?? priorityLabel(quest.priority),
+      action: quest.scheduledStartAt ? 'Move quest' : 'Schedule quest',
+      color: this.folderColor(quest.folderId),
+    });
   }
 
   protected dragGame(event: DragEvent, game: LibraryGameOption): void {
-    this.dragged = { type: 'game', myGameId: game.myGameId };
-    event.dataTransfer?.setData('text/plain', `game:${game.myGameId}`);
-    event.dataTransfer?.setDragImage?.(event.currentTarget as Element, 16, 16);
+    this.beginDrag(event, { type: 'game', myGameId: game.myGameId }, {
+      kind: 'game',
+      title: game.gameName,
+      subtitle: game.playtime ? `${game.playtime}h estimate` : 'Library game',
+      action: 'Plan session',
+      color: '#06b6d4',
+    });
   }
 
   protected dragBlock(event: DragEvent, block: WeekScheduleBlock): void {
     if (block.kind === 'quest') {
       const questId = Number(block.id.replace('quest-', ''));
-      this.dragged = { type: 'quest', questId };
-      event.dataTransfer?.setData('text/plain', `quest:${questId}`);
+      this.beginDrag(event, { type: 'quest', questId }, this.previewFromBlock(block, 'Move quest'));
     } else {
       const sessionId = Number(block.id.replace('session-', ''));
-      this.dragged = { type: 'session', sessionId };
-      event.dataTransfer?.setData('text/plain', `session:${sessionId}`);
+      this.beginDrag(event, { type: 'session', sessionId }, this.previewFromBlock(block, 'Move session'));
     }
-    event.dataTransfer?.setDragImage?.(event.currentTarget as Element, 16, 16);
   }
 
   protected endDrag(): void {
-    this.dragged = null;
+    this.clearDragState();
   }
 
-  protected allowDrop(event: DragEvent): void {
+  protected allowDrop(event: DragEvent, day: WeekScheduleDay, minutes: number): void {
     if (!this.dragged) return;
     event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = this.dragged.type === 'game' ? 'copy' : 'move';
+    }
+    this.activeDropKey = this.slotKey(day, minutes);
+    this.updateDragPreviewPosition(event);
+  }
+
+  protected clearDropSlot(key: string): void {
+    if (this.activeDropKey === key) {
+      this.activeDropKey = null;
+    }
   }
 
   protected async dropOnSlot(event: DragEvent, day: WeekScheduleDay, minutes: number): Promise<void> {
     if (!this.dragged) return;
     event.preventDefault();
     const payload = this.dragged;
-    this.dragged = null;
+    this.clearDragState();
 
     if (payload.type === 'quest') {
       const quest = this.quests.find((item) => item.id === payload.questId);
@@ -545,6 +575,109 @@ export class WeeklySchedulePage implements OnInit {
     }
 
     await this.createSessionAt(payload.myGameId, day.date, minutes);
+  }
+
+  protected isDraggingItem(id: string): boolean {
+    return this.draggingId === id;
+  }
+
+  protected isActiveDropSlot(day: WeekScheduleDay, minutes: number): boolean {
+    return this.activeDropKey === this.slotKey(day, minutes);
+  }
+
+  protected slotKey(day: WeekScheduleDay, minutes: number): string {
+    return `${day.key}-${minutes}`;
+  }
+
+  protected dragPreviewTransform(): string {
+    if (!this.dragPreview) {
+      return 'translate3d(0, 0, 0)';
+    }
+
+    return `translate3d(${this.dragPreview.x + 18}px, ${this.dragPreview.y + 18}px, 0)`;
+  }
+
+  private beginDrag(
+    event: DragEvent,
+    payload: DragPayload,
+    preview: Omit<DragPreview, 'x' | 'y'>,
+  ): void {
+    this.dragged = payload;
+    this.draggingId = this.dragId(payload);
+    this.activeDropKey = null;
+    this.dragPreview = {
+      ...preview,
+      x: event.clientX,
+      y: event.clientY,
+    };
+
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = payload.type === 'game' ? 'copy' : 'move';
+      event.dataTransfer.setData('text/plain', this.dragData(payload));
+      this.setTransparentDragImage(event.dataTransfer);
+    }
+  }
+
+  private clearDragState(): void {
+    this.dragged = null;
+    this.dragPreview = null;
+    this.activeDropKey = null;
+    this.draggingId = null;
+  }
+
+  private updateDragPreviewPosition(event: DragEvent): void {
+    if (!this.dragPreview) return;
+    const nextX = event.clientX || this.dragPreview.x;
+    const nextY = event.clientY || this.dragPreview.y;
+    this.dragPreview = {
+      ...this.dragPreview,
+      x: nextX,
+      y: nextY,
+    };
+  }
+
+  private setTransparentDragImage(dataTransfer: DataTransfer): void {
+    if (!this.transparentDragImage) {
+      this.transparentDragImage = document.createElement('canvas');
+      this.transparentDragImage.width = 1;
+      this.transparentDragImage.height = 1;
+    }
+
+    dataTransfer.setDragImage(this.transparentDragImage, 0, 0);
+  }
+
+  private dragId(payload: DragPayload): string {
+    if (payload.type === 'quest') {
+      return `quest-${payload.questId}`;
+    }
+
+    if (payload.type === 'session') {
+      return `session-${payload.sessionId}`;
+    }
+
+    return `game-${payload.myGameId}`;
+  }
+
+  private dragData(payload: DragPayload): string {
+    if (payload.type === 'quest') {
+      return `quest:${payload.questId}`;
+    }
+
+    if (payload.type === 'session') {
+      return `session:${payload.sessionId}`;
+    }
+
+    return `game:${payload.myGameId}`;
+  }
+
+  private previewFromBlock(block: WeekScheduleBlock, action: string): Omit<DragPreview, 'x' | 'y'> {
+    return {
+      kind: block.kind,
+      title: block.title,
+      subtitle: `${formatTimeRange(block.startAt, block.endAt)}${block.subtitle ? ` · ${block.subtitle}` : ''}`,
+      action,
+      color: block.color,
+    };
   }
 
   protected blockTop(block: WeekScheduleBlock): number {
