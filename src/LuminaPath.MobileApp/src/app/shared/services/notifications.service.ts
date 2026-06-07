@@ -166,7 +166,7 @@ export class NotificationsService {
         icon: 'rocket-outline',
         title,
         body: 'Plan a launch session before it lands.',
-        link: '/planning',
+        link: '/weekly-schedule',
         sortAt: releaseAt,
       });
     }
@@ -227,7 +227,7 @@ export class NotificationsService {
         icon: 'time-outline',
         title,
         body: `${session.durationMinutes} min planned today.`,
-        link: '/planning',
+        link: '/weekly-schedule',
         sortAt: at,
       });
     }
@@ -328,4 +328,3 @@ export class NotificationsService {
     }
   }
 }
-

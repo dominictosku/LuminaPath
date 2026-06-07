@@ -57,11 +57,6 @@ export const routes: Routes = [
           import('../../../features/my-games/pages/my-game-details.page').then((m) => m.MyGameDetailsPage),
       },
       {
-        path: 'planning',
-        loadComponent: () =>
-          import('../../../features/planning/pages/planning.page').then((m) => m.PlanningPage),
-      },
-      {
         path: 'weekly-schedule',
         loadComponent: () =>
           import('../../../features/weekly-schedule/pages/weekly-schedule.page').then((m) => m.WeeklySchedulePage),

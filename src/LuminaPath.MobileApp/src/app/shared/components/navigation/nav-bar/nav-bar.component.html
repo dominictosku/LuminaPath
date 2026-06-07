@@ -19,9 +19,9 @@
           <ion-icon name="library-outline"></ion-icon>
           <span>Library</span>
         </a>
-        <a [routerLink]="['/planning']" [class.active]="isActive('/planning')">
-          <ion-icon name="calendar-clear-outline"></ion-icon>
-          <span>Plan</span>
+        <a [routerLink]="['/weekly-schedule']" [class.active]="isActive('/weekly-schedule')">
+          <ion-icon name="calendar-outline"></ion-icon>
+          <span>Schedule</span>
         </a>
         <a [routerLink]="['/statistic']" [class.active]="isActive('/statistic')">
           <ion-icon name="bar-chart-outline"></ion-icon>
@@ -178,10 +178,6 @@
                 <strong>Apps</strong>
               </div>
               <div class="app-grid">
-                <a [routerLink]="['/planning']" (click)="closeMenus()">
-                  <ion-icon name="calendar-clear-outline"></ion-icon>
-                  <span>Plan</span>
-                </a>
                 <a [routerLink]="['/weekly-schedule']" (click)="closeMenus()">
                   <ion-icon name="calendar-outline"></ion-icon>
                   <span>Schedule</span>

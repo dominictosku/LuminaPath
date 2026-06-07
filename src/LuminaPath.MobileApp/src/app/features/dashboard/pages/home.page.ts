@@ -52,7 +52,6 @@ import { DashboardReleasesComponent } from '../components/dashboard-releases/das
 import { DashboardBacklogComponent } from '../components/dashboard-backlog/dashboard-backlog.component';
 import { DashboardRecentComponent } from '../components/dashboard-recent/dashboard-recent.component';
 import { ReleaseCalendarComponent } from '../../release-calendar/components/release-calendar.component';
-import { ReleasePlanComponent } from '../../release-calendar/components/release-plan.component';
 
 /** Raw fetched data for the dashboard. Stored in RequestCache so repeat
  *  visits paint immediately, then refetch in the background. */
@@ -105,7 +104,6 @@ function emptyPage<T>(): PaginateResult<T> {
     DashboardBacklogComponent,
     DashboardRecentComponent,
     ReleaseCalendarComponent,
-    ReleasePlanComponent,
   ],
 })
 export class HomePage implements OnInit {

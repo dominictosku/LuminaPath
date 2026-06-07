@@ -48,5 +48,12 @@
     @if (psnTrophyTotals) {
       <app-statistic-psn-trophies [totals]="psnTrophyTotals"></app-statistic-psn-trophies>
     }
+
+    <app-release-plan
+      class="section-block--wide statistic-release-plan"
+      [games]="releasePlanGames"
+      [isLoading]="isLoading"
+      [errorMessage]="errorMessage">
+    </app-release-plan>
   </main>
 </ion-content>

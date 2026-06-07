@@ -2,16 +2,16 @@
   display: grid;
   gap: 16px;
 
-  --ink: var(--app-chrome-text, #eef6ff);
-  --muted: var(--app-chrome-muted, #9fb6d4);
-  --line: var(--app-chrome-border, rgba(137, 180, 255, 0.16));
-  --surface: var(--app-chrome-bg, rgba(8, 22, 48, 0.86));
-  --surface-strong: var(--app-chrome-bg-strong, rgba(12, 31, 64, 0.94));
-  --surface-solid: #08162f;
-  --accent: var(--app-theme-accent, #60a5fa);
-  --accent-2: var(--app-theme-accent-2, #22d3ee);
-  --accent-soft: var(--app-theme-accent-soft, rgba(96, 165, 250, 0.14));
-  --accent-border: var(--app-theme-accent-border, rgba(96, 165, 250, 0.32));
+  --ink: #eef2ff;
+  --muted: #98a2b3;
+  --line: rgba(255, 255, 255, 0.1);
+  --surface: rgba(18, 24, 38, 0.86);
+  --surface-strong: #111827;
+  --surface-solid: #0b1220;
+  --accent: #60a5fa;
+  --accent-2: #34d399;
+  --accent-soft: rgba(96, 165, 250, 0.12);
+  --accent-border: rgba(96, 165, 250, 0.28);
 }
 
 .section-block,

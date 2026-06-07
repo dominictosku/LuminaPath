@@ -75,6 +75,7 @@ describe('StatisticPage', () => {
     fixture.detectChanges();
     tick();
 
+    expect(component.releasePlanGames.length).toBe(2);
     expect(component.ownedItems.length).toBe(2);
     expect(component.backlogItems.length).toBe(1);
     expect(component.longCommitments[0].name).toBe('Long RPG');

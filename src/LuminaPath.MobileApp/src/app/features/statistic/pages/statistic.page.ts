@@ -13,6 +13,7 @@ import { catchError, forkJoin, of } from 'rxjs';
 
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 import { AnimeService } from '../../animes/services/anime.service';
+import { Game } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { MovieService } from '../../movies/services/movie.service';
 import { SeriesService } from '../../series/services/series.service';
@@ -58,8 +59,14 @@ import { StatisticBreakdownComponent } from '../components/statistic-breakdown/s
 import { StatisticPsnTrophiesComponent } from '../components/statistic-psn-trophies/statistic-psn-trophies.component';
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { PsnTrophyTotals, StatisticService } from '../services/statistic.service';
+import { ReleasePlanComponent } from '../../release-calendar/components/release-plan.component';
 
-const STATISTIC_CACHE_KEY = 'statistic:items';
+type StatisticSnapshot = {
+  items: BacklogItem[];
+  releasePlanGames: Game[];
+};
+
+const STATISTIC_CACHE_KEY = 'statistic:items:v2';
 const PSN_TROPHY_CACHE_KEY = 'statistic:psn-trophies';
 
 @Component({
@@ -91,6 +98,7 @@ const PSN_TROPHY_CACHE_KEY = 'statistic:psn-trophies';
     StatisticTopRatedComponent,
     StatisticBreakdownComponent,
     StatisticPsnTrophiesComponent,
+    ReleasePlanComponent,
   ],
 })
 export class StatisticPage implements OnInit {
@@ -102,6 +110,7 @@ export class StatisticPage implements OnInit {
   private readonly cache = inject(RequestCache);
 
   items: BacklogItem[] = [];
+  releasePlanGames: Game[] = [];
   ownedItems: BacklogItem[] = [];
   backlogItems: BacklogItem[] = [];
   activeItems: BacklogItem[] = [];
@@ -177,9 +186,10 @@ export class StatisticPage implements OnInit {
     if (event) this.loadPsnTrophies(event);
     // Stale-while-revalidate: paint cached items immediately so repeat
     // visits don't flash skeletons across 13 sub-components.
-    const cached = this.cache.get<BacklogItem[]>(STATISTIC_CACHE_KEY);
+    const cached = this.cache.get<StatisticSnapshot>(STATISTIC_CACHE_KEY);
     if (cached) {
-      this.items = cached;
+      this.items = cached.items;
+      this.releasePlanGames = cached.releasePlanGames;
       this.buildStatistics();
       this.isLoading = false;
       if (!event && this.cache.isFresh(STATISTIC_CACHE_KEY)) {
@@ -198,13 +208,17 @@ export class StatisticPage implements OnInit {
       series: this.seriesService.getAll(filter).pipe(catchError(() => of({ data: [] }))),
     }).subscribe({
       next: ({ games, animes, movies, series }) => {
+        this.releasePlanGames = games.data ?? [];
         this.items = [
-          ...(games.data ?? []).map(fromGame),
+          ...this.releasePlanGames.map(fromGame),
           ...(animes.data ?? []).map(fromAnime),
           ...(movies.data ?? []).map(fromMovie),
           ...(series.data ?? []).map(fromSeries),
         ];
-        this.cache.set(STATISTIC_CACHE_KEY, this.items);
+        this.cache.set(STATISTIC_CACHE_KEY, {
+          items: this.items,
+          releasePlanGames: this.releasePlanGames,
+        });
         this.buildStatistics();
         this.isLoading = false;
         this.completeRefresh(event);
@@ -216,6 +230,7 @@ export class StatisticPage implements OnInit {
         // as duplicate noise.
         if (!cached) {
           this.items = [];
+          this.releasePlanGames = [];
           this.buildStatistics();
           this.errorMessage = 'Statistic data could not be loaded.';
         }
