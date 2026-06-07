@@ -4,7 +4,8 @@ import { IonContent, IonIcon, IonSpinner } from '@ionic/angular/standalone';
 import { firstValueFrom } from 'rxjs';
 
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
-import { MyGame } from '../../games/models/games.model';
+import { Game, MyGame } from '../../games/models/games.model';
+import { GameService } from '../../games/services/game.service';
 import { MyGameService } from '../../my-games/services/my-game.service';
 import { QuestBoardService } from '../../quests/services/quest-board.service';
 import type {
@@ -15,6 +16,13 @@ import type {
   QuestType,
 } from '../../quests/services/quest-board.service';
 import { GamingSession, GamingSessionService } from '../../planning/services/gaming-session.service';
+import { PlanningCalendarService } from '../../planning/services/planning-calendar.service';
+import type {
+  CalendarMode,
+  PlanningCalendarDay,
+  TimelineEvent,
+  TimelineEventKind,
+} from '../../planning/services/planning-calendar.service';
 import {
   HOUR_HEIGHT,
   SLOT_MINUTES,
@@ -37,6 +45,7 @@ import {
 } from '../domain/weekly-schedule.helpers';
 
 type CalendarGroupId = 'quests' | 'sessions';
+type ScheduleViewMode = 'planner' | 'overview';
 
 type LibraryGameOption = {
   myGameId: number;
@@ -103,8 +112,10 @@ type DragPreview = {
 })
 export class WeeklySchedulePage implements OnInit {
   private questService = inject(QuestBoardService);
+  private gameService = inject(GameService);
   private myGameService = inject(MyGameService);
   private sessionService = inject(GamingSessionService);
+  private planningCalendar = inject(PlanningCalendarService);
 
   protected readonly hours = Array.from(
     { length: WEEK_END_HOUR - WEEK_START_HOUR },
@@ -122,6 +133,11 @@ export class WeeklySchedulePage implements OnInit {
   protected title = weekTitle(this.weekAnchor);
   protected isLoading = true;
   protected isSaving = false;
+  protected viewMode: ScheduleViewMode = 'planner';
+  protected overviewMode: CalendarMode = 'week';
+  protected overviewAnchor = this.planningCalendar.startOfToday();
+  protected overviewTitle = '';
+  protected overviewDays: PlanningCalendarDay[] = [];
   protected errorMessage = '';
   protected questSearch = '';
   protected gameSearch = '';
@@ -140,7 +156,9 @@ export class WeeklySchedulePage implements OnInit {
   private quests: Quest[] = [];
   private folders: QuestFolder[] = [];
   private sessions: GamingSession[] = [];
+  private overviewSessions: GamingSession[] = [];
   private games: LibraryGameOption[] = [];
+  private allGames: Game[] = [];
   private dragged: DragPayload | null = null;
   private draggingId: string | null = null;
   private transparentDragImage: HTMLCanvasElement | null = null;
@@ -157,21 +175,27 @@ export class WeeklySchedulePage implements OnInit {
       const weekStart = startOfWeek(this.weekAnchor);
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 7);
+      const overviewWindow = this.overviewSessionWindow();
 
-      const [board, sessions, myGames] = await Promise.all([
+      const [board, sessions, overviewSessions, myGames, games] = await Promise.all([
         this.questService.getBoard(),
         firstValueFrom(this.sessionService.list({ from: weekStart, to: weekEnd })),
+        firstValueFrom(this.sessionService.list(overviewWindow)),
         firstValueFrom(this.myGameService.getAll(this.libraryFilter())),
+        firstValueFrom(this.gameService.getAll(this.libraryFilter())),
       ]);
 
       this.quests = board.quests ?? [];
       this.folders = [...(board.folders ?? [])].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
       this.sessions = sessions ?? [];
+      this.overviewSessions = overviewSessions ?? [];
       this.games = (myGames.data ?? [])
         .map((item) => this.toLibraryGame(item))
         .filter((item): item is LibraryGameOption => item !== null)
         .sort((a, b) => a.gameName.localeCompare(b.gameName));
+      this.allGames = games.data ?? [];
       this.rebuildCalendar();
+      this.buildOverviewCalendar();
     } catch {
       this.errorMessage = 'Weekly schedule could not be loaded.';
     } finally {
@@ -186,6 +210,36 @@ export class WeeklySchedulePage implements OnInit {
 
   protected async today(): Promise<void> {
     this.weekAnchor = startOfWeek(new Date());
+    await this.load();
+  }
+
+  protected async setViewMode(mode: ScheduleViewMode): Promise<void> {
+    if (this.viewMode === mode) {
+      return;
+    }
+
+    this.viewMode = mode;
+    if (mode === 'overview' && this.overviewDays.length === 0) {
+      await this.load();
+    }
+  }
+
+  protected async shiftOverview(direction: -1 | 1): Promise<void> {
+    this.overviewAnchor = this.planningCalendar.shiftAnchor(this.overviewAnchor, this.overviewMode, direction);
+    await this.load();
+  }
+
+  protected async overviewToday(): Promise<void> {
+    this.overviewAnchor = this.planningCalendar.startOfToday();
+    await this.load();
+  }
+
+  protected async setOverviewMode(mode: CalendarMode): Promise<void> {
+    if (this.overviewMode === mode) {
+      return;
+    }
+
+    this.overviewMode = mode;
     await this.load();
   }
 
@@ -751,6 +805,14 @@ export class WeeklySchedulePage implements OnInit {
     return day.key;
   }
 
+  protected trackByOverviewDay(_: number, day: PlanningCalendarDay): string {
+    return day.key;
+  }
+
+  protected trackByOverviewEvent(_: number, event: TimelineEvent): string {
+    return event.id;
+  }
+
   protected trackByBlock(_: number, block: WeekScheduleBlock): string {
     return block.id;
   }
@@ -767,6 +829,18 @@ export class WeeklySchedulePage implements OnInit {
     return game.myGameId;
   }
 
+  protected overviewEventIcon(kind: TimelineEventKind): string {
+    switch (kind) {
+      case 'release':
+        return 'rocket-outline';
+      case 'quest':
+        return 'flag-outline';
+      case 'session':
+      default:
+        return 'time-outline';
+    }
+  }
+
   private rebuildCalendar(): void {
     this.weekDays = buildWeekDays(this.weekAnchor);
     this.title = weekTitle(this.weekAnchor);
@@ -777,6 +851,32 @@ export class WeeklySchedulePage implements OnInit {
     }
 
     this.blocksByDay = map;
+  }
+
+  private buildOverviewCalendar(): void {
+    const calendar = this.planningCalendar.build({
+      mode: this.overviewMode,
+      anchor: this.overviewAnchor,
+      sessions: this.overviewSessions,
+      games: this.allGames,
+      quests: this.quests,
+    });
+    this.overviewTitle = calendar.title;
+    this.overviewDays = calendar.days;
+  }
+
+  private overviewSessionWindow(): { from: Date; to: Date } {
+    const start = this.overviewMode === 'week'
+      ? startOfWeek(this.overviewAnchor)
+      : this.startOfOverviewMonthGrid(this.overviewAnchor);
+    const to = new Date(start);
+    to.setDate(start.getDate() + (this.overviewMode === 'week' ? 7 : 42));
+    return { from: start, to };
+  }
+
+  private startOfOverviewMonthGrid(anchor: Date): Date {
+    const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    return startOfWeek(monthStart);
   }
 
   private blocksFor(day: WeekScheduleDay): WeekScheduleBlock[] {

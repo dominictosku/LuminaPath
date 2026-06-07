@@ -19,21 +19,13 @@ import { firstValueFrom } from 'rxjs';
 
 import { Game } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
-import { Quest, QuestBoardService } from '../../quests/services/quest-board.service';
 import { ReleasePlanComponent } from '../../release-calendar/components/release-plan.component';
 import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
 import { GameForecast, GamingSession, GamingSessionService } from '../services/gaming-session.service';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
-import {
-  CalendarMode,
-  DayBucket,
-  PlanningCalendarDay,
-  PlanningCalendarService,
-  TimelineEvent,
-  TimelineEventKind,
-} from '../services/planning-calendar.service';
+import { DayBucket, PlanningCalendarService } from '../services/planning-calendar.service';
 
-type PlanMode = 'sessions' | 'calendar' | 'releases';
+type PlanMode = 'sessions' | 'releases';
 type SessionRange = 'upcoming' | 'past' | 'all';
 
 type DraftSession = {
@@ -69,7 +61,6 @@ type DraftSession = {
 export class PlanningPage implements OnInit {
   private gameService = inject(GameService);
   private sessionService = inject(GamingSessionService);
-  private questBoardService = inject(QuestBoardService);
   private planningCalendar = inject(PlanningCalendarService);
 
   isLoading = true;
@@ -79,18 +70,12 @@ export class PlanningPage implements OnInit {
   sessions: GamingSession[] = [];
   buckets: DayBucket[] = [];
   forecasts: GameForecast[] = [];
-  quests: Quest[] = [];
-  calendarMode: CalendarMode = 'week';
-  calendarAnchor: Date;
-  calendarDays: PlanningCalendarDay[] = [];
-  calendarTitle = '';
   libraryGames: { myGameId: number; gameName: string; playtime: number | null }[] = [];
   allGames: Game[] = [];
 
   draft: DraftSession;
 
   constructor() {
-    this.calendarAnchor = this.planningCalendar.startOfToday();
     this.draft = this.emptyDraft();
 
   }
@@ -124,12 +109,6 @@ export class PlanningPage implements OnInit {
           .map((bucket) => ({ ...bucket, sessions: [...bucket.sessions].reverse() }))
           .reverse();
       }
-      try {
-        this.quests = (await this.questBoardService.getBoard()).quests ?? [];
-      } catch {
-        this.quests = [];
-      }
-      this.buildCalendarDays();
 
       const linkedIds = Array.from(
         new Set(this.sessions
@@ -249,41 +228,6 @@ export class PlanningPage implements OnInit {
     return `${Math.round(value * 10) / 10}h`;
   }
 
-  shiftCalendar(direction: -1 | 1): void {
-    this.calendarAnchor = this.planningCalendar.shiftAnchor(this.calendarAnchor, this.calendarMode, direction);
-    this.buildCalendarDays();
-  }
-
-  goToToday(): void {
-    this.calendarAnchor = this.planningCalendar.startOfToday();
-    this.buildCalendarDays();
-  }
-
-  setCalendarMode(mode: CalendarMode): void {
-    this.calendarMode = mode;
-    this.buildCalendarDays();
-  }
-
-  trackByCalendarDay(_: number, day: PlanningCalendarDay): string {
-    return day.key;
-  }
-
-  trackByTimelineEvent(_: number, event: TimelineEvent): string {
-    return event.id;
-  }
-
-  eventIcon(kind: TimelineEventKind): string {
-    switch (kind) {
-      case 'release':
-        return 'rocket-outline';
-      case 'quest':
-        return 'flag-outline';
-      case 'session':
-      default:
-        return 'time-outline';
-    }
-  }
-
   trackBySession(_: number, session: GamingSession): number {
     return session.id;
   }
@@ -369,18 +313,6 @@ export class PlanningPage implements OnInit {
     const future = new Date(today);
     future.setDate(today.getDate() + 60);
     return { from: today, to: future };
-  }
-
-  private buildCalendarDays(): void {
-    const calendar = this.planningCalendar.build({
-      mode: this.calendarMode,
-      anchor: this.calendarAnchor,
-      sessions: this.sessions,
-      games: this.allGames,
-      quests: this.quests,
-    });
-    this.calendarTitle = calendar.title;
-    this.calendarDays = calendar.days;
   }
 
   private errorTextFrom(error: unknown): string | null {

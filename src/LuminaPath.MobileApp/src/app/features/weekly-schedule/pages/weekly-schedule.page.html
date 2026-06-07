@@ -6,18 +6,29 @@
           <ion-icon name="calendar-clear-outline"></ion-icon>
           Weekly schedule
         </span>
-        <h1>{{ title }}</h1>
+        <h1>{{ viewMode === 'planner' ? title : 'Calendar overview' }}</h1>
       </div>
 
-      <div class="schedule-nav">
-        <button type="button" class="schedule-icon-button" aria-label="Previous week" (click)="shift(-1)">
-          <ion-icon name="chevron-back-outline"></ion-icon>
+      <div class="schedule-view-toggle" aria-label="Schedule view">
+        <button type="button" [class.active]="viewMode === 'planner'" (click)="setViewMode('planner')">
+          Planner
         </button>
-        <button type="button" class="schedule-nav__today" (click)="today()">Today</button>
-        <button type="button" class="schedule-icon-button" aria-label="Next week" (click)="shift(1)">
-          <ion-icon name="chevron-forward-outline"></ion-icon>
+        <button type="button" [class.active]="viewMode === 'overview'" (click)="setViewMode('overview')">
+          Overview
         </button>
       </div>
+
+      @if (viewMode === 'planner') {
+        <div class="schedule-nav">
+          <button type="button" class="schedule-icon-button" aria-label="Previous week" (click)="shift(-1)">
+            <ion-icon name="chevron-back-outline"></ion-icon>
+          </button>
+          <button type="button" class="schedule-nav__today" (click)="today()">Today</button>
+          <button type="button" class="schedule-icon-button" aria-label="Next week" (click)="shift(1)">
+            <ion-icon name="chevron-forward-outline"></ion-icon>
+          </button>
+        </div>
+      }
     </header>
 
     @if (errorMessage) {
@@ -27,6 +38,7 @@
       </section>
     }
 
+    @if (viewMode === 'planner') {
     <section class="weekly-schedule-layout">
       <aside class="schedule-sidebar">
         <section class="sidebar-section">
@@ -203,6 +215,78 @@
         }
       </section>
     </section>
+    }
+
+    @if (viewMode === 'overview') {
+      @if (isLoading) {
+        <section class="schedule-loading schedule-loading--overview">
+          <ion-spinner name="crescent"></ion-spinner>
+        </section>
+      } @else {
+        <section class="schedule-overview">
+          <header class="overview-toolbar">
+            <div>
+              <span class="schedule-eyebrow">
+                <ion-icon name="calendar-clear-outline"></ion-icon>
+                Timeline
+              </span>
+              <h2>{{ overviewTitle }}</h2>
+            </div>
+            <div class="overview-actions">
+              <button type="button" class="schedule-icon-button" aria-label="Previous" (click)="shiftOverview(-1)">
+                <ion-icon name="chevron-back-outline"></ion-icon>
+              </button>
+              <div class="overview-mode-toggle" aria-label="Calendar density">
+                <button type="button" [class.active]="overviewMode === 'week'" (click)="setOverviewMode('week')">
+                  Week
+                </button>
+                <button type="button" [class.active]="overviewMode === 'month'" (click)="setOverviewMode('month')">
+                  Month
+                </button>
+              </div>
+              <button type="button" class="schedule-nav__today" (click)="overviewToday()">Today</button>
+              <button type="button" class="schedule-icon-button" aria-label="Next" (click)="shiftOverview(1)">
+                <ion-icon name="chevron-forward-outline"></ion-icon>
+              </button>
+            </div>
+          </header>
+
+          <div class="overview-grid" [class.overview-grid--month]="overviewMode === 'month'">
+            @for (day of overviewDays; track trackByOverviewDay($index, day)) {
+              <article
+                class="overview-day"
+                [class.overview-day--today]="day.isToday"
+                [class.overview-day--outside]="!day.isCurrentMonth">
+                <header>
+                  <span>{{ day.label }}</span>
+                  <strong>{{ day.number }}</strong>
+                </header>
+                @if (day.events.length) {
+                  <div class="overview-events">
+                    @for (event of day.events; track trackByOverviewEvent($index, event)) {
+                      <article
+                        class="overview-event"
+                        [class.overview-event--session]="event.kind === 'session'"
+                        [class.overview-event--release]="event.kind === 'release'"
+                        [class.overview-event--quest]="event.kind === 'quest'"
+                        [class.overview-event--done]="event.completed">
+                        <ion-icon [name]="overviewEventIcon(event.kind)"></ion-icon>
+                        <div>
+                          <strong>{{ event.title }}</strong>
+                          <span>{{ event.timeLabel }} · {{ event.subtitle }}</span>
+                        </div>
+                      </article>
+                    }
+                  </div>
+                } @else {
+                  <span class="overview-empty">Open</span>
+                }
+              </article>
+            }
+          </div>
+        </section>
+      }
+    }
 
     @if (draft) {
       <div class="schedule-modal-backdrop" (click)="closeDraft()">

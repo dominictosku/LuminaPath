@@ -19,10 +19,6 @@
           <ion-icon name="time-outline"></ion-icon>
           <span>Sessions</span>
         </ion-segment-button>
-        <ion-segment-button value="calendar">
-          <ion-icon name="calendar-clear-outline"></ion-icon>
-          <span>Calendar</span>
-        </ion-segment-button>
         <ion-segment-button value="releases">
           <ion-icon name="rocket-outline"></ion-icon>
           <span>Releases</span>
@@ -174,72 +170,6 @@
               </div>
             </article>
           }
-        </section>
-      }
-    }
-    @if (mode === 'calendar') {
-      @if (isLoading) {
-        <section class="loading-state">
-          <ion-spinner name="crescent"></ion-spinner>
-        </section>
-      }
-      @if (!isLoading) {
-        <section class="calendar-planner">
-          <header class="calendar-toolbar">
-            <div>
-              <span class="eyebrow">
-                <ion-icon name="calendar-clear-outline"></ion-icon>
-                Timeline
-              </span>
-              <h2>{{ calendarTitle }}</h2>
-            </div>
-            <div class="calendar-actions">
-              <button type="button" class="icon-action" aria-label="Previous" (click)="shiftCalendar(-1)">
-                <ion-icon name="chevron-back-outline"></ion-icon>
-              </button>
-              <ion-segment [ngModel]="calendarMode" (ngModelChange)="setCalendarMode($event)">
-                <ion-segment-button value="week">Week</ion-segment-button>
-                <ion-segment-button value="month">Month</ion-segment-button>
-              </ion-segment>
-              <button type="button" class="today-button" (click)="goToToday()">Today</button>
-              <button type="button" class="icon-action" aria-label="Next" (click)="shiftCalendar(1)">
-                <ion-icon name="chevron-forward-outline"></ion-icon>
-              </button>
-            </div>
-          </header>
-          <div class="calendar-grid" [class.calendar-grid--month]="calendarMode === 'month'">
-            @for (day of calendarDays; track trackByCalendarDay($index, day)) {
-              <article
-                class="calendar-day"
-                [class.calendar-day--today]="day.isToday"
-                [class.calendar-day--outside]="!day.isCurrentMonth">
-                <header>
-                  <span>{{ day.label }}</span>
-                  <strong>{{ day.number }}</strong>
-                </header>
-                @if (day.events.length) {
-                  <div class="timeline-events">
-                    @for (event of day.events; track trackByTimelineEvent($index, event)) {
-                      <article
-                        class="timeline-event"
-                        [class.timeline-event--session]="event.kind === 'session'"
-                        [class.timeline-event--release]="event.kind === 'release'"
-                        [class.timeline-event--quest]="event.kind === 'quest'"
-                        [class.timeline-event--done]="event.completed">
-                        <ion-icon [name]="eventIcon(event.kind)"></ion-icon>
-                        <div>
-                          <strong>{{ event.title }}</strong>
-                          <span>{{ event.timeLabel }} · {{ event.subtitle }}</span>
-                        </div>
-                      </article>
-                    }
-                  </div>
-                } @else {
-                  <span class="calendar-empty">Open</span>
-                }
-              </article>
-            }
-          </div>
         </section>
       }
     }
