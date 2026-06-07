@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonIcon, IonSpinner } from '@ionic/angular/standalone';
+import { IonContent, IonIcon, IonSegment, IonSegmentButton, IonSpinner } from '@ionic/angular/standalone';
 import { firstValueFrom } from 'rxjs';
 
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
@@ -46,6 +46,7 @@ import {
 
 type CalendarGroupId = 'quests' | 'sessions';
 type ScheduleViewMode = 'planner' | 'overview';
+type SessionWindow = { from: Date; to: Date };
 
 type LibraryGameOption = {
   myGameId: number;
@@ -107,6 +108,8 @@ type DragPreview = {
     FormsModule,
     IonContent,
     IonIcon,
+    IonSegment,
+    IonSegmentButton,
     IonSpinner,
   ],
 })
@@ -132,6 +135,7 @@ export class WeeklySchedulePage implements OnInit {
   protected weekDays: WeekScheduleDay[] = buildWeekDays(this.weekAnchor);
   protected title = weekTitle(this.weekAnchor);
   protected isLoading = true;
+  protected isOverviewLoading = false;
   protected isSaving = false;
   protected viewMode: ScheduleViewMode = 'planner';
   protected overviewMode: CalendarMode = 'week';
@@ -157,11 +161,13 @@ export class WeeklySchedulePage implements OnInit {
   private folders: QuestFolder[] = [];
   private sessions: GamingSession[] = [];
   private overviewSessions: GamingSession[] = [];
+  private overviewSessionRange: SessionWindow | null = null;
   private games: LibraryGameOption[] = [];
   private allGames: Game[] = [];
   private dragged: DragPayload | null = null;
   private draggingId: string | null = null;
   private transparentDragImage: HTMLCanvasElement | null = null;
+  private readonly overviewCachePaddingDays = 42;
   protected blocksByDay = new Map<string, WeekScheduleBlock[]>();
 
   async ngOnInit(): Promise<void> {
@@ -175,7 +181,7 @@ export class WeeklySchedulePage implements OnInit {
       const weekStart = startOfWeek(this.weekAnchor);
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 7);
-      const overviewWindow = this.overviewSessionWindow();
+      const overviewWindow = this.expandedOverviewSessionWindow(this.overviewSessionWindow());
 
       const [board, sessions, overviewSessions, myGames, games] = await Promise.all([
         this.questService.getBoard(),
@@ -188,7 +194,7 @@ export class WeeklySchedulePage implements OnInit {
       this.quests = board.quests ?? [];
       this.folders = [...(board.folders ?? [])].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
       this.sessions = sessions ?? [];
-      this.overviewSessions = overviewSessions ?? [];
+      this.setOverviewSessionCache(overviewWindow, overviewSessions ?? []);
       this.games = (myGames.data ?? [])
         .map((item) => this.toLibraryGame(item))
         .filter((item): item is LibraryGameOption => item !== null)
@@ -220,18 +226,18 @@ export class WeeklySchedulePage implements OnInit {
 
     this.viewMode = mode;
     if (mode === 'overview' && this.overviewDays.length === 0) {
-      await this.load();
+      await this.refreshOverviewCalendar();
     }
   }
 
   protected async shiftOverview(direction: -1 | 1): Promise<void> {
     this.overviewAnchor = this.planningCalendar.shiftAnchor(this.overviewAnchor, this.overviewMode, direction);
-    await this.load();
+    await this.refreshOverviewCalendar();
   }
 
   protected async overviewToday(): Promise<void> {
     this.overviewAnchor = this.planningCalendar.startOfToday();
-    await this.load();
+    await this.refreshOverviewCalendar();
   }
 
   protected async setOverviewMode(mode: CalendarMode): Promise<void> {
@@ -240,7 +246,7 @@ export class WeeklySchedulePage implements OnInit {
     }
 
     this.overviewMode = mode;
-    await this.load();
+    await this.refreshOverviewCalendar();
   }
 
   protected toggleGroup(group: CalendarGroupId): void {
@@ -865,13 +871,54 @@ export class WeeklySchedulePage implements OnInit {
     this.overviewDays = calendar.days;
   }
 
-  private overviewSessionWindow(): { from: Date; to: Date } {
+  private async refreshOverviewCalendar(): Promise<void> {
+    const window = this.overviewSessionWindow();
+    if (!this.overviewSessionRangeContains(window)) {
+      this.isOverviewLoading = true;
+      this.errorMessage = '';
+      try {
+        const expandedWindow = this.expandedOverviewSessionWindow(window);
+        const sessions = await firstValueFrom(this.sessionService.list(expandedWindow));
+        this.setOverviewSessionCache(expandedWindow, sessions ?? []);
+      } catch {
+        this.errorMessage = 'Calendar sessions could not be loaded.';
+      } finally {
+        this.isOverviewLoading = false;
+      }
+    }
+
+    this.buildOverviewCalendar();
+  }
+
+  private overviewSessionWindow(): SessionWindow {
     const start = this.overviewMode === 'week'
       ? startOfWeek(this.overviewAnchor)
       : this.startOfOverviewMonthGrid(this.overviewAnchor);
     const to = new Date(start);
     to.setDate(start.getDate() + (this.overviewMode === 'week' ? 7 : 42));
     return { from: start, to };
+  }
+
+  private expandedOverviewSessionWindow(window: SessionWindow): SessionWindow {
+    const from = new Date(window.from);
+    from.setDate(from.getDate() - this.overviewCachePaddingDays);
+    const to = new Date(window.to);
+    to.setDate(to.getDate() + this.overviewCachePaddingDays);
+    return { from, to };
+  }
+
+  private overviewSessionRangeContains(window: SessionWindow): boolean {
+    return this.overviewSessionRange !== null
+      && this.overviewSessionRange.from.getTime() <= window.from.getTime()
+      && this.overviewSessionRange.to.getTime() >= window.to.getTime();
+  }
+
+  private setOverviewSessionCache(window: SessionWindow, sessions: GamingSession[]): void {
+    this.overviewSessionRange = {
+      from: new Date(window.from),
+      to: new Date(window.to),
+    };
+    this.overviewSessions = sessions;
   }
 
   private startOfOverviewMonthGrid(anchor: Date): Date {

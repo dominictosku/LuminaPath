@@ -218,12 +218,12 @@
     }
 
     @if (viewMode === 'overview') {
-      @if (isLoading) {
+      @if (isLoading && overviewDays.length === 0) {
         <section class="schedule-loading schedule-loading--overview">
           <ion-spinner name="crescent"></ion-spinner>
         </section>
       } @else {
-        <section class="schedule-overview">
+        <section class="schedule-overview" [class.schedule-overview--refreshing]="isOverviewLoading">
           <header class="overview-toolbar">
             <div>
               <span class="schedule-eyebrow">
@@ -236,14 +236,17 @@
               <button type="button" class="schedule-icon-button" aria-label="Previous" (click)="shiftOverview(-1)">
                 <ion-icon name="chevron-back-outline"></ion-icon>
               </button>
-              <div class="overview-mode-toggle" aria-label="Calendar density">
-                <button type="button" [class.active]="overviewMode === 'week'" (click)="setOverviewMode('week')">
-                  Week
-                </button>
-                <button type="button" [class.active]="overviewMode === 'month'" (click)="setOverviewMode('month')">
-                  Month
-                </button>
-              </div>
+              <ion-segment
+                class="overview-mode-toggle"
+                [ngModel]="overviewMode"
+                (ngModelChange)="setOverviewMode($event)"
+                aria-label="Calendar density">
+                <ion-segment-button value="week">Week</ion-segment-button>
+                <ion-segment-button value="month">Month</ion-segment-button>
+              </ion-segment>
+              @if (isOverviewLoading) {
+                <ion-spinner class="overview-refresh-spinner" name="crescent"></ion-spinner>
+              }
               <button type="button" class="schedule-nav__today" (click)="overviewToday()">Today</button>
               <button type="button" class="schedule-icon-button" aria-label="Next" (click)="shiftOverview(1)">
                 <ion-icon name="chevron-forward-outline"></ion-icon>
