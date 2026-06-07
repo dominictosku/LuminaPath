@@ -16,6 +16,79 @@
   gap: 12px;
 }
 
+.session-forecast-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(137, 180, 255, 0.14);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(96, 165, 250, 0.1), rgba(255, 255, 255, 0.035)),
+    rgba(3, 8, 26, 0.34);
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  h3 {
+    margin: 4px 0 0;
+    color: var(--text);
+    font-size: 18px;
+  }
+
+  ion-badge {
+    flex: 0 0 auto;
+    --background: var(--accent-soft);
+    --color: var(--accent-strong);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+.session-forecast-card__summary {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.session-forecast-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+
+  div {
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid rgba(137, 180, 255, 0.14);
+    border-radius: 12px;
+    background: rgba(3, 8, 26, 0.36);
+    text-align: center;
+  }
+
+  span,
+  strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span {
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  strong {
+    margin-top: 2px;
+    color: var(--text);
+    font-size: 14px;
+  }
+}
+
 .session-form {
   padding: 14px;
   border: 1px solid rgba(137, 180, 255, 0.14);
@@ -166,6 +239,17 @@
 }
 
 @media (max-width: 560px) {
+  .session-forecast-card {
+    header {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+
+  .session-forecast-card__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .sessions-header {
     align-items: stretch;
     flex-direction: column;

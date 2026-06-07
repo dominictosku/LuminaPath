@@ -18,6 +18,44 @@
   </header>
 
   @if (isInLibrary()) {
+    @if (forecast(); as currentForecast) {
+      <section class="session-forecast-card">
+        <header>
+          <div>
+            <span class="eyebrow">
+              <ion-icon name="rocket-outline"></ion-icon>
+              Completion forecast
+            </span>
+            <h3>How long until you finish</h3>
+          </div>
+          <ion-badge>
+            <ion-icon name="hourglass-outline"></ion-icon>
+            {{ formatHours(currentForecast.remainingHours) }} left
+          </ion-badge>
+        </header>
+        <ion-progress-bar [value]="forecastProgress()"></ion-progress-bar>
+        <p class="session-forecast-card__summary">{{ forecastSummary() }}</p>
+        <div class="session-forecast-card__metrics">
+          <div>
+            <span>Played</span>
+            <strong>{{ formatHours(currentForecast.playedHours) }}</strong>
+          </div>
+          <div>
+            <span>Scheduled</span>
+            <strong>{{ formatHours(currentForecast.scheduledHours) }}</strong>
+          </div>
+          <div>
+            <span>Per week</span>
+            <strong>{{ formatHours(currentForecast.weeklyHours) }}</strong>
+          </div>
+          <div>
+            <span>Sessions ahead</span>
+            <strong>{{ currentForecast.upcomingSessionCount }}</strong>
+          </div>
+        </div>
+      </section>
+    }
+
     <section class="session-form">
       <div class="session-form__grid">
         <label>

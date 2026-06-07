@@ -1,8 +1,10 @@
 import { Component, OnChanges, SimpleChanges, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  IonBadge,
   IonButton,
   IonIcon,
+  IonProgressBar,
   IonSegment,
   IonSegmentButton,
   IonSpinner,
@@ -11,7 +13,12 @@ import { firstValueFrom } from 'rxjs';
 
 import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty-state.component';
 import { DayBucket, PlanningCalendarService } from 'src/app/features/planning/services/planning-calendar.service';
-import { GamingSession, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
+import { GameForecast, GamingSession, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
+import {
+  forecastHours,
+  forecastProgress as forecastProgressValue,
+  forecastSummary as forecastSummaryText,
+} from '../../domain/forecast.helpers';
 
 type SessionRange = 'upcoming' | 'past' | 'all';
 
@@ -28,8 +35,10 @@ type DraftSession = {
   styleUrls: ['../../pages/my-game-details.page.scss', './game-sessions.component.scss'],
   imports: [
     FormsModule,
+    IonBadge,
     IonButton,
     IonIcon,
+    IonProgressBar,
     IonSegment,
     IonSegmentButton,
     IonSpinner,
@@ -43,6 +52,7 @@ export class GameSessionsComponent implements OnChanges {
   readonly myGameId = input<number | null>(null);
   readonly isInLibrary = input<boolean>(false);
   readonly gameName = input<string | null>(null);
+  readonly forecast = input<GameForecast | null>(null);
   readonly sessionsChanged = output<void>();
 
   isLoading = false;
@@ -193,6 +203,18 @@ export class GameSessionsComponent implements OnChanges {
 
   sessionTitle(session: GamingSession): string {
     return session.gameName ?? this.gameName() ?? 'Gaming session';
+  }
+
+  forecastProgress(): number {
+    return forecastProgressValue(this.forecast());
+  }
+
+  forecastSummary(): string {
+    return forecastSummaryText(this.forecast());
+  }
+
+  formatHours(value: number | null | undefined): string {
+    return value == null ? '—' : forecastHours(value);
   }
 
   trackBySession(_: number, session: GamingSession): number {

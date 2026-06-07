@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { provideIonicAngular } from '@ionic/angular/standalone';
 import { of } from 'rxjs';
 
-import { GamingSession, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
+import { GameForecast, GamingSession, GamingSessionService } from 'src/app/features/planning/services/gaming-session.service';
 import { GameSessionsComponent } from './game-sessions.component';
 
 function makeSession(overrides: Partial<GamingSession> = {}): GamingSession {
@@ -16,6 +16,24 @@ function makeSession(overrides: Partial<GamingSession> = {}): GamingSession {
     completedAt: null,
     notes: null,
     createdAt: '2026-06-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function makeForecast(overrides: Partial<GameForecast> = {}): GameForecast {
+  return {
+    myGameId: 7,
+    gameName: 'Hades',
+    playtimeEstimateHours: 20,
+    playedHours: 5,
+    remainingHours: 15,
+    scheduledHours: 6,
+    upcomingSessionCount: 4,
+    sessionsToCompletion: null,
+    projectedCompletionDate: null,
+    weeklyHours: 1.5,
+    additionalHoursNeeded: 9,
+    weeksAtCurrentPace: 6,
     ...overrides,
   };
 }
@@ -93,6 +111,23 @@ describe('GameSessionsComponent', () => {
     expect(payload.notes).toBe('Boss');
     expect(payload.scheduledAt).toMatch(/2026-06-04/);
     expect(sessionService.list).toHaveBeenCalledWith(jasmine.objectContaining({ myGameId: 7 }));
+  }));
+
+  it('renders the planning-style forecast summary inside the sessions tab', fakeAsync(() => {
+    configure();
+    fixture.componentRef.setInput('myGameId', 7);
+    fixture.componentRef.setInput('forecast', makeForecast({
+      sessionsToCompletion: 4,
+      projectedCompletionDate: '2026-06-25T22:00:00.000Z',
+      weeksAtCurrentPace: null,
+    }));
+
+    fixture.detectChanges();
+    tick();
+
+    expect(component.forecastSummary()).toContain('4 sessions');
+    expect(component.formatHours(6)).toBe('6h');
+    expect(fixture.nativeElement.textContent).toContain('Sessions ahead');
   }));
 
   it('keeps game scope when switching to past and all sessions', fakeAsync(() => {
