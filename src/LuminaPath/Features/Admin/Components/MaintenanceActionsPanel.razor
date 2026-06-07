@@ -21,123 +21,168 @@
 		</div>
 	</div>
 
-	<div class="maintenance-status-grid">
-		<div class="maintenance-status-card">
-			<span>Retention cleanup</span>
-			<strong>@FormatJob(lastMaintenanceCleanup)</strong>
-		</div>
-		<div class="maintenance-status-card">
-			<span>Orphaned blobs</span>
-			<strong>@FormatJob(lastOrphanedBlobCleanup)</strong>
-		</div>
-		<div class="maintenance-status-card">
-			<span>Database backup</span>
-			<strong>@FormatJob(lastDatabaseBackup)</strong>
-		</div>
-		<div class="maintenance-status-card">
-			<span>Game metadata</span>
-			<strong>@FormatJob(lastGameMetadataRefresh)</strong>
-		</div>
-		<div class="maintenance-status-card">
-			<span>Anime metadata</span>
-			<strong>@FormatJob(lastAnimeMetadataRefresh)</strong>
-		</div>
-		<div class="maintenance-status-card">
-			<span>Movie metadata</span>
-			<strong>@FormatJob(lastMovieMetadataRefresh)</strong>
-		</div>
-		<div class="maintenance-status-card">
-			<span>Series metadata</span>
-			<strong>@FormatJob(lastSeriesMetadataRefresh)</strong>
-		</div>
-	</div>
+	<div class="maintenance-content">
+		<section class="maintenance-group">
+			<div class="maintenance-group__title">
+				<MudIcon Icon="@Icons.Material.Filled.Schedule" />
+				<MudText Typo="Typo.h6">Last successful runs</MudText>
+			</div>
+			<div class="maintenance-status-grid">
+				<div class="maintenance-status-card">
+					<span>Retention cleanup</span>
+					<strong>@FormatJob(lastMaintenanceCleanup)</strong>
+				</div>
+				<div class="maintenance-status-card">
+					<span>Orphaned blobs</span>
+					<strong>@FormatJob(lastOrphanedBlobCleanup)</strong>
+				</div>
+				<div class="maintenance-status-card">
+					<span>Database backup</span>
+					<strong>@FormatJob(lastDatabaseBackup)</strong>
+				</div>
+				<div class="maintenance-status-card">
+					<span>Game metadata</span>
+					<strong>@FormatJob(lastGameMetadataRefresh)</strong>
+				</div>
+				<div class="maintenance-status-card">
+					<span>Anime metadata</span>
+					<strong>@FormatJob(lastAnimeMetadataRefresh)</strong>
+				</div>
+				<div class="maintenance-status-card">
+					<span>Movie metadata</span>
+					<strong>@FormatJob(lastMovieMetadataRefresh)</strong>
+				</div>
+				<div class="maintenance-status-card">
+					<span>Series metadata</span>
+					<strong>@FormatJob(lastSeriesMetadataRefresh)</strong>
+				</div>
+			</div>
+		</section>
 
-	<div class="maintenance-preview-grid">
-		<div class="maintenance-preview-card">
-			<span>Retention preview</span>
-			<strong>@RetentionPreviewText</strong>
-		</div>
-		<div class="maintenance-preview-card">
-			<span>Blob preview</span>
-			<strong>@BlobPreviewText</strong>
-		</div>
-		<div class="maintenance-preview-card">
-			<span>Integrity issues</span>
-			<strong>@DiagnosticsText</strong>
-		</div>
-	</div>
+		<section class="maintenance-group">
+			<div class="maintenance-group__title">
+				<MudIcon Icon="@Icons.Material.Filled.FactCheck" />
+				<MudText Typo="Typo.h6">Preflight checks</MudText>
+			</div>
+			<div class="maintenance-preflight-layout">
+				<div class="maintenance-preview-grid">
+					<div class="maintenance-preview-card">
+						<span>Retention preview</span>
+						<strong>@RetentionPreviewText</strong>
+					</div>
+					<div class="maintenance-preview-card">
+						<span>Blob preview</span>
+						<strong>@BlobPreviewText</strong>
+					</div>
+					<div class="maintenance-preview-card">
+						<span>Integrity issues</span>
+						<strong>@DiagnosticsText</strong>
+					</div>
+				</div>
+				<div class="maintenance-action-grid">
+					<MudButton Class="maintenance-action-button"
+							   OnClick="PreviewMaintenanceCleanup"
+							   Variant="MudBlazor.Variant.Outlined"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.Preview"
+							   Disabled="@previewingMaintenance">
+						@(previewingMaintenance ? "Scanning Retention" : "Preview Retention")
+					</MudButton>
+					<MudButton Class="maintenance-action-button"
+							   OnClick="PreviewOrphanedBlobCleanup"
+							   Variant="MudBlazor.Variant.Outlined"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.Preview"
+							   Disabled="@previewingOrphanedBlobCleanup">
+						@(previewingOrphanedBlobCleanup ? "Scanning Blobs" : "Preview Blobs")
+					</MudButton>
+					<MudButton Class="maintenance-action-button"
+							   OnClick="RunDiagnostics"
+							   Variant="MudBlazor.Variant.Outlined"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.FactCheck"
+							   Disabled="@runningDiagnostics">
+						@(runningDiagnostics ? "Checking Integrity" : "Run Diagnostics")
+					</MudButton>
+					<MudButton Class="maintenance-action-button"
+							   OnClick="LoadStatus"
+							   Variant="MudBlazor.Variant.Outlined"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.Refresh"
+							   Disabled="@(queueingMaintenance || queueingOrphanedBlobCleanup || queueingMetadataRefresh)">
+						Refresh Status
+					</MudButton>
+				</div>
+			</div>
+		</section>
 
-	<div class="maintenance-actions">
-		<MudButton OnClick="PreviewMaintenanceCleanup"
-				   Variant="MudBlazor.Variant.Outlined"
-				   Color="Color.Primary"
-				   StartIcon="@Icons.Material.Filled.Preview"
-				   Disabled="@previewingMaintenance">
-			@(previewingMaintenance ? "Scanning Retention" : "Preview Retention")
-		</MudButton>
-		<MudButton OnClick="QueueMaintenanceCleanup"
-				   Variant="MudBlazor.Variant.Filled"
-				   Color="Color.Secondary"
-				   StartIcon="@Icons.Material.Filled.CleaningServices"
-				   Disabled="@queueingMaintenance">
-			@(queueingMaintenance ? "Queueing Cleanup" : "Run Retention Cleanup")
-		</MudButton>
-		<MudButton OnClick="PreviewOrphanedBlobCleanup"
-				   Variant="MudBlazor.Variant.Outlined"
-				   Color="Color.Primary"
-				   StartIcon="@Icons.Material.Filled.Preview"
-				   Disabled="@previewingOrphanedBlobCleanup">
-			@(previewingOrphanedBlobCleanup ? "Scanning Blobs" : "Preview Blobs")
-		</MudButton>
-		<MudButton OnClick="QueueOrphanedBlobCleanup"
-				   Variant="MudBlazor.Variant.Filled"
-				   Color="Color.Primary"
-				   StartIcon="@Icons.Material.Filled.FolderDelete"
-				   Disabled="@queueingOrphanedBlobCleanup">
-			@(queueingOrphanedBlobCleanup ? "Queueing Blob Cleanup" : "Run Blob Cleanup")
-		</MudButton>
-		<MudButton OnClick="RunDiagnostics"
-				   Variant="MudBlazor.Variant.Outlined"
-				   Color="Color.Primary"
-				   StartIcon="@Icons.Material.Filled.FactCheck"
-				   Disabled="@runningDiagnostics">
-			@(runningDiagnostics ? "Checking Integrity" : "Run Diagnostics")
-		</MudButton>
-		<MudButton OnClick="@(() => QueueMetadataRefresh(MetadataRefreshMediaTypes.Games))"
-				   Variant="MudBlazor.Variant.Filled"
-				   Color="Color.Secondary"
-				   StartIcon="@Icons.Material.Filled.TravelExplore"
-				   Disabled="@queueingMetadataRefresh">
-			Refresh Game Metadata
-		</MudButton>
-		<MudButton OnClick="@(() => QueueMetadataRefresh(MetadataRefreshMediaTypes.Animes))"
-				   Variant="MudBlazor.Variant.Outlined"
-				   Color="Color.Primary"
-				   StartIcon="@Icons.Material.Filled.Animation"
-				   Disabled="@queueingMetadataRefresh">
-			Refresh Anime Metadata
-		</MudButton>
-		<MudButton OnClick="@(() => QueueMetadataRefresh(MetadataRefreshMediaTypes.Movies))"
-				   Variant="MudBlazor.Variant.Outlined"
-				   Color="Color.Primary"
-				   StartIcon="@Icons.Material.Filled.Movie"
-				   Disabled="@queueingMetadataRefresh">
-			Refresh Movie Metadata
-		</MudButton>
-		<MudButton OnClick="@(() => QueueMetadataRefresh(MetadataRefreshMediaTypes.Series))"
-				   Variant="MudBlazor.Variant.Outlined"
-				   Color="Color.Primary"
-				   StartIcon="@Icons.Material.Filled.LiveTv"
-				   Disabled="@queueingMetadataRefresh">
-			Refresh Series Metadata
-		</MudButton>
-		<MudButton OnClick="LoadStatus"
-				   Variant="MudBlazor.Variant.Outlined"
-				   Color="Color.Primary"
-				   StartIcon="@Icons.Material.Filled.Refresh"
-				   Disabled="@(queueingMaintenance || queueingOrphanedBlobCleanup || queueingMetadataRefresh)">
-			Refresh Status
-		</MudButton>
+		<section class="maintenance-group maintenance-group--split">
+			<div class="maintenance-operation-group">
+				<div class="maintenance-group__title">
+					<MudIcon Icon="@Icons.Material.Filled.CleaningServices" />
+					<MudText Typo="Typo.h6">Cleanup jobs</MudText>
+				</div>
+				<div class="maintenance-action-grid maintenance-action-grid--compact">
+					<MudButton Class="maintenance-action-button"
+							   OnClick="QueueMaintenanceCleanup"
+							   Variant="MudBlazor.Variant.Filled"
+							   Color="Color.Secondary"
+							   StartIcon="@Icons.Material.Filled.CleaningServices"
+							   Disabled="@queueingMaintenance">
+						@(queueingMaintenance ? "Queueing Cleanup" : "Run Retention Cleanup")
+					</MudButton>
+					<MudButton Class="maintenance-action-button"
+							   OnClick="QueueOrphanedBlobCleanup"
+							   Variant="MudBlazor.Variant.Filled"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.FolderDelete"
+							   Disabled="@queueingOrphanedBlobCleanup">
+						@(queueingOrphanedBlobCleanup ? "Queueing Blob Cleanup" : "Run Blob Cleanup")
+					</MudButton>
+				</div>
+			</div>
+
+			<div class="maintenance-operation-group">
+				<div class="maintenance-group__title">
+					<MudIcon Icon="@Icons.Material.Filled.TravelExplore" />
+					<MudText Typo="Typo.h6">Metadata refresh jobs</MudText>
+				</div>
+				<div class="maintenance-action-grid">
+					<MudButton Class="maintenance-action-button"
+							   OnClick="@(() => QueueMetadataRefresh(MetadataRefreshMediaTypes.Games))"
+							   Variant="MudBlazor.Variant.Filled"
+							   Color="Color.Secondary"
+							   StartIcon="@Icons.Material.Filled.TravelExplore"
+							   Disabled="@queueingMetadataRefresh">
+						Refresh Game Metadata
+					</MudButton>
+					<MudButton Class="maintenance-action-button"
+							   OnClick="@(() => QueueMetadataRefresh(MetadataRefreshMediaTypes.Animes))"
+							   Variant="MudBlazor.Variant.Outlined"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.Animation"
+							   Disabled="@queueingMetadataRefresh">
+						Refresh Anime Metadata
+					</MudButton>
+					<MudButton Class="maintenance-action-button"
+							   OnClick="@(() => QueueMetadataRefresh(MetadataRefreshMediaTypes.Movies))"
+							   Variant="MudBlazor.Variant.Outlined"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.Movie"
+							   Disabled="@queueingMetadataRefresh">
+						Refresh Movie Metadata
+					</MudButton>
+					<MudButton Class="maintenance-action-button"
+							   OnClick="@(() => QueueMetadataRefresh(MetadataRefreshMediaTypes.Series))"
+							   Variant="MudBlazor.Variant.Outlined"
+							   Color="Color.Primary"
+							   StartIcon="@Icons.Material.Filled.LiveTv"
+							   Disabled="@queueingMetadataRefresh">
+						Refresh Series Metadata
+					</MudButton>
+				</div>
+			</div>
+		</section>
 	</div>
 
 	@if (blobPreview?.OrphanedBlobNames.Any() == true)
@@ -217,23 +262,47 @@
 	}
 </section>
 
-<section class="settings-panel settings-help-panel">
-	<MudIcon Icon="@Icons.Material.Filled.Info" />
-	<div>
-		<MudText Typo="Typo.h6">What runs here</MudText>
-		<MudText Typo="Typo.body2">
-			Retention cleanup removes old completed job records and old backup files. Blob cleanup removes storage files no longer referenced by any document row.
-		</MudText>
-	</div>
-</section>
-
 <style>
+	.maintenance-content {
+		display: grid;
+		gap: 22px;
+		min-width: 0;
+	}
+
+	.maintenance-group,
+	.maintenance-operation-group {
+		display: grid;
+		gap: 12px;
+		min-width: 0;
+	}
+
+	.maintenance-group + .maintenance-group {
+		padding-top: 6px;
+		border-top: 1px solid rgba(59, 130, 246, .12);
+	}
+
+	.maintenance-group__title {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-width: 0;
+	}
+
+	.maintenance-group__title .mud-icon-root {
+		color: var(--mud-palette-primary);
+		font-size: 24px;
+	}
+
+	.maintenance-group__title .mud-typography-h6 {
+		font-weight: 900;
+	}
+
 	.maintenance-status-grid,
 	.maintenance-preview-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
 		gap: 12px;
-		margin-bottom: 16px;
+		min-width: 0;
 	}
 
 	.maintenance-status-card,
@@ -259,20 +328,56 @@
 		font-size: 1rem;
 	}
 
-	.maintenance-actions {
-		display: flex;
-		flex-wrap: wrap;
+	.maintenance-preflight-layout {
+		display: grid;
+		grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+		gap: 14px;
+		align-items: stretch;
+	}
+
+	.maintenance-preview-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.maintenance-group--split {
+		display: grid;
+		grid-template-columns: minmax(280px, .7fr) minmax(420px, 1.3fr);
+		gap: 18px;
+		align-items: start;
+	}
+
+	.maintenance-action-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
 		gap: 10px;
+		min-width: 0;
+	}
+
+	.maintenance-action-grid--compact {
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	}
+
+	.maintenance-action-button {
+		justify-content: flex-start;
+		width: 100%;
+		min-height: 48px;
+	}
+
+	.maintenance-action-button .mud-button-label {
+		min-width: 0;
+		overflow-wrap: anywhere;
 	}
 
 	.maintenance-alert {
-		margin-top: 14px;
+		margin-top: 18px;
 	}
 
 	.diagnostics-detail {
 		display: grid;
 		gap: 10px;
 		margin-top: 14px;
+		min-width: 0;
+		overflow-x: auto;
 	}
 
 	.maintenance-table {
@@ -281,9 +386,27 @@
 		border-radius: 12px;
 	}
 
+	.maintenance-table table {
+		min-width: 720px;
+	}
+
+	@@media (max-width: 1100px) {
+		.maintenance-preflight-layout,
+		.maintenance-group--split {
+			grid-template-columns: 1fr;
+		}
+	}
+
 	@@media (max-width: 680px) {
-		.maintenance-actions {
-			display: grid;
+		.maintenance-status-grid,
+		.maintenance-preview-grid,
+		.maintenance-action-grid,
+		.maintenance-action-grid--compact {
+			grid-template-columns: 1fr;
+		}
+
+		.maintenance-action-button {
+			justify-content: center;
 		}
 	}
 </style>

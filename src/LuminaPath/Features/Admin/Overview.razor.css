@@ -86,6 +86,10 @@
     grid-template-columns: minmax(0, 1fr);
 }
 
+.overview-grid--maintenance {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .jobs-tab-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
@@ -147,6 +151,10 @@
 }
 
 ::deep .overview-grid--jobs .settings-panel--primary {
+    grid-row: auto;
+}
+
+::deep .overview-grid--maintenance .settings-panel--primary {
     grid-row: auto;
 }
 
