@@ -503,7 +503,11 @@
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--block-color) 88%, #111827), color-mix(in srgb, var(--block-color) 52%, #020617));
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
-  cursor: pointer;
+  cursor: grab;
+}
+
+.schedule-block:active {
+  cursor: grabbing;
 }
 
 .schedule-block--session {

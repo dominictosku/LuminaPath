@@ -122,17 +122,27 @@
       @if (!isLoading) {
         <section class="schedule-list">
           <header class="section-heading">
-            <span class="eyebrow">
-              <ion-icon name="time-outline"></ion-icon>
-              Calendar
-            </span>
-            <h2>Upcoming sessions</h2>
+            <div>
+              <span class="eyebrow">
+                <ion-icon name="time-outline"></ion-icon>
+                Calendar
+              </span>
+              <h2>{{ sessionListTitle() }}</h2>
+            </div>
+            <ion-segment
+              class="session-range-filter"
+              [ngModel]="sessionRange"
+              (ngModelChange)="setSessionRange($any($event))">
+              <ion-segment-button value="upcoming">Upcoming</ion-segment-button>
+              <ion-segment-button value="past">Past</ion-segment-button>
+              <ion-segment-button value="all">All</ion-segment-button>
+            </ion-segment>
           </header>
           @if (!buckets.length) {
             <app-empty-state
               icon="calendar-clear-outline"
-              title="No sessions planned"
-              message="Add a session above to start projecting completion." />
+              [title]="sessionEmptyTitle()"
+              [message]="sessionEmptyMessage()" />
           }
           @for (bucket of buckets; track trackByBucket($index, bucket)) {
             <article class="day-bucket">

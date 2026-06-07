@@ -220,6 +220,42 @@ describe('PlanningPage', () => {
     expect(payload.scheduledAt).toMatch(/2026-06-04/);
   }));
 
+  it('loads past sessions without a lower date bound and newest first', fakeAsync(() => {
+    const sessions = [
+      makeSession({ id: 1, scheduledAt: '2026-05-01T18:00:00.000Z', myGameId: 5 }),
+      makeSession({ id: 2, scheduledAt: '2026-05-03T18:00:00.000Z', myGameId: 5 }),
+    ];
+
+    configure({ sessions });
+    fixture.detectChanges();
+    tick();
+
+    sessionService.list.calls.reset();
+    sessionService.forecast.calls.reset();
+
+    component.setSessionRange('past');
+    tick();
+
+    const options = sessionService.list.calls.mostRecent().args[0] ?? {};
+    expect(options.from).toBeUndefined();
+    expect(options.to instanceof Date).toBeTrue();
+    expect(component.buckets.map((bucket) => bucket.key)).toEqual(['2026-05-03', '2026-05-01']);
+    expect(sessionService.forecast).not.toHaveBeenCalled();
+  }));
+
+  it('loads all sessions without date bounds', fakeAsync(() => {
+    configure({});
+    fixture.detectChanges();
+    tick();
+
+    sessionService.list.calls.reset();
+
+    component.setSessionRange('all');
+    tick();
+
+    expect(sessionService.list.calls.mostRecent().args[0]).toEqual({});
+  }));
+
   it('toggleComplete sends the inverted completed flag', fakeAsync(() => {
     const session = makeSession({ id: 7, completed: false });
     configure({ sessions: [session] });

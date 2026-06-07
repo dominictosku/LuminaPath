@@ -65,9 +65,20 @@ type QuestScheduleDraft = {
   myGameId: number | null;
 };
 
+type SessionScheduleDraft = {
+  sessionId: number;
+  myGameId: number | null;
+  scheduledDate: string;
+  startTime: string;
+  durationMinutes: number;
+  notes: string;
+  completed: boolean;
+};
+
 type DragPayload =
   | { type: 'quest'; questId: number }
-  | { type: 'game'; myGameId: number };
+  | { type: 'game'; myGameId: number }
+  | { type: 'session'; sessionId: number };
 
 @Component({
   selector: 'app-weekly-schedule',
@@ -105,7 +116,9 @@ export class WeeklySchedulePage implements OnInit {
   protected questSearch = '';
   protected gameSearch = '';
   protected draft: QuestScheduleDraft | null = null;
+  protected sessionDraft: SessionScheduleDraft | null = null;
   protected draftError = '';
+  protected sessionDraftError = '';
   protected pendingGameId: number | null = null;
   protected readonly groupVisibility: Record<CalendarGroupId, boolean> = {
     quests: true,
@@ -248,6 +261,7 @@ export class WeeklySchedulePage implements OnInit {
       folderId: null,
       myGameId: selectedGame?.myGameId ?? null,
     };
+    this.sessionDraft = null;
     this.draftError = '';
   }
 
@@ -273,12 +287,18 @@ export class WeeklySchedulePage implements OnInit {
       folderId: quest.folderId ?? null,
       myGameId: quest.myGameId ?? null,
     };
+    this.sessionDraft = null;
     this.draftError = '';
   }
 
   protected closeDraft(): void {
     this.draft = null;
     this.draftError = '';
+  }
+
+  protected closeSessionDraft(): void {
+    this.sessionDraft = null;
+    this.sessionDraftError = '';
   }
 
   protected async saveDraft(): Promise<void> {
@@ -381,6 +401,91 @@ export class WeeklySchedulePage implements OnInit {
     }
   }
 
+  protected openBlock(event: MouseEvent, block: WeekScheduleBlock): void {
+    event.stopPropagation();
+    if (block.kind === 'quest') {
+      this.openQuest(block);
+      return;
+    }
+
+    this.openSession(block);
+  }
+
+  protected openSession(block: WeekScheduleBlock): void {
+    if (block.kind !== 'session') return;
+    const sessionId = Number(block.id.replace('session-', ''));
+    const session = this.sessions.find((item) => item.id === sessionId);
+    if (!session) return;
+
+    const start = new Date(session.scheduledAt);
+    this.sessionDraft = {
+      sessionId: session.id,
+      myGameId: session.myGameId ?? null,
+      scheduledDate: dateKey(start),
+      startTime: timeLabelFromMinutes(minutesSinceDayStart(start)),
+      durationMinutes: session.durationMinutes,
+      notes: session.notes ?? '',
+      completed: session.completed,
+    };
+    this.draft = null;
+    this.sessionDraftError = '';
+  }
+
+  protected async saveSessionDraft(): Promise<void> {
+    if (!this.sessionDraft || this.isSaving) return;
+    const draft = this.sessionDraft;
+
+    const scheduledAt = this.combineDateTime(draft.scheduledDate, draft.startTime);
+    if (!scheduledAt || draft.durationMinutes <= 0) {
+      this.sessionDraftError = 'Pick a valid date, time, and duration.';
+      return;
+    }
+
+    const session = this.sessions.find((item) => item.id === draft.sessionId);
+    if (!session) return;
+
+    this.isSaving = true;
+    this.sessionDraftError = '';
+    try {
+      await firstValueFrom(this.sessionService.update(session.id, {
+        id: session.id,
+        myGameId: draft.myGameId,
+        scheduledAt: scheduledAt.toISOString(),
+        durationMinutes: draft.durationMinutes,
+        completed: draft.completed,
+        completedAt: session.completedAt,
+        notes: draft.notes.trim() || null,
+      }));
+      this.closeSessionDraft();
+      await this.load();
+    } catch {
+      this.sessionDraftError = 'Gaming session could not be saved.';
+    } finally {
+      this.isSaving = false;
+    }
+  }
+
+  protected async toggleSessionDraftComplete(): Promise<void> {
+    if (!this.sessionDraft || this.isSaving) return;
+    this.sessionDraft.completed = !this.sessionDraft.completed;
+    await this.saveSessionDraft();
+  }
+
+  protected async deleteSessionDraft(): Promise<void> {
+    if (!this.sessionDraft || this.isSaving) return;
+    const sessionId = this.sessionDraft.sessionId;
+    this.isSaving = true;
+    try {
+      await firstValueFrom(this.sessionService.remove(sessionId));
+      this.closeSessionDraft();
+      await this.load();
+    } catch {
+      this.sessionDraftError = 'Gaming session could not be deleted.';
+    } finally {
+      this.isSaving = false;
+    }
+  }
+
   protected selectGameForNextQuest(game: LibraryGameOption): void {
     this.pendingGameId = this.pendingGameId === game.myGameId ? null : game.myGameId;
   }
@@ -394,6 +499,19 @@ export class WeeklySchedulePage implements OnInit {
   protected dragGame(event: DragEvent, game: LibraryGameOption): void {
     this.dragged = { type: 'game', myGameId: game.myGameId };
     event.dataTransfer?.setData('text/plain', `game:${game.myGameId}`);
+    event.dataTransfer?.setDragImage?.(event.currentTarget as Element, 16, 16);
+  }
+
+  protected dragBlock(event: DragEvent, block: WeekScheduleBlock): void {
+    if (block.kind === 'quest') {
+      const questId = Number(block.id.replace('quest-', ''));
+      this.dragged = { type: 'quest', questId };
+      event.dataTransfer?.setData('text/plain', `quest:${questId}`);
+    } else {
+      const sessionId = Number(block.id.replace('session-', ''));
+      this.dragged = { type: 'session', sessionId };
+      event.dataTransfer?.setData('text/plain', `session:${sessionId}`);
+    }
     event.dataTransfer?.setDragImage?.(event.currentTarget as Element, 16, 16);
   }
 
@@ -416,6 +534,13 @@ export class WeeklySchedulePage implements OnInit {
       const quest = this.quests.find((item) => item.id === payload.questId);
       if (!quest) return;
       await this.scheduleQuestAt(quest, day.date, minutes);
+      return;
+    }
+
+    if (payload.type === 'session') {
+      const session = this.sessions.find((item) => item.id === payload.sessionId);
+      if (!session) return;
+      await this.rescheduleSessionAt(session, day.date, minutes);
       return;
     }
 
@@ -600,6 +725,25 @@ export class WeeklySchedulePage implements OnInit {
       await this.load();
     } catch {
       this.errorMessage = 'Gaming session could not be planned.';
+    }
+  }
+
+  private async rescheduleSessionAt(session: GamingSession, day: Date, minutes: number): Promise<void> {
+    const start = dateAtMinutes(day, minutes);
+    const durationMinutes = this.clampedDuration(minutes, session.durationMinutes);
+    try {
+      await firstValueFrom(this.sessionService.update(session.id, {
+        id: session.id,
+        myGameId: session.myGameId,
+        scheduledAt: start.toISOString(),
+        durationMinutes,
+        completed: session.completed,
+        completedAt: session.completedAt,
+        notes: session.notes,
+      }));
+      await this.load();
+    } catch {
+      this.errorMessage = 'Gaming session could not be rescheduled.';
     }
   }
 

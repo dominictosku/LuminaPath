@@ -34,6 +34,7 @@ import {
 } from '../services/planning-calendar.service';
 
 type PlanMode = 'sessions' | 'calendar' | 'releases';
+type SessionRange = 'upcoming' | 'past' | 'all';
 
 type DraftSession = {
   myGameId: number | null;
@@ -73,6 +74,7 @@ export class PlanningPage implements OnInit {
 
   isLoading = true;
   mode: PlanMode = 'sessions';
+  sessionRange: SessionRange = 'upcoming';
   errorMessage = '';
   sessions: GamingSession[] = [];
   buckets: DayBucket[] = [];
@@ -113,15 +115,15 @@ export class PlanningPage implements OnInit {
         }))
         .sort((a, b) => a.gameName.localeCompare(b.gameName));
 
-      const horizon = new Date();
-      horizon.setHours(0, 0, 0, 0);
-      const future = new Date(horizon);
-      future.setDate(horizon.getDate() + 60);
-
       this.sessions = await firstValueFrom(
-        this.sessionService.list({ from: horizon, to: future }),
+        this.sessionService.list(this.sessionWindow()),
       );
       this.buckets = this.planningCalendar.groupSessionsByDay(this.sessions);
+      if (this.sessionRange !== 'upcoming') {
+        this.buckets = this.buckets
+          .map((bucket) => ({ ...bucket, sessions: [...bucket.sessions].reverse() }))
+          .reverse();
+      }
       try {
         this.quests = (await this.questBoardService.getBoard()).quests ?? [];
       } catch {
@@ -130,7 +132,10 @@ export class PlanningPage implements OnInit {
       this.buildCalendarDays();
 
       const linkedIds = Array.from(
-        new Set(this.sessions.map((s) => s.myGameId).filter((id): id is number => id != null)),
+        new Set(this.sessions
+          .filter((session) => this.sessionRange !== 'past')
+          .map((s) => s.myGameId)
+          .filter((id): id is number => id != null)),
       );
       this.forecasts = await Promise.all(
         linkedIds.map((id) => firstValueFrom(this.sessionService.forecast(id))),
@@ -195,6 +200,33 @@ export class PlanningPage implements OnInit {
     } catch {
       this.errorMessage = 'Could not delete session.';
     }
+  }
+
+  async setSessionRange(range: SessionRange): Promise<void> {
+    if (this.sessionRange === range) {
+      return;
+    }
+
+    this.sessionRange = range;
+    await this.refresh();
+  }
+
+  sessionListTitle(): string {
+    if (this.sessionRange === 'past') return 'Past sessions';
+    if (this.sessionRange === 'all') return 'All sessions';
+    return 'Upcoming sessions';
+  }
+
+  sessionEmptyTitle(): string {
+    if (this.sessionRange === 'past') return 'No past sessions';
+    if (this.sessionRange === 'all') return 'No sessions';
+    return 'No sessions planned';
+  }
+
+  sessionEmptyMessage(): string {
+    if (this.sessionRange === 'past') return 'Older sessions will show here once you have sessions before today.';
+    if (this.sessionRange === 'all') return 'Add a session above to start building your schedule.';
+    return 'Add a session above to start projecting completion.';
   }
 
   formatDuration(minutes: number): string {
@@ -322,6 +354,21 @@ export class PlanningPage implements OnInit {
     const filter = new MediaFilter();
     filter.Paging.Count = 500;
     return filter;
+  }
+
+  private sessionWindow(): { from?: Date; to?: Date } {
+    const today = this.planningCalendar.startOfToday();
+    if (this.sessionRange === 'past') {
+      return { to: today };
+    }
+
+    if (this.sessionRange === 'all') {
+      return {};
+    }
+
+    const future = new Date(today);
+    future.setDate(today.getDate() + 60);
+    return { from: today, to: future };
   }
 
   private buildCalendarDays(): void {
