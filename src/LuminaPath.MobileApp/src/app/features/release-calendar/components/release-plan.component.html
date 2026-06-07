@@ -40,11 +40,9 @@
   </section>
 }
 
-
 <section class="mode-panel">
   <ion-segment [(ngModel)]="mode">
     <ion-segment-button value="week">Week</ion-segment-button>
-    <ion-segment-button value="release">Releases</ion-segment-button>
     <ion-segment-button value="backlog">Backlog</ion-segment-button>
   </ion-segment>
 </section>
@@ -83,50 +81,6 @@
         icon="game-controller-outline"
         title="No active game"
         message="Mark something as Playing to build a weekly queue." />
-    }
-  </section>
-}
-
-@if (mode === 'release') {
-  <section class="section-block">
-    <div class="section-heading">
-      <div>
-        <span class="eyebrow">
-          <ion-icon name="calendar-clear-outline"></ion-icon>
-          {{ monthLabel }}
-        </span>
-        <h2>Release Calendar</h2>
-      </div>
-    </div>
-    <div class="calendar">
-      @for (day of ['S', 'M', 'T', 'W', 'T', 'F', 'S']; track day) {
-        <span class="weekday">{{ day }}</span>
-      }
-      @for (day of calendarDays; track trackByDay($index, day)) {
-        <article
-          class="calendar-day"
-          [class.calendar-day--muted]="!day.isCurrentMonth"
-          [class.calendar-day--today]="day.isToday"
-          [class.calendar-day--release]="day.releases.length">
-          <strong>{{ day.label }}</strong>
-          @for (release of day.releases; track release) {
-            <span>{{ release.name }}</span>
-          }
-        </article>
-      }
-    </div>
-    @if (upcomingReleases.length) {
-      <div class="release-list">
-        @for (game of upcomingReleases; track trackByGameId($index, game)) {
-          <article class="release-item">
-            <div>
-              <h3>{{ game.name }}</h3>
-              <p>{{ platformLabel(game.platforms) }} · {{ game.genre || 'No genre' }}</p>
-            </div>
-            <strong>{{ releaseLabel(game) }}</strong>
-          </article>
-        }
-      </div>
     }
   </section>
 }

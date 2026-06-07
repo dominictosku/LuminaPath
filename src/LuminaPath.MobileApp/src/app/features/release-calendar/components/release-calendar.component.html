@@ -1,0 +1,71 @@
+<section class="section-block">
+  <div class="section-heading">
+    <div>
+      <span class="eyebrow">
+        <ion-icon name="calendar-clear-outline"></ion-icon>
+        {{ monthLabel }}
+      </span>
+      <h2>Release Calendar</h2>
+    </div>
+    @if (!isLoading) {
+      <ion-badge>{{ upcomingReleases.length }}</ion-badge>
+    }
+  </div>
+
+  @if (isLoading) {
+    <div class="calendar calendar--loading">
+      @for (weekday of weekdays; track $index) {
+        <span class="weekday">{{ weekday }}</span>
+      }
+      @for (day of skeletonDays; track day) {
+        <article class="calendar-day calendar-day--loading">
+          <ion-skeleton-text animated></ion-skeleton-text>
+        </article>
+      }
+    </div>
+    <div class="release-list">
+      @for (item of skeletonCards; track item) {
+        <article class="release-item release-item--loading">
+          <ion-skeleton-text animated></ion-skeleton-text>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="calendar">
+      @for (weekday of weekdays; track $index) {
+        <span class="weekday">{{ weekday }}</span>
+      }
+      @for (day of calendarDays; track trackByDay($index, day)) {
+        <article
+          class="calendar-day"
+          [class.calendar-day--muted]="!day.isCurrentMonth"
+          [class.calendar-day--today]="day.isToday"
+          [class.calendar-day--release]="day.releases.length">
+          <strong>{{ day.label }}</strong>
+          @for (release of day.releases; track release) {
+            <span>{{ release.name }}</span>
+          }
+        </article>
+      }
+    </div>
+
+    @if (upcomingReleases.length) {
+      <div class="release-list">
+        @for (game of upcomingReleases; track trackByGameId($index, game)) {
+          <article class="release-item">
+            <div>
+              <h3>{{ game.name }}</h3>
+              <p>{{ platformLabel(game.platforms) }} · {{ game.genre || 'No genre' }}</p>
+            </div>
+            <strong>{{ releaseLabel(game) }}</strong>
+          </article>
+        }
+      </div>
+    } @else {
+      <app-empty-state
+        icon="calendar-clear-outline"
+        title="No upcoming releases"
+        message="No dated game releases are currently in the release plan." />
+    }
+  }
+</section>

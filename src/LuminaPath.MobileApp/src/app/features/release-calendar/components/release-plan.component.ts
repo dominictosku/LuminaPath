@@ -1,4 +1,3 @@
-
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -16,21 +15,11 @@ import { EmptyStateComponent } from 'src/app/shared/components/empty-state/empty
 import { GameStatus, gameStatusLabel, isGameBacklogStatus } from '../../library/models/library-status.model';
 import {
   gameStatusOf,
-  playedHoursOfGame,
   progressRatioOfGame,
-  releaseDateOfGame,
   remainingHoursOfGame,
 } from '../../games/domain/game-library-metrics';
 
-type ReleaseMode = 'week' | 'release' | 'backlog';
-
-type CalendarDay = {
-  label: number;
-  date: Date;
-  isToday: boolean;
-  isCurrentMonth: boolean;
-  releases: Game[];
-};
+type ReleaseMode = 'week' | 'backlog';
 
 type PlanMetric = {
   label: string;
@@ -53,7 +42,7 @@ type PlanMetric = {
     IonSegmentButton,
     IonSkeletonText,
     EmptyStateComponent,
-],
+  ],
 })
 export class ReleasePlanComponent implements OnChanges {
   @Input() games: Game[] = [];
@@ -62,12 +51,9 @@ export class ReleasePlanComponent implements OnChanges {
 
   playingGames: Game[] = [];
   backlogGames: Game[] = [];
-  upcomingReleases: Game[] = [];
-  calendarDays: CalendarDay[] = [];
   metrics: PlanMetric[] = [];
   mode: ReleaseMode = 'week';
   weeklyHours = 10;
-  monthLabel = '';
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['games']) {
@@ -91,20 +77,6 @@ export class ReleasePlanComponent implements OnChanges {
     return gameStatusLabel(this.statusOf(game));
   }
 
-  releaseLabel(game: Game): string {
-    const date = this.releaseDateOf(game);
-
-  if (Number.isNaN(date.getTime())) {
-      return 'No date';
-    }
-
-    return new Intl.DateTimeFormat('en', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
-  }
-
   remainingLabel(game: Game): string {
     return `${Math.round(this.remainingOf(game))}h left`;
   }
@@ -121,10 +93,6 @@ export class ReleasePlanComponent implements OnChanges {
     return game.id;
   }
 
-  trackByDay(_: number, day: CalendarDay): string {
-    return day.date.toISOString();
-  }
-
   private buildPlan() {
     this.playingGames = this.games
       .filter((game) => this.statusOf(game) === GameStatus.Playing)
@@ -139,13 +107,6 @@ export class ReleasePlanComponent implements OnChanges {
       .sort((a, b) => this.remainingOf(b) - this.remainingOf(a))
       .slice(0, 8);
 
-    const today = this.startOfToday();
-    this.upcomingReleases = this.games
-      .filter((game) => this.releaseDateOf(game) >= today)
-      .sort((a, b) => this.releaseDateOf(a).getTime() - this.releaseDateOf(b).getTime())
-      .slice(0, 8);
-
-    this.calendarDays = this.buildCalendarDays();
     this.buildMetrics();
   }
 
@@ -186,54 +147,11 @@ export class ReleasePlanComponent implements OnChanges {
     ];
   }
 
-  private buildCalendarDays(): CalendarDay[] {
-    const today = this.startOfToday();
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const calendarStart = new Date(monthStart);
-    calendarStart.setDate(monthStart.getDate() - monthStart.getDay());
-
-    this.monthLabel = new Intl.DateTimeFormat('en', {
-      month: 'long',
-      year: 'numeric',
-    }).format(today);
-
-    return Array.from({ length: 42 }, (_, index) => {
-      const date = new Date(calendarStart);
-      date.setDate(calendarStart.getDate() + index);
-
-      return {
-        label: date.getDate(),
-        date,
-        isToday: date.toDateString() === today.toDateString(),
-        isCurrentMonth: date.getMonth() === today.getMonth(),
-        releases: this.games.filter((game) => this.sameDay(this.releaseDateOf(game), date)).slice(0, 3),
-      };
-    });
-  }
-
-  private playedOf(game: Game): number {
-    return playedHoursOfGame(game);
-  }
-
   private remainingOf(game: Game): number {
     return remainingHoursOfGame(game);
   }
 
   private statusOf(game: Game): number {
     return gameStatusOf(game);
-  }
-
-  private releaseDateOf(game: Game): Date {
-    return releaseDateOfGame(game);
-  }
-
-  private sameDay(a: Date, b: Date): boolean {
-    return !Number.isNaN(a.getTime()) && a.toDateString() === b.toDateString();
-  }
-
-  private startOfToday(): Date {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
   }
 }

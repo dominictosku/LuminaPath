@@ -59,6 +59,12 @@
       [items]="recentItems">
     </app-dashboard-recent>
 
+    <app-release-calendar
+      class="dash-cell dash-cell--wide dashboard-release-calendar"
+      [games]="releasePlanGames"
+      [isLoading]="isLoading">
+    </app-release-calendar>
+
     <app-release-plan
       class="dash-cell dash-cell--wide dashboard-release-plan"
       [games]="releasePlanGames"

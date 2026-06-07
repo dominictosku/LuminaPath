@@ -51,6 +51,7 @@ import { DashboardActiveRailComponent } from '../components/dashboard-active-rai
 import { DashboardReleasesComponent } from '../components/dashboard-releases/dashboard-releases.component';
 import { DashboardBacklogComponent } from '../components/dashboard-backlog/dashboard-backlog.component';
 import { DashboardRecentComponent } from '../components/dashboard-recent/dashboard-recent.component';
+import { ReleaseCalendarComponent } from '../../release-calendar/components/release-calendar.component';
 import { ReleasePlanComponent } from '../../release-calendar/components/release-plan.component';
 
 /** Raw fetched data for the dashboard. Stored in RequestCache so repeat
@@ -103,6 +104,7 @@ function emptyPage<T>(): PaginateResult<T> {
     DashboardReleasesComponent,
     DashboardBacklogComponent,
     DashboardRecentComponent,
+    ReleaseCalendarComponent,
     ReleasePlanComponent,
   ],
 })
