@@ -1,4 +1,5 @@
 @inject AuditLogService AuditLogService
+@inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
 <section class="settings-panel settings-panel--primary audit-panel">
@@ -86,7 +87,7 @@
                     <MudTh>Target</MudTh>
                     <MudTh>Outcome</MudTh>
                     <MudTh>Request</MudTh>
-                    <MudTh>Details</MudTh>
+                    <MudTh>Actions</MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="Time">@context.TimestampUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</MudTd>
@@ -114,26 +115,14 @@
                             <small>@context.IpAddress</small>
                         </div>
                     </MudTd>
-                    <MudTd DataLabel="Details">
-                        <div class="audit-details">
-                            @if (!string.IsNullOrWhiteSpace(context.ErrorMessage))
-                            {
-                                <div class="audit-error">@context.ErrorMessage</div>
-                            }
-                            @if (!string.IsNullOrWhiteSpace(context.ChangesJson))
-                            {
-                                <details>
-                                    <summary>Changes</summary>
-                                    <pre>@context.ChangesJson</pre>
-                                </details>
-                            }
-                            @if (!string.IsNullOrWhiteSpace(context.MetadataJson))
-                            {
-                                <details>
-                                    <summary>Metadata</summary>
-                                    <pre>@context.MetadataJson</pre>
-                                </details>
-                            }
+                    <MudTd DataLabel="Actions">
+                        <div class="audit-actions">
+                            <MudTooltip Text="View details">
+                                <MudIconButton Icon="@Icons.Material.Filled.Info"
+                                               Color="Color.Primary"
+                                               Size="Size.Small"
+                                               OnClick="@(async () => await ShowAuditDetails(context))" />
+                            </MudTooltip>
                         </div>
                     </MudTd>
                 </RowTemplate>
@@ -336,12 +325,22 @@
         width: 220px;
     }
 
+    .audit-table th:nth-child(7),
+    .audit-table td:nth-child(7) {
+        width: 100px;
+    }
+
     .audit-event,
-    .audit-request,
-    .audit-details {
+    .audit-request {
         display: grid;
         gap: 4px;
         min-width: 0;
+    }
+
+    .audit-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .audit-actor,
@@ -355,38 +354,6 @@
     .audit-request small {
         overflow: hidden;
         text-overflow: ellipsis;
-    }
-
-    .audit-muted {
-        color: var(--mud-palette-text-secondary);
-        font-size: .8rem;
-    }
-
-    .audit-error {
-        color: var(--mud-palette-error);
-        max-width: 420px;
-    }
-
-    details {
-        width: min(100%, 520px);
-    }
-
-    summary {
-        width: fit-content;
-        cursor: pointer;
-        color: var(--mud-palette-primary);
-        font-size: .82rem;
-        font-weight: 800;
-    }
-
-    pre {
-        max-width: 520px;
-        white-space: pre-wrap;
-        word-break: break-word;
-        margin: 8px 0 0;
-        padding: 10px;
-        border-radius: 8px;
-        background: rgba(0, 0, 0, .18);
     }
 
     @@media (max-width: 900px) {
@@ -555,6 +522,16 @@
     private static Color OutcomeColor(string outcome)
     {
         return outcome == AuditOutcomes.Success ? Color.Success : Color.Error;
+    }
+
+    private async Task ShowAuditDetails(LuminaPath.Core.Models.AuditLog log)
+    {
+        var parameters = new DialogParameters<AuditLogDetailsDialog>
+        {
+            { x => x.Log, log }
+        };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        await DialogService.ShowAsync<AuditLogDetailsDialog>($"Audit event #{log.Id}", parameters, options);
     }
 
     private static string? EmptyToNull(string? value)

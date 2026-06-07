@@ -1,0 +1,180 @@
+@using System.Text.Json
+@using LuminaPath.Core.Enums
+@using LuminaPath.Core.Models
+
+<MudDialog>
+	<DialogContent>
+		<div class="audit-detail-dialog">
+			<div class="audit-detail-dialog__grid">
+				<div><span>Event</span><strong>#@Log.Id · @Log.Action</strong></div>
+				<div><span>Category</span><strong>@Log.Category</strong></div>
+				<div>
+					<span>Outcome</span>
+					<strong>
+						<MudChip T="string" Size="Size.Small" Color="@OutcomeColor(Log.Outcome)" Variant="Variant.Filled">@Log.Outcome</MudChip>
+					</strong>
+				</div>
+				<div><span>Time</span><strong>@FormatDate(Log.TimestampUtc)</strong></div>
+				<div><span>Actor</span><strong>@ActorLabel(Log)</strong></div>
+				<div><span>Actor ID</span><strong>@Dash(Log.ActorUserId)</strong></div>
+				<div><span>Target</span><strong>@(Log.TargetName ?? Log.TargetId ?? "-")</strong></div>
+				<div><span>Target type</span><strong>@Dash(Log.TargetType)</strong></div>
+				<div><span>Request</span><strong>@RequestLabel(Log)</strong></div>
+				<div><span>IP address</span><strong>@Dash(Log.IpAddress)</strong></div>
+				<div><span>Correlation ID</span><strong>@Dash(Log.CorrelationId)</strong></div>
+				<div><span>User agent</span><strong>@Dash(Log.UserAgent)</strong></div>
+			</div>
+
+			@if (!string.IsNullOrWhiteSpace(Log.ErrorMessage))
+			{
+				<section class="audit-detail-dialog__block audit-detail-dialog__block--error">
+					<MudText Typo="Typo.overline">Error</MudText>
+					<pre>@Log.ErrorMessage</pre>
+				</section>
+			}
+
+			@if (!string.IsNullOrWhiteSpace(Log.ChangesJson))
+			{
+				<section class="audit-detail-dialog__block">
+					<MudText Typo="Typo.overline">Changes</MudText>
+					<pre>@FormatJson(Log.ChangesJson)</pre>
+				</section>
+			}
+
+			@if (!string.IsNullOrWhiteSpace(Log.MetadataJson))
+			{
+				<section class="audit-detail-dialog__block">
+					<MudText Typo="Typo.overline">Metadata</MudText>
+					<pre>@FormatJson(Log.MetadataJson)</pre>
+				</section>
+			}
+		</div>
+	</DialogContent>
+	<DialogActions>
+		<MudButton OnClick="Close" Color="Color.Primary">Close</MudButton>
+	</DialogActions>
+</MudDialog>
+
+<style>
+	.audit-detail-dialog {
+		display: grid;
+		gap: 14px;
+		min-width: min(780px, 78vw);
+	}
+
+	.audit-detail-dialog__grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 10px;
+	}
+
+	.audit-detail-dialog__grid > div {
+		display: grid;
+		gap: 4px;
+		min-width: 0;
+		padding: 12px;
+		border: 1px solid rgba(59, 130, 246, .18);
+		border-radius: 10px;
+		background: rgba(255, 255, 255, .04);
+	}
+
+	.audit-detail-dialog__grid span,
+	.audit-detail-dialog__block .mud-typography-overline {
+		color: var(--mud-palette-text-secondary);
+		font-size: .75rem;
+		font-weight: 800;
+		text-transform: uppercase;
+	}
+
+	.audit-detail-dialog__grid strong {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+
+	.audit-detail-dialog__block {
+		display: grid;
+		gap: 8px;
+		min-width: 0;
+	}
+
+	.audit-detail-dialog__block--error pre {
+		border: 1px solid rgba(239, 68, 68, .28);
+		background: rgba(239, 68, 68, .08);
+		color: var(--mud-palette-error);
+	}
+
+	.audit-detail-dialog pre {
+		max-height: 280px;
+		margin: 0;
+		padding: 12px;
+		overflow: auto;
+		border-radius: 8px;
+		background: rgba(0, 0, 0, .22);
+		white-space: pre-wrap;
+		word-break: break-word;
+	}
+</style>
+
+@code {
+	private static readonly JsonSerializerOptions IndentedJsonOptions = new()
+	{
+		WriteIndented = true
+	};
+
+	[CascadingParameter]
+	private IMudDialogInstance MudDialog { get; set; } = default!;
+
+	[Parameter]
+	public AuditLog Log { get; set; } = default!;
+
+	private void Close()
+	{
+		MudDialog.Close();
+	}
+
+	private static string ActorLabel(AuditLog log)
+	{
+		return log.ActorEmail ?? log.ActorUserId ?? "Anonymous";
+	}
+
+	private static string RequestLabel(AuditLog log)
+	{
+		var label = string.Join(" ", new[] { log.HttpMethod, log.RequestPath }
+			.Where(value => !string.IsNullOrWhiteSpace(value)));
+
+		return string.IsNullOrWhiteSpace(label) ? "-" : label;
+	}
+
+	private static string Dash(string? value)
+	{
+		return string.IsNullOrWhiteSpace(value) ? "-" : value;
+	}
+
+	private static string FormatDate(DateTime date)
+	{
+		return date.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss");
+	}
+
+	private static Color OutcomeColor(string outcome)
+	{
+		return outcome == AuditOutcomes.Success ? Color.Success : Color.Error;
+	}
+
+	private static string FormatJson(string? value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+		{
+			return string.Empty;
+		}
+
+		try
+		{
+			using var document = JsonDocument.Parse(value);
+			return JsonSerializer.Serialize(document.RootElement, IndentedJsonOptions);
+		}
+		catch (JsonException)
+		{
+			return value;
+		}
+	}
+}
