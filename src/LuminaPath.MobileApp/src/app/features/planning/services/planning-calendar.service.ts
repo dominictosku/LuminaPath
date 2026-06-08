@@ -16,6 +16,7 @@ export type TimelineEvent = {
   subtitle: string;
   timeLabel: string;
   recurrence?: Quest['recurrence'] | null;
+  projected?: boolean;
   completed: boolean;
 };
 
@@ -134,6 +135,7 @@ export class PlanningCalendarService {
         subtitle: session.notes || this.formatDuration(session.durationMinutes),
         timeLabel: this.formatTime(session.scheduledAt),
         recurrence: null,
+        projected: false,
         completed: session.completed,
       });
     }
@@ -151,28 +153,134 @@ export class PlanningCalendarService {
         subtitle: 'Release',
         timeLabel: 'Release',
         recurrence: null,
+        projected: false,
         completed: releaseDate < this.startOfToday(),
       });
     }
 
     for (const quest of input.quests) {
-      const dueDate = this.validDate(quest.dueDate);
-      if (!dueDate || !this.sameDay(dueDate, date)) {
-        continue;
+      const questDate = this.validDate(quest.dueDate) ?? this.validDate(quest.scheduledStartAt);
+      if (questDate && this.sameDay(questDate, date)) {
+        events.push({
+          id: `quest-${quest.id}`,
+          sourceId: quest.id,
+          kind: 'quest',
+          title: quest.title,
+          subtitle: quest.gameName ?? quest.skillName ?? this.questPriorityLabel(quest.priority),
+          timeLabel: quest.completed ? 'Done' : quest.scheduledStartAt ? this.formatTime(quest.scheduledStartAt) : this.questPriorityLabel(quest.priority),
+          recurrence: quest.recurrence,
+          projected: false,
+          completed: quest.completed,
+        });
       }
-      events.push({
-        id: `quest-${quest.id}`,
-        sourceId: quest.id,
-        kind: 'quest',
-        title: quest.title,
-        subtitle: quest.gameName ?? quest.skillName ?? this.questPriorityLabel(quest.priority),
-        timeLabel: quest.completed ? 'Done' : quest.scheduledStartAt ? this.formatTime(quest.scheduledStartAt) : this.questPriorityLabel(quest.priority),
-        recurrence: quest.recurrence,
-        completed: quest.completed,
-      });
+
+      const projected = this.projectedQuestOccurrenceForDay(quest, date);
+      if (projected) {
+        events.push({
+          id: `quest-${quest.id}-projected-${this.dateKey(date)}`,
+          sourceId: quest.id,
+          kind: 'quest',
+          title: quest.title,
+          subtitle: 'Projected repeat',
+          timeLabel: this.formatTime(projected.start.toISOString()),
+          recurrence: quest.recurrence,
+          projected: true,
+          completed: false,
+        });
+      }
     }
 
     return events.sort((a, b) => this.eventRank(a) - this.eventRank(b) || a.title.localeCompare(b.title));
+  }
+
+  private projectedQuestOccurrenceForDay(quest: Quest, day: Date): { start: Date; end: Date } | null {
+    if (!this.hasRecurrence(quest.recurrence) || quest.completed || !quest.scheduledStartAt || !quest.scheduledEndAt) {
+      return null;
+    }
+
+    const sourceStart = new Date(quest.scheduledStartAt);
+    const sourceEnd = new Date(quest.scheduledEndAt);
+    if (Number.isNaN(sourceStart.getTime()) || Number.isNaN(sourceEnd.getTime())) {
+      return null;
+    }
+
+    if (this.sameDay(sourceStart, day) || startOfDay(day) < startOfDay(sourceStart)) {
+      return null;
+    }
+
+    const projectedStart = this.projectedOccurrenceStartForDay(sourceStart, quest.recurrence, day);
+    const durationMs = sourceEnd.getTime() - sourceStart.getTime();
+    if (!projectedStart || durationMs <= 0) {
+      return null;
+    }
+
+    return {
+      start: projectedStart,
+      end: new Date(projectedStart.getTime() + durationMs),
+    };
+  }
+
+  private projectedOccurrenceStartForDay(sourceStart: Date, recurrence: Quest['recurrence'], day: Date): Date | null {
+    const sourceDay = startOfDay(sourceStart);
+    const targetDay = startOfDay(day);
+    if (targetDay <= sourceDay) {
+      return null;
+    }
+
+    if (recurrence === 'daily') {
+      return this.dateAtMinutes(targetDay, this.minutesSinceDayStart(sourceStart));
+    }
+
+    if (recurrence === 'weekly') {
+      const dayDifference = Math.round((targetDay.getTime() - sourceDay.getTime()) / 86_400_000);
+      return dayDifference % 7 === 0
+        ? this.dateAtMinutes(targetDay, this.minutesSinceDayStart(sourceStart))
+        : null;
+    }
+
+    if (recurrence !== 'monthly') {
+      return null;
+    }
+
+    let candidate = new Date(sourceStart);
+    for (let index = 0; index < 240 && startOfDay(candidate) <= targetDay; index += 1) {
+      candidate = this.addMonthsClamped(candidate, 1);
+      if (this.sameDay(candidate, targetDay)) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  private hasRecurrence(recurrence: Quest['recurrence'] | null | undefined): boolean {
+    return Boolean(recurrence && recurrence !== 'none');
+  }
+
+  private dateAtMinutes(day: Date, minutes: number): Date {
+    const date = startOfDay(day);
+    date.setMinutes(minutes);
+    return date;
+  }
+
+  private minutesSinceDayStart(value: Date): number {
+    return value.getHours() * 60 + value.getMinutes();
+  }
+
+  private addMonthsClamped(value: Date, months: number): Date {
+    const year = value.getFullYear();
+    const month = value.getMonth() + months;
+    const day = value.getDate();
+    const lastDayOfTargetMonth = new Date(year, month + 1, 0).getDate();
+    return new Date(
+      year,
+      month,
+      Math.min(day, lastDayOfTargetMonth),
+      value.getHours(),
+      value.getMinutes(),
+      value.getSeconds(),
+      value.getMilliseconds(),
+    );
   }
 
   private eventRank(event: TimelineEvent): number {

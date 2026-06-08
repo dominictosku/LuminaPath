@@ -208,9 +208,10 @@
                         <article
                           class="schedule-block"
                           [class.schedule-block--session]="block.kind === 'session'"
+                          [class.schedule-block--projected]="block.projected"
                           [class.schedule-block--done]="block.completed"
                           [class.schedule-block--dragging]="isDraggingItem(block.id)"
-                          draggable="true"
+                          [attr.draggable]="block.projected ? 'false' : 'true'"
                           [style.--block-color]="block.color"
                           [style.top.px]="blockTop(block)"
                           [style.height.px]="blockHeight(block)"
@@ -302,6 +303,7 @@
                         [class.overview-event--session]="event.kind === 'session'"
                         [class.overview-event--release]="event.kind === 'release'"
                         [class.overview-event--quest]="event.kind === 'quest'"
+                        [class.overview-event--projected]="event.projected"
                         [class.overview-event--done]="event.completed"
                         (click)="openOverviewEvent(event, day, $event)">
                         <ion-icon [name]="overviewEventIcon(event.kind)"></ion-icon>

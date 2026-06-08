@@ -90,6 +90,71 @@ describe('PlanningCalendarService', () => {
     expect(calendar.days[0].key).toBe('2026-06-01');
   });
 
+  it('projects open recurring quests into future visible days', () => {
+    const calendar = service.build({
+      mode: 'week',
+      anchor: new Date(2026, 5, 11),
+      sessions: [],
+      games: [],
+      quests: [
+        makeQuest({
+          id: 7,
+          title: 'Weekly reset',
+          recurrence: 'weekly',
+          dueDate: '2026-06-04T00:00:00.000Z',
+          scheduledStartAt: '2026-06-04T18:30:00.000Z',
+          scheduledEndAt: '2026-06-04T19:30:00.000Z',
+        }),
+        makeQuest({
+          id: 8,
+          title: 'Completed loop',
+          completed: true,
+          recurrence: 'daily',
+          dueDate: '2026-06-09T00:00:00.000Z',
+          scheduledStartAt: '2026-06-09T18:30:00.000Z',
+          scheduledEndAt: '2026-06-09T19:30:00.000Z',
+        }),
+      ],
+    });
+
+    const projectedDay = calendar.days.find((item) => item.key === '2026-06-11');
+    const projectedEvent = projectedDay?.events.find((event) => event.id === 'quest-7-projected-2026-06-11');
+    expect(projectedEvent).toEqual(jasmine.objectContaining({
+      id: 'quest-7-projected-2026-06-11',
+      sourceId: 7,
+      projected: true,
+      recurrence: 'weekly',
+      subtitle: 'Projected repeat',
+    }));
+    expect(calendar.days.flatMap((day) => day.events).some((event) => event.sourceId === 8 && event.projected)).toBeFalse();
+  });
+
+  it('clamps monthly projected quests to the target month length', () => {
+    const calendar = service.build({
+      mode: 'month',
+      anchor: new Date(2026, 1, 15),
+      sessions: [],
+      games: [],
+      quests: [
+        makeQuest({
+          id: 9,
+          title: 'Month end reset',
+          recurrence: 'monthly',
+          dueDate: '2026-01-31T00:00:00.000Z',
+          scheduledStartAt: '2026-01-31T18:00:00.000Z',
+          scheduledEndAt: '2026-01-31T19:00:00.000Z',
+        }),
+      ],
+    });
+
+    const projectedDay = calendar.days.find((item) => item.key === '2026-02-28');
+    expect(projectedDay?.events.find((event) => event.sourceId === 9)).toEqual(jasmine.objectContaining({
+      id: 'quest-9-projected-2026-02-28',
+      projected: true,
+      recurrence: 'monthly',
+    }));
+  });
+
   it('groups sessions by local day and keeps buckets sorted', () => {
     const buckets = service.groupSessionsByDay([
       makeSession({ id: 2, scheduledAt: '2026-06-05T20:00:00.000Z' }),

@@ -640,6 +640,11 @@
   color: #c4b5fd;
 }
 
+.overview-event--projected {
+  border-style: dashed;
+  background: rgba(124, 58, 237, 0.08);
+}
+
 .overview-event--release {
   border-color: rgba(245, 158, 11, 0.22);
 }
@@ -882,6 +887,20 @@
 
 .schedule-block--session {
   border-style: dashed;
+}
+
+.schedule-block--projected {
+  border-style: dashed;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--block-color) 40%, #111827), rgba(8, 13, 24, 0.9));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--block-color) 24%, transparent),
+    0 12px 24px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
+.schedule-block--projected:active {
+  cursor: pointer;
 }
 
 .schedule-block--done {

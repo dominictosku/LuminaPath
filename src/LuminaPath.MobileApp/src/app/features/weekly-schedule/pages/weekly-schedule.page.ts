@@ -4,6 +4,7 @@ import { IonContent, IonIcon, IonSegment, IonSegmentButton, IonSpinner } from '@
 import { firstValueFrom } from 'rxjs';
 
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
+import { startOfDay } from 'src/app/shared/utils/date-helpers';
 import { Game, MyGame } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { MyGameService } from '../../my-games/services/my-game.service';
@@ -462,7 +463,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
 
   protected openQuest(block: WeekScheduleBlock): void {
     if (block.kind !== 'quest') return;
-    const questId = Number(block.id.replace('quest-', ''));
+    const questId = block.sourceId ?? Number(block.id.replace('quest-', ''));
     this.openQuestById(questId);
   }
 
@@ -736,6 +737,11 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   }
 
   protected dragBlock(event: DragEvent, block: WeekScheduleBlock): void {
+    if (block.projected) {
+      event.preventDefault();
+      return;
+    }
+
     if (block.kind === 'quest') {
       const questId = Number(block.id.replace('quest-', ''));
       this.beginDrag(event, { type: 'quest', questId }, this.previewFromBlock(block, 'Move quest'));
@@ -1127,22 +1133,41 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
 
     if (this.groupVisibility.quests) {
       for (const quest of this.quests) {
-        if (!this.isScheduledQuest(quest) || dateKey(new Date(quest.scheduledStartAt!)) !== day.key) {
-          continue;
+        if (this.isScheduledQuest(quest) && dateKey(new Date(quest.scheduledStartAt!)) === day.key) {
+          blocks.push({
+            id: `quest-${quest.id}`,
+            sourceId: quest.id,
+            kind: 'quest',
+            title: quest.title,
+            subtitle: quest.gameName ?? quest.folderName ?? priorityLabel(quest.priority),
+            startAt: quest.scheduledStartAt!,
+            endAt: quest.scheduledEndAt!,
+            color: this.folderColor(quest.folderId),
+            recurrence: quest.recurrence,
+            completed: quest.completed,
+            lane: 0,
+            laneCount: 1,
+          });
         }
-        blocks.push({
-          id: `quest-${quest.id}`,
-          kind: 'quest',
-          title: quest.title,
-          subtitle: quest.gameName ?? quest.folderName ?? priorityLabel(quest.priority),
-          startAt: quest.scheduledStartAt!,
-          endAt: quest.scheduledEndAt!,
-          color: this.folderColor(quest.folderId),
-          recurrence: quest.recurrence,
-          completed: quest.completed,
-          lane: 0,
-          laneCount: 1,
-        });
+
+        const projected = this.projectedQuestOccurrenceForDay(quest, day.date);
+        if (projected) {
+          blocks.push({
+            id: `quest-${quest.id}-projected-${day.key}`,
+            sourceId: quest.id,
+            kind: 'quest',
+            title: quest.title,
+            subtitle: 'Projected repeat',
+            startAt: projected.start.toISOString(),
+            endAt: projected.end.toISOString(),
+            color: this.folderColor(quest.folderId),
+            recurrence: quest.recurrence,
+            projected: true,
+            completed: false,
+            lane: 0,
+            laneCount: 1,
+          });
+        }
       }
     }
 
@@ -1170,6 +1195,71 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     }
 
     return blocks;
+  }
+
+  private projectedQuestOccurrenceForDay(quest: Quest, day: Date): { start: Date; end: Date } | null {
+    if (!this.hasRecurrence(quest.recurrence) || quest.completed || !quest.scheduledStartAt || !quest.scheduledEndAt) {
+      return null;
+    }
+
+    const sourceStart = new Date(quest.scheduledStartAt);
+    const sourceEnd = new Date(quest.scheduledEndAt);
+    if (Number.isNaN(sourceStart.getTime()) || Number.isNaN(sourceEnd.getTime())) {
+      return null;
+    }
+
+    const dayKey = dateKey(day);
+    if (dayKey === dateKey(sourceStart) || startOfDay(day) < startOfDay(sourceStart)) {
+      return null;
+    }
+
+    const projectedStart = this.projectedOccurrenceStartForDay(sourceStart, quest.recurrence, day);
+    if (!projectedStart) {
+      return null;
+    }
+
+    const durationMs = sourceEnd.getTime() - sourceStart.getTime();
+    if (durationMs <= 0) {
+      return null;
+    }
+
+    return {
+      start: projectedStart,
+      end: new Date(projectedStart.getTime() + durationMs),
+    };
+  }
+
+  private projectedOccurrenceStartForDay(sourceStart: Date, recurrence: QuestRecurrence, day: Date): Date | null {
+    const sourceDay = startOfDay(sourceStart);
+    const targetDay = startOfDay(day);
+    if (targetDay <= sourceDay) {
+      return null;
+    }
+
+    if (recurrence === 'daily') {
+      return dateAtMinutes(targetDay, minutesSinceDayStart(sourceStart));
+    }
+
+    if (recurrence === 'weekly') {
+      const dayDifference = Math.round((targetDay.getTime() - sourceDay.getTime()) / 86_400_000);
+      return dayDifference % 7 === 0
+        ? dateAtMinutes(targetDay, minutesSinceDayStart(sourceStart))
+        : null;
+    }
+
+    if (recurrence !== 'monthly') {
+      return null;
+    }
+
+    let candidate = new Date(sourceStart);
+    for (let index = 0; index < 240 && startOfDay(candidate) <= targetDay; index += 1) {
+      candidate = this.shiftForRecurrence(candidate, 'monthly');
+      if (dateKey(candidate) === dateKey(targetDay)) {
+        return candidate;
+      }
+    }
+
+    return null;
   }
 
   private async scheduleQuestAt(quest: Quest, day: Date, minutes: number): Promise<void> {
@@ -1328,9 +1418,25 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     } else if (recurrence === 'weekly') {
       next.setDate(next.getDate() + 7);
     } else if (recurrence === 'monthly') {
-      next.setMonth(next.getMonth() + 1);
+      return this.addMonthsClamped(value, 1);
     }
     return next;
+  }
+
+  private addMonthsClamped(value: Date, months: number): Date {
+    const year = value.getFullYear();
+    const month = value.getMonth() + months;
+    const day = value.getDate();
+    const lastDayOfTargetMonth = new Date(year, month + 1, 0).getDate();
+    return new Date(
+      year,
+      month,
+      Math.min(day, lastDayOfTargetMonth),
+      value.getHours(),
+      value.getMinutes(),
+      value.getSeconds(),
+      value.getMilliseconds(),
+    );
   }
 
   private formatDateTime(value: Date): string {

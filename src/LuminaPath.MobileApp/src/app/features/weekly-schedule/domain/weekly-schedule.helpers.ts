@@ -16,6 +16,7 @@ export type WeekScheduleDay = {
 
 export type WeekScheduleBlock = {
   id: string;
+  sourceId?: number;
   kind: 'quest' | 'session';
   title: string;
   subtitle: string;
@@ -23,6 +24,7 @@ export type WeekScheduleBlock = {
   endAt: string;
   color: string;
   recurrence?: 'none' | 'daily' | 'weekly' | 'monthly';
+  projected?: boolean;
   completed: boolean;
   lane: number;
   laneCount: number;
