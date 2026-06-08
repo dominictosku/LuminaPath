@@ -4,7 +4,7 @@ import { IonContent, IonIcon, IonSegment, IonSegmentButton, IonSpinner } from '@
 import { firstValueFrom } from 'rxjs';
 
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
-import { Game, MyGame } from '../../games/models/games.model';
+import { Game } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { MyGameService } from '../../my-games/services/my-game.service';
 import { QuestBoardService } from '../../quests/services/quest-board.service';
@@ -14,7 +14,6 @@ import type {
   QuestMutationResult,
   QuestPriority,
   QuestRecurrence,
-  QuestType,
 } from '../../quests/services/quest-board.service';
 import { GamingSession, GamingSessionService } from '../../planning/services/gaming-session.service';
 import {
@@ -54,6 +53,19 @@ import {
   isScheduledQuest,
   type WeeklyScheduleCalendarGroupId,
 } from '../domain/weekly-schedule.builder';
+import {
+  clampedDuration,
+  combineDateTime,
+  createQuestDraftForSlot,
+  editQuestDraftForQuest,
+  questDraftRange,
+  questDurationMinutes,
+  sessionDraftForSession,
+  toLibraryGame,
+  type LibraryGameOption,
+  type QuestScheduleDraft,
+  type SessionScheduleDraft,
+} from '../domain/weekly-schedule.drafts';
 
 type CalendarGroupId = WeeklyScheduleCalendarGroupId;
 type ScheduleViewMode = 'planner' | 'overview';
@@ -70,41 +82,10 @@ type SlotActionDraft = {
   quest: Quest | null;
 };
 
-type LibraryGameOption = {
-  myGameId: number;
-  gameName: string;
-  playtime: number | null;
-};
-
 type SidebarQuestGroup = {
   key: string;
   folder: QuestFolder | null;
   quests: Quest[];
-};
-
-type QuestScheduleDraft = {
-  mode: 'create' | 'edit';
-  questId: number | null;
-  title: string;
-  notes: string;
-  type: QuestType;
-  priority: QuestPriority;
-  recurrence: QuestRecurrence;
-  scheduledDate: string;
-  startTime: string;
-  endTime: string;
-  folderId: number | null;
-  myGameId: number | null;
-};
-
-type SessionScheduleDraft = {
-  sessionId: number;
-  myGameId: number | null;
-  scheduledDate: string;
-  startTime: string;
-  durationMinutes: number;
-  notes: string;
-  completed: boolean;
 };
 
 type DragPayload =
@@ -248,7 +229,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       if (library) {
         const [myGames, games] = library;
         this.games = (myGames.data ?? [])
-          .map((item) => this.toLibraryGame(item))
+          .map(toLibraryGame)
           .filter((item): item is LibraryGameOption => item !== null)
           .sort((a, b) => a.gameName.localeCompare(b.gameName));
         this.allGames = games.data ?? [];
@@ -404,26 +385,11 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   }
 
   protected openCreateQuest(day: WeekScheduleDay, minutes: number): void {
-    const start = dateAtMinutes(day.date, minutes);
-    const endMinutes = this.clampedEndMinutes(minutes, 60);
     const selectedGame = this.pendingGameId == null
       ? null
       : this.games.find((game) => game.myGameId === this.pendingGameId) ?? null;
 
-    this.draft = {
-      mode: 'create',
-      questId: null,
-      title: selectedGame ? `Play ${selectedGame.gameName}` : '',
-      notes: '',
-      type: 'sub',
-      priority: 'medium',
-      recurrence: 'none',
-      scheduledDate: dateKey(start),
-      startTime: timeLabelFromMinutes(minutes),
-      endTime: timeLabelFromMinutes(endMinutes),
-      folderId: null,
-      myGameId: selectedGame?.myGameId ?? null,
-    };
+    this.draft = createQuestDraftForSlot(day, minutes, selectedGame);
     this.sessionDraft = null;
     this.slotActionDraft = null;
     this.draftError = '';
@@ -494,7 +460,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       return;
     }
 
-    const range = this.draftRange(this.draft);
+    const range = questDraftRange(this.draft);
     if (!range) {
       this.draftError = 'Pick a valid time range.';
       return;
@@ -609,27 +575,9 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     const quest = this.quests.find((item) => item.id === questId);
     if (!quest) return;
 
-    const fallbackDate = quest.dueDate ? new Date(quest.dueDate) : new Date();
-    const start = quest.scheduledStartAt ? new Date(quest.scheduledStartAt) : dateAtMinutes(fallbackDate, this.defaultCalendarStartMinutes);
-    const end = quest.scheduledEndAt ? new Date(quest.scheduledEndAt) : new Date(start);
-    if (!quest.scheduledEndAt) {
-      end.setMinutes(start.getMinutes() + 60);
-    }
-
-    this.draft = {
-      mode: 'edit',
-      questId: quest.id,
-      title: quest.title,
-      notes: quest.notes ?? '',
-      type: quest.type,
-      priority: quest.priority,
-      recurrence: quest.recurrence,
-      scheduledDate: dateKey(start),
-      startTime: timeLabelFromMinutes(minutesSinceDayStart(start)),
-      endTime: timeLabelFromMinutes(minutesSinceDayStart(end)),
-      folderId: quest.folderId ?? null,
-      myGameId: quest.myGameId ?? null,
-    };
+    this.draft = editQuestDraftForQuest(quest, {
+      defaultStartMinutes: this.defaultCalendarStartMinutes,
+    });
     this.sessionDraft = null;
     this.slotActionDraft = null;
     this.draftError = '';
@@ -640,16 +588,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       ?? this.overviewSessions.find((item) => item.id === sessionId);
     if (!session) return;
 
-    const start = new Date(session.scheduledAt);
-    this.sessionDraft = {
-      sessionId: session.id,
-      myGameId: session.myGameId ?? null,
-      scheduledDate: dateKey(start),
-      startTime: timeLabelFromMinutes(minutesSinceDayStart(start)),
-      durationMinutes: session.durationMinutes,
-      notes: session.notes ?? '',
-      completed: session.completed,
-    };
+    this.sessionDraft = sessionDraftForSession(session);
     this.draft = null;
     this.slotActionDraft = null;
     this.sessionDraftError = '';
@@ -659,7 +598,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     if (!this.sessionDraft || this.isSaving) return;
     const draft = this.sessionDraft;
 
-    const scheduledAt = this.combineDateTime(draft.scheduledDate, draft.startTime);
+    const scheduledAt = combineDateTime(draft.scheduledDate, draft.startTime);
     if (!scheduledAt || draft.durationMinutes <= 0) {
       this.sessionDraftError = 'Pick a valid date, time, and duration.';
       return;
@@ -971,7 +910,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       return '';
     }
 
-    const start = this.combineDateTime(draft.scheduledDate, draft.startTime);
+    const start = combineDateTime(draft.scheduledDate, draft.startTime);
     if (!start) {
       return `${this.recurrenceLabel(draft.recurrence)} repeat`;
     }
@@ -1134,7 +1073,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   private async scheduleQuestAt(quest: Quest, day: Date, minutes: number): Promise<void> {
     const start = dateAtMinutes(day, minutes);
     const end = new Date(start);
-    end.setMinutes(start.getMinutes() + this.clampedDuration(minutes, this.questDurationMinutes(quest)));
+    end.setMinutes(start.getMinutes() + clampedDuration(minutes, questDurationMinutes(quest)));
     const previousQuests = this.quests;
     this.upsertQuest({
       ...quest,
@@ -1159,7 +1098,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
 
   private async createSessionAt(myGameId: number | null, day: Date, minutes: number): Promise<void> {
     const start = dateAtMinutes(day, minutes);
-    const durationMinutes = this.clampedDuration(minutes, 90);
+    const durationMinutes = clampedDuration(minutes, 90);
     try {
       const created = await firstValueFrom(this.sessionService.create({
         myGameId,
@@ -1176,7 +1115,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
 
   private async rescheduleSessionAt(session: GamingSession, day: Date, minutes: number): Promise<void> {
     const start = dateAtMinutes(day, minutes);
-    const durationMinutes = this.clampedDuration(minutes, session.durationMinutes);
+    const durationMinutes = clampedDuration(minutes, session.durationMinutes);
     const previousSessions = this.sessions;
     const previousOverviewSessions = this.overviewSessions;
     this.upsertSession({
@@ -1261,25 +1200,6 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     return { from, to };
   }
 
-  private questDurationMinutes(quest: Quest): number {
-    if (!quest.scheduledStartAt || !quest.scheduledEndAt) {
-      return 60;
-    }
-    const start = new Date(quest.scheduledStartAt).getTime();
-    const end = new Date(quest.scheduledEndAt).getTime();
-    const minutes = Math.round((end - start) / 60_000);
-    return Number.isFinite(minutes) && minutes > 0 ? minutes : 60;
-  }
-
-  private clampedDuration(startMinutes: number, requestedMinutes: number): number {
-    const remainingMinutes = WEEK_END_HOUR * 60 - startMinutes;
-    return Math.max(SLOT_MINUTES, Math.min(requestedMinutes, remainingMinutes));
-  }
-
-  private clampedEndMinutes(startMinutes: number, requestedMinutes: number): number {
-    return Math.min(startMinutes + this.clampedDuration(startMinutes, requestedMinutes), WEEK_END_HOUR * 60 - 1);
-  }
-
   private formatDateTime(value: Date): string {
     return new Intl.DateTimeFormat('en', {
       weekday: 'short',
@@ -1290,40 +1210,9 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     }).format(value);
   }
 
-  private draftRange(draft: QuestScheduleDraft): { start: Date; end: Date } | null {
-    const start = this.combineDateTime(draft.scheduledDate, draft.startTime);
-    const end = this.combineDateTime(draft.scheduledDate, draft.endTime);
-    if (!start || !end || end <= start) {
-      return null;
-    }
-    return { start, end };
-  }
-
-  private combineDateTime(dateValue: string, timeValue: string): Date | null {
-    const [year, month, day] = dateValue.split('-').map(Number);
-    const [hour, minute] = timeValue.split(':').map(Number);
-    if ([year, month, day, hour, minute].some((value) => !Number.isFinite(value))) {
-      return null;
-    }
-    return new Date(year, month - 1, day, hour, minute, 0, 0);
-  }
-
   private questSortKey(quest: Quest): string {
     const schedule = quest.scheduledStartAt ?? quest.dueDate ?? '9999';
     return `${schedule}|${quest.sortOrder.toString().padStart(5, '0')}|${quest.title.toLowerCase()}`;
-  }
-
-  private toLibraryGame(myGame: MyGame): LibraryGameOption | null {
-    const gameName = myGame.game?.name;
-    if (!gameName) {
-      return null;
-    }
-
-    return {
-      myGameId: myGame.id,
-      gameName,
-      playtime: myGame.game?.playtime ?? null,
-    };
   }
 
   private libraryFilter(): MediaFilter {
