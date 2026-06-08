@@ -12,7 +12,6 @@ import type {
   Quest,
   QuestFolder,
   QuestMutationResult,
-  QuestPriority,
   QuestRecurrence,
 } from '../../quests/services/quest-board.service';
 import { GamingSession, GamingSessionService } from '../../planning/services/gaming-session.service';
@@ -66,6 +65,20 @@ import {
   type SessionScheduleDraft,
 } from '../domain/weekly-schedule.drafts';
 import {
+  blockDragPayload,
+  blockDragPreview,
+  dragData,
+  dragId,
+  dragPreviewTransform as formatDragPreviewTransform,
+  gameDragPayload,
+  gameDragPreview,
+  questDragPayload,
+  questDragPreview,
+  type DragPayload,
+  type DragPreview,
+  type DragPreviewContent,
+} from '../domain/weekly-schedule.drag';
+import {
   buildSidebarQuestGroups,
   cloneSessionWindow,
   expandedSessionWindow,
@@ -90,21 +103,6 @@ type SlotActionDraft = {
   minutes: number;
   game: LibraryGameOption | null;
   quest: Quest | null;
-};
-
-type DragPayload =
-  | { type: 'quest'; questId: number }
-  | { type: 'game'; myGameId: number }
-  | { type: 'session'; sessionId: number };
-
-type DragPreview = {
-  kind: 'quest' | 'game' | 'session';
-  title: string;
-  subtitle: string;
-  action: string;
-  color: string;
-  x: number;
-  y: number;
 };
 
 @Component({
@@ -640,23 +638,11 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   }
 
   protected dragQuest(event: DragEvent, quest: Quest): void {
-    this.beginDrag(event, { type: 'quest', questId: quest.id }, {
-      kind: 'quest',
-      title: quest.title,
-      subtitle: quest.gameName ?? quest.folderName ?? priorityLabel(quest.priority),
-      action: quest.scheduledStartAt ? 'Move quest' : 'Schedule quest',
-      color: this.folderColor(quest.folderId),
-    });
+    this.beginDrag(event, questDragPayload(quest), questDragPreview(quest, this.folderColor(quest.folderId)));
   }
 
   protected dragGame(event: DragEvent, game: LibraryGameOption): void {
-    this.beginDrag(event, { type: 'game', myGameId: game.myGameId }, {
-      kind: 'game',
-      title: game.gameName,
-      subtitle: game.playtime ? `${game.playtime}h estimate` : 'Library game',
-      action: 'Plan session',
-      color: '#06b6d4',
-    });
+    this.beginDrag(event, gameDragPayload(game), gameDragPreview(game));
   }
 
   protected dragBlock(event: DragEvent, block: WeekScheduleBlock): void {
@@ -665,13 +651,9 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       return;
     }
 
-    if (block.kind === 'quest') {
-      const questId = Number(block.id.replace('quest-', ''));
-      this.beginDrag(event, { type: 'quest', questId }, this.previewFromBlock(block, 'Move quest'));
-    } else {
-      const sessionId = Number(block.id.replace('session-', ''));
-      this.beginDrag(event, { type: 'session', sessionId }, this.previewFromBlock(block, 'Move session'));
-    }
+    const payload = blockDragPayload(block);
+    if (!payload) return;
+    this.beginDrag(event, payload, blockDragPreview(block, block.kind === 'quest' ? 'Move quest' : 'Move session'));
   }
 
   protected endDrag(): void {
@@ -730,20 +712,16 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   }
 
   protected dragPreviewTransform(): string {
-    if (!this.dragPreview) {
-      return 'translate3d(0, 0, 0)';
-    }
-
-    return `translate3d(${this.dragPreview.x + 18}px, ${this.dragPreview.y + 18}px, 0)`;
+    return formatDragPreviewTransform(this.dragPreview);
   }
 
   private beginDrag(
     event: DragEvent,
     payload: DragPayload,
-    preview: Omit<DragPreview, 'x' | 'y'>,
+    preview: DragPreviewContent,
   ): void {
     this.dragged = payload;
-    this.draggingId = this.dragId(payload);
+    this.draggingId = dragId(payload);
     this.activeDropKey = null;
     this.dragPreview = {
       ...preview,
@@ -753,7 +731,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
 
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = payload.type === 'game' ? 'copy' : 'move';
-      event.dataTransfer.setData('text/plain', this.dragData(payload));
+      event.dataTransfer.setData('text/plain', dragData(payload));
       this.setTransparentDragImage(event.dataTransfer);
     }
   }
@@ -784,40 +762,6 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     }
 
     dataTransfer.setDragImage(this.transparentDragImage, 0, 0);
-  }
-
-  private dragId(payload: DragPayload): string {
-    if (payload.type === 'quest') {
-      return `quest-${payload.questId}`;
-    }
-
-    if (payload.type === 'session') {
-      return `session-${payload.sessionId}`;
-    }
-
-    return `game-${payload.myGameId}`;
-  }
-
-  private dragData(payload: DragPayload): string {
-    if (payload.type === 'quest') {
-      return `quest:${payload.questId}`;
-    }
-
-    if (payload.type === 'session') {
-      return `session:${payload.sessionId}`;
-    }
-
-    return `game:${payload.myGameId}`;
-  }
-
-  private previewFromBlock(block: WeekScheduleBlock, action: string): Omit<DragPreview, 'x' | 'y'> {
-    return {
-      kind: block.kind,
-      title: block.title,
-      subtitle: `${formatTimeRange(block.startAt, block.endAt)}${block.subtitle ? ` · ${block.subtitle}` : ''}`,
-      action,
-      color: block.color,
-    };
   }
 
   protected blockTop(block: WeekScheduleBlock): number {
@@ -1191,12 +1135,4 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       .formatToParts(new Date())
       .find((part) => part.type === 'timeZoneName')?.value ?? 'Local';
   }
-}
-
-function priorityLabel(priority: QuestPriority): string {
-  return priority === 'high'
-    ? 'High priority'
-    : priority === 'low'
-      ? 'Low priority'
-      : 'Medium priority';
 }
