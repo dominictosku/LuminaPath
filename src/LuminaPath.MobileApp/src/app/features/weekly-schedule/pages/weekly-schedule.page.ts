@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonIcon, IonSegment, IonSegmentButton, IonSpinner } from '@ionic/angular/standalone';
 import { firstValueFrom } from 'rxjs';
@@ -114,7 +114,7 @@ type DragPreview = {
     IonSpinner,
   ],
 })
-export class WeeklySchedulePage implements OnInit {
+export class WeeklySchedulePage implements OnInit, AfterViewInit {
   private questService = inject(QuestBoardService);
   private gameService = inject(GameService);
   private myGameService = inject(MyGameService);
@@ -171,13 +171,21 @@ export class WeeklySchedulePage implements OnInit {
   private draggingId: string | null = null;
   private transparentDragImage: HTMLCanvasElement | null = null;
   private readonly overviewCachePaddingDays = 42;
+  private readonly defaultCalendarStartMinutes = 6 * 60;
+  private calendarAutoScrollQueued = false;
   protected blocksByDay = new Map<string, WeekScheduleBlock[]>();
 
+  @ViewChild('calendarScroll') private calendarScroll?: ElementRef<HTMLElement>;
+
   async ngOnInit(): Promise<void> {
-    await this.load();
+    await this.load({ autoScrollCalendar: true });
   }
 
-  protected async load(): Promise<void> {
+  ngAfterViewInit(): void {
+    this.queueCalendarAutoScroll();
+  }
+
+  protected async load(options: { autoScrollCalendar?: boolean } = {}): Promise<void> {
     this.isLoading = true;
     this.errorMessage = '';
     try {
@@ -209,17 +217,20 @@ export class WeeklySchedulePage implements OnInit {
       this.errorMessage = 'Weekly schedule could not be loaded.';
     } finally {
       this.isLoading = false;
+      if (options.autoScrollCalendar) {
+        this.queueCalendarAutoScroll();
+      }
     }
   }
 
   protected async shift(direction: -1 | 1): Promise<void> {
     this.weekAnchor = shiftWeek(this.weekAnchor, direction);
-    await this.load();
+    await this.load({ autoScrollCalendar: true });
   }
 
   protected async today(): Promise<void> {
     this.weekAnchor = startOfWeek(new Date());
-    await this.load();
+    await this.load({ autoScrollCalendar: true });
   }
 
   protected async setViewMode(mode: ScheduleViewMode): Promise<void> {
@@ -228,6 +239,9 @@ export class WeeklySchedulePage implements OnInit {
     }
 
     this.viewMode = mode;
+    if (mode === 'planner') {
+      this.queueCalendarAutoScroll();
+    }
     if (mode === 'overview' && this.overviewDays.length === 0) {
       await this.refreshOverviewCalendar();
     }
@@ -1131,6 +1145,46 @@ export class WeeklySchedulePage implements OnInit {
     const filter = new MediaFilter();
     filter.Paging.Count = 500;
     return filter;
+  }
+
+  private queueCalendarAutoScroll(): void {
+    if (this.calendarAutoScrollQueued) {
+      return;
+    }
+
+    this.calendarAutoScrollQueued = true;
+    setTimeout(() => {
+      this.calendarAutoScrollQueued = false;
+      this.scrollCalendarToHelpfulTime();
+    });
+  }
+
+  private scrollCalendarToHelpfulTime(): void {
+    const scroller = this.calendarScroll?.nativeElement;
+    if (!scroller || this.isLoading || this.viewMode !== 'planner') {
+      return;
+    }
+
+    const targetTop = this.slotTop(this.calendarScrollTargetMinutes());
+    const maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    scroller.scrollTop = Math.min(Math.max(0, targetTop), maxScrollTop);
+  }
+
+  private calendarScrollTargetMinutes(): number {
+    const visibleStartMinutes = WEEK_START_HOUR * 60;
+    const fallbackStartMinutes = Math.max(visibleStartMinutes, this.defaultCalendarStartMinutes);
+
+    if (!this.isCurrentWeek()) {
+      return fallbackStartMinutes;
+    }
+
+    const leadMinutes = 90;
+    const latestUsefulStart = WEEK_END_HOUR * 60 - SLOT_MINUTES;
+    const currentMinutes = minutesSinceDayStart(new Date());
+    return Math.min(
+      Math.max(fallbackStartMinutes, currentMinutes - leadMinutes),
+      latestUsefulStart,
+    );
   }
 
   private resolveTimezoneLabel(): string {

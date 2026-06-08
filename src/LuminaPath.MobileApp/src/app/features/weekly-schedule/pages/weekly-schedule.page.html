@@ -159,7 +159,7 @@
             }
           </div>
 
-          <div class="week-calendar__scroll">
+          <div class="week-calendar__scroll" #calendarScroll>
             <div class="time-gutter" [style.height.px]="dayHeight">
               @for (hour of hours; track hour) {
                 <span class="time-label" [style.top.px]="slotTop(hour * 60)">{{ hourLabel(hour) }}</span>
