@@ -14,6 +14,7 @@ export interface GoogleCalendarStatus {
 export interface GoogleCalendarSyncResult {
   releaseEvents: number;
   questEvents: number;
+  sessionEvents: number;
   deleted: number;
   message: string;
 }

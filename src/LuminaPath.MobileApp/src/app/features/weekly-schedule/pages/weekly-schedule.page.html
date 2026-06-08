@@ -150,7 +150,7 @@
           </div>
         } @else {
           <div class="week-calendar__header">
-            <div class="time-gutter time-gutter--header">GMT</div>
+            <div class="time-gutter time-gutter--header">{{ timezoneLabel }}</div>
             @for (day of weekDays; track trackByDay($index, day)) {
               <div class="day-heading" [class.day-heading--today]="day.isToday">
                 <span>{{ day.label }}</span>
@@ -176,9 +176,10 @@
                     <button
                       type="button"
                       class="schedule-slot"
+                      [attr.aria-label]="slotAriaLabel(day, minutes)"
                       [style.top.px]="slotTop(minutes)"
                       [style.height.px]="slotHeight"
-                      (click)="openCreateQuest(day, minutes)"
+                      (click)="openSlotActions(day, minutes)"
                       [class.schedule-slot--drop-target]="isActiveDropSlot(day, minutes)"
                       (dragover)="allowDrop($event, day, minutes)"
                       (dragleave)="clearDropSlot(slotKey(day, minutes))"
@@ -473,6 +474,42 @@
               {{ isSaving ? 'Saving' : 'Save' }}
             </button>
           </footer>
+        </section>
+      </div>
+    }
+
+    @if (slotActionDraft) {
+      <div class="schedule-modal-backdrop" (click)="closeSlotActions()">
+        <section class="schedule-modal schedule-modal--compact" (click)="$event.stopPropagation()">
+          <header>
+            <div>
+              <span class="schedule-eyebrow">
+                <ion-icon name="add-circle-outline"></ion-icon>
+                New schedule item
+              </span>
+              <h2>{{ slotActionDraft.day.label }} {{ slotActionDraft.day.dayNumber }} at {{ slotTimeLabel(slotActionDraft.minutes) }}</h2>
+            </div>
+            <button type="button" class="schedule-icon-button" aria-label="Close" (click)="closeSlotActions()">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
+          </header>
+
+          <div class="slot-choice-list">
+            <button type="button" class="slot-choice" (click)="createQuestFromSlot()">
+              <ion-icon name="sparkles-outline"></ion-icon>
+              <span>
+                <strong>Scheduled quest</strong>
+                <small>{{ slotActionDraft.game ? 'Quest for ' + slotActionDraft.game.gameName : 'Create a task block' }}</small>
+              </span>
+            </button>
+            <button type="button" class="slot-choice slot-choice--session" (click)="createSessionFromSlot()" [disabled]="isSaving">
+              <ion-icon name="game-controller-outline"></ion-icon>
+              <span>
+                <strong>Gaming session</strong>
+                <small>{{ slotActionDraft.game ? slotActionDraft.game.gameName : 'Generic gaming time' }} - 90 min</small>
+              </span>
+            </button>
+          </div>
         </section>
       </div>
     }

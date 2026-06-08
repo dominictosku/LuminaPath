@@ -4,16 +4,18 @@ using Microsoft.EntityFrameworkCore;
 namespace LuminaPath.Infrastructure.Services.ThirdParty.GoogleCalendar;
 
 /// <summary>
-/// One-way push of the user's library releases and dated quests into their
-/// dedicated "LuminaPath" Google Calendar. Idempotent: events use deterministic
-/// ids so a re-sync updates in place, and events no longer backed by a release
-/// or open quest are deleted (safe — the calendar is exclusively ours).
+/// One-way push of the user's library releases, open quests, and open gaming
+/// sessions into their dedicated "LuminaPath" Google Calendar. Idempotent:
+/// events use deterministic ids so a re-sync updates in place, and events no
+/// longer backed by LuminaPath data are deleted. The calendar is exclusively
+/// managed by LuminaPath.
 /// </summary>
 public sealed class GoogleCalendarSyncService
 {
     public const string Provider = "google";
     private const string ReleaseIdPrefix = "lprel";
     private const string QuestIdPrefix = "lpquest";
+    private const string SessionIdPrefix = "lpsess";
 
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
     private readonly IGoogleOAuthClient _oauth;
@@ -68,7 +70,11 @@ public sealed class GoogleCalendarSyncService
 
         var releases = await BuildReleaseEventsAsync(db, userId, cancellationToken);
         var quests = await BuildQuestEventsAsync(db, userId, cancellationToken);
-        var desired = releases.Concat(quests).ToList();
+        var sessions = await BuildSessionEventsAsync(db, userId, cancellationToken);
+        var desired = releases
+            .Concat(quests)
+            .Concat(sessions)
+            .ToList();
 
         var existingIds = await _calendar.ListEventIdsAsync(token.AccessToken, calendarId, cancellationToken);
 
@@ -87,10 +93,13 @@ public sealed class GoogleCalendarSyncService
         link.LastSyncedAt = _utcNow();
         await db.SaveChangesAsync(cancellationToken);
 
-        return new CalendarSyncResult(releases.Count, quests.Count, stale.Count);
+        return new CalendarSyncResult(releases.Count, quests.Count, sessions.Count, stale.Count);
     }
 
-    private async Task<List<CalendarEventInput>> BuildReleaseEventsAsync(LuminaPathDbContext db, string userId, CancellationToken cancellationToken)
+    private async Task<List<CalendarEventInput>> BuildReleaseEventsAsync(
+        LuminaPathDbContext db,
+        string userId,
+        CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(_utcNow().Date);
 
@@ -104,29 +113,81 @@ public sealed class GoogleCalendarSyncService
             // One game can appear once; collapse any duplicate library rows.
             .GroupBy(r => r.Id)
             .Select(group => group.First())
-            .Select(r => new CalendarEventInput(
-                Id: ReleaseIdPrefix + r.Id,
-                Summary: $"🎮 {r.Name} releases",
-                Description: "Game release tracked in your LuminaPath library.",
-                Date: DateOnly.FromDateTime(r.ReleaseDate!.Value)))
+            .Select(r => CalendarEventInput.AllDay(
+                id: ReleaseIdPrefix + r.Id,
+                summary: $"Game release: {r.Name}",
+                description: "Game release tracked in your LuminaPath library.",
+                date: DateOnly.FromDateTime(r.ReleaseDate!.Value)))
             .Where(e => e.Date >= today)
             .ToList();
     }
 
-    private async Task<List<CalendarEventInput>> BuildQuestEventsAsync(LuminaPathDbContext db, string userId, CancellationToken cancellationToken)
+    private async Task<List<CalendarEventInput>> BuildQuestEventsAsync(
+        LuminaPathDbContext db,
+        string userId,
+        CancellationToken cancellationToken)
     {
         var rows = await db.Quests
             .AsNoTracking()
-            .Where(q => q.LuminaUserId == userId && q.DueDate.HasValue && !q.Completed)
-            .Select(q => new { q.Id, q.Title, q.DueDate })
+            .Where(q => q.LuminaUserId == userId
+                && !q.Completed
+                && (q.DueDate.HasValue || (q.ScheduledStartAt.HasValue && q.ScheduledEndAt.HasValue)))
+            .Select(q => new { q.Id, q.Title, q.DueDate, q.ScheduledStartAt, q.ScheduledEndAt })
             .ToListAsync(cancellationToken);
 
         return rows
-            .Select(q => new CalendarEventInput(
-                Id: QuestIdPrefix + q.Id,
-                Summary: $"📜 {q.Title}",
-                Description: "Quest due date from your LuminaPath quest board.",
-                Date: DateOnly.FromDateTime(q.DueDate!.Value)))
+            .Select(q =>
+            {
+                if (q.ScheduledStartAt.HasValue && q.ScheduledEndAt.HasValue)
+                {
+                    return CalendarEventInput.Timed(
+                        id: QuestIdPrefix + q.Id,
+                        summary: $"Quest: {q.Title}",
+                        description: "Scheduled quest from your LuminaPath weekly schedule.",
+                        startAt: q.ScheduledStartAt.Value,
+                        endAt: q.ScheduledEndAt.Value);
+                }
+
+                return CalendarEventInput.AllDay(
+                    id: QuestIdPrefix + q.Id,
+                    summary: $"Quest: {q.Title}",
+                    description: "Quest due date from your LuminaPath quest board.",
+                    date: DateOnly.FromDateTime(q.DueDate!.Value));
+            })
+            .ToList();
+    }
+
+    private async Task<List<CalendarEventInput>> BuildSessionEventsAsync(
+        LuminaPathDbContext db,
+        string userId,
+        CancellationToken cancellationToken)
+    {
+        var rows = await db.GamingSessions
+            .AsNoTracking()
+            .Include(session => session.MyGame!)
+                .ThenInclude(myGame => myGame.Game)
+            .Where(session => session.LuminaUserId == userId
+                && !session.Completed
+                && session.DurationMinutes > 0)
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .Select(session =>
+            {
+                var title = session.MyGame?.Game?.Name ?? "Gaming session";
+                var start = session.ScheduledAt;
+                var end = start.AddMinutes(session.DurationMinutes);
+                var description = string.IsNullOrWhiteSpace(session.Notes)
+                    ? "Gaming session scheduled in LuminaPath."
+                    : session.Notes.Trim();
+
+                return CalendarEventInput.Timed(
+                    id: SessionIdPrefix + session.Id,
+                    summary: $"Gaming session: {title}",
+                    description: description,
+                    startAt: start,
+                    endAt: end);
+            })
             .ToList();
     }
 }

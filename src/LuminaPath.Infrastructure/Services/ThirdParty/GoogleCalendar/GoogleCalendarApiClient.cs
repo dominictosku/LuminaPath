@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Globalization;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 
@@ -173,9 +174,35 @@ public sealed class GoogleCalendarApiClient : IGoogleCalendarApi
 
     private static object BuildEventBody(CalendarEventInput calendarEvent, bool includeId)
     {
+        if (calendarEvent.IsTimed)
+        {
+            var start = FormatUtcDateTime(calendarEvent.StartAt!.Value);
+            var end = FormatUtcDateTime(calendarEvent.EndAt!.Value);
+
+            if (includeId)
+            {
+                return new
+                {
+                    id = calendarEvent.Id,
+                    summary = calendarEvent.Summary,
+                    description = calendarEvent.Description,
+                    start = new { dateTime = start },
+                    end = new { dateTime = end },
+                };
+            }
+
+            return new
+            {
+                summary = calendarEvent.Summary,
+                description = calendarEvent.Description,
+                start = new { dateTime = start },
+                end = new { dateTime = end },
+            };
+        }
+
         // All-day event: end.date is exclusive, so it's the day after start.
-        var start = calendarEvent.Date.ToString("yyyy-MM-dd");
-        var end = calendarEvent.Date.AddDays(1).ToString("yyyy-MM-dd");
+        var allDayStart = calendarEvent.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var allDayEnd = calendarEvent.Date.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
         if (includeId)
         {
@@ -184,8 +211,8 @@ public sealed class GoogleCalendarApiClient : IGoogleCalendarApi
                 id = calendarEvent.Id,
                 summary = calendarEvent.Summary,
                 description = calendarEvent.Description,
-                start = new { date = start },
-                end = new { date = end },
+                start = new { date = allDayStart },
+                end = new { date = allDayEnd },
             };
         }
 
@@ -193,9 +220,21 @@ public sealed class GoogleCalendarApiClient : IGoogleCalendarApi
         {
             summary = calendarEvent.Summary,
             description = calendarEvent.Description,
-            start = new { date = start },
-            end = new { date = end },
+            start = new { date = allDayStart },
+            end = new { date = allDayEnd },
         };
+    }
+
+    private static string FormatUtcDateTime(DateTime value)
+    {
+        var utc = value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc),
+        };
+
+        return utc.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
     }
 
     private Task<HttpResponseMessage> SendAsync(HttpMethod method, string accessToken, string relativePath, object? body, CancellationToken cancellationToken)

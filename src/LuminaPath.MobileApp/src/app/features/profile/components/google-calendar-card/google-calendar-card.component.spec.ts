@@ -8,6 +8,7 @@ import {
   GoogleCalendarService,
   GoogleCalendarStatus,
 } from '../../services/google-calendar.service';
+import { registerAppIcons } from 'src/app/shared/icons/register-icons';
 
 function status(overrides: Partial<GoogleCalendarStatus> = {}): GoogleCalendarStatus {
   return { configured: true, connected: false, email: null, lastSyncedAt: null, ...overrides };
@@ -16,6 +17,8 @@ function status(overrides: Partial<GoogleCalendarStatus> = {}): GoogleCalendarSt
 describe('GoogleCalendarCardComponent', () => {
   let fixture: ComponentFixture<GoogleCalendarCardComponent>;
   let service: jasmine.SpyObj<GoogleCalendarService>;
+
+  beforeAll(() => registerAppIcons());
 
   function setup(initial: GoogleCalendarStatus): void {
     service = jasmine.createSpyObj<GoogleCalendarService>('GoogleCalendarService', [
@@ -81,7 +84,13 @@ describe('GoogleCalendarCardComponent', () => {
     await settle();
 
     service.sync.and.returnValue(
-      of({ releaseEvents: 1, questEvents: 2, deleted: 0, message: 'Synced 1 release(s) and 2 quest(s).' }),
+      of({
+        releaseEvents: 1,
+        questEvents: 2,
+        sessionEvents: 3,
+        deleted: 0,
+        message: 'Synced 1 release(s), 2 quest(s), and 3 session(s).',
+      }),
     );
     service.getStatus.calls.reset();
     service.getStatus.and.returnValue(of(status({ configured: true, connected: true, email: 'g@e.com', lastSyncedAt: '2026-06-01T00:00:00Z' })));

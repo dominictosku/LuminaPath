@@ -47,6 +47,7 @@ import {
 type CalendarGroupId = 'quests' | 'sessions';
 type ScheduleViewMode = 'planner' | 'overview';
 type SessionWindow = { from: Date; to: Date };
+type SlotActionDraft = { day: WeekScheduleDay; minutes: number; game: LibraryGameOption | null };
 
 type LibraryGameOption = {
   myGameId: number;
@@ -130,6 +131,7 @@ export class WeeklySchedulePage implements OnInit {
   );
   protected readonly dayHeight = (WEEK_END_HOUR - WEEK_START_HOUR) * HOUR_HEIGHT;
   protected readonly slotHeight = HOUR_HEIGHT / 2;
+  protected readonly timezoneLabel = this.resolveTimezoneLabel();
 
   protected weekAnchor = startOfWeek(new Date());
   protected weekDays: WeekScheduleDay[] = buildWeekDays(this.weekAnchor);
@@ -147,6 +149,7 @@ export class WeeklySchedulePage implements OnInit {
   protected gameSearch = '';
   protected draft: QuestScheduleDraft | null = null;
   protected sessionDraft: SessionScheduleDraft | null = null;
+  protected slotActionDraft: SlotActionDraft | null = null;
   protected draftError = '';
   protected sessionDraftError = '';
   protected pendingGameId: number | null = null;
@@ -336,7 +339,35 @@ export class WeeklySchedulePage implements OnInit {
       myGameId: selectedGame?.myGameId ?? null,
     };
     this.sessionDraft = null;
+    this.slotActionDraft = null;
     this.draftError = '';
+  }
+
+  protected openSlotActions(day: WeekScheduleDay, minutes: number): void {
+    const selectedGame = this.pendingGameId == null
+      ? null
+      : this.games.find((game) => game.myGameId === this.pendingGameId) ?? null;
+    this.slotActionDraft = { day, minutes, game: selectedGame };
+    this.draft = null;
+    this.sessionDraft = null;
+  }
+
+  protected closeSlotActions(): void {
+    this.slotActionDraft = null;
+  }
+
+  protected createQuestFromSlot(): void {
+    if (!this.slotActionDraft) return;
+    const { day, minutes } = this.slotActionDraft;
+    this.slotActionDraft = null;
+    this.openCreateQuest(day, minutes);
+  }
+
+  protected async createSessionFromSlot(): Promise<void> {
+    if (!this.slotActionDraft) return;
+    const { day, minutes, game } = this.slotActionDraft;
+    this.slotActionDraft = null;
+    await this.createSessionAt(game?.myGameId ?? null, day.date, minutes);
   }
 
   protected openQuest(block: WeekScheduleBlock): void {
@@ -362,6 +393,7 @@ export class WeeklySchedulePage implements OnInit {
       myGameId: quest.myGameId ?? null,
     };
     this.sessionDraft = null;
+    this.slotActionDraft = null;
     this.draftError = '';
   }
 
@@ -502,6 +534,7 @@ export class WeeklySchedulePage implements OnInit {
       completed: session.completed,
     };
     this.draft = null;
+    this.slotActionDraft = null;
     this.sessionDraftError = '';
   }
 
@@ -764,6 +797,14 @@ export class WeeklySchedulePage implements OnInit {
     return `${String(hour).padStart(2, '0')}:00`;
   }
 
+  protected slotAriaLabel(day: WeekScheduleDay, minutes: number): string {
+    return `Plan ${day.label} ${day.dayNumber} at ${timeLabelFromMinutes(minutes)}`;
+  }
+
+  protected slotTimeLabel(minutes: number): string {
+    return timeLabelFromMinutes(minutes);
+  }
+
   protected formatBlockTime(block: WeekScheduleBlock): string {
     return formatTimeRange(block.startAt, block.endAt);
   }
@@ -991,7 +1032,7 @@ export class WeeklySchedulePage implements OnInit {
     }
   }
 
-  private async createSessionAt(myGameId: number, day: Date, minutes: number): Promise<void> {
+  private async createSessionAt(myGameId: number | null, day: Date, minutes: number): Promise<void> {
     const start = dateAtMinutes(day, minutes);
     const durationMinutes = this.clampedDuration(minutes, 90);
     try {
@@ -1090,6 +1131,12 @@ export class WeeklySchedulePage implements OnInit {
     const filter = new MediaFilter();
     filter.Paging.Count = 500;
     return filter;
+  }
+
+  private resolveTimezoneLabel(): string {
+    return new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' })
+      .formatToParts(new Date())
+      .find((part) => part.type === 'timeZoneName')?.value ?? 'Local';
   }
 }
 

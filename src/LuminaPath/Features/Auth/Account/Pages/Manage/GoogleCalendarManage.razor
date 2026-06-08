@@ -27,7 +27,7 @@
 else if (status.Connected)
 {
     <p>
-        Your library's upcoming releases and dated quests are pushed to a dedicated
+        Your library's upcoming releases, open quests, and planned gaming sessions are pushed to a dedicated
         <strong>@calendarName</strong> calendar.
     </p>
 
@@ -51,7 +51,7 @@ else if (status.Connected)
 }
 else
 {
-    <p>Link your Google account to push upcoming releases and dated quests into your calendar.</p>
+    <p>Link your Google account to push upcoming releases, open quests, and planned gaming sessions into your calendar.</p>
     <a class="btn btn-primary" href="@ConnectHref">Connect Google Calendar</a>
 }
 
@@ -98,7 +98,7 @@ else
             var result = await Sync.SyncAsync(user.Id, HttpContext.RequestAborted);
             RedirectManager.RedirectToWithStatus(
                 ManagePath.TrimStart('/'),
-                $"Synced {result.ReleaseEvents} release(s) and {result.QuestEvents} quest(s).",
+                $"Synced {result.ReleaseEvents} release(s), {result.QuestEvents} quest(s), and {result.SessionEvents} session(s).",
                 HttpContext);
         }
         catch (Exception ex)

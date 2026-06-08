@@ -18,7 +18,7 @@ public class GoogleCalendarSyncServiceTests
     public async Task SyncAsync_PushesLibraryReleasesAndDatedOpenQuests_AndDeletesStale()
     {
         var options = Test.Utilities.DbContext.TestDbContextOptions();
-        int futureGameId, questId;
+        int futureGameId, questId, scheduledQuestId, sessionId;
 
         await using (var db = new LuminaPathDbContext(options))
         {
@@ -27,16 +27,56 @@ public class GoogleCalendarSyncServiceTests
             var otherUserGame = new Game { Name = "Not Mine", Description = "x", ReleaseDate = Now.Date.AddDays(5) };
             db.Games.AddRange(futureGame, pastGame, otherUserGame);
 
+            var futureMyGame = new MyGame { Game = futureGame, LuminaUserId = "user-1", Status = GameStatus.Planned, Priority = 1 };
             db.MyGames.AddRange(
-                new MyGame { Game = futureGame, LuminaUserId = "user-1", Status = GameStatus.Planned, Priority = 1 },
+                futureMyGame,
                 new MyGame { Game = pastGame, LuminaUserId = "user-1", Status = GameStatus.Planned, Priority = 1 },
                 new MyGame { Game = otherUserGame, LuminaUserId = "user-2", Status = GameStatus.Planned, Priority = 1 });
 
             db.Quests.AddRange(
                 new Quest { LuminaUserId = "user-1", Title = "Dated open", DueDate = Now.Date.AddDays(3), Completed = false },
+                new Quest
+                {
+                    LuminaUserId = "user-1",
+                    Title = "Scheduled open",
+                    DueDate = Now.Date.AddDays(2),
+                    ScheduledStartAt = Now.AddDays(2).AddHours(1),
+                    ScheduledEndAt = Now.AddDays(2).AddHours(2),
+                    Completed = false
+                },
                 new Quest { LuminaUserId = "user-1", Title = "Dated done", DueDate = Now.Date.AddDays(3), Completed = true },
                 new Quest { LuminaUserId = "user-1", Title = "No date", Completed = false },
                 new Quest { LuminaUserId = "user-2", Title = "Someone else", DueDate = Now.Date.AddDays(3), Completed = false });
+
+            db.GamingSessions.AddRange(
+                new GamingSession
+                {
+                    LuminaUserId = "user-1",
+                    MyGame = futureMyGame,
+                    ScheduledAt = Now.AddDays(1).AddHours(8),
+                    DurationMinutes = 90,
+                    Completed = false,
+                    Notes = "Co-op night",
+                    CreatedAt = Now
+                },
+                new GamingSession
+                {
+                    LuminaUserId = "user-1",
+                    MyGame = futureMyGame,
+                    ScheduledAt = Now.AddDays(1).AddHours(10),
+                    DurationMinutes = 60,
+                    Completed = true,
+                    CompletedAt = Now,
+                    CreatedAt = Now
+                },
+                new GamingSession
+                {
+                    LuminaUserId = "user-2",
+                    ScheduledAt = Now.AddDays(1).AddHours(8),
+                    DurationMinutes = 60,
+                    Completed = false,
+                    CreatedAt = Now
+                });
 
             db.CalendarIntegrations.Add(new CalendarIntegration
             {
@@ -49,6 +89,8 @@ public class GoogleCalendarSyncServiceTests
             await db.SaveChangesAsync();
             futureGameId = futureGame.Id;
             questId = db.Quests.Single(q => q.Title == "Dated open").Id;
+            scheduledQuestId = db.Quests.Single(q => q.Title == "Scheduled open").Id;
+            sessionId = db.GamingSessions.Single(s => s.LuminaUserId == "user-1" && !s.Completed).Id;
         }
 
         var calendar = new FakeCalendarApi
@@ -61,17 +103,32 @@ public class GoogleCalendarSyncServiceTests
         var result = await service.SyncAsync("user-1", CancellationToken.None);
 
         Assert.Equal(1, result.ReleaseEvents);
-        Assert.Equal(1, result.QuestEvents);
+        Assert.Equal(2, result.QuestEvents);
+        Assert.Equal(1, result.SessionEvents);
         Assert.Equal(2, result.Deleted);
 
         Assert.Contains(calendar.Upserts, e => e.Id == $"lprel{futureGameId}");
         Assert.Contains(calendar.Upserts, e => e.Id == $"lpquest{questId}");
-        Assert.Equal(2, calendar.Upserts.Count);
+        Assert.Contains(calendar.Upserts, e => e.Id == $"lpquest{scheduledQuestId}");
+        Assert.Contains(calendar.Upserts, e => e.Id == $"lpsess{sessionId}");
+        Assert.Equal(4, calendar.Upserts.Count);
         Assert.Equivalent(new[] { "lprel999999", "lpquest888888" }, calendar.Deletes);
 
         var release = calendar.Upserts.Single(e => e.Id == $"lprel{futureGameId}");
         Assert.Equal(new DateOnly(2026, 6, 11), release.Date);
         Assert.Contains("Future Game", release.Summary);
+
+        var scheduledQuest = calendar.Upserts.Single(e => e.Id == $"lpquest{scheduledQuestId}");
+        Assert.True(scheduledQuest.IsTimed);
+        Assert.Equal(Now.AddDays(2).AddHours(1), scheduledQuest.StartAt);
+        Assert.Equal(Now.AddDays(2).AddHours(2), scheduledQuest.EndAt);
+
+        var session = calendar.Upserts.Single(e => e.Id == $"lpsess{sessionId}");
+        Assert.True(session.IsTimed);
+        Assert.Equal(Now.AddDays(1).AddHours(8), session.StartAt);
+        Assert.Equal(Now.AddDays(1).AddHours(9).AddMinutes(30), session.EndAt);
+        Assert.Contains("Future Game", session.Summary);
+        Assert.Equal("Co-op night", session.Description);
     }
 
     [Fact]

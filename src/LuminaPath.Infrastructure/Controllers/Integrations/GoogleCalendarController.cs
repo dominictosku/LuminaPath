@@ -144,8 +144,9 @@ public sealed class GoogleCalendarController : AuthorizedControllerBase
             {
                 result.ReleaseEvents,
                 result.QuestEvents,
+                result.SessionEvents,
                 result.Deleted,
-                message = $"Synced {result.ReleaseEvents} release(s) and {result.QuestEvents} quest(s).",
+                message = $"Synced {result.ReleaseEvents} release(s), {result.QuestEvents} quest(s), and {result.SessionEvents} session(s).",
             });
         }
         catch (Exception ex)

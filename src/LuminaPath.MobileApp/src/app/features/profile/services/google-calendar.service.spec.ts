@@ -63,8 +63,9 @@ describe('GoogleCalendarService', () => {
     const payload: GoogleCalendarSyncResult = {
       releaseEvents: 2,
       questEvents: 1,
+      sessionEvents: 3,
       deleted: 0,
-      message: 'Synced 2 release(s) and 1 quest(s).',
+      message: 'Synced 2 release(s), 1 quest(s), and 3 session(s).',
     };
     req.flush(payload);
     expect(result).toEqual(payload);

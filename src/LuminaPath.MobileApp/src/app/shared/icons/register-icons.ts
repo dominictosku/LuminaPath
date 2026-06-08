@@ -56,6 +56,7 @@ import {
   libraryOutline,
   linkOutline,
   listOutline,
+  logoGoogle,
   lockClosedOutline,
   logOutOutline,
   mailOutline,
@@ -91,6 +92,7 @@ import {
   sparklesOutline,
   speedometerOutline,
   starOutline,
+  syncOutline,
   swapVerticalOutline,
   timeOutline,
   timerOutline,
@@ -99,6 +101,7 @@ import {
   trendingUpOutline,
   trophyOutline,
   tvOutline,
+  unlinkOutline,
   volumeMuteOutline,
 } from 'ionicons/icons';
 
@@ -173,6 +176,7 @@ export function registerAppIcons(): void {
     libraryOutline,
     linkOutline,
     listOutline,
+    logoGoogle,
     lockClosedOutline,
     logOutOutline,
     mailOutline,
@@ -208,6 +212,7 @@ export function registerAppIcons(): void {
     sparklesOutline,
     speedometerOutline,
     starOutline,
+    syncOutline,
     swapVerticalOutline,
     timeOutline,
     timerOutline,
@@ -216,6 +221,7 @@ export function registerAppIcons(): void {
     trendingUpOutline,
     trophyOutline,
     tvOutline,
+    unlinkOutline,
     volumeMuteOutline,
   });
 }
