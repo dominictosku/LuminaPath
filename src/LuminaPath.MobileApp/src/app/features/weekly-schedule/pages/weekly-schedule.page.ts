@@ -19,7 +19,6 @@ import { GamingSession, GamingSessionService } from '../../planning/services/gam
 import {
   hasRecurrence as hasCalendarRecurrence,
   shiftForRecurrence,
-  startOfCalendarMonthGrid,
 } from '../../planning/domain/planning-calendar.helpers';
 import { PlanningCalendarService } from '../../planning/services/planning-calendar.service';
 import type {
@@ -66,10 +65,21 @@ import {
   type QuestScheduleDraft,
   type SessionScheduleDraft,
 } from '../domain/weekly-schedule.drafts';
+import {
+  buildSidebarQuestGroups,
+  cloneSessionWindow,
+  expandedSessionWindow,
+  overviewSessionWindow,
+  sessionWindowContains,
+  upsertSessionInWindow,
+  visibleGames as visibleGameOptions,
+  weekSessionWindow,
+  type SessionWindow,
+  type SidebarQuestGroup,
+} from '../domain/weekly-schedule.view';
 
 type CalendarGroupId = WeeklyScheduleCalendarGroupId;
 type ScheduleViewMode = 'planner' | 'overview';
-type SessionWindow = { from: Date; to: Date };
 type ScheduleLoadOptions = {
   autoScrollCalendar?: boolean;
   forceBoard?: boolean;
@@ -80,12 +90,6 @@ type SlotActionDraft = {
   minutes: number;
   game: LibraryGameOption | null;
   quest: Quest | null;
-};
-
-type SidebarQuestGroup = {
-  key: string;
-  folder: QuestFolder | null;
-  quests: Quest[];
 };
 
 type DragPayload =
@@ -194,13 +198,13 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     this.isLoading = true;
     this.errorMessage = '';
     try {
-      const weekWindow = this.weekSessionWindow();
-      const overviewWindow = this.overviewSessionWindow();
+      const weekWindow = weekSessionWindow(this.weekAnchor);
+      const calendarWindow = overviewSessionWindow(this.overviewMode, this.overviewAnchor);
       const shouldLoadBoard = options.forceBoard || !this.boardLoaded;
       const shouldLoadLibrary = options.forceLibrary || !this.libraryLoaded;
-      const shouldLoadOverview = !this.overviewSessionRangeContains(overviewWindow);
+      const shouldLoadOverview = !sessionWindowContains(this.overviewSessionRange, calendarWindow);
       const expandedOverviewWindow = shouldLoadOverview
-        ? this.expandedOverviewSessionWindow(overviewWindow)
+        ? expandedSessionWindow(calendarWindow, this.overviewCachePaddingDays)
         : null;
 
       const [board, sessions, overviewSessions, library] = await Promise.all([
@@ -344,40 +348,11 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   }
 
   protected sidebarQuestGroups(): SidebarQuestGroup[] {
-    const query = this.questSearch.trim().toLowerCase();
-    const openQuests = this.quests
-      .filter((quest) => !quest.completed)
-      .filter((quest) => {
-        if (!query) return true;
-        return [
-          quest.title,
-          quest.gameName ?? '',
-          quest.folderName ?? '',
-          ...(quest.tags ?? []),
-        ].some((value) => value.toLowerCase().includes(query));
-      })
-      .sort((a, b) => this.questSortKey(a).localeCompare(this.questSortKey(b)));
-
-    const folderGroups = this.folders
-      .map((folder) => ({
-        key: `folder-${folder.id}`,
-        folder,
-        quests: openQuests.filter((quest) => quest.folderId === folder.id),
-      }))
-      .filter((group) => group.quests.length > 0);
-
-    const unfiled = openQuests.filter((quest) => (quest.folderId ?? null) === null);
-    return [
-      ...folderGroups,
-      ...(unfiled.length ? [{ key: 'unfiled', folder: null, quests: unfiled }] : []),
-    ];
+    return buildSidebarQuestGroups(this.quests, this.folders, this.questSearch);
   }
 
   protected visibleGames(): LibraryGameOption[] {
-    const query = this.gameSearch.trim().toLowerCase();
-    return this.games
-      .filter((game) => !query || game.gameName.toLowerCase().includes(query))
-      .slice(0, 40);
+    return visibleGameOptions(this.games, this.gameSearch);
   }
 
   protected blocksForDay(day: WeekScheduleDay): WeekScheduleBlock[] {
@@ -1021,12 +996,12 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   }
 
   private async refreshOverviewCalendar(): Promise<void> {
-    const window = this.overviewSessionWindow();
-    if (!this.overviewSessionRangeContains(window)) {
+    const window = overviewSessionWindow(this.overviewMode, this.overviewAnchor);
+    if (!sessionWindowContains(this.overviewSessionRange, window)) {
       this.isOverviewLoading = true;
       this.errorMessage = '';
       try {
-        const expandedWindow = this.expandedOverviewSessionWindow(window);
+        const expandedWindow = expandedSessionWindow(window, this.overviewCachePaddingDays);
         const sessions = await firstValueFrom(this.sessionService.list(expandedWindow));
         this.setOverviewSessionCache(expandedWindow, sessions ?? []);
       } catch {
@@ -1039,34 +1014,8 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     this.buildOverviewCalendar();
   }
 
-  private overviewSessionWindow(): SessionWindow {
-    const start = this.overviewMode === 'week'
-      ? startOfWeek(this.overviewAnchor)
-      : startOfCalendarMonthGrid(this.overviewAnchor);
-    const to = new Date(start);
-    to.setDate(start.getDate() + (this.overviewMode === 'week' ? 7 : 42));
-    return { from: start, to };
-  }
-
-  private expandedOverviewSessionWindow(window: SessionWindow): SessionWindow {
-    const from = new Date(window.from);
-    from.setDate(from.getDate() - this.overviewCachePaddingDays);
-    const to = new Date(window.to);
-    to.setDate(to.getDate() + this.overviewCachePaddingDays);
-    return { from, to };
-  }
-
-  private overviewSessionRangeContains(window: SessionWindow): boolean {
-    return this.overviewSessionRange !== null
-      && this.overviewSessionRange.from.getTime() <= window.from.getTime()
-      && this.overviewSessionRange.to.getTime() >= window.to.getTime();
-  }
-
   private setOverviewSessionCache(window: SessionWindow, sessions: GamingSession[]): void {
-    this.overviewSessionRange = {
-      from: new Date(window.from),
-      to: new Date(window.to),
-    };
+    this.overviewSessionRange = cloneSessionWindow(window);
     this.overviewSessions = sessions;
   }
 
@@ -1166,9 +1115,9 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   }
 
   private upsertSession(session: GamingSession): void {
-    this.sessions = this.upsertSessionInWindow(this.sessions, session, this.weekSessionWindow());
+    this.sessions = upsertSessionInWindow(this.sessions, session, weekSessionWindow(this.weekAnchor));
     if (this.overviewSessionRange) {
-      this.overviewSessions = this.upsertSessionInWindow(this.overviewSessions, session, this.overviewSessionRange);
+      this.overviewSessions = upsertSessionInWindow(this.overviewSessions, session, this.overviewSessionRange);
     }
     this.rebuildCalendar();
     this.buildOverviewCalendar();
@@ -1181,25 +1130,6 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     this.buildOverviewCalendar();
   }
 
-  private upsertSessionInWindow(sessions: GamingSession[], session: GamingSession, window: SessionWindow): GamingSession[] {
-    const withoutSession = sessions.filter((item) => item.id !== session.id);
-    return this.sessionInWindow(session, window)
-      ? [...withoutSession, session]
-      : withoutSession;
-  }
-
-  private sessionInWindow(session: GamingSession, window: SessionWindow): boolean {
-    const time = new Date(session.scheduledAt).getTime();
-    return time >= window.from.getTime() && time < window.to.getTime();
-  }
-
-  private weekSessionWindow(): SessionWindow {
-    const from = startOfWeek(this.weekAnchor);
-    const to = new Date(from);
-    to.setDate(from.getDate() + 7);
-    return { from, to };
-  }
-
   private formatDateTime(value: Date): string {
     return new Intl.DateTimeFormat('en', {
       weekday: 'short',
@@ -1208,11 +1138,6 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       hour: 'numeric',
       minute: '2-digit',
     }).format(value);
-  }
-
-  private questSortKey(quest: Quest): string {
-    const schedule = quest.scheduledStartAt ?? quest.dueDate ?? '9999';
-    return `${schedule}|${quest.sortOrder.toString().padStart(5, '0')}|${quest.title.toLowerCase()}`;
   }
 
   private libraryFilter(): MediaFilter {
