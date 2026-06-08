@@ -22,6 +22,7 @@ export type WeekScheduleBlock = {
   startAt: string;
   endAt: string;
   color: string;
+  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly';
   completed: boolean;
   lane: number;
   laneCount: number;

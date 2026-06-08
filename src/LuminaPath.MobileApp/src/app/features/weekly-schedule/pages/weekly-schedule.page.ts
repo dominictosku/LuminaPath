@@ -11,6 +11,7 @@ import { QuestBoardService } from '../../quests/services/quest-board.service';
 import type {
   Quest,
   QuestFolder,
+  QuestMutationResult,
   QuestPriority,
   QuestRecurrence,
   QuestType,
@@ -47,6 +48,11 @@ import {
 type CalendarGroupId = 'quests' | 'sessions';
 type ScheduleViewMode = 'planner' | 'overview';
 type SessionWindow = { from: Date; to: Date };
+type ScheduleLoadOptions = {
+  autoScrollCalendar?: boolean;
+  forceBoard?: boolean;
+  forceLibrary?: boolean;
+};
 type SlotActionDraft = {
   day: WeekScheduleDay;
   minutes: number;
@@ -176,6 +182,8 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   private dragged: DragPayload | null = null;
   private draggingId: string | null = null;
   private transparentDragImage: HTMLCanvasElement | null = null;
+  private boardLoaded = false;
+  private libraryLoaded = false;
   private readonly overviewCachePaddingDays = 42;
   private readonly defaultCalendarStartMinutes = 6 * 60;
   private calendarAutoScrollQueued = false;
@@ -191,32 +199,51 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     this.queueCalendarAutoScroll();
   }
 
-  protected async load(options: { autoScrollCalendar?: boolean } = {}): Promise<void> {
+  protected async load(options: ScheduleLoadOptions = {}): Promise<void> {
     this.isLoading = true;
     this.errorMessage = '';
     try {
-      const weekStart = startOfWeek(this.weekAnchor);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 7);
-      const overviewWindow = this.expandedOverviewSessionWindow(this.overviewSessionWindow());
+      const weekWindow = this.weekSessionWindow();
+      const overviewWindow = this.overviewSessionWindow();
+      const shouldLoadBoard = options.forceBoard || !this.boardLoaded;
+      const shouldLoadLibrary = options.forceLibrary || !this.libraryLoaded;
+      const shouldLoadOverview = !this.overviewSessionRangeContains(overviewWindow);
+      const expandedOverviewWindow = shouldLoadOverview
+        ? this.expandedOverviewSessionWindow(overviewWindow)
+        : null;
 
-      const [board, sessions, overviewSessions, myGames, games] = await Promise.all([
-        this.questService.getBoard(),
-        firstValueFrom(this.sessionService.list({ from: weekStart, to: weekEnd })),
-        firstValueFrom(this.sessionService.list(overviewWindow)),
-        firstValueFrom(this.myGameService.getAll(this.libraryFilter())),
-        firstValueFrom(this.gameService.getAll(this.libraryFilter())),
+      const [board, sessions, overviewSessions, library] = await Promise.all([
+        shouldLoadBoard ? this.questService.getBoard() : Promise.resolve(null),
+        firstValueFrom(this.sessionService.list(weekWindow)),
+        expandedOverviewWindow
+          ? firstValueFrom(this.sessionService.list(expandedOverviewWindow))
+          : Promise.resolve(null),
+        shouldLoadLibrary
+          ? Promise.all([
+            firstValueFrom(this.myGameService.getAll(this.libraryFilter())),
+            firstValueFrom(this.gameService.getAll(this.libraryFilter())),
+          ])
+          : Promise.resolve(null),
       ]);
 
-      this.quests = board.quests ?? [];
-      this.folders = [...(board.folders ?? [])].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+      if (board) {
+        this.quests = board.quests ?? [];
+        this.folders = [...(board.folders ?? [])].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+        this.boardLoaded = true;
+      }
       this.sessions = sessions ?? [];
-      this.setOverviewSessionCache(overviewWindow, overviewSessions ?? []);
-      this.games = (myGames.data ?? [])
-        .map((item) => this.toLibraryGame(item))
-        .filter((item): item is LibraryGameOption => item !== null)
-        .sort((a, b) => a.gameName.localeCompare(b.gameName));
-      this.allGames = games.data ?? [];
+      if (expandedOverviewWindow && overviewSessions) {
+        this.setOverviewSessionCache(expandedOverviewWindow, overviewSessions);
+      }
+      if (library) {
+        const [myGames, games] = library;
+        this.games = (myGames.data ?? [])
+          .map((item) => this.toLibraryGame(item))
+          .filter((item): item is LibraryGameOption => item !== null)
+          .sort((a, b) => a.gameName.localeCompare(b.gameName));
+        this.allGames = games.data ?? [];
+        this.libraryLoaded = true;
+      }
       this.rebuildCalendar();
       this.buildOverviewCalendar();
     } catch {
@@ -270,6 +297,35 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
 
     this.overviewMode = mode;
     await this.refreshOverviewCalendar();
+  }
+
+  protected async openPlannerDay(day: PlanningCalendarDay): Promise<void> {
+    this.viewMode = 'planner';
+    const nextAnchor = startOfWeek(day.date);
+    const sameWeek = dateKey(nextAnchor) === dateKey(startOfWeek(this.weekAnchor));
+    this.weekAnchor = nextAnchor;
+    if (sameWeek) {
+      this.rebuildCalendar();
+      this.queueCalendarAutoScroll();
+      return;
+    }
+
+    await this.load({ autoScrollCalendar: true });
+  }
+
+  protected async openOverviewEvent(event: TimelineEvent, day: PlanningCalendarDay, clickEvent: MouseEvent): Promise<void> {
+    clickEvent.stopPropagation();
+    if (event.kind === 'quest') {
+      this.openQuestById(event.sourceId);
+      return;
+    }
+
+    if (event.kind === 'session') {
+      this.openSessionById(event.sourceId);
+      return;
+    }
+
+    await this.openPlannerDay(day);
   }
 
   protected toggleGroup(group: CalendarGroupId): void {
@@ -407,28 +463,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   protected openQuest(block: WeekScheduleBlock): void {
     if (block.kind !== 'quest') return;
     const questId = Number(block.id.replace('quest-', ''));
-    const quest = this.quests.find((item) => item.id === questId);
-    if (!quest || !quest.scheduledStartAt || !quest.scheduledEndAt) return;
-
-    const start = new Date(quest.scheduledStartAt);
-    const end = new Date(quest.scheduledEndAt);
-    this.draft = {
-      mode: 'edit',
-      questId: quest.id,
-      title: quest.title,
-      notes: quest.notes ?? '',
-      type: quest.type,
-      priority: quest.priority,
-      recurrence: quest.recurrence,
-      scheduledDate: dateKey(start),
-      startTime: timeLabelFromMinutes(minutesSinceDayStart(start)),
-      endTime: timeLabelFromMinutes(minutesSinceDayStart(end)),
-      folderId: quest.folderId ?? null,
-      myGameId: quest.myGameId ?? null,
-    };
-    this.sessionDraft = null;
-    this.slotActionDraft = null;
-    this.draftError = '';
+    this.openQuestById(questId);
   }
 
   protected closeDraft(): void {
@@ -458,8 +493,9 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     this.isSaving = true;
     this.draftError = '';
     try {
+      let result: QuestMutationResult | null = null;
       if (this.draft.mode === 'create') {
-        await this.questService.createQuest({
+        result = await this.questService.createQuest({
           title,
           notes: this.draft.notes.trim() || null,
           type: this.draft.type,
@@ -472,7 +508,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
           myGameId: this.draft.myGameId,
         });
       } else if (this.draft.questId != null) {
-        await this.questService.updateQuest(this.draft.questId, {
+        result = await this.questService.updateQuest(this.draft.questId, {
           title,
           notes: this.draft.notes.trim(),
           type: this.draft.type,
@@ -488,8 +524,10 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
         });
       }
 
+      if (result) {
+        this.applyQuestMutation(result);
+      }
       this.closeDraft();
-      await this.load();
     } catch {
       this.draftError = 'Quest could not be saved.';
     } finally {
@@ -501,9 +539,9 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     if (!this.draft || this.draft.mode !== 'edit' || this.draft.questId == null || this.isSaving) return;
     this.isSaving = true;
     try {
-      await this.questService.updateQuest(this.draft.questId, { clearSchedule: true });
+      const result = await this.questService.updateQuest(this.draft.questId, { clearSchedule: true });
+      this.applyQuestMutation(result);
       this.closeDraft();
-      await this.load();
     } catch {
       this.draftError = 'Schedule could not be cleared.';
     } finally {
@@ -516,8 +554,8 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     this.isSaving = true;
     try {
       await this.questService.deleteQuest(this.draft.questId);
+      this.removeQuest(this.draft.questId);
       this.closeDraft();
-      await this.load();
     } catch {
       this.draftError = 'Quest could not be deleted.';
     } finally {
@@ -531,9 +569,9 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     if (!quest) return;
     this.isSaving = true;
     try {
-      await this.questService.updateQuest(quest.id, { completed: !quest.completed });
+      const result = await this.questService.updateQuest(quest.id, { completed: !quest.completed });
+      this.applyQuestMutation(result);
       this.closeDraft();
-      await this.load();
     } catch {
       this.draftError = 'Quest could not be updated.';
     } finally {
@@ -554,7 +592,42 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   protected openSession(block: WeekScheduleBlock): void {
     if (block.kind !== 'session') return;
     const sessionId = Number(block.id.replace('session-', ''));
-    const session = this.sessions.find((item) => item.id === sessionId);
+    this.openSessionById(sessionId);
+  }
+
+  protected openQuestById(questId: number): void {
+    const quest = this.quests.find((item) => item.id === questId);
+    if (!quest) return;
+
+    const fallbackDate = quest.dueDate ? new Date(quest.dueDate) : new Date();
+    const start = quest.scheduledStartAt ? new Date(quest.scheduledStartAt) : dateAtMinutes(fallbackDate, this.defaultCalendarStartMinutes);
+    const end = quest.scheduledEndAt ? new Date(quest.scheduledEndAt) : new Date(start);
+    if (!quest.scheduledEndAt) {
+      end.setMinutes(start.getMinutes() + 60);
+    }
+
+    this.draft = {
+      mode: 'edit',
+      questId: quest.id,
+      title: quest.title,
+      notes: quest.notes ?? '',
+      type: quest.type,
+      priority: quest.priority,
+      recurrence: quest.recurrence,
+      scheduledDate: dateKey(start),
+      startTime: timeLabelFromMinutes(minutesSinceDayStart(start)),
+      endTime: timeLabelFromMinutes(minutesSinceDayStart(end)),
+      folderId: quest.folderId ?? null,
+      myGameId: quest.myGameId ?? null,
+    };
+    this.sessionDraft = null;
+    this.slotActionDraft = null;
+    this.draftError = '';
+  }
+
+  protected openSessionById(sessionId: number): void {
+    const session = this.sessions.find((item) => item.id === sessionId)
+      ?? this.overviewSessions.find((item) => item.id === sessionId);
     if (!session) return;
 
     const start = new Date(session.scheduledAt);
@@ -582,13 +655,14 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       return;
     }
 
-    const session = this.sessions.find((item) => item.id === draft.sessionId);
+    const session = this.sessions.find((item) => item.id === draft.sessionId)
+      ?? this.overviewSessions.find((item) => item.id === draft.sessionId);
     if (!session) return;
 
     this.isSaving = true;
     this.sessionDraftError = '';
     try {
-      await firstValueFrom(this.sessionService.update(session.id, {
+      const updated = await firstValueFrom(this.sessionService.update(session.id, {
         id: session.id,
         myGameId: draft.myGameId,
         scheduledAt: scheduledAt.toISOString(),
@@ -597,8 +671,8 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
         completedAt: session.completedAt,
         notes: draft.notes.trim() || null,
       }));
+      this.upsertSession(updated);
       this.closeSessionDraft();
-      await this.load();
     } catch {
       this.sessionDraftError = 'Gaming session could not be saved.';
     } finally {
@@ -618,8 +692,8 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     this.isSaving = true;
     try {
       await firstValueFrom(this.sessionService.remove(sessionId));
+      this.removeSession(sessionId);
       this.closeSessionDraft();
-      await this.load();
     } catch {
       this.sessionDraftError = 'Gaming session could not be deleted.';
     } finally {
@@ -853,6 +927,43 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     return formatTimeRange(block.startAt, block.endAt);
   }
 
+  protected recurrenceLabel(recurrence: QuestRecurrence | null | undefined): string {
+    return recurrence === 'daily'
+      ? 'Daily'
+      : recurrence === 'weekly'
+        ? 'Weekly'
+        : recurrence === 'monthly'
+          ? 'Monthly'
+          : 'No repeat';
+  }
+
+  protected recurrenceShortLabel(recurrence: QuestRecurrence | null | undefined): string {
+    return recurrence === 'daily'
+      ? 'D'
+      : recurrence === 'weekly'
+        ? 'W'
+        : recurrence === 'monthly'
+          ? 'M'
+          : '';
+  }
+
+  protected hasRecurrence(recurrence: QuestRecurrence | null | undefined): boolean {
+    return Boolean(recurrence && recurrence !== 'none');
+  }
+
+  protected draftRecurrencePreview(draft: QuestScheduleDraft): string {
+    if (!this.hasRecurrence(draft.recurrence)) {
+      return '';
+    }
+
+    const start = this.combineDateTime(draft.scheduledDate, draft.startTime);
+    if (!start) {
+      return `${this.recurrenceLabel(draft.recurrence)} repeat`;
+    }
+
+    return `Next ${this.recurrenceLabel(draft.recurrence).toLowerCase()} occurrence: ${this.formatDateTime(this.shiftForRecurrence(start, draft.recurrence))}`;
+  }
+
   protected questScheduleLabel(quest: Quest): string {
     if (!quest.scheduledStartAt || !quest.scheduledEndAt) {
       return '';
@@ -1027,6 +1138,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
           startAt: quest.scheduledStartAt!,
           endAt: quest.scheduledEndAt!,
           color: this.folderColor(quest.folderId),
+          recurrence: quest.recurrence,
           completed: quest.completed,
           lane: 0,
           laneCount: 1,
@@ -1064,14 +1176,24 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     const start = dateAtMinutes(day, minutes);
     const end = new Date(start);
     end.setMinutes(start.getMinutes() + this.clampedDuration(minutes, this.questDurationMinutes(quest)));
+    const previousQuests = this.quests;
+    this.upsertQuest({
+      ...quest,
+      dueDate: dateKey(start),
+      scheduledStartAt: start.toISOString(),
+      scheduledEndAt: end.toISOString(),
+    });
     try {
-      await this.questService.updateQuest(quest.id, {
+      const result = await this.questService.updateQuest(quest.id, {
         dueDate: dateKey(start),
         scheduledStartAt: start.toISOString(),
         scheduledEndAt: end.toISOString(),
       });
-      await this.load();
+      this.applyQuestMutation(result);
     } catch {
+      this.quests = previousQuests;
+      this.rebuildCalendar();
+      this.buildOverviewCalendar();
       this.errorMessage = 'Quest could not be scheduled.';
     }
   }
@@ -1080,14 +1202,14 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     const start = dateAtMinutes(day, minutes);
     const durationMinutes = this.clampedDuration(minutes, 90);
     try {
-      await firstValueFrom(this.sessionService.create({
+      const created = await firstValueFrom(this.sessionService.create({
         myGameId,
         scheduledAt: start.toISOString(),
         durationMinutes,
         completed: false,
         notes: null,
       }));
-      await this.load();
+      this.upsertSession(created);
     } catch {
       this.errorMessage = 'Gaming session could not be planned.';
     }
@@ -1096,8 +1218,15 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   private async rescheduleSessionAt(session: GamingSession, day: Date, minutes: number): Promise<void> {
     const start = dateAtMinutes(day, minutes);
     const durationMinutes = this.clampedDuration(minutes, session.durationMinutes);
+    const previousSessions = this.sessions;
+    const previousOverviewSessions = this.overviewSessions;
+    this.upsertSession({
+      ...session,
+      scheduledAt: start.toISOString(),
+      durationMinutes,
+    });
     try {
-      await firstValueFrom(this.sessionService.update(session.id, {
+      const updated = await firstValueFrom(this.sessionService.update(session.id, {
         id: session.id,
         myGameId: session.myGameId,
         scheduledAt: start.toISOString(),
@@ -1106,10 +1235,71 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
         completedAt: session.completedAt,
         notes: session.notes,
       }));
-      await this.load();
+      this.upsertSession(updated);
     } catch {
+      this.sessions = previousSessions;
+      this.overviewSessions = previousOverviewSessions;
+      this.rebuildCalendar();
+      this.buildOverviewCalendar();
       this.errorMessage = 'Gaming session could not be rescheduled.';
     }
+  }
+
+  private applyQuestMutation(result: QuestMutationResult): void {
+    this.upsertQuest(result.quest);
+    if (result.spawnedQuest) {
+      this.upsertQuest(result.spawnedQuest);
+    }
+  }
+
+  private upsertQuest(quest: Quest): void {
+    const existingIndex = this.quests.findIndex((item) => item.id === quest.id);
+    this.quests = existingIndex === -1
+      ? [quest, ...this.quests]
+      : this.quests.map((item) => item.id === quest.id ? quest : item);
+    this.rebuildCalendar();
+    this.buildOverviewCalendar();
+  }
+
+  private removeQuest(questId: number): void {
+    this.quests = this.quests.filter((quest) => quest.id !== questId);
+    this.rebuildCalendar();
+    this.buildOverviewCalendar();
+  }
+
+  private upsertSession(session: GamingSession): void {
+    this.sessions = this.upsertSessionInWindow(this.sessions, session, this.weekSessionWindow());
+    if (this.overviewSessionRange) {
+      this.overviewSessions = this.upsertSessionInWindow(this.overviewSessions, session, this.overviewSessionRange);
+    }
+    this.rebuildCalendar();
+    this.buildOverviewCalendar();
+  }
+
+  private removeSession(sessionId: number): void {
+    this.sessions = this.sessions.filter((session) => session.id !== sessionId);
+    this.overviewSessions = this.overviewSessions.filter((session) => session.id !== sessionId);
+    this.rebuildCalendar();
+    this.buildOverviewCalendar();
+  }
+
+  private upsertSessionInWindow(sessions: GamingSession[], session: GamingSession, window: SessionWindow): GamingSession[] {
+    const withoutSession = sessions.filter((item) => item.id !== session.id);
+    return this.sessionInWindow(session, window)
+      ? [...withoutSession, session]
+      : withoutSession;
+  }
+
+  private sessionInWindow(session: GamingSession, window: SessionWindow): boolean {
+    const time = new Date(session.scheduledAt).getTime();
+    return time >= window.from.getTime() && time < window.to.getTime();
+  }
+
+  private weekSessionWindow(): SessionWindow {
+    const from = startOfWeek(this.weekAnchor);
+    const to = new Date(from);
+    to.setDate(from.getDate() + 7);
+    return { from, to };
   }
 
   private questDurationMinutes(quest: Quest): number {
@@ -1129,6 +1319,28 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
 
   private clampedEndMinutes(startMinutes: number, requestedMinutes: number): number {
     return Math.min(startMinutes + this.clampedDuration(startMinutes, requestedMinutes), WEEK_END_HOUR * 60 - 1);
+  }
+
+  private shiftForRecurrence(value: Date, recurrence: QuestRecurrence): Date {
+    const next = new Date(value);
+    if (recurrence === 'daily') {
+      next.setDate(next.getDate() + 1);
+    } else if (recurrence === 'weekly') {
+      next.setDate(next.getDate() + 7);
+    } else if (recurrence === 'monthly') {
+      next.setMonth(next.getMonth() + 1);
+    }
+    return next;
+  }
+
+  private formatDateTime(value: Date): string {
+    return new Intl.DateTimeFormat('en', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(value);
   }
 
   private draftRange(draft: QuestScheduleDraft): { start: Date; end: Date } | null {

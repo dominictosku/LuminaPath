@@ -61,7 +61,7 @@ describe('PlanningCalendarService', () => {
       anchor: new Date(2026, 5, 4),
       sessions: [makeSession({ id: 2, gameName: 'Hades', notes: 'Boss route' })],
       games: [game],
-      quests: [makeQuest({ id: 3, title: 'Prepare route', dueDate: '2026-06-04T00:00:00.000Z', priority: 'high' })],
+      quests: [makeQuest({ id: 3, title: 'Prepare route', dueDate: '2026-06-04T00:00:00.000Z', priority: 'high', recurrence: 'weekly' })],
     });
 
     expect(calendar.days.length).toBe(7);
@@ -70,6 +70,10 @@ describe('PlanningCalendarService', () => {
     const day = calendar.days.find((item) => item.key === '2026-06-04');
     expect(day?.events.map((event) => event.kind)).toEqual(['session', 'quest', 'release']);
     expect(day?.events.map((event) => event.title)).toEqual(['Hades', 'Prepare route', 'Silksong']);
+    expect(day?.events.find((event) => event.kind === 'quest')).toEqual(jasmine.objectContaining({
+      sourceId: 3,
+      recurrence: 'weekly',
+    }));
   });
 
   it('builds month calendars as six-week grids around the current month', () => {

@@ -377,6 +377,31 @@
   white-space: nowrap;
 }
 
+.sidebar-recurrence {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 2px 7px;
+  border: 1px solid rgba(167, 139, 250, 0.22);
+  border-radius: 999px;
+  color: #d8b4fe;
+  background: rgba(124, 58, 237, 0.13);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.sidebar-recurrence ion-icon {
+  flex: 0 0 auto;
+  font-size: 13px;
+}
+
+.sidebar-quest .sidebar-recurrence {
+  margin-left: 0;
+  color: #d8b4fe;
+}
+
 .sidebar-quest ion-icon,
 .sidebar-quest small {
   margin-left: auto;
@@ -484,6 +509,12 @@
   border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: 12px;
   background: rgba(3, 8, 26, 0.34);
+  cursor: pointer;
+}
+
+.overview-day:focus-visible {
+  outline: 2px solid rgba(147, 197, 253, 0.58);
+  outline-offset: 2px;
 }
 
 .overview-grid--month .overview-day {
@@ -537,10 +568,22 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 7px;
   align-items: start;
+  width: 100%;
   padding: 8px;
   border: 1px solid rgba(148, 163, 184, 0.14);
   border-radius: 10px;
+  color: inherit;
   background: rgba(8, 22, 48, 0.72);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.overview-event:hover,
+.overview-event:focus-visible {
+  border-color: rgba(147, 197, 253, 0.3);
+  background: rgba(15, 37, 78, 0.78);
+  outline: 0;
 }
 
 .overview-event ion-icon {
@@ -565,6 +608,20 @@
   margin-top: 2px;
   color: var(--schedule-muted);
   font-size: 0.7rem;
+}
+
+.overview-recurrence {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  color: #d8b4fe;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.overview-recurrence ion-icon {
+  font-size: 13px;
 }
 
 .overview-event--session {
@@ -831,6 +888,38 @@
   opacity: 0.58;
 }
 
+.schedule-block__footer {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.schedule-block__footer small {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.schedule-recurrence-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+  max-width: 58px;
+  padding: 2px 5px;
+  border: 1px solid rgba(216, 180, 254, 0.28);
+  border-radius: 999px;
+  color: #f5d0fe;
+  background: rgba(124, 58, 237, 0.2);
+  font-size: 0.64rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.schedule-recurrence-badge ion-icon {
+  font-size: 11px;
+}
+
 .schedule-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -898,6 +987,41 @@
 
 .schedule-field textarea {
   resize: vertical;
+}
+
+.schedule-recurrence-preview {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 11px 12px;
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 12px;
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.schedule-recurrence-preview > ion-icon {
+  color: #d8b4fe;
+  font-size: 22px;
+}
+
+.schedule-recurrence-preview div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.schedule-recurrence-preview strong {
+  overflow: hidden;
+  color: #f8fbff;
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-recurrence-preview span {
+  color: var(--schedule-muted);
+  font-size: 0.76rem;
 }
 
 .schedule-modal footer {

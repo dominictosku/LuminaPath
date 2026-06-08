@@ -92,6 +92,12 @@
                       <div>
                         <strong>{{ quest.title }}</strong>
                         <span>{{ quest.gameName || quest.skillName || quest.priority }}</span>
+                        @if (hasRecurrence(quest.recurrence)) {
+                          <small class="sidebar-recurrence">
+                            <ion-icon name="sync-outline"></ion-icon>
+                            {{ recurrenceLabel(quest.recurrence) }}
+                          </small>
+                        }
                       </div>
                       @if (pendingQuestId === quest.id) {
                         <ion-icon class="sidebar-status-icon" name="checkmark-circle-outline"></ion-icon>
@@ -215,7 +221,15 @@
                           (dragend)="endDrag()">
                           <strong>{{ block.title }}</strong>
                           <span>{{ formatBlockTime(block) }}</span>
-                          <small>{{ block.subtitle }}</small>
+                          <div class="schedule-block__footer">
+                            <small>{{ block.subtitle }}</small>
+                            @if (hasRecurrence(block.recurrence)) {
+                              <span class="schedule-recurrence-badge" [attr.title]="recurrenceLabel(block.recurrence)">
+                                <ion-icon name="sync-outline"></ion-icon>
+                                {{ recurrenceShortLabel(block.recurrence) }}
+                              </span>
+                            }
+                          </div>
                         </article>
                       }
                     </div>
@@ -271,7 +285,10 @@
               <article
                 class="overview-day"
                 [class.overview-day--today]="day.isToday"
-                [class.overview-day--outside]="!day.isCurrentMonth">
+                [class.overview-day--outside]="!day.isCurrentMonth"
+                tabindex="0"
+                (click)="openPlannerDay(day)"
+                (keydown.enter)="openPlannerDay(day)">
                 <header>
                   <span>{{ day.label }}</span>
                   <strong>{{ day.number }}</strong>
@@ -279,22 +296,30 @@
                 @if (day.events.length) {
                   <div class="overview-events">
                     @for (event of day.events; track trackByOverviewEvent($index, event)) {
-                      <article
+                      <button
+                        type="button"
                         class="overview-event"
                         [class.overview-event--session]="event.kind === 'session'"
                         [class.overview-event--release]="event.kind === 'release'"
                         [class.overview-event--quest]="event.kind === 'quest'"
-                        [class.overview-event--done]="event.completed">
+                        [class.overview-event--done]="event.completed"
+                        (click)="openOverviewEvent(event, day, $event)">
                         <ion-icon [name]="overviewEventIcon(event.kind)"></ion-icon>
                         <div>
                           <strong>{{ event.title }}</strong>
-                          <span>{{ event.timeLabel }} · {{ event.subtitle }}</span>
+                          <span>{{ event.timeLabel }} - {{ event.subtitle }}</span>
+                          @if (hasRecurrence(event.recurrence)) {
+                            <small class="overview-recurrence">
+                              <ion-icon name="sync-outline"></ion-icon>
+                              {{ recurrenceLabel(event.recurrence) }}
+                            </small>
+                          }
                         </div>
-                      </article>
+                      </button>
                     }
                   </div>
                 } @else {
-                  <span class="overview-empty">Open</span>
+                  <span class="overview-empty">Free</span>
                 }
               </article>
             }
@@ -361,6 +386,19 @@
                 <option value="monthly">Monthly</option>
               </select>
             </label>
+            @if (hasRecurrence(draft.recurrence)) {
+              <div class="schedule-recurrence-preview schedule-field--wide">
+                <ion-icon name="sync-outline"></ion-icon>
+                <div>
+                  <strong>{{ draftRecurrencePreview(draft) }}</strong>
+                  @if (draft.mode === 'edit') {
+                    <span>This edits this scheduled quest only; series-wide editing is not active yet.</span>
+                  } @else {
+                    <span>Completing this quest will create the next occurrence.</span>
+                  }
+                </div>
+              </div>
+            }
             <label class="schedule-field">
               <span>Folder</span>
               <select [(ngModel)]="draft.folderId">

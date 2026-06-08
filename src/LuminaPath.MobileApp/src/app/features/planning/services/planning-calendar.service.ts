@@ -10,10 +10,12 @@ export type TimelineEventKind = 'session' | 'release' | 'quest';
 
 export type TimelineEvent = {
   id: string;
+  sourceId: number;
   kind: TimelineEventKind;
   title: string;
   subtitle: string;
   timeLabel: string;
+  recurrence?: Quest['recurrence'] | null;
   completed: boolean;
 };
 
@@ -126,10 +128,12 @@ export class PlanningCalendarService {
       }
       events.push({
         id: `session-${session.id}`,
+        sourceId: session.id,
         kind: 'session',
         title: session.gameName ?? 'Gaming session',
         subtitle: session.notes || this.formatDuration(session.durationMinutes),
         timeLabel: this.formatTime(session.scheduledAt),
+        recurrence: null,
         completed: session.completed,
       });
     }
@@ -141,10 +145,12 @@ export class PlanningCalendarService {
       }
       events.push({
         id: `release-${game.id}`,
+        sourceId: game.id,
         kind: 'release',
         title: game.name,
         subtitle: 'Release',
         timeLabel: 'Release',
+        recurrence: null,
         completed: releaseDate < this.startOfToday(),
       });
     }
@@ -156,10 +162,12 @@ export class PlanningCalendarService {
       }
       events.push({
         id: `quest-${quest.id}`,
+        sourceId: quest.id,
         kind: 'quest',
         title: quest.title,
         subtitle: quest.gameName ?? quest.skillName ?? this.questPriorityLabel(quest.priority),
-        timeLabel: quest.completed ? 'Done' : this.questPriorityLabel(quest.priority),
+        timeLabel: quest.completed ? 'Done' : quest.scheduledStartAt ? this.formatTime(quest.scheduledStartAt) : this.questPriorityLabel(quest.priority),
+        recurrence: quest.recurrence,
         completed: quest.completed,
       });
     }
