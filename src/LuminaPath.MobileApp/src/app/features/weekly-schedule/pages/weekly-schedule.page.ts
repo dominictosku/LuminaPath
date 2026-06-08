@@ -4,7 +4,6 @@ import { IonContent, IonIcon, IonSegment, IonSegmentButton, IonSpinner } from '@
 import { firstValueFrom } from 'rxjs';
 
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
-import { startOfDay } from 'src/app/shared/utils/date-helpers';
 import { Game, MyGame } from '../../games/models/games.model';
 import { GameService } from '../../games/services/game.service';
 import { MyGameService } from '../../my-games/services/my-game.service';
@@ -18,6 +17,11 @@ import type {
   QuestType,
 } from '../../quests/services/quest-board.service';
 import { GamingSession, GamingSessionService } from '../../planning/services/gaming-session.service';
+import {
+  hasRecurrence as hasCalendarRecurrence,
+  shiftForRecurrence,
+  startOfCalendarMonthGrid,
+} from '../../planning/domain/planning-calendar.helpers';
 import { PlanningCalendarService } from '../../planning/services/planning-calendar.service';
 import type {
   CalendarMode,
@@ -38,15 +42,20 @@ import {
   eventHeight,
   eventTop,
   formatTimeRange,
-  layoutOverlappingBlocks,
   minutesSinceDayStart,
   shiftWeek,
   startOfWeek,
   timeLabelFromMinutes,
   weekTitle,
 } from '../domain/weekly-schedule.helpers';
+import {
+  buildWeeklyScheduleBlocksByDay,
+  folderColor as scheduleFolderColor,
+  isScheduledQuest,
+  type WeeklyScheduleCalendarGroupId,
+} from '../domain/weekly-schedule.builder';
 
-type CalendarGroupId = 'quests' | 'sessions';
+type CalendarGroupId = WeeklyScheduleCalendarGroupId;
 type ScheduleViewMode = 'planner' | 'overview';
 type SessionWindow = { from: Date; to: Date };
 type ScheduleLoadOptions = {
@@ -339,7 +348,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       {
         id: 'quests',
         label: 'Scheduled quests',
-        count: this.quests.filter((quest) => this.isScheduledQuest(quest)).length,
+        count: this.quests.filter(isScheduledQuest).length,
         color: '#7c3aed',
         icon: 'sparkles-outline',
       },
@@ -954,7 +963,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   }
 
   protected hasRecurrence(recurrence: QuestRecurrence | null | undefined): boolean {
-    return Boolean(recurrence && recurrence !== 'none');
+    return hasCalendarRecurrence(recurrence);
   }
 
   protected draftRecurrencePreview(draft: QuestScheduleDraft): string {
@@ -967,7 +976,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       return `${this.recurrenceLabel(draft.recurrence)} repeat`;
     }
 
-    return `Next ${this.recurrenceLabel(draft.recurrence).toLowerCase()} occurrence: ${this.formatDateTime(this.shiftForRecurrence(start, draft.recurrence))}`;
+    return `Next ${this.recurrenceLabel(draft.recurrence).toLowerCase()} occurrence: ${this.formatDateTime(shiftForRecurrence(start, draft.recurrence))}`;
   }
 
   protected questScheduleLabel(quest: Quest): string {
@@ -988,8 +997,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   }
 
   protected folderColor(folderId: number | null | undefined): string {
-    if (folderId == null) return '#7c3aed';
-    return this.folders.find((folder) => folder.id === folderId)?.color || '#7c3aed';
+    return scheduleFolderColor(this.folders, folderId);
   }
 
   protected folderName(folder: QuestFolder | null): string {
@@ -1052,13 +1060,13 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   private rebuildCalendar(): void {
     this.weekDays = buildWeekDays(this.weekAnchor);
     this.title = weekTitle(this.weekAnchor);
-    const map = new Map<string, WeekScheduleBlock[]>();
-
-    for (const day of this.weekDays) {
-      map.set(day.key, layoutOverlappingBlocks(this.blocksFor(day)));
-    }
-
-    this.blocksByDay = map;
+    this.blocksByDay = buildWeeklyScheduleBlocksByDay({
+      days: this.weekDays,
+      quests: this.quests,
+      sessions: this.sessions,
+      folders: this.folders,
+      groupVisibility: this.groupVisibility,
+    });
   }
 
   private buildOverviewCalendar(): void {
@@ -1095,7 +1103,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   private overviewSessionWindow(): SessionWindow {
     const start = this.overviewMode === 'week'
       ? startOfWeek(this.overviewAnchor)
-      : this.startOfOverviewMonthGrid(this.overviewAnchor);
+      : startOfCalendarMonthGrid(this.overviewAnchor);
     const to = new Date(start);
     to.setDate(start.getDate() + (this.overviewMode === 'week' ? 7 : 42));
     return { from: start, to };
@@ -1121,145 +1129,6 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       to: new Date(window.to),
     };
     this.overviewSessions = sessions;
-  }
-
-  private startOfOverviewMonthGrid(anchor: Date): Date {
-    const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-    return startOfWeek(monthStart);
-  }
-
-  private blocksFor(day: WeekScheduleDay): WeekScheduleBlock[] {
-    const blocks: WeekScheduleBlock[] = [];
-
-    if (this.groupVisibility.quests) {
-      for (const quest of this.quests) {
-        if (this.isScheduledQuest(quest) && dateKey(new Date(quest.scheduledStartAt!)) === day.key) {
-          blocks.push({
-            id: `quest-${quest.id}`,
-            sourceId: quest.id,
-            kind: 'quest',
-            title: quest.title,
-            subtitle: quest.gameName ?? quest.folderName ?? priorityLabel(quest.priority),
-            startAt: quest.scheduledStartAt!,
-            endAt: quest.scheduledEndAt!,
-            color: this.folderColor(quest.folderId),
-            recurrence: quest.recurrence,
-            completed: quest.completed,
-            lane: 0,
-            laneCount: 1,
-          });
-        }
-
-        const projected = this.projectedQuestOccurrenceForDay(quest, day.date);
-        if (projected) {
-          blocks.push({
-            id: `quest-${quest.id}-projected-${day.key}`,
-            sourceId: quest.id,
-            kind: 'quest',
-            title: quest.title,
-            subtitle: 'Projected repeat',
-            startAt: projected.start.toISOString(),
-            endAt: projected.end.toISOString(),
-            color: this.folderColor(quest.folderId),
-            recurrence: quest.recurrence,
-            projected: true,
-            completed: false,
-            lane: 0,
-            laneCount: 1,
-          });
-        }
-      }
-    }
-
-    if (this.groupVisibility.sessions) {
-      for (const session of this.sessions) {
-        const start = new Date(session.scheduledAt);
-        if (dateKey(start) !== day.key) {
-          continue;
-        }
-        const end = new Date(start);
-        end.setMinutes(start.getMinutes() + session.durationMinutes);
-        blocks.push({
-          id: `session-${session.id}`,
-          kind: 'session',
-          title: session.gameName ?? 'Gaming session',
-          subtitle: session.notes || `${session.durationMinutes} min`,
-          startAt: start.toISOString(),
-          endAt: end.toISOString(),
-          color: '#06b6d4',
-          completed: session.completed,
-          lane: 0,
-          laneCount: 1,
-        });
-      }
-    }
-
-    return blocks;
-  }
-
-  private projectedQuestOccurrenceForDay(quest: Quest, day: Date): { start: Date; end: Date } | null {
-    if (!this.hasRecurrence(quest.recurrence) || quest.completed || !quest.scheduledStartAt || !quest.scheduledEndAt) {
-      return null;
-    }
-
-    const sourceStart = new Date(quest.scheduledStartAt);
-    const sourceEnd = new Date(quest.scheduledEndAt);
-    if (Number.isNaN(sourceStart.getTime()) || Number.isNaN(sourceEnd.getTime())) {
-      return null;
-    }
-
-    const dayKey = dateKey(day);
-    if (dayKey === dateKey(sourceStart) || startOfDay(day) < startOfDay(sourceStart)) {
-      return null;
-    }
-
-    const projectedStart = this.projectedOccurrenceStartForDay(sourceStart, quest.recurrence, day);
-    if (!projectedStart) {
-      return null;
-    }
-
-    const durationMs = sourceEnd.getTime() - sourceStart.getTime();
-    if (durationMs <= 0) {
-      return null;
-    }
-
-    return {
-      start: projectedStart,
-      end: new Date(projectedStart.getTime() + durationMs),
-    };
-  }
-
-  private projectedOccurrenceStartForDay(sourceStart: Date, recurrence: QuestRecurrence, day: Date): Date | null {
-    const sourceDay = startOfDay(sourceStart);
-    const targetDay = startOfDay(day);
-    if (targetDay <= sourceDay) {
-      return null;
-    }
-
-    if (recurrence === 'daily') {
-      return dateAtMinutes(targetDay, minutesSinceDayStart(sourceStart));
-    }
-
-    if (recurrence === 'weekly') {
-      const dayDifference = Math.round((targetDay.getTime() - sourceDay.getTime()) / 86_400_000);
-      return dayDifference % 7 === 0
-        ? dateAtMinutes(targetDay, minutesSinceDayStart(sourceStart))
-        : null;
-    }
-
-    if (recurrence !== 'monthly') {
-      return null;
-    }
-
-    let candidate = new Date(sourceStart);
-    for (let index = 0; index < 240 && startOfDay(candidate) <= targetDay; index += 1) {
-      candidate = this.shiftForRecurrence(candidate, 'monthly');
-      if (dateKey(candidate) === dateKey(targetDay)) {
-        return candidate;
-      }
-    }
-
-    return null;
   }
 
   private async scheduleQuestAt(quest: Quest, day: Date, minutes: number): Promise<void> {
@@ -1411,34 +1280,6 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     return Math.min(startMinutes + this.clampedDuration(startMinutes, requestedMinutes), WEEK_END_HOUR * 60 - 1);
   }
 
-  private shiftForRecurrence(value: Date, recurrence: QuestRecurrence): Date {
-    const next = new Date(value);
-    if (recurrence === 'daily') {
-      next.setDate(next.getDate() + 1);
-    } else if (recurrence === 'weekly') {
-      next.setDate(next.getDate() + 7);
-    } else if (recurrence === 'monthly') {
-      return this.addMonthsClamped(value, 1);
-    }
-    return next;
-  }
-
-  private addMonthsClamped(value: Date, months: number): Date {
-    const year = value.getFullYear();
-    const month = value.getMonth() + months;
-    const day = value.getDate();
-    const lastDayOfTargetMonth = new Date(year, month + 1, 0).getDate();
-    return new Date(
-      year,
-      month,
-      Math.min(day, lastDayOfTargetMonth),
-      value.getHours(),
-      value.getMinutes(),
-      value.getSeconds(),
-      value.getMilliseconds(),
-    );
-  }
-
   private formatDateTime(value: Date): string {
     return new Intl.DateTimeFormat('en', {
       weekday: 'short',
@@ -1465,10 +1306,6 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       return null;
     }
     return new Date(year, month - 1, day, hour, minute, 0, 0);
-  }
-
-  private isScheduledQuest(quest: Quest): boolean {
-    return Boolean(quest.scheduledStartAt && quest.scheduledEndAt);
   }
 
   private questSortKey(quest: Quest): string {

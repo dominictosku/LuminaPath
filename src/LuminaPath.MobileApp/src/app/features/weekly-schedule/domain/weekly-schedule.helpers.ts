@@ -1,4 +1,17 @@
-import { addDays, startOfDay, toISODate } from 'src/app/shared/utils/date-helpers';
+import { addDays } from 'src/app/shared/utils/date-helpers';
+import {
+  dateKey,
+  minutesSinceDayStart,
+  startOfWeek,
+} from '../../planning/domain/planning-calendar.helpers';
+
+export {
+  dateAtMinutes,
+  dateKey,
+  minutesSinceDayStart,
+  shiftWeek,
+  startOfWeek,
+} from '../../planning/domain/planning-calendar.helpers';
 
 export const WEEK_START_HOUR = 0;
 export const WEEK_END_HOUR = 24;
@@ -29,16 +42,6 @@ export type WeekScheduleBlock = {
   lane: number;
   laneCount: number;
 };
-
-export function startOfWeek(date: Date): Date {
-  const start = startOfDay(date);
-  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
-  return start;
-}
-
-export function shiftWeek(anchor: Date, direction: -1 | 1): Date {
-  return addDays(startOfWeek(anchor), direction * 7);
-}
 
 export function buildWeekDays(anchor: Date, now: Date = new Date()): WeekScheduleDay[] {
   const todayKey = dateKey(now);
@@ -82,20 +85,6 @@ export function weekTitle(anchor: Date): string {
   }
 
   return `${fullFormat.format(start)} - ${fullFormat.format(end)}`;
-}
-
-export function dateKey(value: Date): string {
-  return toISODate(value);
-}
-
-export function dateAtMinutes(day: Date, minutes: number): Date {
-  const date = startOfDay(day);
-  date.setMinutes(minutes);
-  return date;
-}
-
-export function minutesSinceDayStart(value: Date): number {
-  return value.getHours() * 60 + value.getMinutes();
 }
 
 export function timeLabelFromMinutes(minutes: number): string {
