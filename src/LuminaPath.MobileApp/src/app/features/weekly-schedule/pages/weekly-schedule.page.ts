@@ -47,7 +47,12 @@ import {
 type CalendarGroupId = 'quests' | 'sessions';
 type ScheduleViewMode = 'planner' | 'overview';
 type SessionWindow = { from: Date; to: Date };
-type SlotActionDraft = { day: WeekScheduleDay; minutes: number; game: LibraryGameOption | null };
+type SlotActionDraft = {
+  day: WeekScheduleDay;
+  minutes: number;
+  game: LibraryGameOption | null;
+  quest: Quest | null;
+};
 
 type LibraryGameOption = {
   myGameId: number;
@@ -152,6 +157,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   protected slotActionDraft: SlotActionDraft | null = null;
   protected draftError = '';
   protected sessionDraftError = '';
+  protected pendingQuestId: number | null = null;
   protected pendingGameId: number | null = null;
   protected dragPreview: DragPreview | null = null;
   protected activeDropKey: string | null = null;
@@ -358,10 +364,18 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   }
 
   protected openSlotActions(day: WeekScheduleDay, minutes: number): void {
+    const selectedQuest = this.pendingQuestId == null
+      ? null
+      : this.quests.find((quest) => quest.id === this.pendingQuestId) ?? null;
     const selectedGame = this.pendingGameId == null
       ? null
       : this.games.find((game) => game.myGameId === this.pendingGameId) ?? null;
-    this.slotActionDraft = { day, minutes, game: selectedGame };
+    this.slotActionDraft = {
+      day,
+      minutes,
+      game: selectedGame,
+      quest: selectedQuest,
+    };
     this.draft = null;
     this.sessionDraft = null;
   }
@@ -370,10 +384,16 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     this.slotActionDraft = null;
   }
 
-  protected createQuestFromSlot(): void {
+  protected async planQuestFromSlot(): Promise<void> {
     if (!this.slotActionDraft) return;
-    const { day, minutes } = this.slotActionDraft;
+    const { day, minutes, quest } = this.slotActionDraft;
     this.slotActionDraft = null;
+    if (quest) {
+      this.pendingQuestId = null;
+      await this.scheduleQuestAt(quest, day.date, minutes);
+      return;
+    }
+
     this.openCreateQuest(day, minutes);
   }
 
@@ -607,8 +627,18 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     }
   }
 
-  protected selectGameForNextQuest(game: LibraryGameOption): void {
+  protected selectGameForNextSlot(game: LibraryGameOption): void {
     this.pendingGameId = this.pendingGameId === game.myGameId ? null : game.myGameId;
+    if (this.pendingGameId !== null) {
+      this.pendingQuestId = null;
+    }
+  }
+
+  protected selectQuestForNextSlot(quest: Quest): void {
+    this.pendingQuestId = this.pendingQuestId === quest.id ? null : quest.id;
+    if (this.pendingQuestId !== null) {
+      this.pendingGameId = null;
+    }
   }
 
   protected dragQuest(event: DragEvent, quest: Quest): void {

@@ -83,15 +83,19 @@
                     <article
                       class="sidebar-quest"
                       [class.sidebar-quest--scheduled]="quest.scheduledStartAt"
+                      [class.sidebar-quest--active]="pendingQuestId === quest.id"
                       [class.sidebar-item--dragging]="isDraggingItem('quest-' + quest.id)"
                       draggable="true"
+                      (click)="selectQuestForNextSlot(quest)"
                       (dragstart)="dragQuest($event, quest)"
                       (dragend)="endDrag()">
                       <div>
                         <strong>{{ quest.title }}</strong>
                         <span>{{ quest.gameName || quest.skillName || quest.priority }}</span>
                       </div>
-                      @if (quest.scheduledStartAt && quest.scheduledEndAt) {
+                      @if (pendingQuestId === quest.id) {
+                        <ion-icon class="sidebar-status-icon" name="checkmark-circle-outline"></ion-icon>
+                      } @else if (quest.scheduledStartAt && quest.scheduledEndAt) {
                         <small>{{ questScheduleLabel(quest) }}</small>
                       } @else {
                         <ion-icon name="time-outline"></ion-icon>
@@ -124,7 +128,7 @@
                 [class.sidebar-game--active]="pendingGameId === game.myGameId"
                 [class.sidebar-item--dragging]="isDraggingItem('game-' + game.myGameId)"
                 draggable="true"
-                (click)="selectGameForNextQuest(game)"
+                (click)="selectGameForNextSlot(game)"
                 (dragstart)="dragGame($event, game)"
                 (dragend)="endDrag()">
                 <ion-icon name="game-controller-outline"></ion-icon>
@@ -132,6 +136,9 @@
                   <strong>{{ game.gameName }}</strong>
                   <span>{{ game.playtime ? game.playtime + 'h estimate' : 'Library game' }}</span>
                 </div>
+                @if (pendingGameId === game.myGameId) {
+                  <ion-icon class="sidebar-status-icon" name="checkmark-circle-outline"></ion-icon>
+                }
               </article>
             } @empty {
               <div class="sidebar-empty">
@@ -149,68 +156,72 @@
             <ion-spinner name="crescent"></ion-spinner>
           </div>
         } @else {
-          <div class="week-calendar__header">
-            <div class="time-gutter time-gutter--header">{{ timezoneLabel }}</div>
-            @for (day of weekDays; track trackByDay($index, day)) {
-              <div class="day-heading" [class.day-heading--today]="day.isToday">
-                <span>{{ day.label }}</span>
-                <strong>{{ day.dayNumber }}</strong>
-              </div>
-            }
-          </div>
-
           <div class="week-calendar__scroll" #calendarScroll>
-            <div class="time-gutter" [style.height.px]="dayHeight">
-              @for (hour of hours; track hour) {
-                <span class="time-label" [style.top.px]="slotTop(hour * 60)">{{ hourLabel(hour) }}</span>
-              }
-            </div>
+            <div class="week-calendar__grid-shell">
+              <div class="week-calendar__header">
+                <div class="time-gutter time-gutter--header">{{ timezoneLabel }}</div>
+                @for (day of weekDays; track trackByDay($index, day)) {
+                  <div class="day-heading" [class.day-heading--today]="day.isToday">
+                    <span>{{ day.label }}</span>
+                    <strong>{{ day.dayNumber }}</strong>
+                  </div>
+                }
+              </div>
 
-            <div class="week-calendar__days">
-              @for (day of weekDays; track trackByDay($index, day)) {
-                <div class="day-column" [class.day-column--today]="day.isToday" [style.height.px]="dayHeight">
+              <div class="week-calendar__body">
+                <div class="time-gutter" [style.height.px]="dayHeight">
                   @for (hour of hours; track hour) {
-                    <span class="hour-line" [style.top.px]="slotTop(hour * 60)"></span>
-                  }
-                  @for (minutes of slots; track minutes) {
-                    <button
-                      type="button"
-                      class="schedule-slot"
-                      [attr.aria-label]="slotAriaLabel(day, minutes)"
-                      [style.top.px]="slotTop(minutes)"
-                      [style.height.px]="slotHeight"
-                      (click)="openSlotActions(day, minutes)"
-                      [class.schedule-slot--drop-target]="isActiveDropSlot(day, minutes)"
-                      (dragover)="allowDrop($event, day, minutes)"
-                      (dragleave)="clearDropSlot(slotKey(day, minutes))"
-                      (drop)="dropOnSlot($event, day, minutes)">
-                    </button>
-                  }
-                  @if (isCurrentWeek() && day.isToday) {
-                    <span class="current-time-line" [style.top.px]="currentTimeTop()"></span>
-                  }
-                  @for (block of blocksForDay(day); track trackByBlock($index, block)) {
-                    <article
-                      class="schedule-block"
-                      [class.schedule-block--session]="block.kind === 'session'"
-                      [class.schedule-block--done]="block.completed"
-                      [class.schedule-block--dragging]="isDraggingItem(block.id)"
-                      draggable="true"
-                      [style.--block-color]="block.color"
-                      [style.top.px]="blockTop(block)"
-                      [style.height.px]="blockHeight(block)"
-                      [style.left]="blockLeft(block)"
-                      [style.width]="blockWidth(block)"
-                      (click)="openBlock($event, block)"
-                      (dragstart)="dragBlock($event, block)"
-                      (dragend)="endDrag()">
-                      <strong>{{ block.title }}</strong>
-                      <span>{{ formatBlockTime(block) }}</span>
-                      <small>{{ block.subtitle }}</small>
-                    </article>
+                    <span class="time-label" [style.top.px]="slotTop(hour * 60)">{{ hourLabel(hour) }}</span>
                   }
                 </div>
-              }
+
+                <div class="week-calendar__days">
+                  @for (day of weekDays; track trackByDay($index, day)) {
+                    <div class="day-column" [class.day-column--today]="day.isToday" [style.height.px]="dayHeight">
+                      @for (hour of hours; track hour) {
+                        <span class="hour-line" [style.top.px]="slotTop(hour * 60)"></span>
+                      }
+                      @for (minutes of slots; track minutes) {
+                        <button
+                          type="button"
+                          class="schedule-slot"
+                          [attr.aria-label]="slotAriaLabel(day, minutes)"
+                          [style.top.px]="slotTop(minutes)"
+                          [style.height.px]="slotHeight"
+                          (click)="openSlotActions(day, minutes)"
+                          [class.schedule-slot--drop-target]="isActiveDropSlot(day, minutes)"
+                          (dragover)="allowDrop($event, day, minutes)"
+                          (dragleave)="clearDropSlot(slotKey(day, minutes))"
+                          (drop)="dropOnSlot($event, day, minutes)">
+                        </button>
+                      }
+                      @if (isCurrentWeek() && day.isToday) {
+                        <span class="current-time-line" [style.top.px]="currentTimeTop()"></span>
+                      }
+                      @for (block of blocksForDay(day); track trackByBlock($index, block)) {
+                        <article
+                          class="schedule-block"
+                          [class.schedule-block--session]="block.kind === 'session'"
+                          [class.schedule-block--done]="block.completed"
+                          [class.schedule-block--dragging]="isDraggingItem(block.id)"
+                          draggable="true"
+                          [style.--block-color]="block.color"
+                          [style.top.px]="blockTop(block)"
+                          [style.height.px]="blockHeight(block)"
+                          [style.left]="blockLeft(block)"
+                          [style.width]="blockWidth(block)"
+                          (click)="openBlock($event, block)"
+                          (dragstart)="dragBlock($event, block)"
+                          (dragend)="endDrag()">
+                          <strong>{{ block.title }}</strong>
+                          <span>{{ formatBlockTime(block) }}</span>
+                          <small>{{ block.subtitle }}</small>
+                        </article>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
             </div>
           </div>
         }
@@ -495,11 +506,13 @@
           </header>
 
           <div class="slot-choice-list">
-            <button type="button" class="slot-choice" (click)="createQuestFromSlot()">
-              <ion-icon name="sparkles-outline"></ion-icon>
+            <button type="button" class="slot-choice" (click)="planQuestFromSlot()" [disabled]="isSaving">
+              <ion-icon [name]="slotActionDraft.quest ? 'flag-outline' : 'sparkles-outline'"></ion-icon>
               <span>
-                <strong>Scheduled quest</strong>
-                <small>{{ slotActionDraft.game ? 'Quest for ' + slotActionDraft.game.gameName : 'Create a task block' }}</small>
+                <strong>{{ slotActionDraft.quest ? 'Schedule selected quest' : 'New quest' }}</strong>
+                <small>
+                  {{ slotActionDraft.quest ? slotActionDraft.quest.title : slotActionDraft.game ? 'Quest for ' + slotActionDraft.game.gameName : 'Create a task block' }}
+                </small>
               </span>
             </button>
             <button type="button" class="slot-choice slot-choice--session" (click)="createSessionFromSlot()" [disabled]="isSaving">
