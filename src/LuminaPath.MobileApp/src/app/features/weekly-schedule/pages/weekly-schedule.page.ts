@@ -95,6 +95,7 @@ type CalendarGroupId = WeeklyScheduleCalendarGroupId;
 type ScheduleViewMode = 'planner' | 'overview';
 type ScheduleLoadOptions = {
   autoScrollCalendar?: boolean;
+  restoreCalendarScrollTop?: number;
   forceBoard?: boolean;
   forceLibrary?: boolean;
 };
@@ -243,6 +244,9 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       this.errorMessage = 'Weekly schedule could not be loaded.';
     } finally {
       this.isLoading = false;
+      if (options.restoreCalendarScrollTop !== undefined) {
+        this.queueCalendarScrollRestore(options.restoreCalendarScrollTop);
+      }
       if (options.autoScrollCalendar) {
         this.queueCalendarAutoScroll();
       }
@@ -250,8 +254,9 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   }
 
   protected async shift(direction: -1 | 1): Promise<void> {
+    const scrollTop = this.calendarScroll?.nativeElement.scrollTop ?? 0;
     this.weekAnchor = shiftWeek(this.weekAnchor, direction);
-    await this.load({ autoScrollCalendar: true });
+    await this.load({ restoreCalendarScrollTop: scrollTop });
   }
 
   protected async today(): Promise<void> {
@@ -1220,6 +1225,18 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     setTimeout(() => {
       this.calendarAutoScrollQueued = false;
       this.scrollCalendarToHelpfulTime();
+    });
+  }
+
+  private queueCalendarScrollRestore(scrollTop: number): void {
+    setTimeout(() => {
+      const scroller = this.calendarScroll?.nativeElement;
+      if (!scroller || this.isLoading || this.viewMode !== 'planner') {
+        return;
+      }
+
+      const maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+      scroller.scrollTop = Math.min(Math.max(0, scrollTop), maxScrollTop);
     });
   }
 
