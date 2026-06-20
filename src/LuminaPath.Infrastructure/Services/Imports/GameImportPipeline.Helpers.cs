@@ -13,8 +13,7 @@ public sealed partial class GameImportPipeline
         ExternalMediaProvider.Psn,
         ExternalMediaProvider.Steam,
         ExternalMediaProvider.Igdb,
-        ExternalMediaProvider.Rawg,
-        ExternalMediaProvider.Excel
+        ExternalMediaProvider.Rawg
     ];
 
     private static IQueryable<Game> LoadGames(LuminaPathDbContext context)
@@ -90,6 +89,9 @@ public sealed partial class GameImportPipeline
         myGame.StartDate = item.StartDate ?? myGame.StartDate;
         myGame.EndDate = item.EndDate ?? myGame.EndDate;
         myGame.TimeSpend = item.TimeSpend ?? myGame.TimeSpend;
+        myGame.PersonalNotes = string.IsNullOrWhiteSpace(item.PersonalNotes)
+            ? myGame.PersonalNotes
+            : item.PersonalNotes;
 
         if (item.FirstPlayed.HasValue || item.LastPlayed.HasValue || item.TrackedHours.HasValue)
         {

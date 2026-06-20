@@ -36,6 +36,7 @@ public partial class ExcelService
         return new GameImportItem
         {
             RowNumber = row,
+            ExportedId = GetInt(worksheet, row, headerMap, "id"),
             Name = name,
             Description = GetText(worksheet, row, headerMap, "description"),
             Source = GetText(worksheet, row, headerMap, "source") ?? "Excel",
@@ -43,6 +44,7 @@ public partial class ExcelService
             Platforms = string.IsNullOrWhiteSpace(platform) ? 0 : ParsePlatforms(platform),
             Genres = string.IsNullOrWhiteSpace(genres) ? new List<string>() : SplitList(genres).ToList(),
             Playtime = GetInt(worksheet, row, headerMap, "playtime", "estimatedplaytime"),
+            ParentGameId = GetInt(worksheet, row, headerMap, "parentgameid"),
             ExternalProvider = primaryExternalId?.Key,
             ExternalId = primaryExternalId?.Value,
             ExternalIds = externalIds,
@@ -55,6 +57,7 @@ public partial class ExcelService
             FirstPlayed = ToUtcDate(GetDate(worksheet, row, headerMap, "firstplayed")),
             LastPlayed = ToUtcDate(GetDate(worksheet, row, headerMap, "lastplayed")),
             TrackedHours = GetDouble(worksheet, row, headerMap, "trackedhours", "playtimeinhours"),
+            PersonalNotes = GetText(worksheet, row, headerMap, "personalnotes", "notes"),
         };
     }
 

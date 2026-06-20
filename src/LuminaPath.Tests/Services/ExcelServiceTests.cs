@@ -311,6 +311,29 @@ namespace Test.Services
             Assert.Equal(250, mySeries.CurrentWatchTimeMinutes);
         }
 
+        [Fact]
+        public async Task ImportLibraryWorkbookAsync_RestoresGameParentAndPersonalNotes()
+        {
+            var options = CreateOptions();
+            var user = await SeedUser(options);
+            var service = CreateService(options);
+            using var stream = CreateGameParentWorkbookStream();
+
+            var result = await service.ImportLibraryWorkbookAsync(stream, user);
+
+            Assert.Empty(result.Errors);
+            Assert.Equal(2, result.RowsImported);
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            var child = await assertContext.Games
+                .Include(game => game.ParentGame)
+                .Include(game => game.MyGames!)
+                .SingleAsync(game => game.Name == "Imported Expansion");
+
+            Assert.Equal("Imported Base Game", child.ParentGame?.Name);
+            Assert.Equal("Bring snacks", child.MyGames!.Single().PersonalNotes);
+        }
+
         private static DbContextOptions<LuminaPathDbContext> CreateOptions()
         {
             return new DbContextOptionsBuilder<LuminaPathDbContext>()
@@ -547,6 +570,40 @@ namespace Test.Services
                 5,
                 250
             ]);
+
+            var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+            return stream;
+        }
+
+        private static MemoryStream CreateGameParentWorkbookStream()
+        {
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Games");
+            var headers = new[]
+            {
+                "Id",
+                "Name",
+                "Status",
+                "Parent Game Id",
+                "Personal Notes"
+            };
+
+            for (var index = 0; index < headers.Length; index++)
+            {
+                worksheet.Cell(1, index + 1).Value = headers[index];
+            }
+
+            worksheet.Cell(2, 1).Value = 10;
+            worksheet.Cell(2, 2).Value = "Imported Base Game";
+            worksheet.Cell(2, 3).Value = "Planned";
+
+            worksheet.Cell(3, 1).Value = 11;
+            worksheet.Cell(3, 2).Value = "Imported Expansion";
+            worksheet.Cell(3, 3).Value = "Playing";
+            worksheet.Cell(3, 4).Value = 10;
+            worksheet.Cell(3, 5).Value = "Bring snacks";
 
             var stream = new MemoryStream();
             workbook.SaveAs(stream);

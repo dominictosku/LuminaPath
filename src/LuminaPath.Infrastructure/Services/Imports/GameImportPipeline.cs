@@ -117,6 +117,8 @@ public sealed partial class GameImportPipeline
         var result = new GameImportResult();
         var sequence = 1;
         var seenRows = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var importedByExportedId = new Dictionary<int, Game>();
+        var parentLinks = new List<(Game Game, int ParentExportedId)>();
 
         foreach (var item in items)
         {
@@ -170,11 +172,30 @@ public sealed partial class GameImportPipeline
                 }
 
                 ApplyMyGameValues(myGame, item);
+                if (item.ExportedId.HasValue)
+                {
+                    importedByExportedId[item.ExportedId.Value] = game;
+                }
+
+                if (item.ParentGameId.HasValue)
+                {
+                    parentLinks.Add((game, item.ParentGameId.Value));
+                }
+
                 result.RowsImported++;
             }
             catch (Exception ex)
             {
                 result.Errors.Add($"Row {rowNumber}: {ex.Message}");
+            }
+        }
+
+        foreach (var (game, parentExportedId) in parentLinks)
+        {
+            if (importedByExportedId.TryGetValue(parentExportedId, out var parent)
+                && parent != game)
+            {
+                game.ParentGame = parent;
             }
         }
 

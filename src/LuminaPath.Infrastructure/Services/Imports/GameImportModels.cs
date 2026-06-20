@@ -6,6 +6,8 @@ public sealed class GameImportItem
 {
     public int? RowNumber { get; set; }
 
+    public int? ExportedId { get; set; }
+
     public string Name { get; set; } = string.Empty;
 
     public string Source { get; set; } = "Import";
@@ -19,6 +21,8 @@ public sealed class GameImportItem
     public Platforms Platforms { get; set; }
 
     public int? Playtime { get; set; }
+
+    public int? ParentGameId { get; set; }
 
     public ExternalMediaProvider? ExternalProvider { get; set; }
 
@@ -43,6 +47,8 @@ public sealed class GameImportItem
     public DateTime? LastPlayed { get; set; }
 
     public double? TrackedHours { get; set; }
+
+    public string? PersonalNotes { get; set; }
 }
 
 public sealed class GameImportResult

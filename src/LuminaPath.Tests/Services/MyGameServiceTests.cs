@@ -428,52 +428,6 @@ namespace Test.Services
         }
 
         [Fact]
-        public async Task ExportAsCSV_OnlyContainsCallingUsersGames()
-        {
-            var options = Utilities.DbContext.TestDbContextOptions();
-            const string userA = "user-a";
-            const string userB = "user-b";
-
-            await using (var dbContext = new LuminaPathDbContext(options))
-            {
-                dbContext.Users.AddRange(NewUser(userA), NewUser(userB));
-                var aGame = new Game { Name = "Apex", Description = "", ReleaseDate = new DateTime(2020, 1, 1) };
-                var bGame = new Game { Name = "Bastion", Description = "", ReleaseDate = new DateTime(2021, 1, 1) };
-                dbContext.Games.AddRange(aGame, bGame);
-                dbContext.MyGames.AddRange(
-                    new MyGame
-                    {
-                        Game = aGame,
-                        LuminaUserId = userA,
-                        Status = GameStatus.Playing,
-                        Priority = 1,
-                        MyGameInfo = new MyGameInfo
-                        {
-                            TrackedHours = 12.5,
-                            FirstPlayed = new DateTime(2024, 1, 1),
-                            LastPlayed = new DateTime(2024, 6, 1)
-                        }
-                    },
-                    new MyGame
-                    {
-                        Game = bGame,
-                        LuminaUserId = userB,
-                        Status = GameStatus.Completed,
-                        Priority = 1
-                    });
-                await dbContext.SaveChangesAsync();
-            }
-
-            var service = new MyGameService(new TestDbContextFactory(options), new ObjectMapper());
-
-            var bytes = await service.ExportAsCSV(new LuminaUser { Id = userA });
-            var csv = System.Text.Encoding.UTF8.GetString(bytes);
-
-            Assert.Contains("Apex", csv);
-            Assert.DoesNotContain("Bastion", csv);
-        }
-
-        [Fact]
         public async Task GetEarnedAchievementsAsync_ReturnsOnlyCallingUsersEarnedAchievementsForGame()
         {
             var options = Utilities.DbContext.TestDbContextOptions();

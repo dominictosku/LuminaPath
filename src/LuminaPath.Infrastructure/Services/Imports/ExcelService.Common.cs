@@ -14,8 +14,7 @@ public partial class ExcelService
         ExternalMediaProvider.Rawg,
         ExternalMediaProvider.Anilist,
         ExternalMediaProvider.Mal,
-        ExternalMediaProvider.Tmdb,
-        ExternalMediaProvider.Excel
+        ExternalMediaProvider.Tmdb
     ];
 
     private static void ValidateWorkbookSize(Stream stream)

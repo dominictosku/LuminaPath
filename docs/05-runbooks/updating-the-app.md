@@ -154,7 +154,7 @@ After either backend or frontend upgrades, manually verify:
 - Game details tabs, trophies, quests and notes.
 - Planning calendar.
 - Settings tabs, database backups and background jobs.
-- Import/export flows for ODS and PSN.
+- Import/export flows for Excel (.xlsx), Steam, and PSN.
 - Uploaded cover images and documents.
 
 For Docker:
