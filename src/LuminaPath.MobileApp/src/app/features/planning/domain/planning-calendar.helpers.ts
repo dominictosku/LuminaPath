@@ -3,10 +3,18 @@ import { addDays, startOfDay, toISODate } from 'src/app/shared/utils/date-helper
 export type CalendarRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';
 
 export type ScheduledRecurringItem = {
+  id?: number | null;
   recurrence?: CalendarRecurrence | null;
+  seriesRecurrence?: CalendarRecurrence | null;
+  questSeriesId?: number | null;
+  seriesOccurrenceDate?: string | null;
+  projectsQuestSeries?: boolean | null;
   completed?: boolean | null;
+  dueDate?: string | null;
   scheduledStartAt?: string | null;
   scheduledEndAt?: string | null;
+  seriesScheduledStartAt?: string | null;
+  seriesScheduledEndAt?: string | null;
 };
 
 export function startOfWeek(date: Date): Date {
@@ -48,6 +56,10 @@ export function hasRecurrence(recurrence: CalendarRecurrence | null | undefined)
   return Boolean(recurrence && recurrence !== 'none');
 }
 
+export function recurringItemRecurrence(item: ScheduledRecurringItem): CalendarRecurrence | null | undefined {
+  return item.seriesRecurrence ?? item.recurrence;
+}
+
 export function shiftForRecurrence(value: Date, recurrence: CalendarRecurrence): Date {
   const next = new Date(value);
   if (recurrence === 'daily') {
@@ -80,12 +92,15 @@ export function projectedRecurringOccurrenceForDay(
   item: ScheduledRecurringItem,
   day: Date,
 ): { start: Date; end: Date } | null {
-  if (!hasRecurrence(item.recurrence) || item.completed || !item.scheduledStartAt || !item.scheduledEndAt) {
+  const recurrence = recurringItemRecurrence(item);
+  const scheduledStartAt = item.seriesScheduledStartAt ?? item.scheduledStartAt;
+  const scheduledEndAt = item.seriesScheduledEndAt ?? item.scheduledEndAt;
+  if (item.projectsQuestSeries === false || !hasRecurrence(recurrence) || item.completed || !scheduledStartAt || !scheduledEndAt) {
     return null;
   }
 
-  const sourceStart = new Date(item.scheduledStartAt);
-  const sourceEnd = new Date(item.scheduledEndAt);
+  const sourceStart = new Date(scheduledStartAt);
+  const sourceEnd = new Date(scheduledEndAt);
   if (Number.isNaN(sourceStart.getTime()) || Number.isNaN(sourceEnd.getTime())) {
     return null;
   }
@@ -95,7 +110,7 @@ export function projectedRecurringOccurrenceForDay(
     return null;
   }
 
-  const projectedStart = projectedOccurrenceStartForDay(sourceStart, item.recurrence!, targetDay);
+  const projectedStart = projectedOccurrenceStartForDay(sourceStart, recurrence!, targetDay);
   const durationMs = sourceEnd.getTime() - sourceStart.getTime();
   if (!projectedStart || durationMs <= 0) {
     return null;
@@ -105,6 +120,41 @@ export function projectedRecurringOccurrenceForDay(
     start: projectedStart,
     end: new Date(projectedStart.getTime() + durationMs),
   };
+}
+
+export function hasMaterializedOccurrenceForDay(
+  items: ScheduledRecurringItem[],
+  source: ScheduledRecurringItem,
+  day: Date,
+): boolean {
+  if (source.questSeriesId == null) {
+    return false;
+  }
+
+  const targetKey = dateKey(day);
+  return items.some((item) =>
+    item.id !== source.id
+    && item.questSeriesId === source.questSeriesId
+    && materializedOccurrenceKey(item) === targetKey);
+}
+
+export function materializedOccurrenceKey(item: ScheduledRecurringItem): string | null {
+  if (item.questSeriesId == null) {
+    return null;
+  }
+
+  const occurrenceDate = validDate(item.seriesOccurrenceDate);
+  if (occurrenceDate) {
+    return dateKey(occurrenceDate);
+  }
+
+  const scheduledDate = validDate(item.scheduledStartAt);
+  if (scheduledDate) {
+    return dateKey(scheduledDate);
+  }
+
+  const dueDate = validDate(item.dueDate);
+  return dueDate ? dateKey(dueDate) : null;
 }
 
 export function projectedOccurrenceStartForDay(

@@ -114,8 +114,15 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 SortOrder = nextSort + 1,
                 MyGameId = myGameId,
                 SkillId = skillId,
-                QuestFolderId = folderId
+                QuestFolderId = folderId,
+                ProjectsQuestSeries = true
             };
+
+            if (quest.Recurrence != QuestRecurrence.None)
+            {
+                quest.SeriesOccurrenceDate = quest.DueDate ?? ScheduleDueDate(quest.ScheduledStartAt);
+                quest.QuestSeries = CreateSeriesFromQuest(quest, now);
+            }
 
             await dbContext.Quests.AddAsync(quest);
             await dbContext.SaveChangesAsync();
@@ -123,11 +130,112 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             return await BuildMutationResultAsync(dbContext, userId, quest.Id);
         }
 
+        public async Task<Result<QuestMutationResultDto, FailedResult>> MaterializeOccurrenceAsync(
+            string userId,
+            int id,
+            QuestOccurrenceCreateDto dto)
+        {
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+            var source = await dbContext.Quests
+                .Include(q => q.QuestSeries)
+                .FirstOrDefaultAsync(q => q.Id == id && q.LuminaUserId == userId);
+
+            if (source == null)
+            {
+                return new FailedResult("Quest not found");
+            }
+
+            if (source.QuestSeriesId is null && source.QuestSeries is null && source.Recurrence == QuestRecurrence.None)
+            {
+                return new FailedResult("Quest is not recurring");
+            }
+
+            var now = UtcNow;
+            var series = await EnsureQuestSeriesAsync(dbContext, userId, source, now);
+            if (series.Recurrence == QuestRecurrence.None)
+            {
+                return new FailedResult("Quest is not recurring");
+            }
+
+            if (series.Id == 0)
+            {
+                await dbContext.SaveChangesAsync();
+            }
+
+            var occurrenceDate = NormalizeDateOnly(dto.OccurrenceDate);
+
+            if (!TryResolveOccurrenceSchedule(series, occurrenceDate, dto, out var scheduledStartAt, out var scheduledEndAt, out var scheduleError))
+            {
+                return new FailedResult(scheduleError);
+            }
+
+            var occurrenceDay = occurrenceDate;
+            var nextDay = occurrenceDay.AddDays(1);
+            var existing = await dbContext.Quests
+                .Include(q => q.QuestSeries)
+                .FirstOrDefaultAsync(q =>
+                    q.LuminaUserId == userId
+                    && q.QuestSeriesId == series.Id
+                    && q.SeriesOccurrenceDate.HasValue
+                    && q.SeriesOccurrenceDate.Value >= occurrenceDay
+                    && q.SeriesOccurrenceDate.Value < nextDay);
+
+            if (existing != null)
+            {
+                existing.ScheduledStartAt = scheduledStartAt;
+                existing.ScheduledEndAt = scheduledEndAt;
+                existing.DueDate = ScheduleDueDate(scheduledStartAt) ?? occurrenceDay;
+                existing.SeriesOccurrenceDate = occurrenceDay;
+                existing.OverridesQuestSeries = true;
+                existing.ProjectsQuestSeries = false;
+                existing.UpdatedAt = now;
+                await dbContext.SaveChangesAsync();
+                return await BuildMutationResultAsync(dbContext, userId, existing.Id);
+            }
+
+            var nextSort = await dbContext.Quests
+                .Where(q => q.LuminaUserId == userId && q.Type == series.Type)
+                .Select(q => (int?)q.SortOrder)
+                .MaxAsync() ?? -1;
+
+            var occurrence = new Quest
+            {
+                LuminaUserId = userId,
+                Title = series.Title,
+                Notes = series.Notes,
+                Type = series.Type,
+                Priority = series.Priority,
+                Recurrence = series.Recurrence,
+                DueDate = ScheduleDueDate(scheduledStartAt) ?? occurrenceDay,
+                ScheduledStartAt = scheduledStartAt,
+                ScheduledEndAt = scheduledEndAt,
+                QuestSeries = series,
+                OverridesQuestSeries = true,
+                SeriesOccurrenceDate = occurrenceDay,
+                ProjectsQuestSeries = false,
+                Tags = new List<string>(series.Tags ?? new List<string>()),
+                RewardXp = series.RewardXp,
+                Completed = false,
+                CreatedAt = now,
+                UpdatedAt = now,
+                SortOrder = nextSort + 1,
+                MyGameId = series.MyGameId,
+                SkillId = series.SkillId,
+                QuestFolderId = series.QuestFolderId
+            };
+
+            await dbContext.Quests.AddAsync(occurrence);
+            await dbContext.SaveChangesAsync();
+            return await BuildMutationResultAsync(dbContext, userId, occurrence.Id);
+        }
+
         public async Task<Result<QuestMutationResultDto, FailedResult>> UpdateAsync(string userId, int id, QuestUpdateDto dto)
         {
             await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
 
             var quest = await dbContext.Quests
+                .Include(q => q.QuestSeries)
                 .FirstOrDefaultAsync(q => q.Id == id && q.LuminaUserId == userId);
 
             if (quest == null)
@@ -136,7 +244,13 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             }
 
             var now = UtcNow;
+            if (ResolveEditScope(quest, dto) == QuestEditScope.Series)
+            {
+                return await UpdateSeriesAsync(dbContext, userId, quest, dto, now);
+            }
+
             var profile = await GetOrCreateProfileAsync(dbContext, userId, now);
+            var overridesSeries = false;
 
             if (dto.Title is not null)
             {
@@ -146,11 +260,13 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     return new FailedResult("Title cannot be empty");
                 }
                 quest.Title = trimmed;
+                overridesSeries = true;
             }
 
             if (dto.Notes is not null)
             {
                 quest.Notes = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim();
+                overridesSeries = true;
             }
 
             if (dto.Type.HasValue && dto.Type.Value != quest.Type)
@@ -160,31 +276,37 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 {
                     quest.RewardXp = RewardFor(quest.Type);
                 }
+                overridesSeries = true;
             }
 
             if (dto.Priority.HasValue)
             {
                 quest.Priority = dto.Priority.Value;
+                overridesSeries = true;
             }
 
             if (dto.Recurrence.HasValue)
             {
                 quest.Recurrence = dto.Recurrence.Value;
+                overridesSeries = true;
             }
 
             if (dto.ClearDueDate == true)
             {
                 quest.DueDate = null;
+                overridesSeries = true;
             }
             else if (dto.DueDate.HasValue)
             {
                 quest.DueDate = NormalizeDate(dto.DueDate);
+                overridesSeries = true;
             }
 
             if (dto.ClearSchedule == true)
             {
                 quest.ScheduledStartAt = null;
                 quest.ScheduledEndAt = null;
+                overridesSeries = true;
             }
             else if (dto.ScheduledStartAt.HasValue || dto.ScheduledEndAt.HasValue)
             {
@@ -198,43 +320,56 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                 quest.ScheduledStartAt = scheduledStartAt;
                 quest.ScheduledEndAt = scheduledEndAt;
                 quest.DueDate = ScheduleDueDate(scheduledStartAt);
+                overridesSeries = true;
             }
 
             if (dto.Tags is not null)
             {
                 quest.Tags = NormalizeTags(dto.Tags);
+                overridesSeries = true;
             }
 
             if (dto.ClearMyGame == true)
             {
                 quest.MyGameId = null;
+                overridesSeries = true;
             }
             else if (dto.MyGameId.HasValue)
             {
                 quest.MyGameId = await ResolveOwnedMyGameIdAsync(dbContext, userId, dto.MyGameId) ?? quest.MyGameId;
+                overridesSeries = true;
             }
 
             if (dto.ClearSkill == true)
             {
                 quest.SkillId = null;
+                overridesSeries = true;
             }
             else if (dto.SkillId.HasValue)
             {
                 quest.SkillId = await ResolveOwnedSkillIdAsync(dbContext, userId, dto.SkillId) ?? quest.SkillId;
+                overridesSeries = true;
             }
 
             if (dto.ClearQuestFolder == true)
             {
                 quest.QuestFolderId = null;
+                overridesSeries = true;
             }
             else if (dto.QuestFolderId.HasValue)
             {
                 quest.QuestFolderId = await ResolveOwnedFolderIdAsync(dbContext, userId, dto.QuestFolderId) ?? quest.QuestFolderId;
+                overridesSeries = true;
             }
 
             if (dto.SortOrder.HasValue)
             {
                 quest.SortOrder = dto.SortOrder.Value;
+            }
+
+            if (quest.QuestSeriesId.HasValue && overridesSeries)
+            {
+                quest.OverridesQuestSeries = true;
             }
 
             Quest? spawned = null;
@@ -265,7 +400,7 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
 
                     UpdateStreakOnCompletion(profile, now);
 
-                    if (quest.Recurrence != QuestRecurrence.None)
+                    if (quest.ProjectsQuestSeries && (quest.QuestSeriesId.HasValue || quest.Recurrence != QuestRecurrence.None))
                     {
                         spawned = await SpawnNextRecurrenceAsync(dbContext, userId, quest, now);
                     }
@@ -299,6 +434,150 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
             result.AwardedSkillId = awardedSkillId;
             result.UnlockedAchievements = unlockedAchievements.Select(ProjectAchievementDto).ToList();
             return result;
+        }
+
+        private async Task<Result<QuestMutationResultDto, FailedResult>> UpdateSeriesAsync(
+            LuminaPathDbContext dbContext,
+            string userId,
+            Quest quest,
+            QuestUpdateDto dto,
+            DateTime now)
+        {
+            var series = await EnsureQuestSeriesAsync(dbContext, userId, quest, now);
+
+            if (dto.Title is not null)
+            {
+                var trimmed = dto.Title.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed))
+                {
+                    return new FailedResult("Title cannot be empty");
+                }
+                series.Title = trimmed;
+            }
+
+            if (dto.Notes is not null)
+            {
+                series.Notes = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim();
+            }
+
+            if (dto.Type.HasValue)
+            {
+                series.Type = dto.Type.Value;
+                series.RewardXp = RewardFor(series.Type);
+            }
+
+            if (dto.Priority.HasValue)
+            {
+                series.Priority = dto.Priority.Value;
+            }
+
+            if (dto.Recurrence.HasValue)
+            {
+                series.Recurrence = dto.Recurrence.Value;
+            }
+
+            if (dto.ClearDueDate == true)
+            {
+                series.DueDate = null;
+            }
+            else if (dto.DueDate.HasValue)
+            {
+                series.DueDate = NormalizeDate(dto.DueDate);
+            }
+
+            if (dto.ClearSchedule == true)
+            {
+                series.ScheduledStartAt = null;
+                series.ScheduledEndAt = null;
+            }
+            else if (dto.ScheduledStartAt.HasValue || dto.ScheduledEndAt.HasValue)
+            {
+                var nextStart = dto.ScheduledStartAt ?? series.ScheduledStartAt ?? quest.ScheduledStartAt;
+                var nextEnd = dto.ScheduledEndAt ?? series.ScheduledEndAt ?? quest.ScheduledEndAt;
+                if (!TryBuildSchedule(nextStart, nextEnd, out var scheduledStartAt, out var scheduledEndAt, out var scheduleError))
+                {
+                    return new FailedResult(scheduleError);
+                }
+
+                series.ScheduledStartAt = scheduledStartAt;
+                series.ScheduledEndAt = scheduledEndAt;
+                series.DueDate = ScheduleDueDate(scheduledStartAt);
+            }
+
+            if (dto.Tags is not null)
+            {
+                series.Tags = NormalizeTags(dto.Tags);
+            }
+
+            if (dto.ClearMyGame == true)
+            {
+                series.MyGameId = null;
+            }
+            else if (dto.MyGameId.HasValue)
+            {
+                series.MyGameId = await ResolveOwnedMyGameIdAsync(dbContext, userId, dto.MyGameId) ?? series.MyGameId;
+            }
+
+            if (dto.ClearSkill == true)
+            {
+                series.SkillId = null;
+            }
+            else if (dto.SkillId.HasValue)
+            {
+                series.SkillId = await ResolveOwnedSkillIdAsync(dbContext, userId, dto.SkillId) ?? series.SkillId;
+            }
+
+            if (dto.ClearQuestFolder == true)
+            {
+                series.QuestFolderId = null;
+            }
+            else if (dto.QuestFolderId.HasValue)
+            {
+                series.QuestFolderId = await ResolveOwnedFolderIdAsync(dbContext, userId, dto.QuestFolderId) ?? series.QuestFolderId;
+            }
+
+            series.UpdatedAt = now;
+            ApplySeriesToQuest(quest, series);
+            quest.UpdatedAt = now;
+
+            await dbContext.SaveChangesAsync();
+            return await BuildMutationResultAsync(dbContext, userId, quest.Id);
+        }
+
+        private static QuestEditScope ResolveEditScope(Quest quest, QuestUpdateDto dto)
+        {
+            if (dto.EditScope.HasValue)
+            {
+                return dto.EditScope.Value;
+            }
+
+            var isRecurringQuest = quest.QuestSeriesId.HasValue
+                || quest.QuestSeries != null
+                || quest.Recurrence != QuestRecurrence.None;
+            return isRecurringQuest && UpdatesSeriesTemplateFields(dto)
+                ? QuestEditScope.Series
+                : QuestEditScope.Occurrence;
+        }
+
+        private static bool UpdatesSeriesTemplateFields(QuestUpdateDto dto)
+        {
+            return dto.Title is not null
+                || dto.Notes is not null
+                || dto.Type.HasValue
+                || dto.Priority.HasValue
+                || dto.Recurrence.HasValue
+                || dto.DueDate.HasValue
+                || dto.ClearDueDate == true
+                || dto.ScheduledStartAt.HasValue
+                || dto.ScheduledEndAt.HasValue
+                || dto.ClearSchedule == true
+                || dto.Tags is not null
+                || dto.MyGameId.HasValue
+                || dto.ClearMyGame == true
+                || dto.SkillId.HasValue
+                || dto.ClearSkill == true
+                || dto.QuestFolderId.HasValue
+                || dto.ClearQuestFolder == true;
         }
 
         public async Task<Result<int, FailedResult>> DeleteAsync(string userId, int id)

@@ -22,10 +22,13 @@ describe('weekly schedule builder', () => {
         quest({
           id: 2,
           title: 'Weekly reset',
-          recurrence: 'weekly',
+          recurrence: 'none',
+          seriesRecurrence: 'weekly',
           folderId: 5,
-          scheduledStartAt: new Date(2026, 5, 4, 18, 30).toISOString(),
-          scheduledEndAt: new Date(2026, 5, 4, 19, 30).toISOString(),
+          scheduledStartAt: new Date(2026, 5, 4, 21, 0).toISOString(),
+          scheduledEndAt: new Date(2026, 5, 4, 22, 0).toISOString(),
+          seriesScheduledStartAt: new Date(2026, 5, 4, 18, 30).toISOString(),
+          seriesScheduledEndAt: new Date(2026, 5, 4, 19, 30).toISOString(),
         }),
       ],
       sessions: [
@@ -49,8 +52,10 @@ describe('weekly schedule builder', () => {
     expect(thursday.find((block) => block.id === 'quest-2-projected-2026-06-11')).toEqual(jasmine.objectContaining({
       projected: true,
       sourceId: 2,
+      occurrenceDate: '2026-06-11',
       color: '#123456',
       subtitle: 'Projected repeat',
+      recurrence: 'weekly',
     }));
     expect(thursday.find((block) => block.id === 'session-7')).toEqual(jasmine.objectContaining({
       kind: 'session',
@@ -82,6 +87,46 @@ describe('weekly schedule builder', () => {
     });
 
     expect((blocks.get('2026-06-11') ?? []).map((block) => block.id)).toEqual(['session-7']);
+  });
+
+  it('suppresses projected blocks when a series occurrence was materialized and moved', () => {
+    const days = buildWeekDays(new Date(2026, 5, 11), new Date(2026, 5, 1));
+    const blocks = buildWeeklyScheduleBlocksByDay({
+      days,
+      folders: [],
+      quests: [
+        quest({
+          id: 2,
+          title: 'Weekly reset',
+          recurrence: 'weekly',
+          questSeriesId: 20,
+          projectsQuestSeries: true,
+          seriesOccurrenceDate: new Date(2026, 5, 4).toISOString(),
+          scheduledStartAt: new Date(2026, 5, 4, 18, 30).toISOString(),
+          scheduledEndAt: new Date(2026, 5, 4, 19, 30).toISOString(),
+          seriesScheduledStartAt: new Date(2026, 5, 4, 18, 30).toISOString(),
+          seriesScheduledEndAt: new Date(2026, 5, 4, 19, 30).toISOString(),
+        }),
+        quest({
+          id: 3,
+          title: 'Weekly reset',
+          recurrence: 'weekly',
+          questSeriesId: 20,
+          projectsQuestSeries: false,
+          overridesQuestSeries: true,
+          seriesOccurrenceDate: new Date(2026, 5, 11).toISOString(),
+          scheduledStartAt: new Date(2026, 5, 12, 20, 0).toISOString(),
+          scheduledEndAt: new Date(2026, 5, 12, 21, 0).toISOString(),
+          seriesScheduledStartAt: new Date(2026, 5, 4, 18, 30).toISOString(),
+          seriesScheduledEndAt: new Date(2026, 5, 4, 19, 30).toISOString(),
+        }),
+      ],
+      sessions: [],
+      groupVisibility: { quests: true, sessions: true },
+    });
+
+    expect((blocks.get('2026-06-11') ?? []).some((block) => block.projected)).toBeFalse();
+    expect((blocks.get('2026-06-12') ?? []).map((block) => block.id)).toEqual(['quest-3']);
   });
 });
 

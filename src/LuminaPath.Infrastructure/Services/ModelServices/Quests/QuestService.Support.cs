@@ -56,6 +56,7 @@ public partial class QuestService
             .Include(q => q.MyGame).ThenInclude(myGame => myGame!.Game)
             .Include(q => q.Skill)
             .Include(q => q.QuestFolder)
+            .Include(q => q.QuestSeries)
             .Include(q => q.Subtasks)
             .Where(q => q.LuminaUserId == userId);
     }
@@ -94,46 +95,210 @@ public partial class QuestService
         };
     }
 
-    private static async Task<Quest> SpawnNextRecurrenceAsync(LuminaPathDbContext dbContext, string userId, Quest source, DateTime now)
+    private static async Task<Quest?> SpawnNextRecurrenceAsync(LuminaPathDbContext dbContext, string userId, Quest source, DateTime now)
     {
-        var anchor = source.DueDate ?? source.CompletedAt ?? now;
-        var nextDue = ShiftForRecurrence(anchor, source.Recurrence);
-        var nextScheduledStart = source.ScheduledStartAt.HasValue
-            ? ShiftForRecurrence(source.ScheduledStartAt.Value, source.Recurrence)
+        var series = source.QuestSeriesId.HasValue || source.QuestSeries != null
+            ? await EnsureQuestSeriesAsync(dbContext, userId, source, now)
+            : null;
+        var recurrence = series?.Recurrence ?? source.Recurrence;
+        if (recurrence == QuestRecurrence.None)
+        {
+            return null;
+        }
+
+        if (series == null)
+        {
+            series = await EnsureQuestSeriesAsync(dbContext, userId, source, now);
+        }
+
+        var anchor = series.DueDate ?? source.DueDate ?? source.CompletedAt ?? now;
+        var nextScheduledStart = series.ScheduledStartAt.HasValue
+            ? ShiftForRecurrence(series.ScheduledStartAt.Value, recurrence)
             : (DateTime?)null;
-        var nextScheduledEnd = source.ScheduledEndAt.HasValue
-            ? ShiftForRecurrence(source.ScheduledEndAt.Value, source.Recurrence)
+        var nextScheduledEnd = series.ScheduledEndAt.HasValue
+            ? ShiftForRecurrence(series.ScheduledEndAt.Value, recurrence)
             : (DateTime?)null;
+        var nextDue = nextScheduledStart.HasValue
+            ? ScheduleDueDate(nextScheduledStart)
+            : NormalizeDate(ShiftForRecurrence(anchor, recurrence));
+
+        if (nextDue.HasValue)
+        {
+            var occurrenceDay = nextDue.Value.Date;
+            var nextDay = occurrenceDay.AddDays(1);
+            var existingOccurrence = await dbContext.Quests
+                .FirstOrDefaultAsync(q =>
+                    q.LuminaUserId == userId
+                    && q.QuestSeriesId == series.Id
+                    && q.SeriesOccurrenceDate.HasValue
+                    && q.SeriesOccurrenceDate.Value >= occurrenceDay
+                    && q.SeriesOccurrenceDate.Value < nextDay);
+
+            if (existingOccurrence != null)
+            {
+                existingOccurrence.ProjectsQuestSeries = true;
+                existingOccurrence.UpdatedAt = now;
+                series.DueDate = nextDue;
+                series.ScheduledStartAt = nextScheduledStart;
+                series.ScheduledEndAt = nextScheduledEnd;
+                series.UpdatedAt = now;
+                return existingOccurrence;
+            }
+        }
 
         var nextSort = await dbContext.Quests
-            .Where(q => q.LuminaUserId == userId && q.Type == source.Type)
+            .Where(q => q.LuminaUserId == userId && q.Type == series.Type)
             .Select(q => (int?)q.SortOrder)
             .MaxAsync() ?? -1;
 
         var clone = new Quest
         {
             LuminaUserId = userId,
+            Title = series.Title,
+            Notes = series.Notes,
+            Type = series.Type,
+            Priority = series.Priority,
+            Recurrence = series.Recurrence,
+            DueDate = nextDue,
+            ScheduledStartAt = nextScheduledStart,
+            ScheduledEndAt = nextScheduledEnd,
+            QuestSeries = series,
+            OverridesQuestSeries = false,
+            SeriesOccurrenceDate = nextDue,
+            ProjectsQuestSeries = true,
+            Tags = new List<string>(series.Tags ?? new List<string>()),
+            RewardXp = series.RewardXp,
+            Completed = false,
+            CreatedAt = now,
+            UpdatedAt = now,
+            SortOrder = nextSort + 1,
+            MyGameId = series.MyGameId,
+            SkillId = series.SkillId,
+            QuestFolderId = series.QuestFolderId
+        };
+
+        series.DueDate = nextDue;
+        series.ScheduledStartAt = nextScheduledStart;
+        series.ScheduledEndAt = nextScheduledEnd;
+        series.UpdatedAt = now;
+
+        await dbContext.Quests.AddAsync(clone);
+        return clone;
+    }
+
+    private static async Task<QuestSeries> EnsureQuestSeriesAsync(
+        LuminaPathDbContext dbContext,
+        string userId,
+        Quest source,
+        DateTime now)
+    {
+        if (source.QuestSeries != null)
+        {
+            source.SeriesOccurrenceDate ??= source.DueDate ?? ScheduleDueDate(source.ScheduledStartAt);
+            source.ProjectsQuestSeries = true;
+            return source.QuestSeries;
+        }
+
+        if (source.QuestSeriesId.HasValue)
+        {
+            var existing = await dbContext.QuestSeries
+                .FirstOrDefaultAsync(series => series.Id == source.QuestSeriesId.Value && series.LuminaUserId == userId);
+            if (existing != null)
+            {
+                source.QuestSeries = existing;
+                source.SeriesOccurrenceDate ??= source.DueDate ?? ScheduleDueDate(source.ScheduledStartAt);
+                source.ProjectsQuestSeries = true;
+                return existing;
+            }
+        }
+
+        var series = CreateSeriesFromQuest(source, now);
+        await dbContext.QuestSeries.AddAsync(series);
+        source.QuestSeries = series;
+        source.OverridesQuestSeries = false;
+        source.SeriesOccurrenceDate = source.DueDate ?? ScheduleDueDate(source.ScheduledStartAt);
+        source.ProjectsQuestSeries = true;
+        return series;
+    }
+
+    private static QuestSeries CreateSeriesFromQuest(Quest source, DateTime now)
+    {
+        return new QuestSeries
+        {
+            LuminaUserId = source.LuminaUserId,
             Title = source.Title,
             Notes = source.Notes,
             Type = source.Type,
             Priority = source.Priority,
             Recurrence = source.Recurrence,
-            DueDate = NormalizeDate(nextDue),
-            ScheduledStartAt = nextScheduledStart,
-            ScheduledEndAt = nextScheduledEnd,
+            DueDate = source.DueDate,
+            ScheduledStartAt = source.ScheduledStartAt,
+            ScheduledEndAt = source.ScheduledEndAt,
             Tags = new List<string>(source.Tags ?? new List<string>()),
             RewardXp = source.RewardXp,
-            Completed = false,
             CreatedAt = now,
             UpdatedAt = now,
-            SortOrder = nextSort + 1,
             MyGameId = source.MyGameId,
             SkillId = source.SkillId,
             QuestFolderId = source.QuestFolderId
         };
+    }
 
-        await dbContext.Quests.AddAsync(clone);
-        return clone;
+    private static void ApplySeriesToQuest(Quest quest, QuestSeries series)
+    {
+        quest.Title = series.Title;
+        quest.Notes = series.Notes;
+        quest.Type = series.Type;
+        quest.Priority = series.Priority;
+        quest.Recurrence = series.Recurrence;
+        quest.DueDate = series.DueDate;
+        quest.ScheduledStartAt = series.ScheduledStartAt;
+        quest.ScheduledEndAt = series.ScheduledEndAt;
+        quest.Tags = new List<string>(series.Tags ?? new List<string>());
+        quest.RewardXp = series.RewardXp;
+        quest.MyGameId = series.MyGameId;
+        quest.SkillId = series.SkillId;
+        quest.QuestFolderId = series.QuestFolderId;
+        quest.QuestSeries = series;
+        quest.OverridesQuestSeries = false;
+        quest.SeriesOccurrenceDate = series.DueDate ?? ScheduleDueDate(series.ScheduledStartAt);
+    }
+
+    private static bool TryResolveOccurrenceSchedule(
+        QuestSeries series,
+        DateTime occurrenceDate,
+        QuestOccurrenceCreateDto dto,
+        out DateTime? scheduledStartAt,
+        out DateTime? scheduledEndAt,
+        out string error)
+    {
+        scheduledStartAt = null;
+        scheduledEndAt = null;
+        error = string.Empty;
+
+        if (dto.ScheduledStartAt.HasValue || dto.ScheduledEndAt.HasValue)
+        {
+            return TryBuildSchedule(dto.ScheduledStartAt, dto.ScheduledEndAt, out scheduledStartAt, out scheduledEndAt, out error);
+        }
+
+        if (!series.ScheduledStartAt.HasValue || !series.ScheduledEndAt.HasValue)
+        {
+            error = "Recurring quest needs a schedule before an occurrence can be edited";
+            return false;
+        }
+
+        var sourceStart = NormalizeDate(series.ScheduledStartAt)!.Value;
+        var sourceEnd = NormalizeDate(series.ScheduledEndAt)!.Value;
+        var duration = sourceEnd - sourceStart;
+        if (duration <= TimeSpan.Zero)
+        {
+            error = "Recurring quest schedule is invalid";
+            return false;
+        }
+
+        scheduledStartAt = DateTime.SpecifyKind(occurrenceDate.Date + sourceStart.TimeOfDay, DateTimeKind.Utc);
+        scheduledEndAt = scheduledStartAt.Value.Add(duration);
+        return true;
     }
 
     private static DateTime ShiftForRecurrence(DateTime value, QuestRecurrence recurrence)
@@ -178,6 +343,11 @@ public partial class QuestService
         return date.Kind == DateTimeKind.Utc
             ? date
             : DateTime.SpecifyKind(date.ToUniversalTime(), DateTimeKind.Utc);
+    }
+
+    private static DateTime NormalizeDateOnly(DateTime value)
+    {
+        return DateTime.SpecifyKind(value.Date, DateTimeKind.Utc);
     }
 
     private static DateTime? ScheduleDueDate(DateTime? scheduledStartAt)
@@ -245,6 +415,13 @@ public partial class QuestService
             DueDate = quest.DueDate,
             ScheduledStartAt = quest.ScheduledStartAt,
             ScheduledEndAt = quest.ScheduledEndAt,
+            QuestSeriesId = quest.QuestSeriesId,
+            OverridesQuestSeries = quest.OverridesQuestSeries,
+            SeriesOccurrenceDate = quest.SeriesOccurrenceDate,
+            ProjectsQuestSeries = quest.ProjectsQuestSeries,
+            SeriesRecurrence = quest.QuestSeries?.Recurrence,
+            SeriesScheduledStartAt = quest.QuestSeries?.ScheduledStartAt,
+            SeriesScheduledEndAt = quest.QuestSeries?.ScheduledEndAt,
             Tags = quest.Tags ?? new(),
             RewardXp = quest.RewardXp,
             Completed = quest.Completed,

@@ -211,7 +211,7 @@
                           [class.schedule-block--projected]="block.projected"
                           [class.schedule-block--done]="block.completed"
                           [class.schedule-block--dragging]="isDraggingItem(block.id)"
-                          [attr.draggable]="block.projected ? 'false' : 'true'"
+                          draggable="true"
                           [style.--block-color]="block.color"
                           [style.top.px]="blockTop(block)"
                           [style.height.px]="blockHeight(block)"
@@ -388,13 +388,30 @@
                 <option value="monthly">Monthly</option>
               </select>
             </label>
+            @if (canEditQuestSeries(draft)) {
+              <label class="schedule-field schedule-field--wide">
+                <span>Edit</span>
+                <ion-segment
+                  class="schedule-scope-toggle"
+                  [ngModel]="draft.editScope"
+                  (ngModelChange)="draft.editScope = $event"
+                  aria-label="Recurring edit scope">
+                  <ion-segment-button value="occurrence">This occurrence</ion-segment-button>
+                  <ion-segment-button value="series">Series</ion-segment-button>
+                </ion-segment>
+              </label>
+            }
             @if (hasRecurrence(draft.recurrence)) {
               <div class="schedule-recurrence-preview schedule-field--wide">
                 <ion-icon name="sync-outline"></ion-icon>
                 <div>
                   <strong>{{ draftRecurrencePreview(draft) }}</strong>
                   @if (draft.mode === 'edit') {
-                    <span>This edits this scheduled quest only; series-wide editing is not active yet.</span>
+                    @if (draft.editScope === 'series') {
+                      <span>Changes update this repeat series from the current occurrence.</span>
+                    } @else {
+                      <span>This edits this scheduled occurrence only; future repeats keep the series template.</span>
+                    }
                   } @else {
                     <span>Completing this quest will create the next occurrence.</span>
                   }

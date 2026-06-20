@@ -25,6 +25,13 @@ namespace LuminaPath.Core.Dtos
         public DateTime? DueDate { get; set; }
         public DateTime? ScheduledStartAt { get; set; }
         public DateTime? ScheduledEndAt { get; set; }
+        public int? QuestSeriesId { get; set; }
+        public bool OverridesQuestSeries { get; set; }
+        public DateTime? SeriesOccurrenceDate { get; set; }
+        public bool ProjectsQuestSeries { get; set; } = true;
+        public QuestRecurrence? SeriesRecurrence { get; set; }
+        public DateTime? SeriesScheduledStartAt { get; set; }
+        public DateTime? SeriesScheduledEndAt { get; set; }
         public List<string> Tags { get; set; } = [];
         public int RewardXp { get; set; }
         public bool Completed { get; set; }
@@ -91,6 +98,7 @@ namespace LuminaPath.Core.Dtos
         public DateTime? ScheduledStartAt { get; set; }
         public DateTime? ScheduledEndAt { get; set; }
         public bool? ClearSchedule { get; set; }
+        public QuestEditScope? EditScope { get; set; }
         public List<string>? Tags { get; set; }
         public bool? Completed { get; set; }
         public int? MyGameId { get; set; }
@@ -100,6 +108,13 @@ namespace LuminaPath.Core.Dtos
         public bool? ClearSkill { get; set; }
         public int? QuestFolderId { get; set; }
         public bool? ClearQuestFolder { get; set; }
+    }
+
+    public class QuestOccurrenceCreateDto
+    {
+        public DateTime OccurrenceDate { get; set; }
+        public DateTime? ScheduledStartAt { get; set; }
+        public DateTime? ScheduledEndAt { get; set; }
     }
 
     public class QuestFolderDto

@@ -5,7 +5,9 @@ import { Game } from '../../games/models/games.model';
 import { Quest } from '../../quests/services/quest-board.service';
 import {
   dateKey as calendarDateKey,
+  hasMaterializedOccurrenceForDay,
   projectedRecurringOccurrenceForDay,
+  recurringItemRecurrence,
   sameDay,
   startOfCalendarMonthGrid,
   startOfWeek,
@@ -23,6 +25,9 @@ export type TimelineEvent = {
   title: string;
   subtitle: string;
   timeLabel: string;
+  startAt?: string | null;
+  endAt?: string | null;
+  occurrenceDate?: string | null;
   recurrence?: Quest['recurrence'] | null;
   projected?: boolean;
   completed: boolean;
@@ -142,6 +147,9 @@ export class PlanningCalendarService {
         title: session.gameName ?? 'Gaming session',
         subtitle: session.notes || this.formatDuration(session.durationMinutes),
         timeLabel: this.formatTime(session.scheduledAt),
+        startAt: session.scheduledAt,
+        endAt: null,
+        occurrenceDate: null,
         recurrence: null,
         projected: false,
         completed: session.completed,
@@ -160,6 +168,9 @@ export class PlanningCalendarService {
         title: game.name,
         subtitle: 'Release',
         timeLabel: 'Release',
+        startAt: null,
+        endAt: null,
+        occurrenceDate: null,
         recurrence: null,
         projected: false,
         completed: releaseDate < this.startOfToday(),
@@ -176,14 +187,20 @@ export class PlanningCalendarService {
           title: quest.title,
           subtitle: quest.gameName ?? quest.skillName ?? this.questPriorityLabel(quest.priority),
           timeLabel: quest.completed ? 'Done' : quest.scheduledStartAt ? this.formatTime(quest.scheduledStartAt) : this.questPriorityLabel(quest.priority),
+          startAt: quest.scheduledStartAt ?? quest.dueDate ?? null,
+          endAt: quest.scheduledEndAt ?? null,
+          occurrenceDate: null,
           recurrence: quest.recurrence,
           projected: false,
           completed: quest.completed,
         });
       }
 
-      const projected = projectedRecurringOccurrenceForDay(quest, date);
+      const projected = hasMaterializedOccurrenceForDay(input.quests, quest, date)
+        ? null
+        : projectedRecurringOccurrenceForDay(quest, date);
       if (projected) {
+        const recurrence = recurringItemRecurrence(quest);
         events.push({
           id: `quest-${quest.id}-projected-${calendarDateKey(date)}`,
           sourceId: quest.id,
@@ -191,7 +208,10 @@ export class PlanningCalendarService {
           title: quest.title,
           subtitle: 'Projected repeat',
           timeLabel: this.formatTime(projected.start.toISOString()),
-          recurrence: quest.recurrence,
+          startAt: projected.start.toISOString(),
+          endAt: projected.end.toISOString(),
+          occurrenceDate: calendarDateKey(date),
+          recurrence: recurrence ?? quest.recurrence,
           projected: true,
           completed: false,
         });

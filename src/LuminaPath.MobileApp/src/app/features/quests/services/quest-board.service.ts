@@ -10,6 +10,8 @@ export type QuestPriority = 'low' | 'medium' | 'high';
 
 export type QuestRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';
 
+export type QuestEditScope = 'occurrence' | 'series';
+
 export type Quest = {
   id: number;
   title: string;
@@ -20,6 +22,13 @@ export type Quest = {
   dueDate?: string | null;
   scheduledStartAt?: string | null;
   scheduledEndAt?: string | null;
+  questSeriesId?: number | null;
+  overridesQuestSeries?: boolean;
+  seriesOccurrenceDate?: string | null;
+  projectsQuestSeries?: boolean;
+  seriesRecurrence?: QuestRecurrence | null;
+  seriesScheduledStartAt?: string | null;
+  seriesScheduledEndAt?: string | null;
   tags: string[];
   completed: boolean;
   completedAt?: string;
@@ -97,6 +106,7 @@ export type QuestUpdate = {
   scheduledStartAt?: string | null;
   scheduledEndAt?: string | null;
   clearSchedule?: boolean;
+  editScope?: QuestEditScope;
   tags?: string[];
   completed?: boolean;
   myGameId?: number | null;
@@ -106,6 +116,12 @@ export type QuestUpdate = {
   clearSkill?: boolean;
   folderId?: number | null;
   clearFolder?: boolean;
+};
+
+export type QuestOccurrenceCreate = {
+  occurrenceDate: string;
+  scheduledStartAt?: string | null;
+  scheduledEndAt?: string | null;
 };
 
 export type QuestSubtaskUpdate = {
@@ -189,6 +205,13 @@ type ApiQuest = {
   dueDate?: string | null;
   scheduledStartAt?: string | null;
   scheduledEndAt?: string | null;
+  questSeriesId?: number | null;
+  overridesQuestSeries?: boolean;
+  seriesOccurrenceDate?: string | null;
+  projectsQuestSeries?: boolean;
+  seriesRecurrence?: ApiQuestRecurrence | null;
+  seriesScheduledStartAt?: string | null;
+  seriesScheduledEndAt?: string | null;
   tags: string[];
   rewardXp: number;
   completed: boolean;
@@ -314,6 +337,7 @@ export class QuestBoardService {
     if (input.scheduledStartAt !== undefined) payload['scheduledStartAt'] = input.scheduledStartAt;
     if (input.scheduledEndAt !== undefined) payload['scheduledEndAt'] = input.scheduledEndAt;
     if (input.clearSchedule !== undefined) payload['clearSchedule'] = input.clearSchedule;
+    if (input.editScope !== undefined) payload['editScope'] = input.editScope === 'series' ? 1 : 0;
     if (input.tags !== undefined) payload['tags'] = input.tags;
     if (input.completed !== undefined) payload['completed'] = input.completed;
     if (input.myGameId !== undefined) payload['myGameId'] = input.myGameId;
@@ -325,6 +349,19 @@ export class QuestBoardService {
     if (input.clearFolder !== undefined) payload['clearQuestFolder'] = input.clearFolder;
 
     const response = await firstValueFrom(this.http.patch<ApiQuestMutationResult>(this.apiEndpoint.url(`quests/${id}`), payload, this.httpConfig));
+    this.invalidateDashboardCache();
+    return this.toMutation(response);
+  }
+
+  async materializeOccurrence(id: number, input: QuestOccurrenceCreate): Promise<QuestMutationResult> {
+    const payload = {
+      occurrenceDate: input.occurrenceDate,
+      scheduledStartAt: input.scheduledStartAt ?? null,
+      scheduledEndAt: input.scheduledEndAt ?? null,
+    };
+    const response = await firstValueFrom(
+      this.http.post<ApiQuestMutationResult>(this.apiEndpoint.url(`quests/${id}/occurrences`), payload, this.httpConfig),
+    );
     this.invalidateDashboardCache();
     return this.toMutation(response);
   }
@@ -478,6 +515,13 @@ export class QuestBoardService {
       dueDate: apiQuest.dueDate ?? null,
       scheduledStartAt: apiQuest.scheduledStartAt ?? null,
       scheduledEndAt: apiQuest.scheduledEndAt ?? null,
+      questSeriesId: apiQuest.questSeriesId ?? null,
+      overridesQuestSeries: apiQuest.overridesQuestSeries ?? false,
+      seriesOccurrenceDate: apiQuest.seriesOccurrenceDate ?? null,
+      projectsQuestSeries: apiQuest.projectsQuestSeries ?? true,
+      seriesRecurrence: apiQuest.seriesRecurrence == null ? null : this.toRecurrence(apiQuest.seriesRecurrence),
+      seriesScheduledStartAt: apiQuest.seriesScheduledStartAt ?? null,
+      seriesScheduledEndAt: apiQuest.seriesScheduledEndAt ?? null,
       tags: apiQuest.tags ?? [],
       completed: apiQuest.completed,
       completedAt: apiQuest.completedAt,

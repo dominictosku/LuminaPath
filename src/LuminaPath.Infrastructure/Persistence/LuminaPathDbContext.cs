@@ -36,6 +36,8 @@ namespace LuminaPath.Infrastructure
 
             modelBuilder.Entity<Quest>()
                 .HasOne<LuminaUser>().WithMany().HasForeignKey(e => e.LuminaUserId);
+            modelBuilder.Entity<QuestSeries>()
+                .HasOne<LuminaUser>().WithMany().HasForeignKey(e => e.LuminaUserId);
             modelBuilder.Entity<QuestProfile>()
                 .HasOne<LuminaUser>().WithMany().HasForeignKey(e => e.LuminaUserId);
             modelBuilder.Entity<QuestSkill>()
@@ -111,6 +113,7 @@ namespace LuminaPath.Infrastructure
         public DbSet<Series> Series { get; set; }
         public DbSet<MySeries> MySeries { get; set; }
         public DbSet<Quest> Quests { get; set; }
+        public DbSet<QuestSeries> QuestSeries { get; set; }
         public DbSet<QuestSubtask> QuestSubtasks { get; set; }
         public DbSet<QuestFolder> QuestFolders { get; set; }
         public DbSet<QuestProfile> QuestProfiles { get; set; }

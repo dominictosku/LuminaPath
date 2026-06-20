@@ -35,6 +35,7 @@ export type WeekScheduleBlock = {
   subtitle: string;
   startAt: string;
   endAt: string;
+  occurrenceDate?: string;
   color: string;
   recurrence?: 'none' | 'daily' | 'weekly' | 'monthly';
   projected?: boolean;

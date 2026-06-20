@@ -81,6 +81,13 @@ describe('QuestBoardService', () => {
           recurrence: 2,
           myGameId: 42,
           gameName: 'Hades',
+          questSeriesId: 12,
+          overridesQuestSeries: true,
+          seriesOccurrenceDate: '2026-06-04T00:00:00.000Z',
+          projectsQuestSeries: false,
+          seriesRecurrence: 2,
+          seriesScheduledStartAt: '2026-06-04T18:30:00.000Z',
+          seriesScheduledEndAt: '2026-06-04T19:30:00.000Z',
           skillId: 9,
           skillName: 'Programming',
           tags: ['boss'],
@@ -115,6 +122,13 @@ describe('QuestBoardService', () => {
       recurrence: 'weekly',
       myGameId: 42,
       gameName: 'Hades',
+      questSeriesId: 12,
+      overridesQuestSeries: true,
+      seriesOccurrenceDate: '2026-06-04T00:00:00.000Z',
+      projectsQuestSeries: false,
+      seriesRecurrence: 'weekly',
+      seriesScheduledStartAt: '2026-06-04T18:30:00.000Z',
+      seriesScheduledEndAt: '2026-06-04T19:30:00.000Z',
       skillId: 9,
       skillName: 'Programming',
     }));
@@ -146,6 +160,8 @@ describe('QuestBoardService', () => {
       priority: 2,
       recurrence: 3,
       dueDate: '2026-05-16',
+      scheduledStartAt: null,
+      scheduledEndAt: null,
       tags: ['release'],
       myGameId: 42,
       skillId: 9,
@@ -162,6 +178,7 @@ describe('QuestBoardService', () => {
       title: 'Renamed',
       completed: true,
       clearDueDate: true,
+      editScope: 'series',
       clearMyGame: true,
       clearSkill: true,
     });
@@ -172,12 +189,50 @@ describe('QuestBoardService', () => {
       title: 'Renamed',
       completed: true,
       clearDueDate: true,
+      editScope: 1,
       clearMyGame: true,
       clearSkill: true,
     });
     req.flush(mutation({ quest: apiQuest({ id: 10, title: 'Renamed', completed: true }) }));
 
     expect((await promise).quest.completed).toBeTrue();
+  });
+
+  it('materializeOccurrence posts occurrence schedule and maps the mutation response', async () => {
+    const promise = service.materializeOccurrence(10, {
+      occurrenceDate: '2026-06-11',
+      scheduledStartAt: '2026-06-12T20:00:00.000Z',
+      scheduledEndAt: '2026-06-12T21:00:00.000Z',
+    });
+
+    const req = httpMock.expectOne(endpoint('quests/10/occurrences'));
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      occurrenceDate: '2026-06-11',
+      scheduledStartAt: '2026-06-12T20:00:00.000Z',
+      scheduledEndAt: '2026-06-12T21:00:00.000Z',
+    });
+    req.flush(mutation({
+      quest: apiQuest({
+        id: 12,
+        title: 'Moved occurrence',
+        recurrence: 2,
+        questSeriesId: 10,
+        overridesQuestSeries: true,
+        seriesOccurrenceDate: '2026-06-11T00:00:00.000Z',
+        projectsQuestSeries: false,
+      }),
+    }));
+
+    const result = await promise;
+    expect(result.quest).toEqual(jasmine.objectContaining({
+      id: 12,
+      recurrence: 'weekly',
+      questSeriesId: 10,
+      overridesQuestSeries: true,
+      seriesOccurrenceDate: '2026-06-11T00:00:00.000Z',
+      projectsQuestSeries: false,
+    }));
   });
 
   it('handles subtasks and quest reordering endpoints', async () => {

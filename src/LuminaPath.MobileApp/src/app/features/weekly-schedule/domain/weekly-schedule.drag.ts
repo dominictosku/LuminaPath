@@ -4,6 +4,7 @@ import { formatTimeRange, type WeekScheduleBlock } from './weekly-schedule.helpe
 
 export type DragPayload =
   | { type: 'quest'; questId: number }
+  | { type: 'questOccurrence'; questId: number; occurrenceDate: string; scheduledStartAt: string; scheduledEndAt: string }
   | { type: 'game'; myGameId: number }
   | { type: 'session'; sessionId: number };
 
@@ -28,12 +29,20 @@ export function gameDragPayload(game: LibraryGameOption): DragPayload {
 }
 
 export function blockDragPayload(block: WeekScheduleBlock): DragPayload | null {
-  if (block.projected) {
-    return null;
-  }
-
   if (block.kind === 'quest') {
     const questId = block.sourceId ?? Number(block.id.replace('quest-', ''));
+    if (block.projected) {
+      return Number.isFinite(questId) && block.occurrenceDate
+        ? {
+          type: 'questOccurrence',
+          questId,
+          occurrenceDate: block.occurrenceDate,
+          scheduledStartAt: block.startAt,
+          scheduledEndAt: block.endAt,
+        }
+        : null;
+    }
+
     return Number.isFinite(questId) ? { type: 'quest', questId } : null;
   }
 
@@ -72,6 +81,10 @@ export function blockDragPreview(block: WeekScheduleBlock, action: string): Drag
 }
 
 export function dragId(payload: DragPayload): string {
+  if (payload.type === 'questOccurrence') {
+    return `quest-${payload.questId}-projected-${payload.occurrenceDate}`;
+  }
+
   if (payload.type === 'quest') {
     return `quest-${payload.questId}`;
   }
@@ -84,6 +97,10 @@ export function dragId(payload: DragPayload): string {
 }
 
 export function dragData(payload: DragPayload): string {
+  if (payload.type === 'questOccurrence') {
+    return `quest-occurrence:${payload.questId}:${payload.occurrenceDate}`;
+  }
+
   if (payload.type === 'quest') {
     return `quest:${payload.questId}`;
   }

@@ -2,7 +2,9 @@ import type { GamingSession } from '../../planning/services/gaming-session.servi
 import type { Quest, QuestFolder, QuestPriority } from '../../quests/services/quest-board.service';
 import {
   dateKey,
+  hasMaterializedOccurrenceForDay,
   projectedRecurringOccurrenceForDay,
+  recurringItemRecurrence,
 } from '../../planning/domain/planning-calendar.helpers';
 import {
   layoutOverlappingBlocks,
@@ -59,8 +61,11 @@ export function buildWeeklyScheduleBlocksForDay(
         });
       }
 
-      const projected = projectedRecurringOccurrenceForDay(quest, day.date);
+      const projected = hasMaterializedOccurrenceForDay(input.quests, quest, day.date)
+        ? null
+        : projectedRecurringOccurrenceForDay(quest, day.date);
       if (projected) {
+        const recurrence = recurringItemRecurrence(quest);
         blocks.push({
           id: `quest-${quest.id}-projected-${day.key}`,
           sourceId: quest.id,
@@ -69,8 +74,9 @@ export function buildWeeklyScheduleBlocksForDay(
           subtitle: 'Projected repeat',
           startAt: projected.start.toISOString(),
           endAt: projected.end.toISOString(),
+          occurrenceDate: day.key,
           color,
-          recurrence: quest.recurrence,
+          recurrence: recurrence ?? quest.recurrence,
           projected: true,
           completed: false,
           lane: 0,

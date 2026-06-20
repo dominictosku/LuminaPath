@@ -1008,6 +1008,24 @@
   resize: vertical;
 }
 
+.schedule-scope-toggle {
+  min-height: 44px;
+  padding: 3px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.schedule-scope-toggle ion-segment-button {
+  min-height: 36px;
+  --border-radius: 8px;
+  --color: var(--schedule-muted);
+  --color-checked: #f8fbff;
+  --indicator-color: rgba(124, 58, 237, 0.72);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .schedule-recurrence-preview {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr);

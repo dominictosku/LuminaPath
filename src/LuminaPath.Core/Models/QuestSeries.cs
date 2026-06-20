@@ -3,7 +3,7 @@ using LuminaPath.Core.Interfaces;
 
 namespace LuminaPath.Core.Models
 {
-    public class Quest : IBasicInfo
+    public class QuestSeries : IBasicInfo
     {
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
@@ -14,18 +14,10 @@ namespace LuminaPath.Core.Models
         public DateTime? DueDate { get; set; }
         public DateTime? ScheduledStartAt { get; set; }
         public DateTime? ScheduledEndAt { get; set; }
-        public int? QuestSeriesId { get; set; }
-        public QuestSeries? QuestSeries { get; set; }
-        public bool OverridesQuestSeries { get; set; }
-        public DateTime? SeriesOccurrenceDate { get; set; }
-        public bool ProjectsQuestSeries { get; set; } = true;
         public List<string> Tags { get; set; } = new();
         public int RewardXp { get; set; }
-        public bool Completed { get; set; }
-        public DateTime? CompletedAt { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-        public int SortOrder { get; set; }
         public string LuminaUserId { get; set; } = string.Empty;
         public int? MyGameId { get; set; }
         public MyGame? MyGame { get; set; }
@@ -33,6 +25,6 @@ namespace LuminaPath.Core.Models
         public QuestSkill? Skill { get; set; }
         public int? QuestFolderId { get; set; }
         public QuestFolder? QuestFolder { get; set; }
-        public List<QuestSubtask> Subtasks { get; set; } = new();
+        public List<Quest> Quests { get; set; } = new();
     }
 }

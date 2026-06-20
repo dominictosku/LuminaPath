@@ -1,6 +1,6 @@
 import type { MyGame } from '../../games/models/games.model';
 import type { GamingSession } from '../../planning/services/gaming-session.service';
-import type { Quest, QuestPriority, QuestRecurrence, QuestType } from '../../quests/services/quest-board.service';
+import type { Quest, QuestEditScope, QuestPriority, QuestRecurrence, QuestType } from '../../quests/services/quest-board.service';
 import {
   SLOT_MINUTES,
   WEEK_END_HOUR,
@@ -20,6 +20,7 @@ export type LibraryGameOption = {
 export type QuestScheduleDraft = {
   mode: 'create' | 'edit';
   questId: number | null;
+  editScope: QuestEditScope;
   title: string;
   notes: string;
   type: QuestType;
@@ -53,6 +54,7 @@ export function createQuestDraftForSlot(
   return {
     mode: 'create',
     questId: null,
+    editScope: 'occurrence',
     title: selectedGame ? `Play ${selectedGame.gameName}` : '',
     notes: '',
     type: 'sub',
@@ -83,6 +85,7 @@ export function editQuestDraftForQuest(
   return {
     mode: 'edit',
     questId: quest.id,
+    editScope: 'occurrence',
     title: quest.title,
     notes: quest.notes ?? '',
     type: quest.type,

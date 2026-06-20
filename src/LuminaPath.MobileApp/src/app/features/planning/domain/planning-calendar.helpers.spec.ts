@@ -1,5 +1,6 @@
 import {
   dateKey,
+  hasMaterializedOccurrenceForDay,
   projectedRecurringOccurrenceForDay,
   shiftForRecurrence,
   startOfCalendarMonthGrid,
@@ -48,5 +49,53 @@ describe('planning calendar helpers', () => {
       scheduledStartAt: sourceStart.toISOString(),
       scheduledEndAt: sourceEnd.toISOString(),
     }, new Date(2026, 5, 10))).toBeNull();
+  });
+
+  it('projects from series schedule when an occurrence has local overrides', () => {
+    const occurrenceStart = new Date(2026, 5, 4, 21, 0);
+    const occurrenceEnd = new Date(2026, 5, 4, 22, 0);
+    const seriesStart = new Date(2026, 5, 4, 18, 30);
+    const seriesEnd = new Date(2026, 5, 4, 19, 30);
+
+    const projected = projectedRecurringOccurrenceForDay({
+      recurrence: 'none',
+      seriesRecurrence: 'weekly',
+      completed: false,
+      scheduledStartAt: occurrenceStart.toISOString(),
+      scheduledEndAt: occurrenceEnd.toISOString(),
+      seriesScheduledStartAt: seriesStart.toISOString(),
+      seriesScheduledEndAt: seriesEnd.toISOString(),
+    }, new Date(2026, 5, 11));
+
+    expect(projected).not.toBeNull();
+    expect(dateKey(projected!.start)).toBe('2026-06-11');
+    expect(projected!.start.getHours()).toBe(18);
+    expect(projected!.start.getMinutes()).toBe(30);
+  });
+
+  it('does not project materialized one-off occurrences and can detect their original date', () => {
+    const items = [
+      {
+        id: 1,
+        questSeriesId: 20,
+        recurrence: 'weekly' as const,
+        projectsQuestSeries: true,
+        seriesOccurrenceDate: '2026-06-04T00:00:00.000Z',
+        scheduledStartAt: '2026-06-04T18:30:00.000Z',
+        scheduledEndAt: '2026-06-04T19:30:00.000Z',
+      },
+      {
+        id: 2,
+        questSeriesId: 20,
+        recurrence: 'weekly' as const,
+        projectsQuestSeries: false,
+        seriesOccurrenceDate: '2026-06-11T00:00:00.000Z',
+        scheduledStartAt: '2026-06-12T20:00:00.000Z',
+        scheduledEndAt: '2026-06-12T21:00:00.000Z',
+      },
+    ];
+
+    expect(projectedRecurringOccurrenceForDay(items[1], new Date(2026, 5, 18))).toBeNull();
+    expect(hasMaterializedOccurrenceForDay(items, items[0], new Date(2026, 5, 11))).toBeTrue();
   });
 });

@@ -175,6 +175,146 @@ namespace Test.Services
         }
 
         [Fact]
+        public async Task UpdateAsync_OccurrenceEditDoesNotLeakIntoNextRecurringQuest()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string userId = "user-1";
+            var start = new DateTime(2026, 6, 16, 18, 0, 0, DateTimeKind.Utc);
+            var service = new QuestService(new TestDbContextFactory(options));
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.Add(NewUser(userId));
+                await dbContext.SaveChangesAsync();
+            }
+
+            var created = Success(await service.CreateAsync(userId, new QuestCreateDto
+            {
+                Title = "Practice",
+                Recurrence = QuestRecurrence.Weekly,
+                ScheduledStartAt = start,
+                ScheduledEndAt = start.AddHours(1)
+            }));
+
+            Assert.NotNull(created.Quest.QuestSeriesId);
+
+            var movedStart = start.AddHours(2);
+            var edited = Success(await service.UpdateAsync(userId, created.Quest.Id, new QuestUpdateDto
+            {
+                EditScope = QuestEditScope.Occurrence,
+                Title = "One-off practice",
+                ScheduledStartAt = movedStart,
+                ScheduledEndAt = movedStart.AddHours(1)
+            }));
+
+            Assert.Equal("One-off practice", edited.Quest.Title);
+            Assert.True(edited.Quest.OverridesQuestSeries);
+
+            var completed = Success(await service.UpdateAsync(userId, created.Quest.Id, new QuestUpdateDto { Completed = true }));
+
+            Assert.NotNull(completed.SpawnedQuest);
+            Assert.Equal("Practice", completed.SpawnedQuest!.Title);
+            Assert.Equal(start.AddDays(7), completed.SpawnedQuest.ScheduledStartAt);
+            Assert.Equal(start.AddDays(7).AddHours(1), completed.SpawnedQuest.ScheduledEndAt);
+            Assert.False(completed.SpawnedQuest.OverridesQuestSeries);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_SeriesEditUpdatesTemplateUsedByNextRecurringQuest()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string userId = "user-1";
+            var start = new DateTime(2026, 6, 16, 18, 0, 0, DateTimeKind.Utc);
+            var service = new QuestService(new TestDbContextFactory(options));
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.Add(NewUser(userId));
+                await dbContext.SaveChangesAsync();
+            }
+
+            var created = Success(await service.CreateAsync(userId, new QuestCreateDto
+            {
+                Title = "Practice",
+                Recurrence = QuestRecurrence.Weekly,
+                ScheduledStartAt = start,
+                ScheduledEndAt = start.AddHours(1)
+            }));
+
+            var seriesStart = start.AddHours(2);
+            var edited = Success(await service.UpdateAsync(userId, created.Quest.Id, new QuestUpdateDto
+            {
+                EditScope = QuestEditScope.Series,
+                Title = "Updated practice",
+                Recurrence = QuestRecurrence.Daily,
+                ScheduledStartAt = seriesStart,
+                ScheduledEndAt = seriesStart.AddMinutes(90)
+            }));
+
+            Assert.Equal("Updated practice", edited.Quest.Title);
+            Assert.Equal(QuestRecurrence.Daily, edited.Quest.Recurrence);
+            Assert.False(edited.Quest.OverridesQuestSeries);
+
+            var completed = Success(await service.UpdateAsync(userId, created.Quest.Id, new QuestUpdateDto { Completed = true }));
+
+            Assert.NotNull(completed.SpawnedQuest);
+            Assert.Equal("Updated practice", completed.SpawnedQuest!.Title);
+            Assert.Equal(seriesStart.AddDays(1), completed.SpawnedQuest.ScheduledStartAt);
+            Assert.Equal(seriesStart.AddDays(1).AddMinutes(90), completed.SpawnedQuest.ScheduledEndAt);
+            Assert.Equal(QuestRecurrence.Daily, completed.SpawnedQuest.Recurrence);
+        }
+
+        [Fact]
+        public async Task MaterializeOccurrenceAsync_CreatesOneOffOccurrenceAndPromotesItOnCompletion()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            const string userId = "user-1";
+            var start = new DateTime(2026, 6, 4, 18, 0, 0, DateTimeKind.Utc);
+            var projectedDate = start.AddDays(7).Date;
+            var movedStart = new DateTime(2026, 6, 12, 20, 0, 0, DateTimeKind.Utc);
+            var service = new QuestService(new TestDbContextFactory(options));
+
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                dbContext.Users.Add(NewUser(userId));
+                await dbContext.SaveChangesAsync();
+            }
+
+            var created = Success(await service.CreateAsync(userId, new QuestCreateDto
+            {
+                Title = "Weekly reset",
+                Recurrence = QuestRecurrence.Weekly,
+                ScheduledStartAt = start,
+                ScheduledEndAt = start.AddHours(1)
+            }));
+
+            var materialized = Success(await service.MaterializeOccurrenceAsync(userId, created.Quest.Id, new QuestOccurrenceCreateDto
+            {
+                OccurrenceDate = projectedDate,
+                ScheduledStartAt = movedStart,
+                ScheduledEndAt = movedStart.AddHours(1)
+            }));
+
+            Assert.NotEqual(created.Quest.Id, materialized.Quest.Id);
+            Assert.Equal(created.Quest.QuestSeriesId, materialized.Quest.QuestSeriesId);
+            Assert.Equal(projectedDate, materialized.Quest.SeriesOccurrenceDate);
+            Assert.Equal(movedStart, materialized.Quest.ScheduledStartAt);
+            Assert.Equal(movedStart.Date, materialized.Quest.DueDate);
+            Assert.True(materialized.Quest.OverridesQuestSeries);
+            Assert.False(materialized.Quest.ProjectsQuestSeries);
+
+            var completed = Success(await service.UpdateAsync(userId, created.Quest.Id, new QuestUpdateDto { Completed = true }));
+
+            Assert.NotNull(completed.SpawnedQuest);
+            Assert.Equal(materialized.Quest.Id, completed.SpawnedQuest!.Id);
+            Assert.Equal(movedStart, completed.SpawnedQuest.ScheduledStartAt);
+            Assert.True(completed.SpawnedQuest.ProjectsQuestSeries);
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            Assert.Equal(2, await assertContext.Quests.CountAsync(quest => quest.LuminaUserId == userId));
+        }
+
+        [Fact]
         public async Task UpdateAsync_ReschedulesAndClearsQuestBlock()
         {
             var options = Utilities.DbContext.TestDbContextOptions();

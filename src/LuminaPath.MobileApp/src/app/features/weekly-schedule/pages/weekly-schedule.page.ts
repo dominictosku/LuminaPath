@@ -309,6 +309,11 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   protected async openOverviewEvent(event: TimelineEvent, day: PlanningCalendarDay, clickEvent: MouseEvent): Promise<void> {
     clickEvent.stopPropagation();
     if (event.kind === 'quest') {
+      if (event.projected) {
+        await this.openProjectedOverviewQuest(event, day);
+        return;
+      }
+
       this.openQuestById(event.sourceId);
       return;
     }
@@ -409,8 +414,13 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     await this.createSessionAt(game?.myGameId ?? null, day.date, minutes);
   }
 
-  protected openQuest(block: WeekScheduleBlock): void {
+  protected async openQuest(block: WeekScheduleBlock): Promise<void> {
     if (block.kind !== 'quest') return;
+    if (block.projected) {
+      await this.openProjectedQuestBlock(block);
+      return;
+    }
+
     const questId = block.sourceId ?? Number(block.id.replace('quest-', ''));
     this.openQuestById(questId);
   }
@@ -466,6 +476,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
           dueDate: this.draft.scheduledDate,
           scheduledStartAt: range.start.toISOString(),
           scheduledEndAt: range.end.toISOString(),
+          editScope: this.draft.editScope,
           folderId: this.draft.folderId ?? undefined,
           clearFolder: this.draft.folderId == null,
           myGameId: this.draft.myGameId ?? undefined,
@@ -488,7 +499,10 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     if (!this.draft || this.draft.mode !== 'edit' || this.draft.questId == null || this.isSaving) return;
     this.isSaving = true;
     try {
-      const result = await this.questService.updateQuest(this.draft.questId, { clearSchedule: true });
+      const result = await this.questService.updateQuest(this.draft.questId, {
+        clearSchedule: true,
+        editScope: this.draft.editScope,
+      });
       this.applyQuestMutation(result);
       this.closeDraft();
     } catch {
@@ -528,10 +542,10 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     }
   }
 
-  protected openBlock(event: MouseEvent, block: WeekScheduleBlock): void {
+  protected async openBlock(event: MouseEvent, block: WeekScheduleBlock): Promise<void> {
     event.stopPropagation();
     if (block.kind === 'quest') {
-      this.openQuest(block);
+      await this.openQuest(block);
       return;
     }
 
@@ -646,14 +660,12 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
   }
 
   protected dragBlock(event: DragEvent, block: WeekScheduleBlock): void {
-    if (block.projected) {
-      event.preventDefault();
-      return;
-    }
-
     const payload = blockDragPayload(block);
     if (!payload) return;
-    this.beginDrag(event, payload, blockDragPreview(block, block.kind === 'quest' ? 'Move quest' : 'Move session'));
+    this.beginDrag(event, payload, blockDragPreview(
+      block,
+      block.projected ? 'Move occurrence' : block.kind === 'quest' ? 'Move quest' : 'Move session',
+    ));
   }
 
   protected endDrag(): void {
@@ -686,6 +698,11 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       const quest = this.quests.find((item) => item.id === payload.questId);
       if (!quest) return;
       await this.scheduleQuestAt(quest, day.date, minutes);
+      return;
+    }
+
+    if (payload.type === 'questOccurrence') {
+      await this.scheduleProjectedOccurrenceAt(payload, day.date, minutes);
       return;
     }
 
@@ -822,6 +839,17 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
 
   protected hasRecurrence(recurrence: QuestRecurrence | null | undefined): boolean {
     return hasCalendarRecurrence(recurrence);
+  }
+
+  protected canEditQuestSeries(draft: QuestScheduleDraft): boolean {
+    if (draft.mode !== 'edit') {
+      return false;
+    }
+
+    const quest = this.selectedQuest();
+    return this.hasRecurrence(draft.recurrence)
+      || this.hasRecurrence(quest?.seriesRecurrence)
+      || Boolean(quest?.questSeriesId);
   }
 
   protected draftRecurrencePreview(draft: QuestScheduleDraft): string {
@@ -963,6 +991,91 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
     this.overviewSessions = sessions;
   }
 
+  private async openProjectedQuestBlock(block: WeekScheduleBlock): Promise<void> {
+    const questId = block.sourceId ?? Number(block.id.replace('quest-', ''));
+    if (!Number.isFinite(questId)) {
+      return;
+    }
+
+    const result = await this.materializeQuestOccurrence(
+      questId,
+      block.occurrenceDate ?? dateKey(new Date(block.startAt)),
+      block.startAt,
+      block.endAt,
+      'Quest occurrence could not be opened.',
+    );
+    if (!result) {
+      return;
+    }
+
+    this.applyQuestMutation(result);
+    this.openQuestById(result.quest.id);
+  }
+
+  private async openProjectedOverviewQuest(event: TimelineEvent, day: PlanningCalendarDay): Promise<void> {
+    if (!event.startAt || !event.endAt) {
+      await this.openPlannerDay(day);
+      return;
+    }
+
+    const result = await this.materializeQuestOccurrence(
+      event.sourceId,
+      event.occurrenceDate ?? day.key,
+      event.startAt,
+      event.endAt,
+      'Quest occurrence could not be opened.',
+    );
+    if (!result) {
+      return;
+    }
+
+    this.applyQuestMutation(result);
+    this.openQuestById(result.quest.id);
+  }
+
+  private async scheduleProjectedOccurrenceAt(
+    payload: Extract<DragPayload, { type: 'questOccurrence' }>,
+    day: Date,
+    minutes: number,
+  ): Promise<void> {
+    const start = dateAtMinutes(day, minutes);
+    const end = new Date(start);
+    end.setMinutes(start.getMinutes() + clampedDuration(minutes, this.durationMinutesFromRange(
+      payload.scheduledStartAt,
+      payload.scheduledEndAt,
+    )));
+
+    const result = await this.materializeQuestOccurrence(
+      payload.questId,
+      payload.occurrenceDate,
+      start.toISOString(),
+      end.toISOString(),
+      'Quest occurrence could not be moved.',
+    );
+    if (result) {
+      this.applyQuestMutation(result);
+    }
+  }
+
+  private async materializeQuestOccurrence(
+    questId: number,
+    occurrenceDate: string,
+    scheduledStartAt: string,
+    scheduledEndAt: string,
+    errorMessage: string,
+  ): Promise<QuestMutationResult | null> {
+    try {
+      return await this.questService.materializeOccurrence(questId, {
+        occurrenceDate,
+        scheduledStartAt,
+        scheduledEndAt,
+      });
+    } catch {
+      this.errorMessage = errorMessage;
+      return null;
+    }
+  }
+
   private async scheduleQuestAt(quest: Quest, day: Date, minutes: number): Promise<void> {
     const start = dateAtMinutes(day, minutes);
     const end = new Date(start);
@@ -979,6 +1092,7 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
         dueDate: dateKey(start),
         scheduledStartAt: start.toISOString(),
         scheduledEndAt: end.toISOString(),
+        editScope: 'occurrence',
       });
       this.applyQuestMutation(result);
     } catch {
@@ -987,6 +1101,13 @@ export class WeeklySchedulePage implements OnInit, AfterViewInit {
       this.buildOverviewCalendar();
       this.errorMessage = 'Quest could not be scheduled.';
     }
+  }
+
+  private durationMinutesFromRange(startAt: string, endAt: string): number {
+    const start = new Date(startAt).getTime();
+    const end = new Date(endAt).getTime();
+    const minutes = Math.round((end - start) / 60_000);
+    return Number.isFinite(minutes) && minutes > 0 ? minutes : 60;
   }
 
   private async createSessionAt(myGameId: number | null, day: Date, minutes: number): Promise<void> {

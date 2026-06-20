@@ -72,6 +72,18 @@ namespace LuminaPath.Infrastructure.Controllers
                 failed => NotFound(failed));
         }
 
+        [HttpPost("{id:int}/occurrences")]
+        public async Task<ActionResult<QuestMutationResultDto>> MaterializeOccurrence(int id, QuestOccurrenceCreateDto dto)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return LoginRequired();
+
+            var result = await _service.MaterializeOccurrenceAsync(user.Id, id, dto);
+            return result.Match<ActionResult<QuestMutationResultDto>>(
+                mutation => Ok(mutation),
+                failed => BadRequest(failed));
+        }
+
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {

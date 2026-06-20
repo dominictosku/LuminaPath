@@ -25,6 +25,7 @@ describe('weekly schedule drafts', () => {
 
     expect(draft).toEqual(jasmine.objectContaining({
       mode: 'create',
+      editScope: 'occurrence',
       title: 'Play Hades',
       scheduledDate: '2026-06-11',
       startTime: '20:30',
@@ -49,6 +50,7 @@ describe('weekly schedule drafts', () => {
     expect(scheduled).toEqual(jasmine.objectContaining({
       mode: 'edit',
       questId: 4,
+      editScope: 'occurrence',
       title: 'Raid',
       notes: 'Bring potions',
       priority: 'high',

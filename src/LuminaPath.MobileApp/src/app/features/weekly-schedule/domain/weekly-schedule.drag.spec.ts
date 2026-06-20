@@ -16,10 +16,24 @@ import {
 describe('weekly schedule drag helpers', () => {
   it('serializes drag payload ids and data consistently', () => {
     expect(dragId({ type: 'quest', questId: 4 })).toBe('quest-4');
+    expect(dragId({
+      type: 'questOccurrence',
+      questId: 4,
+      occurrenceDate: '2026-06-11',
+      scheduledStartAt: '2026-06-11T18:00:00.000Z',
+      scheduledEndAt: '2026-06-11T19:00:00.000Z',
+    })).toBe('quest-4-projected-2026-06-11');
     expect(dragId({ type: 'game', myGameId: 7 })).toBe('game-7');
     expect(dragId({ type: 'session', sessionId: 9 })).toBe('session-9');
 
     expect(dragData({ type: 'quest', questId: 4 })).toBe('quest:4');
+    expect(dragData({
+      type: 'questOccurrence',
+      questId: 4,
+      occurrenceDate: '2026-06-11',
+      scheduledStartAt: '2026-06-11T18:00:00.000Z',
+      scheduledEndAt: '2026-06-11T19:00:00.000Z',
+    })).toBe('quest-occurrence:4:2026-06-11');
     expect(dragData({ type: 'game', myGameId: 7 })).toBe('game:7');
     expect(dragData({ type: 'session', sessionId: 9 })).toBe('session:9');
   });
@@ -57,13 +71,26 @@ describe('weekly schedule drag helpers', () => {
       .toBe('Low priority');
   });
 
-  it('builds block payloads and ignores projected blocks', () => {
+  it('builds block payloads including projected occurrences', () => {
     expect(blockDragPayload(block({ id: 'quest-4', sourceId: 12, kind: 'quest' })))
       .toEqual({ type: 'quest', questId: 12 });
     expect(blockDragPayload(block({ id: 'session-9', kind: 'session', sourceId: undefined })))
       .toEqual({ type: 'session', sessionId: 9 });
-    expect(blockDragPayload(block({ id: 'quest-4-projected-2026-06-11', kind: 'quest', projected: true })))
-      .toBeNull();
+    expect(blockDragPayload(block({
+      id: 'quest-4-projected-2026-06-11',
+      sourceId: 4,
+      kind: 'quest',
+      projected: true,
+      occurrenceDate: '2026-06-11',
+      startAt: '2026-06-11T18:00:00.000Z',
+      endAt: '2026-06-11T19:00:00.000Z',
+    }))).toEqual({
+      type: 'questOccurrence',
+      questId: 4,
+      occurrenceDate: '2026-06-11',
+      scheduledStartAt: '2026-06-11T18:00:00.000Z',
+      scheduledEndAt: '2026-06-11T19:00:00.000Z',
+    });
   });
 
   it('builds block preview content and transforms preview position', () => {

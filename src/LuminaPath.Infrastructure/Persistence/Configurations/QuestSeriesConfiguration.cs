@@ -6,33 +6,31 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LuminaPath.Infrastructure.ModelConfiguration
 {
-    public class QuestConfiguration : IEntityTypeConfiguration<Quest>
+    public class QuestSeriesConfiguration : IEntityTypeConfiguration<QuestSeries>
     {
-        public void Configure(EntityTypeBuilder<Quest> builder)
+        public void Configure(EntityTypeBuilder<QuestSeries> builder)
         {
-            builder.HasOne(quest => quest.MyGame)
-                .WithMany(myGame => myGame.Quests)
-                .HasForeignKey(quest => quest.MyGameId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            builder.HasOne(quest => quest.Skill)
+            builder.HasOne(series => series.MyGame)
                 .WithMany()
-                .HasForeignKey(quest => quest.SkillId)
+                .HasForeignKey(series => series.MyGameId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // Deleting a folder shouldn't take its quests with it — they
-            // fall back to the "Unfiled" bucket (folderId = null).
-            builder.HasOne(quest => quest.QuestFolder)
+            builder.HasOne(series => series.Skill)
                 .WithMany()
-                .HasForeignKey(quest => quest.QuestFolderId)
+                .HasForeignKey(series => series.SkillId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            builder.HasMany(quest => quest.Subtasks)
-                .WithOne(subtask => subtask.Quest!)
-                .HasForeignKey(subtask => subtask.QuestId)
-                .OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(series => series.QuestFolder)
+                .WithMany()
+                .HasForeignKey(series => series.QuestFolderId)
+                .OnDelete(DeleteBehavior.SetNull);
 
-            builder.Property(quest => quest.Tags)
+            builder.HasMany(series => series.Quests)
+                .WithOne(quest => quest.QuestSeries)
+                .HasForeignKey(quest => quest.QuestSeriesId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Property(series => series.Tags)
                 .HasColumnType("jsonb")
                 .HasDefaultValueSql("'[]'::jsonb")
                 .HasConversion(
@@ -43,10 +41,8 @@ namespace LuminaPath.Infrastructure.ModelConfiguration
                     list => list == null ? 0 : list.Aggregate(0, (hash, item) => HashCode.Combine(hash, item.GetHashCode())),
                     list => list == null ? new List<string>() : list.ToList()));
 
-            builder.HasIndex(quest => new { quest.LuminaUserId, quest.Completed, quest.DueDate });
-            builder.HasIndex(quest => new { quest.LuminaUserId, quest.ScheduledStartAt });
-            builder.HasIndex(quest => new { quest.LuminaUserId, quest.QuestSeriesId, quest.SeriesOccurrenceDate });
-            builder.HasIndex(quest => new { quest.LuminaUserId, quest.SortOrder });
+            builder.HasIndex(series => new { series.LuminaUserId, series.Recurrence });
+            builder.HasIndex(series => new { series.LuminaUserId, series.ScheduledStartAt });
         }
 
         private static List<string> DeserializeTags(string? json)
