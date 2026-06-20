@@ -6,6 +6,7 @@ import { signal } from '@angular/core';
 
 import { LibraryPage } from './library.page';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
+import { DataExportService } from 'src/app/shared/services/data-export.service';
 import { PaginateResult } from 'src/app/core/entities/paginatedResult';
 import { MediaLibraryFacade } from '../services/media-library.facade';
 import { MediaItem, UserMediaEntry } from '../models/media-item.model';
@@ -60,6 +61,7 @@ describe('LibraryPage', () => {
 
   let mediaLibrary: jasmine.SpyObj<MediaLibraryFacade>;
   let releaseNotifications: jasmine.SpyObj<ReleaseNotificationService>;
+  let dataExport: jasmine.SpyObj<DataExportService>;
   let router: jasmine.SpyObj<Router>;
   let gameService: jasmine.SpyObj<GameService>;
   let animeService: jasmine.SpyObj<AnimeService>;
@@ -82,12 +84,22 @@ describe('LibraryPage', () => {
       'ReleaseNotificationService',
       ['syncForGames'],
     );
+    dataExport = jasmine.createSpyObj<DataExportService>(
+      'DataExportService',
+      ['downloadJson', 'downloadLibraryWorkbook'],
+    );
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
 
     mediaLibrary.getAll.and.returnValue(getAllResponse);
     mediaLibrary.removeFromLibrary.and.returnValue(of(void 0));
     mediaLibrary.detailsRoute.and.callFake((item) => ['/library', item.kind, item.id]);
     releaseNotifications.syncForGames.and.resolveTo();
+    dataExport.downloadLibraryWorkbook.and.returnValue(of({
+      blob: new Blob(['xlsx'], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }),
+      fileName: 'LuminaLibrary.xlsx',
+    }));
     router.navigate.and.resolveTo(true);
 
     // Catalog services for the admin create flow — stubs by default so the
@@ -115,6 +127,7 @@ describe('LibraryPage', () => {
         provideIonicAngular(),
         { provide: MediaLibraryFacade, useValue: mediaLibrary },
         { provide: ReleaseNotificationService, useValue: releaseNotifications },
+        { provide: DataExportService, useValue: dataExport },
         { provide: Router, useValue: router },
         { provide: GameService, useValue: gameService },
         { provide: AnimeService, useValue: animeService },
@@ -525,6 +538,41 @@ describe('LibraryPage', () => {
     expect(mediaLibrary.detailsRoute).toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledOnceWith(['/library', 'games', 42]);
   });
+
+  it('exportLibrary downloads the Excel workbook', fakeAsync(() => {
+    configure(of(pageOf([])));
+    fixture.detectChanges();
+    const click = spyOn(HTMLAnchorElement.prototype, 'click').and.stub();
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:library-export');
+    const revoke = spyOn(URL, 'revokeObjectURL').and.stub();
+
+    component.exportLibrary();
+    tick();
+
+    expect(dataExport.downloadLibraryWorkbook).toHaveBeenCalledTimes(1);
+    expect(click).toHaveBeenCalled();
+    expect(component.successMessage).toBe('Excel export downloaded.');
+    expect(component.errorMessage).toBe('');
+    expect(component.exportState).toBe('idle');
+
+    tick();
+    expect(revoke).toHaveBeenCalledWith('blob:library-export');
+  }));
+
+  it('exportLibrary surfaces workbook export errors', fakeAsync(() => {
+    configure(of(pageOf([])));
+    fixture.detectChanges();
+    dataExport.downloadLibraryWorkbook.and.returnValue(
+      throwError(() => ({ error: 'Workbook export failed' })),
+    );
+
+    component.exportLibrary();
+    tick();
+
+    expect(component.errorMessage).toBe('Workbook export failed');
+    expect(component.successMessage).toBe('');
+    expect(component.exportState).toBe('idle');
+  }));
 
   describe('admin create flow', () => {
     it('canCreateCatalogEntry is false for non-admins', () => {

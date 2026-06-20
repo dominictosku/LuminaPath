@@ -21,11 +21,14 @@ import {
   IonSkeletonText,
 } from '@ionic/angular/standalone';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { firstValueFrom } from 'rxjs';
 import { Platforms } from '../../games/models/games.model';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
+import { DataExportService } from 'src/app/shared/services/data-export.service';
 import { MediaMode, MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { capitalize } from 'src/app/shared/utils/format';
+import { triggerDownload } from 'src/app/shared/utils/download-file';
 import { MediaLibraryFacade } from '../services/media-library.facade';
 import { MediaStore } from '../state/media.store';
 import { MediaItem } from '../models/media-item.model';
@@ -81,6 +84,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   private mediaLibrary = inject(MediaLibraryFacade);
   private mediaStore = inject(MediaStore);
   private releaseNotifications = inject(ReleaseNotificationService);
+  private dataExport = inject(DataExportService);
   private router = inject(Router);
   private mediaModeService = inject(MediaModeService);
   readonly mediaView = inject(MediaLibraryViewService);
@@ -118,6 +122,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   viewMode: ViewMode = 'grid';
   isLoading = true;
   isLoadingMore = false;
+  exportState: 'idle' | 'working' = 'idle';
   errorMessage = '';
   successMessage = '';
   addingGameIds = new Set<number>();
@@ -466,6 +471,26 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
       this.triggerAddHaptic();
       this.loadGames();
     });
+  }
+
+  async exportLibrary(): Promise<void> {
+    if (this.exportState === 'working') {
+      return;
+    }
+
+    this.exportState = 'working';
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    try {
+      const download = await firstValueFrom(this.dataExport.downloadLibraryWorkbook());
+      triggerDownload(download.blob, download.fileName);
+      this.successMessage = 'Excel export downloaded.';
+    } catch (error) {
+      this.errorMessage = extractErrorMessage(error, 'Excel export could not be downloaded.');
+    } finally {
+      this.exportState = 'idle';
+    }
   }
 
   get hasMorePages(): boolean {

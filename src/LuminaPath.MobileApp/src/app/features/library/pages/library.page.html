@@ -98,6 +98,15 @@
               Create
             </ion-button>
           }
+          <ion-button
+            fill="clear"
+            size="small"
+            aria-label="Export library to Excel"
+            [disabled]="exportState === 'working'"
+            (click)="exportLibrary()">
+            <ion-icon slot="start" name="download-outline"></ion-icon>
+            {{ exportState === 'working' ? 'Exporting...' : 'Export Excel' }}
+          </ion-button>
           @if (bulk.visibleLibraryItems.length) {
             <ion-button fill="clear" size="small" (click)="bulk.toggleSelectionMode()">
               <ion-icon slot="start" name="checkbox-outline"></ion-icon>

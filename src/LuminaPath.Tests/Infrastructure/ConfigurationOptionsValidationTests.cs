@@ -1,6 +1,7 @@
 using LuminaPath.Core.Mapping;
 using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Configuration;
+using LuminaPath.Infrastructure.Controllers;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.Storage;
 using Microsoft.AspNetCore.Cors.Infrastructure;
@@ -135,6 +136,7 @@ public class ConfigurationOptionsValidationTests
         Assert.NotNull(policy);
         Assert.Empty(policy!.Origins);
         Assert.True(policy.SupportsCredentials);
+        AssertExportHeadersAreExposed(policy);
     }
 
     [Fact]
@@ -152,6 +154,7 @@ public class ConfigurationOptionsValidationTests
         Assert.NotNull(policy);
         Assert.Empty(policy!.Origins);
         Assert.True(policy.SupportsCredentials);
+        AssertExportHeadersAreExposed(policy);
     }
 
     [Fact]
@@ -170,6 +173,7 @@ public class ConfigurationOptionsValidationTests
         Assert.NotNull(policy);
         Assert.Equal(["http://localhost:4200"], policy!.Origins);
         Assert.True(policy.SupportsCredentials);
+        AssertExportHeadersAreExposed(policy);
     }
 
     [Fact]
@@ -309,6 +313,13 @@ public class ConfigurationOptionsValidationTests
             ["PSN:TokenAuthorizationHeader"] = "Basic test",
             ["Cors:AllowedOrigins:0"] = "http://localhost"
         };
+    }
+
+    private static void AssertExportHeadersAreExposed(CorsPolicy policy)
+    {
+        Assert.Contains(LoginBlockedReason.ResponseHeaderName, policy.ExposedHeaders);
+        Assert.Contains("Content-Disposition", policy.ExposedHeaders);
+        Assert.Contains(DataExportController.ExportFileNameHeader, policy.ExposedHeaders);
     }
 
     private sealed class TestHostEnvironment : IHostEnvironment

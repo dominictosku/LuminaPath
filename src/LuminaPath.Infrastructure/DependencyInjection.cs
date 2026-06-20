@@ -1,6 +1,7 @@
 using System.Reflection;
 using FluentValidation;
 using LuminaPath.Infrastructure.Configuration;
+using LuminaPath.Infrastructure.Controllers;
 using LuminaPath.Infrastructure.Hubs;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Middleware;
@@ -61,7 +62,12 @@ namespace LuminaPath.Infrastructure
                 // is inactive — without this, the browser hides it from
                 // the Angular SPA on cross-origin requests and the
                 // tailored "awaiting approval" message can't be shown.
-                .WithExposedHeaders(LoginBlockedReason.ResponseHeaderName)));
+                // Export filenames travel in download response headers and
+                // need the same treatment when the Angular app is cross-origin.
+                .WithExposedHeaders(
+                    LoginBlockedReason.ResponseHeaderName,
+                    "Content-Disposition",
+                    DataExportController.ExportFileNameHeader)));
         }
 
         public static async Task MigrateDatabase(this WebApplication app)

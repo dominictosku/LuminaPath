@@ -10,10 +10,11 @@ import {
 } from '@ionic/angular/standalone';
 import { firstValueFrom, finalize } from 'rxjs';
 import { AuthService } from 'src/app/core/auth/services/auth.service';
+import { DataExportService } from 'src/app/shared/services/data-export.service';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { ThemePreferenceService } from 'src/app/shared/services/theme-preference.service';
-import { DataExportService } from '../services/data-export.service';
+import { triggerDownload } from 'src/app/shared/utils/download-file';
 import { ProfileService } from '../services/profile.service';
 import { TwoFactorCardComponent } from '../components/two-factor-card/two-factor-card.component';
 import { GoogleCalendarCardComponent } from '../components/google-calendar-card/google-calendar-card.component';
@@ -171,18 +172,6 @@ export class SettingsPage {
         },
       });
   }
-}
-
-function triggerDownload(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = fileName;
-  anchor.rel = 'noopener';
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 function errorTextFrom(error: unknown): string | null {
