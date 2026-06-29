@@ -3,6 +3,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 COPY LuminaPath.sln ./
+COPY Directory.Build.props Directory.Packages.props ./
 COPY src/LuminaPath/LuminaPath.csproj src/LuminaPath/
 COPY src/LuminaPath.Core/LuminaPath.Core.csproj src/LuminaPath.Core/
 COPY src/LuminaPath.Infrastructure/LuminaPath.Infrastructure.csproj src/LuminaPath.Infrastructure/
