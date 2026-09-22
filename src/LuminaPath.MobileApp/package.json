@@ -5,8 +5,12 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "ng": "ng",
+    "prestart": "node ../../scripts/prepare-legal.mjs",
     "start": "ng serve",
+    "prebuild": "node ../../scripts/prepare-legal.mjs",
     "build": "ng build",
+    "postbuild": "node ../../scripts/finish-web-licenses.mjs",
+    "prewatch": "node ../../scripts/prepare-legal.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:smoke": "ng test --watch=false --browsers=ChromeHeadlessNoSandbox",
@@ -16,15 +20,15 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "^21.2.11",
+    "@angular/animations": "^21.2.23",
     "@angular/cdk": "^21.2.9",
-    "@angular/common": "^21.2.11",
-    "@angular/compiler": "^21.2.11",
-    "@angular/core": "^21.2.11",
-    "@angular/forms": "^21.2.11",
-    "@angular/platform-browser": "^21.2.11",
-    "@angular/platform-browser-dynamic": "^21.2.11",
-    "@angular/router": "^21.2.11",
+    "@angular/common": "^21.2.23",
+    "@angular/compiler": "^21.2.23",
+    "@angular/core": "^21.2.23",
+    "@angular/forms": "^21.2.23",
+    "@angular/platform-browser": "^21.2.23",
+    "@angular/platform-browser-dynamic": "^21.2.23",
+    "@angular/router": "^21.2.23",
     "@auth0/angular-jwt": "^5.2.0",
     "@capacitor/app": "8.1.0",
     "@capacitor/core": "8.3.1",
@@ -37,9 +41,9 @@
     "@ngrx/signals": "^21.0.0",
     "@tailwindcss/postcss": "^4.2.4",
     "@types/three": "^0.184.0",
-    "dompurify": "^3.4.5",
+    "dompurify": "^3.4.15",
     "marked": "^18.0.4",
-    "postcss": "^8.5.13",
+    "postcss": "^8.5.28",
     "qrcode-generator": "^2.0.4",
     "rxjs": "~7.8.2",
     "tailwindcss": "^4.2.4",
@@ -48,15 +52,15 @@
     "zone.js": "~0.16.1"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^21.2.9",
+    "@angular-devkit/build-angular": "^21.2.24",
     "@angular-eslint/builder": "^21.4.0",
     "@angular-eslint/eslint-plugin": "^21.4.0",
     "@angular-eslint/eslint-plugin-template": "^21.4.0",
     "@angular-eslint/schematics": "^21.4.0",
     "@angular-eslint/template-parser": "^21.4.0",
-    "@angular/cli": "^21.2.9",
-    "@angular/compiler-cli": "^21.2.11",
-    "@angular/language-service": "^21.2.11",
+    "@angular/cli": "^21.2.24",
+    "@angular/compiler-cli": "^21.2.23",
+    "@angular/language-service": "^21.2.23",
     "@capacitor/android": "^8.3.1",
     "@capacitor/cli": "8.3.1",
     "@compodoc/compodoc": "^1.1.0",
@@ -72,5 +76,14 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.59.3"
   },
-  "description": "Webapp of Luminapath"
+  "description": "Webapp of Luminapath",
+  "overrides": {
+    "@compodoc/compodoc": {
+      "@angular-devkit/core": "21.2.24",
+      "@angular-devkit/schematics": "21.2.24",
+      "@babel/core": "^7.29.1",
+      "ajv": "^8.18.0",
+      "picomatch": "^4.0.4"
+    }
+  }
 }

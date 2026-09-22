@@ -1,9 +1,6 @@
-name: Publish Containers
+name: Manual GHCR and Azure Release
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
   workflow_dispatch:
 
 permissions:
@@ -57,6 +54,9 @@ jobs:
         with:
           context: .
           file: src/LuminaPath/Dockerfile
+          build-args: |
+            SOURCE_REVISION=${{ github.sha }}
+            SOURCE_REPOSITORY=${{ github.server_url }}/${{ github.repository }}
           push: true
           tags: |
             ${{ steps.api_meta.outputs.tags }}
@@ -66,8 +66,11 @@ jobs:
       - name: Build and Push Frontend
         uses: docker/build-push-action@v6
         with:
-          context: src/LuminaPath.MobileApp
+          context: .
           file: src/LuminaPath.MobileApp/Dockerfile
+          build-args: |
+            SOURCE_REVISION=${{ github.sha }}
+            SOURCE_REPOSITORY=${{ github.server_url }}/${{ github.repository }}
           push: true
           tags: |
             ${{ steps.frontend_meta.outputs.tags }}

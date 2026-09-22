@@ -7,9 +7,8 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "GitHub release tag to create or update"
+        description: "Existing version tag to publish (for example v1.2.3)"
         required: true
-        default: "v0.0.0-dev"
 
 permissions:
   contents: write
@@ -21,12 +20,55 @@ env:
   FRONTEND_IMAGE: luminapath-frontend
 
 jobs:
+  prepare:
+    name: Source and licenses
+    runs-on: ubuntu-latest
+    outputs:
+      revision: ${{ steps.source.outputs.revision }}
+    steps:
+      - name: Validate version tag
+        run: '[[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]'
+
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Archive exact source and licenses
+        id: source
+        env:
+          SOURCE_REPOSITORY: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          SOURCE_REVISION="$(git rev-parse HEAD)"
+          export SOURCE_REVISION
+          echo "revision=$SOURCE_REVISION" >> "$GITHUB_OUTPUT"
+          mkdir -p artifacts/release
+          git archive --format=tar.gz --prefix="LuminaPath-${RELEASE_TAG}/" --output="artifacts/release/LuminaPath-${RELEASE_TAG}-source.tar.gz" "$SOURCE_REVISION"
+          node scripts/prepare-legal.mjs artifacts/release-notices
+          tar -czf "artifacts/release/LuminaPath-${RELEASE_TAG}-licenses.tar.gz" -C artifacts/release-notices .
+          printf 'LuminaPath %s\nSource revision: %s\nRepository: %s\nSource archive: %s/archive/%s.tar.gz\nLicense: AGPL-3.0-only\n' "$RELEASE_TAG" "$SOURCE_REVISION" "$SOURCE_REPOSITORY" "$SOURCE_REPOSITORY" "$SOURCE_REVISION" > artifacts/release/SOURCE.txt
+
+      - name: Upload source and licenses
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-source
+          path: artifacts/release/*
+          if-no-files-found: error
+
   dockerhub:
     name: Docker Hub Images
     runs-on: ubuntu-latest
+    needs: prepare
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.revision }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -46,7 +88,10 @@ jobs:
             type=semver,pattern={{version}},value=${{ env.RELEASE_TAG }}
             type=semver,pattern={{major}}.{{minor}},value=${{ env.RELEASE_TAG }}
             type=raw,value=latest,enable=${{ github.event_name == 'push' }}
-            type=sha,prefix=sha-
+            type=raw,value=sha-${{ needs.prepare.outputs.revision }}
+          labels: |
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.revision }}
+            org.opencontainers.image.licenses=AGPL-3.0-only
 
       - name: Frontend Metadata
         id: frontend_meta
@@ -57,13 +102,19 @@ jobs:
             type=semver,pattern={{version}},value=${{ env.RELEASE_TAG }}
             type=semver,pattern={{major}}.{{minor}},value=${{ env.RELEASE_TAG }}
             type=raw,value=latest,enable=${{ github.event_name == 'push' }}
-            type=sha,prefix=sha-
+            type=raw,value=sha-${{ needs.prepare.outputs.revision }}
+          labels: |
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.revision }}
+            org.opencontainers.image.licenses=AGPL-3.0-only
 
       - name: Build and Push API
         uses: docker/build-push-action@v6
         with:
           context: .
           file: src/LuminaPath/Dockerfile
+          build-args: |
+            SOURCE_REVISION=${{ needs.prepare.outputs.revision }}
+            SOURCE_REPOSITORY=${{ github.server_url }}/${{ github.repository }}
           push: true
           tags: ${{ steps.api_meta.outputs.tags }}
           labels: ${{ steps.api_meta.outputs.labels }}
@@ -71,8 +122,11 @@ jobs:
       - name: Build and Push Frontend
         uses: docker/build-push-action@v6
         with:
-          context: src/LuminaPath.MobileApp
+          context: .
           file: src/LuminaPath.MobileApp/Dockerfile
+          build-args: |
+            SOURCE_REVISION=${{ needs.prepare.outputs.revision }}
+            SOURCE_REPOSITORY=${{ github.server_url }}/${{ github.repository }}
           push: true
           tags: ${{ steps.frontend_meta.outputs.tags }}
           labels: ${{ steps.frontend_meta.outputs.labels }}
@@ -80,7 +134,10 @@ jobs:
   android:
     name: Android APK
     runs-on: ubuntu-latest
+    needs: prepare
     env:
+      SOURCE_REVISION: ${{ needs.prepare.outputs.revision }}
+      SOURCE_REPOSITORY: ${{ github.server_url }}/${{ github.repository }}
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -88,6 +145,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.revision }}
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -122,6 +181,14 @@ jobs:
           npx cap sync android
           chmod +x android/gradlew
 
+      - name: Check Android license inventory
+        run: |
+          mkdir -p artifacts
+          cd src/LuminaPath.MobileApp/android
+          ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --console=plain > ../../../artifacts/android-dependencies.txt
+          cd ../../..
+          python scripts/update-android-licenses.py artifacts/android-dependencies.txt --check
+
       - name: Build debug APK
         if: env.ANDROID_KEYSTORE_BASE64 == '' || env.ANDROID_KEYSTORE_PASSWORD == '' || env.ANDROID_KEY_ALIAS == '' || env.ANDROID_KEY_PASSWORD == ''
         working-directory: src/LuminaPath.MobileApp/android
@@ -137,7 +204,7 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > release.keystore
           ./gradlew assembleRelease
           mkdir -p ../artifacts
-          SDK_BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          SDK_BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
           "$SDK_BUILD_TOOLS/zipalign" -p -f 4 app/build/outputs/apk/release/app-release-unsigned.apk "../artifacts/LuminaPath-${RELEASE_TAG}-aligned.apk"
           "$SDK_BUILD_TOOLS/apksigner" sign \
             --ks release.keystore \
@@ -149,18 +216,43 @@ jobs:
           "$SDK_BUILD_TOOLS/apksigner" verify "../artifacts/LuminaPath-${RELEASE_TAG}.apk"
           rm "../artifacts/LuminaPath-${RELEASE_TAG}-aligned.apk"
 
+      - name: Verify APK legal assets
+        run: |
+          for apk in src/LuminaPath.MobileApp/artifacts/*.apk; do
+            python scripts/verify-apk.py "$apk"
+          done
+          cp src/LuminaPath.MobileApp/www/browser/assets/legal/web-licenses.txt src/LuminaPath.MobileApp/artifacts/web-licenses.txt
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: luminapath-android-apk
-          path: src/LuminaPath.MobileApp/artifacts/*.apk
+          name: release-android
+          path: |
+            src/LuminaPath.MobileApp/artifacts/*.apk
+            src/LuminaPath.MobileApp/artifacts/web-licenses.txt
           if-no-files-found: error
+
+  release:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+    needs: [prepare, dockerhub, android]
+    steps:
+      - name: Download release files
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: artifacts/release
+
+      - name: Hash release files
+        working-directory: artifacts/release
+        run: sha256sum ./*.apk ./*.tar.gz ./*.txt > SHA256SUMS
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
-          target_commitish: ${{ github.sha }}
+          target_commitish: ${{ needs.prepare.outputs.revision }}
           name: LuminaPath ${{ env.RELEASE_TAG }}
-          files: src/LuminaPath.MobileApp/artifacts/*.apk
+          files: artifacts/release/*
           generate_release_notes: true

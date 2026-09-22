@@ -88,13 +88,14 @@ nav:
       - Configuration reference: 05-runbooks/configuration.md
       - Database migrations: 05-runbooks/migrations.md
       - Updating the app: 05-runbooks/updating-the-app.md
+      - Publishing releases: 05-runbooks/releases.md
   - Contributing to docs: contributing.md
 
 extra:
   generator: false
 
 # To preview locally:
-#   pip install "mkdocs-material>=9.5" pymdown-extensions
+#   python -m pip install -r requirements-docs.txt
 #   mkdocs serve
 # To build the static site:
 #   mkdocs build

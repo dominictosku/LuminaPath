@@ -384,3 +384,7 @@ deploy/secrets/
 # docs build artifacts
 docs/generated/
 site/
+
+# Generated legal assets; rebuilt by the frontend npm scripts.
+/src/LuminaPath.MobileApp/src/assets/legal/
+.npm-cache/

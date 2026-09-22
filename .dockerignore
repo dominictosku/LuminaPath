@@ -18,3 +18,11 @@ TestResults
 .env
 src/LuminaPath/App_Data/storage
 src/LuminaPath/App_Data/logs
+**/.npm-cache
+**/.dotnet-cli-home
+src/LuminaPath.MobileApp/src/assets/legal
+src/LuminaPath.MobileApp/android
+src/LuminaPath.MobileApp/ios
+docs/generated
+site
+**/__pycache__

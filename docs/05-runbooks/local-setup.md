@@ -3,7 +3,7 @@
 After this you will have the API, PostgreSQL, Redis and the Angular app running on your laptop, reachable on:
 
 - API: <http://localhost:8080>
-- Angular app: <http://localhost:8100>
+- Angular app: <http://localhost:4200>
 - Postgres: `localhost:5432` (creds in `.env`)
 
 ## Prerequisites
@@ -12,6 +12,9 @@ After this you will have the API, PostgreSQL, Redis and the Angular app running 
 - Node.js 22+ (only if you want the Angular dev server running outside Docker)
 - .NET 10 SDK (only if you want to run the API outside Docker)
 - A populated `.env` file at the repo root (copy from `.env.example`)
+
+Set `POSTGRES_PASSWORD`, `LUMINAPATH_ADMIN_EMAIL` and
+`LUMINAPATH_ADMIN_PASSWORD` in `.env` before starting the stack.
 
 ## Option A — everything in Docker
 
@@ -25,24 +28,28 @@ RUN_MIGRATIONS_ON_STARTUP=true
 docker compose -f docker-compose.yml -f docker-compose.frontend.yml up --build
 ```
 
-Success looks like:
+The API logs `Now listening on: http://[::]:8080`. The frontend container serves
+the compiled app through nginx. Open <http://localhost:4200> to sign in with the
+administrator account configured in `.env`.
 
-```
-luminapath-api       | Now listening on: http://[::]:8080
-luminapath-frontend  |  ➜  Local:   http://localhost:8100/
-```
 
 ## Option B — backend in Docker, frontend in `ng serve`
 
 Useful if you're iterating on the mobile app and want fast HMR.
 
+In `src/LuminaPath.MobileApp/src/environments/environment.ts`, set `endpoint` to
+`http://localhost:8080/api` for the Docker backend (the checked-in development
+value targets the .NET HTTPS development server on port 7013).
+Set `FRONTEND_PUBLIC_URL=http://localhost:4200` in `.env` so the API allows this
+browser origin. For a fresh local database, enable migrations as in Option A.
+
 ```bash
 # Terminal 1 — backend
-docker compose up db redis api
+docker compose up --build db redis api
 
 # Terminal 2 — frontend
 cd src/LuminaPath.MobileApp
-npm install
+npm ci
 npm run start
 ```
 
@@ -52,7 +59,7 @@ npm run start
 |---|---|---|
 | `relation "X" does not exist` on API startup | Migrations didn't run | For local only, confirm `RUN_MIGRATIONS_ON_STARTUP=true` in `.env`, restart `api` |
 | `connection refused` from API to `db` | Postgres still starting | API has a healthcheck; wait ~10s and it'll retry |
-| Angular app shows CORS errors | Frontend origin not in `Cors__AllowedOrigins__*` | Add the origin in `.env` and restart `api` |
+| Angular app shows CORS errors | Frontend origin not allowed | Set `FRONTEND_PUBLIC_URL=http://localhost:4200` in `.env` and recreate `api` |
 | Cover images don't appear | Storage volume not writable | `docker volume inspect luminapath_luminapath-storage`, check permissions |
 | Port 8080 already in use | Another process is bound | `BACKEND_HTTP_PORT=8081 docker compose up` |
 

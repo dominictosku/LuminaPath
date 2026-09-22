@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/images/app-screenshot-placeholder.svg" alt="LuminaPath app screenshot placeholder" width="100%" />
+  <img src="docs/images/Luminapath_Logo.png" alt="LuminaPath logo" width="180" />
 
   <h1>LuminaPath</h1>
 
@@ -48,7 +48,6 @@
   </p>
 </div>
 
-> Screenshot note: replace `docs/images/app-screenshot-placeholder.svg` with your real app screenshot, or add `docs/images/app-screenshot.png` and update the image path above.
 
 ## Overview
 
@@ -477,10 +476,16 @@ The agent will execute up to `AiChat:MaxToolIterations` (default `8`) tool round
 
 ## CI/CD
 
-GitHub Actions are split into two workflows:
+GitHub Actions provide these workflows:
 
 - `CI`: restores, builds and tests the .NET solution, builds Angular, validates Compose and builds both Docker images.
-- `Release`: publishes backend and frontend images to Docker Hub, builds the Ionic/Angular app as an Android APK, and attaches the APK to a GitHub Release.
+- `Docs`: builds the documentation with strict validation.
+- `Release`: version tags publish Docker Hub images, an Android APK, the matching source archive, license notices and checksums to a GitHub Release.
+- `Manual GHCR and Azure Release`: runs only through **Run workflow**; publishes GHCR images and optionally deploys the API to Azure when configured.
+
+See the [release runbook](docs/05-runbooks/releases.md) for required secrets,
+source information and artifact verification. A manual rerun of `Release` requires
+an existing version tag and builds the commit referenced by that tag.
 
 Create a release by pushing a version tag:
 
@@ -542,13 +547,13 @@ Editor
 ## Tests
 
 ```powershell
-dotnet test Test/Test.csproj
+dotnet test src/LuminaPath.Tests/LuminaPath.Tests.csproj
 ```
 
 On Windows, if another process locks normal build output, use:
 
 ```powershell
-dotnet test Test/Test.csproj -p:OutDir=.\artifacts\test-out\
+dotnet test src/LuminaPath.Tests/LuminaPath.Tests.csproj --artifacts-path .\artifacts\tests
 ```
 
 ## Migrations
@@ -572,6 +577,9 @@ For major dependency upgrades such as .NET 10 to 11 or Angular 21 to 22, use the
 
 ## License
 
+For contribution instructions, see [CONTRIBUTING.md](CONTRIBUTING.md).
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
+
 Copyright (C) 2023-2026 dominictosku.
 
 Unless otherwise noted, LuminaPath's original source code and documentation are
@@ -589,3 +597,4 @@ of merchantability or fitness for a particular purpose. See the license for deta
 
 Dependencies and bundled third-party material retain their own licenses and
 copyright notices; the project license does not replace those terms.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the inventory and notices.

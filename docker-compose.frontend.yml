@@ -2,8 +2,8 @@ services:
   frontend:
     image: ${LUMINAPATH_FRONTEND_IMAGE:-luminapath-frontend:local}
     build:
-      context: ./src/LuminaPath.MobileApp
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: src/LuminaPath.MobileApp/Dockerfile
     container_name: luminapath-frontend
     restart: unless-stopped
     environment:

@@ -31,6 +31,9 @@ jobs:
       - name: Test
         run: dotnet test LuminaPath.sln --configuration Release --no-build --logger trx --results-directory TestResults
 
+      - name: Check backend license inventory
+        run: node scripts/check-backend-licenses.mjs
+
       - name: Publish test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -78,10 +81,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate Compose
-        run: docker compose -f docker-compose.yml -f docker-compose.frontend.yml -f docker-compose.tools.yml config
+        env:
+          LUMINAPATH_ADMIN_EMAIL: ci@example.invalid
+        run: docker compose -f docker-compose.yml -f docker-compose.frontend.yml -f docker-compose.tools.yml config --quiet
 
       - name: Build API Image
         run: docker build -t luminapath-api:ci -f src/LuminaPath/Dockerfile .
 
       - name: Build Frontend Image
-        run: docker build -t luminapath-frontend:ci -f src/LuminaPath.MobileApp/Dockerfile src/LuminaPath.MobileApp
+        run: docker build -t luminapath-frontend:ci -f src/LuminaPath.MobileApp/Dockerfile .
