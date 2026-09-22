@@ -43,6 +43,8 @@
     <a href="#ai-assistant">AI Assistant</a>
     <span> | </span>
     <a href="#cicd">CI/CD</a>
+    <span> | </span>
+    <a href="#license">License</a>
   </p>
 </div>
 
@@ -567,3 +569,23 @@ See the full runbook: [`docs/05-runbooks/migrations.md`](docs/05-runbooks/migrat
 For major dependency upgrades such as .NET 10 to 11 or Angular 21 to 22, use the upgrade checklist:
 
 [`docs/05-runbooks/updating-the-app.md`](docs/05-runbooks/updating-the-app.md)
+
+## License
+
+Copyright (C) 2023-2026 dominictosku.
+
+Unless otherwise noted, LuminaPath's original source code and documentation are
+licensed under the **GNU Affero General Public License, version 3 only**
+(`AGPL-3.0-only`). See [LICENSE](LICENSE) for the complete terms.
+
+You may use, modify, and distribute LuminaPath, including commercially, under
+those terms. When distributing covered versions, you must preserve the license
+and provide corresponding source using one of the methods it permits. Modified
+versions offered over a network must prominently offer their corresponding
+source to those users, as specified in section 13 of the license.
+
+LuminaPath is distributed without any warranty, including the implied warranties
+of merchantability or fitness for a particular purpose. See the license for details.
+
+Dependencies and bundled third-party material retain their own licenses and
+copyright notices; the project license does not replace those terms.

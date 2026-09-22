@@ -2,6 +2,7 @@
   "name": "luminapath",
   "version": "0.0.1",
   "author": "Lumina",
+  "license": "AGPL-3.0-only",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
