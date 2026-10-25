@@ -29,6 +29,6 @@ RUN chmod +x /docker-entrypoint.d/99-luminapath-env.sh
 COPY --from=build /src/src/LuminaPath.MobileApp/www/browser ./
 
 ENV LUMINAPATH_API_ENDPOINT=/api
-ENV LUMINAPATH_API_PROXY_TARGET=http://luminapath-api:8080
+ENV LUMINAPATH_API_PROXY_TARGET=http://api:8080
 
 EXPOSE 80

@@ -238,6 +238,33 @@ public class ConfigurationOptionsValidationTests
         Assert.True(options.UsesFileSystem);
     }
 
+    [Theory]
+    [InlineData(false, null, null, "localhost:6379")]
+    [InlineData(true, null, null, "localhost:6379")]
+    [InlineData(false, "redis:6379", null, "redis:6379")]
+    [InlineData(true, "redis:6379", null, "redis:6379")]
+    [InlineData(false, null, "redis:6379", "redis:6379")]
+    [InlineData(true, null, "redis:6379", "redis:6379")]
+    [InlineData(false, "legacy:6379", "canonical:6379", "canonical:6379")]
+    public async Task RedisConfiguration_OverridesBundledDefaults(
+        bool development, string? legacy, string? canonical, string expected)
+    {
+        var values = CreateValidConfiguration();
+        values.Remove("ConnectionStrings:Redis");
+        values.Remove("Redis:ConnectionString");
+        if (legacy is not null) values["ConnectionStrings:Redis"] = legacy;
+        if (canonical is not null) values["Redis:ConnectionString"] = canonical;
+
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(Path.Combine(AppContext.BaseDirectory, "Configuration"))
+            .AddJsonFile("appsettings.json");
+        if (development) builder.AddJsonFile("appsettings.Development.json");
+        var configuration = builder.AddInMemoryCollection(values).Build();
+
+        await using var provider = BuildProviderFromConfiguration(configuration);
+        Assert.Equal(expected, provider.GetRequiredService<IOptions<RedisOptions>>().Value.ConnectionString);
+    }
+
     private static ServiceProvider BuildProvider(Dictionary<string, string?>? overrides = null)
     {
         var configurationValues = CreateValidConfiguration();
@@ -258,6 +285,11 @@ public class ConfigurationOptionsValidationTests
             .AddInMemoryCollection(configurationValues)
             .Build();
 
+        return BuildProviderFromConfiguration(configuration);
+    }
+
+    private static ServiceProvider BuildProviderFromConfiguration(IConfiguration configuration)
+    {
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton<IConfiguration>(configuration);

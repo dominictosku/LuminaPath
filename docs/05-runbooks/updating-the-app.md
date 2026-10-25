@@ -160,12 +160,12 @@ After either backend or frontend upgrades, manually verify:
 For Docker:
 
 ```bash
-docker compose build
-docker compose up -d
-docker compose ps
+docker compose -f compose.yml -f compose.dev.yml build
+docker compose -f compose.yml -f compose.dev.yml up -d
+docker compose -f compose.yml -f compose.dev.yml ps
 ```
 
-Open the backend and optional Angular frontend and check that API calls still work through the configured proxy/base URL.
+Open the backend and Angular frontend and check that API calls still work through the configured proxy/base URL.
 
 ## Production rollout
 
@@ -173,7 +173,7 @@ Open the backend and optional Angular frontend and check that API calls still wo
 2. Generate and review a production migration script if EF model changes exist.
 3. Back up PostgreSQL before deploying.
 4. Apply the reviewed migration script manually.
-5. Deploy the new image with `RUN_MIGRATIONS_ON_STARTUP=false`.
+5. Deploy the new image with `Database__RunMigrationsOnStartup=false`.
 6. Run a smoke test in the browser.
 7. Check background job history and application logs.
 

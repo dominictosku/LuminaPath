@@ -6,20 +6,20 @@ After this you will know how LuminaPath applies EF Core migrations in developmen
 
 - In `Development`, the backend calls `MigrateDatabase()` during startup and applies pending EF Core migrations automatically.
 - Outside `Development`, migrations are only applied on startup when `Database:RunMigrationsOnStartup` is `true`.
-- The default production configuration is `false`. Keep it that way for real deployments.
-- Docker Compose maps `RUN_MIGRATIONS_ON_STARTUP` to `Database__RunMigrationsOnStartup`. The compose default is `false`.
+- The application default outside Development is `false`.
+- The Docker stack explicitly defaults `Database__RunMigrationsOnStartup` to `true` for automatic first-run setup. Set it to `false` when applying reviewed SQL migrations separately.
 
 ## Local development
 
 If you run the Blazor backend with `ASPNETCORE_ENVIRONMENT=Development`, migrations are applied automatically on startup.
 
-If you run the backend in Docker with `ASPNETCORE_ENVIRONMENT=Production` against a local throwaway database, you can opt into automatic migrations in `.env`:
+If you run the backend in Docker with `ASPNETCORE_ENVIRONMENT=Production` against a local throwaway database, automatic migrations are already enabled. The explicit equivalent in `.env` is:
 
 ```text
-RUN_MIGRATIONS_ON_STARTUP=true
+Database__RunMigrationsOnStartup=true
 ```
 
-Use this only for local/dev databases where it is acceptable for the app process to change the schema at startup.
+For deployments where schema changes need a separate review, disable this and follow the SQL workflow below.
 
 ## Create a migration
 
@@ -70,14 +70,14 @@ psql "host=db port=5432 dbname=luminapath user=luminapath" --file artifacts/migr
 Production environment:
 
 ```text
-RUN_MIGRATIONS_ON_STARTUP=false
+Database__RunMigrationsOnStartup=false
 ```
 
 ## When it goes wrong
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| App starts locally with `relation "X" does not exist` | Local Docker backend is running as `Production` with startup migrations disabled | Set `RUN_MIGRATIONS_ON_STARTUP=true` for local only, or run the backend as `Development`. |
-| Production app applies migrations on startup | `RUN_MIGRATIONS_ON_STARTUP=true` was deployed | Set it to `false` and apply reviewed SQL scripts manually. |
+| App starts locally with `relation "X" does not exist` | Local Docker backend is running as `Production` with startup migrations disabled | Set `Database__RunMigrationsOnStartup=true` for local only, or run the backend as `Development`. |
+| Production app applies migrations on startup | `Database__RunMigrationsOnStartup=true` was deployed | Set it to `false` and apply reviewed SQL scripts manually. |
 | `dotnet ef` cannot create the app service provider | Startup config requires services/secrets not available locally | Use local appsettings/user-secrets/env vars for required config, then regenerate the script. |
 | SQL script fails in production | Database state differs from expected migrations history | Check `__EFMigrationsHistory`, restore from backup if needed, and regenerate an idempotent script from the deployed code version. |

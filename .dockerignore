@@ -26,3 +26,7 @@ src/LuminaPath.MobileApp/ios
 docs/generated
 site
 **/__pycache__
+
+**/.env
+**/secrets
+nginx/certs

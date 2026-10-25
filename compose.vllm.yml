@@ -57,7 +57,6 @@ services:
     profiles:
       - amd
     image: ${VLLM_AMD_IMAGE:-vllm/vllm-openai-rocm:latest}
-    container_name: luminapath-vllm
     group_add:
       - video
     cap_add:
@@ -77,7 +76,6 @@ services:
     profiles:
       - nvidia
     image: ${VLLM_NVIDIA_IMAGE:-vllm/vllm-openai:latest}
-    container_name: luminapath-vllm
     gpus: ${VLLM_NVIDIA_GPUS:-all}
     environment:
       <<: *vllm-env

@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LuminaPath\LuminaPath.csproj" />
+    <Content Include="..\LuminaPath\appsettings.json" Link="Configuration\appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\LuminaPath\appsettings.Development.json" Link="Configuration\appsettings.Development.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

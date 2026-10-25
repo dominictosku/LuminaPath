@@ -1,6 +1,6 @@
 # C4 Level 2 — Containers
 
-This zoom level shows the **deployable units** that make up LuminaPath. Each box is a separate process / image in [`docker-compose.yml`](https://github.com/dominictosku/LuminaPath/blob/main/docker-compose.yml).
+This zoom level shows the **deployable units** that make up LuminaPath. Each box is a separate process / image in [`compose.yml`](https://github.com/dominictosku/LuminaPath/blob/main/compose.yml).
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
@@ -9,8 +9,8 @@ flowchart TB
 
     subgraph host["🖥️ Self-hosted host (Docker Compose)"]
         nginx["nginx<br/><i>Reverse proxy, TLS</i>"]
-        api["luminapath-api<br/><i>.NET 10 — REST API + Blazor admin</i>"]
-        mobile["luminapath-frontend<br/><i>Angular 21 + Ionic SPA</i>"]
+        api["api<br/><i>.NET 10 — REST API + Blazor admin</i>"]
+        mobile["frontend<br/><i>Angular 21 + Ionic SPA</i>"]
         db[("postgres<br/><i>PostgreSQL 17</i>")]
         redis[("redis<br/><i>Cache, sessions</i>")]
         storage["filesystem volume<br/><i>Cover art, uploads</i>"]
@@ -41,7 +41,7 @@ flowchart TB
 
 ## Containers in detail
 
-### `luminapath-api`
+### `api`
 
 - **Tech**: .NET 10, ASP.NET Core, EF Core, Blazor Server
 - **Source**: [`src/LuminaPath/`](../../src/LuminaPath/), [`src/LuminaPath.Core/`](../../src/LuminaPath.Core/), [`src/LuminaPath.Infrastructure/`](../../src/LuminaPath.Infrastructure/)
@@ -53,7 +53,7 @@ flowchart TB
     - Database migrations (automatic in development; production should use reviewed SQL scripts)
 - **State**: stateless beyond the request scope; persistence in Postgres / Redis / filesystem volume.
 
-### `luminapath-frontend`
+### `frontend`
 
 - **Tech**: Angular 21, Ionic, Capacitor
 - **Source**: [`src/LuminaPath.MobileApp/`](../../src/LuminaPath.MobileApp/)
@@ -85,10 +85,14 @@ flowchart TB
 
 | Compose file | What it stands up | When to use |
 |---|---|---|
-| `docker-compose.yml` | API + DB + Redis | Production-shape backend |
-| `docker-compose.frontend.yml` | + frontend SPA | Full stack on one host |
-| `docker-compose.proxy.yml` | + nginx with TLS | Internet-facing |
-| `docker-compose.tools.yml` | + dev utilities | Local debugging |
+| `compose.yml` | API + frontend + DB + Redis | Published-image deployment |
+| `compose.dev.yml` | Local builds and loopback debugging ports | Development override |
+| `compose.secrets.yml` | Password file mounts | Optional secrets override |
+| `compose.vllm.yml` | GPU model server + API configuration | Optional `amd` or `nvidia` profile |
+
+The main file also provides `tools` (pgAdmin) and `proxy` (TLS nginx) profiles.
+The frontend contains its own nginx for same-origin API and admin routing;
+the additional TLS proxy is optional.
 
 ## Container-level decisions
 

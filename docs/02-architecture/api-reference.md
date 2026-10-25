@@ -17,7 +17,7 @@ The launch profile already opens `/swagger` when you `dotnet run` the API projec
 
 Most endpoints require an authenticated user (cookie auth via ASP.NET Core Identity). To call them from Swagger UI:
 
-1. POST to the login endpoint with a seeded user (see [Seeded Login](https://github.com/dominictosku/LuminaPath/blob/main/README.md#seeded-login)).
+1. POST to the login endpoint with your configured administrator (see [Docker setup](https://github.com/dominictosku/LuminaPath/blob/main/README.md#quick-docker-setup)).
 2. The cookie sticks to the browser — `Try it out` will then succeed on protected routes.
 
 ## Controller surface

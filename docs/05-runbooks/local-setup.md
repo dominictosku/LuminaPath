@@ -1,70 +1,22 @@
 # Local setup
 
-After this you will have the API, PostgreSQL, Redis and the Angular app running on your laptop, reachable on:
+The canonical development instructions are in
+[CONTRIBUTING.md](https://github.com/dominictosku/LuminaPath/blob/main/CONTRIBUTING.md#development-setup).
+They cover local image builds, running backend/frontend on the host, validation
+and Android builds.
 
-- API: <http://localhost:8080>
-- Angular app: <http://localhost:4200>
-- Postgres: `localhost:5432` (creds in `.env`)
+For published-image installation, updates and environment variables, use the
+[README](https://github.com/dominictosku/LuminaPath/blob/main/README.md#quick-docker-setup).
 
-## Prerequisites
+## Troubleshooting
 
-- Docker Desktop / Docker Engine 24+ with Compose v2
-- Node.js 22+ (only if you want the Angular dev server running outside Docker)
-- .NET 10 SDK (only if you want to run the API outside Docker)
-- A populated `.env` file at the repo root (copy from `.env.example`)
+| Symptom | Check |
+|---|---|
+| Missing database tables | Startup migrations default to on in Docker. If disabled, apply the reviewed schema first. |
+| API cannot reach Redis | Use `Redis__ConnectionString=redis:6379` in Docker; do not use a host-published port internally. |
+| Host process cannot reach Postgres | Start `db` with `compose.dev.yml`; set the host connection string to match `.env`. |
+| Browser CORS errors during hot reload | Match the frontend API URL and the backend's allowed origin; see the contributor setup. |
+| Missing uploaded files after migration | Keep the original Compose project name and storage volume, and check mount paths. |
 
-Set `POSTGRES_PASSWORD`, `LUMINAPATH_ADMIN_EMAIL` and
-`LUMINAPATH_ADMIN_PASSWORD` in `.env` before starting the stack.
-
-## Option A — everything in Docker
-
-For a local throwaway database, enable startup migrations in `.env` before the first run:
-
-```text
-RUN_MIGRATIONS_ON_STARTUP=true
-```
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml up --build
-```
-
-The API logs `Now listening on: http://[::]:8080`. The frontend container serves
-the compiled app through nginx. Open <http://localhost:4200> to sign in with the
-administrator account configured in `.env`.
-
-
-## Option B — backend in Docker, frontend in `ng serve`
-
-Useful if you're iterating on the mobile app and want fast HMR.
-
-In `src/LuminaPath.MobileApp/src/environments/environment.ts`, set `endpoint` to
-`http://localhost:8080/api` for the Docker backend (the checked-in development
-value targets the .NET HTTPS development server on port 7013).
-Set `FRONTEND_PUBLIC_URL=http://localhost:4200` in `.env` so the API allows this
-browser origin. For a fresh local database, enable migrations as in Option A.
-
-```bash
-# Terminal 1 — backend
-docker compose up --build db redis api
-
-# Terminal 2 — frontend
-cd src/LuminaPath.MobileApp
-npm ci
-npm run start
-```
-
-## When it goes wrong
-
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| `relation "X" does not exist` on API startup | Migrations didn't run | For local only, confirm `RUN_MIGRATIONS_ON_STARTUP=true` in `.env`, restart `api` |
-| `connection refused` from API to `db` | Postgres still starting | API has a healthcheck; wait ~10s and it'll retry |
-| Angular app shows CORS errors | Frontend origin not allowed | Set `FRONTEND_PUBLIC_URL=http://localhost:4200` in `.env` and recreate `api` |
-| Cover images don't appear | Storage volume not writable | `docker volume inspect luminapath_luminapath-storage`, check permissions |
-| Port 8080 already in use | Another process is bound | `BACKEND_HTTP_PORT=8081 docker compose up` |
-
-## Tearing it all down
-
-```bash
-docker compose down -v   # drops the volumes too — fresh DB on next start
-```
+Use `docker compose logs api` for startup diagnostics. Named volumes survive
+`docker compose down`; `down -v` deletes their data.

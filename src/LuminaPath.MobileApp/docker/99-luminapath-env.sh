@@ -2,7 +2,7 @@
 set -eu
 
 : "${LUMINAPATH_API_ENDPOINT:=/api}"
-: "${LUMINAPATH_API_PROXY_TARGET:=http://luminapath-api:8080}"
+: "${LUMINAPATH_API_PROXY_TARGET:=http://api:8080}"
 
 # Enforcing Content-Security-Policy for the served SPA document. Scripts are
 # locked to same-origin (the Angular build emits no inline <script>); styles

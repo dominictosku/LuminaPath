@@ -1,0 +1,108 @@
+name: luminapath
+
+services:
+  api:
+    image: ${LUMINAPATH_API_IMAGE:-sekijuo/luminapath-api:${LUMINAPATH_VERSION:-latest}}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Only container wiring belongs here. Application defaults live in the app.
+      Database__Host: ${Database__Host:-db}
+      Database__Port: ${Database__Port:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-luminapath}
+      POSTGRES_USER: ${POSTGRES_USER:-luminapath}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_PASSWORD_FILE: ${POSTGRES_PASSWORD_FILE:-}
+      Redis__ConnectionString: ${Redis__ConnectionString:-redis:6379}
+      Database__RunMigrationsOnStartup: ${Database__RunMigrationsOnStartup:-true}
+    volumes:
+      - luminapath-storage:/app/App_Data/storage
+      - luminapath-logs:/app/App_Data/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    image: ${LUMINAPATH_FRONTEND_IMAGE:-sekijuo/luminapath-frontend:${LUMINAPATH_VERSION:-latest}}
+    restart: unless-stopped
+    environment:
+      LUMINAPATH_API_ENDPOINT: ${LUMINAPATH_API_ENDPOINT:-/api}
+      LUMINAPATH_API_PROXY_TARGET: ${LUMINAPATH_API_PROXY_TARGET:-http://api:8080}
+      LUMINAPATH_CSP: ${LUMINAPATH_CSP:-}
+    ports:
+      - "${FRONTEND_HTTP_PORT:-4200}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  db:
+    image: postgres:${POSTGRES_VERSION:-17-alpine}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-luminapath}
+      POSTGRES_USER: ${POSTGRES_USER:-luminapath}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_PASSWORD_FILE: ${POSTGRES_PASSWORD_FILE:-}
+    volumes:
+      - luminapath-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:${REDIS_VERSION:-7-alpine}
+    restart: unless-stopped
+    volumes:
+      - luminapath-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    profiles: [tools]
+    image: dpage/pgadmin4:${PGADMIN_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    ports:
+      - "127.0.0.1:${PGADMIN_HTTP_PORT:-5050}:80"
+    volumes:
+      - luminapath-pgadmin:/var/lib/pgadmin
+    depends_on:
+      db:
+        condition: service_healthy
+
+  nginx:
+    profiles: [proxy]
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - frontend
+      - api
+
+# Keep these keys and the project name: existing installations retain their data.
+volumes:
+  luminapath-postgres:
+  luminapath-storage:
+  luminapath-logs:
+  luminapath-redis:
+  luminapath-pgadmin:

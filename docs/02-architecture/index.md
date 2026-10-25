@@ -40,7 +40,9 @@ LuminaPath/
 │   ├── LuminaPath.Infrastructure/ # EF Core, repositories, integrations
 │   ├── LuminaPath.MobileApp/      # Angular + Ionic frontend
 │   └── LuminaPath.Tests/          # Backend unit + integration tests
-├── docker-compose.yml             # API + DB + Redis (production-shape)
-├── docker-compose.frontend.yml    # Adds the Angular dev server
+├── compose.yml                   # Published API + frontend + DB + Redis
+├── compose.dev.yml               # Local builds and debugging ports
+├── compose.secrets.yml           # Optional password files
+├── compose.vllm.yml              # Optional GPU AI services
 └── docs/                          # You are here.
 ```

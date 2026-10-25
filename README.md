@@ -57,7 +57,7 @@
 
 ## Overview
 
-LuminaPath is a personal media library, backlog planner, playtime tracker, social hub and quest-style productivity app. It tracks games, movies, series and anime in one place, layers a friends/DM/co-op-session social layer on top, and adds an RPG-style quest and skill-tree system for real-life goals. The main experience is an ASP.NET Core Blazor app with a PostgreSQL backend. An optional Ionic/Angular frontend is included for a mobile-style interface and can run against the same API.
+LuminaPath is a personal media library, backlog planner, playtime tracker, social hub and quest-style productivity app. It tracks games, movies, series and anime in one place, layers a friends/DM/co-op-session social layer on top, and adds an RPG-style quest and skill-tree system for real-life goals. The everyday interface is an Ionic/Angular app backed by ASP.NET Core and PostgreSQL; Blazor provides the admin and account pages. Both interfaces are included in the default Docker stack.
 
 <table>
   <tr>
@@ -73,7 +73,7 @@ LuminaPath is a personal media library, backlog planner, playtime tracker, socia
   <tr>
     <td><strong>AI Assistant</strong><br />Streaming chat with user-scoped DB tools (reads + confirm-first writes) and MCP server support.</td>
     <td><strong>Release Calendar</strong><br />Browse upcoming releases and plan ahead.</td>
-    <td><strong>Self-hosting</strong><br />Run the backend, database and optional Angular app through Docker.</td>
+    <td><strong>Self-hosting</strong><br />Run the backend, database and Angular app through Docker.</td>
   </tr>
 </table>
 
@@ -103,339 +103,487 @@ Full project documentation lives in [`docs/`](docs/index.md) — architecture (C
 | Layer | Tools |
 | --- | --- |
 | Backend | .NET 10, ASP.NET Core, Blazor Server, EF Core, Identity |
-| Frontend | MudBlazor, Radzen, optional Ionic/Angular 21 |
+| Frontend | MudBlazor, Radzen, Ionic/Angular 21 |
 | Data | PostgreSQL 17 |
 | Deployment | Docker, Docker Compose, GitHub Actions, optional Azure Web App |
 | Testing | xUnit |
 
 ## Quick Docker Setup
 
-Use the lightweight deployment files if you want to run LuminaPath from prebuilt Docker Hub images:
+Install Docker with Compose v2.30+ and run from the repository root. For a
+standalone install, only `compose.yml` and `.env.example` are needed; optional
+overlays and the proxy configuration are needed only when using those features.
 
-```powershell
-cd deploy
-Copy-Item .env.example .env
+```sh
+cp .env.example .env
 ```
 
-Edit `.env` and set `POSTGRES_PASSWORD`, `LUMINAPATH_ADMIN_EMAIL`,
-and `LUMINAPATH_ADMIN_PASSWORD`, then start:
+On PowerShell use `Copy-Item .env.example .env`. Fill in the three values:
 
-```powershell
-docker compose --env-file .env up -d
-```
-
-Open Angular at `http://localhost:4200`. The deploy frontend proxies `/api`,
-`/Account`, and `/Admin` to the backend internally. For direct local backend
-access, add the optional backend-port overlay:
-
-```powershell
-docker compose --env-file .env -f docker-compose.yml -f docker-compose.backend.yml up -d
-```
-
-Use the root Compose files below when you want to build the images yourself from source.
-
-Create `.env` with the same required production values:
-
-```text
-POSTGRES_PASSWORD=your-strong-password
+```dotenv
+POSTGRES_PASSWORD=your-strong-database-password
 LUMINAPATH_ADMIN_EMAIL=you@example.com
 LUMINAPATH_ADMIN_PASSWORD=your-strong-admin-password
 ```
 
-`FRONTEND_PUBLIC_URL` is optional when the included frontend proxies `/api`
-same-origin. Set it only when a browser talks to the backend API from a
-different public origin; cross-site cookie deployments should also set
-`AUTH_COOKIE_SAMESITE=None` with `AUTH_COOKIE_SECURE_POLICY=Always`.
+The admin password needs at least 10 characters, four distinct characters,
+uppercase, lowercase, a digit and a symbol. Then start the complete app:
 
-Start the backend and PostgreSQL:
-
-```powershell
-docker compose up -d --build
+```sh
+docker compose up -d
 ```
 
-Open the Blazor app/API at:
+Open <http://localhost:4200>. The frontend proxies API, account and admin routes
+to the backend. The API, PostgreSQL and Redis have no host ports by default.
+Use HTTPS through your reverse proxy for access from other machines; secure
+cookies remain enabled. No public URL or CORS setting is needed for the default
+same-origin deployment.
 
-```text
-http://localhost:8080
+Startup migrations are enabled in Docker so a fresh database initializes
+automatically. Set `Database__RunMigrationsOnStartup=false` if you apply reviewed
+SQL migrations yourself; see the [migration runbook](docs/05-runbooks/migrations.md).
+New registrations require admin approval by default. Changing bootstrap values
+does not rotate an existing account's password; use account management for that.
+
+### Updating
+
+Back up PostgreSQL and uploaded files before upgrading. To pin both application
+images to a matching published version, add `LUMINAPATH_VERSION=1.2.3` to `.env`
+(replace the example with your release). Without this, the tag is `latest`.
+
+```sh
+docker compose pull
+docker compose up -d
 ```
 
-Start the optional Angular frontend too:
+Use the same overlays/profiles on updates as on installation. If schema changes
+have been applied, reverting an image may also require restoring its database
+backup. Dependency upgrades are covered in the
+[upgrade runbook](docs/05-runbooks/updating-the-app.md).
 
-```powershell
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d --build
+### Optional services
+
+- `docker compose --profile tools up -d` adds pgAdmin at
+  <http://localhost:5050>, bound to loopback. Default login:
+  `admin@example.com` / `admin`; connect it to host `db` using your database credentials.
+- `docker compose --profile proxy up -d` adds the existing TLS nginx example.
+  Supply `nginx/nginx.conf` and certificates at `nginx/certs/cert.pem` and
+  `nginx/certs/key.pem`. Adapt its `angular.localhost` / `blazor.localhost`
+  server names to your domains. An existing external reverse proxy can instead
+  forward directly to the frontend port.
+- `docker compose -f compose.yml -f compose.vllm.yml --profile amd up -d`
+  adds local vLLM. Use `nvidia` instead of `amd` for NVIDIA hardware, and enable
+  only one GPU profile. The overlay also points the API at vLLM, so always
+  select a GPU profile when using it. GPU drivers and sufficient model memory
+  are required on the host.
+
+### File-based secrets
+
+Create `secrets/postgres_password.txt` and `secrets/admin_password.txt` with the
+passwords. Keep `LUMINAPATH_ADMIN_EMAIL` in `.env`, but leave its two password
+values blank and remove any direct `Database__Password` / `Admin__Password`
+overrides. Then run:
+
+```sh
+docker compose -f compose.yml -f compose.secrets.yml up -d
 ```
 
-Open Angular at:
+Secret files are mounted only into the services that need them and are excluded
+from Git and Docker build contexts. For a standalone deployment, copy the secrets
+overlay too. Host paths can be overridden using the variables in the reference below.
 
-```text
-http://localhost:4200
+### Migrating an existing installation
+
+Before updating the checkout, stop the old stack using its original files and
+`.env` location (`deploy/` for published-image installations). Use `docker compose
+down` with your original overlays, **without `-v`**, so containers are removed but
+their volumes remain. Back up your database and storage first.
+
+Move your existing `.env` to the repository root (or your standalone deployment
+folder). Move `deploy/secrets/` to `secrets/`, or update its host-path overrides.
+Translate any optional variables using this table; unchanged values can stay:
+
+| Old name | New name |
+|---|---|
+| `RUN_MIGRATIONS_ON_STARTUP` | `Database__RunMigrationsOnStartup` |
+| `AUTH_REQUIRE_ADMIN_APPROVAL` | `Auth__RequireAdminApproval` |
+| `AUTH_COOKIE_SAMESITE` | `Auth__CookieSameSite` |
+| `AUTH_COOKIE_SECURE_POLICY` | `Auth__CookieSecurePolicy` |
+| `FRONTEND_PUBLIC_URL` | `Cors__AllowedOrigins__0` |
+| `HTTPS_REDIRECT` | `Https__Redirect` |
+| `STORAGE_PROVIDER` | `Storage__Provider` |
+| `STORAGE_PATH` | `Storage__Path` (see the storage note below) |
+| `AZURE_BLOB_CONNECTION_STRING` | `Azure__BlobConnectionString` |
+| `AZURE_BLOB_CONTAINER_NAME` | `Azure__BlobContainerName` |
+| `LOG_PATH` | `Serilog__WriteTo__1__Args__path` |
+| `ConnectionStrings__Redis` | `Redis__ConnectionString` for Compose |
+
+Remove a former default proxy target of `http://luminapath-api:8080`; the new
+service address is `http://api:8080`. Root installations that relied on migrations
+being off must explicitly set `Database__RunMigrationsOnStartup=false`.
+
+The project name stays `luminapath` and volume keys are unchanged, including
+`luminapath_luminapath-postgres`, `luminapath_luminapath-storage` and
+`luminapath_luminapath-redis`. If you previously used `-p` / `COMPOSE_PROJECT_NAME`,
+keep that same project name. Service/container names change; scripts should use
+`docker compose exec api ...` or `docker compose exec db ...`.
+
+Start with `docker compose up -d` for published images, or use the development
+overlay described in [CONTRIBUTING.md](CONTRIBUTING.md#full-stack-from-source).
+For direct backend access without local builds, add a personal `compose.override.yml`:
+
+```yaml
+services:
+  api:
+    ports:
+      - "127.0.0.1:8080:8080"
 ```
 
-The Angular container uses `/api` and proxies requests to the backend container, so browser/API communication works without local CORS pain.
-
-Optional pgAdmin:
-
-```powershell
-docker compose -f docker-compose.yml -f docker-compose.tools.yml up -d
-```
-
-Open pgAdmin at `http://localhost:5050`.
-
-Optional local vLLM:
-
-```powershell
-docker compose --profile amd -f docker-compose.yml -f docker-compose.vllm.yml up -d --build
-```
-
-Use `--profile nvidia` instead on NVIDIA hosts. This starts `vllm` at `http://localhost:8000/v1` and points the backend AI assistant at it through the OpenAI-compatible provider. The default model is `NousResearch/Hermes-3-Llama-3.1-8B` with the `hermes` tool-call parser, so tool calling works out of the box when the selected model/parser pair supports it. Change `VLLM_MODEL`, `VLLM_TOOL_CALL_PARSER`, `VLLM_GPU_MEMORY_UTILIZATION` and `VLLM_TENSOR_PARALLEL_SIZE` in `.env` for your GPU and model.
+This replaces the former backend-port overlay. The development overlay already
+exposes this port. Remove the old Compose files when migrating a standalone
+installation; the repository no longer maintains a separate `deploy/` stack.
 
 ## Environment Variables
 
-All deployment-specific values are controlled through `.env` or normal ASP.NET environment variables.
-Most knobs have defaults in Docker Compose or the backend option classes.
-The full optional reference lives in [`docs/05-runbooks/configuration.md`](docs/05-runbooks/configuration.md).
+Only the three values in `.env.example` need filling in for the default stack.
+Optional backend settings use native .NET names: `Auth:RequireAdminApproval`
+becomes `Auth__RequireAdminApproval`. Add only the overrides you need to `.env`.
 
-Required Docker variables:
+The API loads `.env` using Compose `env_file`; PostgreSQL, the frontend and tools
+receive only their explicitly mapped settings. A shell variable alone is not
+forwarded unless Compose explicitly maps it. Outside Compose, provide backend
+settings through the process environment, user secrets or application JSON.
+Environment variables override JSON configuration; built-in option defaults apply
+when no value is configured. Some integration settings saved in the admin UI take
+precedence over these startup defaults.
+
+Compose owns container addresses, images, ports and mounts. The application owns
+cookie, storage, logging and integration defaults. Explicit settings in a Compose
+`environment` block override `env_file`, so container wiring has corresponding
+interpolation overrides below. Recreate containers with `docker compose up -d`
+after editing `.env`.
+
+### Images, ports and profiles
+
+| Variable | Default | When to change |
+|---|---|---|
+| `LUMINAPATH_VERSION` | `latest` | Pin both app images to one release tag. |
+| `LUMINAPATH_API_IMAGE` | `sekijuo/luminapath-api:<version>` | Use a custom registry/image instead. |
+| `LUMINAPATH_FRONTEND_IMAGE` | `sekijuo/luminapath-frontend:<version>` | Use a custom registry/image instead. |
+| `FRONTEND_HTTP_PORT` | `4200` | Change the public frontend port. |
+| `POSTGRES_VERSION` | `17-alpine` | Select a compatible Postgres image; major upgrades need a data migration. |
+| `REDIS_VERSION` | `7-alpine` | Select the Redis image tag. |
+| `BACKEND_HTTP_PORT` | `8080` | Development overlay only, bound to loopback. |
+| `POSTGRES_PORT` | `5432` | Development host port only; the container still listens on 5432. |
+| `REDIS_PORT` | `6379` | Development host port only. |
+| `COMPOSE_PROFILES` | empty | Enable `tools`, `proxy`, or one GPU profile with the vLLM overlay. |
+| `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT` | `80` / `443` | TLS proxy profile host ports. |
+
+The development overlay always builds `luminapath-api:local` and
+`luminapath-frontend:local`; release image/version overrides apply to deployment.
+
+### Database, Redis and secret files
+
+| Variable | Default | When to change |
+|---|---|---|
+| `POSTGRES_DB` / `POSTGRES_USER` | `luminapath` | Database name/user shared by API and Postgres initialization. Changing these does not rename an existing database/user. |
+| `Database__Host` / `Database__Port` | `db` / `5432` | Point the API at another database server. |
+| `Database__Name` / `Database__Username` | values above | Override the API's connection only. |
+| `Database__Password` / `Database__PasswordFile` | `POSTGRES_PASSWORD` / `POSTGRES_PASSWORD_FILE` fallback | API-only database credentials or a mounted secret path. |
+| `ConnectionStrings__Default` | empty | Complete connection string; overrides the individual database fields. |
+| `Database__RunMigrationsOnStartup` | `true` in Docker; `false` outside Development otherwise | Disable when applying migrations separately. |
+| `Redis__ConnectionString` | `redis:6379` in Docker; `localhost:6379` otherwise | External Redis or connection options. |
+| `Redis__InstanceName` | `LuminaPath:` | Cache key prefix. |
+| `POSTGRES_PASSWORD_FILE` | empty | Container path to an already-mounted database password file. |
+| `LUMINAPATH_ADMIN_PASSWORD_FILE` | empty | Container path to an already-mounted admin password file. |
+| `POSTGRES_PASSWORD_SECRET_FILE` | `./secrets/postgres_password.txt` | Host file used by the secrets overlay. |
+| `LUMINAPATH_ADMIN_PASSWORD_SECRET_FILE` | `./secrets/admin_password.txt` | Host file used by the secrets overlay. |
+| `Admin__Email` / `Admin__Password` / `Admin__PasswordFile` | bootstrap variables from `.env` | Native .NET alternatives for the API. |
+
+File paths do not mount themselves: use the secrets overlay or arrange the mounts
+in your orchestrator. Direct password values take precedence over password files.
+`ConnectionStrings__Redis` remains a fallback outside Compose; use the canonical
+`Redis__ConnectionString` with the provided stack.
+
+### Auth, cookies and CORS
+
+| Variable | Default | Notes |
+|---|---|---|
+| `Auth__RequireAdminApproval` | `true` | New self-registered users require admin activation. Development overrides this to `false`. |
+| `Auth__CookieSameSite` | `Lax` | Use `None` only when browser cookie auth must cross sites. |
+| `Auth__CookieSecurePolicy` | `Always` | Startup validation requires `Always` when SameSite is `None`. |
+| `Cors__AllowedOrigins__0` | empty | Optional CORS origin. Leave empty when the frontend proxies `/api` same-origin. |
+| `LUMINAPATH_CORS_ORIGINS` | empty | Semicolon- or comma-separated CORS origins as an alternative CORS list. |
+| `FrontendUrls__0` | empty | Alternative .NET array form for CORS origins. |
+
+Guardrails:
+
+- CORS origins with `Auth__CookieSameSite=Lax` log a startup warning because
+  cross-site cookie auth usually needs `None`.
+- `Auth__CookieSameSite=None` with anything except
+  `Auth__CookieSecurePolicy=Always` fails startup validation.
+
+### Startup summary and warnings
+
+On startup the backend logs a redacted configuration summary with safe values
+only: environment, whether database/Redis are configured, storage provider,
+migration switch, CORS origin count, cookie modes, admin-approval switch, AI
+provider and scheduled-job switch.
+
+It never logs passwords, connection strings, API keys or the bootstrap admin
+email/password.
+
+### HTTPS and reverse proxies
+
+| Variable | Default | Notes |
+|---|---|---|
+| `Https__Redirect` | `false` (`true` in Development) | Enable only when the backend should redirect HTTP to HTTPS. |
+
+#### Forwarded headers (`X-Forwarded-Proto` / `X-Forwarded-For`)
+
+The backend honours `X-Forwarded-*` headers so HTTPS scheme detection and
+per-IP rate limiting see the real client rather than the proxy hop. By
+default it trusts those headers only when the immediate peer is on a
+private network (RFC1918 + loopback + IPv6 ULA/link-local), which covers
+the nginx → backend hop inside Docker. A directly internet-exposed backend
+sees a public peer address outside that set, so spoofed headers are ignored.
+
+Override the trust set when your proxy is on a non-private network or you
+want to pin a specific proxy:
+
+| Variable | Default | Notes |
+|---|---|---|
+| `ForwardedHeaders__KnownNetworks__0` | private ranges | CIDR allowlist; repeat the index for multiple entries. |
+| `ForwardedHeaders__KnownProxies__0` | empty | Exact proxy IP allowlist; repeat the index for multiple entries. |
+| `ForwardedHeaders__ForwardLimit` | `1` | Number of trusted proxy hops; raise for chained proxies. |
+
+### Security headers
+
+The backend always emits `X-Content-Type-Options`, `X-Frame-Options`,
+`Referrer-Policy` and `Permissions-Policy`. It also emits a
+Content-Security-Policy, which ships in **report-only** mode by default so a
+mistuned policy surfaces as browser-console warnings instead of a broken UI.
+Watch the console (or a `report-uri` collector) on the Blazor app, then flip
+to enforcing once it is clean.
+
+| Variable | Default | Notes |
+|---|---|---|
+| `SecurityHeaders__EnableContentSecurityPolicy` | `true` | Set false to drop the CSP header entirely. |
+| `SecurityHeaders__ContentSecurityPolicyReportOnly` | `true` | Set false to enforce (send `Content-Security-Policy` instead of `…-Report-Only`). |
+| `SecurityHeaders__ContentSecurityPolicy` | tuned default | Override the full policy string. The default allows same-origin scripts, inline styles (MudBlazor/Radzen) and Google Fonts. |
+| `SecurityHeaders__ReportUri` | empty | Optional endpoint appended as a `report-uri` directive. |
+
+### Email (SMTP)
+
+Email delivery is **optional**. Without it, the app keeps a no-op sender that
+shows account-confirmation links on-screen (development convenience), and
+self-service password reset cannot deliver mail. Configure SMTP to turn on
+real password-reset and email-confirmation messages.
+
+| Variable | Default | Notes |
+|---|---|---|
+| `Email__Smtp__Host` | empty | SMTP server host. Setting this enables the real sender. |
+| `Email__Smtp__Port` | `587` | SMTP port. |
+| `Email__Smtp__User` | empty | SMTP username; omit for unauthenticated relays. |
+| `Email__Smtp__Password` | empty | SMTP password. Prefer a secret/env over `appsettings.json`. |
+| `Email__Smtp__UseStartTls` | `true` | STARTTLS (maps to `SmtpClient.EnableSsl`); the common port-587 setup. |
+| `Email__FromAddress` | empty | Required once a host is set; must be a valid address. |
+| `Email__FromName` | `LuminaPath` | Display name on outgoing mail. |
+
+Startup validation fails fast if `Email__Smtp__Host` is set but
+`Email__FromAddress` is missing/invalid or the port is out of range. Delivery
+failures are logged but never surfaced to the requester, so a broken SMTP
+relay can't be used to enumerate which email addresses have accounts.
+
+Note: password reset requires the target account to have a confirmed email.
+Admin-created and seeded users are confirmed automatically; self-registered
+users confirm via the link sent once SMTP is configured.
+
+### Storage
+
+File-system storage is the default.
+
+| Variable | Default | Notes |
+|---|---|---|
+| `Storage__Provider` | `FileSystem` | Set to `Azure` to use Azure Blob Storage. |
+| `Storage__Path` | `App_Data/storage` (under `/app` in Docker) | File-system storage path inside the API container. |
+| `Azure__BlobConnectionString` | empty | Required when `Storage__Provider=Azure`. |
+| `Azure__BlobContainerName` | `media` | Azure container name. |
+
+Container mounts stay at `/app/App_Data/storage` and `/app/App_Data/logs`.
+Normally leave these paths unchanged. If an existing install used `STORAGE_PATH`,
+the same named volume can be mounted at the new default path without moving its
+contents. Remove the old path override to use that default. If you need a custom
+path, change both `Storage__Path` and the mount target in a personal Compose
+override, and align `DatabaseBackup__Directory` with it.
+
+| Variable | Default | When to change |
+|---|---|---|
+| `Serilog__WriteTo__1__Args__path` | `App_Data/logs/luminapath-.log` | File log destination; keep it within a persisted mount. |
+
+### Frontend runtime
+
+| Variable | Default | Notes |
+|---|---|---|
+| `LUMINAPATH_API_ENDPOINT` | `/api` | Browser-facing API endpoint. Keep `/api` with the included frontend container. |
+| `LUMINAPATH_API_PROXY_TARGET` | `http://api:8080` | Nginx target inside the Docker network. |
+| `LUMINAPATH_CSP` | enforcing default | Full Content-Security-Policy for the served SPA. The frontend nginx also sends `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy` and `Permissions-Policy`. |
+
+The frontend container serves the SPA with an **enforcing** CSP. The default
+locks scripts to same-origin, allows inline styles (Angular/Ionic inject
+`<style>` tags at runtime), permits `https:`/`data:` images for external
+cover art, and keeps `connect-src 'self'` because the API is proxied
+same-origin. If the SPA talks to a **different** API origin (custom
+`LUMINAPATH_API_ENDPOINT`), override `LUMINAPATH_CSP` to add that origin to
+`connect-src`, e.g.:
 
 ```text
-POSTGRES_PASSWORD=your-strong-password
-LUMINAPATH_ADMIN_EMAIL=you@example.com
-LUMINAPATH_ADMIN_PASSWORD=your-strong-admin-password
+LUMINAPATH_CSP=default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.example.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'
 ```
 
-For production installs, the deploy folder also supports a file-based secrets
-overlay so `POSTGRES_PASSWORD` and `LUMINAPATH_ADMIN_PASSWORD` can stay out of
-`.env`; see the configuration reference for the exact command.
+The frontend also proxies `/Account`, `/Admin`, `/_blazor`,
+`/_content` and `/_framework` to the backend. This keeps the default deploy
+path to a single public frontend port while preserving access to the Blazor
+admin and account flows.
 
-Common optional Docker variables:
+### AI provider settings
 
-```text
-BACKEND_HTTP_PORT=8080
-FRONTEND_HTTP_PORT=4200
-RUN_MIGRATIONS_ON_STARTUP=false
-AUTH_REQUIRE_ADMIN_APPROVAL=true
-FRONTEND_PUBLIC_URL=https://luminapath.yourdomain.com
-```
+The backend supports Anthropic and OpenAI-compatible providers. The
+OpenAI-compatible path covers Ollama, LM Studio, vLLM and OpenAI-style APIs.
 
-Azure Blob storage, if you do not want file-system storage:
+| Variable | Default | Notes |
+|---|---|---|
+| `AiChat__Provider` | `anthropic` | Use `openai` for OpenAI-compatible endpoints. |
+| `AiChat__MaxToolIterations` | `8` | Safety cap for tool-use loops. |
+| `Anthropic__MaxTokens` | `4096` | Maximum output tokens. |
+| `Anthropic__AnthropicVersion` | `2023-06-01` | API version header. |
+| `ANTHROPIC_API_KEY` or `Anthropic__ApiKey` | empty | Required when using Anthropic. |
+| `Anthropic__Model` | `claude-sonnet-4-6` | Anthropic model name. |
+| `Anthropic__BaseUrl` | `https://api.anthropic.com` | Override only for compatible gateways. |
+| `OPENAI_API_KEY` or `OpenAi__ApiKey` | empty | Optional for local endpoints. |
+| `OPENAI_BASE_URL` or `OpenAi__BaseUrl` | `http://localhost:11434/v1` | OpenAI-compatible API root. |
+| `OPENAI_MODEL` or `OpenAi__Model` | `llama3.2` | Model name. |
+| `OpenAi__ToolChoice` | empty | Useful for vLLM auto tool calling. |
 
-```text
-STORAGE_PROVIDER=Azure
-AZURE_BLOB_CONNECTION_STRING=...
-AZURE_BLOB_CONTAINER_NAME=media
-```
+### Local vLLM overlay
 
-Angular runtime variable:
+Use these only with `compose.vllm.yml` and an `amd` or `nvidia` profile.
 
-```text
-LUMINAPATH_API_ENDPOINT=/api
-```
+| Variable | Default | Notes |
+|---|---|---|
+| `COMPOSE_PROFILES` | empty | Set to `amd` or `nvidia`. |
+| `VLLM_MODEL` | `NousResearch/Hermes-3-Llama-3.1-8B` | Model served by vLLM. |
+| `VLLM_API_KEY` | `local-vllm` | API key shared between backend and vLLM. |
+| `VLLM_PORT` | `8000` | Host port for vLLM. |
+| `VLLM_GPU_MEMORY_UTILIZATION` | `0.90` | vLLM memory tuning. |
+| `VLLM_TENSOR_PARALLEL_SIZE` | `1` | Multi-GPU tensor parallelism. |
+| `VLLM_TOOL_CALL_PARSER` | `hermes` | Parser used for tool calls. |
+| `HF_TOKEN` | empty | Optional Hugging Face token. |
+| `HUGGING_FACE_HUB_TOKEN` | empty | Alternative Hugging Face token variable. |
+| `VLLM_BASE_URL` | `http://vllm:8000/v1` | API-side endpoint. |
+| `VLLM_TOOL_CHOICE` | `auto` | API-side tool choice. |
+| `VLLM_DTYPE` | `auto` | Model data type. |
+| `VLLM_MAX_MODEL_LEN` | `8192` | Model context length. |
+| `VLLM_AMD_IMAGE` | `vllm/vllm-openai-rocm:latest` | AMD image override. |
+| `VLLM_NVIDIA_IMAGE` | `vllm/vllm-openai:latest` | NVIDIA image override. |
+| `VLLM_AMD_KFD_DEVICE` / `VLLM_AMD_DRI_DEVICE` | `/dev/kfd` / `/dev/dri` | AMD host device paths. |
+| `VLLM_HIP_VISIBLE_DEVICES` / `VLLM_ROCR_VISIBLE_DEVICES` | `0` / `0` | AMD device selection. |
+| `VLLM_NVIDIA_GPUS` / `VLLM_NVIDIA_VISIBLE_DEVICES` | `all` / `all` | NVIDIA GPU selection. |
+| `VLLM_NVIDIA_DRIVER_CAPABILITIES` | `compute,utility` | NVIDIA container capabilities. |
 
-For the Docker frontend, `/api` is recommended because nginx proxies it to the backend service. Outside Docker, set it to something like `https://your-api.example.com/api`.
+### Metadata, imports and third-party APIs
 
-## Local Development Without Docker
+These are optional. Empty credentials simply disable the provider features that
+need them.
 
-Start PostgreSQL through Docker:
+| Variable | Default | Notes |
+|---|---|---|
+| `GameMetadata__Provider` | `IgdbThenRawg` | Supported: `IgdbThenRawg`, `RawgThenIgdb`, `Igdb`, `Rawg`. |
+| `GameMetadata__IgdbClientId` | empty | IGDB client id. |
+| `GameMetadata__IgdbClientSecret` | empty | IGDB client secret. |
+| `GameMetadata__RawgApiKey` | empty | RAWG API key. |
+| `Steam__ApiBaseUrl` | `https://api.steampowered.com` | Override for tests or proxies. |
+| `Steam__StoreBaseUrl` | `https://store.steampowered.com` | Override for tests or proxies. |
+| `PSN__AuthorizationBaseUrl` | built in | Override only if Sony endpoints change. |
+| `PSN__ProfileBaseUrl` | built in | Override only if Sony endpoints change. |
+| `PSN__ApiBaseUrl` | built in | Override only if Sony endpoints change. |
 
-```powershell
-docker compose up -d db
-```
+### Google Calendar integration
 
-Run the Blazor backend:
+Optional. When configured, users can link their Google account from the Angular
+app's **Settings → Google Calendar** card or the Blazor **Account → Manage →
+Google Calendar** page, and push their library's upcoming releases and dated
+quests into a dedicated "LuminaPath" calendar with **Sync now**. Both surfaces
+are hidden until the server is configured.
 
-```powershell
-dotnet restore LuminaPath.sln
-dotnet run --project src/LuminaPath/LuminaPath.csproj
-```
+Operator setup: create a Google Cloud **OAuth 2.0 Web** client, enable the
+**Google Calendar API**, and register the redirect URI
+`https://<your-frontend-host>/api/integrations/google/callback`. The frontend
+proxies `/api` to the backend, so use the public frontend origin. If users also
+link from the Blazor admin on a different origin, add that origin's
+`/api/integrations/google/callback` too (Google allows multiple redirect URIs),
+or pin a single one with `GoogleCalendar__RedirectUri`.
 
-Run the Angular frontend:
+The client id, client secret, and calendar name can be set **without an
+environment variable or restart** from the Blazor admin **Settings → Google
+Calendar** panel. Stored values are kept in `ApplicationSettings` (the secret as
+plaintext, matching the IGDB client secret convention) and **override** the
+environment variables below; the env vars remain as the fallback/default. The
+integration is considered configured when an effective client id *and* secret
+are present from either source.
 
-```powershell
-cd src/LuminaPath.MobileApp
-npm install
-npm start
-```
+| Variable | Default | Notes |
+|---|---|---|
+| `GOOGLE_CLIENT_ID` | empty | OAuth client id. Setting this (or the admin Settings panel) enables the integration. |
+| `GOOGLE_CLIENT_SECRET` | empty | OAuth client secret (or `GoogleCalendar__ClientSecretFile`, or the admin Settings panel). |
+| `GoogleCalendar__CalendarName` | `LuminaPath` | Name of the dedicated calendar created on first sync (also editable in the admin Settings panel). |
+| `GoogleCalendar__RedirectUri` | derived from request | Override only if the auto-derived `{scheme}://{host}/api/integrations/google/callback` is wrong (e.g. local dev without the proxy). |
+| `GoogleCalendar__SettingsReturnPath` | `/settings` | SPA path the callback returns to. |
 
-For local Angular development, edit `src/LuminaPath.MobileApp/src/assets/env.js` if you need a different API endpoint.
+Notes:
 
-## Manual Android APK Build
+- Sync is one-way (LuminaPath → Google) and manual. It upserts events with
+  stable ids (so re-syncing never duplicates) and removes events whose release
+  or open quest no longer applies.
+- The OAuth refresh token is encrypted at rest with ASP.NET Data Protection.
+  In Docker the Data Protection key ring is container-local by default — if it
+  isn't persisted, links become unreadable after a redeploy and users must
+  reconnect. Persist the key ring (volume) for durable links.
 
-Use this when you want to build the Ionic/Angular mobile app yourself and install it on a phone for homelab testing.
+### Background jobs and backups
 
-Install these tools first:
+| Variable | Default | Notes |
+|---|---|---|
+| `BackgroundJobs__ScheduledJobsEnabled` | `false` | Master switch for scheduled jobs. Admins can still trigger ad-hoc jobs. |
+| `BackgroundJobs__BackupIntervalHours` | `24` | Scheduled backup cadence. |
+| `BackgroundJobs__BackupRetentionCount` | `10` | Number of backups to keep. |
+| `BackgroundJobs__JobHistoryRetentionDays` | `30` | Job record retention. |
+| `BackgroundJobs__MaintenanceIntervalHours` | `6` | Maintenance cleanup cadence. |
+| `BackgroundJobs__OrphanedBlobCleanupIntervalHours` | `24` | Set `0` to disable this scheduled job only. |
+| `DatabaseBackup__Directory` | `App_Data/storage/backups` | Backup output directory. |
+| `DatabaseBackup__PgDumpPath` | `pg_dump` | Path to `pg_dump`. |
+| `DatabaseBackup__FilePrefix` | `luminapath` | Backup file prefix. |
+| `DatabaseBackup__MaxListedBackups` | `20` | Maximum backups listed in admin UI. |
 
-- Android Studio with the Android SDK.
-- Java 21.
-- Android platform tools if you want to install through `adb`.
-- Node.js 22.
+### Optional tools
 
-Build the web app and sync Capacitor:
+Use these only with the `tools` profile.
 
-```powershell
-cd src/LuminaPath.MobileApp
-npm install
-npm run build -- --configuration production
-npx cap add android
-npx cap sync android
-```
-
-`npx cap add android` only needs to be run once, or whenever the generated `android` folder does not exist.
-The Angular production build writes the web app to `www/browser`, which is the directory Capacitor packages into the APK.
-
-Build a debug APK:
-
-```powershell
-cd android
-.\gradlew.bat assembleDebug
-```
-
-The APK is created here:
-
-```text
-src/LuminaPath.MobileApp/android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-Install it on a connected Android device:
-
-```powershell
-adb install -r app\build\outputs\apk\debug\app-debug.apk
-```
-
-For homelab testing, point the app login screen to your hosted backend API:
-
-```text
-https://luminapath.yourdomain.com/api
-```
-
-or:
-
-```text
-http://192.168.178.50:8080/api
-```
-
-HTTPS with a trusted certificate is recommended. Plain HTTP and self-signed certificates can work for some setups, but Android WebView is much stricter than a normal desktop browser.
-
-Allow the Capacitor app origin in the backend CORS configuration:
-
-```text
-Cors__AllowedOrigins__0=capacitor://localhost
-Cors__AllowedOrigins__1=http://localhost
-Cors__AllowedOrigins__2=https://luminapath.yourdomain.com
-Auth__CookieSameSite=None
-Auth__CookieSecurePolicy=Always
-```
-
-Restart the backend after changing CORS settings.
-
-For quick rebuilds after frontend changes:
-
-```powershell
-cd src/LuminaPath.MobileApp
-npm run build -- --configuration production
-npx cap sync android
-cd android
-.\gradlew.bat assembleDebug
-adb install -r app\build\outputs\apk\debug\app-debug.apk
-```
+| Variable | Default | Notes |
+|---|---|---|
+| `PGADMIN_VERSION` | `latest` | pgAdmin image tag. |
+| `PGADMIN_HTTP_PORT` | `5050` | Host port for pgAdmin. |
+| `PGADMIN_DEFAULT_EMAIL` | `admin@example.com` | Local tool login. Change it if exposed. |
+| `PGADMIN_DEFAULT_PASSWORD` | `admin` | Local tool login. Change it if exposed. |
 
 ## AI Assistant
 
-The Angular app ships with a floating chat panel (bottom-right) that streams replies token-by-token from a backend endpoint at `POST /api/chat/stream`. The agent has access to database tools scoped to the signed-in user (reads plus a confirm-first quest-create write), plus optional MCP tools for external information.
-
-### Pick a provider
-
-The provider is selected through `AiChat:Provider`. Both providers are wired by default — switch by changing config and supplying the credentials.
-
-| Provider | `AiChat:Provider` | Used for |
-| --- | --- | --- |
-| Anthropic Claude | `anthropic` (default) | Claude 4 family via the official API |
-| OpenAI-compatible | `openai` (or `ollama`) | Ollama, LM Studio, vLLM, llama.cpp server, the official OpenAI API, etc. |
-
-#### Anthropic Claude
-
-```text
-ANTHROPIC_API_KEY=sk-ant-...
-```
-
-Or in `appsettings.Development.json`:
-
-```jsonc
-"AiChat":   { "Provider": "anthropic" },
-"Anthropic": {
-  "ApiKey": "sk-ant-...",
-  "Model": "claude-sonnet-4-6",
-  "MaxTokens": 4096
-}
-```
-
-#### Ollama (self-hosted)
-
-Install Ollama and pull a tool-capable model (e.g. `llama3.2`, `qwen2.5`, `mistral-small`):
-
-```powershell
-ollama pull llama3.2
-ollama serve
-```
-
-Then point the backend at it:
-
-```jsonc
-"AiChat": { "Provider": "ollama" },
-"OpenAi": {
-  "BaseUrl": "http://localhost:11434/v1",
-  "Model":   "llama3.2"
-}
-```
-
-No API key required. Ollama exposes the OpenAI-compatible Chat Completions API at `/v1/chat/completions`, including tool calls.
-
-#### Other OpenAI-compatible endpoints
-
-```jsonc
-"AiChat": { "Provider": "openai" },
-"OpenAi": {
-  "ApiKey":  "sk-...",                // empty for keyless local servers
-  "BaseUrl": "https://api.openai.com/v1",
-  "Model":   "gpt-4o-mini",
-  "ToolChoice": "auto"                // optional; useful for vLLM auto tool calling
-}
-```
-
-For LM Studio, vLLM or llama.cpp's server, change `BaseUrl` to whatever they expose (typically ending in `/v1`) and pick the model name they advertise.
-
-For local GPU testing with vLLM:
-
-```powershell
-docker compose --profile amd -f docker-compose.yml -f docker-compose.vllm.yml up -d --build
-```
-
-or:
-
-```powershell
-docker compose --profile nvidia -f docker-compose.yml -f docker-compose.vllm.yml up -d --build
-```
-
-The overlay has two mutually exclusive vLLM profiles:
-
-| Profile | Image default | GPU wiring |
-| --- | --- | --- |
-| `amd` | `vllm/vllm-openai-rocm:latest` | Exposes `/dev/kfd` and `/dev/dri`; uses `HIP_VISIBLE_DEVICES` / `ROCR_VISIBLE_DEVICES` |
-| `nvidia` | `vllm/vllm-openai:latest` | Uses Docker Compose `gpus`; sets `NVIDIA_VISIBLE_DEVICES` / `NVIDIA_DRIVER_CAPABILITIES` |
-
-Both profiles publish `http://localhost:8000/v1` on the host and expose `http://vllm:8000/v1` inside Docker, so the backend config stays the same. Set `COMPOSE_PROFILES=amd` or `COMPOSE_PROFILES=nvidia` in `.env` if you do not want to pass `--profile` every time. The default tool-calling setup is Hermes-flavored; if you switch to a Llama, Mistral, Qwen or other model, update `VLLM_TOOL_CALL_PARSER` to the parser that matches that model.
-
-### Environment variable overrides
-
-These take precedence over `appsettings.json` so you can leave the file blank in source control:
-
-```text
-ANTHROPIC_API_KEY=...     # falls into Anthropic:ApiKey
-OPENAI_API_KEY=...        # falls into OpenAi:ApiKey
-OPENAI_BASE_URL=...       # falls into OpenAi:BaseUrl
-OPENAI_MODEL=...          # falls into OpenAi:Model
-```
+Choose the provider and optional credentials from the reference above. For a
+containerized API, `localhost` refers to its own container; use a reachable
+server address for Ollama or LM Studio. The vLLM overlay wires this automatically.
 
 ### Built-in database tools
+
 
 All tools are scoped to the authenticated user, so the agent can only ever see or change the signed-in user's own data:
 
@@ -480,106 +628,25 @@ MCP tools appear to the model alongside the built-in ones, namespaced as `mcp__<
 
 The agent will execute up to `AiChat:MaxToolIterations` (default `8`) tool round-trips before forcing a final answer. Bump this if you expect long multi-step reasoning chains.
 
+## Development and Releases
+
+Development setup, checks and Android build instructions are in
+[CONTRIBUTING.md](CONTRIBUTING.md). The .NET project boundaries remain unchanged:
+Core, Infrastructure, the API/Blazor host, the Angular/Ionic frontend and tests.
+See [architecture](docs/02-architecture/index.md) for their responsibilities.
+
 ## CI/CD
 
-GitHub Actions provide these workflows:
+- CI builds and tests the backend and frontend, checks every Compose variant and
+  builds both container images.
+- Docs validates the documentation site.
+- Release publishes matching Docker Hub images, an Android APK, source archives,
+  license notices and checksums for a version tag.
+- Manual GHCR and Azure Release publishes to GHCR and optionally deploys the API
+  to Azure.
 
-- `CI`: restores, builds and tests the .NET solution, builds Angular, validates Compose and builds both Docker images.
-- `Docs`: builds the documentation with strict validation.
-- `Release`: version tags publish Docker Hub images, an Android APK, the matching source archive, license notices and checksums to a GitHub Release.
-- `Manual GHCR and Azure Release`: runs only through **Run workflow**; publishes GHCR images and optionally deploys the API to Azure when configured.
-
-See the [release runbook](docs/05-runbooks/releases.md) for required secrets,
-source information and artifact verification. A manual rerun of `Release` requires
-an existing version tag and builds the commit referenced by that tag.
-
-Create a release by pushing a version tag:
-
-```powershell
-git tag v1.2.3
-git push origin v1.2.3
-```
-
-Docker Hub publishing needs these repository secrets:
-
-```text
-DOCKERHUB_USERNAME
-DOCKERHUB_TOKEN
-```
-
-The release workflow publishes:
-
-```text
-docker.io/<DOCKERHUB_USERNAME>/luminapath-api:<version>
-docker.io/<DOCKERHUB_USERNAME>/luminapath-api:<major>.<minor>
-docker.io/<DOCKERHUB_USERNAME>/luminapath-api:latest
-docker.io/<DOCKERHUB_USERNAME>/luminapath-frontend:<version>
-docker.io/<DOCKERHUB_USERNAME>/luminapath-frontend:<major>.<minor>
-docker.io/<DOCKERHUB_USERNAME>/luminapath-frontend:latest
-```
-
-Every build also gets a `sha-...` tag for exact rollbacks.
-
-Android APK publishing works without signing secrets and uploads a debug-signed APK. For a user-facing release APK, add these optional secrets:
-
-```text
-ANDROID_KEYSTORE_BASE64
-ANDROID_KEYSTORE_PASSWORD
-ANDROID_KEY_ALIAS
-ANDROID_KEY_PASSWORD
-```
-
-`ANDROID_KEYSTORE_BASE64` is your Android keystore encoded as base64. When all four secrets are present, the workflow signs, verifies and uploads `LuminaPath-<version>.apk` to the GitHub Release.
-
-## Seeded Login
-
-Development fallback seeding creates:
-
-```text
-Email:    admin@example.com
-Password: ChangeMe!1AdminAccess
-```
-
-Production startup refuses those bundled credentials, so set
-`LUMINAPATH_ADMIN_EMAIL` and `LUMINAPATH_ADMIN_PASSWORD` before first boot.
-
-Roles:
-
-```text
-Administrator
-Editor
-```
-
-## Tests
-
-```powershell
-dotnet test src/LuminaPath.Tests/LuminaPath.Tests.csproj
-```
-
-On Windows, if another process locks normal build output, use:
-
-```powershell
-dotnet test src/LuminaPath.Tests/LuminaPath.Tests.csproj --artifacts-path .\artifacts\tests
-```
-
-## Migrations
-
-Development applies migrations automatically when the backend runs with `ASPNETCORE_ENVIRONMENT=Development`.
-Production should keep `RUN_MIGRATIONS_ON_STARTUP=false`, generate an idempotent SQL script, review it, and apply it manually.
-
-Create a migration:
-
-```powershell
-dotnet ef migrations add BackgroundJobs --project src/LuminaPath.Infrastructure/LuminaPath.Infrastructure.csproj --startup-project src/LuminaPath/LuminaPath.csproj --output-dir Migrations
-```
-
-See the full runbook: [`docs/05-runbooks/migrations.md`](docs/05-runbooks/migrations.md).
-
-## Upgrades
-
-For major dependency upgrades such as .NET 10 to 11 or Angular 21 to 22, use the upgrade checklist:
-
-[`docs/05-runbooks/updating-the-app.md`](docs/05-runbooks/updating-the-app.md)
+See the [release runbook](docs/05-runbooks/releases.md) for publishing instructions,
+required credentials, Android signing and source/license requirements.
 
 ## License
 
