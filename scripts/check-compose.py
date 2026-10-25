@@ -53,8 +53,10 @@ class ComposeTests(unittest.TestCase):
             self.assertNotIn('build', services[name])
         for name in ('api', 'db', 'redis'):
             self.assertFalse(services[name].get('ports'))
-        for name in ('postgres', 'storage', 'logs', 'redis'):
+        for name in ('postgres', 'storage', 'logs', 'redis', 'google-drive'):
             self.assertEqual(f'luminapath_luminapath-{name}', config['volumes'][f'luminapath-{name}']['name'])
+        self.assertTrue(any(v['target'] == '/app/App_Data/google-drive' and v['source'] == 'luminapath-google-drive'
+                            for v in services['api']['volumes']))
         self.assertNotIn('Auth__RequireAdminApproval', api)
         self.assertNotIn('Storage__Provider', api)
 

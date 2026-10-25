@@ -186,6 +186,7 @@ namespace LuminaPath.Infrastructure
         private static void AddApi(IServiceCollection services)
         {
             services.AddEndpointsApiExplorer();
+            services.AddAntiforgery();
             services.AddControllers(options =>
             {
                 options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider());

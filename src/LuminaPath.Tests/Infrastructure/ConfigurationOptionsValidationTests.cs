@@ -70,8 +70,10 @@ public class ConfigurationOptionsValidationTests
     [Theory]
     [InlineData("GoogleDrive:ClientId", "")]
     [InlineData("GoogleDrive:ClientSecret", "")]
-    [InlineData("GoogleDrive:RefreshToken", "")]
     [InlineData("GoogleDrive:CacheMinutes", "-1")]
+    [InlineData("GoogleDrive:RedirectUri", "http://vpn.example.com/api/integrations/google-drive/callback")]
+    [InlineData("GoogleDrive:RedirectUri", "https://vpn.example.com/other")]
+    [InlineData("GoogleDrive:RedirectUri", "https://vpn.example.com/api/integrations/google-drive/callback?extra=1")]
     public async Task GoogleDrive_RejectsIncompleteConfiguration(string key, string value)
     {
         var values = new Dictionary<string, string?>
@@ -82,6 +84,22 @@ public class ConfigurationOptionsValidationTests
         values[key] = value;
         await using var provider = BuildProvider(values);
         Assert.Throws<OptionsValidationException>(() => provider.GetRequiredService<IStartupValidator>().Validate());
+    }
+
+    [Theory]
+    [InlineData("FileSystem")]
+    [InlineData("GoogleDrive")]
+    public async Task GoogleDrive_AllowsBrowserAuthorizationBeforeTokenExists(string storageProvider)
+    {
+        await using var provider = BuildProvider(new Dictionary<string, string?>
+        {
+            ["Storage:Provider"] = storageProvider, ["GoogleDrive:ClientId"] = "web-client",
+            ["GoogleDrive:ClientSecret"] = "secret",
+            ["GoogleDrive:RedirectUri"] = "https://vpn.example.com/api/integrations/google-drive/callback"
+        });
+        provider.GetRequiredService<IStartupValidator>().Validate();
+        Assert.True(provider.GetRequiredService<IOptions<GoogleDriveOptions>>().Value.CanConnectInBrowser);
+        Assert.NotNull(provider.GetRequiredService<GoogleDriveConnectionService>());
     }
 
     [Theory]

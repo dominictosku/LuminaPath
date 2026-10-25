@@ -14,16 +14,18 @@ public sealed class GoogleDriveClient : IDisposable
     private const string FolderType = "application/vnd.google-apps.folder";
     private readonly HttpClient _http;
     private readonly GoogleDriveOptions _options;
+    private readonly GoogleDriveConnectionStore? _connection;
     private readonly SemaphoreSlim _tokenLock = new(1, 1);
     private readonly SemaphoreSlim _folderLock = new(1, 1);
     private readonly Dictionary<string, string> _folders = new();
     private string? _accessToken;
     private DateTimeOffset _expires;
 
-    public GoogleDriveClient(HttpClient http, IOptions<GoogleDriveOptions> options)
+    public GoogleDriveClient(HttpClient http, IOptions<GoogleDriveOptions> options, GoogleDriveConnectionStore? connection = null)
     {
         _http = http;
         _options = options.Value;
+        _connection = connection;
     }
 
     public async Task<string> GetFolderAsync(string area, CancellationToken cancellationToken = default)
@@ -223,10 +225,13 @@ public sealed class GoogleDriveClient : IDisposable
         try
         {
             if (_accessToken is not null && DateTimeOffset.UtcNow < _expires) return _accessToken;
+            var refreshToken = _options.HasExternalToken ? _options.RefreshToken : _connection?.Read()?.RefreshToken;
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                throw new InvalidOperationException("Connect Google Drive from /Admin/GoogleDrive first.");
             using var response = await _http.PostAsync("https://oauth2.googleapis.com/token", new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["client_id"] = _options.ClientId, ["client_secret"] = _options.ClientSecret,
-                ["refresh_token"] = _options.RefreshToken, ["grant_type"] = "refresh_token"
+                ["refresh_token"] = refreshToken, ["grant_type"] = "refresh_token"
             }), ct);
             if (!response.IsSuccessStatusCode)
                 throw new InvalidOperationException("Google Drive authorization failed. Check credentials or authorize the account again.");

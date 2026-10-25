@@ -18,6 +18,7 @@ TestResults
 .env
 src/LuminaPath/App_Data/storage
 src/LuminaPath/App_Data/logs
+src/LuminaPath/App_Data/google-drive
 **/.npm-cache
 **/.dotnet-cli-home
 src/LuminaPath.MobileApp/src/assets/legal

@@ -23,18 +23,21 @@ internal static class StorageServiceCollectionExtensions
 
         var storageOptions = StorageOptions.FromConfiguration(config);
         services.AddScoped<StorageMigrationService>();
+        services.AddOptions<GoogleDriveOptions>()
+            .Bind(config.GetSection(GoogleDriveOptions.SectionName))
+            .PostConfigure(options => GoogleDriveOptions.ReadSecrets(options, config))
+            .Validate(options => (!storageOptions.UsesGoogleDrive && string.IsNullOrWhiteSpace(options.ClientId)
+                && string.IsNullOrWhiteSpace(options.ClientSecret)) || GoogleDriveOptions.IsValid(options),
+                "GoogleDrive requires ClientId, ClientSecret (or ClientSecretFile), a FolderName, ConnectionPath, CacheMinutes between 0 and 60, and a valid RedirectUri when supplied.")
+            .ValidateOnStart();
+        services.AddSingleton(sp => new GoogleDriveConnectionStore(
+            sp.GetRequiredService<IOptions<GoogleDriveOptions>>(), sp.GetRequiredService<IHostEnvironment>()));
+        services.AddSingleton(sp => new GoogleDriveConnectionService(CreateDriveHttpClient(),
+            sp.GetRequiredService<IOptions<GoogleDriveOptions>>(), sp.GetRequiredService<GoogleDriveConnectionStore>()));
         if (storageOptions.UsesGoogleDrive)
         {
-            services.AddOptions<GoogleDriveOptions>()
-                .Bind(config.GetSection(GoogleDriveOptions.SectionName))
-                .PostConfigure(options => GoogleDriveOptions.ReadSecrets(options, config))
-                .Validate(GoogleDriveOptions.IsValid, "GoogleDrive requires ClientId, ClientSecret (or ClientSecretFile), RefreshToken (or RefreshTokenFile), a FolderName and CacheMinutes between 0 and 60.")
-                .ValidateOnStart();
-            services.AddSingleton(sp => new GoogleDriveClient(new HttpClient(new SocketsHttpHandler
-            {
-                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
-                AllowAutoRedirect = false
-            }), sp.GetRequiredService<IOptions<GoogleDriveOptions>>()));
+            services.AddSingleton(sp => new GoogleDriveClient(CreateDriveHttpClient(),
+                sp.GetRequiredService<IOptions<GoogleDriveOptions>>(), sp.GetRequiredService<GoogleDriveConnectionStore>()));
             services.AddSingleton<IStorageService, GoogleDriveStorage>();
             if (config.GetValue("GoogleDrive:UploadBackups", true))
                 services.AddSingleton<IBackupArchive, GoogleDriveBackupArchive>();
@@ -54,6 +57,12 @@ internal static class StorageServiceCollectionExtensions
 
         throw new InvalidOperationException("Unsupported storage provider. Set Storage:Provider to 'Azure', 'FileSystem' or 'GoogleDrive'.");
     }
+
+    // Avoid logging OAuth tokens or resumable-session URLs through HttpClientFactory.
+    private static HttpClient CreateDriveHttpClient() => new(new SocketsHttpHandler
+    {
+        PooledConnectionLifetime = TimeSpan.FromMinutes(2), AllowAutoRedirect = false
+    });
 
     private static void AddFileSystemStorage(IServiceCollection services, StorageOptions storageOptions)
     {

@@ -9,6 +9,12 @@ public sealed class GoogleDriveOptions
     public string ClientId { get; set; } = string.Empty;
     public string ClientSecret { get; set; } = string.Empty;
     public string RefreshToken { get; set; } = string.Empty;
+    public string? RedirectUri { get; set; }
+    public string ConnectionPath { get; set; } = Path.Combine("App_Data", "google-drive");
+    public bool HasClientCredentials => !string.IsNullOrWhiteSpace(ClientId) && !string.IsNullOrWhiteSpace(ClientSecret);
+    public bool HasExternalToken => !string.IsNullOrWhiteSpace(RefreshToken);
+    public bool CanConnectInBrowser => HasClientCredentials && IsValidRedirectUri(RedirectUri);
+
     public string FolderName { get; set; } = "LuminaPath";
     public string? FolderId { get; set; }
     public bool UploadBackups { get; set; } = true;
@@ -25,7 +31,14 @@ public sealed class GoogleDriveOptions
     internal static bool IsValid(GoogleDriveOptions options) =>
         !string.IsNullOrWhiteSpace(options.ClientId)
         && !string.IsNullOrWhiteSpace(options.ClientSecret)
-        && !string.IsNullOrWhiteSpace(options.RefreshToken)
         && !string.IsNullOrWhiteSpace(options.FolderName)
-        && options.CacheMinutes is >= 0 and <= 60;
+        && options.CacheMinutes is >= 0 and <= 60
+        && !string.IsNullOrWhiteSpace(options.ConnectionPath)
+        && (string.IsNullOrEmpty(options.RedirectUri) || IsValidRedirectUri(options.RedirectUri));
+
+    internal static bool IsValidRedirectUri(string? value) =>
+        Uri.TryCreate(value, UriKind.Absolute, out var uri)
+        && (uri.Scheme == "https" || uri.Scheme == "http" && uri.IsLoopback)
+        && string.IsNullOrEmpty(uri.UserInfo) && string.IsNullOrEmpty(uri.Query) && string.IsNullOrEmpty(uri.Fragment)
+        && uri.AbsolutePath == "/api/integrations/google-drive/callback";
 }

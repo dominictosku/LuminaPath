@@ -18,6 +18,7 @@ services:
     volumes:
       - luminapath-storage:/app/App_Data/storage
       - luminapath-logs:/app/App_Data/logs
+      - luminapath-google-drive:/app/App_Data/google-drive
     depends_on:
       db:
         condition: service_healthy
@@ -104,5 +105,6 @@ volumes:
   luminapath-postgres:
   luminapath-storage:
   luminapath-logs:
+  luminapath-google-drive:
   luminapath-redis:
   luminapath-pgadmin:

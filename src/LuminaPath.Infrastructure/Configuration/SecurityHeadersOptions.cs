@@ -54,7 +54,7 @@ public sealed class SecurityHeadersOptions
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
         "script-src 'self'; " +
         "connect-src 'self'; " +
-        "form-action 'self'";
+        "form-action 'self' https://accounts.google.com";
 
     public string GetEffectivePolicy()
     {

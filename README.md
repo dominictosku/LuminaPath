@@ -433,54 +433,100 @@ This provider is available in images built from this change. Build the source
 with `compose.dev.yml` until a release containing it is published; setting the
 provider on an older image will fail startup validation.
 
-1. Enable the Google Drive API in your Google Cloud project. Use an OAuth client
-   belonging to the account/project you want to retain for this deployment; an
-   API key or standalone service account cannot use your personal Drive quota.
-2. Download the OAuth client JSON to your local computer. A **Desktop app** client
-   works with the helper below. For an existing **Web application** client,
-   register `http://127.0.0.1:8765/callback` as an authorized redirect URI, then
-   download its JSON again. The helper uses a local browser callback; no public
-   callback endpoint on the VPS is needed.
-3. Run on that local computer (Python 3.10+):
+#### Connect from the backend (recommended)
 
-   ```sh
-   python3 scripts/authorize-google-drive.py --client-json /path/to/client.json
-   ```
-
-   Sign in to the Google account whose storage you want to use. The helper
-   requests only `drive.file`, uses PKCE and validates OAuth state. It saves
-   `client_id.txt`, `client_secret.txt` and `refresh_token.txt` under
-   `secrets/google-drive/`, with owner-only file permissions on Unix. Tokens are
-   never printed. Transfer these files securely to the VPS. Protect the downloaded
-   client JSON too; keep it outside the repository and Docker build context.
-4. Add the following to `.env`, using the contents of `client_id.txt` for the ID:
+1. Enable the Google Drive API in Google Cloud. Create an OAuth **Web application**
+   client. A Desktop client or API key cannot be used for this browser flow.
+2. Register the exact callback URL on that client, for example:
+   `https://lumina.example.com/api/integrations/google-drive/callback`.
+   For your VPN-only VPS, use an HTTPS hostname that your browser resolves/reaches
+   through the VPN. The callback is a browser redirect; Google does not need
+   inbound network access to your VPS. Google requires HTTPS and a valid hostname
+   for web callbacks (not a private IP or `.local` name). Local development can use
+   `http://localhost:4200/api/integrations/google-drive/callback` instead.
+   See [Google's redirect URI rules](https://developers.google.com/identity/protocols/oauth2/web-server#uri-validation).
+3. Add the OAuth client configuration to `.env`:
 
    ```dotenv
-   Storage__Provider=GoogleDrive
    GoogleDrive__ClientId=your-client-id.apps.googleusercontent.com
-   GoogleDrive__ClientSecretFile=/run/secrets/google_drive_client_secret
-   GoogleDrive__RefreshTokenFile=/run/secrets/google_drive_refresh_token
+   GoogleDrive__ClientSecret=your-client-secret
+   GoogleDrive__RedirectUri=https://lumina.example.com/api/integrations/google-drive/callback
    ```
 
-5. Add these entries to your personal `compose.override.yml` (merge them with
-   any existing VPN port override):
+   Protect `.env`. You can use `GoogleDrive__ClientSecretFile` with a mounted
+   Docker secret instead of the inline secret (see the helper example below).
+   Leave `GoogleDrive__RefreshToken` and `GoogleDrive__RefreshTokenFile` unset.
+   Keep the current storage provider while connecting and preparing migration.
+4. Recreate the API with `docker compose up -d`, sign in as an administrator, and
+   open **Admin → Google Drive** at `/Admin/GoogleDrive` on the app's origin.
+   Click **Connect Google Drive**, sign in to your storage account, and allow
+   access. The page also links from backend Settings → Google Drive.
+5. The backend saves an encrypted offline grant. With Compose, the grant and its
+   encryption keys persist in the dedicated `luminapath-google-drive` volume,
+   outside the uploaded-file folder. Keep this volume in your server backups and
+   protect it: someone with both the grant and its keys can decrypt it. For a
+   deployment outside Docker, persist `App_Data/google-drive` under the API's
+   content root. No Python script, token copying, or API restart is needed after
+   browser authorization. Reauthorization must use the same Google account and
+   OAuth client to preserve existing file references.
+6. For an empty installation, set `Storage__Provider=GoogleDrive` in `.env` and
+   recreate the API. For existing filesystem uploads, follow the migration steps
+   below before restarting normal traffic with the new provider. Connecting alone
+   does not change the storage provider or move existing files.
 
-   ```yaml
-   services:
-     api:
-       secrets:
-         - google_drive_client_secret
-         - google_drive_refresh_token
-   secrets:
-     google_drive_client_secret:
-       file: ./secrets/google-drive/client_secret.txt
-     google_drive_refresh_token:
-       file: ./secrets/google-drive/refresh_token.txt
-   ```
+The browser flow uses administrator-only endpoints, an antiforgery-protected
+start, single-use state tied to the administrator (expires after ten minutes),
+PKCE, and the `drive.file` scope. A restart during consent requires starting again.
+When enforcing a custom backend CSP, allow `https://accounts.google.com` in
+`form-action` for the authorization redirect; the built-in policy includes it.
+Use **Reconnect Google Drive** if the grant is revoked or expired. Authorization
+status reports a saved grant; it is not a continuous connectivity/expiry check.
 
-6. Recreate the API with `docker compose up -d`. When using explicit `-f` flags,
-   include `-f compose.override.yml` as well; Compose does not automatically add
-   the personal override when an explicit file list is used.
+#### Optional local authorization helper
+
+The Python helper remains available for headless setups. Download a **Desktop app**
+client JSON, or a **Web application** client JSON with
+`http://127.0.0.1:8765/callback` registered. Run locally (Python 3.10+):
+
+```sh
+python3 scripts/authorize-google-drive.py --client-json /path/to/client.json
+```
+
+The helper saves `client_id.txt`, `client_secret.txt` and `refresh_token.txt` under
+`secrets/google-drive/` with owner-only file permissions on Unix. Transfer them
+securely to the VPS and keep the client JSON outside the repository/build context.
+Configure `.env` using the contents of `client_id.txt` for the ID:
+
+```dotenv
+Storage__Provider=GoogleDrive
+GoogleDrive__ClientId=your-client-id.apps.googleusercontent.com
+GoogleDrive__ClientSecretFile=/run/secrets/google_drive_client_secret
+GoogleDrive__RefreshTokenFile=/run/secrets/google_drive_refresh_token
+```
+
+Add to your personal `compose.override.yml` (merge with any VPN port override):
+
+```yaml
+services:
+  api:
+    secrets:
+      - google_drive_client_secret
+      - google_drive_refresh_token
+secrets:
+  google_drive_client_secret:
+    file: ./secrets/google-drive/client_secret.txt
+  google_drive_refresh_token:
+    file: ./secrets/google-drive/refresh_token.txt
+```
+
+For browser setup with a file-based client secret, use only the
+`google_drive_client_secret` entries; no refresh token file is needed.
+Recreate the API with `docker compose up -d`. With explicit `-f` flags, include
+`-f compose.override.yml`; Compose does not automatically add the override in that
+case. Configured refresh tokens take precedence over browser grants, and the page
+disables browser authorization until the external token setting is removed and
+the API restarted. Reconnect the same account when moving from the helper to the
+browser flow. Keep the same Web client; Desktop clients require the helper.
 
 On first use the provider creates an app-marked `LuminaPath` folder in My Drive,
 with separate `uploads` and `backups` subfolders. The `drive.file` grant covers
@@ -496,7 +542,9 @@ and [OAuth token expiration](https://developers.google.com/identity/protocols/oa
 |---|---|---|
 | `GoogleDrive__ClientId` | empty | Required with the Drive provider. |
 | `GoogleDrive__ClientSecret` / `GoogleDrive__ClientSecretFile` | empty | Client secret or mounted secret-file path. |
-| `GoogleDrive__RefreshToken` / `GoogleDrive__RefreshTokenFile` | empty | Offline grant from the authorization helper or mounted secret-file path. |
+| `GoogleDrive__RefreshToken` / `GoogleDrive__RefreshTokenFile` | empty | Optional external grant from the helper; omit for browser authorization. |
+| `GoogleDrive__RedirectUri` | empty | Exact registered Web client callback URL; required only for browser authorization. |
+| `GoogleDrive__ConnectionPath` | `App_Data/google-drive` | Persistent directory for the encrypted browser grant and its keys. Mount this path if changed in Docker. |
 | `GoogleDrive__FolderName` | `LuminaPath` | Root folder name; use distinct names for independent installations. |
 | `GoogleDrive__FolderId` | empty (auto-create/find) | Existing root folder accessible to this OAuth app. Its marked subfolders are still isolated. |
 | `GoogleDrive__UploadBackups` | `true` | Copy each newly completed database dump to Drive; set false for uploads only. |
