@@ -1,4 +1,6 @@
 using LuminaPath.Core.Mapping;
+using LuminaPath.Core.Interfaces;
+using LuminaPath.Infrastructure.Services.Application;
 using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Configuration;
 using LuminaPath.Infrastructure.Controllers;
@@ -63,6 +65,50 @@ public class ConfigurationOptionsValidationTests
             provider.GetRequiredService<IStartupValidator>().Validate());
 
         Assert.Contains("Azure blob storage requires", string.Join(" ", exception.Failures));
+    }
+
+    [Theory]
+    [InlineData("GoogleDrive:ClientId", "")]
+    [InlineData("GoogleDrive:ClientSecret", "")]
+    [InlineData("GoogleDrive:RefreshToken", "")]
+    [InlineData("GoogleDrive:CacheMinutes", "-1")]
+    public async Task GoogleDrive_RejectsIncompleteConfiguration(string key, string value)
+    {
+        var values = new Dictionary<string, string?>
+        {
+            ["Storage:Provider"] = "GoogleDrive", ["GoogleDrive:ClientId"] = "test-client",
+            ["GoogleDrive:ClientSecret"] = "test-secret", ["GoogleDrive:RefreshToken"] = "test-token"
+        };
+        values[key] = value;
+        await using var provider = BuildProvider(values);
+        Assert.Throws<OptionsValidationException>(() => provider.GetRequiredService<IStartupValidator>().Validate());
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GoogleDrive_ReadsSecretFilesAndOptionallyRegistersBackupArchive(bool backups)
+    {
+        var secret = Path.GetTempFileName();
+        var token = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(secret, "test-secret\n");
+            await File.WriteAllTextAsync(token, "test-token\n");
+            await using var provider = BuildProvider(new Dictionary<string, string?>
+            {
+                ["Storage:Provider"] = "GoogleDrive", ["GoogleDrive:ClientId"] = "test-client",
+                ["GoogleDrive:ClientSecretFile"] = secret, ["GoogleDrive:RefreshTokenFile"] = token,
+                ["GoogleDrive:UploadBackups"] = backups.ToString()
+            });
+            provider.GetRequiredService<IStartupValidator>().Validate();
+            Assert.IsType<GoogleDriveStorage>(provider.GetRequiredService<IStorageService>());
+            var options = provider.GetRequiredService<IOptions<GoogleDriveOptions>>().Value;
+            Assert.Equal("test-secret", options.ClientSecret);
+            Assert.Equal("test-token", options.RefreshToken);
+            Assert.Equal(backups, provider.GetService<IBackupArchive>() is GoogleDriveBackupArchive);
+        }
+        finally { File.Delete(secret); File.Delete(token); }
     }
 
     [Fact]

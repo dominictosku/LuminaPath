@@ -91,7 +91,7 @@ LuminaPath is a personal media library, backlog planner, playtime tracker, socia
 - RPG-style quest board with main quests, sub quests, faction quests and skill trees for real-life goals.
 - Dashboard and statistics pages for played hours, completions and upcoming releases.
 - ASP.NET Core Identity authentication with seeded administrator/editor roles.
-- File-system storage by default, with Azure Blob support available through env vars.
+- File-system storage by default, with Azure Blob and private Google Drive providers available through env vars.
 - Streaming AI assistant in the Angular app, powered by Anthropic Claude or any OpenAI-compatible endpoint (Ollama, LM Studio, OpenAI), with MCP tool integration.
 
 ## Documentation
@@ -405,7 +405,7 @@ File-system storage is the default.
 
 | Variable | Default | Notes |
 |---|---|---|
-| `Storage__Provider` | `FileSystem` | Set to `Azure` to use Azure Blob Storage. |
+| `Storage__Provider` | `FileSystem` | `Azure` for Azure Blob Storage or `GoogleDrive` for private Google Drive storage. |
 | `Storage__Path` | `App_Data/storage` (under `/app` in Docker) | File-system storage path inside the API container. |
 | `Azure__BlobConnectionString` | empty | Required when `Storage__Provider=Azure`. |
 | `Azure__BlobContainerName` | `media` | Azure container name. |
@@ -420,6 +420,131 @@ override, and align `DatabaseBackup__Directory` with it.
 | Variable | Default | When to change |
 |---|---|---|
 | `Serilog__WriteTo__1__Args__path` | `App_Data/logs/luminapath-.log` | File log destination; keep it within a persisted mount. |
+
+### Google Drive storage
+
+Google Drive can store uploaded covers/documents and copies of completed database
+backups in your own account. PostgreSQL, Redis, logs and temporary files stay on
+the VPS. The app keeps Drive files private and serves uploads through its existing
+authenticated `/api/files/...` routes, so the app can remain VPN-only. The VPS
+needs outbound HTTPS access to `oauth2.googleapis.com` and `www.googleapis.com`.
+
+This provider is available in images built from this change. Build the source
+with `compose.dev.yml` until a release containing it is published; setting the
+provider on an older image will fail startup validation.
+
+1. Enable the Google Drive API in your Google Cloud project. Use an OAuth client
+   belonging to the account/project you want to retain for this deployment; an
+   API key or standalone service account cannot use your personal Drive quota.
+2. Download the OAuth client JSON to your local computer. A **Desktop app** client
+   works with the helper below. For an existing **Web application** client,
+   register `http://127.0.0.1:8765/callback` as an authorized redirect URI, then
+   download its JSON again. The helper uses a local browser callback; no public
+   callback endpoint on the VPS is needed.
+3. Run on that local computer (Python 3.10+):
+
+   ```sh
+   python3 scripts/authorize-google-drive.py --client-json /path/to/client.json
+   ```
+
+   Sign in to the Google account whose storage you want to use. The helper
+   requests only `drive.file`, uses PKCE and validates OAuth state. It saves
+   `client_id.txt`, `client_secret.txt` and `refresh_token.txt` under
+   `secrets/google-drive/`, with owner-only file permissions on Unix. Tokens are
+   never printed. Transfer these files securely to the VPS. Protect the downloaded
+   client JSON too; keep it outside the repository and Docker build context.
+4. Add the following to `.env`, using the contents of `client_id.txt` for the ID:
+
+   ```dotenv
+   Storage__Provider=GoogleDrive
+   GoogleDrive__ClientId=your-client-id.apps.googleusercontent.com
+   GoogleDrive__ClientSecretFile=/run/secrets/google_drive_client_secret
+   GoogleDrive__RefreshTokenFile=/run/secrets/google_drive_refresh_token
+   ```
+
+5. Add these entries to your personal `compose.override.yml` (merge them with
+   any existing VPN port override):
+
+   ```yaml
+   services:
+     api:
+       secrets:
+         - google_drive_client_secret
+         - google_drive_refresh_token
+   secrets:
+     google_drive_client_secret:
+       file: ./secrets/google-drive/client_secret.txt
+     google_drive_refresh_token:
+       file: ./secrets/google-drive/refresh_token.txt
+   ```
+
+6. Recreate the API with `docker compose up -d`. When using explicit `-f` flags,
+   include `-f compose.override.yml` as well; Compose does not automatically add
+   the personal override when an explicit file list is used.
+
+On first use the provider creates an app-marked `LuminaPath` folder in My Drive,
+with separate `uploads` and `backups` subfolders. The `drive.file` grant covers
+files created/authorized for this OAuth app; it does not grant access to arbitrary
+pre-existing Drive files just because they are moved into a folder. Keep the same
+OAuth client when reauthorizing. An external consent screen left in **Testing**
+usually produces a Drive refresh token that expires after seven days; configure
+its publishing status for ongoing use before authorizing. Revoked/expired tokens
+require reauthorization. See [Google's scope guidance](https://developers.google.com/workspace/drive/api/guides/api-specific-auth)
+and [OAuth token expiration](https://developers.google.com/identity/protocols/oauth2#expiration).
+
+| Variable | Default | When to change |
+|---|---|---|
+| `GoogleDrive__ClientId` | empty | Required with the Drive provider. |
+| `GoogleDrive__ClientSecret` / `GoogleDrive__ClientSecretFile` | empty | Client secret or mounted secret-file path. |
+| `GoogleDrive__RefreshToken` / `GoogleDrive__RefreshTokenFile` | empty | Offline grant from the authorization helper or mounted secret-file path. |
+| `GoogleDrive__FolderName` | `LuminaPath` | Root folder name; use distinct names for independent installations. |
+| `GoogleDrive__FolderId` | empty (auto-create/find) | Existing root folder accessible to this OAuth app. Its marked subfolders are still isolated. |
+| `GoogleDrive__UploadBackups` | `true` | Copy each newly completed database dump to Drive; set false for uploads only. |
+| `GoogleDrive__CacheMinutes` | `5` | In-memory upload-download cache lifetime (0 disables, maximum 60). |
+
+The cache is bounded to 32 MiB per API process and caches files up to 4 MiB.
+Large transfers use temporary local disk and resumable, bounded-memory uploads.
+Drive filenames are not unique: ambiguous duplicates cause an error instead of
+selecting a file arbitrarily. Use a single API writer per Drive root; do not modify
+its files manually. An interrupted upload can be retried; if completion was
+uncertain, verify the existing file before retrying or removing it.
+
+Backup jobs still create a local dump first. A failed Drive upload marks the job
+failed and **retains the completed local dump**. Existing backup downloads and
+local retention work as before. Remote backup copies are retained independently:
+local cleanup and orphan-upload cleanup never delete Drive backups. Manage their
+retention in Drive and download a dump from the `backups` folder for a normal
+`pg_restore` recovery. Existing local backups are not automatically copied.
+
+#### Migrating existing filesystem uploads
+
+Changing providers does not automatically copy existing files. Stop the API and
+frontend first so uploads and orphan cleanup cannot race with migration. Back up
+your database and source volume. Configure Drive as above, then run a dry run
+(the command can initialize the dedicated Drive folders, but does not copy files):
+
+```sh
+docker compose stop api frontend
+docker compose run --rm --no-deps api --migrate-storage=/app/App_Data/storage --dry-run=true
+```
+
+Copy and verify the files:
+
+```sh
+docker compose run --rm --no-deps api --migrate-storage=/app/App_Data/storage --dry-run=false
+docker compose up -d
+```
+
+Use the same Compose file list as your installation, including secret/VPN overrides.
+The one-off command does not start the web server, run database migrations or run
+background jobs. It preserves filenames so database references remain valid,
+verifies SHA-256 after copying, skips identical existing files, and stops on a
+conflicting file without overwriting it. Source files are never deleted. Only
+files directly in the source directory are migrated; metadata sidecars,
+subdirectories (including `backups`) and symbolic links are not copied. Symbolic
+links cause an error. Keep the source volume until verification and backup are
+complete. Azure-to-Drive migration requires exporting blobs with their original
+names to a local directory first.
 
 ### Frontend runtime
 

@@ -64,6 +64,7 @@ dotnet restore LuminaPath.sln
 dotnet build LuminaPath.sln --configuration Release --no-restore
 dotnet test LuminaPath.sln --configuration Release --no-build
 python3 scripts/check-compose.py
+python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
 For the frontend:

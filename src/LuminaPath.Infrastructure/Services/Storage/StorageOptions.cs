@@ -7,6 +7,7 @@ namespace LuminaPath.Infrastructure.Services.Storage;
 public sealed partial class StorageOptions
 {
     public const string SectionName = "Storage";
+    public const string GoogleDriveProvider = "GoogleDrive";
     public const string AzureProvider = "Azure";
     public const string FileSystemProvider = "FileSystem";
 
@@ -15,6 +16,7 @@ public sealed partial class StorageOptions
     public string AzureBlobConnectionString { get; set; } = string.Empty;
     public string AzureBlobContainerName { get; set; } = "media";
 
+    public bool UsesGoogleDrive => Provider.Equals(GoogleDriveProvider, StringComparison.OrdinalIgnoreCase);
     public bool UsesFileSystem => Provider.Equals(FileSystemProvider, StringComparison.OrdinalIgnoreCase);
     public bool UsesAzure => Provider.Equals(AzureProvider, StringComparison.OrdinalIgnoreCase);
 
@@ -54,7 +56,7 @@ public sealed partial class StorageOptions
 
     internal static bool IsSupportedProvider(StorageOptions options)
     {
-        return options.UsesAzure || options.UsesFileSystem;
+        return options.UsesAzure || options.UsesFileSystem || options.UsesGoogleDrive;
     }
 
     internal static bool HasValidFileSystemPath(StorageOptions options)

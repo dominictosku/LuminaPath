@@ -22,7 +22,7 @@ internal static class PersistenceServiceCollectionExtensions
         return services;
     }
 
-    private static string GetConnectionString(IConfiguration config)
+    internal static string GetConnectionString(IConfiguration config)
     {
         var explicitConnectionString = ConfigurationValues.FirstNonEmpty(
             config.GetConnectionString("Default"),

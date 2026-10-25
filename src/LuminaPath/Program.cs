@@ -1,6 +1,7 @@
 using LuminaPath;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Infrastructure;
+using LuminaPath.Infrastructure.Services.Storage;
 using MudBlazor.Services;
 using Radzen;
 using Serilog;
@@ -34,6 +35,15 @@ try
     builder.Services.AddScoped<IObjectMapper, ObjectMapper>();
 
     var app = builder.Build();
+
+    if (builder.Configuration["migrate-storage"] is { } sourceDirectory)
+    {
+        await using var scope = app.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<StorageMigrationService>()
+            .MigrateAsync(sourceDirectory, builder.Configuration.GetValue("dry-run", true));
+        await app.DisposeAsync();
+        return;
+    }
 
     app.UseSerilogRequestLogging(options =>
     {

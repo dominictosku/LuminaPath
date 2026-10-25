@@ -1,4 +1,6 @@
 using LuminaPath.Core.Interfaces;
+using LuminaPath.Infrastructure.Services.Application;
+using Microsoft.Extensions.Options;
 using LuminaPath.Infrastructure.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,12 +16,30 @@ internal static class StorageServiceCollectionExtensions
         services.AddOptions<StorageOptions>()
             .Bind(config.GetSection(StorageOptions.SectionName))
             .PostConfigure(options => StorageOptions.ApplyFallbacks(options, config))
-            .Validate(StorageOptions.IsSupportedProvider, "Storage:Provider must be either 'Azure' or 'FileSystem'.")
+            .Validate(StorageOptions.IsSupportedProvider, "Storage:Provider must be 'Azure', 'FileSystem' or 'GoogleDrive'.")
             .Validate(StorageOptions.HasValidFileSystemPath, "Storage:Path must be a valid path when Storage:Provider is 'FileSystem'.")
             .Validate(StorageOptions.HasValidAzureConfiguration, "Azure blob storage requires Azure:BlobConnectionString and a valid Azure:BlobContainerName when Storage:Provider is 'Azure'.")
             .ValidateOnStart();
 
         var storageOptions = StorageOptions.FromConfiguration(config);
+        services.AddScoped<StorageMigrationService>();
+        if (storageOptions.UsesGoogleDrive)
+        {
+            services.AddOptions<GoogleDriveOptions>()
+                .Bind(config.GetSection(GoogleDriveOptions.SectionName))
+                .PostConfigure(options => GoogleDriveOptions.ReadSecrets(options, config))
+                .Validate(GoogleDriveOptions.IsValid, "GoogleDrive requires ClientId, ClientSecret (or ClientSecretFile), RefreshToken (or RefreshTokenFile), a FolderName and CacheMinutes between 0 and 60.")
+                .ValidateOnStart();
+            services.AddSingleton(sp => new GoogleDriveClient(new HttpClient(new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+                AllowAutoRedirect = false
+            }), sp.GetRequiredService<IOptions<GoogleDriveOptions>>()));
+            services.AddSingleton<IStorageService, GoogleDriveStorage>();
+            if (config.GetValue("GoogleDrive:UploadBackups", true))
+                services.AddSingleton<IBackupArchive, GoogleDriveBackupArchive>();
+            return services;
+        }
         if (storageOptions.UsesFileSystem)
         {
             AddFileSystemStorage(services, storageOptions);
@@ -32,7 +52,7 @@ internal static class StorageServiceCollectionExtensions
             return services;
         }
 
-        throw new InvalidOperationException("Unsupported storage provider. Set Storage:Provider to 'Azure' or 'FileSystem'.");
+        throw new InvalidOperationException("Unsupported storage provider. Set Storage:Provider to 'Azure', 'FileSystem' or 'GoogleDrive'.");
     }
 
     private static void AddFileSystemStorage(IServiceCollection services, StorageOptions storageOptions)

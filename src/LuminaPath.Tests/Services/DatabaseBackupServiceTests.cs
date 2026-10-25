@@ -124,6 +124,55 @@ public class DatabaseBackupServiceTests : IDisposable
         Assert.True(File.Exists(newest));
     }
 
+    [UnixFact]
+    public async Task RemoteUploadFailure_RetainsCompletedLocalBackup()
+    {
+        var archive = new Mock<IBackupArchive>();
+        archive.Setup(value => value.SaveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new IOException("remote failure"));
+        var service = CreateDumpService(archive.Object);
+        var result = await service.CreateBackupAsync();
+        Assert.False(result.IsSuccess);
+        Assert.Contains("local backup was retained", result.Match(_ => "", failure => string.Join(";", failure.errorMessage)));
+        Assert.Single(Directory.GetFiles(_backupDirectory, "*.dump"));
+    }
+
+    [UnixFact]
+    public async Task ComposeDatabaseSettings_AreUsedForBackupAndRemoteCopy()
+    {
+        var archive = new Mock<IBackupArchive>();
+        archive.Setup(value => value.SaveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        var service = CreateDumpService(archive.Object);
+        var result = await service.CreateBackupAsync();
+        Assert.True(result.IsSuccess);
+        archive.Verify(value => value.SaveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal("backup", await File.ReadAllTextAsync(Assert.Single(Directory.GetFiles(_backupDirectory, "*.dump"))));
+    }
+
+    private DatabaseBackupService CreateDumpService(IBackupArchive archive)
+    {
+        Directory.CreateDirectory(_backupDirectory);
+        var executable = Path.Combine(_backupDirectory, "pg-dump-test");
+        File.WriteAllText(executable, "#!/bin/sh\nwhile [ \"$#\" -gt 0 ]; do\ncase \"$1\" in\n--file) output=\"$2\"; shift;;\n--host) [ \"$2\" = db ] || exit 2; shift;;\nesac\nshift\ndone\n[ \"$PGPASSWORD\" = test-password ] || exit 3\nprintf backup > \"$output\"\n");
+        if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(executable, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Database:Host"] = "db", ["POSTGRES_DB"] = "luminapath", ["POSTGRES_USER"] = "luminapath", ["POSTGRES_PASSWORD"] = "test-password"
+        }).Build();
+        return new DatabaseBackupService(config, Options.Create(new DatabaseBackupOptions
+        {
+            Directory = _backupDirectory, PgDumpPath = executable
+        }), new Mock<ILogger<DatabaseBackupService>>().Object, archive);
+    }
+
+    private sealed class UnixFactAttribute : FactAttribute
+    {
+        public UnixFactAttribute()
+        {
+            if (OperatingSystem.IsWindows()) Skip = "The pg_dump process fixture uses a POSIX shell.";
+        }
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_backupDirectory))

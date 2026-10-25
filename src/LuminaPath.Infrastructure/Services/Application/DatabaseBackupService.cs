@@ -14,12 +14,14 @@ public sealed class DatabaseBackupService
     private readonly DatabaseBackupOptions _options;
     private readonly ILogger<DatabaseBackupService> _logger;
     private readonly Func<DateTimeOffset> _now;
+    private readonly IBackupArchive? _archive;
 
     public DatabaseBackupService(
         IConfiguration configuration,
         IOptions<DatabaseBackupOptions> options,
-        ILogger<DatabaseBackupService> logger)
-        : this(configuration, options, logger, () => DateTimeOffset.UtcNow)
+        ILogger<DatabaseBackupService> logger,
+        IBackupArchive? archive = null)
+        : this(configuration, options, logger, () => DateTimeOffset.UtcNow, archive)
     {
     }
 
@@ -27,12 +29,14 @@ public sealed class DatabaseBackupService
         IConfiguration configuration,
         IOptions<DatabaseBackupOptions> options,
         ILogger<DatabaseBackupService> logger,
-        Func<DateTimeOffset> now)
+        Func<DateTimeOffset> now,
+        IBackupArchive? archive = null)
     {
         _configuration = configuration;
         _options = options.Value;
         _logger = logger;
         _now = now;
+        _archive = archive;
     }
 
     public Task<IReadOnlyList<DatabaseBackupInfo>> GetBackupsAsync(CancellationToken cancellationToken = default)
@@ -103,14 +107,9 @@ public sealed class DatabaseBackupService
 
     public async Task<Result<DatabaseBackupInfo, FailedResult>> CreateBackupAsync(CancellationToken cancellationToken = default)
     {
-        var connectionString = ConfigurationValues.FirstNonEmpty(
-            _configuration.GetConnectionString("Default"),
-            _configuration["POSTGRESQL_DB"]);
-
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            return new FailedResult("Missing database connection string.");
-        }
+        string connectionString;
+        try { connectionString = PersistenceServiceCollectionExtensions.GetConnectionString(_configuration); }
+        catch (InvalidOperationException) { return new FailedResult("Missing database connection string."); }
 
         NpgsqlConnectionStringBuilder connection;
         try
@@ -133,6 +132,7 @@ public sealed class DatabaseBackupService
 
         var filePath = Path.Combine(directory, CreateBackupFileName(connection.Database));
         var processInfo = CreatePgDumpStartInfo(connection, filePath);
+        var completed = false;
 
         try
         {
@@ -173,14 +173,18 @@ public sealed class DatabaseBackupService
                     : detail.Trim());
             }
 
+            if (!File.Exists(filePath) || new FileInfo(filePath).Length == 0)
+                throw new IOException("pg_dump did not produce a non-empty backup file.");
+            completed = true;
+            if (_archive is not null) await _archive.SaveAsync(filePath, cancellationToken);
             return CreateBackupInfo(filePath);
         }
         catch (OperationCanceledException)
         {
-            DeletePartialBackup(filePath);
+            if (!completed) DeletePartialBackup(filePath);
             throw;
         }
-        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or FileNotFoundException)
+        catch (Exception ex) when (!completed && ex is (System.ComponentModel.Win32Exception or FileNotFoundException))
         {
             DeletePartialBackup(filePath);
             _logger.LogWarning(ex, "pg_dump executable was not found.");
@@ -188,6 +192,11 @@ public sealed class DatabaseBackupService
         }
         catch (Exception ex)
         {
+            if (completed)
+            {
+                _logger.LogWarning("Remote backup upload failed ({ErrorType}); local backup retained.", ex.GetType().Name);
+                return new FailedResult("Database dump created locally, but its remote upload failed. The local backup was retained; check Google Drive authorization, quota and connectivity.");
+            }
             DeletePartialBackup(filePath);
             _logger.LogWarning(ex, "Could not create PostgreSQL backup.");
             return new FailedResult("Could not create database backup.");
@@ -263,7 +272,7 @@ public sealed class DatabaseBackupService
     {
         var prefix = string.IsNullOrWhiteSpace(_options.FilePrefix) ? "luminapath" : _options.FilePrefix.Trim();
         var safeDatabaseName = SanitizeFileName(databaseName);
-        return $"{SanitizeFileName(prefix)}-{safeDatabaseName}-{_now():yyyyMMdd-HHmmss}.dump";
+        return $"{SanitizeFileName(prefix)}-{safeDatabaseName}-{_now():yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.dump";
     }
 
     private static string SanitizeFileName(string value)
