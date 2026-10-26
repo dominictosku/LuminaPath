@@ -130,17 +130,37 @@ public sealed class GoogleDriveStorageTests
             await File.WriteAllBytesAsync(Path.Combine(directory, "cover.png"), [1, 2]);
             Directory.CreateDirectory(Path.Combine(directory, "backups"));
             await File.WriteAllBytesAsync(Path.Combine(directory, "backups", "db.dump"), [3]);
-            var migration = new StorageMigrationService(fixture.Storage, NullLogger<StorageMigrationService>.Instance);
-            Assert.Equal(1, (await migration.MigrateAsync(directory, dryRun: true)).Copied);
+            var migration = new StorageMigrationService(NullLogger<StorageMigrationService>.Instance);
+            var source = new FileSystemStorage(directory, NullLogger<FileSystemStorage>.Instance);
+            Assert.Equal(1, (await migration.MigrateAsync(source, fixture.Storage, dryRun: true)).Copied);
             Assert.Empty(fixture.Handler.Files);
-            Assert.Equal(1, (await migration.MigrateAsync(directory, dryRun: false)).Copied);
+            Assert.Equal(1, (await migration.MigrateAsync(source, fixture.Storage, dryRun: false)).Copied);
             Assert.True(File.Exists(Path.Combine(directory, "cover.png")));
-            Assert.Equal(1, (await migration.MigrateAsync(directory, dryRun: false)).Skipped);
+            Assert.Equal(1, (await migration.MigrateAsync(source, fixture.Storage, dryRun: false)).Skipped);
             await File.WriteAllBytesAsync(Path.Combine(directory, "cover.png"), [9]);
-            await Assert.ThrowsAsync<IOException>(() => migration.MigrateAsync(directory, dryRun: false));
+            await Assert.ThrowsAsync<IOException>(() => migration.MigrateAsync(source, fixture.Storage, dryRun: false));
             Assert.Equal(new byte[] { 1, 2 }, Assert.Single(fixture.Handler.Files.Values).Bytes);
         }
         finally { Directory.Delete(directory, true); }
+    }
+
+    [Fact]
+    public async Task MigrationFromDrive_PreservesEmptyAndExtensionlessFiles()
+    {
+        using var fixture = new DriveFixture();
+        Assert.False((await fixture.Storage.UploadExactAsync(new MemoryStream([]), "empty", "image/png")).Error);
+        Assert.False((await fixture.Storage.UploadExactAsync(new MemoryStream([1, 2]), "cover", "image/png")).Error);
+        var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var filesystem = new FileSystemStorage(directory, NullLogger<FileSystemStorage>.Instance);
+            var migration = new StorageMigrationService(NullLogger<StorageMigrationService>.Instance);
+            Assert.Equal(2, (await migration.MigrateAsync(fixture.Storage, filesystem, false)).Copied);
+            Assert.Empty(await File.ReadAllBytesAsync(Path.Combine(directory, "empty")));
+            Assert.Equal(new byte[] { 1, 2 }, await File.ReadAllBytesAsync(Path.Combine(directory, "cover")));
+            Assert.Equal(2, (await migration.MigrateAsync(filesystem, fixture.Storage, false)).Skipped);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }
 
     private static byte[] ReadAll(Stream stream)
@@ -231,8 +251,13 @@ public sealed class GoogleDriveStorageTests
             {
                 using var json = await JsonDocument.ParseAsync(await request.Content!.ReadAsStreamAsync(ct), cancellationToken: ct);
                 Assert.False(json.RootElement.TryGetProperty("permissions", out _));
-                CreatedFolders.Add(json.RootElement.GetProperty("name").GetString()!);
-                return Json(new { id = json.RootElement.GetProperty("id").GetString() });
+                var metadata = json.RootElement;
+                if (metadata.GetProperty("mimeType").GetString() == "application/vnd.google-apps.folder")
+                    CreatedFolders.Add(metadata.GetProperty("name").GetString()!);
+                else
+                    Files.Add(metadata.GetProperty("id").GetString()!, new(metadata.GetProperty("name").GetString()!,
+                        metadata.GetProperty("parents")[0].GetString()!, metadata.GetProperty("mimeType").GetString()!, []));
+                return Json(new { id = metadata.GetProperty("id").GetString() });
             }
             if (uri.AbsolutePath == "/upload/drive/v3/files")
             {

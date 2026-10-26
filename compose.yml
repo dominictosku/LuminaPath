@@ -16,9 +16,7 @@ services:
       Redis__ConnectionString: ${Redis__ConnectionString:-redis:6379}
       Database__RunMigrationsOnStartup: ${Database__RunMigrationsOnStartup:-true}
     volumes:
-      - luminapath-storage:/app/App_Data/storage
-      - luminapath-logs:/app/App_Data/logs
-      - luminapath-google-drive:/app/App_Data/google-drive
+      - luminapath-data:/app/App_Data
     depends_on:
       db:
         condition: service_healthy
@@ -100,11 +98,9 @@ services:
       - frontend
       - api
 
-# Keep these keys and the project name: existing installations retain their data.
+# Application state, database and Redis persist independently.
 volumes:
   luminapath-postgres:
-  luminapath-storage:
-  luminapath-logs:
-  luminapath-google-drive:
+  luminapath-data:
   luminapath-redis:
   luminapath-pgadmin:

@@ -54,11 +54,6 @@ public sealed partial class StorageOptions
             ?? "media";
     }
 
-    internal static bool IsSupportedProvider(StorageOptions options)
-    {
-        return options.UsesAzure || options.UsesFileSystem || options.UsesGoogleDrive;
-    }
-
     internal static bool HasValidFileSystemPath(StorageOptions options)
     {
         if (!options.UsesFileSystem)

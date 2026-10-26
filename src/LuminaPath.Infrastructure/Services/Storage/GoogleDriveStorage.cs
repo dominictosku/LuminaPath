@@ -14,6 +14,7 @@ public sealed class GoogleDriveStorage : IStorageService, IDisposable
     private readonly SemaphoreSlim _writes = new(1, 1);
     private readonly object _cacheLock = new();
     private long _revision;
+    private int _disposed;
     private readonly MemoryCache _cache = new(new MemoryCacheOptions { SizeLimit = 32 * 1024 * 1024 });
 
     public GoogleDriveStorage(GoogleDriveClient drive, IOptions<GoogleDriveOptions> options, ILogger<GoogleDriveStorage> logger)
@@ -60,22 +61,26 @@ public sealed class GoogleDriveStorage : IStorageService, IDisposable
         catch { await temporary.DisposeAsync(); throw; }
     }
 
-    public async Task<BlobResponseDto> UploadAsync(Stream file, string fileName, string? contentType = null)
+    public Task<BlobResponseDto> UploadAsync(Stream file, string fileName, string? contentType = null) =>
+        UploadExactAsync(file, StorageFileNames.WithExtensionFromContentType(fileName, contentType), contentType);
+
+    public async Task<BlobResponseDto> UploadExactAsync(Stream file, string fileName, string? contentType = null,
+        CancellationToken cancellationToken = default)
     {
-        var name = StorageFileNames.WithExtensionFromContentType(fileName, contentType);
+        var name = StorageFileNames.GetExactName(fileName);
         contentType ??= StorageContentTypes.GetContentType(name);
-        await _writes.WaitAsync();
+        await _writes.WaitAsync(cancellationToken);
         FileStream? temporary = null;
         try
         {
             if (!file.CanSeek)
             {
                 temporary = CreateTemporaryStream();
-                await file.CopyToAsync(temporary);
+                await file.CopyToAsync(temporary, cancellationToken);
                 temporary.Position = 0;
                 file = temporary;
             }
-            await _drive.UploadAsync("uploads", name, file, contentType ?? "application/octet-stream");
+            await _drive.UploadAsync("uploads", name, file, contentType ?? "application/octet-stream", cancellationToken);
             Invalidate(name);
             return new BlobResponseDto
             {
@@ -83,6 +88,7 @@ public sealed class GoogleDriveStorage : IStorageService, IDisposable
                 Blob = new BlobDto { Name = name, ContentType = contentType, Uri = AppUrl(name) }
             };
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
             LogFailure("upload", ex);
@@ -148,6 +154,11 @@ public sealed class GoogleDriveStorage : IStorageService, IDisposable
     private static string AppUrl(string name) => "api/files/" + Uri.EscapeDataString(name);
     private static FileStream CreateTemporaryStream() => new(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()),
         FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 81920, FileOptions.Asynchronous | FileOptions.DeleteOnClose);
-    public void Dispose() { _cache.Dispose(); _writes.Dispose(); }
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        _cache.Dispose();
+        _writes.Dispose();
+    }
     private sealed record CachedFile(byte[] Bytes, string ContentType);
 }

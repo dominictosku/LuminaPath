@@ -14,6 +14,13 @@ namespace LuminaPath.Core.Interfaces
         Task<BlobResponseDto> UploadAsync(Stream file, string fileName, string? contentType = null);
 
         /// <summary>
+        /// Creates a file under the exact supplied name and content type, without overwriting.
+        /// The caller owns the input stream. Used for provider-independent migration.
+        /// </summary>
+        Task<BlobResponseDto> UploadExactAsync(Stream file, string fileName, string? contentType = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// This method downloads a file with the specified filename
         /// </summary>
         /// <param name="blobFilename">Filename</param>

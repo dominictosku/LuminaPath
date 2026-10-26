@@ -129,7 +129,15 @@ public sealed class GoogleDriveClient : IDisposable
         var id = await GenerateIdAsync(ct);
         var start = source.Position;
         var length = source.Length - start;
-        if (length == 0) throw new IOException("Cannot upload an empty file.");
+        if (length == 0)
+        {
+            using var empty = await SendAsync(() => new(HttpMethod.Post, Api + "files?fields=id")
+            {
+                Content = JsonContent.Create(new { id, name, mimeType = contentType, parents = new[] { folder } })
+            }, ct);
+            if (empty.StatusCode != HttpStatusCode.Conflict) await EnsureSuccessAsync(empty);
+            return;
+        }
         using var init = await SendAsync(() =>
         {
             var request = new HttpRequestMessage(HttpMethod.Post, "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id");

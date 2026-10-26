@@ -10,7 +10,7 @@ public sealed class GoogleDriveOptions
     public string ClientSecret { get; set; } = string.Empty;
     public string RefreshToken { get; set; } = string.Empty;
     public string? RedirectUri { get; set; }
-    public string ConnectionPath { get; set; } = Path.Combine("App_Data", "google-drive");
+    public string ConnectionPath { get; set; } = Path.Combine("App_Data", "connections", "google-drive");
     public bool HasClientCredentials => !string.IsNullOrWhiteSpace(ClientId) && !string.IsNullOrWhiteSpace(ClientSecret);
     public bool HasExternalToken => !string.IsNullOrWhiteSpace(RefreshToken);
     public bool CanConnectInBrowser => HasClientCredentials && IsValidRedirectUri(RedirectUri);

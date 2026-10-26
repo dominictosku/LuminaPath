@@ -38,7 +38,7 @@ class ComposeTests(unittest.TestCase):
                 self.fail(f'Compose validation failed: {result.stderr}')
             return json.loads(result.stdout)
 
-    def test_minimal_deployment_and_existing_volumes(self):
+    def test_minimal_deployment_and_persistent_data(self):
         config = self.render()
         services = config['services']
         self.assertEqual({'api', 'frontend', 'db', 'redis'}, set(services))
@@ -53,9 +53,9 @@ class ComposeTests(unittest.TestCase):
             self.assertNotIn('build', services[name])
         for name in ('api', 'db', 'redis'):
             self.assertFalse(services[name].get('ports'))
-        for name in ('postgres', 'storage', 'logs', 'redis', 'google-drive'):
+        for name in ('postgres', 'data', 'redis'):
             self.assertEqual(f'luminapath_luminapath-{name}', config['volumes'][f'luminapath-{name}']['name'])
-        self.assertTrue(any(v['target'] == '/app/App_Data/google-drive' and v['source'] == 'luminapath-google-drive'
+        self.assertTrue(any(v['target'] == '/app/App_Data' and v['source'] == 'luminapath-data'
                             for v in services['api']['volumes']))
         self.assertNotIn('Auth__RequireAdminApproval', api)
         self.assertNotIn('Storage__Provider', api)

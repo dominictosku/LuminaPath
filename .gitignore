@@ -368,10 +368,8 @@ FodyWeavers.xsd
 nginx/certs
 secrets/
 
-# Local file-system storage uploads
-/src/LuminaPath/App_Data/storage/
-/src/LuminaPath/App_Data/logs/
-/src/LuminaPath/App_Data/google-drive/
+# Local application data: uploads, logs, credentials and keys
+/src/LuminaPath/App_Data/
 
 # rider
 .idea

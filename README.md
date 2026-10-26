@@ -192,57 +192,6 @@ Secret files are mounted only into the services that need them and are excluded
 from Git and Docker build contexts. For a standalone deployment, copy the secrets
 overlay too. Host paths can be overridden using the variables in the reference below.
 
-### Migrating an existing installation
-
-Before updating the checkout, stop the old stack using its original files and
-`.env` location (`deploy/` for published-image installations). Use `docker compose
-down` with your original overlays, **without `-v`**, so containers are removed but
-their volumes remain. Back up your database and storage first.
-
-Move your existing `.env` to the repository root (or your standalone deployment
-folder). Move `deploy/secrets/` to `secrets/`, or update its host-path overrides.
-Translate any optional variables using this table; unchanged values can stay:
-
-| Old name | New name |
-|---|---|
-| `RUN_MIGRATIONS_ON_STARTUP` | `Database__RunMigrationsOnStartup` |
-| `AUTH_REQUIRE_ADMIN_APPROVAL` | `Auth__RequireAdminApproval` |
-| `AUTH_COOKIE_SAMESITE` | `Auth__CookieSameSite` |
-| `AUTH_COOKIE_SECURE_POLICY` | `Auth__CookieSecurePolicy` |
-| `FRONTEND_PUBLIC_URL` | `Cors__AllowedOrigins__0` |
-| `HTTPS_REDIRECT` | `Https__Redirect` |
-| `STORAGE_PROVIDER` | `Storage__Provider` |
-| `STORAGE_PATH` | `Storage__Path` (see the storage note below) |
-| `AZURE_BLOB_CONNECTION_STRING` | `Azure__BlobConnectionString` |
-| `AZURE_BLOB_CONTAINER_NAME` | `Azure__BlobContainerName` |
-| `LOG_PATH` | `Serilog__WriteTo__1__Args__path` |
-| `ConnectionStrings__Redis` | `Redis__ConnectionString` for Compose |
-
-Remove a former default proxy target of `http://luminapath-api:8080`; the new
-service address is `http://api:8080`. Root installations that relied on migrations
-being off must explicitly set `Database__RunMigrationsOnStartup=false`.
-
-The project name stays `luminapath` and volume keys are unchanged, including
-`luminapath_luminapath-postgres`, `luminapath_luminapath-storage` and
-`luminapath_luminapath-redis`. If you previously used `-p` / `COMPOSE_PROJECT_NAME`,
-keep that same project name. Service/container names change; scripts should use
-`docker compose exec api ...` or `docker compose exec db ...`.
-
-Start with `docker compose up -d` for published images, or use the development
-overlay described in [CONTRIBUTING.md](CONTRIBUTING.md#full-stack-from-source).
-For direct backend access without local builds, add a personal `compose.override.yml`:
-
-```yaml
-services:
-  api:
-    ports:
-      - "127.0.0.1:8080:8080"
-```
-
-This replaces the former backend-port overlay. The development overlay already
-exposes this port. Remove the old Compose files when migrating a standalone
-installation; the repository no longer maintains a separate `deploy/` stack.
-
 ## Environment Variables
 
 Only the three values in `.env.example` need filling in for the default stack.
@@ -410,12 +359,17 @@ File-system storage is the default.
 | `Azure__BlobConnectionString` | empty | Required when `Storage__Provider=Azure`. |
 | `Azure__BlobContainerName` | `media` | Azure container name. |
 
-Container mounts stay at `/app/App_Data/storage` and `/app/App_Data/logs`.
-Normally leave these paths unchanged. If an existing install used `STORAGE_PATH`,
-the same named volume can be mounted at the new default path without moving its
-contents. Remove the old path override to use that default. If you need a custom
-path, change both `Storage__Path` and the mount target in a personal Compose
-override, and align `DatabaseBackup__Directory` with it.
+The API uses one `luminapath-data` volume mounted at `/app/App_Data`:
+
+- `storage/`: filesystem uploads and local database backups.
+- `logs/`: application logs.
+- `connections/`: provider authorization state (currently Google Drive).
+- `keys/`: ASP.NET Data Protection keys for cookies and Calendar tokens.
+
+Future providers can keep local state under `connections/` without adding Docker
+volumes. Keep custom paths under `App_Data` to persist them automatically; paths
+outside it need their own mount. Back up the volume together with PostgreSQL and
+protect its contents, including encryption keys.
 
 | Variable | Default | When to change |
 |---|---|---|
@@ -428,10 +382,6 @@ backups in your own account. PostgreSQL, Redis, logs and temporary files stay on
 the VPS. The app keeps Drive files private and serves uploads through its existing
 authenticated `/api/files/...` routes, so the app can remain VPN-only. The VPS
 needs outbound HTTPS access to `oauth2.googleapis.com` and `www.googleapis.com`.
-
-This provider is available in images built from this change. Build the source
-with `compose.dev.yml` until a release containing it is published; setting the
-provider on an older image will fail startup validation.
 
 #### Connect from the backend (recommended)
 
@@ -462,15 +412,15 @@ provider on an older image will fail startup validation.
    Click **Connect Google Drive**, sign in to your storage account, and allow
    access. The page also links from backend Settings → Google Drive.
 5. The backend saves an encrypted offline grant. With Compose, the grant and its
-   encryption keys persist in the dedicated `luminapath-google-drive` volume,
-   outside the uploaded-file folder. Keep this volume in your server backups and
+   encryption keys persist under `App_Data/connections/google-drive` in the shared
+   `luminapath-data` volume, outside the uploaded-file folder. Keep this volume in your server backups and
    protect it: someone with both the grant and its keys can decrypt it. For a
-   deployment outside Docker, persist `App_Data/google-drive` under the API's
+   deployment outside Docker, persist `App_Data` under the API's
    content root. No Python script, token copying, or API restart is needed after
    browser authorization. Reauthorization must use the same Google account and
    OAuth client to preserve existing file references.
 6. For an empty installation, set `Storage__Provider=GoogleDrive` in `.env` and
-   recreate the API. For existing filesystem uploads, follow the migration steps
+   recreate the API. For existing uploads on another provider, follow the migration steps
    below before restarting normal traffic with the new provider. Connecting alone
    does not change the storage provider or move existing files.
 
@@ -544,7 +494,7 @@ and [OAuth token expiration](https://developers.google.com/identity/protocols/oa
 | `GoogleDrive__ClientSecret` / `GoogleDrive__ClientSecretFile` | empty | Client secret or mounted secret-file path. |
 | `GoogleDrive__RefreshToken` / `GoogleDrive__RefreshTokenFile` | empty | Optional external grant from the helper; omit for browser authorization. |
 | `GoogleDrive__RedirectUri` | empty | Exact registered Web client callback URL; required only for browser authorization. |
-| `GoogleDrive__ConnectionPath` | `App_Data/google-drive` | Persistent directory for the encrypted browser grant and its keys. Mount this path if changed in Docker. |
+| `GoogleDrive__ConnectionPath` | `App_Data/connections/google-drive` | Directory for the encrypted browser grant and its keys; included in the shared application data volume. |
 | `GoogleDrive__FolderName` | `LuminaPath` | Root folder name; use distinct names for independent installations. |
 | `GoogleDrive__FolderId` | empty (auto-create/find) | Existing root folder accessible to this OAuth app. Its marked subfolders are still isolated. |
 | `GoogleDrive__UploadBackups` | `true` | Copy each newly completed database dump to Drive; set false for uploads only. |
@@ -564,35 +514,52 @@ local cleanup and orphan-upload cleanup never delete Drive backups. Manage their
 retention in Drive and download a dump from the `backups` folder for a normal
 `pg_restore` recovery. Existing local backups are not automatically copied.
 
-#### Migrating existing filesystem uploads
+### Switching storage providers
 
-Changing providers does not automatically copy existing files. Stop the API and
-frontend first so uploads and orphan cleanup cannot race with migration. Back up
-your database and source volume. Configure Drive as above, then run a dry run
-(the command can initialize the dedicated Drive folders, but does not copy files):
+The same migration command works between any registered providers: `FileSystem`,
+`Azure` and `GoogleDrive`. Configure credentials for both source and destination;
+for Drive, authorize the account from Admin → Google Drive first. No local export
+is needed for cloud-to-cloud transfers. Migration copies application uploads only;
+PostgreSQL, Redis, local database dumps, logs and connection credentials are not
+uploaded files and stay in their own storage. Existing remote backup archives stay
+with their original provider.
+
+Stop normal traffic and background jobs before copying. Keep the app stopped
+until verification and the provider switch are complete:
 
 ```sh
 docker compose stop api frontend
-docker compose run --rm --no-deps api --migrate-storage=/app/App_Data/storage --dry-run=true
+# Preview; --dry-run=true is the default.
+docker compose run --rm --no-deps api --migrate-storage=FileSystem --to-storage=GoogleDrive
+# Copy and verify.
+docker compose run --rm --no-deps api --migrate-storage=FileSystem --to-storage=GoogleDrive --dry-run=false
 ```
 
-Copy and verify the files:
+After success, set `Storage__Provider=GoogleDrive` in `.env`, then run
+`docker compose up -d`. If you already changed that setting, leave the app stopped
+and run the same command before starting it. `--to-storage` can be omitted to use
+`Storage__Provider` as the destination. Specify the **source provider name**, not a
+filesystem path; filesystem storage uses `Storage__Path`.
 
-```sh
-docker compose run --rm --no-deps api --migrate-storage=/app/App_Data/storage --dry-run=false
-docker compose up -d
-```
+For example, Drive → Azure uses `--migrate-storage=GoogleDrive --to-storage=Azure`;
+Azure → filesystem uses `--migrate-storage=Azure --to-storage=FileSystem`.
+Use the same Compose file list and mounted secrets as the app. The command exits
+without starting the server, database migrations or background jobs.
 
-Use the same Compose file list as your installation, including secret/VPN overrides.
-The one-off command does not start the web server, run database migrations or run
-background jobs. It preserves filenames so database references remain valid,
-verifies SHA-256 after copying, skips identical existing files, and stops on a
-conflicting file without overwriting it. Source files are never deleted. Only
-files directly in the source directory are migrated; metadata sidecars,
-subdirectories (including `backups`) and symbolic links are not copied. Symbolic
-links cause an error. Keep the source volume until verification and backup are
-complete. Azure-to-Drive migration requires exporting blobs with their original
-names to a local directory first.
+Files keep their exact names and content types so database references stay valid.
+Each copied file is downloaded again and verified using SHA-256. Rerunning skips
+identical files, so completed copies survive an interrupted run. A conflicting
+name, checksum/type mismatch, unreadable file or duplicate listing stops the run
+with a nonzero exit status. Existing destination files are never overwritten and
+source files are never deleted. Inspect a failed or partial destination file
+before retrying; remove only that copy if needed, leaving the source intact.
+
+Migration uses temporary local disk for one source file at a time and bounded
+memory, including when a provider returns a non-seekable download stream. Dry runs
+read files to check conflicts but do not upload or delete files; providers may
+initialize their storage folders. The app uses flat filenames, so nested object
+keys are rejected instead of flattened. Filesystem metadata sidecars and folders
+(such as `backups`) are excluded from upload listings; symbolic links are rejected.
 
 ### Frontend runtime
 
@@ -719,9 +686,8 @@ Notes:
   stable ids (so re-syncing never duplicates) and removes events whose release
   or open quest no longer applies.
 - The OAuth refresh token is encrypted at rest with ASP.NET Data Protection.
-  In Docker the Data Protection key ring is container-local by default — if it
-  isn't persisted, links become unreadable after a redeploy and users must
-  reconnect. Persist the key ring (volume) for durable links.
+  The key ring is persisted under `App_Data/keys`, included in the shared
+  application data volume. Preserve these keys when restoring backups.
 
 ### Background jobs and backups
 

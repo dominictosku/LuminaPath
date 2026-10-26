@@ -25,6 +25,8 @@ namespace LuminaPath.Infrastructure.Services.Storage
             var container = CreateContainerClient();
             List<BlobDto> files = [];
 
+            if (!await container.ExistsAsync()) return files;
+
             await foreach (BlobItem file in container.GetBlobsAsync())
             {
                 var uri = container.Uri.ToString();
@@ -53,20 +55,19 @@ namespace LuminaPath.Infrastructure.Services.Storage
 
                 if (await file.ExistsAsync())
                 {
-                    var data = await file.OpenReadAsync();
-                    Stream blobContent = data;
-                    var content = await file.DownloadContentAsync();
+                    var properties = await file.GetPropertiesAsync();
+                    var blobContent = await file.OpenReadAsync();
 
                     return new BlobDto
                     {
                         Content = blobContent,
                         Name = blobName,
-                        ContentType = content.Value.Details.ContentType
+                        ContentType = properties.Value.ContentType
                     };
                 }
             }
             catch (RequestFailedException ex)
-                when (ex.ErrorCode == BlobErrorCode.BlobNotFound)
+                when (ex.ErrorCode == BlobErrorCode.BlobNotFound || ex.ErrorCode == BlobErrorCode.ContainerNotFound)
             {
                 _logger.LogError("File {FileName} was not found.", blobName);
             }
@@ -75,21 +76,26 @@ namespace LuminaPath.Infrastructure.Services.Storage
         }
 
 
-        public async Task<BlobResponseDto> UploadAsync(Stream blob, string fileName, string? contentType = null)
+        public Task<BlobResponseDto> UploadAsync(Stream blob, string fileName, string? contentType = null) =>
+            UploadExactAsync(blob, StorageFileNames.WithExtensionFromContentType(fileName, contentType), contentType);
+
+        public async Task<BlobResponseDto> UploadExactAsync(Stream blob, string fileName, string? contentType = null,
+            CancellationToken cancellationToken = default)
         {
             BlobResponseDto response = new();
             var container = CreateContainerClient();
-            await container.CreateIfNotExistsAsync();
-            var blobName = StorageFileNames.WithExtensionFromContentType(fileName, contentType);
+            await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
+            var blobName = StorageFileNames.GetExactName(fileName);
 
             try
             {
                 var client = container.GetBlobClient(blobName);
 
-                await using (Stream? data = blob)
+                await client.UploadAsync(blob, new BlobUploadOptions
                 {
-                    await client.UploadAsync(data, new BlobHttpHeaders { ContentType = contentType });
-                }
+                    HttpHeaders = new BlobHttpHeaders { ContentType = contentType ?? "application/octet-stream" },
+                    Conditions = new BlobRequestConditions { IfNoneMatch = ETag.All }
+                }, cancellationToken);
 
                 response.Status = $"File {blobName} Uploaded Successfully";
                 response.Error = false;
@@ -99,7 +105,7 @@ namespace LuminaPath.Infrastructure.Services.Storage
 
             }
             catch (RequestFailedException ex)
-               when (ex.ErrorCode == BlobErrorCode.BlobAlreadyExists)
+               when (ex.ErrorCode == BlobErrorCode.BlobAlreadyExists || ex.Status == 412)
             {
                 _logger.LogError(
                     "File with name {FileName} already exists in container {ContainerName}.",
@@ -136,7 +142,7 @@ namespace LuminaPath.Infrastructure.Services.Storage
                 }
             }
             catch (RequestFailedException ex)
-                when (ex.ErrorCode == BlobErrorCode.BlobNotFound)
+                when (ex.ErrorCode == BlobErrorCode.BlobNotFound || ex.ErrorCode == BlobErrorCode.ContainerNotFound)
             {
                 _logger.LogError("File {FileName} was not found.", blobName);
                 return new BlobResponseDto { Error = true, Status = $"File with name {blobName} not found." };
@@ -161,7 +167,7 @@ namespace LuminaPath.Infrastructure.Services.Storage
                 await source.DeleteAsync();
             }
             catch (RequestFailedException ex)
-                when (ex.ErrorCode == BlobErrorCode.BlobNotFound)
+                when (ex.ErrorCode == BlobErrorCode.BlobNotFound || ex.ErrorCode == BlobErrorCode.ContainerNotFound)
             {
                 _logger.LogError("File {FileName} was not found.", oldBlobName);
                 return false;

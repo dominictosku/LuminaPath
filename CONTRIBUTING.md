@@ -186,3 +186,27 @@ By submitting a contribution, you agree to provide it under the project's
 [AGPL-3.0-only license](LICENSE). You retain copyright in your contributions.
 Only submit material you have the right to license, and identify any third-party
 material and its original license.
+
+## Adding storage providers
+
+Implement `IStorageService` and register the adapter with
+`services.AddStorageProvider("ProviderName", sp => new YourStorageAdapter(...))`
+in the infrastructure storage setup. Register providers independently of the
+active `Storage:Provider` setting, so migration can resolve both endpoints.
+The registry constructs adapters lazily and reuses them; implementations must be
+thread safe and tolerate repeated disposal during service-provider shutdown.
+
+`ListAsync` must enumerate all uploaded files (including every remote page), with
+unique flat names. Downloads return caller-owned streams; missing files return
+null, while access/network failures must throw. `UploadExactAsync` must retain the
+exact name and content type, create without overwriting, leave the input stream
+open and honor cancellation. Regular uploads may infer an extension before calling
+that method. Remote download verification must see newly uploaded content rather
+than stale cached data. Keep provider credentials and backups outside upload
+listings.
+
+The shared `StorageMigrationService` then supports the new provider as either
+source or destination without provider-specific migration branches. Add adapter
+contract tests and exercise a round trip through the migration tests. Storage
+migration is an offline copy-and-verify operation; it does not move the database
+or delete source files. See the README for the operator commands.

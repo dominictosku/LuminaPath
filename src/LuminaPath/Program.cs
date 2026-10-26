@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using LuminaPath;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Infrastructure;
@@ -34,13 +35,23 @@ try
 
     builder.Services.AddScoped<IObjectMapper, ObjectMapper>();
 
+    builder.Services.AddDataProtection()
+        .SetApplicationName("LuminaPath")
+        .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "App_Data", "keys")));
+
     var app = builder.Build();
 
-    if (builder.Configuration["migrate-storage"] is { } sourceDirectory)
+    if (builder.Configuration["migrate-storage"] is { } sourceProvider)
     {
         await using var scope = app.Services.CreateAsyncScope();
+        var providers = scope.ServiceProvider.GetRequiredService<StorageProviderRegistry>();
+        var targetProvider = builder.Configuration["to-storage"]
+            ?? scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<StorageOptions>>().Value.Provider;
+        using var cancellation = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) => { e.Cancel = true; cancellation.Cancel(); };
         await scope.ServiceProvider.GetRequiredService<StorageMigrationService>()
-            .MigrateAsync(sourceDirectory, builder.Configuration.GetValue("dry-run", true));
+            .MigrateAsync(providers.Get(sourceProvider), providers.Get(targetProvider),
+                builder.Configuration.GetValue("dry-run", true), cancellation.Token);
         await app.DisposeAsync();
         return;
     }

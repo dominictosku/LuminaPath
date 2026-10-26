@@ -23,9 +23,9 @@ namespace LuminaPath.Infrastructure.Services.Storage
                 .Where(filePath => !IsMetadataFile(filePath))
                 .Select(filePath => new BlobDto
                 {
-                    Uri = filePath,
+                    Uri = CheckRegularFile(filePath),
                     Name = Path.GetFileName(filePath),
-                    ContentType = StorageContentTypes.GetContentType(filePath)
+                    ContentType = ReadContentType(filePath)
                 })
                 .ToList();
 
@@ -44,46 +44,59 @@ namespace LuminaPath.Infrastructure.Services.Storage
 
             BlobDto blob = new()
             {
-                Content = File.OpenRead(filePath),
+                Content = File.OpenRead(CheckRegularFile(filePath)),
                 Name = Path.GetFileName(filePath),
-                ContentType = StorageContentTypes.GetContentType(filePath)
+                ContentType = ReadContentType(filePath)
             };
 
             return Task.FromResult<BlobDto?>(blob);
         }
 
-        public async Task<BlobResponseDto> UploadAsync(Stream blob, string fileName, string? contentType = null)
+        public Task<BlobResponseDto> UploadAsync(Stream blob, string fileName, string? contentType = null) =>
+            UploadExactAsync(blob, StorageFileNames.WithExtensionFromContentType(fileName, contentType), contentType);
+
+        public async Task<BlobResponseDto> UploadExactAsync(Stream blob, string fileName, string? contentType = null,
+            CancellationToken cancellationToken = default)
         {
-            BlobResponseDto response = new();
-            var filePath = GetStorageFilePath(StorageFileNames.WithExtensionFromContentType(fileName, contentType));
-            var storedFileName = Path.GetFileName(filePath);
-
-            if (File.Exists(filePath))
-            {
-                response.Status = $"File with name {storedFileName} already exists. Please use another name to store your file.";
-                response.Error = true;
-                return response;
-            }
-
+            var storedFileName = StorageFileNames.GetExactName(fileName);
+            if (IsMetadataFile(storedFileName))
+                throw new InvalidOperationException("The .contenttype suffix is reserved for filesystem metadata.");
+            var filePath = GetStorageFilePath(storedFileName);
+            if (File.Exists(filePath)) return new BlobResponseDto { Error = true, Status = "File already exists." };
+            var staging = Path.Combine(_storagePath, ".pending");
+            Directory.CreateDirectory(staging);
+            CheckRegularFile(staging);
+            var temporary = Path.Combine(staging, Guid.NewGuid().ToString("N"));
+            var created = false;
+            contentType ??= StorageContentTypes.GetContentType(fileName) ?? "application/octet-stream";
             try
             {
-                await using var fileStream = File.Create(filePath);
-                await blob.CopyToAsync(fileStream);
-
-                response.Status = $"File {storedFileName} Uploaded Successfully";
-                response.Error = false;
-                response.Blob.Uri = filePath;
-                response.Blob.Name = storedFileName;
-                response.Blob.ContentType = StorageContentTypes.GetContentType(filePath);
+                await using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                    81920, FileOptions.Asynchronous))
+                    await blob.CopyToAsync(stream, cancellationToken);
+                await File.WriteAllTextAsync(temporary + ".contenttype", contentType, cancellationToken);
+                // Publish only a complete file; a concurrent create must never be overwritten.
+                File.Move(temporary, filePath, overwrite: false);
+                created = true;
+                File.Move(temporary + ".contenttype", GetContentTypeMetadataPath(filePath), overwrite: true);
+                return new BlobResponseDto
+                {
+                    Status = "File uploaded successfully.",
+                    Blob = new BlobDto { Uri = filePath, Name = storedFileName, ContentType = contentType }
+                };
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
+                if (created) File.Delete(filePath);
                 _logger.LogError(ex, "Could not upload file {FileName}.", storedFileName);
-                response.Status = "Unexpected storage error while uploading the file. Check the server logs.";
-                response.Error = true;
+                return new BlobResponseDto { Error = true, Status = "File upload failed. Check the server logs." };
             }
-
-            return response;
+            finally
+            {
+                File.Delete(temporary);
+                File.Delete(temporary + ".contenttype");
+            }
         }
 
         public Task<BlobResponseDto> DeleteAsync(string blobFilename)
@@ -128,8 +141,11 @@ namespace LuminaPath.Infrastructure.Services.Storage
                 return Task.FromResult(false);
             }
 
+            CheckRegularFile(oldPath);
             File.Move(oldPath, newPath);
-            DeleteContentType(oldPath);
+            var metadata = GetContentTypeMetadataPath(oldPath);
+            if (File.Exists(metadata))
+                File.Move(CheckRegularFile(metadata), GetContentTypeMetadataPath(newPath), overwrite: true);
             return Task.FromResult(true);
         }
 
@@ -146,6 +162,21 @@ namespace LuminaPath.Infrastructure.Services.Storage
             }
 
             return fullPath;
+        }
+
+        private static string CheckRegularFile(string path)
+        {
+            if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+                throw new IOException("Storage does not follow symbolic links.");
+            return path;
+        }
+
+        private static string? ReadContentType(string path)
+        {
+            var metadata = GetContentTypeMetadataPath(path);
+            return File.Exists(metadata)
+                ? File.ReadAllText(CheckRegularFile(metadata))
+                : StorageContentTypes.GetContentType(path);
         }
 
         private static void DeleteContentType(string filePath)

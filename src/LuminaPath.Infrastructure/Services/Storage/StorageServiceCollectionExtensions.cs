@@ -16,7 +16,9 @@ internal static class StorageServiceCollectionExtensions
         services.AddOptions<StorageOptions>()
             .Bind(config.GetSection(StorageOptions.SectionName))
             .PostConfigure(options => StorageOptions.ApplyFallbacks(options, config))
-            .Validate(StorageOptions.IsSupportedProvider, "Storage:Provider must be 'Azure', 'FileSystem' or 'GoogleDrive'.")
+            .Validate<IEnumerable<StorageProviderRegistration>>((options, registrations) => registrations.Any(
+                provider => provider.Name.Equals(options.Provider, StringComparison.OrdinalIgnoreCase)),
+                "Storage:Provider must name a registered storage provider.")
             .Validate(StorageOptions.HasValidFileSystemPath, "Storage:Path must be a valid path when Storage:Provider is 'FileSystem'.")
             .Validate(StorageOptions.HasValidAzureConfiguration, "Azure blob storage requires Azure:BlobConnectionString and a valid Azure:BlobContainerName when Storage:Provider is 'Azure'.")
             .ValidateOnStart();
@@ -34,28 +36,39 @@ internal static class StorageServiceCollectionExtensions
             sp.GetRequiredService<IOptions<GoogleDriveOptions>>(), sp.GetRequiredService<IHostEnvironment>()));
         services.AddSingleton(sp => new GoogleDriveConnectionService(CreateDriveHttpClient(),
             sp.GetRequiredService<IOptions<GoogleDriveOptions>>(), sp.GetRequiredService<GoogleDriveConnectionStore>()));
-        if (storageOptions.UsesGoogleDrive)
+        services.AddSingleton(sp => new GoogleDriveClient(CreateDriveHttpClient(),
+            sp.GetRequiredService<IOptions<GoogleDriveOptions>>(), sp.GetRequiredService<GoogleDriveConnectionStore>()));
+        services.AddStorageProvider(StorageOptions.GoogleDriveProvider, sp =>
         {
-            services.AddSingleton(sp => new GoogleDriveClient(CreateDriveHttpClient(),
-                sp.GetRequiredService<IOptions<GoogleDriveOptions>>(), sp.GetRequiredService<GoogleDriveConnectionStore>()));
-            services.AddSingleton<IStorageService, GoogleDriveStorage>();
-            if (config.GetValue("GoogleDrive:UploadBackups", true))
-                services.AddSingleton<IBackupArchive, GoogleDriveBackupArchive>();
-            return services;
-        }
-        if (storageOptions.UsesFileSystem)
+            var options = sp.GetRequiredService<IOptions<GoogleDriveOptions>>();
+            if (!GoogleDriveOptions.IsValid(options.Value))
+                throw new InvalidOperationException("Configure GoogleDrive credentials before using this storage provider.");
+            return new GoogleDriveStorage(sp.GetRequiredService<GoogleDriveClient>(), options,
+                sp.GetRequiredService<ILogger<GoogleDriveStorage>>());
+        });
+        services.AddStorageProvider(StorageOptions.FileSystemProvider, sp =>
         {
-            AddFileSystemStorage(services, storageOptions);
-            return services;
-        }
-
-        if (storageOptions.UsesAzure)
+            var environment = sp.GetRequiredService<IHostEnvironment>();
+            var fullPath = Path.GetFullPath(storageOptions.Path, environment.ContentRootPath);
+            return new FileSystemStorage(fullPath, sp.GetRequiredService<ILogger<FileSystemStorage>>());
+        });
+        services.AddStorageProvider(StorageOptions.AzureProvider, sp =>
         {
-            AddAzureStorage(services, storageOptions);
-            return services;
-        }
-
-        throw new InvalidOperationException("Unsupported storage provider. Set Storage:Provider to 'Azure', 'FileSystem' or 'GoogleDrive'.");
+            if (!StorageOptions.HasValidAzureConfiguration(new StorageOptions
+            {
+                Provider = StorageOptions.AzureProvider,
+                AzureBlobConnectionString = storageOptions.AzureBlobConnectionString,
+                AzureBlobContainerName = storageOptions.AzureBlobContainerName
+            })) throw new InvalidOperationException("Configure Azure blob storage credentials before using this provider.");
+            return new AzureStorage(storageOptions.AzureBlobConnectionString, storageOptions.AzureBlobContainerName,
+                sp.GetRequiredService<ILogger<AzureStorage>>());
+        });
+        services.AddSingleton<StorageProviderRegistry>();
+        services.AddSingleton<IStorageService>(sp => sp.GetRequiredService<StorageProviderRegistry>()
+            .Get(sp.GetRequiredService<IOptions<StorageOptions>>().Value.Provider));
+        if (storageOptions.UsesGoogleDrive && config.GetValue("GoogleDrive:UploadBackups", true))
+            services.AddSingleton<IBackupArchive, GoogleDriveBackupArchive>();
+        return services;
     }
 
     // Avoid logging OAuth tokens or resumable-session URLs through HttpClientFactory.
@@ -63,26 +76,4 @@ internal static class StorageServiceCollectionExtensions
     {
         PooledConnectionLifetime = TimeSpan.FromMinutes(2), AllowAutoRedirect = false
     });
-
-    private static void AddFileSystemStorage(IServiceCollection services, StorageOptions storageOptions)
-    {
-        services.AddScoped<IStorageService, FileSystemStorage>(sp =>
-        {
-            var environment = sp.GetRequiredService<IHostEnvironment>();
-            var fullPath = Path.IsPathRooted(storageOptions.Path)
-                ? storageOptions.Path
-                : Path.Combine(environment.ContentRootPath, storageOptions.Path);
-
-            return new FileSystemStorage(fullPath, sp.GetRequiredService<ILogger<FileSystemStorage>>());
-        });
-    }
-
-    private static void AddAzureStorage(IServiceCollection services, StorageOptions storageOptions)
-    {
-        services.AddScoped<IStorageService, AzureStorage>(sp =>
-            new AzureStorage(
-                storageOptions.AzureBlobConnectionString,
-                storageOptions.AzureBlobContainerName,
-                sp.GetRequiredService<ILogger<AzureStorage>>()));
-    }
 }

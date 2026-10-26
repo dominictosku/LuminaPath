@@ -14,6 +14,13 @@ namespace LuminaPath.Infrastructure.Services.Storage
             return safeFileName;
         }
 
+        public static string GetExactName(string fileName)
+        {
+            if (GetSafeName(fileName) != fileName)
+                throw new InvalidOperationException("Storage names must be flat filenames without directory segments.");
+            return fileName;
+        }
+
         public static string WithExtensionFromContentType(string fileName, string? contentType)
         {
             var safeFileName = GetSafeName(fileName);
