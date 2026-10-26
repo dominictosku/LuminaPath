@@ -54,6 +54,10 @@ def collect(item, folders):
         if upstream is not None and upstream.attrib.get("commit"):
             repo = upstream.attrib["url"].rstrip("/").removesuffix(".git")
             commit = upstream.attrib["commit"]
+        elif identity in {"AWSSDK.S3/4.0.104.6", "AWSSDK.Core/4.0.102.13"}:
+            # AWS NuGet packages declare Apache-2.0 but omit repository/commit metadata.
+            # Pin the upstream license/NOTICE source reviewed when adding these versions.
+            repo, commit = "https://github.com/aws/aws-sdk-net", "6ade2131198f6445516cde6a015199e02a893295"
         elif identity == "ExcelNumberFormat/1.1.0":
             repo, commit = "https://github.com/andersnm/ExcelNumberFormat", "v1.1.0"
         else:

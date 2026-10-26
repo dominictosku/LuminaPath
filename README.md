@@ -354,7 +354,7 @@ File-system storage is the default.
 
 | Variable | Default | Notes |
 |---|---|---|
-| `Storage__Provider` | `FileSystem` | `Azure` for Azure Blob Storage or `GoogleDrive` for private Google Drive storage. |
+| `Storage__Provider` | `FileSystem` | `Azure`, `GoogleDrive` or `S3` for remote storage. |
 | `Storage__Path` | `App_Data/storage` (under `/app` in Docker) | File-system storage path inside the API container. |
 | `Azure__BlobConnectionString` | empty | Required when `Storage__Provider=Azure`. |
 | `Azure__BlobContainerName` | `media` | Azure container name. |
@@ -374,6 +374,71 @@ protect its contents, including encryption keys.
 | Variable | Default | When to change |
 |---|---|---|
 | `Serilog__WriteTo__1__Args__path` | `App_Data/logs/luminapath-.log` | File log destination; keep it within a persisted mount. |
+
+### S3 storage
+
+Select `S3` to use an existing private AWS S3 bucket. The app does not create
+buckets or change bucket policies/ACLs. Keep public access blocked; uploaded files
+are served through authenticated `/api/files/...` routes, including on VPN-only
+installations.
+
+```dotenv
+Storage__Provider=S3
+S3__BucketName=your-private-bucket
+S3__Region=eu-central-1
+```
+
+Authentication uses the AWS SDK credential chain by default: an IAM role on AWS,
+or `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` (plus `AWS_SESSION_TOKEN` for
+session credentials). These can be set in `.env` for the API. Alternatively use
+`S3__AccessKeyId` with `S3__SecretAccessKey`, or their `File` variants for mounted
+Docker secrets. Never commit credential files. No new Compose volume or required
+setting is added for installations using another provider.
+
+For an S3-compatible service, also set `S3__ServiceUrl` to its API origin, e.g.
+`https://storage.example.com`. Set `S3__ForcePathStyle=true` when that service
+requires path-style bucket addressing, and use its documented signing region
+(`us-east-1` is the default; some services use `auto`). The endpoint must support
+conditional object writes and multipart completion (`If-None-Match: *`), plus
+conditional deletion for rename. Incompatible endpoints fail the operation;
+there is no fallback that overwrites existing files. HTTP endpoints are supported
+for local development; use HTTPS for remote storage.
+
+| Variable | Default | When to change |
+|---|---|---|
+| `S3__BucketName` | empty | Required for S3. Create the private bucket first. |
+| `S3__Region` | `us-east-1` | Bucket region or compatible endpoint's signing region. |
+| `S3__ServiceUrl` | empty (AWS endpoint) | Custom S3-compatible API origin, without a bucket path or query. |
+| `S3__ForcePathStyle` | `false` | Enable for endpoints requiring path-style addressing. |
+| `S3__Prefix` | `luminapath/` | Installation-specific root prefix within the bucket; empty uses the bucket root. |
+| `S3__AccessKeyId` / `S3__AccessKeyIdFile` | empty | Explicit key ID or secret-file path; omit to use the AWS credential chain. |
+| `S3__SecretAccessKey` / `S3__SecretAccessKeyFile` | empty | Required alongside an explicit key ID. |
+| `S3__SessionToken` / `S3__SessionTokenFile` | empty | Session token for explicit temporary credentials. |
+| `S3__UploadBackups` | `true` | Copy newly completed local database dumps to the backup prefix. |
+
+Uploads go under `luminapath/uploads/` and backup copies under
+`luminapath/backups/` by default. Upload listing, migration and orphan cleanup
+only see the upload prefix. Use distinct prefixes for separate installations.
+Backup failures preserve the completed local dump; remote backup retention is
+independent of local cleanup. Bucket encryption settings apply to new objects.
+
+The credentials need `s3:ListBucket` for the uploads prefix and `s3:GetObject`,
+`s3:PutObject`, `s3:DeleteObject`, and `s3:AbortMultipartUpload` for objects under
+the installation prefix. KMS-encrypted buckets may also need their KMS key
+permissions. No bucket-administration or public-ACL permissions are needed.
+
+Files above 8 MiB use multipart uploads, with bounded memory and conditional
+completion. This adapter supports individual files up to 5 TiB. Failed/cancelled uploads attempt to abort their multipart session;
+configure a bucket lifecycle rule to expire incomplete multipart uploads left by
+process crashes. Downloads and non-seekable uploads use temporary local disk.
+Rename copies to a new key without overwriting, then deletes the source only if
+its ETag still matches; a failed source deletion can leave both copies. Use one
+app writer per prefix and avoid editing its objects manually.
+
+To move existing uploads, use the [storage migration process](#switching-storage-providers)
+with `--to-storage=S3` or `--migrate-storage=S3`. Connecting credentials does not
+copy existing files automatically. See the [AWS credential-chain documentation](https://docs.aws.amazon.com/sdk-for-net/v4/developer-guide/creds-assign.html)
+and [conditional-write documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes.html).
 
 ### Google Drive storage
 
@@ -517,7 +582,7 @@ retention in Drive and download a dump from the `backups` folder for a normal
 ### Switching storage providers
 
 The same migration command works between any registered providers: `FileSystem`,
-`Azure` and `GoogleDrive`. Configure credentials for both source and destination;
+`Azure`, `GoogleDrive` and `S3`. Configure credentials for both source and destination;
 for Drive, authorize the account from Admin → Google Drive first. No local export
 is needed for cloud-to-cloud transfers. Migration copies application uploads only;
 PostgreSQL, Redis, local database dumps, logs and connection credentials are not
@@ -541,7 +606,8 @@ and run the same command before starting it. `--to-storage` can be omitted to us
 `Storage__Provider` as the destination. Specify the **source provider name**, not a
 filesystem path; filesystem storage uses `Storage__Path`.
 
-For example, Drive → Azure uses `--migrate-storage=GoogleDrive --to-storage=Azure`;
+For example, filesystem → S3 uses `--migrate-storage=FileSystem --to-storage=S3`;
+S3 → Drive uses `--migrate-storage=S3 --to-storage=GoogleDrive`. Drive → Azure uses `--migrate-storage=GoogleDrive --to-storage=Azure`;
 Azure → filesystem uses `--migrate-storage=Azure --to-storage=FileSystem`.
 Use the same Compose file list and mounted secrets as the app. The command exits
 without starting the server, database migrations or background jobs.

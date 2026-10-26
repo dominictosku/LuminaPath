@@ -129,6 +129,59 @@ public class ConfigurationOptionsValidationTests
         finally { File.Delete(secret); File.Delete(token); }
     }
 
+    [Theory]
+    [InlineData("S3:BucketName", "")]
+    [InlineData("S3:Region", "")]
+    [InlineData("S3:ServiceUrl", "ftp://storage.example")]
+    [InlineData("S3:ServiceUrl", "https://storage.example/bucket")]
+    [InlineData("S3:Prefix", "../other/")]
+    [InlineData("S3:AccessKeyId", "key-without-secret")]
+    public async Task S3_RejectsInvalidConfiguration(string key, string value)
+    {
+        var values = new Dictionary<string, string?> { ["Storage:Provider"] = "S3", ["S3:BucketName"] = "bucket" };
+        values[key] = value;
+        await using var provider = BuildProvider(values);
+        Assert.Throws<OptionsValidationException>(() => provider.GetRequiredService<IStartupValidator>().Validate());
+    }
+
+    [Theory]
+    [InlineData("S3", true)]
+    [InlineData("S3", false)]
+    [InlineData("FileSystem", true)]
+    public async Task S3_ResolvesInactiveProviderAndReadsSecretFiles(string active, bool backups)
+    {
+        var file = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(file, "secret-from-file\n");
+            await using var provider = BuildProvider(new Dictionary<string, string?>
+            {
+                ["Storage:Provider"] = active, ["S3:BucketName"] = "bucket", ["S3:AccessKeyId"] = "test-key",
+                ["S3:SecretAccessKeyFile"] = file, ["S3:ServiceUrl"] = "https://storage.example",
+                ["S3:Region"] = "auto", ["S3:ForcePathStyle"] = "true", ["S3:UploadBackups"] = backups.ToString()
+            });
+            provider.GetRequiredService<IStartupValidator>().Validate();
+            Assert.Equal("secret-from-file", provider.GetRequiredService<IOptions<S3Options>>().Value.SecretAccessKey);
+            Assert.IsType<S3Storage>(provider.GetRequiredService<StorageProviderRegistry>().Get("s3"));
+            var client = provider.GetRequiredService<Amazon.S3.IAmazonS3>();
+            var configuration = Assert.IsType<Amazon.S3.AmazonS3Config>(client.Config);
+            Assert.Equal("https://storage.example/", configuration.ServiceURL);
+            Assert.Equal("auto", configuration.AuthenticationRegion);
+            Assert.True(configuration.ForcePathStyle);
+            Assert.Equal(active == "S3" && backups, provider.GetService<IBackupArchive>() is S3BackupArchive);
+        }
+        finally { File.Delete(file); }
+    }
+
+    [Fact]
+    public async Task S3_AllowsAwsCredentialChainWithoutStaticKeys()
+    {
+        await using var provider = BuildProvider(new Dictionary<string, string?>
+        { ["Storage:Provider"] = "S3", ["S3:BucketName"] = "bucket", ["S3:Region"] = "eu-central-1" });
+        provider.GetRequiredService<IStartupValidator>().Validate();
+        Assert.Null(provider.GetRequiredService<IOptions<S3Options>>().Value.AccessKeyId);
+    }
+
     [Fact]
     public async Task AddInfrastructure_SameSiteNoneWithoutSecureAlways_FailsStartupOptionsValidation()
     {

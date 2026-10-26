@@ -25,7 +25,7 @@ The why's behind each split live in the [Architecture Decision Records](../04-de
 | Mobile / web app | Angular 21 + Ionic |
 | Database | PostgreSQL 17 |
 | Cache / sessions | Redis |
-| Storage | Local filesystem, Azure Blob or private Google Drive (pluggable) |
+| Storage | Local filesystem, Azure Blob, private Google Drive or S3 (pluggable) |
 | Reverse proxy | nginx |
 | Container runtime | Docker Compose |
 | External catalog sources | IGDB (games), Google News / Steam (game news) |

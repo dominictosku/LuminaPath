@@ -7,6 +7,7 @@ namespace LuminaPath.Infrastructure.Services.Storage;
 public sealed partial class StorageOptions
 {
     public const string SectionName = "Storage";
+    public const string S3Provider = "S3";
     public const string GoogleDriveProvider = "GoogleDrive";
     public const string AzureProvider = "Azure";
     public const string FileSystemProvider = "FileSystem";

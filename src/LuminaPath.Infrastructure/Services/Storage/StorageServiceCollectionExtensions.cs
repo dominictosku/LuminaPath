@@ -63,6 +63,19 @@ internal static class StorageServiceCollectionExtensions
             return new AzureStorage(storageOptions.AzureBlobConnectionString, storageOptions.AzureBlobContainerName,
                 sp.GetRequiredService<ILogger<AzureStorage>>());
         });
+        services.AddOptions<S3Options>()
+            .Bind(config.GetSection(S3Options.SectionName))
+            .PostConfigure(options => S3Options.ReadSecrets(options, config))
+            .Validate(options => (!storageOptions.Provider.Equals(StorageOptions.S3Provider, StringComparison.OrdinalIgnoreCase)
+                && !config.GetSection(S3Options.SectionName).Exists()) || S3Options.IsValid(options),
+                "S3 requires BucketName, Region, a valid endpoint/prefix and either a complete credential pair or the AWS credential chain.")
+            .ValidateOnStart();
+        services.AddSingleton<Amazon.S3.IAmazonS3>(sp => sp.GetRequiredService<IOptions<S3Options>>().Value.CreateClient());
+        services.AddSingleton<S3Storage>();
+        services.AddStorageProvider(StorageOptions.S3Provider, sp => sp.GetRequiredService<S3Storage>());
+        if (storageOptions.Provider.Equals(StorageOptions.S3Provider, StringComparison.OrdinalIgnoreCase)
+            && config.GetValue("S3:UploadBackups", true))
+            services.AddSingleton<IBackupArchive, S3BackupArchive>();
         services.AddSingleton<StorageProviderRegistry>();
         services.AddSingleton<IStorageService>(sp => sp.GetRequiredService<StorageProviderRegistry>()
             .Get(sp.GetRequiredService<IOptions<StorageOptions>>().Value.Provider));
