@@ -8,17 +8,17 @@
   </ion-refresher>
 
   <main class="library-page">
-    <app-library-hero
-      [mediaModeSingular]="mediaMode.singular"
-      [heroTitle]="heroTitle"
-      [heroDescription]="heroDescription"
-      [totalGames]="totalGames"
-      [ownedGames]="ownedGames"
-      [playingGames]="playingGames"
-      [remainingHours]="remainingHours"
-      [isGamesMode]="isGamesMode" />
+    <app-library-hero>
+      <ion-button fill="outline" aria-label="Export library to Excel" [disabled]="exportState === 'working'" (click)="exportLibrary()">
+        <ion-icon slot="start" name="download-outline" />{{ exportState === 'working' ? 'Exporting…' : 'Export library' }}
+      </ion-button>
+      <ion-button (click)="browseMedia()"><ion-icon slot="start" name="add-outline" />Add media</ion-button>
+    </app-library-hero>
 
     <app-library-toolbar
+      [mediaOptions]="mediaOptions"
+      [mediaModeId]="mediaMode.id"
+      (mediaModeChange)="selectMediaMode($event)"
       [(searchTerm)]="searchTerm"
       [(viewMode)]="viewMode"
       [(ownershipFilter)]="ownershipFilter"
@@ -41,9 +41,15 @@
       (apply)="applyFilters()"
       (savePreset)="saveCurrentPreset()"
       (applyPreset)="applyPreset($event)"
-      (deletePreset)="deletePreset($event)" />
+      (deletePreset)="deletePreset($event)">
+    <details class="collection-summary">
+      <summary>Your collection at a glance</summary>
+      <div><span><strong>{{ totalGames }}</strong> loaded titles</span><span><strong>{{ ownedGames }}</strong> in your library</span><span><strong>{{ playingGames }}</strong> in progress</span><span><strong>{{ remainingHours }}h</strong> remaining</span></div>
+    </details>
 
-    @if (!isLoading && nextBestGame; as best) {
+    </app-library-toolbar>
+
+    @if (!isLoading && smartFilter === 'best' && nextBestGame; as best) {
       <section class="finish-pick">
         <div>
           <span class="eyebrow">
@@ -58,14 +64,14 @@
     }
 
     @if (errorMessage) {
-      <section class="notice">
+      <section class="notice" role="alert">
         <ion-icon name="search-outline"></ion-icon>
         <span>{{ errorMessage }}</span>
       </section>
     }
 
     @if (successMessage) {
-      <section class="notice notice--success">
+      <section class="notice notice--success" role="status">
         <ion-icon name="checkmark-circle-outline"></ion-icon>
         <span>{{ successMessage }}</span>
       </section>
@@ -84,29 +90,12 @@
     @if (!isLoading) {
       <section class="results-heading">
         <div>
-          <span class="eyebrow">Results</span>
-          <h2>{{ resultTitle }}</h2>
+          <h2>{{ resultTitle }} to explore</h2>
         </div>
         <div class="results-heading__actions">
           @if (creator.canCreate) {
-            <ion-button
-              class="create-button"
-              size="small"
-              aria-label="Create new catalog entry"
-              (click)="creator.open()">
-              <ion-icon slot="start" name="add-circle-outline"></ion-icon>
-              Create
-            </ion-button>
+            <ion-button fill="clear" size="small" aria-label="Create new catalog entry" (click)="creator.open()">Create media</ion-button>
           }
-          <ion-button
-            fill="clear"
-            size="small"
-            aria-label="Export library to Excel"
-            [disabled]="exportState === 'working'"
-            (click)="exportLibrary()">
-            <ion-icon slot="start" name="download-outline"></ion-icon>
-            {{ exportState === 'working' ? 'Exporting...' : 'Export Excel' }}
-          </ion-button>
           @if (bulk.visibleLibraryItems.length) {
             <ion-button fill="clear" size="small" (click)="bulk.toggleSelectionMode()">
               <ion-icon slot="start" name="checkbox-outline"></ion-icon>
@@ -177,6 +166,7 @@
       <section class="game-grid">
         @for (game of filteredGames(); track trackByGameId($index, game)) {
           <app-library-card
+            [style.--card-index]="$index % 5"
             [item]="game"
             [mediaMode]="mediaMode"
             [isAdding]="isAdding(game)"
@@ -246,6 +236,8 @@
     [isGamesMode]="isGamesMode"
     [isEpisodeMode]="isEpisodeMode"
     [isEditing]="isEditingSelectedGame()"
+    [errorMessage]="errorMessage"
+    (details)="selectedGame && openDetails(selectedGame)"
     [isSaving]="selectedGame ? isAdding(selectedGame) : false"
     (dismiss)="closeAddDialog()"
     (submitted)="submitAddGame()" />

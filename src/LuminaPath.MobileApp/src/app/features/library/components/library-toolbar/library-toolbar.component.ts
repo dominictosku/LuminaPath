@@ -1,14 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, effect, input, model, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-  IonButton,
-  IonIcon,
-  IonSearchbar,
-  IonSegment,
-  IonSegmentButton,
-  IonSelect,
-  IonSelectOption,
-} from '@ionic/angular/standalone';
+import { IonButton, IonIcon } from '@ionic/angular/standalone';
+import { MediaFilterTabsComponent, MediaFilterTab } from 'src/app/shared/components/media-filter-tabs/media-filter-tabs.component';
 
 import {
   LibraryFilterPreset,
@@ -36,17 +29,8 @@ type SortOption = { value: SortMode; label: string };
 @Component({
   selector: 'app-library-toolbar',
   templateUrl: './library-toolbar.component.html',
-  styleUrls: ['../../pages/library.page.scss'],
-  imports: [
-    FormsModule,
-    IonButton,
-    IonIcon,
-    IonSearchbar,
-    IonSegment,
-    IonSegmentButton,
-    IonSelect,
-    IonSelectOption,
-  ],
+  styleUrls: ['./library-toolbar.component.scss'],
+  imports: [FormsModule, IonButton, IonIcon, MediaFilterTabsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LibraryToolbarComponent implements OnDestroy {
@@ -74,6 +58,9 @@ export class LibraryToolbarComponent implements OnDestroy {
   readonly hasNextBest = input<boolean>(false);
   readonly isGamesMode = input<boolean>(false);
 
+  readonly mediaOptions = input<readonly MediaFilterTab[]>([]);
+  readonly mediaModeId = input('games');
+  readonly mediaModeChange = output<string>();
   readonly apply = output<void>();
   readonly savePreset = output<void>();
   readonly applyPreset = output<LibraryFilterPreset>();

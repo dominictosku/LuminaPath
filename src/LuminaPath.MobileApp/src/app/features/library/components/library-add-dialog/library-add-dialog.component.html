@@ -1,77 +1,43 @@
-<ion-modal
-  class="add-game-modal"
-  [isOpen]="isOpen()"
-  (didDismiss)="dismiss.emit()">
+<ion-modal class="add-game-modal" [isOpen]="isOpen()" [canDismiss]="canDismiss" (didDismiss)="dismiss.emit()" aria-label="Edit library entry">
   <ng-template>
     @if (selectedGame(); as game) {
-      <form class="library-editor" (ngSubmit)="submitted.emit()" novalidate>
-        <section class="editor-cover" [style.background-image]="'url(' + imageFor(game) + ')'">
-          <div class="editor-cover__shade"></div>
-          <ion-button
-            type="button"
-            fill="clear"
-            class="dialog-icon-button"
-            aria-label="Close"
-            [disabled]="isSaving()"
-            (click)="dismiss.emit()">
-            <ion-icon slot="icon-only" name="close-outline"></ion-icon>
-          </ion-button>
-          <div class="editor-cover__content">
-            <img [src]="imageFor(game)" alt="" loading="lazy" decoding="async" />
-            <div>
-              <span class="eyebrow">{{ isEditing() ? 'Edit my ' + mediaMode().singular : 'Add to mine' }}</span>
-              <h2>{{ game.name }}</h2>
-              <p>{{ isGamesMode() ? view.platformLabel(game.platforms) : view.mediaTypeLabel(game, mediaMode()) }} · {{ view.durationLabel(game, mediaMode()) }}</p>
-            </div>
-          </div>
-        </section>
-        <section class="editor-body">
+      <form class="media-dialog" #editorForm="ngForm" (ngSubmit)="editorForm.valid && !isSaving() && submitted.emit()">
+        <app-media-dialog-hero [image]="imageFor(game)" [title]="game.name"
+          [eyebrow]="mediaMode().singular + ' · ' + view.releaseLabel(game)"
+          [subtitle]="game.genre + (game.genre ? ' · ' : '') + (isGamesMode() ? view.platformLabel(game.platforms) : mediaMode().label)"
+          [busy]="isSaving()" (closed)="dismiss.emit()" />
+        <section class="dialog-body">
+          @if (errorMessage()) { <div class="dialog-notice" role="alert">{{ errorMessage() }}</div> }
+          @if (game.description) { <p class="dialog-description">{{ game.description }}</p> }
           <div class="editor-stats">
-            <article>
-              <span>Status</span>
-              <strong>{{ view.statusLabel(game, mediaMode()) }}</strong>
-            </article>
-            <article>
-              <span>{{ isGamesMode() ? 'Progress' : 'Watched' }}</span>
-              <strong>{{ view.progressOf(game, mediaMode()) }}%</strong>
-            </article>
-            <article>
-              <span>Remaining</span>
-              <strong>{{ view.remainingLabel(game, mediaMode()) }}</strong>
-            </article>
+            <div><strong>{{ view.playedOf(game, mediaMode()) | number:'1.0-1' }} h</strong><span>Your logged time</span></div>
+            <div><strong>{{ view.durationLabel(game, mediaMode()) }}</strong><span>Estimated length</span></div>
+            <div><strong>{{ view.progressOf(game, mediaMode()) }}%</strong><span>Your progress</span></div>
           </div>
-          <fieldset class="status-picker">
-            <legend>Status</legend>
-            @for (status of statusOptions(); track status) {
-              <button
-                type="button"
-                class="status-option"
-                [class.status-option--active]="form().status === status.value"
-                [attr.aria-pressed]="form().status === status.value"
-                (click)="selectStatus(status.value)">
-                <span>{{ status.label }}</span>
-                @if (form().status === status.value) {
-                  <ion-icon name="checkmark-circle-outline"></ion-icon>
-                }
-                @if (form().status === status.value) {
-                  <small>Selected</small>
-                }
-              </button>
-            }
-          </fieldset>
-          <div class="editor-grid">
-            <label class="form-field">
-              <span>{{ isGamesMode() ? 'Played hours' : 'Watched hours' }}</span>
+          @if (isGamesMode() && game.libraryEntry?.myGameInfo?.trackedHours) {
+            <p class="dialog-hint">{{ game.libraryEntry?.timeSpend ?? 0 }} h manual + {{ game.libraryEntry?.myGameInfo?.trackedHours }} h imported. Only manual hours are editable below.</p>
+          }
+          <label class="dialog-field">
+            <span>Status</span>
+            <select name="status" [ngModel]="form().status" (ngModelChange)="selectStatus(+$event)" [disabled]="isSaving()">
+              @for (status of statusOptions(); track status.value) { <option [ngValue]="status.value">{{ status.label }}</option> }
+            </select>
+          </label>
+          <fieldset class="editor-fields" [disabled]="isSaving()">
+          <div class="dialog-grid">
+            <label class="dialog-field">
+              <span>{{ isGamesMode() ? 'Manual playtime (hours)' : 'Watched time (hours)' }}</span>
               <input
                 type="number"
                 min="0"
                 inputmode="decimal"
                 [ngModel]="form().timeSpend"
                 (ngModelChange)="form.update((f) => ({ ...f, timeSpend: $event }))"
-                name="timeSpend" />
+                name="timeSpend" step="any" />
+              @if (isGamesMode()) { <small>Imported playtime is tracked separately and is added to your total.</small> }
             </label>
             @if (isEpisodeMode()) {
-              <label class="form-field">
+              <label class="dialog-field">
                 <span>Current episode</span>
                 <input
                   type="number"
@@ -82,11 +48,12 @@
                   name="currentEpisode" />
               </label>
             }
-            <label class="form-field">
+            <label class="dialog-field">
               <span>Rating</span>
               <div class="rating-field">
                 <input
                   type="range"
+                  aria-label="Rating slider"
                   min="1"
                   max="10"
                   step="1"
@@ -101,10 +68,10 @@
                   placeholder="--"
                   [ngModel]="form().rating"
                   (ngModelChange)="form.update((f) => ({ ...f, rating: $event }))"
-                  name="rating" />
+                  name="rating" aria-label="Rating out of 10" />
               </div>
             </label>
-            <label class="form-field">
+            <label class="dialog-field">
               <span>Started</span>
               <input
                 type="date"
@@ -112,7 +79,7 @@
                 (ngModelChange)="form.update((f) => ({ ...f, startDate: $event }))"
                 name="startDate" />
             </label>
-            <label class="form-field">
+            <label class="dialog-field">
               <span>Finished</span>
               <input
                 type="date"
@@ -121,18 +88,14 @@
                 name="endDate" />
             </label>
           </div>
+          </fieldset>
         </section>
-        <footer class="editor-actions">
-          <ion-button
-            type="button"
-            fill="clear"
-            [disabled]="isSaving()"
-            (click)="dismiss.emit()">
-            Cancel
-          </ion-button>
-          <ion-button type="submit" [disabled]="isSaving()">
-            <ion-icon slot="start" [name]="isSaving() ? 'hourglass-outline' : (isEditing() ? 'checkmark-circle-outline' : 'add-outline')"></ion-icon>
-            {{ isSaving() ? 'Saving...' : (isEditing() ? 'Save changes' : 'Add ' + mediaMode().singular) }}
+        <footer class="dialog-actions">
+          <ion-button type="button" fill="clear" [disabled]="isSaving()" (click)="details.emit()">Full details ↗</ion-button>
+          <ion-button type="button" fill="clear" [disabled]="isSaving()" (click)="dismiss.emit()">Cancel</ion-button>
+          <ion-button type="submit" [disabled]="isSaving() || editorForm.invalid">
+            <ion-icon slot="start" [name]="isSaving() ? 'hourglass-outline' : 'checkmark-circle-outline'" />
+            {{ isSaving() ? 'Saving…' : (isEditing() ? 'Save changes' : 'Add to library') }}
           </ion-button>
         </footer>
       </form>

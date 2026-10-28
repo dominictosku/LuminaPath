@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, model, output, signal } from '@angular/core';
+import { MediaDialogHeroComponent } from 'src/app/shared/components/media-dialog-hero/media-dialog-hero.component';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { IonButton, IonIcon, IonModal, IonSpinner } from '@ionic/angular/standalone';
@@ -33,7 +34,7 @@ import { CreateMediaForm } from './library-create-dialog.model';
   selector: 'app-library-create-dialog',
   templateUrl: './library-create-dialog.component.html',
   styleUrls: ['./library-create-dialog.component.scss'],
-  imports: [FormsModule, IonButton, IonIcon, IonModal, IonSpinner],
+  imports: [FormsModule, IonButton, IonIcon, IonModal, IonSpinner, MediaDialogHeroComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LibraryCreateDialogComponent {
@@ -53,6 +54,7 @@ export class LibraryCreateDialogComponent {
    */
   readonly isEditing = input<boolean>(false);
 
+  readonly canDismiss = () => !this.isSaving() && !this.isUploadingCover();
   readonly dismiss = output<void>();
   readonly submitted = output<void>();
 

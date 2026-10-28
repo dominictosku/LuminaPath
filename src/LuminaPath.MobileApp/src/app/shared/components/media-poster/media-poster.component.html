@@ -1,0 +1,27 @@
+<article class="media-card" [class.is-selected]="selected()">
+  <div class="poster">
+    <button type="button" class="poster-button" [disabled]="disabled()"
+      [attr.aria-label]="(selecting() ? (selected() ? 'Deselect ' : 'Select ') : 'Open ') + title()"
+      [attr.aria-pressed]="selecting() ? selected() : null" (click)="open.emit()">
+      <img [src]="image()" alt="" loading="lazy" decoding="async" (error)="imageFailed($event)" />
+      <span class="media-kind"><ion-icon [name]="icon()" aria-hidden="true" />{{ kind() }}</span>
+      @if (status()) {
+        <span class="poster-bottom">
+          <span class="poster-status"><i></i>{{ status() }}</span>
+          @if (progress() !== null) {
+            <span class="progress" role="progressbar" [attr.aria-label]="title() + ' progress'"
+              [attr.aria-valuenow]="progress()" aria-valuemin="0" aria-valuemax="100">
+              <span [style.width.%]="progress()"></span>
+            </span>
+          }
+        </span>
+      }
+    </button>
+    <button type="button" class="card-action" [disabled]="disabled()"
+      [attr.aria-label]="actionLabel()" (click)="action.emit()">
+      <ion-icon [name]="selecting() ? (selected() ? 'checkbox-outline' : 'ellipse-outline') : actionIcon()" />
+    </button>
+  </div>
+  <button type="button" class="card-title" [disabled]="disabled()" (click)="open.emit()">{{ title() }}</button>
+  <div class="card-sub"><span [title]="subtitle()">{{ subtitle() }}</span><span>{{ meta() }}</span></div>
+</article>

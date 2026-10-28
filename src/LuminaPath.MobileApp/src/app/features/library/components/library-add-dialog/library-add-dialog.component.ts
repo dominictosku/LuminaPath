@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input, model, output } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { MediaDialogHeroComponent } from 'src/app/shared/components/media-dialog-hero/media-dialog-hero.component';
 import { FormsModule } from '@angular/forms';
 import { IonButton, IonIcon, IonModal } from '@ionic/angular/standalone';
 
@@ -21,8 +23,8 @@ import { MediaLibraryViewService } from '../../services/media-library-view.servi
 @Component({
   selector: 'app-library-add-dialog',
   templateUrl: './library-add-dialog.component.html',
-  styleUrls: ['../../pages/library.page.scss'],
-  imports: [FormsModule, IonButton, IonIcon, IonModal],
+  styleUrls: ['./library-add-dialog.component.scss'],
+  imports: [FormsModule, DecimalPipe, IonButton, IonIcon, IonModal, MediaDialogHeroComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LibraryAddDialogComponent {
@@ -40,7 +42,10 @@ export class LibraryAddDialogComponent {
   /** True while the page is sending the add/update request — disables form. */
   readonly isSaving = input<boolean>(false);
 
+  readonly errorMessage = input('');
+  readonly details = output<void>();
   readonly dismiss = output<void>();
+  readonly canDismiss = () => !this.isSaving();
   readonly submitted = output<void>();
 
   imageFor(game: MediaItem): string {

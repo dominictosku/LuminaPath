@@ -1,0 +1,22 @@
+@use '../../../../shared/styles/collection' as collection;
+:host { display: block; min-width: 0; @include collection.controls; }
+.toolbar-top { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+.primary-filters { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+input, select { min-height: 44px; min-width: 0; border: 1px solid var(--collection-line); border-radius: 8px; padding: 10px 14px; color: var(--collection-muted); background: var(--collection-surface); font: inherit; font-size: 13px; }
+.library-search { width: 240px; }
+.advanced-filters { margin-top: 18px; color: var(--collection-muted); font-size: 12px; }
+summary { cursor: pointer; padding: 8px 0; width: fit-content; }
+summary span { margin-left: 14px; color: var(--collection-accent); }
+.advanced-filters[open] { border-bottom: 1px solid var(--collection-line); padding-bottom: 18px; }
+.filter-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 12px 0 16px; }
+.filter-grid label, .release-date-range label { display: grid; gap: 7px; }
+.smart-chips, .preset-strip { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+.smart-chips button, .preset-pill, .preset-delete { border: 1px solid var(--collection-line); border-radius: 6px; background: var(--collection-surface); color: var(--collection-muted); padding: 10px 12px; min-height: 40px; font: inherit; cursor: pointer; }
+.smart-chips span, .smart-chips ion-icon { color: var(--collection-accent); margin-left: 8px; }
+.smart-chips .smart-chip--active { background: var(--app-theme-accent-soft); border-color: var(--app-theme-accent-border); color: var(--collection-text); }
+button:disabled { opacity: .45; cursor: default; }
+.preset-name { display: flex; align-items: center; gap: 10px; }
+.preset-delete { margin-left: -5px; }
+.release-date-range { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+@media (max-width: 1000px) { .primary-filters { flex: 1 1 100%; } .library-search { flex: 1; } }
+@media (max-width: 600px) { .primary-filters { display: grid; width: 100%; grid-template-columns: 1fr 1fr; gap: 10px; } .library-search { width: 100%; grid-column: 1 / -1; } select { width: 100%; } .filter-grid { grid-template-columns: 1fr 1fr; } summary span { display: block; margin: 7px 0 0; } }

@@ -27,6 +27,10 @@ by `scripts/update-bundled-licenses.py`. Preserve the headers in bundled files.
   Supplemental full MIT notices for `qrcode-generator` 2.0.4, `@microsoft/signalr`
   9.0.6 and `@ionic/angular` 8.8.5 are retained in `licenses/` and appended to the
   web bundle because their npm packages omit standalone license files.
+  SIL Open Font License 1.1 notices for `@fontsource-variable/dm-sans` and
+  `@fontsource-variable/manrope` are extracted from the installed packages and appended
+  by the postbuild script since stylesheet-bundled fonts are omitted by Angular's
+  JavaScript license extractor.
 - `licenses/android.txt` includes Apache-2.0 native dependencies, available embedded
   notices and Capacitor's MIT notices. `licenses/android-packages.json` records the
   resolved Maven coordinates, including dependency constraints. Test-only JUnit

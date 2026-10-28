@@ -1,0 +1,30 @@
+:host { display: block; min-width: 0; }
+.media-card { min-width: 0; animation: poster-enter .45s both; animation-delay: calc(var(--card-index, 0) * 45ms); }
+@keyframes poster-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.poster { position: relative; }
+.poster-button { position: relative; display: block; width: 100%; aspect-ratio: .76; overflow: hidden; padding: 0; border: 1px solid var(--collection-line, #ffffff1a); border-radius: 12px; background: #182232; cursor: pointer; isolation: isolate; transition: transform .35s, box-shadow .35s; }
+.poster-button img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s, filter .6s; }
+.poster-button::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 0, #ffffff25, transparent 65%); opacity: 0; transition: opacity .35s; pointer-events: none; }
+.media-kind { position: absolute; top: 12px; left: 12px; display: flex; align-items: center; gap: 5px; padding: 5px 8px; font-size: 10px; color: #edf2fa; background: #0b1425c9; border: 1px solid #ffffff26; border-radius: 5px; backdrop-filter: blur(10px); text-transform: capitalize; }
+.media-kind ion-icon { font-size: 12px; }
+.card-action { position: absolute; top: 11px; right: 11px; display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #ffffff1f; border-radius: 50%; background: #0b1425c9; color: #edf2fa; backdrop-filter: blur(10px); cursor: pointer; }
+.poster-bottom { position: absolute; inset: auto 0 0; padding: 50px 14px 14px; background: linear-gradient(transparent, #060e1aee); text-align: left; }
+.poster-status { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; font-size: 11px; color: #e2eaf5; }
+.poster-status i { width: 5px; height: 5px; border-radius: 50%; background: var(--app-theme-accent); }
+.progress { display: block; height: 3px; border-radius: 20px; background: #ffffff20; overflow: hidden; }
+.progress > span { display: block; height: 100%; background: var(--app-theme-accent); border-radius: inherit; transition: width .6s; }
+.card-title { display: block; max-width: 100%; margin: 13px 0 7px; padding: 0; border: 0; background: none; color: var(--collection-text, #edf2fa); font: inherit; font-weight: 500; font-size: 14px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.card-sub { display: flex; justify-content: space-between; gap: 8px; color: var(--collection-muted, #9aa8bb); font-size: 11px; line-height: 1.5; }
+.card-sub span:first-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.card-sub span:last-child { flex-shrink: 0; }
+.is-selected .poster-button { border-color: var(--app-theme-accent); box-shadow: 0 0 0 2px var(--app-theme-accent-soft); }
+button:focus-visible { outline: 2px solid var(--app-theme-accent); outline-offset: 4px; }
+button:disabled { cursor: default; opacity: .65; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .poster-button:hover { transform: translateY(-4px); box-shadow: 0 16px 30px #0005; }
+  .poster-button:hover img { transform: scale(1.05); filter: brightness(1.08); }
+  .poster-button:hover::after { opacity: 1; }
+}
+@media (min-width: 1550px) { .poster-button { aspect-ratio: .82; } }
+@media (max-width: 600px) { .media-kind { top: 9px; left: 8px; font-size: 9px; padding: 5px; } .card-action { top: 7px; right: 6px; } .card-title { font-size: 13px; } .card-sub { font-size: 10px; flex-wrap: wrap; gap: 2px 6px; } .poster-bottom { padding: 40px 10px 12px; } }
+@media (prefers-reduced-motion: reduce) { *, *::after { transition: none !important; animation: none !important; } }

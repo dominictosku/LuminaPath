@@ -1,0 +1,66 @@
+// Shared collection surfaces follow the active media theme.
+@mixin palette {
+  --collection-bg: #0b1019;
+  --collection-surface: #151d2b;
+  --collection-line: rgba(164, 183, 211, .19);
+  --collection-text: #edf2fa;
+  --collection-muted: #9aa8bb;
+  --collection-accent: var(--app-theme-accent, #60a5fa);
+  color: var(--collection-text);
+  font-family: 'DM Sans', var(--ion-font-family, sans-serif);
+}
+
+@mixin page {
+  display: grid;
+  gap: 28px;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 36px 38px 130px;
+  animation: collection-enter .45s ease both;
+  @media (max-width: 720px) { gap: 22px; padding: 26px 20px 130px; }
+}
+
+@mixin grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 28px 22px;
+  @media (max-width: 1180px) { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px 18px; }
+  @media (max-width: 900px) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 600px) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
+}
+
+@mixin controls {
+  ion-button {
+    margin: 0;
+    min-height: 40px;
+    --border-radius: 8px;
+    --box-shadow: none;
+    text-transform: none;
+    font-weight: 550;
+    letter-spacing: 0;
+  }
+  ion-button:not([fill='clear']):not([fill='outline']) {
+    --background: var(--collection-accent);
+    --color: #091321;
+  }
+  ion-button[fill='clear'], ion-button[fill='outline'] {
+    --color: var(--collection-muted);
+    --border-color: var(--collection-line);
+  }
+  :is(input, select, textarea, button):focus-visible {
+    outline: 2px solid var(--collection-accent);
+    outline-offset: 3px;
+  }
+}
+
+@mixin feedback {
+  .notice { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid #fb718544; border-radius: 10px; background: #fb718510; color: #fecdd3; }
+  .notice--success { color: #bbf7d0; border-color: #86efac33; background: #86efac0a; }
+  .empty-state { text-align: center; padding: 56px 20px; border: 1px dashed var(--collection-line); border-radius: 12px; color: var(--collection-muted); }
+  .empty-state h2 { color: var(--collection-text); font-size: 22px; }
+  .loading-grid { @include grid; }
+  .loading-grid article { aspect-ratio: .76; overflow: hidden; border-radius: 12px; background: var(--collection-surface); }
+  .loading-grid ion-skeleton-text { height: 100%; width: 100%; margin: 0; }
+}
+
+@keyframes collection-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

@@ -529,6 +529,19 @@ describe('LibraryPage', () => {
     expect(component.successMessage).toBe('1 game removed from your library.');
   });
 
+  it('Add media opens the current media catalog instead of the limited release feed', fakeAsync(() => {
+    configure(of(pageOf([])));
+    fixture.detectChanges();
+    tick();
+    component.statusFilter = '2';
+    component.browseMedia();
+    tick();
+    expect(component.ownershipFilter).toBe('catalog');
+    expect(component.statusFilter).toBe('all');
+    expect(mediaLibrary.getAll).toHaveBeenCalledWith(jasmine.objectContaining({ Ownership: 'catalog' }));
+    expect(router.navigate).not.toHaveBeenCalled();
+  }));
+
   it('openDetails uses the facade route', () => {
     configure(of(pageOf([])));
     fixture.detectChanges();

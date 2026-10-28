@@ -36,6 +36,8 @@
     "@capacitor/keyboard": "8.0.3",
     "@capacitor/local-notifications": "8.0.2",
     "@capacitor/status-bar": "8.0.2",
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
     "@ionic/angular": "^8.8.5",
     "@microsoft/signalr": "^9.0.0",
     "@ngrx/signals": "^21.0.0",

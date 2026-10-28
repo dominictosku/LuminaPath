@@ -1,14 +1,15 @@
 
 import { Component, OnInit, effect, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { MediaPosterComponent } from 'src/app/shared/components/media-poster/media-poster.component';
+import { MediaFilterTabsComponent } from 'src/app/shared/components/media-filter-tabs/media-filter-tabs.component';
+import { CollectionSectionComponent } from 'src/app/shared/components/collection-section/collection-section.component';
+import { LibraryAddDialogComponent } from '../../library/components/library-add-dialog/library-add-dialog.component';
 import { FormsModule } from '@angular/forms';
 import {
   IonButton,
-  IonBadge,
   IonContent,
   IonIcon,
-  IonModal,
-  IonSegment,
-  IonSegmentButton,
   IonSkeletonText,
 } from '@ionic/angular/standalone';
 import { forkJoin } from 'rxjs';
@@ -39,23 +40,27 @@ const SEASONS = [
   styleUrls: ['./browse.page.scss'],
   imports: [
     FormsModule,
-    IonBadge,
     IonButton,
     IonContent,
     IonIcon,
-    IonModal,
-    IonSegment,
-    IonSegmentButton,
-    IonSkeletonText
-],
+    IonSkeletonText,
+    MediaPosterComponent,
+    MediaFilterTabsComponent,
+    CollectionSectionComponent,
+    LibraryAddDialogComponent,
+  ],
 })
 export class BrowsePage implements OnInit {
+  private readonly router = inject(Router);
   private readonly browseService = inject(BrowseService);
   private readonly mediaModeService = inject(MediaModeService);
   private readonly mediaLibrary = inject(MediaLibraryFacade);
   readonly mediaView = inject(MediaLibraryViewService);
 
   selectedKind: BrowseKind = 'games';
+  readonly kindOptions = [{ id: 'games', label: 'Games' }, { id: 'animes', label: 'Anime' }];
+  searchTerm = '';
+  sortMode = 'popular';
   games: BrowseItem[] = [];
   animes: BrowseItem[] = [];
   selectedGameMonth = startOfMonth(new Date());
@@ -79,6 +84,7 @@ export class BrowsePage implements OnInit {
 
   constructor() {
     this.mediaMode = this.mediaModeService.mode();
+    this.selectedKind = this.mediaMode.id === 'animes' ? 'animes' : 'games';
     // Resync from the global mode when it changes (e.g., the user switches
     // tabs in the nav bar). Browse only supports 'games' and 'animes', so
     // other modes are ignored.
@@ -89,7 +95,6 @@ export class BrowsePage implements OnInit {
       if ((mode.id === 'games' || mode.id === 'animes') && mode.id !== lastSyncedKind) {
         lastSyncedKind = mode.id;
         this.selectedKind = mode.id;
-        this.load();
       }
     });
   }
@@ -99,19 +104,8 @@ export class BrowsePage implements OnInit {
     this.load();
   }
 
-  get title(): string {
-    return this.selectedKind === 'games' ? 'Game releases' : 'Anime seasons';
-  }
 
-  get description(): string {
-    return this.selectedKind === 'games'
-      ? 'Review one release month at a time, with the most popular games highlighted first.'
-      : 'Review one anime season at a time, with the most popular titles highlighted first.';
-  }
 
-  get items(): BrowseItem[] {
-    return this.selectedKind === 'games' ? this.games : this.animes;
-  }
 
   get selectedGroup(): BrowseGroup {
     return this.selectedKind === 'games'
@@ -119,13 +113,40 @@ export class BrowsePage implements OnInit {
       : this.groupForAnimeSeason(this.selectedAnimeSeason);
   }
 
-  get topItems(): BrowseItem[] {
-    return this.selectedGroup.items.slice(0, 4);
+  get sortCaption(): string {
+    if (this.sortMode === 'title') return 'Title A–Z';
+    if (this.sortMode === 'release') return 'Newest releases first';
+    return this.selectedGroup.subtitle;
   }
 
-  get hasItemsInPeriod(): boolean {
-    return this.selectedGroup.items.length > 0;
+  get visibleItems(): BrowseItem[] {
+    const query = this.searchTerm.trim().toLocaleLowerCase();
+    const items = this.selectedGroup.items.filter((item) => item.name.toLocaleLowerCase().includes(query));
+    if (this.sortMode === 'title') items.sort((a, b) => a.name.localeCompare(b.name));
+    if (this.sortMode === 'release') items.sort((a, b) => this.releaseTime(b) - this.releaseTime(a));
+    return items;
   }
+
+  selectKindTab(id: string): void {
+    if (id === 'games' || id === 'animes') this.selectKind(id);
+  }
+
+  openSelectedDetails(): void {
+    const media = this.selectedMedia;
+    if (!media) return;
+    this.closeAddDialog();
+    void this.router.navigate(this.mediaLibrary.detailsRoute(media));
+  }
+
+  browseStatus(item: BrowseItem): string {
+    return item.libraryEntry ? this.mediaView.statusLabel(this.toMediaItem(item), this.mediaMode) : this.releaseLabel(item);
+  }
+
+  browseProgress(item: BrowseItem): number | null {
+    return item.libraryEntry ? this.mediaView.progressOf(this.toMediaItem(item), this.mediaMode) : null;
+  }
+
+
 
   get periodLabel(): string {
     return this.selectedGroup.title;
@@ -286,29 +307,11 @@ export class BrowsePage implements OnInit {
     return this.mediaView.statusOptions(this.mediaMode);
   }
 
-  platformLabel(value: number | null | undefined): string {
-    return this.mediaView.platformLabel(value);
-  }
 
-  statusLabel(item: MediaItem): string {
-    return this.mediaView.statusLabel(item, this.mediaMode);
-  }
 
-  progressOf(item: MediaItem): number {
-    return this.mediaView.progressOf(item, this.mediaMode);
-  }
 
-  remainingLabel(item: MediaItem): string {
-    return this.mediaView.remainingLabel(item, this.mediaMode);
-  }
 
-  durationLabel(item: MediaItem): string {
-    return this.mediaView.durationLabel(item, this.mediaMode);
-  }
 
-  mediaTypeLabel(item: MediaItem): string {
-    return this.mediaView.mediaTypeLabel(item, this.mediaMode);
-  }
 
   imageFor(item: BrowseItem | MediaItem): string {
     return mediaImageUrl(item.image);
@@ -334,9 +337,6 @@ export class BrowsePage implements OnInit {
     return episodes > 0 ? `${episodes} episodes` : watchTime || 'Anime';
   }
 
-  trackByGroup(_: number, group: BrowseGroup): string {
-    return group.id;
-  }
 
   trackByItem(_: number, item: BrowseItem): string {
     return `${item.kind}-${item.id}`;

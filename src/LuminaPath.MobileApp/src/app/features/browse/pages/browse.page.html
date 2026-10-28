@@ -1,295 +1,68 @@
 <ion-content [fullscreen]="true" class="release-shell">
   <main class="release-page">
-    <section class="hero">
-      <div>
-        <span class="eyebrow">
-          <ion-icon name="calendar-clear-outline"></ion-icon>
-          Browse
-        </span>
-        <h1>{{ title }}</h1>
-        <p>{{ description }}</p>
-      </div>
-
-      <ion-segment [(ngModel)]="selectedKind" (ionChange)="selectKind(selectedKind)">
-        <ion-segment-button value="games">
-          <ion-icon name="game-controller-outline"></ion-icon>
-          Games
-        </ion-segment-button>
-        <ion-segment-button value="animes">
-          <ion-icon name="sparkles-outline"></ion-icon>
-          Animes
-        </ion-segment-button>
-      </ion-segment>
+    <header class="page-intro">
+      <span class="eyebrow"><ion-icon name="sparkles-outline" /> Discover</span>
+      <h1>Follow your curiosity.</h1>
+      <p>Something unforgettable is waiting just around the corner.</p>
+    </header>
+    <section class="catalog-banner">
+      <span class="big-spark" aria-hidden="true">✧</span>
+      <span class="eyebrow">A world for every mood</span>
+      <h2>One more world to fall into.</h2>
+      <p>From sprawling adventures to stories that stay with you. Explore new releases and save your next favorite.</p>
     </section>
-
+    <div class="browse-controls">
+      <app-media-filter-tabs [options]="kindOptions" [selected]="selectedKind" (selectedChange)="selectKindTab($event)" />
+      <div class="browse-fields">
+        <input type="search" aria-label="Search releases" placeholder="Search titles…" [(ngModel)]="searchTerm" />
+        <select aria-label="Sort releases" [(ngModel)]="sortMode"><option value="popular">Most popular</option><option value="release">Newest release</option><option value="title">Title A–Z</option></select>
+      </div>
+    </div>
+    <div class="period-panel">
+      <div><span class="eyebrow">{{ periodSubtitle }}</span><h2>{{ periodLabel }}</h2></div>
+      <div class="period-actions" aria-label="Change release period">
+        <ion-button fill="clear" aria-label="Previous period" (click)="previousPeriod()">‹</ion-button>
+        <ion-button fill="outline" (click)="jumpToCurrentPeriod()">Current</ion-button>
+        <ion-button fill="clear" aria-label="Next period" (click)="nextPeriod()">›</ion-button>
+      </div>
+    </div>
     @if (errorMessage) {
-      <section class="notice">
-        <span>{{ errorMessage }}</span>
-        <ion-button fill="clear" size="small" (click)="load()">
-          <ion-icon slot="start" name="refresh-outline"></ion-icon>
-          Retry
-        </ion-button>
-      </section>
+      <section class="notice" role="alert"><span>{{ errorMessage }}</span><ion-button fill="clear" size="small" (click)="load()">Retry</ion-button></section>
     }
-
-    @if (successMessage) {
-      <section class="notice notice--success">
-        <span>{{ successMessage }}</span>
-      </section>
-    }
-
+    @if (successMessage) { <section class="notice notice--success" role="status">{{ successMessage }}</section> }
     @if (isLoading) {
-      <section class="loading-grid">
-        @for (item of [1, 2, 3, 4, 5, 6]; track item) {
-          <article>
-            <ion-skeleton-text animated></ion-skeleton-text>
-          </article>
-        }
+      <section class="loading-grid" aria-label="Loading releases" aria-busy="true">
+        @for (item of [1, 2, 3, 4, 5]; track item) { <article><ion-skeleton-text animated /></article> }
       </section>
     }
-
     @if (!isLoading && !errorMessage) {
-      <section class="period-panel">
-        <div>
-          <span class="eyebrow">{{ periodSubtitle }}</span>
-          <h2>{{ periodLabel }}</h2>
-        </div>
-        <div class="period-actions" aria-label="Change release period">
-          <ion-button fill="clear" aria-label="Previous period" (click)="previousPeriod()">
-            <span aria-hidden="true">‹</span>
-          </ion-button>
-          <ion-button fill="outline" (click)="jumpToCurrentPeriod()">
-            Current
-          </ion-button>
-          <ion-button fill="clear" aria-label="Next period" (click)="nextPeriod()">
-            <span aria-hidden="true">›</span>
-          </ion-button>
-        </div>
-      </section>
-    }
-
-    @if (!isLoading && topItems.length) {
-      <section class="top-strip">
-        <div class="section-heading">
-          <div>
-            <span class="eyebrow">Most popular</span>
-            <h2>Leading this period</h2>
-          </div>
-        </div>
-        <div class="top-scroll">
-          @for (item of topItems; track trackByItem($index, item)) {
-            <article class="top-card">
-              <ion-button
-                type="button"
-                fill="clear"
-                class="quick-add-button top-card__action"
-                [class.quick-add-button--edit]="hasLibraryEntry(item)"
-                [disabled]="isAdding(item)"
-                [attr.aria-label]="(hasLibraryEntry(item) ? 'Edit ' : 'Add ') + item.name + (hasLibraryEntry(item) ? ' in my library' : ' to my library')"
-                (click)="openLibraryDialog(item)">
-                <ion-icon slot="icon-only" [name]="isAdding(item) ? 'hourglass-outline' : (hasLibraryEntry(item) ? 'create-outline' : 'add-outline')"></ion-icon>
-              </ion-button>
-              <img [src]="imageFor(item)" alt="" loading="lazy" decoding="async" />
-              <div>
-                <ion-badge>
-                  <ion-icon name="people-outline"></ion-icon>
-                  {{ item.addedCount }}
-                </ion-badge>
-                <h3>{{ item.name }}</h3>
-                <p>{{ releaseLabel(item) }}</p>
-              </div>
-            </article>
-          }
-        </div>
-      </section>
-    }
-
-    @if (!isLoading && hasItemsInPeriod) {
-      <section class="release-group">
-        <div class="section-heading">
-          <div>
-            <span class="eyebrow">{{ selectedGroup.subtitle }}</span>
-            <h2>{{ selectedGroup.title }}</h2>
-          </div>
-          <strong>{{ selectedGroup.items.length }}</strong>
-        </div>
+      <app-collection-section [heading]="visibleItems.length + (visibleItems.length === 1 ? ' story to explore' : ' stories to explore')">
+        <span section-actions class="section-caption">{{ sortCaption }}</span>
         <div class="release-grid">
-          @for (item of selectedGroup.items; track trackByItem($index, item)) {
-            <article class="release-card">
-              <ion-button
-                type="button"
-                fill="clear"
-                class="quick-add-button"
-                [class.quick-add-button--edit]="hasLibraryEntry(item)"
-                [disabled]="isAdding(item)"
-                [attr.aria-label]="(hasLibraryEntry(item) ? 'Edit ' : 'Add ') + item.name + (hasLibraryEntry(item) ? ' in my library' : ' to my library')"
-                (click)="openLibraryDialog(item)">
-                <ion-icon slot="icon-only" [name]="isAdding(item) ? 'hourglass-outline' : (hasLibraryEntry(item) ? 'create-outline' : 'add-outline')"></ion-icon>
-              </ion-button>
-              <img [src]="imageFor(item)" alt="" loading="lazy" decoding="async" />
-              <div class="card-body">
-                <div class="badge-row">
-                  <ion-badge>
-                    <ion-icon name="people-outline"></ion-icon>
-                    {{ item.addedCount }} added
-                  </ion-badge>
-                  <span>{{ item.kind === 'games' ? 'Game' : 'Anime' }}</span>
-                </div>
-                <h3>{{ item.name }}</h3>
-                <p>{{ item.description || item.genre || detailsLabel(item) }}</p>
-                <div class="meta-row">
-                  <span>
-                    <ion-icon name="calendar-clear-outline"></ion-icon>
-                    {{ releaseLabel(item) }}
-                  </span>
-                  <span>
-                    <ion-icon name="time-outline"></ion-icon>
-                    {{ detailsLabel(item) }}
-                  </span>
-                </div>
-              </div>
-            </article>
+          @for (item of visibleItems; track trackByItem($index, item)) {
+            <app-media-poster [style.--card-index]="$index % 5" [title]="item.name" [image]="imageFor(item)"
+              [kind]="item.kind === 'games' ? 'Game' : 'Anime'" [icon]="item.kind === 'games' ? 'game-controller-outline' : 'sparkles-outline'"
+              [subtitle]="detailsLabel(item)" [meta]="item.addedCount + ' in libraries'"
+              [status]="browseStatus(item)" [progress]="browseProgress(item)" [disabled]="isAdding(item)"
+              [actionIcon]="hasLibraryEntry(item) ? 'create-outline' : 'add-outline'"
+              [actionLabel]="(hasLibraryEntry(item) ? 'Edit ' : 'Add ') + item.name"
+              (open)="openLibraryDialog(item)" (action)="openLibraryDialog(item)" />
           }
         </div>
-      </section>
-    }
-
-    @if (!isLoading && !hasItemsInPeriod && !errorMessage) {
-      <section class="empty-state">
-        <ion-icon [name]="selectedKind === 'games' ? 'game-controller-outline' : 'sparkles-outline'"></ion-icon>
-        <h2>No releases in {{ periodLabel }}</h2>
-        <p>Use the period navigation to browse nearby {{ selectedKind === 'games' ? 'months' : 'seasons' }}.</p>
-      </section>
+        @if (!visibleItems.length) {
+          <section class="empty-state">
+            <ion-icon name="albums-outline" />
+            <h2>{{ searchTerm ? 'No stories found.' : 'No releases in ' + periodLabel }}</h2>
+            <p>{{ searchTerm ? 'Try another title or clear your search.' : 'Explore a nearby ' + (selectedKind === 'games' ? 'month' : 'season') + ' to find your next story.' }}</p>
+            @if (searchTerm) { <ion-button fill="outline" (click)="searchTerm = ''">Clear search</ion-button> }
+          </section>
+        }
+      </app-collection-section>
     }
   </main>
-
-  <ion-modal
-    class="add-game-modal"
-    [isOpen]="isAddDialogOpen"
-    (didDismiss)="closeAddDialog()">
-    <ng-template>
-      @if (selectedMedia; as game) {
-        <form class="library-editor" (ngSubmit)="submitAddGame()" novalidate>
-          <section class="editor-cover" [style.background-image]="'url(' + imageFor(game) + ')'">
-            <div class="editor-cover__shade"></div>
-            <ion-button
-              type="button"
-              fill="clear"
-              class="dialog-icon-button"
-              aria-label="Close"
-              [disabled]="isAdding(game)"
-              (click)="closeAddDialog()">
-              <ion-icon slot="icon-only" name="close-outline"></ion-icon>
-            </ion-button>
-            <div class="editor-cover__content">
-              <img [src]="imageFor(game)" alt="" loading="lazy" decoding="async" />
-              <div>
-                <span class="eyebrow">{{ isEditingSelectedGame() ? 'Edit my ' + mediaMode.singular : 'Add to mine' }}</span>
-                <h2>{{ game.name }}</h2>
-                <p>{{ isGamesMode ? platformLabel(game.platforms) : mediaTypeLabel(game) }} - {{ durationLabel(game) }}</p>
-              </div>
-            </div>
-          </section>
-          <section class="editor-body">
-            <div class="editor-stats">
-              <article>
-                <span>Status</span>
-                <strong>{{ statusLabel(game) }}</strong>
-              </article>
-              <article>
-                <span>{{ isGamesMode ? 'Progress' : 'Watched' }}</span>
-                <strong>{{ progressOf(game) }}%</strong>
-              </article>
-              <article>
-                <span>Remaining</span>
-                <strong>{{ remainingLabel(game) }}</strong>
-              </article>
-            </div>
-            <fieldset class="status-picker">
-              <legend>Status</legend>
-              @for (status of statusOptions; track status) {
-                <button
-                  type="button"
-                  class="status-option"
-                  [class.status-option--active]="addGameForm.status === status.value"
-                  [attr.aria-pressed]="addGameForm.status === status.value"
-                  (click)="addGameForm.status = status.value">
-                  <span>{{ status.label }}</span>
-                  @if (addGameForm.status === status.value) {
-                    <ion-icon name="checkmark-circle-outline"></ion-icon>
-                  }
-                  @if (addGameForm.status === status.value) {
-                    <small>Selected</small>
-                  }
-                </button>
-              }
-            </fieldset>
-            <div class="editor-grid">
-              <label class="form-field">
-                <span>{{ isGamesMode ? 'Played hours' : 'Watched hours' }}</span>
-                <input
-                  type="number"
-                  min="0"
-                  inputmode="decimal"
-                  [(ngModel)]="addGameForm.timeSpend"
-                  name="timeSpend" />
-              </label>
-              @if (isEpisodeMode) {
-                <label class="form-field">
-                  <span>Current episode</span>
-                  <input
-                    type="number"
-                    min="0"
-                    inputmode="numeric"
-                    [(ngModel)]="addGameForm.currentEpisode"
-                    name="currentEpisode" />
-                </label>
-              }
-              <label class="form-field">
-                <span>Rating</span>
-                <div class="rating-field">
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    step="1"
-                    [(ngModel)]="addGameForm.rating"
-                    name="ratingRange" />
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    inputmode="numeric"
-                    placeholder="--"
-                    [(ngModel)]="addGameForm.rating"
-                    name="rating" />
-                </div>
-              </label>
-              <label class="form-field">
-                <span>Started</span>
-                <input type="date" [(ngModel)]="addGameForm.startDate" name="startDate" />
-              </label>
-              <label class="form-field">
-                <span>Finished</span>
-                <input type="date" [(ngModel)]="addGameForm.endDate" name="endDate" />
-              </label>
-            </div>
-          </section>
-          <footer class="editor-actions">
-            <ion-button
-              type="button"
-              fill="clear"
-              [disabled]="isAdding(game)"
-              (click)="closeAddDialog()">
-              Cancel
-            </ion-button>
-            <ion-button type="submit" [disabled]="isAdding(game)">
-              <ion-icon slot="start" [name]="isAdding(game) ? 'hourglass-outline' : (isEditingSelectedGame() ? 'checkmark-circle-outline' : 'add-outline')"></ion-icon>
-              {{ isAdding(game) ? 'Saving...' : (isEditingSelectedGame() ? 'Save changes' : 'Add ' + mediaMode.singular) }}
-            </ion-button>
-          </footer>
-        </form>
-      }
-    </ng-template>
-  </ion-modal>
+  <app-library-add-dialog [(isOpen)]="isAddDialogOpen" [(form)]="addGameForm"
+    [selectedGame]="selectedMedia" [mediaMode]="mediaMode" [statusOptions]="statusOptions"
+    [isGamesMode]="isGamesMode" [isEpisodeMode]="isEpisodeMode" [isEditing]="isEditingSelectedGame()"
+    [isSaving]="selectedItem ? isAdding(selectedItem) : false" [errorMessage]="errorMessage"
+    (details)="openSelectedDetails()" (dismiss)="closeAddDialog()" (submitted)="submitAddGame()" />
 </ion-content>

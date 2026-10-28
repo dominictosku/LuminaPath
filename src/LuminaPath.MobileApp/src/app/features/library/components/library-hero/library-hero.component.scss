@@ -1,0 +1,8 @@
+:host { display: block; }
+.page-intro { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 10px; }
+.eyebrow { display: flex; align-items: center; gap: 9px; color: var(--collection-muted); font-size: 11px; text-transform: uppercase; }
+.eyebrow ion-icon { color: var(--collection-accent); font-size: 17px; }
+h1 { font: 600 clamp(26px, 2.7vw, 36px)/1.25 Manrope, sans-serif; letter-spacing: -1.3px; margin: 18px 0 12px; }
+p { color: var(--collection-muted); font-size: 14px; margin: 0; line-height: 1.7; }
+.heading-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+@media (max-width: 1000px) { .page-intro { align-items: flex-start; flex-direction: column; gap: 20px; } }

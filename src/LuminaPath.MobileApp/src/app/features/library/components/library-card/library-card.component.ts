@@ -1,6 +1,6 @@
 
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
-import { IonBadge, IonButton, IonIcon } from '@ionic/angular/standalone';
+import { MediaPosterComponent } from 'src/app/shared/components/media-poster/media-poster.component';
 import { MediaModeOption } from 'src/app/shared/services/media-mode.service';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { MediaItem } from '../../models/media-item.model';
@@ -10,7 +10,7 @@ import { MediaLibraryViewService } from '../../services/media-library-view.servi
   selector: 'app-library-card',
   templateUrl: './library-card.component.html',
   styleUrls: ['./library-card.component.scss'],
-  imports: [IonBadge, IonButton, IonIcon],
+  imports: [MediaPosterComponent],
 })
 export class LibraryCardComponent {
   readonly view = inject(MediaLibraryViewService);
@@ -39,6 +39,6 @@ export class LibraryCardComponent {
       return;
     }
 
-    this.details.emit(item);
+    this.edit.emit(item);
   }
 }

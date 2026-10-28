@@ -1,34 +1,16 @@
 <ion-modal
   class="create-modal"
   [isOpen]="isOpen()"
+  [canDismiss]="canDismiss"
+  aria-label="Catalog media editor"
   (didDismiss)="dismiss.emit()">
   <ng-template>
-    <form class="create-dialog" (ngSubmit)="submitted.emit()" novalidate>
-      <header class="create-dialog__header">
-        <div class="create-dialog__heading">
-          <span class="create-dialog__eyebrow">
-            <ion-icon [name]="isEditing() ? 'create-outline' : 'add-circle-outline'"></ion-icon>
-            {{ isEditing() ? 'Edit' : 'Create' }}
-          </span>
-          <h2>{{ isEditing() ? 'Edit ' + mediaMode().singular : 'New ' + mediaMode().singular }}</h2>
-          <p>
-            {{ isEditing()
-              ? 'Update the shared catalog entry. Personal library entries are not affected.'
-              : 'Add a ' + mediaMode().singular + ' to the shared catalog.' }}
-          </p>
-        </div>
-        <ion-button
-          type="button"
-          fill="clear"
-          class="create-dialog__close"
-          aria-label="Close"
-          [disabled]="isSaving()"
-          (click)="dismiss.emit()">
-          <ion-icon slot="icon-only" name="close-outline"></ion-icon>
-        </ion-button>
-      </header>
-
-      <div class="create-dialog__body">
+    <form class="create-dialog media-dialog" #createForm="ngForm" (ngSubmit)="createForm.valid && canSubmit() && !isSaving() && !isUploadingCover() && submitted.emit()">
+      <app-media-dialog-hero [image]="coverDisplayUrl()" [title]="form().name || 'A new story starts here.'"
+        [eyebrow]="(isEditing() ? 'Edit ' : 'Create ') + mediaMode().singular"
+        [subtitle]="isEditing() ? 'Update this title in the shared catalog.' : 'Add a new world to the shared catalog.'"
+        [busy]="isSaving() || isUploadingCover()" (closed)="dismiss.emit()" />
+      <div class="create-dialog__body dialog-body">
         @if (errorMessage()) {
           <div class="create-dialog__notice create-dialog__notice--error" role="alert">
             <ion-icon name="alert-circle-outline"></ion-icon>
@@ -91,8 +73,8 @@
 
         <!-- Core fields -->
         <section class="create-dialog__section">
-          <div class="create-dialog__grid">
-            <label class="create-dialog__field create-dialog__field--full">
+          <div class="create-dialog__grid dialog-grid">
+            <label class="dialog-field create-dialog__field create-dialog__field--full dialog-field--full">
               <span>Title</span>
               <input
                 type="text"
@@ -104,7 +86,7 @@
                 name="name" />
             </label>
 
-            <label class="create-dialog__field create-dialog__field--full">
+            <label class="dialog-field create-dialog__field create-dialog__field--full dialog-field--full">
               <span>Description</span>
               <textarea
                 rows="3"
@@ -114,7 +96,7 @@
                 name="description"></textarea>
             </label>
 
-            <label class="create-dialog__field">
+            <label class="dialog-field create-dialog__field">
               <span>Release date</span>
               <input
                 type="date"
@@ -123,7 +105,7 @@
                 name="releaseDate" />
             </label>
 
-            <label class="create-dialog__field">
+            <label class="dialog-field create-dialog__field">
               <span>Genre</span>
               <input
                 type="text"
@@ -134,7 +116,7 @@
             </label>
 
             @if (isGamesMode()) {
-              <fieldset class="create-dialog__field create-dialog__field--full create-dialog__chips">
+              <fieldset class="dialog-field create-dialog__field create-dialog__field--full dialog-field--full create-dialog__chips">
                 <legend>Platforms</legend>
                 <div class="create-dialog__chip-row">
                   @for (option of platformChoices; track trackByValue($index, option)) {
@@ -150,7 +132,7 @@
                 </div>
               </fieldset>
 
-              <label class="create-dialog__field">
+              <label class="dialog-field create-dialog__field">
                 <span>Estimated playtime (h)</span>
                 <input
                   type="number"
@@ -158,12 +140,12 @@
                   inputmode="decimal"
                   [ngModel]="form().playtime"
                   (ngModelChange)="form.update((f) => ({ ...f, playtime: $event }))"
-                  name="playtime" />
+                  name="playtime" step="any" />
               </label>
             }
 
             @if (isEpisodeMode()) {
-              <label class="create-dialog__field">
+              <label class="dialog-field create-dialog__field">
                 <span>Episodes</span>
                 <input
                   type="number"
@@ -173,7 +155,7 @@
                   (ngModelChange)="form.update((f) => ({ ...f, episodeCount: $event }))"
                   name="episodeCount" />
               </label>
-              <label class="create-dialog__field">
+              <label class="dialog-field create-dialog__field">
                 <span>Per episode (min)</span>
                 <input
                   type="number"
@@ -183,7 +165,7 @@
                   (ngModelChange)="form.update((f) => ({ ...f, expectedWatchTimePerEpisodeMinutes: $event }))"
                   name="perEpisodeMinutes" />
               </label>
-              <label class="create-dialog__field create-dialog__field--full">
+              <label class="dialog-field create-dialog__field create-dialog__field--full dialog-field--full">
                 <span>Total runtime (min)</span>
                 <input
                   type="number"
@@ -196,7 +178,7 @@
             }
 
             @if (isMovieMode()) {
-              <label class="create-dialog__field create-dialog__field--full">
+              <label class="dialog-field create-dialog__field create-dialog__field--full dialog-field--full">
                 <span>Runtime (min)</span>
                 <input
                   type="number"
@@ -223,6 +205,7 @@
                 type="checkbox"
                 [checked]="form().createLibraryEntry"
                 (change)="setCreateLibraryEntry($any($event.target).checked)"
+                aria-label="Also add to my library"
                 name="createLibraryEntry" />
               <span class="create-dialog__switch-track" aria-hidden="true">
                 <span class="create-dialog__switch-thumb"></span>
@@ -234,7 +217,7 @@
           </header>
 
           @if (form().createLibraryEntry) {
-            <fieldset class="create-dialog__field create-dialog__field--full create-dialog__status-picker">
+            <fieldset class="dialog-field create-dialog__field create-dialog__field--full dialog-field--full create-dialog__status-picker">
               <legend>Status</legend>
               <div class="create-dialog__status-grid">
                 @for (status of statusOptions(); track status.value) {
@@ -253,20 +236,20 @@
               </div>
             </fieldset>
 
-            <div class="create-dialog__grid">
-              <label class="create-dialog__field">
-                <span>{{ isGamesMode() ? 'Played hours' : 'Watched hours' }}</span>
+            <div class="create-dialog__grid dialog-grid">
+              <label class="dialog-field create-dialog__field">
+                <span>{{ isGamesMode() ? 'Manual playtime (hours)' : 'Watched hours' }}</span>
                 <input
                   type="number"
                   min="0"
                   inputmode="decimal"
                   [ngModel]="form().libraryEntry.timeSpend"
                   (ngModelChange)="form.update((f) => ({ ...f, libraryEntry: { ...f.libraryEntry, timeSpend: $event } }))"
-                  name="libTime" />
+                  name="libTime" step="any" />
               </label>
 
               @if (isEpisodeMode()) {
-                <label class="create-dialog__field">
+                <label class="dialog-field create-dialog__field">
                   <span>Current episode</span>
                   <input
                     type="number"
@@ -278,7 +261,7 @@
                 </label>
               }
 
-              <label class="create-dialog__field">
+              <label class="dialog-field create-dialog__field">
                 <span>Rating</span>
                 <input
                   type="number"
@@ -291,7 +274,7 @@
                   name="libRating" />
               </label>
 
-              <label class="create-dialog__field">
+              <label class="dialog-field create-dialog__field">
                 <span>Started</span>
                 <input
                   type="date"
@@ -300,7 +283,7 @@
                   name="libStart" />
               </label>
 
-              <label class="create-dialog__field">
+              <label class="dialog-field create-dialog__field">
                 <span>Finished</span>
                 <input
                   type="date"
@@ -314,7 +297,7 @@
         }
       </div>
 
-      <footer class="create-dialog__footer">
+      <footer class="create-dialog__footer dialog-actions">
         <ion-button
           type="button"
           fill="clear"
@@ -324,7 +307,7 @@
         </ion-button>
         <ion-button
           type="submit"
-          [disabled]="isSaving() || isUploadingCover() || !canSubmit()">
+          [disabled]="isSaving() || isUploadingCover() || !canSubmit() || createForm.invalid">
           <ion-icon
             slot="start"
             [name]="isSaving()

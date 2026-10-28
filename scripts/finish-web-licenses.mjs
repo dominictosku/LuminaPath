@@ -19,6 +19,22 @@ if (existsSync(licenses)) {
     if (pkg.version !== version) throw new Error(`Review and update the supplemental license for ${name}@${pkg.version}.`);
     text += `\n${'-'.repeat(80)}\n${name}@${version}\n\n${readFileSync(resolve(root, 'licenses', file), 'utf8')}`;
   }
+  // Font packages are referenced in SCSS/CSS and bundled into media assets by Angular's stylesheet pipeline,
+  // so Angular's JS-only license extractor omits them from 3rdpartylicenses.txt.
+  const fontPackages = [
+    '@fontsource-variable/dm-sans',
+    '@fontsource-variable/manrope',
+  ];
+  for (const name of fontPackages) {
+    const pkgDir = resolve(root, 'src/LuminaPath.MobileApp/node_modules', name);
+    if (existsSync(pkgDir)) {
+      const pkg = JSON.parse(readFileSync(resolve(pkgDir, 'package.json'), 'utf8'));
+      const licensePath = resolve(pkgDir, 'LICENSE');
+      if (existsSync(licensePath)) {
+        text += `\n${'-'.repeat(80)}\nPackage: ${name}\nVersion: ${pkg.version}\nLicense: "${pkg.license}"\n\n${readFileSync(licensePath, 'utf8')}`;
+      }
+    }
+  }
   writeFileSync(resolve(output, 'browser/assets/legal/web-licenses.txt'), text);
   const metadataPath = resolve(output, 'browser/assets/legal/source.json');
   const metadata = JSON.parse(readFileSync(metadataPath, 'utf8'));

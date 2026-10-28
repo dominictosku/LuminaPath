@@ -87,6 +87,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   private dataExport = inject(DataExportService);
   private router = inject(Router);
   private mediaModeService = inject(MediaModeService);
+  readonly mediaOptions = this.mediaModeService.options;
   readonly mediaView = inject(MediaLibraryViewService);
   private libraryIntelligence = inject(LibraryIntelligenceService);
   private libraryFilterPresets = inject(LibraryFilterPresetService);
@@ -455,7 +456,20 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     return this.addingGameIds.has(game.id);
   }
 
+  browseMedia(): void {
+    // The catalog supports every media mode; release feeds only cover games and anime.
+    this.clearFilters(false);
+    this.ownershipFilter = 'catalog';
+    this.applyFilters();
+  }
+
+  selectMediaMode(id: string): void {
+    const mode = this.mediaOptions.find((option) => option.id === id);
+    if (mode) this.mediaModeService.select(mode.id);
+  }
+
   openDetails(game: MediaItem) {
+    this.closeAddDialog();
     this.router.navigate(this.mediaLibrary.detailsRoute(game));
   }
 
@@ -507,14 +521,6 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
 
   get statusOptions() {
     return this.mediaView.statusOptions(this.mediaMode);
-  }
-
-  get heroTitle(): string {
-    return this.mediaView.heroTitle(this.mediaMode);
-  }
-
-  get heroDescription(): string {
-    return this.mediaView.heroDescription(this.mediaMode);
   }
 
   get resultTitle(): string {

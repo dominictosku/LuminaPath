@@ -88,4 +88,16 @@ describe('MediaLibraryViewService', () => {
       currentEpisode: 6,
     }, mode('movies')).currentEpisode).toBeNull();
   });
+  it('keeps imported game hours out of the editable manual-hours draft and payload', () => {
+    const item = mediaItem({kind: 'games', playtime: 40, libraryEntry: {
+      id: 5, rating: 9, startDate: null, endDate: null, status: 2,
+      timeSpend: 8.5, myGameInfo: {trackedHours: 10},
+    }});
+    const draft = service.createLibraryForm(item, mode('games'));
+    expect(service.playedOf(item, mode('games'))).toBe(18.5);
+    expect(draft.timeSpend).toBe(8.5);
+    expect(service.toLibraryEntryDetails(draft, mode('games')).timeSpend).toBe(8.5);
+    expect(item.libraryEntry?.myGameInfo?.trackedHours).toBe(10);
+  });
+
 });
