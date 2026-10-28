@@ -1,0 +1,51 @@
+@using LuminaPath.Features.Media.Models
+@using Microsoft.AspNetCore.Components.Web
+
+<article class="media-card tilt"
+         tabindex="0"
+         role="button"
+         aria-label="@($"{Item.Title}, {Item.KindLabel}, {Item.StatusDisplayLabel}")"
+         @onclick="HandleClick"
+         @onkeydown="HandleKeyDown">
+    <img src="@Item.CoverUrl" alt="@Item.Title" loading="lazy" />
+    <div class="card-top">
+        <span class="media-tag">@Item.KindIcon @Item.KindLabel</span>
+        <button class="more-btn"
+                type="button"
+                aria-label="@($"Open details for {Item.Title}")"
+                @onclick="HandleClick"
+                @onclick:stopPropagation="true">···</button>
+    </div>
+    <div class="card-bottom">
+        <div class="card-status">
+            <i class="@Item.StatusDotClass"></i>
+            <span>@Item.StatusDisplayLabel</span>
+        </div>
+        @if (Item.ProgressPercent > 0)
+        {
+            <div class="progress-line">
+                <span style="width:@(Item.ProgressPercent)%"></span>
+            </div>
+        }
+        <h3 class="card-title">@Item.Title</h3>
+        <div class="card-meta">
+            <span>@Item.Platform</span>
+            <strong>@Item.CardFootText</strong>
+        </div>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public UnifiedMediaItem Item { get; set; } = default!;
+    [Parameter] public EventCallback<UnifiedMediaItem> OnSelect { get; set; }
+
+    private Task HandleClick() => OnSelect.InvokeAsync(Item);
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            await OnSelect.InvokeAsync(Item);
+        }
+    }
+}

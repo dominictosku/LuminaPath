@@ -1,0 +1,298 @@
+@using LuminaPath.Core.Enums
+@using LuminaPath.Features.Media.Models
+
+@if (Item is not null)
+{
+    <div class="lumina-modal-backdrop" @onclick="Close">
+        <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="detail-dialog-title" @onclick:stopPropagation="true">
+            <div class="dialog-banner">
+                <img src="@Item.CoverUrl" alt="@Item.Title" />
+                <button class="dialog-close" type="button" aria-label="Close" @onclick="Close">✕</button>
+            </div>
+            <div class="dialog-body">
+                <p class="eyebrow">@BadgeText</p>
+                <h2 id="detail-dialog-title">@Item.Title</h2>
+                <p class="dialog-meta">@MetaText</p>
+                <p class="dialog-desc">
+                    @(string.IsNullOrWhiteSpace(Item.Description)
+                        ? "A hand-picked world in your LuminaPath universe. Track your time, episodes, ratings, and personal notes."
+                        : Item.Description)
+                </p>
+
+                @if (Item.Kind == "game")
+                {
+                    <div class="detail-stats detail-stats-4">
+                        <div>
+                            <span>Manual Time</span>
+                            <strong>@UnifiedMediaItem.FormatHours(Item.ManualHours)</strong>
+                            <small>Logged by you</small>
+                        </div>
+                        <div>
+                            <span>Imported Time</span>
+                            <strong>@UnifiedMediaItem.FormatHours(Item.TrackedHours)</strong>
+                            <small>Steam / PSN</small>
+                        </div>
+                        <div>
+                            <span>Total / Est.</span>
+                            <strong>@UnifiedMediaItem.FormatHours(Item.TotalHours) / @(Item.EstimatedHours > 0 ? UnifiedMediaItem.FormatHours(Item.EstimatedHours) : "—")</strong>
+                            <small>Combined</small>
+                        </div>
+                        <div>
+                            <span>Progress</span>
+                            <strong>@(Item.ProgressPercent)%</strong>
+                            <small>@Item.StatusDisplayLabel</small>
+                        </div>
+                    </div>
+                }
+                else if (Item.Kind is "series" or "anime")
+                {
+                    <div class="detail-stats">
+                        <div>
+                            <span>Episodes</span>
+                            <strong>@(Item.CurrentEpisode ?? 0) / @(Item.TotalEpisodes?.ToString() ?? "—")</strong>
+                        </div>
+                        <div>
+                            <span>Watched Time</span>
+                            <strong>@UnifiedMediaItem.FormatHours(Item.ManualHours) @(Item.EstimatedHours > 0 ? $"/ {UnifiedMediaItem.FormatHours(Item.EstimatedHours)}" : "")</strong>
+                        </div>
+                        <div>
+                            <span>Progress</span>
+                            <strong>@(Item.ProgressPercent)%</strong>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="detail-stats">
+                        <div>
+                            <span>Watched Time</span>
+                            <strong>@UnifiedMediaItem.FormatHours(Item.ManualHours)</strong>
+                        </div>
+                        <div>
+                            <span>Runtime</span>
+                            <strong>@(Item.ExpectedWatchTimeMinutes is > 0 ? $"{Item.ExpectedWatchTimeMinutes}m" : "—")</strong>
+                        </div>
+                        <div>
+                            <span>Progress</span>
+                            <strong>@(Item.ProgressPercent)%</strong>
+                        </div>
+                    </div>
+                }
+
+                @if (IsAuthenticated)
+                {
+                    <div class="dialog-controls">
+                        @if (Item.InLibrary)
+                        {
+                            @if (Item.Kind == "game")
+                            {
+                                <label>
+                                    Status
+                                    <select class="select" value="@(Item.GameStatus ?? GameStatus.Planned)" @onchange="HandleGameStatusChanged" disabled="@Busy">
+                                        @foreach (var st in Enum.GetValues<GameStatus>())
+                                        {
+                                            <option value="@st">@st</option>
+                                        }
+                                    </select>
+                                </label>
+                            }
+                            else
+                            {
+                                <label>
+                                    Status
+                                    <select class="select" value="@(Item.MediaStatus ?? MediaStatus.Planned)" @onchange="HandleMediaStatusChanged" disabled="@Busy">
+                                        @foreach (var st in Enum.GetValues<MediaStatus>())
+                                        {
+                                            <option value="@st">@st</option>
+                                        }
+                                    </select>
+                                </label>
+                            }
+
+                            <label>
+                                Rating (1–10)
+                                <select class="select" value="@(Item.Rating?.ToString() ?? "")" @onchange="HandleRatingChanged" disabled="@Busy">
+                                    <option value="">Unrated</option>
+                                    @for (short r = 10; r >= 1; r--)
+                                    {
+                                        var ratingValue = r;
+                                        <option value="@ratingValue">★ @ratingValue / 10</option>
+                                    }
+                                </select>
+                            </label>
+
+                            @if (Item.Kind is "series" or "anime")
+                            {
+                                <label>
+                                    Add episodes watched
+                                    <input class="input" type="number" min="1" max="50" step="1" @bind="_sessionAmount" disabled="@Busy" />
+                                </label>
+                                <button class="btn btn-primary" type="button" @onclick="HandleLogProgress" disabled="@Busy">
+                                    + Log episode
+                                </button>
+                            }
+                            else
+                            {
+                                <label>
+                                    Log manual session (hrs)
+                                    <input class="input" type="number" min="0.5" max="24" step="0.5" @bind="_sessionAmount" disabled="@Busy" />
+                                </label>
+                                <button class="btn btn-primary" type="button" @onclick="HandleLogProgress" disabled="@Busy">
+                                    + Log session
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary" type="button" @onclick="@(() => OnAddToLibrary.InvokeAsync(Item))" disabled="@Busy">
+                                + Add to my library
+                            </button>
+                        }
+                    </div>
+                }
+
+                <div class="dialog-secondary-actions">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        @if (IsAuthenticated && Item.InLibrary)
+                        {
+                            @if (OnEditLibraryEntry.HasDelegate)
+                            {
+                                <button class="btn btn-ghost" type="button" @onclick="@(() => OnEditLibraryEntry.InvokeAsync(Item))" disabled="@Busy">
+                                    ✎ Full library options
+                                </button>
+                            }
+                            @if (OnRemoveFromLibrary.HasDelegate)
+                            {
+                                <button class="btn btn-danger" type="button" @onclick="@(() => OnRemoveFromLibrary.InvokeAsync(Item))" disabled="@Busy">
+                                    Remove from library
+                                </button>
+                            }
+                        }
+                    </div>
+
+                    @if (CanUserEdit)
+                    {
+                        <div style="display:flex;gap:8px;flex-wrap:wrap">
+                            @if (Item.Kind == "game" && OnRefreshMetadata.HasDelegate)
+                            {
+                                <button class="btn btn-ghost" type="button" @onclick="@(() => OnRefreshMetadata.InvokeAsync(Item))" disabled="@Busy">
+                                    ↻ Refresh metadata
+                                </button>
+                            }
+                            @if (OnEditCatalogEntry.HasDelegate)
+                            {
+                                <button class="btn btn-ghost" type="button" @onclick="@(() => OnEditCatalogEntry.InvokeAsync(Item))" disabled="@Busy">
+                                    ✎ Edit catalog
+                                </button>
+                            }
+                            @if (OnDeleteCatalogEntry.HasDelegate)
+                            {
+                                <button class="btn btn-danger" type="button" @onclick="@(() => OnDeleteCatalogEntry.InvokeAsync(Item))" disabled="@Busy">
+                                    Delete catalog
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public UnifiedMediaItem? Item { get; set; }
+    [Parameter] public bool IsAuthenticated { get; set; }
+    [Parameter] public bool CanUserEdit { get; set; }
+    [Parameter] public bool Busy { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<UnifiedMediaItem> OnAddToLibrary { get; set; }
+    [Parameter] public EventCallback<UnifiedMediaItem> OnRemoveFromLibrary { get; set; }
+    [Parameter] public EventCallback<(UnifiedMediaItem Item, GameStatus Status)> OnUpdateGameStatus { get; set; }
+    [Parameter] public EventCallback<(UnifiedMediaItem Item, MediaStatus Status)> OnUpdateMediaStatus { get; set; }
+    [Parameter] public EventCallback<(UnifiedMediaItem Item, short? Rating)> OnUpdateRating { get; set; }
+    [Parameter] public EventCallback<(UnifiedMediaItem Item, double Amount)> OnLogSession { get; set; }
+    [Parameter] public EventCallback<UnifiedMediaItem> OnEditLibraryEntry { get; set; }
+    [Parameter] public EventCallback<UnifiedMediaItem> OnEditCatalogEntry { get; set; }
+    [Parameter] public EventCallback<UnifiedMediaItem> OnDeleteCatalogEntry { get; set; }
+    [Parameter] public EventCallback<UnifiedMediaItem> OnRefreshMetadata { get; set; }
+
+    private double _sessionAmount = 1.5;
+    private int? _lastMediaId;
+    private string? _lastKind;
+
+    protected override void OnParametersSet()
+    {
+        if (Item is not null && (Item.MediaId != _lastMediaId || Item.Kind != _lastKind))
+        {
+            _lastMediaId = Item.MediaId;
+            _lastKind = Item.Kind;
+            _sessionAmount = Item.Kind is "series" or "anime" ? 1 : 1.5;
+        }
+    }
+
+    private string BadgeText
+    {
+        get
+        {
+            if (Item is null) return string.Empty;
+            var yearPart = Item.Year.HasValue ? $" · {Item.Year.Value}" : string.Empty;
+            var ratingPart = Item.Rating is > 0 ? $" · ★ {Item.Rating}/10" : string.Empty;
+            return $"{Item.KindLabel.ToUpperInvariant()}{yearPart}{ratingPart}";
+        }
+    }
+
+    private string MetaText
+    {
+        get
+        {
+            if (Item is null) return string.Empty;
+            var genres = Item.Genres.Count > 0 ? string.Join(", ", Item.Genres.Take(3)) : Item.KindLabel;
+            return $"{genres} · {Item.Platform} · {Item.Source}";
+        }
+    }
+
+    private Task Close() => OnClose.InvokeAsync();
+
+    private async Task HandleGameStatusChanged(ChangeEventArgs e)
+    {
+        if (Item is null || !Enum.TryParse<GameStatus>(e.Value?.ToString(), out var status))
+        {
+            return;
+        }
+
+        await OnUpdateGameStatus.InvokeAsync((Item, status));
+    }
+
+    private async Task HandleMediaStatusChanged(ChangeEventArgs e)
+    {
+        if (Item is null || !Enum.TryParse<MediaStatus>(e.Value?.ToString(), out var status))
+        {
+            return;
+        }
+
+        await OnUpdateMediaStatus.InvokeAsync((Item, status));
+    }
+
+    private async Task HandleRatingChanged(ChangeEventArgs e)
+    {
+        if (Item is null)
+        {
+            return;
+        }
+
+        var str = e.Value?.ToString();
+        short? rating = short.TryParse(str, out var parsed) ? parsed : null;
+        await OnUpdateRating.InvokeAsync((Item, rating));
+    }
+
+    private async Task HandleLogProgress()
+    {
+        if (Item is null || _sessionAmount <= 0)
+        {
+            return;
+        }
+
+        await OnLogSession.InvokeAsync((Item, _sessionAmount));
+    }
+}

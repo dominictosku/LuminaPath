@@ -1,0 +1,341 @@
+@page "/library"
+@page "/Media/Library"
+@page "/Media/MyGames"
+@page "/Media/MyAnimes"
+@page "/Media/MyMovies"
+@page "/Media/MySeries"
+@using LuminaPath.Features.Media.Models
+@using LuminaPath.Infrastructure.Services
+@using LuminaPath.Infrastructure.Services.Imports
+@inherits UnifiedMediaPageBase
+@inject ExcelService ExcelService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@attribute [Authorize]
+
+<PageTitle>LuminaPath — My Library</PageTitle>
+
+<section class="view active">
+    <PageIntro Eyebrow="YOUR LIBRARY"
+               Title="Every world, in one place."
+               Subtitle="Games, movies, series, and anime you own, play, watch, and love.">
+        <div class="intro-actions">
+            <button class="btn btn-ghost" type="button" @onclick="ExportLibraryAsync" disabled="@_exporting">
+                ↓ @(_exporting ? "Exporting…" : "Export library")
+            </button>
+            <button class="btn btn-primary" type="button" @onclick="@(() => OpenCreateLibraryEntryDialogAsync(_selectedKind))">
+                + Add @AddButtonKindLabel
+            </button>
+        </div>
+    </PageIntro>
+
+    <section class="stats" aria-label="Library summary">
+        <div class="stat">
+            <span>Showing in view</span>
+            <strong>@FilteredItems.Count</strong>
+            <small class="up">@FilteredItems.Count(i => i.IsActiveJourney) active right now</small>
+        </div>
+        <div class="stat">
+            <span>Manual time logged</span>
+            <strong>@($"{Math.Round(FilteredItems.Sum(i => i.ManualHours), 1)}h")</strong>
+            <small>Personal sessions &amp; episodes</small>
+        </div>
+        <div class="stat">
+            <span>Imported playtime</span>
+            <strong>@($"{Math.Round(FilteredItems.Sum(i => i.TrackedHours), 1)}h")</strong>
+            <small class="up">Steam &amp; PlayStation sync</small>
+        </div>
+        <div class="stat">
+            <span>Completed stories</span>
+            <strong>@FilteredItems.Count(i => i.IsCompleted)</strong>
+            <small>Finished in this view</small>
+        </div>
+    </section>
+
+    <MediaFilterBar @bind-SelectedKind="_selectedKind"
+                    @bind-SearchQuery="_searchQuery"
+                    @bind-SelectedStatus="_selectedStatus"
+                    @bind-SelectedSort="_selectedSort"
+                    @bind-GenreFilter="_genreFilter"
+                    @bind-SourceFilter="_sourceFilter"
+                    @bind-FromYear="_fromYear"
+                    @bind-ToYear="_toYear"
+                    ShowStatusFilter="true"
+                    ShowHoursSort="true"
+                    EnableAdvancedFilters="true"
+                    TabsAriaLabel="Library media type"
+                    TabCounts="@TabCounts" />
+
+    @if (_loading)
+    {
+        <div class="empty-state">
+            <strong>Loading your library…</strong>
+            <span>Fetching your games, movies, series, and anime.</span>
+        </div>
+    }
+    else if (FilteredItems.Count == 0)
+    {
+        <div class="empty-state">
+            <strong>No library entries match your current filter</strong>
+            <p style="margin:6px 0 14px">Try switching tabs, clearing your search filter, or adding a new world from the catalog.</p>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+                <button class="btn btn-primary" type="button" @onclick="@(() => OpenCreateLibraryEntryDialogAsync(_selectedKind))">
+                    + Add @AddButtonKindLabel
+                </button>
+                <a class="btn btn-ghost" href="catalog">Explore catalog →</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="browse-grid">
+            @foreach (var item in FilteredItems)
+            {
+                <MediaCard Item="item" OnSelect="OpenDetail" />
+            }
+        </div>
+    }
+</section>
+
+<MediaDetailDialog Item="@ActiveDetailItem"
+                   IsAuthenticated="true"
+                   CanUserEdit="@CanUserEdit"
+                   Busy="@IsDetailBusy"
+                   OnClose="CloseDetail"
+                   OnAddToLibrary="HandleAddToLibraryAsync"
+                   OnRemoveFromLibrary="HandleRemoveFromLibraryAsync"
+                   OnUpdateGameStatus="HandleUpdateGameStatusAsync"
+                   OnUpdateMediaStatus="HandleUpdateMediaStatusAsync"
+                   OnUpdateRating="HandleUpdateRatingAsync"
+                   OnLogSession="HandleLogSessionAsync"
+                   OnEditLibraryEntry="OpenEditLibraryEntryDialogAsync"
+                   OnEditCatalogEntry="OpenEditCatalogEntryDialogAsync"
+                   OnDeleteCatalogEntry="HandleDeleteCatalogEntryAsync"
+                   OnRefreshMetadata="HandleRefreshGameMetadataAsync" />
+
+@code {
+    [SupplyParameterFromQuery(Name = "type")]
+    public string? QueryType { get; set; }
+
+    [SupplyParameterFromQuery(Name = "q")]
+    public string? QuerySearch { get; set; }
+
+    private bool _loading = true;
+    private bool _exporting;
+    private string _selectedKind = "all";
+    private string _searchQuery = string.Empty;
+    private string _selectedStatus = "all";
+    private string _selectedSort = "recent";
+    private string _genreFilter = string.Empty;
+    private string _sourceFilter = string.Empty;
+    private int? _fromYear;
+    private int? _toYear;
+
+    private List<UnifiedMediaItem> _allItems = [];
+
+    private string AddButtonKindLabel => _selectedKind switch
+    {
+        "game" => "game",
+        "movie" => "movie",
+        "series" => "series",
+        "anime" => "anime",
+        _ => "media"
+    };
+
+    private IReadOnlyDictionary<string, int> TabCounts => new Dictionary<string, int>
+    {
+        ["all"] = _allItems.Count,
+        ["game"] = _allItems.Count(i => i.Kind == "game"),
+        ["movie"] = _allItems.Count(i => i.Kind == "movie"),
+        ["series"] = _allItems.Count(i => i.Kind == "series"),
+        ["anime"] = _allItems.Count(i => i.Kind == "anime")
+    };
+
+    private List<UnifiedMediaItem> FilteredItems
+    {
+        get
+        {
+            IEnumerable<UnifiedMediaItem> query = _allItems;
+
+            if (_selectedKind != "all")
+            {
+                query = query.Where(i => string.Equals(i.Kind, _selectedKind, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (_selectedStatus != "all")
+            {
+                query = query.Where(i => string.Equals(i.NormalizedStatus, _selectedStatus, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_searchQuery))
+            {
+                var q = _searchQuery.Trim();
+                query = query.Where(i =>
+                    i.Title.Contains(q, StringComparison.OrdinalIgnoreCase)
+                    || i.Platform.Contains(q, StringComparison.OrdinalIgnoreCase)
+                    || i.Source.Contains(q, StringComparison.OrdinalIgnoreCase)
+                    || i.Genres.Any(g => g.Contains(q, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_genreFilter))
+            {
+                var gf = _genreFilter.Trim();
+                query = query.Where(i => i.Genres.Any(g => g.Contains(gf, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_sourceFilter))
+            {
+                var sf = _sourceFilter.Trim();
+                query = query.Where(i =>
+                    i.Source.Contains(sf, StringComparison.OrdinalIgnoreCase)
+                    || i.Platform.Contains(sf, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (_fromYear.HasValue)
+            {
+                query = query.Where(i => i.Year.HasValue && i.Year.Value >= _fromYear.Value);
+            }
+
+            if (_toYear.HasValue)
+            {
+                query = query.Where(i => i.Year.HasValue && i.Year.Value <= _toYear.Value);
+            }
+
+            query = _selectedSort switch
+            {
+                "title" => query.OrderBy(i => i.Title),
+                "rating" => query.OrderByDescending(i => i.Rating ?? 0).ThenBy(i => i.Title),
+                "hours" => query.OrderByDescending(i => i.TotalHours).ThenBy(i => i.Title),
+                "release" => query.OrderByDescending(i => i.ReleaseDate).ThenBy(i => i.Title),
+                _ => query.OrderByDescending(i => i.UserMediaId ?? 0)
+            };
+
+            return query.ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        ApplyRouteDefaults();
+        await LoadLibraryAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        ApplyRouteDefaults();
+    }
+
+    protected override async Task OnMediaDataMutatedAsync()
+    {
+        await LoadLibraryAsync();
+        if (ActiveDetailItem is not null)
+        {
+            ActiveDetailItem = _allItems.FirstOrDefault(i => i.Kind == ActiveDetailItem.Kind && i.MediaId == ActiveDetailItem.MediaId);
+        }
+        StateHasChanged();
+    }
+
+    private void ApplyRouteDefaults()
+    {
+        var relative = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        var pathOnly = relative.Split('?')[0];
+
+        if (!string.IsNullOrWhiteSpace(QueryType))
+        {
+            _selectedKind = NormalizeKind(QueryType);
+        }
+        else if (pathOnly.EndsWith("MyGames", StringComparison.OrdinalIgnoreCase))
+        {
+            _selectedKind = "game";
+        }
+        else if (pathOnly.EndsWith("MyAnimes", StringComparison.OrdinalIgnoreCase))
+        {
+            _selectedKind = "anime";
+        }
+        else if (pathOnly.EndsWith("MyMovies", StringComparison.OrdinalIgnoreCase))
+        {
+            _selectedKind = "movie";
+        }
+        else if (pathOnly.EndsWith("MySeries", StringComparison.OrdinalIgnoreCase))
+        {
+            _selectedKind = "series";
+        }
+
+        if (!string.IsNullOrWhiteSpace(QuerySearch))
+        {
+            _searchQuery = QuerySearch;
+        }
+    }
+
+    private static string NormalizeKind(string? raw)
+    {
+        return (raw ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "game" or "games" => "game",
+            "movie" or "movies" => "movie",
+            "series" => "series",
+            "anime" or "animes" => "anime",
+            _ => "all"
+        };
+    }
+
+    private async Task LoadLibraryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(UserId))
+        {
+            _allItems = [];
+            _loading = false;
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            var myGames = await MyGameService.GetMyMedia(UserId);
+            var myMovies = await MyMovieService.GetMyMedia(UserId);
+            var mySeries = await MySeriesService.GetMyMedia(UserId);
+            var myAnimes = await MyAnimeService.GetMyMedia(UserId);
+
+            var list = new List<UnifiedMediaItem>(myGames.Count + myMovies.Count + mySeries.Count + myAnimes.Count);
+            list.AddRange(myGames.Select(UnifiedMediaItem.FromMyGame));
+            list.AddRange(myMovies.Select(UnifiedMediaItem.FromMyMovie));
+            list.AddRange(mySeries.Select(UnifiedMediaItem.FromMySeries));
+            list.AddRange(myAnimes.Select(UnifiedMediaItem.FromMyAnime));
+
+            _allItems = list;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ExportLibraryAsync()
+    {
+        if (User is null)
+        {
+            Snackbar.Add("Please sign in before exporting your library", Severity.Info);
+            return;
+        }
+
+        _exporting = true;
+        try
+        {
+            var bytes = await ExcelService.ExportLibraryWorkbookAsync(User);
+            await using var fileStream = new MemoryStream(bytes);
+            using var streamRef = new DotNetStreamReference(stream: fileStream);
+            await JS.InvokeVoidAsync("downloadFileFromStream", "LuminaLibrary.xlsx", streamRef);
+            Snackbar.Add("Exported LuminaLibrary.xlsx", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Export failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _exporting = false;
+        }
+    }
+}

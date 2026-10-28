@@ -1,0 +1,329 @@
+@page "/catalog"
+@page "/Media/Catalog"
+@page "/Media/Games"
+@page "/Media/Animes"
+@page "/Media/Movies"
+@page "/Media/Series"
+@using LuminaPath.Features.Media.Models
+@inherits UnifiedMediaPageBase
+@inject NavigationManager NavigationManager
+@attribute [Authorize]
+
+<PageTitle>LuminaPath — Discover Catalog</PageTitle>
+
+<section class="view active">
+    <PageIntro Eyebrow="THE CATALOG"
+               Title="Follow your curiosity."
+               Subtitle="Explore critically acclaimed worlds, hidden gems, and timeless classics across every medium.">
+        @if (CanUserEdit)
+        {
+            <div class="intro-actions">
+                <button class="btn btn-primary" type="button" @onclick="@(() => OpenCreateCatalogEntryDialogAsync(_selectedKind))">
+                    + Create @CreateButtonKindLabel
+                </button>
+            </div>
+        }
+    </PageIntro>
+
+    <div class="catalog-banner">
+        <div>
+            <p class="eyebrow">✧ CURATED FOR THE CURIOUS</p>
+            <h2>One more world to fall into.</h2>
+        </div>
+        <p>Click any cover to inspect details, ratings, playtime estimates, or add it straight to your personal library.</p>
+    </div>
+
+    <MediaFilterBar @bind-SelectedKind="_selectedKind"
+                    @bind-SearchQuery="_searchQuery"
+                    @bind-SelectedSort="_selectedSort"
+                    @bind-GenreFilter="_genreFilter"
+                    @bind-SourceFilter="_sourceFilter"
+                    @bind-FromYear="_fromYear"
+                    @bind-ToYear="_toYear"
+                    @bind-OwnershipFilter="_ownershipFilter"
+                    ShowStatusFilter="false"
+                    ShowHoursSort="true"
+                    ShowOwnershipFilter="true"
+                    EnableAdvancedFilters="true"
+                    SearchPlaceholder="Search catalog…"
+                    TabsAriaLabel="Catalog media type"
+                    TabCounts="@TabCounts" />
+
+    @if (_loading)
+    {
+        <div class="empty-state">
+            <strong>Loading catalog…</strong>
+            <span>Exploring games, movies, series, and anime in the LuminaPath catalog.</span>
+        </div>
+    }
+    else if (FilteredItems.Count == 0)
+    {
+        <div class="empty-state">
+            <strong>No catalog titles match your filter</strong>
+            <p style="margin:6px 0 14px">Try switching media tabs, broadening your search, or creating a new catalog entry.</p>
+            @if (CanUserEdit)
+            {
+                <button class="btn btn-primary" type="button" @onclick="@(() => OpenCreateCatalogEntryDialogAsync(_selectedKind))">
+                    + Create @CreateButtonKindLabel
+                </button>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="browse-grid">
+            @foreach (var item in FilteredItems)
+            {
+                <MediaCard Item="item" OnSelect="OpenDetail" />
+            }
+        </div>
+    }
+</section>
+
+<MediaDetailDialog Item="@ActiveDetailItem"
+                   IsAuthenticated="@(!string.IsNullOrWhiteSpace(UserId))"
+                   CanUserEdit="@CanUserEdit"
+                   Busy="@IsDetailBusy"
+                   OnClose="CloseDetail"
+                   OnAddToLibrary="HandleAddToLibraryAsync"
+                   OnRemoveFromLibrary="HandleRemoveFromLibraryAsync"
+                   OnUpdateGameStatus="HandleUpdateGameStatusAsync"
+                   OnUpdateMediaStatus="HandleUpdateMediaStatusAsync"
+                   OnUpdateRating="HandleUpdateRatingAsync"
+                   OnLogSession="HandleLogSessionAsync"
+                   OnEditLibraryEntry="OpenEditLibraryEntryDialogAsync"
+                   OnEditCatalogEntry="OpenEditCatalogEntryDialogAsync"
+                   OnDeleteCatalogEntry="HandleDeleteCatalogEntryAsync"
+                   OnRefreshMetadata="HandleRefreshGameMetadataAsync" />
+
+@code {
+    [SupplyParameterFromQuery(Name = "type")]
+    public string? QueryType { get; set; }
+
+    [SupplyParameterFromQuery(Name = "q")]
+    public string? QuerySearch { get; set; }
+
+    private bool _loading = true;
+    private string _selectedKind = "all";
+    private string _searchQuery = string.Empty;
+    private string _selectedSort = "recent";
+    private string _genreFilter = string.Empty;
+    private string _sourceFilter = string.Empty;
+    private int? _fromYear;
+    private int? _toYear;
+    private string _ownershipFilter = "all";
+
+    private List<UnifiedMediaItem> _allItems = [];
+
+    private string CreateButtonKindLabel => _selectedKind switch
+    {
+        "game" => "game",
+        "movie" => "movie",
+        "series" => "series",
+        "anime" => "anime",
+        _ => "game"
+    };
+
+    private IReadOnlyDictionary<string, int> TabCounts => new Dictionary<string, int>
+    {
+        ["all"] = _allItems.Count,
+        ["game"] = _allItems.Count(i => i.Kind == "game"),
+        ["movie"] = _allItems.Count(i => i.Kind == "movie"),
+        ["series"] = _allItems.Count(i => i.Kind == "series"),
+        ["anime"] = _allItems.Count(i => i.Kind == "anime")
+    };
+
+    private List<UnifiedMediaItem> FilteredItems
+    {
+        get
+        {
+            IEnumerable<UnifiedMediaItem> query = _allItems;
+
+            if (_selectedKind != "all")
+            {
+                query = query.Where(i => string.Equals(i.Kind, _selectedKind, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (_ownershipFilter == "mine")
+            {
+                query = query.Where(i => i.InLibrary);
+            }
+            else if (_ownershipFilter == "unowned")
+            {
+                query = query.Where(i => !i.InLibrary);
+            }
+
+            if (!string.IsNullOrWhiteSpace(_searchQuery))
+            {
+                var q = _searchQuery.Trim();
+                query = query.Where(i =>
+                    i.Title.Contains(q, StringComparison.OrdinalIgnoreCase)
+                    || (i.Description?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || i.Platform.Contains(q, StringComparison.OrdinalIgnoreCase)
+                    || i.Source.Contains(q, StringComparison.OrdinalIgnoreCase)
+                    || i.Genres.Any(g => g.Contains(q, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_genreFilter))
+            {
+                var gf = _genreFilter.Trim();
+                query = query.Where(i => i.Genres.Any(g => g.Contains(gf, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_sourceFilter))
+            {
+                var sf = _sourceFilter.Trim();
+                query = query.Where(i =>
+                    i.Source.Contains(sf, StringComparison.OrdinalIgnoreCase)
+                    || i.Platform.Contains(sf, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (_fromYear.HasValue)
+            {
+                query = query.Where(i => i.Year.HasValue && i.Year.Value >= _fromYear.Value);
+            }
+
+            if (_toYear.HasValue)
+            {
+                query = query.Where(i => i.Year.HasValue && i.Year.Value <= _toYear.Value);
+            }
+
+            query = _selectedSort switch
+            {
+                "title" => query.OrderBy(i => i.Title),
+                "rating" => query.OrderByDescending(i => i.Rating ?? 0).ThenBy(i => i.Title),
+                "hours" => query.OrderByDescending(i => i.TotalHours).ThenByDescending(i => i.EstimatedHours).ThenBy(i => i.Title),
+                "release" => query.OrderByDescending(i => i.ReleaseDate).ThenBy(i => i.Title),
+                _ => query.OrderByDescending(i => i.ReleaseDate).ThenByDescending(i => i.MediaId)
+            };
+
+            return query.ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        ApplyRouteDefaults();
+        await LoadCatalogAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        ApplyRouteDefaults();
+    }
+
+    protected override async Task OnMediaDataMutatedAsync()
+    {
+        await LoadCatalogAsync();
+        if (ActiveDetailItem is not null)
+        {
+            ActiveDetailItem = _allItems.FirstOrDefault(i => i.Kind == ActiveDetailItem.Kind && i.MediaId == ActiveDetailItem.MediaId);
+        }
+        StateHasChanged();
+    }
+
+    private void ApplyRouteDefaults()
+    {
+        var relative = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        var pathOnly = relative.Split('?')[0];
+
+        if (!string.IsNullOrWhiteSpace(QueryType))
+        {
+            _selectedKind = NormalizeKind(QueryType);
+        }
+        else if (pathOnly.EndsWith("Games", StringComparison.OrdinalIgnoreCase))
+        {
+            _selectedKind = "game";
+        }
+        else if (pathOnly.EndsWith("Animes", StringComparison.OrdinalIgnoreCase))
+        {
+            _selectedKind = "anime";
+        }
+        else if (pathOnly.EndsWith("Movies", StringComparison.OrdinalIgnoreCase))
+        {
+            _selectedKind = "movie";
+        }
+        else if (pathOnly.EndsWith("Series", StringComparison.OrdinalIgnoreCase))
+        {
+            _selectedKind = "series";
+        }
+
+        if (!string.IsNullOrWhiteSpace(QuerySearch))
+        {
+            _searchQuery = QuerySearch;
+        }
+    }
+
+    private static string NormalizeKind(string? raw)
+    {
+        return (raw ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "game" or "games" => "game",
+            "movie" or "movies" => "movie",
+            "series" => "series",
+            "anime" or "animes" => "anime",
+            _ => "all"
+        };
+    }
+
+    private async Task LoadCatalogAsync()
+    {
+        _loading = true;
+        try
+        {
+            var games = await GameService.GetAll();
+            var movies = await MovieService.GetAll();
+            var seriesList = await SeriesService.GetAll();
+            var animes = await AnimeService.GetAll();
+
+            Dictionary<int, MyGame> myGamesById = [];
+            Dictionary<int, MyMovie> myMoviesById = [];
+            Dictionary<int, Core.Models.MySeries> mySeriesById = [];
+            Dictionary<int, MyAnime> myAnimesById = [];
+
+            if (!string.IsNullOrWhiteSpace(UserId))
+            {
+                var myGames = await MyGameService.GetMyMedia(UserId);
+                var myMovies = await MyMovieService.GetMyMedia(UserId);
+                var mySeries = await MySeriesService.GetMyMedia(UserId);
+                var myAnimes = await MyAnimeService.GetMyMedia(UserId);
+
+                myGamesById = myGames.GroupBy(x => x.GameId).ToDictionary(g => g.Key, g => g.First());
+                myMoviesById = myMovies.GroupBy(x => x.MovieId).ToDictionary(g => g.Key, g => g.First());
+                mySeriesById = mySeries.GroupBy(x => x.SeriesId).ToDictionary(g => g.Key, g => g.First());
+                myAnimesById = myAnimes.GroupBy(x => x.AnimeId).ToDictionary(g => g.Key, g => g.First());
+            }
+
+            var list = new List<UnifiedMediaItem>(games.Count + movies.Count + seriesList.Count + animes.Count);
+
+            foreach (var g in games.Where(g => g.ParentGameId is null))
+            {
+                myGamesById.TryGetValue(g.Id, out var mg);
+                list.Add(UnifiedMediaItem.FromGame(g, mg));
+            }
+            foreach (var m in movies)
+            {
+                myMoviesById.TryGetValue(m.Id, out var mm);
+                list.Add(UnifiedMediaItem.FromMovie(m, mm));
+            }
+            foreach (var s in seriesList.Where(s => s.ParentSeriesId is null))
+            {
+                mySeriesById.TryGetValue(s.Id, out var ms);
+                list.Add(UnifiedMediaItem.FromSeries(s, ms));
+            }
+            foreach (var a in animes.Where(a => a.ParentAnimeId is null))
+            {
+                myAnimesById.TryGetValue(a.Id, out var ma);
+                list.Add(UnifiedMediaItem.FromAnime(a, ma));
+            }
+
+            _allItems = list;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

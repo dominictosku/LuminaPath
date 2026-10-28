@@ -1,0 +1,43 @@
+<div class="filter-tabs" role="tablist" aria-label="@AriaLabel">
+    @foreach (var tab in Tabs)
+    {
+        var isActive = string.Equals(SelectedKind, tab.Key, StringComparison.OrdinalIgnoreCase);
+        <button type="button"
+                class="tab @(isActive ? "active" : "")"
+                aria-pressed="@(isActive ? "true" : "false")"
+                @onclick="@(() => SelectTab(tab.Key))">
+            @tab.Label
+            @if (Counts is not null && Counts.TryGetValue(tab.Key, out var count))
+            {
+                <span style="opacity:.72;margin-left:4px">(@count)</span>
+            }
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public string SelectedKind { get; set; } = "all";
+    [Parameter] public EventCallback<string> SelectedKindChanged { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "Media type filter";
+    [Parameter] public IReadOnlyDictionary<string, int>? Counts { get; set; }
+
+    private static readonly (string Key, string Label)[] Tabs =
+    [
+        ("all", "All media"),
+        ("game", "Games"),
+        ("movie", "Movies"),
+        ("series", "Series"),
+        ("anime", "Anime")
+    ];
+
+    private async Task SelectTab(string key)
+    {
+        if (string.Equals(SelectedKind, key, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        SelectedKind = key;
+        await SelectedKindChanged.InvokeAsync(key);
+    }
+}

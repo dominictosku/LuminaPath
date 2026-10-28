@@ -1,164 +1,226 @@
-<div class="nav-highlight">
-	<nav class="flex-column">
-		<div class="nav-item px-3">
-			<NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-				<MudIcon Icon="@Icons.Material.Filled.Home" Title="Home" />
-				<span class="bi" aria-hidden="true"></span> Home
-			</NavLink>
-		</div>
+@implements IDisposable
+@using System.Security.Claims
+@using LuminaPath.Core.Dtos
+@using LuminaPath.Infrastructure.Services.ModelServices
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject QuestService QuestService
 
-		<div class="media-nav-shell nav-games">
-			<MudNavGroup Class="nav-item px-3 media-nav-group" Title="Games" Icon="@Icons.Material.Filled.Games" Expanded="true">
-				<div class="nav-item px-3">
-					<NavLink class="nav-link" href="Media/Games">
-						<MudIcon Icon="@Icons.Material.Filled.Games" Title="Games" />
-						<span class="bi" aria-hidden="true"></span> Games
-					</NavLink>
-				</div>
+<a class="brand" href="" @onclick="HandleNavClick">
+    <span class="brand-mark" aria-hidden="true">✧</span>
+    <div>
+        <strong>LuminaPath</strong>
+        <small>MAKE TIME FOR YOUR WORLD</small>
+    </div>
+</a>
 
-				<AuthorizeView>
-					<Authorized>
-						<div class="nav-item px-3">
-							<NavLink class="nav-link" href="Media/MyGames">
-								<MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Title="MyGames" />
-								<span class="bi" aria-hidden="true"></span> My Games
-							</NavLink>
-						</div>
-					</Authorized>
-				</AuthorizeView>
-			</MudNavGroup>
-		</div>
+<AuthorizeView>
+    <Authorized Context="auth">
+        <a class="workspace-pill" href="Account/Manage">
+            <span class="workspace-avatar">@GetInitial(auth.User.Identity?.Name)</span>
+            <span>
+                <strong>@GetShortName(auth.User.Identity?.Name)'s space</strong>
+                <small>Personal workspace</small>
+            </span>
+            <em aria-hidden="true">⌄</em>
+        </a>
+    </Authorized>
+    <NotAuthorized>
+        <a class="workspace-pill" href="Account/Login">
+            <span class="workspace-avatar">G</span>
+            <span>
+                <strong>Guest space</strong>
+                <small>Sign in to sync</small>
+            </span>
+            <em aria-hidden="true">→</em>
+        </a>
+    </NotAuthorized>
+</AuthorizeView>
 
-		<div class="media-nav-shell nav-animes">
-			<MudNavGroup Class="nav-item px-3 media-nav-group" Title="Animes" Icon="@Icons.Material.Filled.AutoStories">
-				<div class="nav-item px-3">
-					<NavLink class="nav-link" href="Media/Animes">
-						<MudIcon Icon="@Icons.Material.Filled.AutoStories" Title="Animes" />
-						<span class="bi" aria-hidden="true"></span> Animes
-					</NavLink>
-				</div>
+<div class="nav-label">YOUR UNIVERSE</div>
+<nav aria-label="Universe navigation">
+    <NavLink class="nav-button" href="" Match="NavLinkMatch.All" @onclick="HandleNavClick">
+        <span aria-hidden="true">⌂</span><span>Overview</span>
+    </NavLink>
+    <a class="nav-button @(IsLibraryRoute ? "active" : "")" href="library" @onclick="HandleNavClick">
+        <span aria-hidden="true">▦</span><span>My library</span>
+    </a>
+    <a class="nav-button @(IsCatalogRoute ? "active" : "")" href="catalog" @onclick="HandleNavClick">
+        <span aria-hidden="true">✦</span><span>Discover</span>
+    </a>
 
-				<AuthorizeView>
-					<Authorized>
-						<div class="nav-item px-3">
-							<NavLink class="nav-link" href="Media/MyAnimes">
-								<MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Title="MyAnimes" />
-								<span class="bi" aria-hidden="true"></span> My Animes
-							</NavLink>
-						</div>
-					</Authorized>
-				</AuthorizeView>
-			</MudNavGroup>
-		</div>
+    <div class="nav-divider"></div>
 
-		<div class="media-nav-shell nav-movies">
-			<MudNavGroup Class="nav-item px-3 media-nav-group" Title="Movies" Icon="@Icons.Material.Filled.Movie">
-				<div class="nav-item px-3">
-					<NavLink class="nav-link" href="Media/Movies">
-						<MudIcon Icon="@Icons.Material.Filled.Movie" Title="Movies" />
-						<span class="bi" aria-hidden="true"></span> Movies
-					</NavLink>
-				</div>
+    <NavLink class="nav-button" href="quests" @onclick="HandleNavClick">
+        <span aria-hidden="true">⚔</span><span>Quest board</span>
+    </NavLink>
+    <NavLink class="nav-button" href="statistics" @onclick="HandleNavClick">
+        <span aria-hidden="true">◔</span><span>Statistics</span>
+    </NavLink>
 
-				<AuthorizeView>
-					<Authorized>
-						<div class="nav-item px-3">
-							<NavLink class="nav-link" href="Media/MyMovies">
-								<MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Title="MyMovies" />
-								<span class="bi" aria-hidden="true"></span> My Movies
-							</NavLink>
-						</div>
-					</Authorized>
-				</AuthorizeView>
-			</MudNavGroup>
-		</div>
+    <AuthorizeView>
+        <Authorized>
+            <NavLink class="nav-button" href="import" @onclick="HandleNavClick">
+                <span aria-hidden="true">⇄</span><span>Import &amp; sync</span>
+            </NavLink>
+        </Authorized>
+    </AuthorizeView>
 
-		<div class="media-nav-shell nav-series">
-			<MudNavGroup Class="nav-item px-3 media-nav-group" Title="Series" Icon="@Icons.Material.Filled.LiveTv">
-				<div class="nav-item px-3">
-					<NavLink class="nav-link" href="Media/Series">
-						<MudIcon Icon="@Icons.Material.Filled.LiveTv" Title="Series" />
-						<span class="bi" aria-hidden="true"></span> Series
-					</NavLink>
-				</div>
+    <AuthorizeView Roles="Administrator, Editor">
+        <Authorized>
+            <NavLink class="nav-button" href="Documents" @onclick="HandleNavClick">
+                <span aria-hidden="true">▤</span><span>Documents</span>
+            </NavLink>
+        </Authorized>
+    </AuthorizeView>
 
-				<AuthorizeView>
-					<Authorized>
-						<div class="nav-item px-3">
-							<NavLink class="nav-link" href="Media/MySeries">
-								<MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Title="MySeries" />
-								<span class="bi" aria-hidden="true"></span> My Series
-							</NavLink>
-						</div>
-					</Authorized>
-				</AuthorizeView>
-			</MudNavGroup>
-		</div>
+    <AuthorizeView Roles="Administrator">
+        <Authorized>
+            <div class="nav-divider"></div>
+            <div class="nav-label">ADMINISTRATION</div>
+            <NavLink class="nav-button" href="Admin/Overview" @onclick="HandleNavClick">
+                <span aria-hidden="true">⚙</span><span>Admin overview</span>
+            </NavLink>
+            <NavLink class="nav-button" href="Admin/Users" @onclick="HandleNavClick">
+                <span aria-hidden="true">☺</span><span>Users</span>
+            </NavLink>
+            <NavLink class="nav-button" href="Admin/GoogleDrive" @onclick="HandleNavClick">
+                <span aria-hidden="true">☁</span><span>Google Drive</span>
+            </NavLink>
+            <NavLink class="nav-button" href="settings" @onclick="HandleNavClick">
+                <span aria-hidden="true">⚡</span><span>Settings</span>
+            </NavLink>
+        </Authorized>
+    </AuthorizeView>
+</nav>
 
-		<AuthorizeView>
-			<Authorized>
-				<div class="nav-item px-3">
-					<NavLink class="nav-link" href="statistics">
-						<MudIcon Icon="@Icons.Material.Filled.QueryStats" Title="Statistics" />
-						<span class="bi" aria-hidden="true"></span> Statistics
-					</NavLink>
-				</div>
+<div class="sidebar-bottom">
+    <a class="level-card" href="quests" @onclick="HandleNavClick">
+        <div class="level-head">
+            <span>LEVEL @Level</span>
+            <strong>@RankTitle.ToUpperInvariant()</strong>
+        </div>
+        <div class="level-title">@RankTitle</div>
+        <div class="xp-bar"><span style="width:@(XpProgress)%"></span></div>
+        <p><strong>@XpIntoLevel / 200 XP</strong> · @(200 - XpIntoLevel) XP to Level @(Level + 1)</p>
+    </a>
 
-				<div class="nav-item px-3">
-					<NavLink class="nav-link" href="quests">
-						<MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Title="Quests" />
-						<span class="bi" aria-hidden="true"></span> Quests
-					</NavLink>
-				</div>
-
-				<div class="nav-item px-3">
-					<NavLink class="nav-link" href="Documents">
-						<MudIcon Icon="@Icons.Material.Filled.FileOpen" Title="Documents" />
-						<span class="bi" aria-hidden="true"></span> Documents
-					</NavLink>
-				</div>
-
-				<div class="nav-item px-3">
-					<NavLink class="nav-link" href="import">
-						<MudIcon Icon="@Icons.Material.Filled.Downloading" Title="Import" />
-						<span class="bi" aria-hidden="true"></span> Import
-					</NavLink>
-				</div>
-			</Authorized>
-		</AuthorizeView>
-
-		<AuthorizeView Roles="Administrator">
-			<Authorized>
-				<MudNavGroup Class="nav-item px-3" Title="Admin" Expanded="true">
-					<div class="nav-item px-3">
-						<NavLink class="nav-link" href="Admin/Overview">
-							<MudIcon Icon="@Icons.Material.Filled.Dashboard" Title="Overview" />
-							<span class="bi" aria-hidden="true"></span> Overview
-						</NavLink>
-					</div>
-
-					<div class="nav-item px-3">
-						<NavLink class="nav-link" href="Admin/Users">
-							<MudIcon Icon="@Icons.Material.Filled.Group" Title="Users" />
-							<span class="bi" aria-hidden="true"></span> Users
-						</NavLink>
-					</div>
-
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="Admin/GoogleDrive">
-                            <MudIcon Icon="@Icons.Material.Filled.Cloud" Title="Google Drive" />
-                            <span class="bi" aria-hidden="true"></span> Google Drive
-                        </NavLink>
-                    </div>
-
-					<div class="nav-item px-3">
-						<NavLink class="nav-link" href="settings">
-							<MudIcon Icon="@Icons.Material.Filled.Settings" Title="Settings" />
-							<span class="bi" aria-hidden="true"></span> Settings
-						</NavLink>
-					</div>
-				</MudNavGroup>
-			</Authorized>
-		</AuthorizeView>
-	</nav>
+    <AuthorizeView>
+        <Authorized Context="auth">
+            <a class="profile" href="Account/Manage">
+                <span class="avatar">@GetInitial(auth.User.Identity?.Name)</span>
+                <span>
+                    <strong>@GetShortName(auth.User.Identity?.Name)</strong>
+                    <small><i class="dot"></i> Exploring</small>
+                </span>
+                <em aria-hidden="true">⋯</em>
+            </a>
+        </Authorized>
+        <NotAuthorized>
+            <a class="profile" href="Account/Login">
+                <span class="avatar">G</span>
+                <span>
+                    <strong>Guest</strong>
+                    <small><i class="dot"></i> Sign in</small>
+                </span>
+                <em aria-hidden="true">→</em>
+            </a>
+        </NotAuthorized>
+    </AuthorizeView>
 </div>
+
+@code {
+    [Parameter] public EventCallback OnNavigate { get; set; }
+
+    private int _xp;
+    private string _currentPath = string.Empty;
+
+    private int Level => Math.Max(1, (_xp / 200) + 1);
+    private int XpIntoLevel => _xp % 200;
+    private int XpProgress => Math.Clamp(XpIntoLevel * 100 / 200, 4, 100);
+    private string RankTitle => Level >= 15
+        ? "Starfarer"
+        : Level >= 10
+            ? "Wayfinder"
+            : Level >= 6
+                ? "Chronicler"
+                : Level >= 3
+                    ? "Pathfinder"
+                    : "Wanderer";
+
+    private bool IsLibraryRoute =>
+        _currentPath.StartsWith("library", StringComparison.OrdinalIgnoreCase)
+        || _currentPath.StartsWith("Media/Library", StringComparison.OrdinalIgnoreCase)
+        || _currentPath.StartsWith("Media/My", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsCatalogRoute =>
+        _currentPath.StartsWith("catalog", StringComparison.OrdinalIgnoreCase)
+        || _currentPath.StartsWith("Media/Catalog", StringComparison.OrdinalIgnoreCase)
+        || _currentPath.StartsWith("Media/Games", StringComparison.OrdinalIgnoreCase)
+        || _currentPath.StartsWith("Media/Animes", StringComparison.OrdinalIgnoreCase)
+        || _currentPath.StartsWith("Media/Movies", StringComparison.OrdinalIgnoreCase)
+        || _currentPath.StartsWith("Media/Series", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        UpdatePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+        await LoadQuestXpAsync();
+    }
+
+    private async Task LoadQuestXpAsync()
+    {
+        try
+        {
+            var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? state.User.FindFirst(c => c.Type.Contains("nameidentifier", StringComparison.OrdinalIgnoreCase))?.Value;
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
+                var board = await QuestService.GetBoardAsync(userId);
+                _xp = board.Xp;
+            }
+        }
+        catch
+        {
+            // Keep default 0 XP if unavailable
+        }
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        UpdatePath(e.Location);
+        _ = InvokeAsync(async () =>
+        {
+            await LoadQuestXpAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void UpdatePath(string uri)
+    {
+        var relative = NavigationManager.ToBaseRelativePath(uri);
+        var qIndex = relative.IndexOf('?');
+        _currentPath = qIndex >= 0 ? relative[..qIndex] : relative;
+    }
+
+    private Task HandleNavClick() => OnNavigate.InvokeAsync();
+
+    private static string GetInitial(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "L";
+        return char.ToUpperInvariant(name.Trim()[0]).ToString();
+    }
+
+    private static string GetShortName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "Explorer";
+        var atIndex = name.IndexOf('@');
+        return atIndex > 0 ? name[..atIndex] : name;
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

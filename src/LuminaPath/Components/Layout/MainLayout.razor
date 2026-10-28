@@ -1,93 +1,205 @@
-﻿@using LuminaPath.Constants
+@implements IAsyncDisposable
+@using System.Security.Claims
+@using LuminaPath.Constants
 @using Radzen.Blazor
 @inherits LayoutComponentBase
 @inject IHostEnvironment HostEnvironment
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JS
 
-<div class="page">
-    <MudThemeProvider Theme="@_theme" IsDarkMode="@true" />
-    <MudDialogProvider />
-    <MudSnackbarProvider />
-    <MudPopoverProvider />
+<MudThemeProvider Theme="@_theme" IsDarkMode="@true" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
 
-    <RadzenComponents @rendermode="InteractiveServer" />
+<RadzenComponents @rendermode="InteractiveServer" />
+
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="ambient" aria-hidden="true"></div>
+
+<aside class="sidebar @(_mobileNavOpen ? "open" : "")" id="sidebar" aria-label="Primary navigation">
+    <NavMenu OnNavigate="CloseMobileNav" />
+</aside>
+
+<div class="app-shell">
+    <header class="topbar">
+        <button class="mobile-menu"
+                type="button"
+                aria-label="Toggle navigation"
+                aria-expanded="@(_mobileNavOpen ? "true" : "false")"
+                @onclick="ToggleMobileNav">
+            ☰
+        </button>
+
+        <p class="breadcrumb">
+            Your universe <em>/</em> <strong>@CurrentBreadcrumb</strong>
+        </p>
+
+        <button class="search-trigger"
+                type="button"
+                aria-label="Open search"
+                @onclick="OpenSearch">
+            <span>⌕</span>
+            <span>Search your universe</span>
+            <kbd>⌘ K</kbd>
+        </button>
+
+        <HeaderMenu />
+    </header>
 
     <ErrorBoundary @ref="errorBoundary">
         <ChildContent>
-            <main>
-                <MudLayout>
-                    <MudAppBar Elevation="0" Class="app-header">
-                        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" Class="header-icon-button" OnClick="@((e) => DrawerToggle())" />
-                        <div class="header-title">
-                            <img class="header-logo" src="/Images/luminapath-logo.png" alt="" />
-                            <div>
-                                <span class="header-kicker">LuminaPath</span>
-                                <strong>@HeaderTitle</strong>
-                            </div>
-                        </div>
-                        <MudSpacer />
-                        <HeaderMenu />
-                    </MudAppBar>
-                    <MudDrawer @bind-Open="_drawerOpen" Elevation="0" Class="app-drawer">
-                        <MudDrawerHeader Class="drawer-brand">
-                            <a class="brand-lockup" href="">
-                                <span class="brand-mark">
-                                    <img src="/Images/luminapath-logo.png" alt="" />
-                                </span>
-                                <span>
-                                    <strong>LuminaPath</strong>
-                                    <small>Game life tracker</small>
-                                </span>
-                            </a>
-                        </MudDrawerHeader>
-                        <NavMenu />
-                        <MudLink Href="/legal/index.html" Class="pa-4">License &amp; source</MudLink>
-                    </MudDrawer>
-                    <MudMainContent>
-                        <article class="content px-4">
-                            <div id="components-reconnect-modal">
-                                <p class="alert alert-danger">
-                                    Connection to the server lost
-                                </p>
-                            </div>
-                            @Body
-                        </article>
-                    </MudMainContent>
-                </MudLayout>
+            <main id="main">
+                <div id="components-reconnect-modal">
+                    <p class="alert alert-danger">
+                        Connection to the server lost
+                    </p>
+                </div>
+                @Body
             </main>
         </ChildContent>
         <ErrorContent Context="Exception">
-            @if (HostEnvironment.IsProduction())
-            {
-                <p class="alert alert-danger">
-                    An error occured
-                </p>
-            }
-            else
-            {
-                <div class="alert alert-danger container">
-                    @Exception.Message
-                    @Exception.StackTrace
-                    @Exception.InnerException
-                </div>
-            }
+            <main id="main">
+                @if (HostEnvironment.IsProduction())
+                {
+                    <p class="alert alert-danger">
+                        An error occurred.
+                    </p>
+                }
+                else
+                {
+                    <div class="alert alert-danger container">
+                        @Exception.Message
+                        @Exception.StackTrace
+                        @Exception.InnerException
+                    </div>
+                }
+            </main>
         </ErrorContent>
     </ErrorBoundary>
+
+    <footer>
+        <span>Made for the worlds you love. · <a href="/legal/index.html">License &amp; source</a></span>
+        <span>LUMINAPATH ✧</span>
+    </footer>
 </div>
+
+<GlobalSearchDialog @bind-IsOpen="_searchOpen" UserId="@_userId" />
 
 @code {
     private ErrorBoundary? errorBoundary;
+    private readonly MudTheme _theme = Theme.ApplicationTheme();
+    private DotNetObjectReference<MainLayout>? _dotNetRef;
+    private bool _mobileNavOpen;
+    private bool _searchOpen;
+    private string? _userId;
+    private string _currentPath = string.Empty;
 
-    bool _drawerOpen = true;
-    private string HeaderTitle => "Command Center";
-
-    void DrawerToggle()
+    private string CurrentBreadcrumb
     {
-        _drawerOpen = !_drawerOpen;
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_currentPath)) return "Overview";
+            if (_currentPath.StartsWith("library", StringComparison.OrdinalIgnoreCase)
+                || _currentPath.StartsWith("Media/Library", StringComparison.OrdinalIgnoreCase)
+                || _currentPath.StartsWith("Media/My", StringComparison.OrdinalIgnoreCase))
+            {
+                return "My library";
+            }
+            if (_currentPath.StartsWith("catalog", StringComparison.OrdinalIgnoreCase)
+                || _currentPath.StartsWith("Media/Catalog", StringComparison.OrdinalIgnoreCase)
+                || _currentPath.StartsWith("Media/Games", StringComparison.OrdinalIgnoreCase)
+                || _currentPath.StartsWith("Media/Animes", StringComparison.OrdinalIgnoreCase)
+                || _currentPath.StartsWith("Media/Movies", StringComparison.OrdinalIgnoreCase)
+                || _currentPath.StartsWith("Media/Series", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Discover";
+            }
+            if (_currentPath.StartsWith("quests", StringComparison.OrdinalIgnoreCase)) return "Quest board";
+            if (_currentPath.StartsWith("statistics", StringComparison.OrdinalIgnoreCase)) return "Statistics";
+            if (_currentPath.StartsWith("import", StringComparison.OrdinalIgnoreCase)) return "Import & sync";
+            if (_currentPath.StartsWith("Documents", StringComparison.OrdinalIgnoreCase)) return "Documents";
+            if (_currentPath.StartsWith("Admin", StringComparison.OrdinalIgnoreCase) || _currentPath.StartsWith("settings", StringComparison.OrdinalIgnoreCase)) return "Administration";
+            if (_currentPath.StartsWith("Account", StringComparison.OrdinalIgnoreCase)) return "Account";
+            return "Overview";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        UpdatePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+
+        try
+        {
+            var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            _userId = state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? state.User.FindFirst(c => c.Type.Contains("nameidentifier", StringComparison.OrdinalIgnoreCase))?.Value;
+        }
+        catch
+        {
+            _userId = null;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _dotNetRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("luminaUi.registerShell", _dotNetRef);
+            }
+            catch
+            {
+                // Ignore JS interop errors during static prerendering
+            }
+        }
     }
 
     protected override void OnParametersSet()
     {
         errorBoundary?.Recover();
     }
-    private MudTheme _theme = Theme.ApplicationTheme();
+
+    [JSInvokable]
+    public void OnOpenSearchShortcut()
+    {
+        _searchOpen = true;
+        StateHasChanged();
+    }
+
+    private void OpenSearch() => _searchOpen = true;
+    private void ToggleMobileNav() => _mobileNavOpen = !_mobileNavOpen;
+    private void CloseMobileNav() => _mobileNavOpen = false;
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        UpdatePath(e.Location);
+        _mobileNavOpen = false;
+        StateHasChanged();
+    }
+
+    private void UpdatePath(string uri)
+    {
+        var relative = NavigationManager.ToBaseRelativePath(uri);
+        var qIndex = relative.IndexOf('?');
+        _currentPath = qIndex >= 0 ? relative[..qIndex] : relative;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+        try
+        {
+            await JS.InvokeVoidAsync("luminaUi.unregisterShell");
+        }
+        catch
+        {
+            // Ignore disconnected circuit
+        }
+        _dotNetRef?.Dispose();
+    }
 }

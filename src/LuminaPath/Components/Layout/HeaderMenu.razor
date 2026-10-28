@@ -1,24 +1,63 @@
 @implements IDisposable
-
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<button class="icon-btn @(_motionDisabled ? "active" : "")"
+        type="button"
+        title="@(_motionDisabled ? "Enable motion effects" : "Reduce motion effects")"
+        aria-label="Toggle reduced motion"
+        aria-pressed="@(_motionDisabled ? "true" : "false")"
+        @onclick="ToggleMotionAsync">
+    ✦
+</button>
+
+<div class="topbar-popover-wrap">
+    <button class="icon-btn @(_notificationsOpen ? "active" : "")"
+            type="button"
+            aria-label="Notifications and quick actions"
+            aria-expanded="@(_notificationsOpen ? "true" : "false")"
+            @onclick="ToggleNotifications">
+        🔔<span class="ping"></span>
+    </button>
+
+    @if (_notificationsOpen)
+    {
+        <div class="topbar-popover" role="region" aria-label="Quick universe updates">
+            <h4>Universe pulse</h4>
+            <div class="topbar-popover-list">
+                <a class="topbar-popover-item" href="quests" @onclick="CloseNotifications">
+                    <span>⚔ Check daily quests</span>
+                    <strong>+XP →</strong>
+                </a>
+                <a class="topbar-popover-item" href="library" @onclick="CloseNotifications">
+                    <span>▦ Continue active stories</span>
+                    <strong>Library →</strong>
+                </a>
+                <a class="topbar-popover-item" href="import" @onclick="CloseNotifications">
+                    <span>⇄ Sync Steam / PSN / Excel</span>
+                    <strong>Sync →</strong>
+                </a>
+            </div>
+        </div>
+    }
+</div>
 
 <AuthorizeView>
     <Authorized Context="authContext">
         <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true" Class="account-menu">
             <ActivatorContent Context="menuContext">
-                <button type="button" class="header-user-pill" @onclick="menuContext.ToggleAsync">
-                    <span class="user-avatar">
-                        <MudIcon Icon="@Icons.Material.Filled.Person" />
-                    </span>
-                    <span class="user-meta">
-                        <strong>@authContext.User.Identity?.Name</strong>
-                        <small>Account</small>
-                    </span>
-                    <MudIcon Class="menu-chevron" Icon="@Icons.Material.Filled.KeyboardArrowDown" />
+                <button type="button"
+                        class="top-avatar"
+                        title="@(authContext.User.Identity?.Name ?? "Account")"
+                        aria-label="Account menu"
+                        @onclick="menuContext.ToggleAsync">
+                    @GetInitial(authContext.User.Identity?.Name)
                 </button>
             </ActivatorContent>
             <ChildContent>
-                <MudMenuItem OnClick="NavigateToAccountManage" Icon="@Icons.Material.Filled.Person">Account</MudMenuItem>
+                <MudMenuItem OnClick="NavigateToAccountManage" Icon="@Icons.Material.Filled.Person">
+                    @(authContext.User.Identity?.Name ?? "Account")
+                </MudMenuItem>
                 <MudDivider />
                 <div class="account-menu-form">
                     <form action="Account/Logout" method="post">
@@ -36,15 +75,12 @@
     <NotAuthorized>
         <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true" Class="account-menu">
             <ActivatorContent Context="menuContext">
-                <button type="button" class="header-user-pill" @onclick="menuContext.ToggleAsync">
-                    <span class="user-avatar">
-                        <MudIcon Icon="@Icons.Material.Filled.Login" />
-                    </span>
-                    <span class="user-meta">
-                        <strong>Guest</strong>
-                        <small>Account</small>
-                    </span>
-                    <MudIcon Class="menu-chevron" Icon="@Icons.Material.Filled.KeyboardArrowDown" />
+                <button type="button"
+                        class="top-avatar"
+                        title="Guest account"
+                        aria-label="Guest account menu"
+                        @onclick="menuContext.ToggleAsync">
+                    G
                 </button>
             </ActivatorContent>
             <ChildContent>
@@ -55,63 +91,6 @@
 </AuthorizeView>
 
 <style>
-    .header-user-pill {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-width: 0;
-        padding: 7px 11px 7px 7px;
-        border: 1px solid rgba(255, 255, 255, .08);
-        border-radius: 999px;
-        color: inherit;
-        background: rgba(255, 255, 255, .055);
-        font: inherit;
-        cursor: pointer;
-    }
-
-    .header-user-pill:hover,
-    .header-user-pill:focus-visible {
-        background: rgba(255, 255, 255, .09);
-    }
-
-    .user-avatar {
-        display: grid;
-        width: 34px;
-        height: 34px;
-        place-items: center;
-        border-radius: 999px;
-        color: #fff;
-        background: linear-gradient(135deg, #2563eb, #06b6d4);
-    }
-
-    .user-meta {
-        display: grid;
-        gap: 1px;
-        min-width: 0;
-        text-align: left;
-    }
-
-    .user-meta strong {
-        overflow: hidden;
-        max-width: 180px;
-        color: #f8fbff;
-        font-size: .88rem;
-        line-height: 1;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .user-meta small {
-        color: #8da2c0;
-        font-size: .72rem;
-        font-weight: 700;
-    }
-
-    .menu-chevron {
-        color: #8da2c0;
-        font-size: 1.15rem;
-    }
-
     .account-menu-form {
         padding: 4px;
     }
@@ -123,12 +102,12 @@
     .account-menu-form button {
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 12px;
         width: 100%;
-        min-height: 38px;
-        padding: 6px 16px;
+        min-height: 36px;
+        padding: 6px 14px;
         border: 0;
-        border-radius: 8px;
+        border-radius: 6px;
         color: var(--mud-palette-error);
         background: transparent;
         font: inherit;
@@ -137,23 +116,14 @@
     }
 
     .account-menu-form button:hover {
-        background: rgba(239, 68, 68, .1);
-    }
-
-    @@media (max-width: 760px) {
-        .user-meta,
-        .menu-chevron {
-            display: none;
-        }
-
-        .header-user-pill {
-            padding: 6px;
-        }
+        background: rgba(255, 156, 156, .12);
     }
 </style>
 
 @code {
     private string? currentUrl;
+    private bool _notificationsOpen;
+    private bool _motionDisabled;
 
     protected override void OnInitialized()
     {
@@ -164,7 +134,29 @@
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        _notificationsOpen = false;
         StateHasChanged();
+    }
+
+    private void ToggleNotifications() => _notificationsOpen = !_notificationsOpen;
+    private void CloseNotifications() => _notificationsOpen = false;
+
+    private async Task ToggleMotionAsync()
+    {
+        try
+        {
+            _motionDisabled = await JS.InvokeAsync<bool>("luminaUi.toggleMotion");
+        }
+        catch
+        {
+            _motionDisabled = !_motionDisabled;
+        }
+    }
+
+    private static string GetInitial(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "L";
+        return char.ToUpperInvariant(name.Trim()[0]).ToString();
     }
 
     public void Dispose()
@@ -177,13 +169,6 @@
         NavigationManager.NavigateTo(uri, forceLoad: true);
     }
 
-    private void NavigateToAccountManage()
-    {
-        NavigateAccountPage("Account/Manage");
-    }
-
-    private void NavigateToLogin()
-    {
-        NavigateAccountPage("Account/Login");
-    }
+    private void NavigateToAccountManage() => NavigateAccountPage("Account/Manage");
+    private void NavigateToLogin() => NavigateAccountPage("Account/Login");
 }

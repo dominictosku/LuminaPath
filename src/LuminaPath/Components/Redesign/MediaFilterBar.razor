@@ -1,0 +1,238 @@
+<div class="browse-controls">
+    <MediaTypeTabs SelectedKind="@SelectedKind"
+                   SelectedKindChanged="@OnKindChanged"
+                   AriaLabel="@TabsAriaLabel"
+                   Counts="@TabCounts" />
+
+    <div class="control-right">
+        <input class="input"
+               type="search"
+               placeholder="@SearchPlaceholder"
+               aria-label="@SearchPlaceholder"
+               value="@SearchQuery"
+               @oninput="HandleSearchInput" />
+
+        @if (ShowStatusFilter)
+        {
+            <select class="select"
+                    aria-label="Filter by status"
+                    value="@SelectedStatus"
+                    @onchange="HandleStatusChange">
+                <option value="all">All statuses</option>
+                <option value="playing">Playing</option>
+                <option value="watching">Watching</option>
+                <option value="backlog">Backlog / Planned</option>
+                <option value="completed">Completed</option>
+                <option value="wishlist">Wishlist</option>
+                <option value="dropped">Dropped</option>
+            </select>
+        }
+
+        <select class="select"
+                aria-label="Sort media"
+                value="@SelectedSort"
+                @onchange="HandleSortChange">
+            <option value="recent">Recently added</option>
+            <option value="title">Title A–Z</option>
+            <option value="rating">Highest rated</option>
+            @if (ShowHoursSort)
+            {
+                <option value="hours">Most logged hours</option>
+            }
+            <option value="release">Release date</option>
+        </select>
+
+        @if (EnableAdvancedFilters)
+        {
+            <button type="button"
+                    class="btn btn-ghost"
+                    aria-expanded="@(_showAdvanced ? "true" : "false")"
+                    @onclick="ToggleAdvanced">
+                ⚙ Filters @(HasActiveAdvancedFilters ? "•" : "")
+            </button>
+        }
+    </div>
+</div>
+
+@if (EnableAdvancedFilters && _showAdvanced)
+{
+    <div class="advanced-filter-panel">
+        <label class="field-label">
+            Genre
+            <input class="input"
+                   type="text"
+                   placeholder="e.g. RPG, Sci-Fi, Fantasy"
+                   value="@GenreFilter"
+                   @oninput="HandleGenreInput" />
+        </label>
+        <label class="field-label">
+            Source / Platform
+            <input class="input"
+                   type="text"
+                   placeholder="e.g. Steam, PSN, Netflix"
+                   value="@SourceFilter"
+                   @oninput="HandleSourceInput" />
+        </label>
+        <label class="field-label">
+            Released From (Year)
+            <input class="input"
+                   type="number"
+                   min="1970"
+                   max="2035"
+                   placeholder="Any"
+                   value="@FromYear"
+                   @onchange="HandleFromYearChange" />
+        </label>
+        <label class="field-label">
+            Released To (Year)
+            <input class="input"
+                   type="number"
+                   min="1970"
+                   max="2035"
+                   placeholder="Any"
+                   value="@ToYear"
+                   @onchange="HandleToYearChange" />
+        </label>
+        @if (ShowOwnershipFilter)
+        {
+            <label class="field-label">
+                Ownership
+                <select class="select" value="@OwnershipFilter" @onchange="HandleOwnershipChange">
+                    <option value="all">All catalog items</option>
+                    <option value="mine">In my library</option>
+                    <option value="unowned">Not in my library</option>
+                </select>
+            </label>
+        }
+        <div>
+            <button type="button" class="btn btn-ghost" @onclick="ClearAdvancedFilters">Reset filters</button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string SelectedKind { get; set; } = "all";
+    [Parameter] public EventCallback<string> SelectedKindChanged { get; set; }
+
+    [Parameter] public string SearchQuery { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> SearchQueryChanged { get; set; }
+
+    [Parameter] public string SelectedStatus { get; set; } = "all";
+    [Parameter] public EventCallback<string> SelectedStatusChanged { get; set; }
+
+    [Parameter] public string SelectedSort { get; set; } = "recent";
+    [Parameter] public EventCallback<string> SelectedSortChanged { get; set; }
+
+    [Parameter] public string GenreFilter { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> GenreFilterChanged { get; set; }
+
+    [Parameter] public string SourceFilter { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> SourceFilterChanged { get; set; }
+
+    [Parameter] public int? FromYear { get; set; }
+    [Parameter] public EventCallback<int?> FromYearChanged { get; set; }
+
+    [Parameter] public int? ToYear { get; set; }
+    [Parameter] public EventCallback<int?> ToYearChanged { get; set; }
+
+    [Parameter] public string OwnershipFilter { get; set; } = "all";
+    [Parameter] public EventCallback<string> OwnershipFilterChanged { get; set; }
+
+    [Parameter] public bool ShowStatusFilter { get; set; } = true;
+    [Parameter] public bool ShowHoursSort { get; set; } = true;
+    [Parameter] public bool ShowOwnershipFilter { get; set; }
+    [Parameter] public bool EnableAdvancedFilters { get; set; } = true;
+    [Parameter] public string SearchPlaceholder { get; set; } = "Filter titles, genres, platforms…";
+    [Parameter] public string TabsAriaLabel { get; set; } = "Media type filter";
+    [Parameter] public IReadOnlyDictionary<string, int>? TabCounts { get; set; }
+    [Parameter] public EventCallback OnFiltersUpdated { get; set; }
+
+    private bool _showAdvanced;
+
+    private bool HasActiveAdvancedFilters =>
+        !string.IsNullOrWhiteSpace(GenreFilter)
+        || !string.IsNullOrWhiteSpace(SourceFilter)
+        || FromYear.HasValue
+        || ToYear.HasValue
+        || (!string.IsNullOrWhiteSpace(OwnershipFilter) && OwnershipFilter != "all");
+
+    private void ToggleAdvanced() => _showAdvanced = !_showAdvanced;
+
+    private async Task OnKindChanged(string kind)
+    {
+        SelectedKind = kind;
+        await SelectedKindChanged.InvokeAsync(kind);
+        await OnFiltersUpdated.InvokeAsync();
+    }
+
+    private async Task HandleSearchInput(ChangeEventArgs e)
+    {
+        SearchQuery = e.Value?.ToString() ?? string.Empty;
+        await SearchQueryChanged.InvokeAsync(SearchQuery);
+        await OnFiltersUpdated.InvokeAsync();
+    }
+
+    private async Task HandleStatusChange(ChangeEventArgs e)
+    {
+        SelectedStatus = e.Value?.ToString() ?? "all";
+        await SelectedStatusChanged.InvokeAsync(SelectedStatus);
+        await OnFiltersUpdated.InvokeAsync();
+    }
+
+    private async Task HandleSortChange(ChangeEventArgs e)
+    {
+        SelectedSort = e.Value?.ToString() ?? "recent";
+        await SelectedSortChanged.InvokeAsync(SelectedSort);
+        await OnFiltersUpdated.InvokeAsync();
+    }
+
+    private async Task HandleGenreInput(ChangeEventArgs e)
+    {
+        GenreFilter = e.Value?.ToString() ?? string.Empty;
+        await GenreFilterChanged.InvokeAsync(GenreFilter);
+        await OnFiltersUpdated.InvokeAsync();
+    }
+
+    private async Task HandleSourceInput(ChangeEventArgs e)
+    {
+        SourceFilter = e.Value?.ToString() ?? string.Empty;
+        await SourceFilterChanged.InvokeAsync(SourceFilter);
+        await OnFiltersUpdated.InvokeAsync();
+    }
+
+    private async Task HandleFromYearChange(ChangeEventArgs e)
+    {
+        FromYear = int.TryParse(e.Value?.ToString(), out var yr) ? yr : null;
+        await FromYearChanged.InvokeAsync(FromYear);
+        await OnFiltersUpdated.InvokeAsync();
+    }
+
+    private async Task HandleToYearChange(ChangeEventArgs e)
+    {
+        ToYear = int.TryParse(e.Value?.ToString(), out var yr) ? yr : null;
+        await ToYearChanged.InvokeAsync(ToYear);
+        await OnFiltersUpdated.InvokeAsync();
+    }
+
+    private async Task HandleOwnershipChange(ChangeEventArgs e)
+    {
+        OwnershipFilter = e.Value?.ToString() ?? "all";
+        await OwnershipFilterChanged.InvokeAsync(OwnershipFilter);
+        await OnFiltersUpdated.InvokeAsync();
+    }
+
+    private async Task ClearAdvancedFilters()
+    {
+        GenreFilter = string.Empty;
+        SourceFilter = string.Empty;
+        FromYear = null;
+        ToYear = null;
+        OwnershipFilter = "all";
+        await GenreFilterChanged.InvokeAsync(GenreFilter);
+        await SourceFilterChanged.InvokeAsync(SourceFilter);
+        await FromYearChanged.InvokeAsync(FromYear);
+        await ToYearChanged.InvokeAsync(ToYear);
+        await OwnershipFilterChanged.InvokeAsync(OwnershipFilter);
+        await OnFiltersUpdated.InvokeAsync();
+    }
+}
