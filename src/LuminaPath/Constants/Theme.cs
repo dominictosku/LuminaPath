@@ -4,8 +4,13 @@ namespace LuminaPath.Constants
 {
     public class Theme
     {
-        public static MudTheme ApplicationTheme()
+        public static MudTheme ApplicationTheme(string? primary = null, string? secondary = null, string? background = null, string? surface = null)
         {
+            var darkPrimary = string.IsNullOrWhiteSpace(primary) ? "#b2f5cf" : primary;
+            var darkSecondary = string.IsNullOrWhiteSpace(secondary) ? "#5fe0a3" : secondary;
+            var darkBackground = string.IsNullOrWhiteSpace(background) ? "#0c1011" : background;
+            var darkSurface = string.IsNullOrWhiteSpace(surface) ? "#13191a" : surface;
+
             var theme = new MudTheme
             {
                 PaletteLight = new PaletteLight
@@ -28,20 +33,20 @@ namespace LuminaPath.Constants
 
                 PaletteDark = new PaletteDark
                 {
-                    Primary = "#b2f5cf",
+                    Primary = darkPrimary,
                     PrimaryContrastText = "#082419",
-                    Secondary = "#5fe0a3",
+                    Secondary = darkSecondary,
                     SecondaryContrastText = "#082419",
-                    Dark = "#13191a",
-                    Info = "#7dc4ff",
-                    InfoContrastText = "#081b29",
+                    Dark = darkSurface,
+                    Info = darkSecondary,
+                    InfoContrastText = "#082419",
                     Error = "#ff9c9c",
                     Success = "#8bf2b5",
                     Warning = "#f5d491",
-                    Black = "#0c1011",
-                    Background = "#0c1011",
+                    Black = darkBackground,
+                    Background = darkBackground,
                     BackgroundGray = "#101617",
-                    Surface = "#13191a",
+                    Surface = darkSurface,
                     DrawerBackground = "#0f1415",
                     DrawerText = "#f0f4f1",
                     DrawerIcon = "#9aa7a4",

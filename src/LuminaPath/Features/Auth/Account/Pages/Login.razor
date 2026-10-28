@@ -1,4 +1,4 @@
-﻿@page "/Account/Login"
+@page "/Account/Login"
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
@@ -252,8 +252,8 @@
         --c-border-h: rgba(167,139,250,0.4);
         --c-text:     #e8e8f0;
         --c-muted:    #6b6b85;
-        --c-accent-1: #a78bfa;
-        --c-accent-2: #38bdf8;
+        --c-accent-1: var(--accent-secondary, #5fe0a3);
+        --c-accent-2: var(--mint, #b2f5cf);
         --c-error-bg: rgba(239,68,68,0.08);
         --c-error:    #f87171;
         --radius:     14px;
@@ -287,14 +287,14 @@
 
     .orb-1 {
         width: 500px; height: 500px;
-        background: radial-gradient(circle, #a78bfa, transparent 70%);
+        background: radial-gradient(circle, var(--accent-secondary, #5fe0a3), transparent 70%);
         top: -120px; left: -120px;
         animation: drift1 12s ease-in-out infinite alternate;
     }
 
     .orb-2 {
         width: 400px; height: 400px;
-        background: radial-gradient(circle, #38bdf8, transparent 70%);
+        background: radial-gradient(circle, var(--mint, #b2f5cf), transparent 70%);
         bottom: -100px; right: -100px;
         animation: drift2 15s ease-in-out infinite alternate;
     }

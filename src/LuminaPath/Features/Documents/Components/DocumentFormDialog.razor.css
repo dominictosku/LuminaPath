@@ -44,7 +44,7 @@
     display: grid;
     gap: 8px;
     place-items: center;
-    color: #7dd3fc;
+    color: var(--mint, #b2f5cf);
     font-weight: 900;
 }
 
@@ -59,7 +59,7 @@
 }
 
 .document-form__summary .mud-typography-overline {
-    color: #7dd3fc;
+    color: var(--mint, #b2f5cf);
     font-weight: 900;
 }
 

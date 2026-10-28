@@ -42,7 +42,7 @@ public partial class Quests
     private List<MyGame> _library = [];
     private string _newSkillName = string.Empty;
     private string _newSkillIcon = Icons.Material.Filled.Code;
-    private string _newSkillColor = "#2563eb";
+    private string _newSkillColor = "#1f6f50";
     private string _newNodeName = string.Empty;
     private int? _editingSkillId;
     private int _temporaryId = -1;
@@ -425,7 +425,7 @@ public partial class Quests
         _editingSkillId = null;
         _newSkillName = string.Empty;
         _newSkillIcon = Icons.Material.Filled.Code;
-        _newSkillColor = "#2563eb";
+        _newSkillColor = "#1f6f50";
     }
 
     private async Task DeleteSkill(QuestSkillDto skill)

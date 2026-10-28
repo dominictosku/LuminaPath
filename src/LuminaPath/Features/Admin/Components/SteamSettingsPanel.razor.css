@@ -42,8 +42,8 @@
 }
 
 .settings-panel__icon--steam {
-    background: linear-gradient(135deg, #0f766e, #2563eb);
-    box-shadow: 0 16px 36px rgba(15, 118, 110, .24);
+    background: var(--accent-gradient, linear-gradient(135deg, #184b39, #2cb57e));
+    box-shadow: 0 16px 36px var(--accent-glow, rgba(178, 245, 207, .22));
 }
 
 .settings-panel__icon .mud-icon-root {

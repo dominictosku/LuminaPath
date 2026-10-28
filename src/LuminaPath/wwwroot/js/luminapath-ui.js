@@ -70,6 +70,14 @@
         }
     });
 
+    // Restore saved theme customization if available
+    try {
+        const savedTheme = localStorage.getItem('luminapath-theme');
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+    } catch (_) {}
+
     window.luminaUi = {
         registerShell: function (dotNetHelper) {
             shellHelper = dotNetHelper;
@@ -93,6 +101,19 @@
                 activeTilt = null;
             }
             return isMotionDisabled();
+        },
+        applyTheme: function (themeName) {
+            if (!themeName || themeName === 'default' || themeName === 'mint') {
+                document.documentElement.removeAttribute('data-theme');
+                try { localStorage.removeItem('luminapath-theme'); } catch (_) {}
+            } else {
+                document.documentElement.setAttribute('data-theme', themeName);
+                try { localStorage.setItem('luminapath-theme', themeName); } catch (_) {}
+            }
+            return document.documentElement.getAttribute('data-theme') || 'default';
+        },
+        getTheme: function () {
+            return document.documentElement.getAttribute('data-theme') || 'default';
         }
     };
 

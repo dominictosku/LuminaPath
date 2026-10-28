@@ -1,10 +1,10 @@
 .import-page {
-    --import-panel-bg: linear-gradient(180deg, rgba(15, 30, 52, .94), rgba(8, 18, 32, .96));
-    --import-panel-soft: rgba(20, 36, 61, .82);
-    --import-panel-border: rgba(125, 211, 252, .16);
-    --import-text: #eef6ff;
-    --import-muted: #a9bfdc;
-    --import-faint: #7f95b3;
+    --import-panel-bg: var(--panel, #13191a);
+    --import-panel-soft: var(--panel-soft, rgba(255, 255, 255, 0.04));
+    --import-panel-border: var(--line, #252c2d);
+    --import-text: var(--text, #f0f4f1);
+    --import-muted: var(--muted, #858e8e);
+    --import-faint: var(--muted-light, #b8c3c0);
     display: flex;
     flex-direction: column;
     gap: 22px;
@@ -18,13 +18,13 @@
     gap: 24px;
     padding: 26px;
     overflow: hidden;
-    border: 1px solid rgba(59, 130, 246, .18);
+    border: 1px solid var(--import-panel-border);
     border-radius: 22px;
     background:
-        radial-gradient(circle at 12% 16%, rgba(56, 189, 248, .22), transparent 34%),
-        radial-gradient(circle at 85% 12%, rgba(34, 197, 94, .14), transparent 26%),
-        linear-gradient(135deg, rgba(7, 20, 38, .98), rgba(16, 42, 69, .96));
-    box-shadow: 0 24px 70px rgba(15, 23, 42, .18);
+        radial-gradient(circle at 12% 16%, var(--accent-glow, rgba(178, 245, 207, .18)), transparent 34%),
+        radial-gradient(circle at 85% 12%, rgba(95, 224, 163, .12), transparent 26%),
+        linear-gradient(135deg, rgba(12, 16, 17, .98), rgba(19, 25, 26, .96));
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .22);
 }
 
 .import-hero__copy {
@@ -32,7 +32,7 @@
 }
 
 .import-eyebrow {
-    color: #7dd3fc;
+    color: var(--mint, #b2f5cf);
     font-weight: 900;
 }
 
@@ -45,7 +45,7 @@
 .import-subtitle {
     max-width: 650px;
     margin-top: 10px;
-    color: #a9bfdc;
+    color: var(--import-muted);
 }
 
 .import-hero__status {
@@ -61,19 +61,19 @@
     gap: 8px;
     min-height: 136px;
     padding: 18px;
-    border: 1px solid rgba(147, 197, 253, .18);
+    border: 1px solid var(--import-panel-border);
     border-radius: 18px;
-    color: #dbeafe;
-    background: rgba(255, 255, 255, .065);
+    color: var(--text, #f0f4f1);
+    background: var(--panel, #13191a);
 }
 
 .import-status-card .mud-icon-root {
-    color: #38bdf8;
+    color: var(--mint, #b2f5cf);
     font-size: 30px;
 }
 
 .import-status-card span {
-    color: #a9bfdc;
+    color: var(--import-muted);
     font-size: .78rem;
     font-weight: 800;
     text-transform: uppercase;
@@ -124,18 +124,18 @@
 }
 
 ::deep .import-tabs .rz-tabview-nav li:not(.rz-tabview-selected):not(.rz-state-active) a:hover {
-    border-color: rgba(147, 197, 253, .12);
-    color: #dbeafe;
+    border-color: var(--line, #252c2d);
+    color: var(--text, #f0f4f1);
     background: rgba(255, 255, 255, .045);
 }
 
 ::deep .import-tabs .rz-tabview-nav li.rz-tabview-selected a,
 ::deep .import-tabs .rz-tabview-nav li.rz-state-active a {
-    border-color: rgba(125, 211, 252, .22);
+    border-color: var(--mint, #b2f5cf);
     border-bottom-color: transparent;
-    color: #eaf7ff;
-    background: rgba(14, 30, 48, .92);
-    box-shadow: inset 0 -2px 0 #38bdf8;
+    color: var(--text, #f0f4f1);
+    background: var(--panel, #13191a);
+    box-shadow: inset 0 -2px 0 var(--mint, #b2f5cf);
 }
 
 ::deep .import-tabs .rz-tabview-selected {
@@ -144,7 +144,7 @@
 
 ::deep .import-tabs .rz-tabview-panel {
     padding: 18px;
-    background: rgba(7, 15, 28, .78);
+    background: var(--bg-subtle, #101617);
 }
 
 .psn-workspace {
@@ -189,7 +189,7 @@
 }
 
 .psn-panel__header .mud-typography-overline {
-    color: #7dd3fc;
+    color: var(--mint, #b2f5cf);
     font-weight: 900;
 }
 
@@ -212,8 +212,8 @@
     place-items: center;
     border-radius: 18px;
     color: #fff;
-    background: linear-gradient(135deg, #2563eb, #06b6d4);
-    box-shadow: 0 16px 36px rgba(37, 99, 235, .28);
+    background: var(--accent-gradient, linear-gradient(135deg, #184b39, #2cb57e));
+    box-shadow: 0 16px 36px var(--accent-glow, rgba(178, 245, 207, .22));
 }
 
 .psn-emblem .mud-icon-root {
@@ -228,7 +228,7 @@
     place-items: center;
     border-radius: 18px;
     color: #fff;
-    background: linear-gradient(135deg, #0f766e, #2563eb);
+    background: var(--accent-gradient, linear-gradient(135deg, #0f766e, #22c55e));
     box-shadow: 0 16px 36px rgba(15, 118, 110, .24);
 }
 
@@ -244,7 +244,7 @@
     place-items: center;
     border-radius: 18px;
     color: #fff;
-    background: linear-gradient(135deg, #15803d, #0891b2);
+    background: var(--accent-gradient, linear-gradient(135deg, #15803d, #22c55e));
     box-shadow: 0 16px 36px rgba(21, 128, 61, .24);
 }
 
@@ -470,9 +470,9 @@
 
 ::deep .psn-games-grid .rz-paginator .rz-state-active,
 ::deep .psn-games-grid .rz-paginator .rz-paginator-page.rz-state-active {
-    color: #7dd3fc !important;
-    background: rgba(56, 189, 248, .14) !important;
-    border-color: rgba(125, 211, 252, .24) !important;
+    color: var(--mint, #b2f5cf) !important;
+    background: rgba(178, 245, 207, .14) !important;
+    border-color: rgba(178, 245, 207, .24) !important;
 }
 
 ::deep .psn-games-grid .rz-paginator .rz-paginator-page,
@@ -504,7 +504,7 @@
 
 .psn-empty-state .mud-icon-root,
 .import-coming-soon .mud-icon-root {
-    color: #38bdf8;
+    color: var(--mint, #b2f5cf);
     font-size: 48px;
 }
 

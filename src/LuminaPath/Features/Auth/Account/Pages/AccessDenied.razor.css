@@ -9,15 +9,15 @@
     width: 56px;
     height: 56px;
     place-items: center;
-    border: 1px solid rgba(147, 197, 253, 0.24);
+    border: 1px solid var(--line, #252c2d);
     border-radius: 8px;
-    color: #93c5fd;
-    background: rgba(15, 35, 62, 0.78);
+    color: var(--mint, #b2f5cf);
+    background: var(--panel, #13191a);
 }
 
 .account-status__kicker {
     margin: 12px 0 0;
-    color: #93c5fd;
+    color: var(--mint, #b2f5cf);
     font-size: 0.8rem;
     font-weight: 800;
     letter-spacing: 0;
@@ -34,7 +34,7 @@
 .account-status__copy {
     margin: 4px 0 0;
     max-width: 620px;
-    color: #bfdbfe;
+    color: var(--muted-light, #b8c3c0);
     line-height: 1.6;
 }
 
@@ -43,10 +43,10 @@
     max-width: 100%;
     margin-top: 8px;
     padding: 10px 12px;
-    border: 1px solid rgba(147, 197, 253, 0.18);
+    border: 1px solid var(--line, #252c2d);
     border-radius: 8px;
-    color: #dbeafe;
-    background: rgba(8, 21, 40, 0.68);
+    color: var(--text, #f0f4f1);
+    background: var(--bg-subtle, #101617);
     overflow-wrap: anywhere;
     font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
     font-size: 0.9rem;

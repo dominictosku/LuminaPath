@@ -11,13 +11,13 @@
     gap: 24px;
     padding: 26px;
     overflow: hidden;
-    border: 1px solid rgba(59, 130, 246, .18);
+    border: 1px solid var(--line, #252c2d);
     border-radius: 22px;
     background:
-        radial-gradient(circle at 14% 18%, rgba(56, 189, 248, .22), transparent 34%),
-        radial-gradient(circle at 86% 14%, rgba(34, 197, 94, .14), transparent 26%),
-        linear-gradient(135deg, rgba(7, 20, 38, .98), rgba(16, 42, 69, .96));
-    box-shadow: 0 24px 70px rgba(15, 23, 42, .18);
+        radial-gradient(circle at 14% 18%, var(--accent-glow, rgba(178, 245, 207, .18)), transparent 34%),
+        radial-gradient(circle at 86% 14%, rgba(95, 224, 163, .12), transparent 26%),
+        linear-gradient(135deg, rgba(12, 16, 17, .98), rgba(19, 25, 26, .96));
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .24);
 }
 
 .settings-hero__copy {
@@ -25,7 +25,7 @@
 }
 
 .settings-eyebrow {
-    color: #7dd3fc;
+    color: var(--mint, #b2f5cf);
     font-weight: 900;
 }
 
@@ -37,7 +37,7 @@
 .settings-subtitle {
     max-width: 660px;
     margin-top: 10px;
-    color: #a9bfdc;
+    color: var(--muted-light, #b8c3c0);
 }
 
 .settings-hero__status {
@@ -53,19 +53,19 @@
     gap: 8px;
     min-height: 136px;
     padding: 18px;
-    border: 1px solid rgba(147, 197, 253, .18);
+    border: 1px solid var(--line, #252c2d);
     border-radius: 18px;
-    color: #dbeafe;
-    background: rgba(255, 255, 255, .065);
+    color: var(--text, #f0f4f1);
+    background: var(--panel, #13191a);
 }
 
 .settings-status-card .mud-icon-root {
-    color: #38bdf8;
+    color: var(--mint, #b2f5cf);
     font-size: 30px;
 }
 
 .settings-status-card span {
-    color: #a9bfdc;
+    color: var(--muted, #858e8e);
     font-size: .78rem;
     font-weight: 800;
     text-transform: uppercase;
@@ -97,9 +97,9 @@
 }
 
 ::deep .settings-tabs {
-    border: 1px solid rgba(59, 130, 246, .18);
+    border: 1px solid var(--line, #252c2d);
     border-radius: 18px;
-    background: rgba(7, 15, 28, .52);
+    background: var(--bg-subtle, #101617);
     overflow: hidden;
 }
 
@@ -110,11 +110,11 @@
 .settings-panel {
     min-width: 0;
     padding: 20px;
-    border: 1px solid rgba(59, 130, 246, .18);
+    border: 1px solid var(--line, #252c2d);
     border-radius: 18px;
     background:
-        linear-gradient(180deg, rgba(18, 30, 45, .98), rgba(14, 24, 36, .96));
-    box-shadow: 0 16px 46px rgba(15, 23, 42, .18);
+        linear-gradient(180deg, rgba(19, 25, 26, .98), rgba(16, 22, 23, .96));
+    box-shadow: 0 16px 46px rgba(0, 0, 0, .2);
 }
 
 .settings-panel--primary {
@@ -152,18 +152,18 @@
     place-items: center;
     border-radius: 18px;
     color: #fff;
-    background: linear-gradient(135deg, #2563eb, #06b6d4);
-    box-shadow: 0 16px 36px rgba(37, 99, 235, .28);
+    background: var(--accent-gradient, linear-gradient(135deg, #184b39, #2cb57e));
+    box-shadow: 0 16px 36px var(--accent-glow, rgba(178, 245, 207, .22));
 }
 
 .settings-panel__icon--green {
-    background: linear-gradient(135deg, #0f766e, #22c55e);
+    background: var(--accent-gradient, linear-gradient(135deg, #0f766e, #22c55e));
     box-shadow: 0 16px 36px rgba(15, 118, 110, .24);
 }
 
 .settings-panel__icon--purple {
-    background: linear-gradient(135deg, #7c3aed, #06b6d4);
-    box-shadow: 0 16px 36px rgba(124, 58, 237, .24);
+    background: var(--accent-gradient-alt, linear-gradient(135deg, #1f6f50, #5fe0a3));
+    box-shadow: 0 16px 36px rgba(44, 181, 126, .24);
 }
 
 .settings-panel__icon .mud-icon-root {
