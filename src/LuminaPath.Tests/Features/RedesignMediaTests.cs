@@ -200,6 +200,59 @@ public class RedesignMediaTests
         Assert.Contains("HandleDeleteImageAsync", source);
     }
 
+    [Fact]
+    public void LibraryPage_SupportsTableViewToggleAndRendersMediaTable()
+    {
+        var source = ReadServerSource("Features", "Media", "Library.razor");
+
+        Assert.Contains("ViewMode=\"@_viewMode\"", source);
+        Assert.Contains("ViewModeChanged=\"HandleViewModeChanged\"", source);
+        Assert.Contains("<MediaTable", source);
+        Assert.Contains("IsLibrary=\"true\"", source);
+        Assert.Contains("QueryView", source);
+        Assert.Contains("_viewMode == \"table\"", source);
+    }
+
+    [Fact]
+    public void CatalogPage_SupportsTableViewToggleAndRendersMediaTable()
+    {
+        var source = ReadServerSource("Features", "Media", "Catalog.razor");
+
+        Assert.Contains("ViewMode=\"@_viewMode\"", source);
+        Assert.Contains("ViewModeChanged=\"HandleViewModeChanged\"", source);
+        Assert.Contains("<MediaTable", source);
+        Assert.Contains("IsLibrary=\"false\"", source);
+        Assert.Contains("QueryView", source);
+        Assert.Contains("_viewMode == \"table\"", source);
+    }
+
+    [Fact]
+    public void MediaFilterBar_DeclaresViewModeToggleMarkupAndParameters()
+    {
+        var source = ReadServerSource("Components", "Redesign", "MediaFilterBar.razor");
+
+        Assert.Contains("class=\"view-mode-toggle\"", source);
+        Assert.Contains("public string ViewMode", source);
+        Assert.Contains("public EventCallback<string> ViewModeChanged", source);
+        Assert.Contains("public bool ShowViewModeToggle", source);
+    }
+
+    [Fact]
+    public void MediaTable_ComponentExistsAndDeclaresExpectedColumns()
+    {
+        var source = ReadServerSource("Components", "Redesign", "MediaTable.razor");
+
+        Assert.Contains("public IReadOnlyList<UnifiedMediaItem> Items", source);
+        Assert.Contains("public EventCallback<UnifiedMediaItem> OnSelect", source);
+        Assert.Contains("public bool IsLibrary", source);
+        Assert.Contains("public EventCallback<UnifiedMediaItem> OnAddToLibrary", source);
+        Assert.Contains("class=\"media-table\"", source);
+        Assert.Contains("col-cover", source);
+        Assert.Contains("col-title", source);
+        Assert.Contains("col-type", source);
+        Assert.Contains("col-platform", source);
+    }
+
     private static string ReadServerSource(params string[] pathParts)
     {
         return File.ReadAllText(Path.Combine(FindRepositoryRoot(), "src", "LuminaPath", Path.Combine(pathParts)));

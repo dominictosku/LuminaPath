@@ -60,6 +60,8 @@
                     @bind-SourceFilter="_sourceFilter"
                     @bind-FromYear="_fromYear"
                     @bind-ToYear="_toYear"
+                    ViewMode="@_viewMode"
+                    ViewModeChanged="HandleViewModeChanged"
                     ShowStatusFilter="true"
                     ShowHoursSort="true"
                     EnableAdvancedFilters="true"
@@ -85,6 +87,13 @@
                 <a class="btn btn-ghost" href="catalog">Explore catalog →</a>
             </div>
         </div>
+    }
+    else if (_viewMode == "table")
+    {
+        <MediaTable Items="@FilteredItems"
+                    IsLibrary="true"
+                    CanUserEdit="@CanUserEdit"
+                    OnSelect="OpenDetail" />
     }
     else
     {
@@ -120,8 +129,12 @@
     [SupplyParameterFromQuery(Name = "q")]
     public string? QuerySearch { get; set; }
 
+    [SupplyParameterFromQuery(Name = "view")]
+    public string? QueryView { get; set; }
+
     private bool _loading = true;
     private bool _exporting;
+    private string _viewMode = "grid";
     private string _selectedKind = "all";
     private string _searchQuery = string.Empty;
     private string _selectedStatus = "all";
@@ -224,7 +237,44 @@
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
+        if (!string.IsNullOrWhiteSpace(QueryView) && (QueryView == "grid" || QueryView == "table"))
+        {
+            _viewMode = QueryView;
+        }
         ApplyRouteDefaults();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && string.IsNullOrWhiteSpace(QueryView))
+        {
+            try
+            {
+                var stored = await JS.InvokeAsync<string?>("localStorage.getItem", "luminapath-media-view");
+                if (stored is "grid" or "table" && stored != _viewMode)
+                {
+                    _viewMode = stored;
+                    StateHasChanged();
+                }
+            }
+            catch
+            {
+                // LocalStorage might not be accessible during prerendering
+            }
+        }
+    }
+
+    private async Task HandleViewModeChanged(string mode)
+    {
+        _viewMode = mode;
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "luminapath-media-view", mode);
+        }
+        catch
+        {
+            // Ignore storage errors
+        }
     }
 
     protected override async Task OnMediaDataMutatedAsync()

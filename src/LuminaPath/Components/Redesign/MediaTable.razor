@@ -1,0 +1,185 @@
+@using LuminaPath.Features.Media.Models
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="media-table-container" role="region" aria-label="Media table view">
+    <table class="media-table">
+        <thead>
+            <tr>
+                <th class="col-cover" scope="col">Cover</th>
+                <th class="col-title" scope="col">Title</th>
+                <th class="col-type" scope="col">Type</th>
+                <th class="col-platform" scope="col">Platform</th>
+                @if (IsLibrary)
+                {
+                    <th class="col-status" scope="col">Status</th>
+                    <th class="col-progress" scope="col">Progress / Time</th>
+                    <th class="col-rating" scope="col">Rating</th>
+                }
+                else
+                {
+                    <th class="col-genres" scope="col">Genres</th>
+                    <th class="col-status" scope="col">In Library</th>
+                    <th class="col-duration" scope="col">Est. Length</th>
+                }
+                <th class="col-year" scope="col">Year</th>
+                <th class="col-actions" scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Items)
+            {
+                <tr class="media-table-row"
+                    tabindex="0"
+                    role="button"
+                    aria-label="@($"{item.Title}, {item.KindLabel}, {item.StatusDisplayLabel}")"
+                    @onclick="() => HandleSelect(item)"
+                    @onkeydown="(e) => HandleKeyDown(e, item)">
+                    <td class="col-cover">
+                        <div class="table-cover-thumb">
+                            <img src="@item.CoverUrl" alt="@item.Title" loading="lazy" />
+                        </div>
+                    </td>
+                    <td class="col-title">
+                        <div class="table-title-cell">
+                            <strong class="table-title">@item.Title</strong>
+                            <span class="table-genre-sub">@item.PrimaryGenre</span>
+                        </div>
+                    </td>
+                    <td class="col-type">
+                        <span class="media-tag">@item.KindIcon @item.KindLabel</span>
+                    </td>
+                    <td class="col-platform">
+                        <span class="soft-pill">@item.Platform</span>
+                    </td>
+                    @if (IsLibrary)
+                    {
+                        <td class="col-status">
+                            <span class="card-status table-status">
+                                <i class="@item.StatusDotClass"></i>
+                                <span>@item.StatusDisplayLabel</span>
+                            </span>
+                        </td>
+                        <td class="col-progress">
+                            <div class="table-progress-cell">
+                                <div class="table-progress-meta">
+                                    <strong>@item.CardFootText</strong>
+                                    @if (item.ProgressPercent > 0)
+                                    {
+                                        <span>@(item.ProgressPercent)%</span>
+                                    }
+                                </div>
+                                @if (item.ProgressPercent > 0)
+                                {
+                                    <div class="progress-line">
+                                        <span style="width:@(item.ProgressPercent)%"></span>
+                                    </div>
+                                }
+                            </div>
+                        </td>
+                        <td class="col-rating">
+                            @if (item.Rating is > 0)
+                            {
+                                <span class="rating-badge">★ @item.Rating/10</span>
+                            }
+                            else
+                            {
+                                <span class="muted-dash">—</span>
+                            }
+                        </td>
+                    }
+                    else
+                    {
+                        <td class="col-genres">
+                            <div class="genres-preview">
+                                @foreach (var g in item.Genres.Take(2))
+                                {
+                                    <span class="soft-pill genre-pill">@g</span>
+                                }
+                                @if (item.Genres.Count == 0)
+                                {
+                                    <span class="muted-dash">—</span>
+                                }
+                            </div>
+                        </td>
+                        <td class="col-status">
+                            @if (item.InLibrary)
+                            {
+                                <span class="library-status-pill in-library">
+                                    ✓ @item.StatusDisplayLabel
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="library-status-pill not-in-library">
+                                    Catalog
+                                </span>
+                            }
+                        </td>
+                        <td class="col-duration">
+                            @if (item.EstimatedHours > 0)
+                            {
+                                <span class="duration-text">~@(UnifiedMediaItem.FormatHours(item.EstimatedHours))</span>
+                            }
+                            else if (item.TotalEpisodes is > 0)
+                            {
+                                <span class="duration-text">@(item.TotalEpisodes) eps</span>
+                            }
+                            else if (item.ExpectedWatchTimeMinutes is > 0)
+                            {
+                                <span class="duration-text">@(item.ExpectedWatchTimeMinutes) min</span>
+                            }
+                            else
+                            {
+                                <span class="muted-dash">—</span>
+                            }
+                        </td>
+                    }
+                    <td class="col-year">
+                        @(item.Year?.ToString() ?? "—")
+                    </td>
+                    <td class="col-actions">
+                        <div class="table-row-actions" @onclick:stopPropagation="true">
+                            @if (!IsLibrary && !item.InLibrary)
+                            {
+                                <button type="button"
+                                        class="btn-row-action btn-add-lib"
+                                        title="Add to library"
+                                        aria-label="@($"Add {item.Title} to library")"
+                                        @onclick="() => HandleAdd(item)">
+                                    + Add
+                                </button>
+                            }
+                            <button type="button"
+                                    class="btn-row-action"
+                                    title="Open details"
+                                    aria-label="@($"Open details for {item.Title}")"
+                                    @onclick="() => HandleSelect(item)">
+                                ···
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<UnifiedMediaItem> Items { get; set; } = [];
+    [Parameter] public EventCallback<UnifiedMediaItem> OnSelect { get; set; }
+    [Parameter] public bool IsLibrary { get; set; } = true;
+    [Parameter] public bool CanUserEdit { get; set; }
+    [Parameter] public EventCallback<UnifiedMediaItem> OnAddToLibrary { get; set; }
+
+    private Task HandleSelect(UnifiedMediaItem item) => OnSelect.InvokeAsync(item);
+
+    private Task HandleAdd(UnifiedMediaItem item) => OnAddToLibrary.InvokeAsync(item);
+
+    private async Task HandleKeyDown(KeyboardEventArgs e, UnifiedMediaItem item)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            await OnSelect.InvokeAsync(item);
+        }
+    }
+}

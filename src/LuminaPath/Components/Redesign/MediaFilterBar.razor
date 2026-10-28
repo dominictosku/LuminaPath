@@ -51,6 +51,32 @@
                 ⚙ Filters @(HasActiveAdvancedFilters ? "•" : "")
             </button>
         }
+
+        @if (ShowViewModeToggle)
+        {
+            <div class="view-mode-toggle" role="group" aria-label="View layout">
+                <button type="button"
+                        class="view-mode-btn @(ViewMode == "grid" ? "active" : "")"
+                        title="Card grid"
+                        aria-label="Card grid"
+                        @onclick='() => SetViewMode("grid")'>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z"/>
+                    </svg>
+                    <span>Cards</span>
+                </button>
+                <button type="button"
+                        class="view-mode-btn @(ViewMode == "table" ? "active" : "")"
+                        title="Table list"
+                        aria-label="Table list"
+                        @onclick='() => SetViewMode("table")'>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M4 5h16v2H4V5zm0 6h16v2H4v-2zm0 6h16v2H4v-2z"/>
+                    </svg>
+                    <span>Table</span>
+                </button>
+            </div>
+        }
     </div>
 </div>
 
@@ -137,6 +163,10 @@
 
     [Parameter] public string OwnershipFilter { get; set; } = "all";
     [Parameter] public EventCallback<string> OwnershipFilterChanged { get; set; }
+
+    [Parameter] public string ViewMode { get; set; } = "grid";
+    [Parameter] public EventCallback<string> ViewModeChanged { get; set; }
+    [Parameter] public bool ShowViewModeToggle { get; set; } = true;
 
     [Parameter] public bool ShowStatusFilter { get; set; } = true;
     [Parameter] public bool ShowHoursSort { get; set; } = true;
@@ -234,5 +264,16 @@
         await ToYearChanged.InvokeAsync(ToYear);
         await OwnershipFilterChanged.InvokeAsync(OwnershipFilter);
         await OnFiltersUpdated.InvokeAsync();
+    }
+
+    private async Task SetViewMode(string mode)
+    {
+        if (ViewMode == mode)
+        {
+            return;
+        }
+
+        ViewMode = mode;
+        await ViewModeChanged.InvokeAsync(mode);
     }
 }
