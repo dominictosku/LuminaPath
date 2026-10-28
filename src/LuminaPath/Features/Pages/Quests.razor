@@ -15,442 +15,635 @@
     @if (_loading)
     {
         <div class="loading-panel">
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+            <p class="loading-text">Summoning your quest board...</p>
         </div>
     }
     else
     {
-        <section class="quest-hero">
-            <div>
-                <p class="eyebrow">Life RPG</p>
-                <h1>@Title Level @Level</h1>
-                <p class="hero-copy">Turn tasks into quests and real-life practice into a skill tree.</p>
-            </div>
-            <div class="rank-panel">
-                <div class="rank-row">
-                    <div>
-                        <span>Total XP</span>
-                        <strong>@_board.Xp</strong>
+        <!-- Modern Hero Header -->
+        <header class="quest-hero-card">
+            <div class="hero-main">
+                <div class="hero-badge-wrap">
+                    <div class="level-orb">
+                        <span class="level-orb-num">@Level</span>
+                        <span class="level-orb-label">LVL</span>
                     </div>
-                    <span class="xp-pill">@XpIntoLevel / 200 XP</span>
-                </div>
-                <div class="progress-track">
-                    <div class="progress-fill" style="width: @(XpProgress)%"></div>
-                </div>
-                <div class="stat-row">
-                    <span>@TodayCount today</span>
-                    <span>@OverdueCount overdue</span>
-                    <span>@CompletedQuestCount complete</span>
-                </div>
-                @if (_board.CurrentStreakDays > 0 || _board.LongestStreakDays > 0)
-                {
-                    <div class="stat-row">
-                        <span>@_board.CurrentStreakDays-day streak</span>
-                        <span>best @_board.LongestStreakDays</span>
+                    <div class="hero-titles">
+                        <div class="hero-eyebrow">
+                            <span class="hero-sparkle">✧</span> LIFE RPG
+                            @if (_board.CurrentStreakDays > 0)
+                            {
+                                <span class="streak-badge">
+                                    <span class="streak-flame">🔥</span> @_board.CurrentStreakDays-day streak
+                                </span>
+                            }
+                        </div>
+                        <h1 class="hero-rank-title">@Title</h1>
+                        <p class="hero-subtitle">Conquer daily objectives, earn XP, and level up your life.</p>
                     </div>
-                }
-                @if (_board.Achievements.Count > 0)
-                {
-                    <div class="achievement-pulse">
-                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" />
-                        <span>@_board.Achievements.Count achievements unlocked</span>
-                    </div>
-                }
-            </div>
-        </section>
+                </div>
 
-        <div class="mode-panel">
-            <MudButtonGroup Variant="Variant.Filled" Color="Color.Primary">
-                <MudButton OnClick="@(() => _mode = PageMode.Quests)" Variant="@(_mode == PageMode.Quests ? Variant.Filled : Variant.Outlined)">Quests</MudButton>
-                <MudButton OnClick="@(() => _mode = PageMode.Skills)" Variant="@(_mode == PageMode.Skills ? Variant.Filled : Variant.Outlined)">Skills</MudButton>
-            </MudButtonGroup>
-        </div>
+                <!-- Mode switcher tabs -->
+                <div class="mode-tabs">
+                    <button type="button" class="mode-tab @(_mode == PageMode.Quests ? "active" : "")" @onclick="@(() => _mode = PageMode.Quests)">
+                        <MudIcon Icon="@Icons.Material.Filled.SportsEsports" Size="Size.Small" />
+                        <span>Quests</span>
+                    </button>
+                    <button type="button" class="mode-tab @(_mode == PageMode.Skills ? "active" : "")" @onclick="@(() => _mode = PageMode.Skills)">
+                        <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Size="Size.Small" />
+                        <span>Skills</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- XP Progression Bar -->
+            <div class="xp-banner">
+                <div class="xp-banner-info">
+                    <span class="xp-label">EXPERIENCE PROGRESS</span>
+                    <span class="xp-values"><strong>@_board.Xp Total XP</strong> · @XpIntoLevel / 200 XP to Level @(Level + 1)</span>
+                </div>
+                <div class="xp-track">
+                    <div class="xp-fill" style="width: @(XpProgress)%"></div>
+                </div>
+            </div>
+
+            <!-- Quick Stat Tiles -->
+            <div class="stat-tiles">
+                <div class="stat-tile @(TodayCount > 0 ? "highlight-amber" : "")">
+                    <div class="stat-icon-wrap amber">
+                        <MudIcon Icon="@Icons.Material.Filled.Today" />
+                    </div>
+                    <div class="stat-meta">
+                        <span class="stat-num">@TodayCount</span>
+                        <span class="stat-label">Focus Today</span>
+                    </div>
+                </div>
+
+                <div class="stat-tile @(OverdueCount > 0 ? "highlight-red" : "")">
+                    <div class="stat-icon-wrap red">
+                        <MudIcon Icon="@(OverdueCount > 0 ? Icons.Material.Filled.WarningAmber : Icons.Material.Filled.CheckCircleOutline)" />
+                    </div>
+                    <div class="stat-meta">
+                        <span class="stat-num">@OverdueCount</span>
+                        <span class="stat-label">Overdue</span>
+                    </div>
+                </div>
+
+                <div class="stat-tile">
+                    <div class="stat-icon-wrap emerald">
+                        <MudIcon Icon="@Icons.Material.Filled.TaskAlt" />
+                    </div>
+                    <div class="stat-meta">
+                        <span class="stat-num">@CompletedQuestCount</span>
+                        <span class="stat-label">Completed</span>
+                    </div>
+                </div>
+
+                <div class="stat-tile">
+                    <div class="stat-icon-wrap purple">
+                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" />
+                    </div>
+                    <div class="stat-meta">
+                        <span class="stat-num">@_board.Achievements.Count</span>
+                        <span class="stat-label">Achievements</span>
+                    </div>
+                </div>
+            </div>
+        </header>
 
         @if (_mode == PageMode.Quests)
         {
-            <section class="quick-add-card">
-                <div class="quest-input quick-add-row">
-                    <input placeholder="Capture a quest" @bind="_quickAddTitle" @bind:event="oninput" @onkeydown="OnQuickAddKeyDown" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="AddQuest" />
+            <!-- Quick Add Quest Card -->
+            <section class="capture-card">
+                <div class="capture-main-row">
+                    <div class="capture-input-box">
+                        <MudIcon Icon="@Icons.Material.Filled.AddCircleOutline" Class="capture-icon" />
+                        <input class="capture-input"
+                               placeholder="Capture a new quest (e.g., Beat the Hydra, Study algorithms)..."
+                               @bind="_quickAddTitle"
+                               @bind:event="oninput"
+                               @onkeydown="OnQuickAddKeyDown" />
+                    </div>
+                    <button type="button" class="capture-submit-btn" @onclick="AddQuest" disabled="@string.IsNullOrWhiteSpace(_quickAddTitle)">
+                        <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                        <span>Add Quest</span>
+                    </button>
                 </div>
 
-                <div class="quick-date-row">
-                    <button type="button" class="quick-date @(IsQuickAddDueToday ? "active" : "")" @onclick="SetQuickAddToday">Today</button>
-                    <button type="button" class="quick-date @(IsQuickAddDueTomorrow ? "active" : "")" @onclick="SetQuickAddTomorrow">Tomorrow</button>
-                    <button type="button" class="quick-date @(_quickAddDue is null ? "active" : "")" @onclick="ResetQuickAddDue">Inbox</button>
-                    <button type="button" class="quick-date tools" @onclick="@(() => _quickAddAdvancedOpen = !_quickAddAdvancedOpen)">
-                        <MudIcon Icon="@Icons.Material.Filled.Tune" />
-                        More
+                <div class="capture-footer-row">
+                    <div class="preset-chips">
+                        <button type="button" class="preset-chip @(IsQuickAddDueToday ? "selected" : "")" @onclick="SetQuickAddToday">
+                            <MudIcon Icon="@Icons.Material.Filled.Today" Size="Size.Small" />
+                            <span>Today</span>
+                        </button>
+                        <button type="button" class="preset-chip @(IsQuickAddDueTomorrow ? "selected" : "")" @onclick="SetQuickAddTomorrow">
+                            <MudIcon Icon="@Icons.Material.Filled.WbSunny" Size="Size.Small" />
+                            <span>Tomorrow</span>
+                        </button>
+                        <button type="button" class="preset-chip @(_quickAddDue is null ? "selected" : "")" @onclick="ResetQuickAddDue">
+                            <MudIcon Icon="@Icons.Material.Filled.Inbox" Size="Size.Small" />
+                            <span>Inbox</span>
+                        </button>
+                    </div>
+
+                    <button type="button" class="more-options-toggle @(_quickAddAdvancedOpen ? "open" : "")" @onclick="@(() => _quickAddAdvancedOpen = !_quickAddAdvancedOpen)">
+                        <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" />
+                        <span>@(_quickAddAdvancedOpen ? "Less options" : "More options")</span>
                     </button>
                 </div>
 
                 @if (_quickAddAdvancedOpen)
                 {
-                    <div class="quick-add-meta">
-                        <label>
-                            <span>Type</span>
+                    <div class="capture-drawer">
+                        <div class="drawer-field">
+                            <label>QUEST TYPE</label>
                             <select @bind="_quickAddType">
                                 @foreach (var type in Enum.GetValues<QuestType>())
                                 {
                                     <option value="@type">@TypeLabel(type)</option>
                                 }
                             </select>
-                        </label>
-                        <label>
-                            <span>Priority</span>
+                        </div>
+                        <div class="drawer-field">
+                            <label>PRIORITY</label>
                             <select @bind="_quickAddPriority">
                                 @foreach (var priority in Enum.GetValues<QuestPriority>())
                                 {
                                     <option value="@priority">@PriorityLabel(priority)</option>
                                 }
                             </select>
-                        </label>
-                        <label>
-                            <span>Repeat</span>
+                        </div>
+                        <div class="drawer-field">
+                            <label>RECURRENCE</label>
                             <select @bind="_quickAddRecurrence">
                                 @foreach (var recurrence in Enum.GetValues<QuestRecurrence>())
                                 {
                                     <option value="@recurrence">@RecurrenceLabel(recurrence)</option>
                                 }
                             </select>
-                        </label>
-                        <label>
-                            <span>Due</span>
+                        </div>
+                        <div class="drawer-field">
+                            <label>DUE DATE</label>
                             <input type="date" @bind="_quickAddDue" />
-                        </label>
+                        </div>
                         @if (_library.Count > 0)
                         {
-                            <label>
-                                <span>Game</span>
+                            <div class="drawer-field">
+                                <label>LINK GAME</label>
                                 <select @bind="_quickAddGameId">
-                                    <option value="">No game</option>
+                                    <option value="">No game linked</option>
                                     @foreach (var game in _library)
                                     {
                                         <option value="@game.Id">@game.Game?.Name</option>
                                     }
                                 </select>
-                            </label>
+                            </div>
                         }
                         @if (_board.Skills.Count > 0)
                         {
-                            <label>
-                                <span>Skill</span>
+                            <div class="drawer-field">
+                                <label>LINK SKILL</label>
                                 <select @bind="_quickAddSkillId">
-                                    <option value="">No skill</option>
+                                    <option value="">No skill linked</option>
                                     @foreach (var skill in _board.Skills)
                                     {
                                         <option value="@skill.Id">@skill.Name</option>
                                     }
                                 </select>
-                            </label>
+                            </div>
                         }
                     </div>
                 }
             </section>
 
-            <section class="board-toolbar">
-                <div class="lane-tabs">
+            <!-- Board Navigation & Filter Toolbar -->
+            <nav class="board-nav-toolbar">
+                <div class="filter-lanes">
                     @foreach (var filter in Enum.GetValues<QuestFilter>())
                     {
-                        <button type="button" class="@(_filter == filter ? "active" : "")" @onclick="@(() => _filter = filter)">
-                            <MudIcon Icon="@FilterIcon(filter)" />
-                            <span>@FilterLabel(filter)</span>
-                            <strong>@FilterCount(filter)</strong>
+                        <button type="button" class="lane-tab @(_filter == filter ? "active" : "")" @onclick="@(() => _filter = filter)">
+                            <MudIcon Icon="@FilterIcon(filter)" Size="Size.Small" />
+                            <span class="lane-name">@FilterLabel(filter)</span>
+                            <span class="lane-counter">@FilterCount(filter)</span>
                         </button>
                     }
                 </div>
 
-                <label class="search-field">
-                    <MudIcon Icon="@Icons.Material.Filled.Search" />
-                    <input placeholder="Search quests, notes, tags" @bind="_searchQuery" @bind:event="oninput" />
+                <div class="search-box">
+                    <MudIcon Icon="@Icons.Material.Filled.Search" Class="search-icon" Size="Size.Small" />
+                    <input class="search-input" placeholder="Search quests, notes, tags..." @bind="_searchQuery" @bind:event="oninput" />
                     @if (!string.IsNullOrWhiteSpace(_searchQuery))
                     {
-                        <button type="button" @onclick="@(() => _searchQuery = string.Empty)">
-                            <MudIcon Icon="@Icons.Material.Filled.Close" />
+                        <button type="button" class="search-clear-btn" @onclick="@(() => _searchQuery = string.Empty)">
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" />
                         </button>
                     }
-                </label>
+                </div>
+            </nav>
 
-                @if (AvailableTags.Count > 0)
-                {
-                    <div class="tag-filter-strip">
-                        @foreach (var tag in AvailableTags)
-                        {
-                            <button type="button" class="@(_tagFilter == tag ? "active" : "")" @onclick="@(() => ToggleTag(tag))">#@tag</button>
-                        }
-                        @if (_tagFilter is not null)
-                        {
-                            <button type="button" class="clear" @onclick="@(() => _tagFilter = null)">Clear</button>
-                        }
-                    </div>
-                }
-            </section>
+            @if (AvailableTags.Count > 0)
+            {
+                <div class="tag-strip">
+                    <span class="tag-strip-label"><MudIcon Icon="@Icons.Material.Filled.LocalOffer" Size="Size.Small" /> TAGS:</span>
+                    @foreach (var tag in AvailableTags)
+                    {
+                        <button type="button" class="tag-pill @(_tagFilter == tag ? "active" : "")" @onclick="@(() => ToggleTag(tag))">
+                            #@tag
+                        </button>
+                    }
+                    @if (_tagFilter is not null)
+                    {
+                        <button type="button" class="tag-clear-pill" @onclick="@(() => _tagFilter = null)">
+                            Clear filter
+                        </button>
+                    }
+                </div>
+            }
 
-            <section class="quest-board">
+            <!-- Quest Board Main -->
+            <main class="quest-board-main">
                 @if (!VisibleQuests.Any())
                 {
-                    <div class="empty-state empty-state-wide">
-                        <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" />
-                        <strong>Nothing needs your attention here</strong>
-                        <span>Capture a quest above, or switch lanes to see what is scheduled elsewhere.</span>
+                    <div class="board-empty-state">
+                        <div class="empty-icon-glow">
+                            <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" />
+                        </div>
+                        <h3>The realm is calm</h3>
+                        <p>No quests match your current view. Capture a new quest above, or pull from your backlog.</p>
                         @if (NextQueuedQuest is not null)
                         {
-                            <button type="button" class="inline-action" @onclick="PullNextQuestToToday">Pull "@NextQueuedQuest.Title" into today</button>
+                            <button type="button" class="empty-pull-btn" @onclick="PullNextQuestToToday">
+                                <MudIcon Icon="@Icons.Material.Filled.NorthEast" Size="Size.Small" />
+                                <span>Pull "@NextQueuedQuest.Title" into today</span>
+                            </button>
                         }
                     </div>
                 }
 
                 @foreach (var questSection in QuestSections)
                 {
-                    <article class="quest-section @questSection.Tone">
-                        <header class="section-header">
-                            <MudIcon Icon="@questSection.Icon" />
-                            <div>
-                                <h2>@questSection.Title</h2>
-                                <p>@questSection.Subtitle</p>
+                    <section class="quest-section @questSection.Tone">
+                        <header class="section-title-bar">
+                            <div class="section-icon-badge">
+                                <MudIcon Icon="@questSection.Icon" Size="Size.Small" />
                             </div>
-                            <span>@questSection.Quests.Count</span>
+                            <div class="section-titles">
+                                <h2>@questSection.Title</h2>
+                                <span class="section-subtitle">@questSection.Subtitle</span>
+                            </div>
+                            <span class="section-badge">@questSection.Quests.Count</span>
                         </header>
 
-                        <div class="quest-list">
+                        <div class="quest-cards-stack">
                             @foreach (var quest in questSection.Quests)
                             {
-                                <article class="quest-card @(quest.Completed ? "done" : "") @(quest.Id == _expandedQuestId ? "selected" : "")">
-                                    <button type="button" class="icon-button" @onclick="@(() => ToggleQuest(quest))">
-                                        <MudIcon Icon="@(quest.Completed ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.CheckCircle)" />
-                                    </button>
-                                    <button type="button" class="quest-body" @onclick="@(() => ToggleExpand(quest))">
-                                        <span class="quest-kicker">
-                                            <MudIcon Icon="@TypeIcon(quest.Type)" />
-                                            @TypeLabel(quest.Type)
-                                            <span class="dot"></span>
-                                            @PriorityLabel(quest.Priority)
-                                        </span>
-                                        <h3>@quest.Title</h3>
-                                        @if (!string.IsNullOrWhiteSpace(quest.Notes))
-                                        {
-                                            <p>@quest.Notes</p>
-                                        }
-                                        <div class="quest-meta">
-                                            <span class="@($"meta-pill {DueState(quest)}")"><MudIcon Icon="@Icons.Material.Filled.Event" /> @DueDateLabel(quest)</span>
-                                            @if (quest.Recurrence != QuestRecurrence.None)
+                                <article class="quest-item-card @(quest.Completed ? "is-completed" : "") @(quest.Id == _expandedQuestId ? "is-expanded" : "") @(quest.Id == _celebratingQuestId ? "is-celebrating" : "")"
+                                         style="--card-type-color: @TypeColor(quest.Type);">
+
+                                    <!-- Floating XP reward badge -->
+                                    <div class="quest-xp-badge" title="Completion Reward">
+                                        <MudIcon Icon="@Icons.Material.Filled.Bolt" Size="Size.Small" />
+                                        <span>+@(GetDisplayRewardXp(quest)) XP</span>
+                                    </div>
+
+                                    <div class="card-inner-grid">
+                                        <!-- Checkbox button -->
+                                        <button type="button"
+                                                class="quest-checkbox-btn @(quest.Completed ? "checked" : "")"
+                                                title="@(quest.Completed ? "Reopen quest" : "Complete quest")"
+                                                @onclick="@(() => ToggleQuest(quest))">
+                                            <MudIcon Icon="@(quest.Completed ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.RadioButtonUnchecked)"
+                                                     Class="@(quest.Completed ? "check-icon completed" : "check-icon")" />
+                                        </button>
+
+                                        <!-- Quest Clickable Body -->
+                                        <div class="quest-content-area" @onclick="@(() => ToggleExpand(quest))">
+                                            <div class="quest-kicker-line">
+                                                <span class="type-chip" style="color: @TypeColor(quest.Type);">
+                                                    <MudIcon Icon="@TypeIcon(quest.Type)" Size="Size.Small" />
+                                                    @TypeLabel(quest.Type).ToUpperInvariant()
+                                                </span>
+
+                                                <span class="priority-pill @quest.Priority.ToString().ToLowerInvariant()">
+                                                    @PriorityLabel(quest.Priority)
+                                                </span>
+                                            </div>
+
+                                            <h3 class="quest-title-text">@quest.Title</h3>
+
+                                            @if (!string.IsNullOrWhiteSpace(quest.Notes))
                                             {
-                                                <span class="meta-pill"><MudIcon Icon="@Icons.Material.Filled.Autorenew" /> @RecurrenceLabel(quest.Recurrence)</span>
+                                                <p class="quest-notes-text">@quest.Notes</p>
                                             }
-                                            @if (!string.IsNullOrWhiteSpace(quest.GameName))
+
+                                            <!-- Metadata Pills -->
+                                            <div class="quest-badges-row">
+                                                <span class="badge-pill due @DueState(quest)">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" />
+                                                    @DueDateLabel(quest)
+                                                </span>
+
+                                                @if (quest.Recurrence != QuestRecurrence.None)
+                                                {
+                                                    <span class="badge-pill recurrence">
+                                                        <MudIcon Icon="@Icons.Material.Filled.Autorenew" Size="Size.Small" />
+                                                        @RecurrenceLabel(quest.Recurrence)
+                                                    </span>
+                                                }
+
+                                                @if (!string.IsNullOrWhiteSpace(quest.GameName))
+                                                {
+                                                    <span class="badge-pill game">
+                                                        <MudIcon Icon="@Icons.Material.Filled.SportsEsports" Size="Size.Small" />
+                                                        @quest.GameName
+                                                    </span>
+                                                }
+
+                                                @if (!string.IsNullOrWhiteSpace(quest.SkillName))
+                                                {
+                                                    <span class="badge-pill skill">
+                                                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Size="Size.Small" />
+                                                        @quest.SkillName
+                                                    </span>
+                                                }
+
+                                                @if (quest.Subtasks.Count > 0)
+                                                {
+                                                    <span class="badge-pill subtasks">
+                                                        <MudIcon Icon="@Icons.Material.Filled.Checklist" Size="Size.Small" />
+                                                        @SubtaskCompletedCount(quest)/@quest.Subtasks.Count
+                                                    </span>
+                                                }
+                                            </div>
+
+                                            @if (quest.Tags.Count > 0)
                                             {
-                                                <span class="meta-pill"><MudIcon Icon="@Icons.Material.Filled.SportsEsports" /> @quest.GameName</span>
+                                                <div class="quest-tag-chips">
+                                                    @foreach (var tag in quest.Tags)
+                                                    {
+                                                        <span class="card-tag">#@tag</span>
+                                                    }
+                                                </div>
                                             }
-                                            @if (!string.IsNullOrWhiteSpace(quest.SkillName))
-                                            {
-                                                <span class="meta-pill"><MudIcon Icon="@Icons.Material.Filled.EmojiEvents" /> @quest.SkillName</span>
-                                            }
+
                                             @if (quest.Subtasks.Count > 0)
                                             {
-                                                <span class="meta-pill"><MudIcon Icon="@Icons.Material.Filled.Checklist" /> @SubtaskCompletedCount(quest)/@quest.Subtasks.Count</span>
+                                                <div class="card-subtask-progress">
+                                                    <div class="progress-bar-track">
+                                                        <div class="progress-bar-fill" style="width: @(SubtaskProgress(quest))%"></div>
+                                                    </div>
+                                                </div>
                                             }
                                         </div>
-                                        @if (quest.Tags.Count > 0)
-                                        {
-                                            <div class="quest-tags">
-                                                @foreach (var tag in quest.Tags)
-                                                {
-                                                    <span>#@tag</span>
-                                                }
-                                            </div>
-                                        }
-                                        @if (quest.Subtasks.Count > 0)
-                                        {
-                                            <div class="progress-track small">
-                                                <div class="progress-fill" style="width: @(SubtaskProgress(quest))%"></div>
-                                            </div>
-                                        }
-                                    </button>
-                                    <button type="button" class="delete-button" @onclick="@(() => DeleteQuest(quest))">
-                                        <MudIcon Icon="@Icons.Material.Filled.DeleteOutline" />
-                                    </button>
 
+                                        <!-- Card Quick Actions -->
+                                        <div class="card-action-column">
+                                            <button type="button" class="card-action-btn edit" title="Edit quest" @onclick="@(() => ToggleExpand(quest))">
+                                                <MudIcon Icon="@(quest.Id == _expandedQuestId ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.Edit)" Size="Size.Small" />
+                                            </button>
+                                            <button type="button" class="card-action-btn delete" title="Delete quest" @onclick="@(() => DeleteQuest(quest))">
+                                                <MudIcon Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expanded In-Card Editor -->
                                     @if (quest.Id == _expandedQuestId && _editDraft is not null)
                                     {
-                                        <div class="quest-editor">
-                                            <label class="wide">
-                                                <span>Title</span>
-                                                <input @bind="_editDraft.Title" @bind:event="oninput" />
-                                            </label>
-                                            <label class="wide">
-                                                <span>Notes</span>
-                                                <textarea @bind="_editDraft.Notes" @bind:event="oninput"></textarea>
-                                            </label>
-                                            <label>
-                                                <span>Type</span>
-                                                <select @bind="_editDraft.Type">
-                                                    @foreach (var type in Enum.GetValues<QuestType>())
-                                                    {
-                                                        <option value="@type">@TypeLabel(type)</option>
-                                                    }
-                                                </select>
-                                            </label>
-                                            <label>
-                                                <span>Priority</span>
-                                                <select @bind="_editDraft.Priority">
-                                                    @foreach (var priority in Enum.GetValues<QuestPriority>())
-                                                    {
-                                                        <option value="@priority">@PriorityLabel(priority)</option>
-                                                    }
-                                                </select>
-                                            </label>
-                                            <label>
-                                                <span>Repeat</span>
-                                                <select @bind="_editDraft.Recurrence">
-                                                    @foreach (var recurrence in Enum.GetValues<QuestRecurrence>())
-                                                    {
-                                                        <option value="@recurrence">@RecurrenceLabel(recurrence)</option>
-                                                    }
-                                                </select>
-                                            </label>
-                                            <label>
-                                                <span>Due</span>
-                                                <input type="date" @bind="_editDraft.DueDate" />
-                                            </label>
-                                            @if (_library.Count > 0)
-                                            {
-                                                <label>
-                                                    <span>Game</span>
-                                                    <select @bind="_editDraft.MyGameId">
-                                                        <option value="">No game</option>
-                                                        @foreach (var game in _library)
-                                                        {
-                                                            <option value="@game.Id">@game.Game?.Name</option>
-                                                        }
-                                                    </select>
-                                                </label>
-                                            }
-                                            @if (_board.Skills.Count > 0)
-                                            {
-                                                <label>
-                                                    <span>Skill</span>
-                                                    <select @bind="_editDraft.SkillId">
-                                                        <option value="">No skill</option>
-                                                        @foreach (var skill in _board.Skills)
-                                                        {
-                                                            <option value="@skill.Id">@skill.Name</option>
-                                                        }
-                                                    </select>
-                                                </label>
-                                            }
-                                            <label class="wide">
-                                                <span>Tags</span>
-                                                <input placeholder="errand, focus, deep-work" @bind="_editDraft.Tags" @bind:event="oninput" />
-                                            </label>
+                                        <div class="expanded-editor-panel">
+                                            <div class="editor-header">
+                                                <MudIcon Icon="@Icons.Material.Filled.EditNote" Size="Size.Small" />
+                                                <span>EDIT QUEST DETAILS</span>
+                                            </div>
 
-                                            <div class="subtask-editor wide">
-                                                <span>Subtasks</span>
-                                                @foreach (var subtask in quest.Subtasks.OrderBy(s => s.SortOrder))
+                                            <div class="editor-grid">
+                                                <div class="editor-field span-full">
+                                                    <label>TITLE</label>
+                                                    <input @bind="_editDraft.Title" @bind:event="oninput" class="editor-input" />
+                                                </div>
+
+                                                <div class="editor-field span-full">
+                                                    <label>NOTES</label>
+                                                    <textarea @bind="_editDraft.Notes" @bind:event="oninput" class="editor-textarea" rows="2"></textarea>
+                                                </div>
+
+                                                <div class="editor-field">
+                                                    <label>TYPE</label>
+                                                    <select @bind="_editDraft.Type" class="editor-select">
+                                                        @foreach (var type in Enum.GetValues<QuestType>())
+                                                        {
+                                                            <option value="@type">@TypeLabel(type)</option>
+                                                        }
+                                                    </select>
+                                                </div>
+
+                                                <div class="editor-field">
+                                                    <label>PRIORITY</label>
+                                                    <select @bind="_editDraft.Priority" class="editor-select">
+                                                        @foreach (var priority in Enum.GetValues<QuestPriority>())
+                                                        {
+                                                            <option value="@priority">@PriorityLabel(priority)</option>
+                                                        }
+                                                    </select>
+                                                </div>
+
+                                                <div class="editor-field">
+                                                    <label>REPEAT</label>
+                                                    <select @bind="_editDraft.Recurrence" class="editor-select">
+                                                        @foreach (var recurrence in Enum.GetValues<QuestRecurrence>())
+                                                        {
+                                                            <option value="@recurrence">@RecurrenceLabel(recurrence)</option>
+                                                        }
+                                                    </select>
+                                                </div>
+
+                                                <div class="editor-field">
+                                                    <label>DUE DATE</label>
+                                                    <input type="date" @bind="_editDraft.DueDate" class="editor-input" />
+                                                </div>
+
+                                                @if (_library.Count > 0)
                                                 {
-                                                    <div class="subtask @(subtask.Completed ? "done" : "")">
-                                                        <button type="button" @onclick="@(() => ToggleSubtask(quest, subtask))">
-                                                            <MudIcon Icon="@(subtask.Completed ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.CheckCircle)" />
-                                                        </button>
-                                                        <span>@subtask.Title</span>
-                                                        <button type="button" @onclick="@(() => DeleteSubtask(quest, subtask))">
-                                                            <MudIcon Icon="@Icons.Material.Filled.Close" />
-                                                        </button>
+                                                    <div class="editor-field">
+                                                        <label>LINK GAME</label>
+                                                        <select @bind="_editDraft.MyGameId" class="editor-select">
+                                                            <option value="">No game</option>
+                                                            @foreach (var game in _library)
+                                                            {
+                                                                <option value="@game.Id">@game.Game?.Name</option>
+                                                            }
+                                                        </select>
                                                     </div>
                                                 }
-                                                <div class="subtask-add">
-                                                    <input placeholder="Add a subtask" value="@SubtaskDraft(quest.Id)" @oninput="@(e => SetSubtaskDraft(quest.Id, e.Value?.ToString() ?? string.Empty))" @onkeydown="@(e => OnSubtaskKeyDown(e, quest))" />
-                                                    <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="@(() => AddSubtask(quest))" />
+
+                                                @if (_board.Skills.Count > 0)
+                                                {
+                                                    <div class="editor-field">
+                                                        <label>LINK SKILL</label>
+                                                        <select @bind="_editDraft.SkillId" class="editor-select">
+                                                            <option value="">No skill</option>
+                                                            @foreach (var skill in _board.Skills)
+                                                            {
+                                                                <option value="@skill.Id">@skill.Name</option>
+                                                            }
+                                                        </select>
+                                                    </div>
+                                                }
+
+                                                <div class="editor-field span-full">
+                                                    <label>TAGS (comma-separated)</label>
+                                                    <input placeholder="errand, focus, boss-fight" @bind="_editDraft.Tags" @bind:event="oninput" class="editor-input" />
                                                 </div>
                                             </div>
 
-                                            <div class="editor-actions wide">
-                                                <button type="button" @onclick="@(() => ScheduleToday(quest))">Today</button>
-                                                <button type="button" @onclick="@(() => ScheduleTomorrow(quest))">Tomorrow</button>
-                                                <button type="button" @onclick="@(() => ClearDueDate(quest))">Inbox</button>
-                                                <span></span>
-                                                <button type="button" @onclick="CancelEdit">Cancel</button>
-                                                <button type="button" class="primary" @onclick="@(() => SaveEdit(quest))">Save</button>
+                                            <!-- Subtask Checklist Manager -->
+                                            <div class="editor-subtask-section">
+                                                <div class="subtask-header-row">
+                                                    <span class="subtask-title"><MudIcon Icon="@Icons.Material.Filled.Checklist" Size="Size.Small" /> SUBTASKS</span>
+                                                    <span class="subtask-count">@SubtaskCompletedCount(quest) / @quest.Subtasks.Count completed</span>
+                                                </div>
+
+                                                <div class="subtask-items-list">
+                                                    @foreach (var subtask in quest.Subtasks.OrderBy(s => s.SortOrder))
+                                                    {
+                                                        <div class="subtask-row @(subtask.Completed ? "done" : "")">
+                                                            <button type="button" class="subtask-check-btn" @onclick="@(() => ToggleSubtask(quest, subtask))">
+                                                                <MudIcon Icon="@(subtask.Completed ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.RadioButtonUnchecked)" Size="Size.Small" />
+                                                            </button>
+                                                            <span class="subtask-title-label">@subtask.Title</span>
+                                                            <button type="button" class="subtask-del-btn" title="Remove subtask" @onclick="@(() => DeleteSubtask(quest, subtask))">
+                                                                <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" />
+                                                            </button>
+                                                        </div>
+                                                    }
+                                                </div>
+
+                                                <div class="subtask-add-bar">
+                                                    <input class="subtask-input"
+                                                           placeholder="Add next subtask..."
+                                                           value="@SubtaskDraft(quest.Id)"
+                                                           @oninput="@(e => SetSubtaskDraft(quest.Id, e.Value?.ToString() ?? string.Empty))"
+                                                           @onkeydown="@(e => OnSubtaskKeyDown(e, quest))" />
+                                                    <button type="button" class="subtask-add-btn" @onclick="@(() => AddSubtask(quest))">
+                                                        <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Quick Date Scheduling & Action Controls -->
+                                            <div class="editor-controls-bar">
+                                                <div class="quick-reschedule-group">
+                                                    <button type="button" class="reschedule-btn" @onclick="@(() => ScheduleToday(quest))">Today</button>
+                                                    <button type="button" class="reschedule-btn" @onclick="@(() => ScheduleTomorrow(quest))">Tomorrow</button>
+                                                    <button type="button" class="reschedule-btn" @onclick="@(() => ClearDueDate(quest))">Inbox</button>
+                                                </div>
+
+                                                <div class="editor-save-group">
+                                                    <button type="button" class="editor-btn cancel" @onclick="CancelEdit">Cancel</button>
+                                                    <button type="button" class="editor-btn save" @onclick="@(() => SaveEdit(quest))">
+                                                        <MudIcon Icon="@Icons.Material.Filled.Save" Size="Size.Small" />
+                                                        <span>Save Changes</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     }
                                 </article>
                             }
                         </div>
-                    </article>
+                    </section>
                 }
-            </section>
+            </main>
         }
         else
         {
+            <!-- Modern Skills View -->
             <section class="skills-layout">
                 <div class="skills-heading">
                     <div>
-                        <p class="eyebrow">Skill tree</p>
+                        <p class="eyebrow">SKILL TREE</p>
                         <h2>Real Life Mastery</h2>
+                        <p class="skills-desc">Level up your real-world disciplines by completing tasks and milestones.</p>
                     </div>
-                    <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.AutoAwesome" OnClick="SaveSkill">@(_editingSkillId is null ? "Add Skill" : "Save Skill")</MudButton>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.AutoAwesome" OnClick="SaveSkill">
+                        @(_editingSkillId is null ? "Create Skill" : "Update Skill")
+                    </MudButton>
                 </div>
 
-                <div class="skill-create">
-                    <input placeholder="@(_editingSkillId is null ? "New skill name" : "Edit skill name")" @bind="_newSkillName" @bind:event="oninput" />
-                    <select @bind="_newSkillIcon">
+                <div class="skill-create-bar">
+                    <input class="skill-name-input" placeholder="@(_editingSkillId is null ? "New discipline name (e.g. Piano, Python, Fitness)..." : "Edit skill name")" @bind="_newSkillName" @bind:event="oninput" />
+                    <select class="skill-icon-select" @bind="_newSkillIcon">
                         <option value="@Icons.Material.Filled.Code">Code</option>
                         <option value="@Icons.Material.Filled.Brush">Art</option>
                         <option value="@Icons.Material.Filled.Restaurant">Cook</option>
                         <option value="@Icons.Material.Filled.MenuBook">Study</option>
                     </select>
-                    <input type="color" @bind="_newSkillColor" />
+                    <input type="color" class="skill-color-picker" @bind="_newSkillColor" title="Select skill aura color" />
                     @if (_editingSkillId is not null)
                     {
-                        <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" OnClick="CancelSkillEdit" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" OnClick="CancelSkillEdit" title="Cancel editing" />
                     }
                 </div>
 
                 <div class="skill-grid">
                     @foreach (var skill in _board.Skills)
                     {
-                        <article class="skill-card" style="--skill-color:@skill.Color">
-                            <header>
-                                <div class="skill-icon">
+                        <article class="skill-card" style="--skill-color: @skill.Color;">
+                            <header class="skill-card-header">
+                                <div class="skill-icon-shield">
                                     <MudIcon Icon="@ToMudIcon(skill.Icon)" />
                                 </div>
-                                <div>
+                                <div class="skill-card-titles">
                                     <h3>@skill.Name</h3>
-                                    <p>Level @SkillLevel(skill) · @skill.Xp XP</p>
+                                    <div class="skill-level-row">
+                                        <span class="skill-level-badge">LVL @SkillLevel(skill)</span>
+                                        <span class="skill-xp-text">@skill.Xp XP</span>
+                                    </div>
                                 </div>
                                 <div class="skill-card-actions">
-                                    <button type="button" class="skill-action edit" @onclick="@(() => EditSkill(skill))">
-                                        <MudIcon Icon="@Icons.Material.Filled.Edit" />
+                                    <button type="button" class="skill-action-btn edit" title="Edit skill" @onclick="@(() => EditSkill(skill))">
+                                        <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
                                     </button>
-                                    <button type="button" class="skill-action" @onclick="@(() => DeleteSkill(skill))">
-                                        <MudIcon Icon="@Icons.Material.Filled.DeleteOutline" />
+                                    <button type="button" class="skill-action-btn delete" title="Delete skill" @onclick="@(() => DeleteSkill(skill))">
+                                        <MudIcon Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" />
                                     </button>
                                 </div>
                             </header>
 
-                            <div class="progress-track small">
-                                <div class="progress-fill skill" style="width: @(SkillProgress(skill))%"></div>
+                            <div class="skill-progress-bar-wrap">
+                                <div class="skill-progress-track">
+                                    <div class="skill-progress-fill" style="width: @(SkillProgress(skill))%;"></div>
+                                </div>
+                                <span class="skill-progress-percent">@(SkillProgress(skill))% to next rank</span>
                             </div>
 
-                            <div class="skill-actions">
-                                <MudButton Size="Size.Small" Variant="Variant.Filled" Style="@($"background:{skill.Color}; color:white;")" StartIcon="@Icons.Material.Filled.Bolt" OnClick="@(() => TrainSkill(skill))">Train</MudButton>
-                                <div class="node-input">
-                                    <input placeholder="New node" @bind="_newNodeName" @bind:event="oninput" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="@(() => AddNode(skill))" />
+                            <div class="skill-quick-actions">
+                                <button type="button" class="skill-train-btn" @onclick="@(() => TrainSkill(skill))">
+                                    <MudIcon Icon="@Icons.Material.Filled.Bolt" Size="Size.Small" />
+                                    <span>Train (+40 XP)</span>
+                                </button>
+                                <div class="node-add-row">
+                                    <input placeholder="Add node..." @bind="_newNodeName" @bind:event="oninput" class="node-input-field" />
+                                    <button type="button" class="node-add-btn" @onclick="@(() => AddNode(skill))">
+                                        <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                                    </button>
                                 </div>
                             </div>
 
-                            <div class="node-list">
+                            <div class="node-constellation">
                                 @foreach (var node in skill.Nodes.OrderBy(node => node.SortOrder))
                                 {
-                                    <button type="button" class="node @(node.Unlocked ? "unlocked" : "")" @onclick="@(() => UnlockNode(skill, node))">
-                                        <MudIcon Icon="@(node.Unlocked ? Icons.Material.Filled.Star : Icons.Material.Filled.Lock)" />
+                                    <button type="button" class="node-chip @(node.Unlocked ? "unlocked" : "locked")" @onclick="@(() => UnlockNode(skill, node))">
+                                        <MudIcon Icon="@(node.Unlocked ? Icons.Material.Filled.Star : Icons.Material.Filled.Lock)" Size="Size.Small" />
                                         <span>@node.Name</span>
                                     </button>
                                 }
                             </div>
 
-                            <small>@skill.Nodes.Count(node => node.Unlocked) of @skill.Nodes.Count nodes unlocked</small>
+                            <footer class="skill-card-footer">
+                                <span>@skill.Nodes.Count(node => node.Unlocked) of @skill.Nodes.Count nodes mastered</span>
+                            </footer>
                         </article>
                     }
                 </div>

@@ -46,6 +46,7 @@ public partial class Quests
     private string _newNodeName = string.Empty;
     private int? _editingSkillId;
     private int _temporaryId = -1;
+    private int? _celebratingQuestId;
 
     private int Level => Math.Max(1, (_board.Xp / 200) + 1);
     private int XpIntoLevel => _board.Xp % 200;
@@ -154,6 +155,18 @@ public partial class Quests
                     _board.Quests.Insert(0, mutation.SpawnedQuest);
                 }
                 ApplyMutationMeta(mutation);
+                if (newCompleted)
+                {
+                    _celebratingQuestId = quest.Id;
+                    _ = Task.Delay(1200).ContinueWith(_ => InvokeAsync(() =>
+                    {
+                        if (_celebratingQuestId == quest.Id)
+                        {
+                            _celebratingQuestId = null;
+                            StateHasChanged();
+                        }
+                    }));
+                }
                 Snackbar.Add(newCompleted ? CompletionMessage(mutation) : "Quest reopened", Severity.Success);
                 return 0;
             },
@@ -704,6 +717,22 @@ public partial class Quests
         QuestType.Main => Icons.Material.Filled.Map,
         QuestType.Faction => Icons.Material.Filled.Groups,
         _ => Icons.Material.Filled.Flag
+    };
+
+    private static int GetDisplayRewardXp(QuestDto quest) => quest.RewardXp > 0
+        ? quest.RewardXp
+        : quest.Type switch
+        {
+            QuestType.Main => 50,
+            QuestType.Faction => 35,
+            _ => 25
+        };
+
+    private static string TypeColor(QuestType type) => type switch
+    {
+        QuestType.Main => "#f59e0b",
+        QuestType.Faction => "#a855f7",
+        _ => "#0ea5e9"
     };
 
     private static int SkillLevel(QuestSkillDto skill)
