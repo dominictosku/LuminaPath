@@ -23,7 +23,7 @@
     border-radius: 22px;
     background:
         radial-gradient(circle at 12% 16%, var(--accent-glow, rgba(178, 245, 207, .18)), transparent 34%),
-        radial-gradient(circle at 86% 12%, rgba(95, 224, 163, .12), transparent 27%),
+        radial-gradient(circle at 86% 12%, var(--accent-glow, rgba(95, 224, 163, .12)), transparent 27%),
         linear-gradient(135deg, rgba(12, 16, 17, .98), rgba(19, 25, 26, .96));
     box-shadow: 0 24px 70px rgba(0, 0, 0, .22);
 }
@@ -125,7 +125,7 @@
 }
 
 ::deep .users-grid .mud-table-row:hover .mud-table-cell {
-    background: rgba(178, 245, 207, .08);
+    background: var(--accent-soft, rgba(178, 245, 207, .08));
 }
 
 ::deep .users-grid .mud-table-pagination,

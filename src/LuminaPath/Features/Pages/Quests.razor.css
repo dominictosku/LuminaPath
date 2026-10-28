@@ -94,7 +94,7 @@
 .progress-track.small {
     height: 8px;
     flex: 1;
-    background: rgba(178, 245, 207, .16);
+    background: var(--accent-soft, rgba(178, 245, 207, .16));
 }
 
 .progress-fill {
@@ -106,7 +106,7 @@
 
 .progress-fill.skill,
 .column-progress .progress-fill {
-    background: linear-gradient(90deg, var(--mint, #b2f5cf), var(--accent-secondary, #5fe0a3));
+    background: var(--accent-gradient-alt, linear-gradient(90deg, var(--mint, #b2f5cf), var(--accent-secondary, #5fe0a3)));
 }
 
 .mode-panel,
@@ -267,7 +267,7 @@
     place-items: center;
     border-radius: 8px;
     color: var(--mint, #b2f5cf);
-    background: rgba(178, 245, 207, .12);
+    background: var(--accent-soft, rgba(178, 245, 207, .12));
 }
 
 .section-header h2 {
@@ -394,7 +394,7 @@ select {
     display: inline-flex;
     gap: 7px;
     align-items: center;
-    color: #76e4c4;
+    color: var(--mint, #76e4c4);
     font-size: .74rem;
     font-weight: 900;
     text-transform: uppercase;
@@ -429,7 +429,7 @@ select {
 
 .meta-pill.today {
     color: var(--mint, #b2f5cf);
-    background: rgba(178, 245, 207, .14);
+    background: var(--accent-soft, rgba(178, 245, 207, .14));
 }
 
 .meta-pill.soon {
@@ -542,7 +542,7 @@ textarea {
     place-items: center;
     border-radius: 8px;
     color: var(--mint, #b2f5cf);
-    background: rgba(178, 245, 207, .12);
+    background: var(--accent-soft, rgba(178, 245, 207, .12));
 }
 
 .delete-button {
@@ -563,7 +563,7 @@ textarea {
     place-items: center;
     border-radius: 8px;
     color: var(--mud-palette-text-secondary);
-    background: rgba(178, 245, 207, .08);
+    background: var(--accent-soft, rgba(178, 245, 207, .08));
 }
 
 .skill-action.edit {
@@ -594,10 +594,10 @@ textarea {
     gap: 9px;
     min-height: 42px;
     padding: 9px 11px;
-    border: 1px dashed rgba(178, 245, 207, .24);
+    border: 1px dashed var(--accent-glow, rgba(178, 245, 207, .24));
     border-radius: 8px;
     color: var(--mud-palette-text-secondary);
-    background: rgba(178, 245, 207, .06);
+    background: var(--accent-soft, rgba(178, 245, 207, .06));
     text-align: left;
 }
 

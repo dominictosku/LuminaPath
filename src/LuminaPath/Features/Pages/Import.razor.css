@@ -22,7 +22,7 @@
     border-radius: 22px;
     background:
         radial-gradient(circle at 12% 16%, var(--accent-glow, rgba(178, 245, 207, .18)), transparent 34%),
-        radial-gradient(circle at 85% 12%, rgba(95, 224, 163, .12), transparent 26%),
+        radial-gradient(circle at 85% 12%, var(--accent-glow, rgba(95, 224, 163, .12)), transparent 26%),
         linear-gradient(135deg, rgba(12, 16, 17, .98), rgba(19, 25, 26, .96));
     box-shadow: 0 24px 70px rgba(0, 0, 0, .22);
 }
@@ -471,8 +471,8 @@
 ::deep .psn-games-grid .rz-paginator .rz-state-active,
 ::deep .psn-games-grid .rz-paginator .rz-paginator-page.rz-state-active {
     color: var(--mint, #b2f5cf) !important;
-    background: rgba(178, 245, 207, .14) !important;
-    border-color: rgba(178, 245, 207, .24) !important;
+    background: var(--accent-soft, rgba(178, 245, 207, .14)) !important;
+    border-color: var(--accent-glow, rgba(178, 245, 207, .24)) !important;
 }
 
 ::deep .psn-games-grid .rz-paginator .rz-paginator-page,

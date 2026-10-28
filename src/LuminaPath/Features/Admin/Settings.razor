@@ -312,6 +312,9 @@
 	private bool showNpsso;
 	private bool showBearer;
 	private bool testingPsnConnection;
+	[CascadingParameter]
+	private HttpContext? HttpContext { get; set; }
+
 	private IntegrationConnectionTestResult? psnConnectionResult;
 	private string _currentTheme = "default";
 
@@ -327,6 +330,12 @@
 
 	protected override async Task OnInitializedAsync()
 	{
+		var cookie = HttpContext?.Request?.Cookies["luminapath-theme"];
+		if (!string.IsNullOrWhiteSpace(cookie))
+		{
+			_currentTheme = cookie;
+		}
+
 		bearerToken = await applicationSettingsService.GetPsnBearerTokenAsync();
 		newsEnabled = await applicationSettingsService.GetNewsEnabledAsync();
 		customNewsRssUrl = await applicationSettingsService.GetNewsCustomRssUrlAsync();
@@ -339,7 +348,7 @@
 			try
 			{
 				var theme = await Js.InvokeAsync<string>("luminaUi.getTheme");
-				if (!string.IsNullOrWhiteSpace(theme))
+				if (!string.IsNullOrWhiteSpace(theme) && theme != _currentTheme)
 				{
 					_currentTheme = theme;
 					StateHasChanged();

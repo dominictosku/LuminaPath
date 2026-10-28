@@ -54,15 +54,44 @@
         }
     });
 
-    // Restore saved theme customization if available
-    try {
-        const savedTheme = localStorage.getItem('luminapath-theme');
-        if (savedTheme && savedTheme !== 'default') {
-            document.documentElement.setAttribute('data-theme', savedTheme);
+    function getSavedTheme() {
+        try {
+            const stored = localStorage.getItem('luminapath-theme');
+            if (stored) return stored;
+        } catch (_) {}
+        try {
+            const m = document.cookie.match(/(?:^|; )luminapath-theme=([^;]*)/);
+            if (m) return decodeURIComponent(m[1]);
+        } catch (_) {}
+        return document.documentElement.getAttribute('data-theme') || 'default';
+    }
+
+    function syncTheme() {
+        try {
+            const theme = getSavedTheme();
+            if (theme && theme !== 'default') {
+                document.documentElement.setAttribute('data-theme', theme);
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        } catch (_) {}
+    }
+
+    // Restore saved theme customization immediately
+    syncTheme();
+
+    // Listen for Blazor enhanced navigation to prevent losing theme attribute
+    if (typeof window !== 'undefined') {
+        if (window.Blazor && window.Blazor.addEventListener) {
+            window.Blazor.addEventListener('enhancedload', syncTheme);
         } else {
-            document.documentElement.removeAttribute('data-theme');
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.Blazor && window.Blazor.addEventListener) {
+                    window.Blazor.addEventListener('enhancedload', syncTheme);
+                }
+            });
         }
-    } catch (_) {}
+    }
 
     // Always keep motion effects enabled
     try {
@@ -88,9 +117,11 @@
             if (resolved === 'default') {
                 document.documentElement.removeAttribute('data-theme');
                 try { localStorage.setItem('luminapath-theme', 'default'); } catch (_) {}
+                try { document.cookie = 'luminapath-theme=default; path=/; max-age=31536000; SameSite=Lax'; } catch (_) {}
             } else {
                 document.documentElement.setAttribute('data-theme', resolved);
                 try { localStorage.setItem('luminapath-theme', resolved); } catch (_) {}
+                try { document.cookie = 'luminapath-theme=' + encodeURIComponent(resolved) + '; path=/; max-age=31536000; SameSite=Lax'; } catch (_) {}
             }
             try {
                 window.dispatchEvent(new CustomEvent('luminapath-theme-changed', { detail: resolved }));
@@ -98,11 +129,7 @@
             return resolved;
         },
         getTheme: function () {
-            try {
-                const stored = localStorage.getItem('luminapath-theme');
-                if (stored) return stored;
-            } catch (_) {}
-            return document.documentElement.getAttribute('data-theme') || 'default';
+            return getSavedTheme();
         }
     };
 

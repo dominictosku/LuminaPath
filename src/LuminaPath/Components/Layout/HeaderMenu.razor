@@ -158,6 +158,9 @@
 </style>
 
 @code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
     private string? currentUrl;
     private bool _notificationsOpen;
     private bool _themeMenuOpen;
@@ -167,6 +170,12 @@
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
+
+        var cookie = HttpContext?.Request?.Cookies["luminapath-theme"];
+        if (!string.IsNullOrWhiteSpace(cookie))
+        {
+            _currentTheme = cookie;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -176,7 +185,7 @@
             try
             {
                 var theme = await JS.InvokeAsync<string>("luminaUi.getTheme");
-                if (!string.IsNullOrWhiteSpace(theme))
+                if (!string.IsNullOrWhiteSpace(theme) && theme != _currentTheme)
                 {
                     _currentTheme = theme;
                     StateHasChanged();
