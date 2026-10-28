@@ -29,10 +29,10 @@ namespace LuminaPath.Infrastructure.Controllers
             [FromQuery] DateTime? before,
             [FromQuery] int take = 100)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.GetConversationAsync(user.Id, otherUserId, take, before);
+            var result = await _service.GetConversationAsync(userId, otherUserId, take, before);
             return result.Match<ActionResult>(Ok, BadRequest);
         }
 
@@ -41,9 +41,9 @@ namespace LuminaPath.Infrastructure.Controllers
         [RequestSizeLimit(DirectMessageLimits.MaxRequestBytes)]
         public async Task<ActionResult<DirectMessageDto>> Send([FromBody] SendDirectMessageDto dto)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
-            var result = await _service.SendAsync(user.Id, dto.RecipientId, dto.Content);
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
+            var result = await _service.SendAsync(userId, dto.RecipientId, dto.Content);
             return result.Match<ActionResult>(Ok, BadRequest);
         }
 
@@ -51,9 +51,9 @@ namespace LuminaPath.Infrastructure.Controllers
         [EnableRateLimiting(RateLimitPolicies.DirectMessages)]
         public async Task<ActionResult<int>> MarkRead(string otherUserId)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
-            return Ok(await _service.MarkConversationReadAsync(user.Id, otherUserId));
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
+            return Ok(await _service.MarkConversationReadAsync(userId, otherUserId));
         }
     }
 }

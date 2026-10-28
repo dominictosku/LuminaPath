@@ -29,19 +29,19 @@ namespace LuminaPath.Infrastructure.Controllers
             [FromQuery] DateTime? from,
             [FromQuery] DateTime? to)
         {
-            var user = await GetCurrentUserAsync();
-            return user == null
+            var userId = CurrentUserId;
+            return string.IsNullOrWhiteSpace(userId)
                 ? LoginRequired()
-                : Ok(await _service.GetForUserAsync(user.Id, myGameId, from, to));
+                : Ok(await _service.GetForUserAsync(userId, myGameId, from, to));
         }
 
         [HttpPost]
         public async Task<ActionResult<GamingSessionDto>> Post(GamingSessionDto dto)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.CreateAsync(user.Id, dto);
+            var result = await _service.CreateAsync(userId, dto);
             return result.Match<ActionResult>(
                 created => CreatedAtAction(nameof(Get), new { id = created.Id }, created),
                 failed => BadRequest(failed));
@@ -50,10 +50,10 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpPut("{id:int}")]
         public async Task<ActionResult<GamingSessionDto>> Put(int id, GamingSessionDto dto)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.UpdateAsync(user.Id, id, dto);
+            var result = await _service.UpdateAsync(userId, id, dto);
             return result.Match<ActionResult>(
                 updated => Ok(updated),
                 failed => BadRequest(failed));
@@ -62,10 +62,10 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpDelete("{id:int}")]
         public async Task<ActionResult> Delete(int id)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.DeleteAsync(user.Id, id);
+            var result = await _service.DeleteAsync(userId, id);
             return result.Match<ActionResult>(
                 _ => Ok(),
                 failed => NotFound(failed));
@@ -75,10 +75,10 @@ namespace LuminaPath.Infrastructure.Controllers
         [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public async Task<ActionResult<GameForecastDto>> Forecast(int myGameId)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var forecast = await _service.GetForecastAsync(user.Id, myGameId);
+            var forecast = await _service.GetForecastAsync(userId, myGameId);
             return forecast == null ? NotFound("Game not found in your library.") : Ok(forecast);
         }
     }

@@ -8,8 +8,6 @@
 @using LuminaPath.Infrastructure.Services.ThirdParty
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Forms
-@using Radzen
-@using Radzen.Blazor
 @using static LuminaPath.Core.Entities.PSN.PSNTitles
 @inherits BaseAuth
 @inject PSNService psnService
@@ -18,22 +16,11 @@
 @inject LuminaUserService userService
 @inject ApplicationSettingsService applicationSettingsService
 @inject ExcelService excelService
-@inject Radzen.DialogService dialogService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 @attribute [Authorize]
 
-@{
-	var baseInclude = nameof(MyGameDto.Game) + ".";
-	var infoInclude = nameof(MyGameDto.MyGameInfo)  + ".";
-	var nameInclude = baseInclude + nameof(Game.Name);
-	var psnIdInclude = baseInclude + nameof(GamesNoIncludeDto.PsnId);
-	var include1 = infoInclude + nameof(MyGameInfo.FirstPlayed);
-	var include2 = infoInclude + nameof(MyGameInfo.LastPlayed);
-	var include3 = infoInclude + nameof(MyGameInfo.TrackedHours);
-
-}
 <PageTitle>Import</PageTitle>
 
 <section class="import-page">
@@ -59,9 +46,8 @@
 		</div>
 	</div>
 
-<RadzenTabs Class="import-tabs">
-	<Tabs>
-		<RadzenTabsItem Text="PSN">
+<MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" Class="import-tabs">
+		<MudTabPanel Text="PSN">
 			<div class="psn-workspace">
 				<section class="psn-panel psn-profile-panel">
 					<div class="psn-panel__header">
@@ -76,8 +62,10 @@
 					</div>
 
 					<div class="psn-search">
-						<RadzenTextBox @bind-Value="model.PSNOnlineId"
+						<MudTextField @bind-Value="model.PSNOnlineId"
 									   Placeholder="PSN online ID"
+									   Variant="MudBlazor.Variant.Outlined"
+									   Margin="Margin.Dense"
 									   Class="psn-search__input" />
 						<MudButton OnClick="ImportProfile"
 								   Variant="MudBlazor.Variant.Filled"
@@ -161,23 +149,20 @@
 					<div class="psn-grid-shell">
 						@if (games?.Any() ?? false)
 						{
-							<RadzenDataGrid AllowFiltering="true"
-											AllowColumnResize="true"
-											AllowAlternatingRows="false"
-											AllowSorting="true"
-											PageSize="8"
-											AllowPaging="true"
-											PagerHorizontalAlign="HorizontalAlign.Left"
-											ShowPagingSummary="true"
-											Data="@games"
-											Class="psn-games-grid">
+							<MudDataGrid T="MyGameDto"
+										 Items="@games"
+										 Filterable="true"
+										 SortMode="SortMode.Multiple"
+										 RowsPerPage="8"
+										 Elevation="0"
+										 Class="psn-games-grid">
 								<Columns>
-									<RadzenDataGridColumn Width="80px" Property="@nameof(MyGameDto.Id)" Title="ID" />
-									<RadzenDataGridColumn Width="260px" Property="@nameInclude" Title="Title" />
-									<RadzenDataGridColumn Width="130px" Title="Change">
-										<Template Context="game">
+									<PropertyColumn Property="x => x.Id" Title="ID" HeaderStyle="width: 80px;" />
+									<PropertyColumn Property="x => x.Game != null ? x.Game.Name : string.Empty" Title="Title" HeaderStyle="width: 260px;" />
+									<TemplateColumn Title="Change" HeaderStyle="width: 130px;">
+										<CellTemplate>
 											@{
-												var change = GetPsnChangeType(game);
+												var change = GetPsnChangeType(context.Item);
 											}
 											<MudChip T="string"
 													 Size="Size.Small"
@@ -185,14 +170,17 @@
 													 Color="@GetImportChangeColor(change)">
 												@change
 											</MudChip>
-										</Template>
-									</RadzenDataGridColumn>
-									<RadzenDataGridColumn Width="160px" Property="@include1" Title="First played" />
-									<RadzenDataGridColumn Width="160px" Property="@include2" Title="Last played" />
-									<RadzenDataGridColumn Width="150px" Property="@include3" Title="Tracked hours" />
-									<RadzenDataGridColumn Width="180px" Property="@psnIdInclude" Title="PSN ID" />
+										</CellTemplate>
+									</TemplateColumn>
+									<PropertyColumn Property="x => x.MyGameInfo != null ? x.MyGameInfo.FirstPlayed : default(DateTime?)" Title="First played" HeaderStyle="width: 160px;" />
+									<PropertyColumn Property="x => x.MyGameInfo != null ? x.MyGameInfo.LastPlayed : default(DateTime?)" Title="Last played" HeaderStyle="width: 160px;" />
+									<PropertyColumn Property="x => x.MyGameInfo != null ? x.MyGameInfo.TrackedHours : default(double?)" Title="Tracked hours" HeaderStyle="width: 150px;" />
+									<PropertyColumn Property="x => x.Game != null ? x.Game.PsnId : string.Empty" Title="PSN ID" HeaderStyle="width: 180px;" />
 								</Columns>
-							</RadzenDataGrid>
+								<PagerContent>
+									<MudDataGridPager T="MyGameDto" PageSizeOptions="new int[] { 8, 16, 32 }" />
+								</PagerContent>
+							</MudDataGrid>
 						}
 						else
 						{
@@ -205,8 +193,8 @@
 					</div>
 				</section>
 			</div>
-		</RadzenTabsItem>
-		<RadzenTabsItem Text="Steam">
+		</MudTabPanel>
+		<MudTabPanel Text="Steam">
 			<div class="steam-workspace">
 				<section class="psn-panel steam-profile-panel">
 					<div class="psn-panel__header">
@@ -228,8 +216,10 @@
 					}
 
 					<div class="psn-search">
-						<RadzenTextBox @bind-Value="steamIdentifier"
+						<MudTextField @bind-Value="steamIdentifier"
 									   Placeholder="steamID64, vanity name, or profile URL"
+									   Variant="MudBlazor.Variant.Outlined"
+									   Margin="Margin.Dense"
 									   Class="psn-search__input" />
 						<MudButton OnClick="PreviewSteamLibrary"
 								   Variant="MudBlazor.Variant.Filled"
@@ -318,23 +308,23 @@
 					<div class="psn-grid-shell">
 						@if (SteamPreviewGames.Any())
 						{
-							<RadzenDataGrid AllowFiltering="true"
-											AllowColumnResize="true"
-											AllowAlternatingRows="false"
-											AllowSorting="true"
-											PageSize="8"
-											AllowPaging="true"
-											PagerHorizontalAlign="HorizontalAlign.Left"
-											ShowPagingSummary="true"
-											Data="@SteamPreviewGames"
-											Class="psn-games-grid">
+							<MudDataGrid T="SteamOwnedGame"
+										 Items="@SteamPreviewGames"
+										 Filterable="true"
+										 SortMode="SortMode.Multiple"
+										 RowsPerPage="8"
+										 Elevation="0"
+										 Class="psn-games-grid">
 								<Columns>
-									<RadzenDataGridColumn Width="100px" Property="@nameof(SteamOwnedGame.AppId)" Title="App ID" />
-									<RadzenDataGridColumn Width="300px" Property="@nameof(SteamOwnedGame.Name)" Title="Title" />
-									<RadzenDataGridColumn Width="160px" Property="@nameof(SteamOwnedGame.PlaytimeMinutes)" Title="Minutes played" />
-									<RadzenDataGridColumn Width="180px" Property="@nameof(SteamOwnedGame.LastPlayed)" Title="Last played" />
+									<PropertyColumn Property="x => x.AppId" Title="App ID" HeaderStyle="width: 100px;" />
+									<PropertyColumn Property="x => x.Name" Title="Title" HeaderStyle="width: 300px;" />
+									<PropertyColumn Property="x => x.PlaytimeMinutes" Title="Minutes played" HeaderStyle="width: 160px;" />
+									<PropertyColumn Property="x => x.LastPlayed" Title="Last played" HeaderStyle="width: 180px;" />
 								</Columns>
-							</RadzenDataGrid>
+								<PagerContent>
+									<MudDataGridPager T="SteamOwnedGame" PageSizeOptions="new int[] { 8, 16, 32 }" />
+								</PagerContent>
+							</MudDataGrid>
 						}
 						else
 						{
@@ -347,8 +337,8 @@
 					</div>
 				</section>
 			</div>
-		</RadzenTabsItem>
-		<RadzenTabsItem Text="Excel">
+		</MudTabPanel>
+		<MudTabPanel Text="Excel">
 			<div class="excel-workspace">
 				<section class="psn-panel excel-profile-panel">
 					<div class="psn-panel__header">
@@ -444,38 +434,38 @@
 					<div class="psn-grid-shell">
 						@if (_excelPreview?.Rows.Any() == true)
 						{
-							<RadzenDataGrid AllowFiltering="false"
-											AllowColumnResize="true"
-											AllowAlternatingRows="false"
-											AllowSorting="true"
-											PageSize="8"
-											AllowPaging="true"
-											PagerHorizontalAlign="HorizontalAlign.Left"
-											ShowPagingSummary="true"
-											Data="@_excelPreview.Rows"
-											Class="psn-games-grid">
+							<MudDataGrid T="ExcelService.LibraryExcelPreviewRow"
+										 Items="@_excelPreview.Rows"
+										 Filterable="false"
+										 SortMode="SortMode.Multiple"
+										 RowsPerPage="8"
+										 Elevation="0"
+										 Class="psn-games-grid">
 								<Columns>
-									<RadzenDataGridColumn Width="120px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.SheetName)" Title="Sheet" />
-									<RadzenDataGridColumn Width="100px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.RowNumber)" Title="Row" />
-									<RadzenDataGridColumn Width="110px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.MediaType)" Title="Type" />
-									<RadzenDataGridColumn Width="260px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.Name)" Title="Title" />
-									<RadzenDataGridColumn Width="130px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.MediaAction)" Title="Media" />
-									<RadzenDataGridColumn Width="130px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.LibraryAction)" Title="Library" />
-									<RadzenDataGridColumn Width="130px" Title="Change">
-										<Template Context="row">
+									<PropertyColumn Property="x => x.SheetName" Title="Sheet" HeaderStyle="width: 120px;" />
+									<PropertyColumn Property="x => x.RowNumber" Title="Row" HeaderStyle="width: 100px;" />
+									<PropertyColumn Property="x => x.MediaType" Title="Type" HeaderStyle="width: 110px;" />
+									<PropertyColumn Property="x => x.Name" Title="Title" HeaderStyle="width: 260px;" />
+									<PropertyColumn Property="x => x.MediaAction" Title="Media" HeaderStyle="width: 130px;" />
+									<PropertyColumn Property="x => x.LibraryAction" Title="Library" HeaderStyle="width: 130px;" />
+									<TemplateColumn Title="Change" HeaderStyle="width: 130px;">
+										<CellTemplate>
 											<MudChip T="string"
 													 Size="Size.Small"
 													 Variant="MudBlazor.Variant.Outlined"
-													 Color="@GetImportChangeColor(row.ChangeType)">
-												@row.ChangeType
+													 Color="@GetImportChangeColor(context.Item.ChangeType)">
+												@context.Item.ChangeType
 											</MudChip>
-										</Template>
-									</RadzenDataGridColumn>
-									<RadzenDataGridColumn Width="140px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.Status)" Title="Status" />
-									<RadzenDataGridColumn Width="170px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.Source)" Title="Source" />
-									<RadzenDataGridColumn Width="220px" Property="@nameof(ExcelService.LibraryExcelPreviewRow.ExternalId)" Title="External ID" />
+										</CellTemplate>
+									</TemplateColumn>
+									<PropertyColumn Property="x => x.Status" Title="Status" HeaderStyle="width: 140px;" />
+									<PropertyColumn Property="x => x.Source" Title="Source" HeaderStyle="width: 170px;" />
+									<PropertyColumn Property="x => x.ExternalId" Title="External ID" HeaderStyle="width: 220px;" />
 								</Columns>
-							</RadzenDataGrid>
+								<PagerContent>
+									<MudDataGridPager T="ExcelService.LibraryExcelPreviewRow" PageSizeOptions="new int[] { 8, 16, 32 }" />
+								</PagerContent>
+							</MudDataGrid>
 						}
 						else
 						{
@@ -498,10 +488,23 @@
 					}
 				</section>
 			</div>
-		</RadzenTabsItem>
-	</Tabs>
-</RadzenTabs>
+		</MudTabPanel>
+</MudTabs>
 </section>
+
+<script>
+	window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+		const arrayBuffer = await contentStreamReference.arrayBuffer();
+		const blob = new Blob([arrayBuffer]);
+		const url = URL.createObjectURL(blob);
+		const anchorElement = document.createElement('a');
+		anchorElement.href = url;
+		anchorElement.download = fileName ?? '';
+		anchorElement.click();
+		anchorElement.remove();
+		URL.revokeObjectURL(url);
+	}
+</script>
 
 <script>
 	window.downloadFileFromStream = async (fileName, contentStreamReference) => {

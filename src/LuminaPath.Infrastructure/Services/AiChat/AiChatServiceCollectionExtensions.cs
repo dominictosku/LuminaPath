@@ -47,8 +47,8 @@ internal static class AiChatServiceCollectionExtensions
             }
         });
 
-        services.AddHttpClient<AnthropicClient>();
-        services.AddHttpClient<OpenAiCompatibleProvider>();
+        services.AddHttpClient<AnthropicClient>(client => client.Timeout = TimeSpan.FromSeconds(60));
+        services.AddHttpClient<OpenAiCompatibleProvider>(client => client.Timeout = TimeSpan.FromSeconds(60));
         services.AddScoped<AiChatRuntimeSettingsResolver>();
         services.AddScoped<IAiProvider, RuntimeAiProvider>();
 

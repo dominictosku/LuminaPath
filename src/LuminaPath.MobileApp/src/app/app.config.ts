@@ -11,12 +11,11 @@ import {
   provideIonicAngular,
 } from '@ionic/angular/standalone';
 import {
-  HTTP_INTERCEPTORS,
   provideHttpClient,
-  withInterceptorsFromDi,
+  withInterceptors,
 } from '@angular/common/http';
 import { routes } from '../app/app.routes';
-import { CookieInterceptor } from './core/http/cookie.interceptor';
+import { cookieInterceptor } from './core/http/cookie.interceptor';
 import { GlobalErrorHandler } from './shared/services/global-error-handler';
 import { RequestCache } from './shared/services/request-cache.service';
 
@@ -43,8 +42,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withPreloading(PreloadAllModules)),
     provideAnimationsAsync(),
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-    provideHttpClient(withInterceptorsFromDi()),
-    { provide: HTTP_INTERCEPTORS, useClass: CookieInterceptor, multi: true },
+    provideHttpClient(withInterceptors([cookieInterceptor])),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
     {
       // Pulls persisted view snapshots out of IndexedDB into RequestCache's

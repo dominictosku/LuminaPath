@@ -204,23 +204,7 @@ public abstract class UnifiedMediaPageBase : BaseAuth
         IsDetailBusy = true;
         try
         {
-            var id = item.UserMediaId.Value;
-            switch (item.Kind)
-            {
-                case "game":
-                    await MyGameService.DeleteAsync(id, User);
-                    break;
-                case "movie":
-                    await MyMovieService.DeleteAsync(id, User);
-                    break;
-                case "series":
-                    await MySeriesService.DeleteAsync(id, User);
-                    break;
-                case "anime":
-                    await MyAnimeService.DeleteAsync(id, User);
-                    break;
-            }
-
+            await DeleteLibraryEntryAsync(item.Kind, item.UserMediaId.Value);
             item.UserMediaId = null;
             ActiveDetailItem = null;
             Snackbar.Add($"Removed \"{item.Title}\" from your library", Severity.Info);
@@ -276,33 +260,7 @@ public abstract class UnifiedMediaPageBase : BaseAuth
         IsDetailBusy = true;
         try
         {
-            var id = args.Item.UserMediaId.Value;
-            switch (args.Item.Kind)
-            {
-                case "movie":
-                {
-                    var entity = await MyMovieService.GetById(id, UserId, MyMovieService.Includes);
-                    entity.Status = args.Status;
-                    entity.Movie = null;
-                    await MyMovieService.PutAsync(entity, User);
-                    break;
-                }
-                case "series":
-                {
-                    var entity = await MySeriesService.GetById(id, UserId, MySeriesService.Includes);
-                    entity.Status = args.Status;
-                    await MySeriesService.PutAsync(entity, User);
-                    break;
-                }
-                case "anime":
-                {
-                    var entity = await MyAnimeService.GetById(id, UserId, MyAnimeService.Includes);
-                    entity.Status = args.Status;
-                    await MyAnimeService.PutAsync(entity, User);
-                    break;
-                }
-            }
-
+            await UpdateLibraryMediaStatusAsync(args.Item.Kind, args.Item.UserMediaId.Value, args.Status);
             args.Item.MediaStatus = args.Status;
             Snackbar.Add("Status updated", Severity.Success);
             await OnMediaDataMutatedAsync();
@@ -323,41 +281,7 @@ public abstract class UnifiedMediaPageBase : BaseAuth
         IsDetailBusy = true;
         try
         {
-            var id = args.Item.UserMediaId.Value;
-            switch (args.Item.Kind)
-            {
-                case "game":
-                {
-                    var entity = await MyGameService.GetById(id, UserId, MyGameService.Includes);
-                    entity.Rating = args.Rating;
-                    entity.Game = null;
-                    await MyGameService.PutAsync(entity, User);
-                    break;
-                }
-                case "movie":
-                {
-                    var entity = await MyMovieService.GetById(id, UserId, MyMovieService.Includes);
-                    entity.Rating = args.Rating;
-                    entity.Movie = null;
-                    await MyMovieService.PutAsync(entity, User);
-                    break;
-                }
-                case "series":
-                {
-                    var entity = await MySeriesService.GetById(id, UserId, MySeriesService.Includes);
-                    entity.Rating = args.Rating;
-                    await MySeriesService.PutAsync(entity, User);
-                    break;
-                }
-                case "anime":
-                {
-                    var entity = await MyAnimeService.GetById(id, UserId, MyAnimeService.Includes);
-                    entity.Rating = args.Rating;
-                    await MyAnimeService.PutAsync(entity, User);
-                    break;
-                }
-            }
-
+            await UpdateLibraryRatingAsync(args.Item.Kind, args.Item.UserMediaId.Value, args.Rating);
             args.Item.Rating = args.Rating;
             Snackbar.Add("Rating saved", Severity.Success);
             await OnMediaDataMutatedAsync();
@@ -964,22 +888,7 @@ public abstract class UnifiedMediaPageBase : BaseAuth
         IsDetailBusy = true;
         try
         {
-            switch (item.Kind)
-            {
-                case "game":
-                    await GameService.DeleteAsync(item.MediaId);
-                    break;
-                case "movie":
-                    await MovieService.DeleteAsync(item.MediaId);
-                    break;
-                case "series":
-                    await SeriesService.DeleteAsync(item.MediaId);
-                    break;
-                case "anime":
-                    await AnimeService.DeleteAsync(item.MediaId);
-                    break;
-            }
-
+            await DeleteCatalogEntryAsync(item.Kind, item.MediaId);
             CloseDetail();
             Snackbar.Add($"Deleted \"{item.Title}\" from catalog", Severity.Info);
             await OnMediaDataMutatedAsync();
@@ -987,6 +896,90 @@ public abstract class UnifiedMediaPageBase : BaseAuth
         finally
         {
             IsDetailBusy = false;
+        }
+    }
+
+    private Task DeleteLibraryEntryAsync(string kind, int id) => kind switch
+    {
+        "game" => MyGameService.DeleteAsync(id, User!),
+        "movie" => MyMovieService.DeleteAsync(id, User!),
+        "series" => MySeriesService.DeleteAsync(id, User!),
+        "anime" => MyAnimeService.DeleteAsync(id, User!),
+        _ => Task.CompletedTask
+    };
+
+    private Task DeleteCatalogEntryAsync(string kind, int id) => kind switch
+    {
+        "game" => GameService.DeleteAsync(id),
+        "movie" => MovieService.DeleteAsync(id),
+        "series" => SeriesService.DeleteAsync(id),
+        "anime" => AnimeService.DeleteAsync(id),
+        _ => Task.CompletedTask
+    };
+
+    private async Task UpdateLibraryMediaStatusAsync(string kind, int id, MediaStatus status)
+    {
+        switch (kind)
+        {
+            case "movie":
+            {
+                var entity = await MyMovieService.GetById(id, UserId!, MyMovieService.Includes);
+                entity.Status = status;
+                entity.Movie = null;
+                await MyMovieService.PutAsync(entity, User);
+                break;
+            }
+            case "series":
+            {
+                var entity = await MySeriesService.GetById(id, UserId!, MySeriesService.Includes);
+                entity.Status = status;
+                await MySeriesService.PutAsync(entity, User);
+                break;
+            }
+            case "anime":
+            {
+                var entity = await MyAnimeService.GetById(id, UserId!, MyAnimeService.Includes);
+                entity.Status = status;
+                await MyAnimeService.PutAsync(entity, User);
+                break;
+            }
+        }
+    }
+
+    private async Task UpdateLibraryRatingAsync(string kind, int id, short? rating)
+    {
+        switch (kind)
+        {
+            case "game":
+            {
+                var entity = await MyGameService.GetById(id, UserId!, MyGameService.Includes);
+                entity.Rating = rating;
+                entity.Game = null;
+                await MyGameService.PutAsync(entity, User);
+                break;
+            }
+            case "movie":
+            {
+                var entity = await MyMovieService.GetById(id, UserId!, MyMovieService.Includes);
+                entity.Rating = rating;
+                entity.Movie = null;
+                await MyMovieService.PutAsync(entity, User);
+                break;
+            }
+            case "series":
+            {
+                var entity = await MySeriesService.GetById(id, UserId!, MySeriesService.Includes);
+                entity.Rating = rating;
+                await MySeriesService.PutAsync(entity, User);
+                break;
+            }
+            case "anime":
+            {
+                var entity = await MyAnimeService.GetById(id, UserId!, MyAnimeService.Includes);
+                entity.Rating = rating;
+                await MyAnimeService.PutAsync(entity, User);
+                break;
+            }
         }
     }
 

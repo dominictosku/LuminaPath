@@ -24,37 +24,37 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpGet("board")]
         public async Task<ActionResult<QuestBoardDto>> GetBoard()
         {
-            var user = await GetCurrentUserAsync();
-            return user == null
+            var userId = CurrentUserId;
+            return string.IsNullOrWhiteSpace(userId)
                 ? LoginRequired()
-                : Ok(await _service.GetBoardAsync(user.Id));
+                : Ok(await _service.GetBoardAsync(userId));
         }
 
         [HttpPut("skills")]
         public async Task<ActionResult<QuestBoardDto>> SaveSkills(QuestBoardDto board)
         {
-            var user = await GetCurrentUserAsync();
-            return user == null
+            var userId = CurrentUserId;
+            return string.IsNullOrWhiteSpace(userId)
                 ? LoginRequired()
-                : Ok(await _service.SaveSkillsAsync(user.Id, board));
+                : Ok(await _service.SaveSkillsAsync(userId, board));
         }
 
         [HttpGet("for-game/{myGameId:int}")]
         public async Task<ActionResult<List<QuestDto>>> GetForGame(int myGameId)
         {
-            var user = await GetCurrentUserAsync();
-            return user == null
+            var userId = CurrentUserId;
+            return string.IsNullOrWhiteSpace(userId)
                 ? LoginRequired()
-                : Ok(await _service.GetQuestsForMyGameAsync(user.Id, myGameId));
+                : Ok(await _service.GetQuestsForMyGameAsync(userId, myGameId));
         }
 
         [HttpPost]
         public async Task<ActionResult<QuestMutationResultDto>> Create(QuestCreateDto dto)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.CreateAsync(user.Id, dto);
+            var result = await _service.CreateAsync(userId, dto);
             return result.Match<ActionResult<QuestMutationResultDto>>(
                 mutation => Ok(mutation),
                 failed => BadRequest(failed));
@@ -63,10 +63,10 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpPatch("{id:int}")]
         public async Task<ActionResult<QuestMutationResultDto>> Update(int id, QuestUpdateDto dto)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.UpdateAsync(user.Id, id, dto);
+            var result = await _service.UpdateAsync(userId, id, dto);
             return result.Match<ActionResult<QuestMutationResultDto>>(
                 mutation => Ok(mutation),
                 failed => NotFound(failed));
@@ -75,10 +75,10 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpPost("{id:int}/occurrences")]
         public async Task<ActionResult<QuestMutationResultDto>> MaterializeOccurrence(int id, QuestOccurrenceCreateDto dto)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.MaterializeOccurrenceAsync(user.Id, id, dto);
+            var result = await _service.MaterializeOccurrenceAsync(userId, id, dto);
             return result.Match<ActionResult<QuestMutationResultDto>>(
                 mutation => Ok(mutation),
                 failed => BadRequest(failed));
@@ -87,30 +87,30 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.DeleteAsync(user.Id, id);
+            var result = await _service.DeleteAsync(userId, id);
             return result.Match<IActionResult>(_ => NoContent(), f => NotFound(f));
         }
 
         [HttpPut("reorder")]
         public async Task<IActionResult> Reorder(List<QuestReorderItemDto> items)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.ReorderAsync(user.Id, items);
+            var result = await _service.ReorderAsync(userId, items);
             return result.Match<IActionResult>(_ => NoContent(), f => BadRequest(f));
         }
 
         [HttpPost("{questId:int}/subtasks")]
         public async Task<ActionResult<QuestMutationResultDto>> AddSubtask(int questId, QuestSubtaskCreateDto dto)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.AddSubtaskAsync(user.Id, questId, dto);
+            var result = await _service.AddSubtaskAsync(userId, questId, dto);
             return result.Match<ActionResult<QuestMutationResultDto>>(
                 mutation => Ok(mutation),
                 failed => NotFound(failed));
@@ -119,10 +119,10 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpPatch("{questId:int}/subtasks/{subtaskId:int}")]
         public async Task<ActionResult<QuestMutationResultDto>> UpdateSubtask(int questId, int subtaskId, QuestSubtaskUpdateDto dto)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.UpdateSubtaskAsync(user.Id, questId, subtaskId, dto);
+            var result = await _service.UpdateSubtaskAsync(userId, questId, subtaskId, dto);
             return result.Match<ActionResult<QuestMutationResultDto>>(
                 mutation => Ok(mutation),
                 failed => NotFound(failed));
@@ -131,10 +131,10 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpDelete("{questId:int}/subtasks/{subtaskId:int}")]
         public async Task<IActionResult> DeleteSubtask(int questId, int subtaskId)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.DeleteSubtaskAsync(user.Id, questId, subtaskId);
+            var result = await _service.DeleteSubtaskAsync(userId, questId, subtaskId);
             return result.Match<IActionResult>(_ => NoContent(), f => NotFound(f));
         }
 
@@ -146,49 +146,49 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpGet("folders")]
         public async Task<ActionResult<List<QuestFolderDto>>> GetFolders()
         {
-            var user = await GetCurrentUserAsync();
-            return user == null
+            var userId = CurrentUserId;
+            return string.IsNullOrWhiteSpace(userId)
                 ? LoginRequired()
-                : Ok(await _service.GetFoldersAsync(user.Id));
+                : Ok(await _service.GetFoldersAsync(userId));
         }
 
         [HttpPost("folders")]
         public async Task<ActionResult<QuestFolderDto>> CreateFolder(QuestFolderCreateDto dto)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.CreateFolderAsync(user.Id, dto);
+            var result = await _service.CreateFolderAsync(userId, dto);
             return result.Match<ActionResult<QuestFolderDto>>(folder => Ok(folder), failed => BadRequest(failed));
         }
 
         [HttpPatch("folders/{folderId:int}")]
         public async Task<ActionResult<QuestFolderDto>> UpdateFolder(int folderId, QuestFolderUpdateDto dto)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.UpdateFolderAsync(user.Id, folderId, dto);
+            var result = await _service.UpdateFolderAsync(userId, folderId, dto);
             return result.Match<ActionResult<QuestFolderDto>>(folder => Ok(folder), failed => NotFound(failed));
         }
 
         [HttpDelete("folders/{folderId:int}")]
         public async Task<IActionResult> DeleteFolder(int folderId)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.DeleteFolderAsync(user.Id, folderId);
+            var result = await _service.DeleteFolderAsync(userId, folderId);
             return result.Match<IActionResult>(_ => NoContent(), f => NotFound(f));
         }
 
         [HttpPut("folders/reorder")]
         public async Task<IActionResult> ReorderFolders(List<QuestFolderReorderItemDto> items)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.ReorderFoldersAsync(user.Id, items);
+            var result = await _service.ReorderFoldersAsync(userId, items);
             return result.Match<IActionResult>(_ => NoContent(), f => BadRequest(f));
         }
     }

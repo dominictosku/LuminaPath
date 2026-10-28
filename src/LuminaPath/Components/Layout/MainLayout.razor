@@ -1,7 +1,6 @@
 @implements IAsyncDisposable
 @using System.Security.Claims
 @using LuminaPath.Constants
-@using Radzen.Blazor
 @inherits LayoutComponentBase
 @inject IHostEnvironment HostEnvironment
 @inject NavigationManager NavigationManager
@@ -12,8 +11,6 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 <MudPopoverProvider />
-
-<RadzenComponents @rendermode="InteractiveServer" />
 
 <a class="skip-link" href="#main">Skip to content</a>
 <div class="ambient" aria-hidden="true"></div>

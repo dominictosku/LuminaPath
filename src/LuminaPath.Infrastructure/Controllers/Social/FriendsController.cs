@@ -26,26 +26,26 @@ namespace LuminaPath.Infrastructure.Controllers
         [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public async Task<ActionResult<List<FriendshipDto>>> Get()
         {
-            var user = await GetCurrentUserAsync();
-            return user == null ? LoginRequired() : Ok(await _service.GetForUserAsync(user.Id));
+            var userId = CurrentUserId;
+            return string.IsNullOrWhiteSpace(userId) ? LoginRequired() : Ok(await _service.GetForUserAsync(userId));
         }
 
         [HttpGet("search")]
         [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public async Task<ActionResult<List<FriendUserDto>>> Search([FromQuery] string query)
         {
-            var user = await GetCurrentUserAsync();
-            return user == null ? LoginRequired() : Ok(await _service.SearchUsersAsync(user.Id, query));
+            var userId = CurrentUserId;
+            return string.IsNullOrWhiteSpace(userId) ? LoginRequired() : Ok(await _service.SearchUsersAsync(userId, query));
         }
 
         [HttpGet("{userId}/profile")]
         [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public async Task<ActionResult<FriendProfileDto>> Profile([FromRoute] string userId, [FromQuery] int limit = 6)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var currentUserId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(currentUserId)) return LoginRequired();
 
-            var result = await _service.GetFriendProfileAsync(user.Id, userId, limit);
+            var result = await _service.GetFriendProfileAsync(currentUserId, userId, limit);
             return result.Match<ActionResult>(Ok, failed => NotFound(failed));
         }
 
@@ -57,10 +57,10 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpPost("requests")]
         public async Task<ActionResult<FriendshipDto>> SendRequest([FromBody] SendRequestDto dto)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
 
-            var result = await _service.SendRequestAsync(user.Id, dto.AddresseeId);
+            var result = await _service.SendRequestAsync(userId, dto.AddresseeId);
             return result.Match<ActionResult>(
                 created => Ok(created),
                 failed => BadRequest(failed));
@@ -69,27 +69,27 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpPost("requests/{id:int}/accept")]
         public async Task<ActionResult<FriendshipDto>> Accept(int id)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
-            var result = await _service.RespondAsync(user.Id, id, accept: true);
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
+            var result = await _service.RespondAsync(userId, id, accept: true);
             return result.Match<ActionResult>(Ok, NotFound);
         }
 
         [HttpPost("requests/{id:int}/decline")]
         public async Task<ActionResult<FriendshipDto>> Decline(int id)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
-            var result = await _service.RespondAsync(user.Id, id, accept: false);
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
+            var result = await _service.RespondAsync(userId, id, accept: false);
             return result.Match<ActionResult>(Ok, NotFound);
         }
 
         [HttpDelete("{id:int}")]
         public async Task<ActionResult> Delete(int id)
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return LoginRequired();
-            var result = await _service.RemoveAsync(user.Id, id);
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId)) return LoginRequired();
+            var result = await _service.RemoveAsync(userId, id);
             return result.Match<ActionResult>(_ => Ok(), NotFound);
         }
     }

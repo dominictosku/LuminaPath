@@ -14,7 +14,7 @@ internal static class ThirdPartyServiceCollectionExtensions
             .Validate(PsnOptions.HasValidUrls, "PSN base URLs must be absolute HTTP or HTTPS URLs.")
             .Validate(PsnOptions.HasRequiredOAuthSettings, "PSN OAuth settings are incomplete.")
             .ValidateOnStart();
-        services.AddHttpClient<PSNService>();
+        services.AddHttpClient<PSNService>(client => client.Timeout = TimeSpan.FromSeconds(20));
         services.AddScoped<IPsnTrophyClient>(sp => sp.GetRequiredService<PSNService>());
 
         services.AddOptions<GameNewsOptions>()
@@ -22,7 +22,7 @@ internal static class ThirdPartyServiceCollectionExtensions
             .Validate(GameNewsOptions.HasValidRanges, "GameNews numeric options are outside the supported ranges.")
             .Validate(GameNewsOptions.HasValidGoogleNewsSettings, "GameNews Google News settings are incomplete or invalid.")
             .ValidateOnStart();
-        services.AddHttpClient<GameNewsService>();
+        services.AddHttpClient<GameNewsService>(client => client.Timeout = TimeSpan.FromSeconds(15));
 
         services.AddOptions<GameMetadataOptions>()
             .Bind(config.GetSection(GameMetadataOptions.SectionName))
@@ -36,8 +36,8 @@ internal static class ThirdPartyServiceCollectionExtensions
             .Validate(GameMetadataOptions.HasValidUrls, "GameMetadata URLs must be absolute HTTP or HTTPS URLs.")
             .Validate(GameMetadataOptions.HasCompleteOptionalCredentials, "GameMetadata IGDB credentials must include both client id and client secret when configured.")
             .ValidateOnStart();
-        services.AddHttpClient<IgdbMetadataProvider>();
-        services.AddHttpClient<RawgMetadataProvider>();
+        services.AddHttpClient<IgdbMetadataProvider>(client => client.Timeout = TimeSpan.FromSeconds(15));
+        services.AddHttpClient<RawgMetadataProvider>(client => client.Timeout = TimeSpan.FromSeconds(15));
         services.AddScoped<IGameMetadataProvider>(sp => sp.GetRequiredService<IgdbMetadataProvider>());
         services.AddScoped<IGameMetadataProvider>(sp => sp.GetRequiredService<RawgMetadataProvider>());
 
@@ -45,7 +45,7 @@ internal static class ThirdPartyServiceCollectionExtensions
             .Bind(config.GetSection(SteamOptions.SectionName))
             .Validate(SteamOptions.HasValidUrls, "Steam base URLs must be absolute HTTP or HTTPS URLs.")
             .ValidateOnStart();
-        services.AddHttpClient<SteamService>();
+        services.AddHttpClient<SteamService>(client => client.Timeout = TimeSpan.FromSeconds(20));
         services.AddScoped<ISteamAchievementClient>(sp => sp.GetRequiredService<SteamService>());
         services.AddScoped<AchievementSyncService>();
 
@@ -85,9 +85,9 @@ internal static class ThirdPartyServiceCollectionExtensions
         // Effective credentials = admin-saved ApplicationSettings over env/config.
         services.AddScoped<GoogleCalendarSettingsResolver>();
 
-        services.AddHttpClient<GoogleOAuthClient>();
+        services.AddHttpClient<GoogleOAuthClient>(client => client.Timeout = TimeSpan.FromSeconds(15));
         services.AddScoped<IGoogleOAuthClient>(sp => sp.GetRequiredService<GoogleOAuthClient>());
-        services.AddHttpClient<GoogleCalendarApiClient>();
+        services.AddHttpClient<GoogleCalendarApiClient>(client => client.Timeout = TimeSpan.FromSeconds(20));
         services.AddScoped<IGoogleCalendarApi>(sp => sp.GetRequiredService<GoogleCalendarApiClient>());
 
         services.AddScoped<GoogleCalendarConnectionService>();

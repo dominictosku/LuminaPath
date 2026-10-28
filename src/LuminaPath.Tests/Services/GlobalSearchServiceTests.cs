@@ -77,6 +77,44 @@ public class GlobalSearchServiceTests
     }
 
     [Fact]
+    public async Task SearchAsync_FindsAnimeMovieAndSeries()
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        const string userId = "user-1";
+
+        await using (var dbContext = new LuminaPathDbContext(options))
+        {
+            dbContext.MyAnimes.Add(new MyAnime
+            {
+                Anime = new Anime { Name = "Steins;Gate", Description = "Time travel thrilling story.", Genres = ["Sci-Fi", "Thriller"] },
+                LuminaUserId = userId,
+                Status = MediaStatus.Completed
+            });
+            dbContext.MyMovies.Add(new MyMovie
+            {
+                Movie = new Movie { Name = "Inception", Description = "Dream within a dream.", Genres = ["Action", "Sci-Fi"] },
+                LuminaUserId = userId,
+                Status = MediaStatus.Completed
+            });
+            dbContext.MySeries.Add(new MySeries
+            {
+                Series = new Series { Name = "Dark", Description = "Everything is connected across time.", Genres = ["Mystery", "Sci-Fi"] },
+                LuminaUserId = userId,
+                Status = MediaStatus.Completed
+            });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var service = new GlobalSearchService(new TestDbContextFactory(options));
+
+        var results = await service.SearchAsync(userId, "Sci-Fi");
+        Assert.Equal(3, results.Count);
+        Assert.Contains(results, r => r.Title == "Steins;Gate" && r.MediaKind == "animes");
+        Assert.Contains(results, r => r.Title == "Inception" && r.MediaKind == "movies");
+        Assert.Contains(results, r => r.Title == "Dark" && r.MediaKind == "series");
+    }
+
+    [Fact]
     public async Task SearchAsync_ReturnsEmpty_ForShortQueries()
     {
         var service = new GlobalSearchService(new TestDbContextFactory(Utilities.DbContext.TestDbContextOptions()));

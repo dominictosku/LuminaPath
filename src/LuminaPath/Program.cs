@@ -4,7 +4,6 @@ using LuminaPath.Core.Mapping;
 using LuminaPath.Infrastructure;
 using LuminaPath.Infrastructure.Services.Storage;
 using MudBlazor.Services;
-using Radzen;
 using Serilog;
 using Serilog.Events;
 using System.Security.Claims;
@@ -31,7 +30,6 @@ try
         .AddBlazor(builder.Configuration, builder.Environment.IsDevelopment());
 
     builder.Services.AddMudServices();
-    builder.Services.AddRadzenComponents();
 
     builder.Services.AddScoped<IObjectMapper, ObjectMapper>();
 
@@ -95,6 +93,11 @@ try
     app.UseBlazor();
 
     app.Run();
+}
+catch (HostAbortedException)
+{
+    // Thrown during EF Core migrations or command-line design-time host resolution; rethrow without logging fatal.
+    throw;
 }
 catch (Exception ex)
 {

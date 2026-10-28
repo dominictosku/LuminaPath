@@ -113,18 +113,19 @@ public partial class Import
 
     async Task AddGamesToLibrary()
     {
-        bool? confirm = await dialogService.Confirm("Add shown games to library?", "Add to Library");
-        if(confirm is not null && confirm.Value)
+        if (User is null || games is null)
         {
-            if (User is null || games is null)
-            {
-                Snackbar.Add("No games available to import", Severity.Info);
-                return;
-            }
-
-            await psnService.ImportGames(User, games.ToList());
-            Snackbar.Add("Added games to library", Severity.Success);
+            Snackbar.Add("No games available to import", Severity.Info);
+            return;
         }
+
+        if (!await ConfirmAsync("Add to Library", "Add shown games to library?", "Import Games", Icons.Material.Filled.LibraryAdd))
+        {
+            return;
+        }
+
+        await psnService.ImportGames(User, games.ToList());
+        Snackbar.Add("Added games to library", Severity.Success);
     }
 
     async Task ImportGames()
@@ -194,8 +195,7 @@ public partial class Import
             return;
         }
 
-        bool? confirm = await dialogService.Confirm("Import this Steam library?", "Import Steam");
-        if (confirm != true)
+        if (!await ConfirmAsync("Import Steam", "Import this Steam library?", "Import Steam", Icons.Material.Filled.LibraryAdd))
         {
             return;
         }
@@ -448,6 +448,30 @@ public partial class Import
         {
             _excelSaving = false;
         }
+    }
+
+    private async Task<bool> ConfirmAsync(string title, string content, string confirmText, string icon)
+    {
+        var parameters = new DialogParameters<ConfirmationDialog>
+        {
+            { dialog => dialog.TitleText, title },
+            { dialog => dialog.ContentText, content },
+            { dialog => dialog.ConfirmText, confirmText },
+            { dialog => dialog.Icon, icon },
+            { dialog => dialog.ConfirmColor, Color.Secondary },
+            { dialog => dialog.Severity, Severity.Info }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>(title, parameters, options);
+        var result = await dialog.Result;
+        return result is { Canceled: false };
     }
 
     async Task<bool> ConfirmExcelImport()

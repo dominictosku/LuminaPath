@@ -93,7 +93,7 @@
     box-shadow: 0 18px 50px rgba(0, 0, 0, .22);
 }
 
-::deep .import-tabs .rz-tabview-nav {
+::deep .import-tabs .mud-tabs-tabbar {
     display: flex;
     gap: 6px;
     padding: 12px 14px 0;
@@ -102,13 +102,7 @@
     background: linear-gradient(135deg, rgba(12, 16, 17, .98), rgba(19, 25, 26, .96));
 }
 
-::deep .import-tabs .rz-tabview-nav li {
-    margin: 0;
-    border: 0;
-    background: transparent;
-}
-
-::deep .import-tabs .rz-tabview-nav li a {
+::deep .import-tabs .mud-tab {
     display: inline-flex;
     align-items: center;
     min-height: 48px;
@@ -123,14 +117,13 @@
     transition: background-color .16s ease, border-color .16s ease, color .16s ease;
 }
 
-::deep .import-tabs .rz-tabview-nav li:not(.rz-tabview-selected):not(.rz-state-active) a:hover {
+::deep .import-tabs .mud-tab:hover {
     border-color: var(--line, #252c2d);
     color: var(--text, #f0f4f1);
     background: rgba(255, 255, 255, .045);
 }
 
-::deep .import-tabs .rz-tabview-nav li.rz-tabview-selected a,
-::deep .import-tabs .rz-tabview-nav li.rz-state-active a {
+::deep .import-tabs .mud-tab.mud-tab-active {
     border-color: var(--mint, #b2f5cf);
     border-bottom-color: transparent;
     color: var(--text, #f0f4f1);
@@ -138,11 +131,7 @@
     box-shadow: inset 0 -2px 0 var(--mint, #b2f5cf);
 }
 
-::deep .import-tabs .rz-tabview-selected {
-    background: transparent;
-}
-
-::deep .import-tabs .rz-tabview-panel {
+::deep .import-tabs .mud-tabs-panels {
     padding: 18px;
     background: var(--bg-subtle, #101617);
 }
@@ -413,78 +402,38 @@
     color: var(--import-text) !important;
 }
 
-::deep .psn-games-grid .rz-column-title,
-::deep .psn-games-grid .rz-sortable-column,
-::deep .psn-games-grid .rz-cell-data {
-    color: inherit !important;
+::deep .psn-games-grid {
+    border: 1px solid var(--import-panel-border);
+    border-radius: 14px;
+    background: var(--panel, #13191a);
+    overflow: hidden;
 }
 
-::deep .psn-games-grid .rz-column-title {
-    color: var(--text, #f0f4f1) !important;
-    font-weight: 900;
-}
-
-::deep .psn-games-grid .rz-grid-table thead th,
-::deep .psn-games-grid .rz-datatable-thead th {
-    border-color: var(--line, #252c2d) !important;
-    background: var(--bg-subtle, #101617) !important;
-    color: var(--text, #f0f4f1) !important;
+::deep .psn-games-grid .mud-table-head th {
+    border-bottom: 1px solid var(--line, #252c2d);
+    background: var(--bg-subtle, #101617);
+    color: var(--text, #f0f4f1);
     font-size: .9rem;
     font-weight: 900;
-    letter-spacing: 0;
 }
 
-::deep .psn-games-grid .rz-data-row td,
-::deep .psn-games-grid .rz-datatable-data td,
-::deep .psn-games-grid .rz-grid-table tbody td {
-    border-color: var(--line, #252c2d) !important;
-    color: var(--text, #f0f4f1) !important;
-    background: var(--panel, #13191a) !important;
-}
-
-::deep .psn-games-grid .rz-data-row td {
+::deep .psn-games-grid .mud-table-body td {
+    border-bottom: 1px solid var(--line, #252c2d);
+    color: var(--text, #f0f4f1);
+    background: var(--panel, #13191a);
     vertical-align: middle;
 }
 
-::deep .psn-games-grid .rz-data-row:hover td,
-::deep .psn-games-grid .rz-grid-table tbody tr:hover td {
-    background: var(--panel-soft, rgba(255, 255, 255, .045)) !important;
-    color: #f8fbff !important;
+::deep .psn-games-grid .mud-table-body tr:hover td {
+    background: var(--panel-soft, rgba(255, 255, 255, .045));
+    color: #f8fbff;
 }
 
-::deep .psn-games-grid .rz-datatable-even td,
-::deep .psn-games-grid .rz-datatable-odd td {
-    background: var(--panel, #13191a) !important;
-}
-
-::deep .psn-games-grid .rz-paginator {
-    min-height: 64px;
-    border-color: var(--line, #252c2d) !important;
-    background: var(--bg-subtle, #101617) !important;
-    color: var(--import-muted) !important;
-}
-
-::deep .psn-games-grid .rz-paginator * {
-    color: var(--import-muted) !important;
-}
-
-::deep .psn-games-grid .rz-paginator .rz-state-active,
-::deep .psn-games-grid .rz-paginator .rz-paginator-page.rz-state-active {
-    color: var(--mint, #b2f5cf) !important;
-    background: var(--accent-soft, rgba(178, 245, 207, .14)) !important;
-    border-color: var(--accent-glow, rgba(178, 245, 207, .24)) !important;
-}
-
-::deep .psn-games-grid .rz-paginator .rz-paginator-page,
-::deep .psn-games-grid .rz-paginator .rz-paginator-first,
-::deep .psn-games-grid .rz-paginator .rz-paginator-prev,
-::deep .psn-games-grid .rz-paginator .rz-paginator-next,
-::deep .psn-games-grid .rz-paginator .rz-paginator-last {
-    border-radius: 10px;
-}
-
-::deep .psn-games-grid .rz-paging-summary {
-    color: var(--import-faint) !important;
+::deep .psn-games-grid .mud-table-pagination {
+    min-height: 56px;
+    border-top: 1px solid var(--line, #252c2d);
+    background: var(--bg-subtle, #101617);
+    color: var(--import-muted);
 }
 
 .psn-empty-state,

@@ -17,7 +17,6 @@ internal static class PersistenceServiceCollectionExtensions
             options
                 .UseNpgsql(connectionString)
                 .AddInterceptors(serviceProvider.GetRequiredService<AuditSaveChangesInterceptor>()));
-        services.AddScoped<ILuminaPathDbContext, LuminaPathDbContext>();
 
         return services;
     }

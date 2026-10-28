@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using LuminaPath.Core.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace LuminaPath.Infrastructure.Services.Auditing;
 
@@ -51,8 +52,9 @@ public sealed partial class AuditSaveChangesInterceptor
             auditContext.AuditLogs.AddRange(pending.Entries);
             auditContext.SaveChanges();
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to persist pending audit log entries.");
         }
     }
 
@@ -72,8 +74,9 @@ public sealed partial class AuditSaveChangesInterceptor
             auditContext.AuditLogs.AddRange(pending.Entries);
             await auditContext.SaveChangesAsync(cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to persist pending audit log entries.");
         }
     }
 

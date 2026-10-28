@@ -29,7 +29,7 @@ public sealed class SearchController : AuthorizedControllerBase
         [FromQuery] int limit = 12,
         CancellationToken cancellationToken = default)
     {
-        var (_, userId) = await GetCurrentUserWithIdAsync();
+        var userId = CurrentUserId;
         if (string.IsNullOrWhiteSpace(userId))
         {
             return LoginRequired();

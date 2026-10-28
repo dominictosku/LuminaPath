@@ -2,8 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import {
   HttpRequest,
   HttpHandler,
+  HttpHandlerFn,
   HttpEvent,
   HttpInterceptor,
+  HttpInterceptorFn,
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -13,35 +15,40 @@ const LUMINA_CLIENT_HEADER = 'X-Lumina-Client';
 const LUMINA_CLIENT_HEADER_VALUE = 'web';
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+export const cookieInterceptor: HttpInterceptorFn = (
+  request: HttpRequest<unknown>,
+  next: HttpHandlerFn
+): Observable<HttpEvent<unknown>> => {
+  const router = inject(Router);
+  const isAuthRequest =
+    request.url.includes('/login') || request.url.includes('/logout');
+  let credentialsRequest = request.withCredentials
+    ? request
+    : request.clone({ withCredentials: true });
+
+  if (shouldAddClientHeader(credentialsRequest)) {
+    credentialsRequest = credentialsRequest.clone({
+      setHeaders: { [LUMINA_CLIENT_HEADER]: LUMINA_CLIENT_HEADER_VALUE },
+    });
+  }
+
+  return next(credentialsRequest).pipe(
+    catchError((error) => {
+      if (error.status === 401 && !isAuthRequest) {
+        router.navigate(['/auth/login']);
+      }
+      return throwError(() => error);
+    })
+  );
+};
+
 @Injectable()
 export class CookieInterceptor implements HttpInterceptor {
-  private router = inject(Router);
-
-
   intercept(
     request: HttpRequest<unknown>,
     next: HttpHandler
   ): Observable<HttpEvent<unknown>> {
-    const isAuthRequest =
-      request.url.includes('/login') || request.url.includes('/logout');
-    let credentialsRequest = request.withCredentials
-      ? request
-      : request.clone({ withCredentials: true });
-
-    if (shouldAddClientHeader(credentialsRequest)) {
-      credentialsRequest = credentialsRequest.clone({
-        setHeaders: { [LUMINA_CLIENT_HEADER]: LUMINA_CLIENT_HEADER_VALUE },
-      });
-    }
-
-    return next.handle(credentialsRequest).pipe(
-      catchError((error) => {
-        if (error.status === 401 && !isAuthRequest) {
-          this.router.navigate(['/auth/login']);
-        }
-        return throwError(() => error);
-      })
-    );
+    return cookieInterceptor(request, (req) => next.handle(req));
   }
 }
 

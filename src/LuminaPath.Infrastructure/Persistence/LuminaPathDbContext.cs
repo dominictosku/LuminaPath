@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LuminaPath.Infrastructure
 {
-    public class LuminaPathDbContext : IdentityDbContext<LuminaUser>, ILuminaPathDbContext
+    public class LuminaPathDbContext : IdentityDbContext<LuminaUser>
     {
         public LuminaPathDbContext(DbContextOptions<LuminaPathDbContext> options) : base(options)
         {

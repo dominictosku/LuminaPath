@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using LuminaPath.Core.Interfaces;
 using LuminaPath.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,13 @@ public abstract class AuthorizedControllerBase : ControllerBase
     }
 
     protected string? CurrentUserId => User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+    protected ILuminaUser? CurrentLuminaUser => CurrentUserId is { } id ? new CurrentUserProxy(id) : null;
+
+    private sealed class CurrentUserProxy(string id) : ILuminaUser
+    {
+        public string Id { get; set; } = id;
+    }
 
     protected async Task<LuminaUser?> GetCurrentUserAsync()
     {

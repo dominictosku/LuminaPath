@@ -39,7 +39,7 @@ public sealed class SecurityHeadersOptions
 
     /// <summary>
     /// Default policy tuned for the App.razor host: every script is
-    /// same-origin, MudBlazor/Radzen inject inline styles at runtime
+    /// same-origin, MudBlazor injects inline styles at runtime
     /// (hence <c>'unsafe-inline'</c> for styles only), and Google Fonts is
     /// the single external origin. Blazor Server's SignalR transport is
     /// same-origin, so <c>connect-src 'self'</c> covers the WebSocket.

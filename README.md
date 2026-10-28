@@ -103,7 +103,7 @@ Full project documentation lives in [`docs/`](docs/index.md) — architecture (C
 | Layer | Tools |
 | --- | --- |
 | Backend | .NET 10, ASP.NET Core, Blazor Server, EF Core, Identity |
-| Frontend | MudBlazor, Radzen, Ionic/Angular 21 |
+| Frontend | MudBlazor, Ionic/Angular 21 |
 | Data | PostgreSQL 17 |
 | Deployment | Docker, Docker Compose, GitHub Actions, optional Azure Web App |
 | Testing | xUnit |
@@ -319,7 +319,7 @@ to enforcing once it is clean.
 |---|---|---|
 | `SecurityHeaders__EnableContentSecurityPolicy` | `true` | Set false to drop the CSP header entirely. |
 | `SecurityHeaders__ContentSecurityPolicyReportOnly` | `true` | Set false to enforce (send `Content-Security-Policy` instead of `…-Report-Only`). |
-| `SecurityHeaders__ContentSecurityPolicy` | tuned default | Override the full policy string. The default allows same-origin scripts, inline styles (MudBlazor/Radzen) and Google Fonts. |
+| `SecurityHeaders__ContentSecurityPolicy` | tuned default | Override the full policy string. The default allows same-origin scripts, inline styles (MudBlazor) and Google Fonts. |
 | `SecurityHeaders__ReportUri` | empty | Optional endpoint appended as a `report-uri` directive. |
 
 ### Email (SMTP)

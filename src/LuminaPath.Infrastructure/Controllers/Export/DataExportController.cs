@@ -34,7 +34,7 @@ public sealed class DataExportController : AuthorizedControllerBase
     [HttpGet("json")]
     public async Task<IActionResult> ExportJson(CancellationToken cancellationToken)
     {
-        var (_, userId) = await GetCurrentUserWithIdAsync();
+        var userId = CurrentUserId;
         if (string.IsNullOrWhiteSpace(userId))
         {
             return LoginRequired();

@@ -25,13 +25,13 @@ namespace LuminaPath.Infrastructure.Controllers.Base
         [EnableRateLimiting(RateLimitPolicies.BroadReads)]
         public virtual async Task<ActionResult<PaginatedResult<TEntityDto>>> Get([FromQuery] MediaFilter mediaFilter)
         {
-            var (user, _) = await GetCurrentUserWithIdAsync();
-            if (user is null)
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId))
             {
                 return LoginRequired();
             }
 
-            Expression<Func<TEntity, bool>> userFilter = entity => entity.LuminaUserId == user.Id;
+            Expression<Func<TEntity, bool>> userFilter = entity => entity.LuminaUserId == userId;
             var result = await _service.GetAllPaginated<TEntityDto>(mediaFilter, Includes, userFilter);
             return Ok(new PaginatedResult<TEntityDto>(result));
         }
@@ -39,8 +39,8 @@ namespace LuminaPath.Infrastructure.Controllers.Base
         [HttpGet("{id}")]
         public virtual async Task<ActionResult<TEntityDto>> GetById(int? id)
         {
-            var (user, _) = await GetCurrentUserWithIdAsync();
-            if (user is null)
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId))
             {
                 return LoginRequired();
             }
@@ -48,7 +48,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
             TEntity result;
             try
             {
-                result = await _service.GetById(id, user.Id, Includes);
+                result = await _service.GetById(id, userId, Includes);
             }
             catch (KeyNotFoundException)
             {
@@ -70,7 +70,12 @@ namespace LuminaPath.Infrastructure.Controllers.Base
                 return BadRequest(ModelState);
             }
 
-            var (user, _) = await GetCurrentUserWithIdAsync();
+            var user = CurrentLuminaUser;
+            if (user is null)
+            {
+                return LoginRequired();
+            }
+
             var entity = Mapper.Map<TEntity>(viewModel);
             var result = await _service.PostAsync(entity, user);
             return result.Match<ActionResult>(
@@ -87,7 +92,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
                 return BadRequest("Id does not match entity");
             }
 
-            var (user, _) = await GetCurrentUserWithIdAsync();
+            var user = CurrentLuminaUser;
             if (user is null)
             {
                 return LoginRequired();
@@ -116,7 +121,7 @@ namespace LuminaPath.Infrastructure.Controllers.Base
         [HttpDelete("{id}")]
         public virtual async Task<IActionResult> DeleteAsync(int? id)
         {
-            var (user, _) = await GetCurrentUserWithIdAsync();
+            var user = CurrentLuminaUser;
             if (user is null)
             {
                 return LoginRequired();

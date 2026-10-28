@@ -13,7 +13,7 @@ namespace LuminaPath.Infrastructure.Middleware;
 ///
 /// <para>
 /// The CSP defaults to <c>report-only</c> (see <see cref="SecurityHeadersOptions"/>):
-/// the Blazor runtime + MudBlazor/Radzen inject inline styles, so the
+/// the Blazor runtime + MudBlazor inject inline styles, so the
 /// default policy allows <c>style-src 'unsafe-inline'</c> while keeping
 /// scripts locked to <c>'self'</c>. Report-only means a misconfigured
 /// policy surfaces as console warnings instead of a broken UI; flip

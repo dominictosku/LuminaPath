@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LuminaPath.Infrastructure.Services.Auditing;
 
@@ -8,13 +10,16 @@ public sealed partial class AuditSaveChangesInterceptor : SaveChangesInterceptor
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly ILogger<AuditSaveChangesInterceptor> _logger;
 
     public AuditSaveChangesInterceptor(
         IHttpContextAccessor httpContextAccessor,
-        IServiceScopeFactory serviceScopeFactory)
+        IServiceScopeFactory serviceScopeFactory,
+        ILogger<AuditSaveChangesInterceptor>? logger = null)
     {
         _httpContextAccessor = httpContextAccessor;
         _serviceScopeFactory = serviceScopeFactory;
+        _logger = logger ?? NullLogger<AuditSaveChangesInterceptor>.Instance;
     }
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)

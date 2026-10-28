@@ -52,11 +52,25 @@ public sealed class GlobalSearchService
         List<SearchHit> hits,
         CancellationToken cancellationToken)
     {
-        var games = await dbContext.MyGames
+        var pattern = $"%{query}%";
+
+        var queryable = dbContext.MyGames
             .AsNoTracking()
             .Include(myGame => myGame.Game)
-            .Where(myGame => myGame.LuminaUserId == userId)
-            .ToListAsync(cancellationToken);
+            .Where(myGame => myGame.LuminaUserId == userId);
+
+        if (dbContext.Database.IsNpgsql())
+        {
+            queryable = queryable.Where(myGame =>
+                (myGame.PersonalNotes != null && EF.Functions.ILike(myGame.PersonalNotes, pattern))
+                || (myGame.Game != null && (
+                    EF.Functions.ILike(myGame.Game.Name, pattern)
+                    || (myGame.Game.Description != null && EF.Functions.ILike(myGame.Game.Description, pattern))
+                    || myGame.Game.Genres.Any(genre => EF.Functions.ILike(genre, pattern))
+                )));
+        }
+
+        var games = await queryable.ToListAsync(cancellationToken);
 
         foreach (var myGame in games)
         {
@@ -96,11 +110,24 @@ public sealed class GlobalSearchService
         List<SearchHit> hits,
         CancellationToken cancellationToken)
     {
-        var animes = await dbContext.MyAnimes
+        var pattern = $"%{query}%";
+
+        var queryable = dbContext.MyAnimes
             .AsNoTracking()
             .Include(myAnime => myAnime.Anime)
-            .Where(myAnime => myAnime.LuminaUserId == userId)
-            .ToListAsync(cancellationToken);
+            .Where(myAnime => myAnime.LuminaUserId == userId);
+
+        if (dbContext.Database.IsNpgsql())
+        {
+            queryable = queryable.Where(myAnime =>
+                myAnime.Anime != null && (
+                    EF.Functions.ILike(myAnime.Anime.Name, pattern)
+                    || (myAnime.Anime.Description != null && EF.Functions.ILike(myAnime.Anime.Description, pattern))
+                    || myAnime.Anime.Genres.Any(genre => EF.Functions.ILike(genre, pattern))
+                ));
+        }
+
+        var animes = await queryable.ToListAsync(cancellationToken);
 
         foreach (var myAnime in animes)
         {
@@ -138,11 +165,24 @@ public sealed class GlobalSearchService
         List<SearchHit> hits,
         CancellationToken cancellationToken)
     {
-        var movies = await dbContext.MyMovies
+        var pattern = $"%{query}%";
+
+        var queryable = dbContext.MyMovies
             .AsNoTracking()
             .Include(myMovie => myMovie.Movie)
-            .Where(myMovie => myMovie.LuminaUserId == userId)
-            .ToListAsync(cancellationToken);
+            .Where(myMovie => myMovie.LuminaUserId == userId);
+
+        if (dbContext.Database.IsNpgsql())
+        {
+            queryable = queryable.Where(myMovie =>
+                myMovie.Movie != null && (
+                    EF.Functions.ILike(myMovie.Movie.Name, pattern)
+                    || (myMovie.Movie.Description != null && EF.Functions.ILike(myMovie.Movie.Description, pattern))
+                    || myMovie.Movie.Genres.Any(genre => EF.Functions.ILike(genre, pattern))
+                ));
+        }
+
+        var movies = await queryable.ToListAsync(cancellationToken);
 
         foreach (var myMovie in movies)
         {
@@ -180,11 +220,24 @@ public sealed class GlobalSearchService
         List<SearchHit> hits,
         CancellationToken cancellationToken)
     {
-        var seriesItems = await dbContext.MySeries
+        var pattern = $"%{query}%";
+
+        var queryable = dbContext.MySeries
             .AsNoTracking()
             .Include(mySeries => mySeries.Series)
-            .Where(mySeries => mySeries.LuminaUserId == userId)
-            .ToListAsync(cancellationToken);
+            .Where(mySeries => mySeries.LuminaUserId == userId);
+
+        if (dbContext.Database.IsNpgsql())
+        {
+            queryable = queryable.Where(mySeries =>
+                mySeries.Series != null && (
+                    EF.Functions.ILike(mySeries.Series.Name, pattern)
+                    || (mySeries.Series.Description != null && EF.Functions.ILike(mySeries.Series.Description, pattern))
+                    || mySeries.Series.Genres.Any(genre => EF.Functions.ILike(genre, pattern))
+                ));
+        }
+
+        var seriesItems = await queryable.ToListAsync(cancellationToken);
 
         foreach (var mySeries in seriesItems)
         {
@@ -222,15 +275,30 @@ public sealed class GlobalSearchService
         List<SearchHit> hits,
         CancellationToken cancellationToken)
     {
-        var quests = await dbContext.Quests
+        var pattern = $"%{query}%";
+
+        var queryable = dbContext.Quests
             .AsNoTracking()
             .Include(quest => quest.Subtasks)
             .Include(quest => quest.MyGame)
                 .ThenInclude(myGame => myGame!.Game)
             .Include(quest => quest.Skill)
             .Include(quest => quest.QuestFolder)
-            .Where(quest => quest.LuminaUserId == userId)
-            .ToListAsync(cancellationToken);
+            .Where(quest => quest.LuminaUserId == userId);
+
+        if (dbContext.Database.IsNpgsql())
+        {
+            queryable = queryable.Where(quest =>
+                EF.Functions.ILike(quest.Title, pattern)
+                || (quest.Notes != null && EF.Functions.ILike(quest.Notes, pattern))
+                || quest.Tags.Any(tag => EF.Functions.ILike(tag, pattern))
+                || (quest.MyGame != null && quest.MyGame.Game != null && EF.Functions.ILike(quest.MyGame.Game.Name, pattern))
+                || (quest.Skill != null && EF.Functions.ILike(quest.Skill.Name, pattern))
+                || (quest.QuestFolder != null && EF.Functions.ILike(quest.QuestFolder.Name, pattern))
+                || quest.Subtasks.Any(subtask => EF.Functions.ILike(subtask.Title, pattern)));
+        }
+
+        var quests = await queryable.ToListAsync(cancellationToken);
 
         foreach (var quest in quests)
         {

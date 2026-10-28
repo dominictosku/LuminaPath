@@ -23,13 +23,13 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpGet("{id:int}/achievements")]
         public async Task<ActionResult<List<UserGameAchievementDto>>> GetAchievements(int id)
         {
-            var (user, _) = await GetCurrentUserWithIdAsync();
-            if (user is null)
+            var userId = CurrentUserId;
+            if (string.IsNullOrWhiteSpace(userId))
             {
                 return LoginRequired();
             }
 
-            var achievements = await ((MyGameService)_service).GetEarnedAchievementsAsync(id, user.Id);
+            var achievements = await ((MyGameService)_service).GetEarnedAchievementsAsync(id, userId);
             if (achievements is null)
             {
                 return NotFound();
