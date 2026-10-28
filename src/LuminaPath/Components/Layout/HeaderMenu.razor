@@ -12,6 +12,52 @@
 </button>
 
 <div class="topbar-popover-wrap">
+    <button class="icon-btn @(_themeMenuOpen ? "active" : "")"
+            type="button"
+            title="Switch theme preset"
+            aria-label="Switch theme preset"
+            aria-expanded="@(_themeMenuOpen ? "true" : "false")"
+            @onclick="ToggleThemeMenu">
+        🎨
+    </button>
+
+    @if (_themeMenuOpen)
+    {
+        <div class="topbar-popover theme-popover" role="region" aria-label="Theme selector">
+            <h4>Application theme</h4>
+            <div class="theme-options">
+                <button type="button"
+                        class="theme-option @(_currentTheme == "default" ? "active" : "")"
+                        @onclick="@(() => SelectThemeAsync("default"))">
+                    <span class="theme-swatch theme-swatch--mint"></span>
+                    <div class="theme-info">
+                        <strong>Lumina Emerald</strong>
+                        <small>Fresh mint &amp; obsidian (Current)</small>
+                    </div>
+                    @if (_currentTheme == "default")
+                    {
+                        <span class="theme-check">✓</span>
+                    }
+                </button>
+                <button type="button"
+                        class="theme-option @(_currentTheme == "blue" ? "active" : "")"
+                        @onclick="@(() => SelectThemeAsync("blue"))">
+                    <span class="theme-swatch theme-swatch--blue"></span>
+                    <div class="theme-info">
+                        <strong>Classic Sapphire</strong>
+                        <small>Deep navy &amp; cool blue (Old blue)</small>
+                    </div>
+                    @if (_currentTheme == "blue")
+                    {
+                        <span class="theme-check">✓</span>
+                    }
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="topbar-popover-wrap">
     <button class="icon-btn @(_notificationsOpen ? "active" : "")"
             type="button"
             aria-label="Notifications and quick actions"
@@ -123,7 +169,9 @@
 @code {
     private string? currentUrl;
     private bool _notificationsOpen;
+    private bool _themeMenuOpen;
     private bool _motionDisabled;
+    private string _currentTheme = "default";
 
     protected override void OnInitialized()
     {
@@ -131,15 +179,63 @@
         NavigationManager.LocationChanged += OnLocationChanged;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var theme = await JS.InvokeAsync<string>("luminaUi.getTheme");
+                if (!string.IsNullOrWhiteSpace(theme))
+                {
+                    _currentTheme = theme;
+                    StateHasChanged();
+                }
+            }
+            catch
+            {
+                // Ignore prerender
+            }
+        }
+    }
+
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
         _notificationsOpen = false;
+        _themeMenuOpen = false;
         StateHasChanged();
     }
 
-    private void ToggleNotifications() => _notificationsOpen = !_notificationsOpen;
+    private void ToggleNotifications()
+    {
+        _notificationsOpen = !_notificationsOpen;
+        if (_notificationsOpen) _themeMenuOpen = false;
+    }
+
     private void CloseNotifications() => _notificationsOpen = false;
+
+    private void ToggleThemeMenu()
+    {
+        _themeMenuOpen = !_themeMenuOpen;
+        if (_themeMenuOpen) _notificationsOpen = false;
+    }
+
+    private void CloseThemeMenu() => _themeMenuOpen = false;
+
+    private async Task SelectThemeAsync(string themeName)
+    {
+        _currentTheme = themeName;
+        _themeMenuOpen = false;
+        try
+        {
+            await JS.InvokeVoidAsync("luminaUi.applyTheme", themeName);
+        }
+        catch
+        {
+            // Ignore JS error
+        }
+    }
 
     private async Task ToggleMotionAsync()
     {

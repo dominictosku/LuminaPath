@@ -15,6 +15,14 @@
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="LuminaPath.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
+    <script>
+        try {
+            var theme = localStorage.getItem('luminapath-theme');
+            if (theme && theme !== 'default') {
+                document.documentElement.setAttribute('data-theme', theme);
+            }
+        } catch (_) {}
+    </script>
     <HeadOutlet @rendermode="@RenderModeForPage" />
 </head>
 

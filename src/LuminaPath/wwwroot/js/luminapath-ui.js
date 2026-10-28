@@ -73,8 +73,10 @@
     // Restore saved theme customization if available
     try {
         const savedTheme = localStorage.getItem('luminapath-theme');
-        if (savedTheme) {
+        if (savedTheme && savedTheme !== 'default') {
             document.documentElement.setAttribute('data-theme', savedTheme);
+        } else {
+            document.documentElement.removeAttribute('data-theme');
         }
     } catch (_) {}
 
@@ -103,16 +105,24 @@
             return isMotionDisabled();
         },
         applyTheme: function (themeName) {
-            if (!themeName || themeName === 'default' || themeName === 'mint') {
+            const resolved = (!themeName || themeName === 'default' || themeName === 'mint') ? 'default' : themeName;
+            if (resolved === 'default') {
                 document.documentElement.removeAttribute('data-theme');
-                try { localStorage.removeItem('luminapath-theme'); } catch (_) {}
+                try { localStorage.setItem('luminapath-theme', 'default'); } catch (_) {}
             } else {
-                document.documentElement.setAttribute('data-theme', themeName);
-                try { localStorage.setItem('luminapath-theme', themeName); } catch (_) {}
+                document.documentElement.setAttribute('data-theme', resolved);
+                try { localStorage.setItem('luminapath-theme', resolved); } catch (_) {}
             }
-            return document.documentElement.getAttribute('data-theme') || 'default';
+            try {
+                window.dispatchEvent(new CustomEvent('luminapath-theme-changed', { detail: resolved }));
+            } catch (_) {}
+            return resolved;
         },
         getTheme: function () {
+            try {
+                const stored = localStorage.getItem('luminapath-theme');
+                if (stored) return stored;
+            } catch (_) {}
             return document.documentElement.getAttribute('data-theme') || 'default';
         }
     };

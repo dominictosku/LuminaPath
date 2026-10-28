@@ -46,6 +46,49 @@
 	<MudTabs Class="settings-tabs" Rounded="true">
 		<MudTabPanel Text="General" Icon="@Icons.Material.Filled.Settings">
 			<div class="settings-grid settings-grid--single">
+				<section class="settings-panel settings-panel--theme">
+					<div class="settings-panel__header">
+						<div>
+							<MudText Typo="Typo.overline">Appearance</MudText>
+							<MudText Typo="Typo.h5">Theme Preset</MudText>
+							<MudText Typo="Typo.body2">
+								Choose between the redesigned Lumina Emerald look and the original Classic Blue theme. Changes apply across the entire application.
+							</MudText>
+						</div>
+						<div class="settings-panel__icon settings-panel__icon--blue">
+							<MudIcon Icon="@Icons.Material.Filled.Palette" />
+						</div>
+					</div>
+
+					<div class="settings-theme-selector">
+						<div class="theme-card @(_currentTheme == "default" ? "active" : "")"
+							 @onclick="@(() => SetThemeAsync("default"))">
+							<div class="theme-card__swatch theme-card__swatch--mint"></div>
+							<div class="theme-card__content">
+								<strong>Lumina Emerald</strong>
+								<small>Modern obsidian backdrop with fresh mint and emerald highlights (Current)</small>
+							</div>
+							@if (_currentTheme == "default")
+							{
+								<span class="theme-card__badge">Active</span>
+							}
+						</div>
+
+						<div class="theme-card @(_currentTheme == "blue" ? "active" : "")"
+							 @onclick="@(() => SetThemeAsync("blue"))">
+							<div class="theme-card__swatch theme-card__swatch--blue"></div>
+							<div class="theme-card__content">
+								<strong>Classic Sapphire</strong>
+								<small>Original midnight navy backdrop with cool blue accents and borders (Old blue)</small>
+							</div>
+							@if (_currentTheme == "blue")
+							{
+								<span class="theme-card__badge">Active</span>
+							}
+						</div>
+					</div>
+				</section>
+
 				<section class="settings-panel settings-panel--primary">
 					<div class="settings-panel__header">
 						<div>
@@ -270,6 +313,7 @@
 	private bool showBearer;
 	private bool testingPsnConnection;
 	private IntegrationConnectionTestResult? psnConnectionResult;
+	private string _currentTheme = "default";
 
 	private string BearerStatus => string.IsNullOrWhiteSpace(bearerToken) ? "Missing" : "Saved";
 	private string NewsStatus => newsEnabled ? "Enabled" : "Off";
@@ -286,6 +330,40 @@
 		bearerToken = await applicationSettingsService.GetPsnBearerTokenAsync();
 		newsEnabled = await applicationSettingsService.GetNewsEnabledAsync();
 		customNewsRssUrl = await applicationSettingsService.GetNewsCustomRssUrlAsync();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			try
+			{
+				var theme = await Js.InvokeAsync<string>("luminaUi.getTheme");
+				if (!string.IsNullOrWhiteSpace(theme))
+				{
+					_currentTheme = theme;
+					StateHasChanged();
+				}
+			}
+			catch
+			{
+				// Ignore prerendering
+			}
+		}
+	}
+
+	private async Task SetThemeAsync(string theme)
+	{
+		_currentTheme = theme;
+		try
+		{
+			await Js.InvokeVoidAsync("luminaUi.applyTheme", theme);
+			Snackbar.Add(theme == "blue" ? "Classic Blue theme activated" : "Lumina Emerald theme activated", Severity.Success);
+		}
+		catch (Exception ex)
+		{
+			Snackbar.Add($"Failed to switch theme: {ex.Message}", Severity.Error);
+		}
 	}
 
 	async Task CopyToClipboard()
