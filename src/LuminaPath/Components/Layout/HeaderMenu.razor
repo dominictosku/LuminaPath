@@ -2,15 +2,6 @@
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 
-<button class="icon-btn @(_motionDisabled ? "active" : "")"
-        type="button"
-        title="@(_motionDisabled ? "Enable motion effects" : "Reduce motion effects")"
-        aria-label="Toggle reduced motion"
-        aria-pressed="@(_motionDisabled ? "true" : "false")"
-        @onclick="ToggleMotionAsync">
-    ✦
-</button>
-
 <div class="topbar-popover-wrap">
     <button class="icon-btn @(_themeMenuOpen ? "active" : "")"
             type="button"
@@ -170,7 +161,6 @@
     private string? currentUrl;
     private bool _notificationsOpen;
     private bool _themeMenuOpen;
-    private bool _motionDisabled;
     private string _currentTheme = "default";
 
     protected override void OnInitialized()
@@ -234,18 +224,6 @@
         catch
         {
             // Ignore JS error
-        }
-    }
-
-    private async Task ToggleMotionAsync()
-    {
-        try
-        {
-            _motionDisabled = await JS.InvokeAsync<bool>("luminaUi.toggleMotion");
-        }
-        catch
-        {
-            _motionDisabled = !_motionDisabled;
         }
     }
 

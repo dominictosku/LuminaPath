@@ -1,12 +1,4 @@
 (function () {
-    const reducedMotionQuery = window.matchMedia
-        ? window.matchMedia('(prefers-reduced-motion: reduce)')
-        : { matches: false };
-
-    function isMotionDisabled() {
-        return reducedMotionQuery.matches || document.body.classList.contains('no-motion');
-    }
-
     let activeTilt = null;
 
     function resetTilt(el) {
@@ -16,14 +8,6 @@
     }
 
     document.addEventListener('pointermove', function (e) {
-        if (isMotionDisabled()) {
-            if (activeTilt) {
-                resetTilt(activeTilt);
-                activeTilt = null;
-            }
-            return;
-        }
-
         const target = e.target instanceof Element ? e.target : null;
         if (!target) return;
 
@@ -80,29 +64,24 @@
         }
     } catch (_) {}
 
+    // Always keep motion effects enabled
+    try {
+        document.body.classList.remove('no-motion');
+    } catch (_) {}
+
     window.luminaUi = {
         registerShell: function (dotNetHelper) {
             shellHelper = dotNetHelper;
-            return isMotionDisabled();
+            return false;
         },
         unregisterShell: function () {
             shellHelper = null;
         },
         toggleMotion: function () {
-            const disabled = document.body.classList.toggle('no-motion');
-            if (disabled && activeTilt) {
-                resetTilt(activeTilt);
-                activeTilt = null;
-            }
-            return disabled;
+            return false;
         },
-        setMotionDisabled: function (disabled) {
-            document.body.classList.toggle('no-motion', !!disabled);
-            if (disabled && activeTilt) {
-                resetTilt(activeTilt);
-                activeTilt = null;
-            }
-            return isMotionDisabled();
+        setMotionDisabled: function () {
+            return false;
         },
         applyTheme: function (themeName) {
             const resolved = (!themeName || themeName === 'default' || themeName === 'mint') ? 'default' : themeName;

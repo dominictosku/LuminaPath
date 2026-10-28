@@ -1300,16 +1300,3 @@ footer a:hover{color:var(--mint)}
   .detail-stats,.detail-stats.detail-stats-4{grid-template-columns:repeat(2,1fr)}
   footer{padding:16px;flex-direction:column;gap:6px;text-align:center}
 }
-
-@media(prefers-reduced-motion:reduce){
-  *,*::before,*::after{
-    animation-duration:.001ms !important;
-    animation-iteration-count:1 !important;
-    transition-duration:.001ms !important;
-  }
-  .media-card{transform:none !important}
-}
-body.no-motion *,body.no-motion *::before,body.no-motion *::after{
-  animation:none !important;transition:none !important;
-}
-body.no-motion .media-card{transform:none !important}
