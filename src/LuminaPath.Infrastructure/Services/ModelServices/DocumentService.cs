@@ -1,4 +1,4 @@
-﻿using LuminaPath.Core.Entities;
+using LuminaPath.Core.Entities;
 using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Enums;
 using LuminaPath.Core.Interfaces;
@@ -179,8 +179,23 @@ namespace LuminaPath.Infrastructure.Services.ModelServices
                     return;
                 var image = entity.Image;
                 entity.Image = null;
-                context.Update(entity);
-                await context.SaveChangesAsync();
+
+                if (context.Model.FindEntityType(entity.GetType()) != null)
+                {
+                    context.Update(entity);
+                    await context.SaveChangesAsync();
+                }
+                else if (entity.Id > 0)
+                {
+                    var dbMedia = await context.Set<Media>().Include(m => m.Image).FirstOrDefaultAsync(m => m.Id == entity.Id);
+                    if (dbMedia != null)
+                    {
+                        dbMedia.Image = null;
+                        context.Update(dbMedia);
+                        await context.SaveChangesAsync();
+                    }
+                }
+
                 await DeleteDocument(image, context);
             }
             finally

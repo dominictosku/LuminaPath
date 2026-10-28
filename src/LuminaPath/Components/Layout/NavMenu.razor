@@ -18,7 +18,7 @@
     <Authorized Context="auth">
         <a class="workspace-pill" href="Account/Manage">
             <span class="workspace-avatar">@GetInitial(auth.User.Identity?.Name)</span>
-            <span>
+            <span class="workspace-info">
                 <strong>@GetShortName(auth.User.Identity?.Name)'s space</strong>
                 <small>Personal workspace</small>
             </span>
@@ -28,7 +28,7 @@
     <NotAuthorized>
         <a class="workspace-pill" href="Account/Login">
             <span class="workspace-avatar">G</span>
-            <span>
+            <span class="workspace-info">
                 <strong>Guest space</strong>
                 <small>Sign in to sync</small>
             </span>
@@ -109,7 +109,7 @@
         <Authorized Context="auth">
             <a class="profile" href="Account/Manage">
                 <span class="avatar">@GetInitial(auth.User.Identity?.Name)</span>
-                <span>
+                <span class="profile-info">
                     <strong>@GetShortName(auth.User.Identity?.Name)</strong>
                     <small><i class="dot"></i> Exploring</small>
                 </span>
@@ -119,7 +119,7 @@
         <NotAuthorized>
             <a class="profile" href="Account/Login">
                 <span class="avatar">G</span>
-                <span>
+                <span class="profile-info">
                     <strong>Guest</strong>
                     <small><i class="dot"></i> Sign in</small>
                 </span>

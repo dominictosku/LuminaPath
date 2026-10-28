@@ -181,11 +181,11 @@
 
 <style>
     .filter-shell {
-        border: 1px solid rgba(117, 167, 255, .16);
+        border: 1px solid var(--line, #252c2d);
         border-radius: 12px;
         background:
-            linear-gradient(180deg, rgba(117, 167, 255, .08), rgba(9, 15, 26, .02)),
-            var(--mud-palette-surface);
+            linear-gradient(180deg, var(--accent-glow, rgba(178, 245, 207, .06)), transparent),
+            var(--panel, var(--mud-palette-surface));
         box-shadow: 0 16px 42px rgba(0, 0, 0, .18);
         overflow: hidden;
     }
@@ -215,9 +215,9 @@
         place-items: center;
         width: 38px;
         height: 38px;
-        border: 1px solid rgba(117, 167, 255, .2);
+        border: 1px solid var(--accent-glow, rgba(178, 245, 207, .2));
         border-radius: 9px;
-        background: rgba(117, 167, 255, .12);
+        background: var(--accent-soft, rgba(178, 245, 207, .12));
         color: var(--mud-palette-primary);
     }
 
@@ -263,11 +263,11 @@
     }
 
     .filter-control .mud-input-outlined-border {
-        border-color: rgba(117, 167, 255, .16);
+        border-color: var(--line, #252c2d);
     }
 
     .filter-control:hover .mud-input-outlined-border {
-        border-color: rgba(117, 167, 255, .34);
+        border-color: var(--accent-glow, rgba(178, 245, 207, .34));
     }
 
     .filter-checkbox-card {
@@ -276,7 +276,7 @@
         width: 100%;
         min-height: 56px;
         padding: 0 10px;
-        border: 1px solid rgba(117, 167, 255, .16);
+        border: 1px solid var(--line, #252c2d);
     }
 
     .active-filter-badge,
@@ -286,7 +286,7 @@
         gap: 6px;
         min-height: 28px;
         padding: 4px 9px;
-        border: 1px solid rgba(117, 167, 255, .18);
+        border: 1px solid var(--line, #252c2d);
         border-radius: 7px;
         background: rgba(255, 255, 255, .045);
         color: var(--mud-palette-text-secondary);

@@ -197,7 +197,7 @@
 
 ::deep .users-filter .mud-input-outlined-border,
 ::deep .users-search .mud-input-outlined-border {
-    border-color: rgba(147, 197, 253, .22);
+    border-color: var(--users-panel-border, var(--line, #252c2d));
 }
 
 ::deep .users-filter .mud-input-label,

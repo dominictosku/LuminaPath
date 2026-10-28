@@ -370,6 +370,7 @@ secrets/
 
 # Local application data: uploads, logs, credentials and keys
 /src/LuminaPath/App_Data/
+/design-reference
 
 # rider
 .idea

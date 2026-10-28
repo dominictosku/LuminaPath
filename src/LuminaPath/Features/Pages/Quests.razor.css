@@ -167,10 +167,10 @@
 .editor-actions button {
     min-height: 38px;
     padding: 0 13px;
-    border: 1px solid rgba(117, 167, 255, .18);
+    border: 1px solid var(--line, #252c2d);
     border-radius: 8px;
     color: var(--mud-palette-text-primary);
-    background: rgba(117, 167, 255, .07);
+    background: var(--panel-soft, rgba(255, 255, 255, .04));
     cursor: pointer;
     font: inherit;
     font-weight: 800;
@@ -373,8 +373,8 @@ select {
 }
 
 .quest-card.selected {
-    border-color: rgba(117, 167, 255, .35);
-    background: rgba(117, 167, 255, .06);
+    border-color: var(--mint, #b2f5cf);
+    background: var(--accent-soft, rgba(178, 245, 207, .08));
 }
 
 .quest-body {

@@ -129,16 +129,23 @@ img{display:block;max-width:100%}
   background:#151c1d;border:1px solid #232b2c;text-align:left;text-decoration:none;color:var(--text);
 }
 .workspace-avatar,.avatar,.top-avatar{
-  width:26px;height:26px;border-radius:50%;
-  display:grid;place-items:center;flex:0 0 auto;
+  width:28px;height:28px;min-width:28px;min-height:28px;max-width:28px;max-height:28px;
+  border-radius:50%;
+  display:grid;place-items:center;
+  flex:0 0 28px !important;
+  flex-shrink:0 !important;
+  aspect-ratio:1/1;
   background:linear-gradient(145deg,#2b4d3f,#1c2a25);
   border:1px solid rgba(178,245,207,.35);
   color:var(--mint);font-weight:700;font-size:11px;
+  line-height:1;
+  box-sizing:border-box;
 }
-.workspace-pill span{flex:1;min-width:0}
+.workspace-pill .workspace-info,
+.workspace-pill > span:not(.workspace-avatar){flex:1;min-width:0}
 .workspace-pill strong{display:block;font-size:12px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .workspace-pill small{display:block;font-size:10px;color:var(--muted)}
-.workspace-pill em{font-style:normal;color:var(--muted);font-size:11px}
+.workspace-pill em{font-style:normal;color:var(--muted);font-size:11px;flex:0 0 auto;flex-shrink:0}
 
 .nav-label{
   padding:4px 8px 0;
@@ -201,11 +208,12 @@ img{display:block;max-width:100%}
   text-decoration:none;color:var(--text);
 }
 .profile:hover{background:#151c1d;border-color:#232b2c}
-.profile span{flex:1;min-width:0}
+.profile .profile-info,
+.profile > span:not(.avatar){flex:1;min-width:0}
 .profile strong{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .profile small{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
-.dot{width:6px;height:6px;border-radius:50%;background:#5fe0a3;display:inline-block}
-.profile em{font-style:normal;color:var(--muted)}
+.dot{width:6px;height:6px;border-radius:50%;background:#5fe0a3;display:inline-block;flex:0 0 6px;flex-shrink:0}
+.profile em{font-style:normal;color:var(--muted);flex:0 0 auto;flex-shrink:0}
 
 /* Main shell */
 .app-shell{
@@ -646,7 +654,9 @@ h1{font-size:clamp(26px,2.5vw,34px);font-weight:800;line-height:1.08}
   padding:10px 12px;border-radius:8px;
   background:#101617;border:1px solid #21292a;
 }
-.friend-row span{flex:1;min-width:0}
+.friend-row .friend-info,
+.friend-row > span:not(.avatar):not(.status-chip){flex:1;min-width:0}
+.friend-row .status-chip{flex:0 0 auto;flex-shrink:0}
 .friend-row strong{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .friend-row small{display:block;font-size:11px;color:var(--muted)}
 
@@ -896,7 +906,7 @@ footer a:hover{color:var(--mint)}
 }
 @media(max-width:960px){
   :root{--side:78px}
-  .brand div,.workspace-pill span,.workspace-pill em,.nav-label,.nav-button span:last-child,.level-card,.profile span,.profile em{display:none}
+  .brand div,.workspace-pill .workspace-info,.workspace-pill > span:not(.workspace-avatar),.workspace-pill em,.nav-label,.nav-button span:last-child,.level-card,.profile .profile-info,.profile > span:not(.avatar),.profile em{display:none}
   .brand,.workspace-pill,.nav-button,.profile{justify-content:center}
   .nav-button span:first-child{font-size:15px}
   .hero-grid,.lower-grid{grid-template-columns:1fr}
@@ -911,8 +921,16 @@ footer a:hover{color:var(--mint)}
     transition:transform .24s ease;
   }
   .sidebar.open{transform:translateX(0)}
-  .sidebar.open .brand div,.sidebar.open .workspace-pill span,.sidebar.open .nav-label,
-  .sidebar.open .nav-button span:last-child,.sidebar.open .level-card,.sidebar.open .profile span{display:block}
+  .sidebar.open .brand div,
+  .sidebar.open .workspace-pill .workspace-info,
+  .sidebar.open .workspace-pill > span:not(.workspace-avatar),
+  .sidebar.open .workspace-pill em,
+  .sidebar.open .nav-label,
+  .sidebar.open .nav-button span:last-child,
+  .sidebar.open .level-card,
+  .sidebar.open .profile .profile-info,
+  .sidebar.open .profile > span:not(.avatar),
+  .sidebar.open .profile em{display:block}
   .sidebar.open .brand,.sidebar.open .workspace-pill,.sidebar.open .nav-button,.sidebar.open .profile{justify-content:flex-start}
   .mobile-menu{display:inline-grid;place-items:center}
   .topbar{padding:0 16px}

@@ -1,5 +1,6 @@
 using LuminaPath.Components.Dialogs;
 using LuminaPath.Core.Enums;
+using LuminaPath.Core.Interfaces;
 using LuminaPath.Core.Mapping;
 using LuminaPath.Core.Models;
 using LuminaPath.Features.Auth;
@@ -19,6 +20,7 @@ using LuminaPath.Features.Media.Series.ViewModel;
 using LuminaPath.Infrastructure.Services.Application;
 using LuminaPath.Infrastructure.Services.ModelServices;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using MudBlazor;
 
 namespace LuminaPath.Features.Media;
@@ -33,6 +35,7 @@ public abstract class UnifiedMediaPageBase : BaseAuth
     [Inject] protected MySeriesService MySeriesService { get; set; } = default!;
     [Inject] protected AnimeService AnimeService { get; set; } = default!;
     [Inject] protected MyAnimeService MyAnimeService { get; set; } = default!;
+    [Inject] protected DocumentService DocumentService { get; set; } = default!;
     [Inject] protected GameMetadataRefreshService GameMetadataRefreshService { get; set; } = default!;
     [Inject] protected IObjectMapper Mapper { get; set; } = default!;
     [Inject] protected IDialogService DialogService { get; set; } = default!;
@@ -695,9 +698,12 @@ public abstract class UnifiedMediaPageBase : BaseAuth
                 {
                     { x => x.Model, vm },
                     { x => x.Refresh, new Action(() => _ = InvokeAsync(OnMediaDataMutatedAsync)) },
+                    { x => x.OnSubmitFile, new Func<IBrowserFile, Task>(file => HandleSubmitFileAsync(file, vm)) },
+                    { x => x.OnDeleteImage, new Func<GameViewModel, Task>(model => HandleDeleteImageAsync(model)) },
                     { x => x.EventCallBack, new Func<GameViewModel, Task>(async entity =>
                     {
-                        var res = await GameService.PostAsync(entity);
+                        var mapped = Mapper.Map<Game>(entity);
+                        var res = await GameService.PostAsync(mapped);
                         res.Match(
                             _ => { Snackbar.Add("Created game in catalog", Severity.Success); return 0; },
                             err => { Snackbar.Add(string.Join(", ", err.errorMessage), Severity.Error); return 0; });
@@ -715,9 +721,12 @@ public abstract class UnifiedMediaPageBase : BaseAuth
                 {
                     { x => x.Model, vm },
                     { x => x.Refresh, new Action(() => _ = InvokeAsync(OnMediaDataMutatedAsync)) },
+                    { x => x.OnSubmitFile, new Func<IBrowserFile, Task>(file => HandleSubmitFileAsync(file, vm)) },
+                    { x => x.OnDeleteImage, new Func<MovieViewModel, Task>(model => HandleDeleteImageAsync(model)) },
                     { x => x.EventCallBack, new Func<MovieViewModel, Task>(async entity =>
                     {
-                        var res = await MovieService.PostAsync(entity);
+                        var mapped = Mapper.Map<Movie>(entity);
+                        var res = await MovieService.PostAsync(mapped);
                         res.Match(
                             _ => { Snackbar.Add("Created movie in catalog", Severity.Success); return 0; },
                             err => { Snackbar.Add(string.Join(", ", err.errorMessage), Severity.Error); return 0; });
@@ -735,9 +744,12 @@ public abstract class UnifiedMediaPageBase : BaseAuth
                 {
                     { x => x.Model, vm },
                     { x => x.Refresh, new Action(() => _ = InvokeAsync(OnMediaDataMutatedAsync)) },
+                    { x => x.OnSubmitFile, new Func<IBrowserFile, Task>(file => HandleSubmitFileAsync(file, vm)) },
+                    { x => x.OnDeleteImage, new Func<SeriesViewModel, Task>(model => HandleDeleteImageAsync(model)) },
                     { x => x.EventCallBack, new Func<SeriesViewModel, Task>(async entity =>
                     {
-                        var res = await SeriesService.PostAsync(entity);
+                        var mapped = Mapper.Map<LuminaPath.Core.Models.Series>(entity);
+                        var res = await SeriesService.PostAsync(mapped);
                         res.Match(
                             _ => { Snackbar.Add("Created series in catalog", Severity.Success); return 0; },
                             err => { Snackbar.Add(string.Join(", ", err.errorMessage), Severity.Error); return 0; });
@@ -755,9 +767,12 @@ public abstract class UnifiedMediaPageBase : BaseAuth
                 {
                     { x => x.Model, vm },
                     { x => x.Refresh, new Action(() => _ = InvokeAsync(OnMediaDataMutatedAsync)) },
+                    { x => x.OnSubmitFile, new Func<IBrowserFile, Task>(file => HandleSubmitFileAsync(file, vm)) },
+                    { x => x.OnDeleteImage, new Func<AnimeViewModel, Task>(model => HandleDeleteImageAsync(model)) },
                     { x => x.EventCallBack, new Func<AnimeViewModel, Task>(async entity =>
                     {
-                        var res = await AnimeService.PostAsync(entity);
+                        var mapped = Mapper.Map<Anime>(entity);
+                        var res = await AnimeService.PostAsync(mapped);
                         res.Match(
                             _ => { Snackbar.Add("Created anime in catalog", Severity.Success); return 0; },
                             err => { Snackbar.Add(string.Join(", ", err.errorMessage), Severity.Error); return 0; });
@@ -790,9 +805,12 @@ public abstract class UnifiedMediaPageBase : BaseAuth
                 {
                     { x => x.Model, vm },
                     { x => x.Refresh, new Action(() => _ = InvokeAsync(OnMediaDataMutatedAsync)) },
+                    { x => x.OnSubmitFile, new Func<IBrowserFile, Task>(file => HandleSubmitFileAsync(file, vm)) },
+                    { x => x.OnDeleteImage, new Func<GameViewModel, Task>(model => HandleDeleteImageAsync(model)) },
                     { x => x.EventCallBack, new Func<GameViewModel, Task>(async entity =>
                     {
-                        var res = await GameService.PutAsync(entity);
+                        var mapped = Mapper.Map<Game>(entity);
+                        var res = await GameService.PutAsync(mapped);
                         res.Match(
                             _ => { Snackbar.Add("Updated game in catalog", Severity.Success); return 0; },
                             err => { Snackbar.Add(string.Join(", ", err.errorMessage), Severity.Error); return 0; });
@@ -810,9 +828,12 @@ public abstract class UnifiedMediaPageBase : BaseAuth
                 {
                     { x => x.Model, vm },
                     { x => x.Refresh, new Action(() => _ = InvokeAsync(OnMediaDataMutatedAsync)) },
+                    { x => x.OnSubmitFile, new Func<IBrowserFile, Task>(file => HandleSubmitFileAsync(file, vm)) },
+                    { x => x.OnDeleteImage, new Func<MovieViewModel, Task>(model => HandleDeleteImageAsync(model)) },
                     { x => x.EventCallBack, new Func<MovieViewModel, Task>(async entity =>
                     {
-                        var res = await MovieService.PutAsync(entity);
+                        var mapped = Mapper.Map<Movie>(entity);
+                        var res = await MovieService.PutAsync(mapped);
                         res.Match(
                             _ => { Snackbar.Add("Updated movie in catalog", Severity.Success); return 0; },
                             err => { Snackbar.Add(string.Join(", ", err.errorMessage), Severity.Error); return 0; });
@@ -830,9 +851,12 @@ public abstract class UnifiedMediaPageBase : BaseAuth
                 {
                     { x => x.Model, vm },
                     { x => x.Refresh, new Action(() => _ = InvokeAsync(OnMediaDataMutatedAsync)) },
+                    { x => x.OnSubmitFile, new Func<IBrowserFile, Task>(file => HandleSubmitFileAsync(file, vm)) },
+                    { x => x.OnDeleteImage, new Func<SeriesViewModel, Task>(model => HandleDeleteImageAsync(model)) },
                     { x => x.EventCallBack, new Func<SeriesViewModel, Task>(async entity =>
                     {
-                        var res = await SeriesService.PutAsync(entity);
+                        var mapped = Mapper.Map<LuminaPath.Core.Models.Series>(entity);
+                        var res = await SeriesService.PutAsync(mapped);
                         res.Match(
                             _ => { Snackbar.Add("Updated series in catalog", Severity.Success); return 0; },
                             err => { Snackbar.Add(string.Join(", ", err.errorMessage), Severity.Error); return 0; });
@@ -850,9 +874,12 @@ public abstract class UnifiedMediaPageBase : BaseAuth
                 {
                     { x => x.Model, vm },
                     { x => x.Refresh, new Action(() => _ = InvokeAsync(OnMediaDataMutatedAsync)) },
+                    { x => x.OnSubmitFile, new Func<IBrowserFile, Task>(file => HandleSubmitFileAsync(file, vm)) },
+                    { x => x.OnDeleteImage, new Func<AnimeViewModel, Task>(model => HandleDeleteImageAsync(model)) },
                     { x => x.EventCallBack, new Func<AnimeViewModel, Task>(async entity =>
                     {
-                        var res = await AnimeService.PutAsync(entity);
+                        var mapped = Mapper.Map<Anime>(entity);
+                        var res = await AnimeService.PutAsync(mapped);
                         res.Match(
                             _ => { Snackbar.Add("Updated anime in catalog", Severity.Success); return 0; },
                             err => { Snackbar.Add(string.Join(", ", err.errorMessage), Severity.Error); return 0; });
@@ -863,6 +890,62 @@ public abstract class UnifiedMediaPageBase : BaseAuth
                 if (result is { Canceled: false }) await OnMediaDataMutatedAsync();
                 break;
             }
+        }
+    }
+
+    protected async Task HandleSubmitFileAsync<TViewModel>(IBrowserFile file, TViewModel model)
+        where TViewModel : class, IMedia<MediaDocument>
+    {
+        if (!CanUserEdit)
+        {
+            Snackbar.Add("No permission to edit", Severity.Info);
+            return;
+        }
+
+        try
+        {
+            var result = await DocumentService.CreateDocument(file, model);
+            result.Match(
+                doc =>
+                {
+                    model.Image = doc;
+                    Snackbar.Add("Cover uploaded", Severity.Success);
+                    return 0;
+                },
+                err =>
+                {
+                    Snackbar.Add(string.Join(", ", err.errorMessage), Severity.Error);
+                    return 0;
+                });
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to upload cover: {ex.Message}", Severity.Error);
+        }
+    }
+
+    protected async Task HandleDeleteImageAsync<TViewModel>(TViewModel model)
+        where TViewModel : class, IMedia<MediaDocument>
+    {
+        if (!CanUserEdit)
+        {
+            Snackbar.Add("No permission to edit", Severity.Info);
+            return;
+        }
+
+        if (model.Image == null)
+        {
+            return;
+        }
+
+        try
+        {
+            await DocumentService.DeleteMediaDocument(model);
+            Snackbar.Add("Image deleted", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to delete image: {ex.Message}", Severity.Error);
         }
     }
 

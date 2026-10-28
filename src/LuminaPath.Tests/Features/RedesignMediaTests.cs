@@ -189,6 +189,17 @@ public class RedesignMediaTests
         Assert.True(item.IsCompleted);
     }
 
+    [Fact]
+    public void CatalogPage_DialogParameters_IncludeOnSubmitFileAndOnDeleteImage()
+    {
+        var source = ReadServerSource("Features", "Media", "UnifiedMediaPageBase.cs");
+
+        Assert.Contains("{ x => x.OnSubmitFile", source);
+        Assert.Contains("{ x => x.OnDeleteImage", source);
+        Assert.Contains("HandleSubmitFileAsync", source);
+        Assert.Contains("HandleDeleteImageAsync", source);
+    }
+
     private static string ReadServerSource(params string[] pathParts)
     {
         return File.ReadAllText(Path.Combine(FindRepositoryRoot(), "src", "LuminaPath", Path.Combine(pathParts)));

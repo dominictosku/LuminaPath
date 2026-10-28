@@ -1,8 +1,9 @@
-﻿using LuminaPath.Components.Dialogs;
+using LuminaPath.Components.Dialogs;
 using LuminaPath.Core.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using MudBlazor;
+
 namespace LuminaPath.Pages.Media.Components
 {
     public class MediaFormDialog<TEntity, TDocument> : BaseFormDialog<TEntity> where TEntity : IMedia<TDocument> where TDocument : IDocument
@@ -10,13 +11,11 @@ namespace LuminaPath.Pages.Media.Components
         private const long MaxAllowedSize = 3145728;
         public IBrowserFile? File { get; set; }
 
-        [EditorRequired]
         [Parameter]
-        public Func<TEntity, Task> OnDeleteImage { get; set; } = default!;
+        public Func<TEntity, Task>? OnDeleteImage { get; set; }
 
-        [EditorRequired]
         [Parameter]
-        public Func<IBrowserFile, Task> OnSubmitFile { get; set; } = default!;
+        public Func<IBrowserFile, Task>? OnSubmitFile { get; set; }
 
         public async Task DeleteImage()
         {
@@ -24,7 +23,7 @@ namespace LuminaPath.Pages.Media.Components
             {
                 var parameters = new DialogParameters<ConfirmationDialog>
                 {
-                    { x=>x.ContentText, "Delete this image? This cannot be undone." }
+                    { x => x.ContentText, "Delete this image? This cannot be undone." }
                 };
                 var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
                 var dialog = await DialogService.ShowAsync<ConfirmationDialog>("Confirm delete", parameters, options);
@@ -32,7 +31,12 @@ namespace LuminaPath.Pages.Media.Components
 
                 if (result is { Canceled: false })
                 {
-                    await OnDeleteImage(Model);
+                    if (OnDeleteImage != null)
+                    {
+                        await OnDeleteImage(Model);
+                    }
+                    Model.Image = default;
+                    StateHasChanged();
                 }
             }
         }
@@ -40,8 +44,18 @@ namespace LuminaPath.Pages.Media.Components
         public async Task SubmitFile(IBrowserFile file)
         {
             _uploading = true;
-            await OnSubmitFile(file);
-            _uploading = false;
+            try
+            {
+                if (OnSubmitFile != null)
+                {
+                    await OnSubmitFile(file);
+                }
+            }
+            finally
+            {
+                _uploading = false;
+                StateHasChanged();
+            }
         }
     }
 }

@@ -62,15 +62,15 @@
     padding: 14px;
     border: 1px solid var(--documents-panel-border);
     border-radius: 14px;
-    background: rgba(8, 18, 32, .76);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, .18);
+    background: var(--documents-panel-bg);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, .2);
 }
 
 ::deep .documents-search .filter-shell,
 ::deep .documents-search .mud-expand-panel,
 ::deep .documents-search .mud-expand-panel-header,
 ::deep .documents-search .mud-expand-panel-content {
-    border-color: rgba(147, 197, 253, .12);
+    border-color: var(--documents-panel-border);
     background: transparent;
     color: var(--documents-text);
 }
@@ -83,7 +83,7 @@
 }
 
 ::deep .documents-search .mud-input-outlined-border {
-    border-color: rgba(147, 197, 253, .22);
+    border-color: var(--documents-panel-border);
 }
 
 ::deep .documents-search .mud-input-label,
@@ -124,7 +124,7 @@
 
 .document-card:hover {
     transform: translateY(-3px);
-    border-color: rgba(56, 189, 248, .34);
+    border-color: var(--accent-glow, rgba(178, 245, 207, .34));
     box-shadow: 0 22px 54px rgba(0, 0, 0, .28);
 }
 
@@ -134,7 +134,7 @@
     min-height: 178px;
     place-items: center;
     overflow: hidden;
-    background: linear-gradient(135deg, rgba(15, 31, 53, .98), rgba(20, 50, 82, .92));
+    background: linear-gradient(135deg, rgba(19, 25, 26, .98), rgba(25, 33, 34, .92));
 }
 
 .document-card__preview img {
@@ -210,7 +210,7 @@
     justify-content: space-between;
     gap: 8px;
     padding: 10px 12px 12px;
-    border-top: 1px solid rgba(147, 197, 253, .12);
+    border-top: 1px solid var(--documents-panel-border);
 }
 
 .documents-state,
@@ -220,9 +220,9 @@
     place-items: center;
     gap: 10px;
     padding: 28px;
-    border: 1px dashed rgba(125, 211, 252, .24);
+    border: 1px dashed var(--line, #252c2d);
     border-radius: 16px;
-    background: rgba(8, 18, 32, .74);
+    background: var(--documents-panel-bg);
     text-align: center;
     color: var(--documents-muted);
 }

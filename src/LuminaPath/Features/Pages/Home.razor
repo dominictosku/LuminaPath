@@ -169,7 +169,7 @@
                         var displayName = !string.IsNullOrWhiteSpace(friend.User.FullName) ? friend.User.FullName : friend.User.UserName;
                         <div class="friend-row">
                             <span class="avatar">@GetInitial(displayName)</span>
-                            <span>
+                            <span class="friend-info">
                                 <strong>@displayName</strong>
                                 <small>@(string.Equals(friend.Status, "Accepted", StringComparison.OrdinalIgnoreCase) ? "Connected explorer" : "Pending invite")</small>
                             </span>

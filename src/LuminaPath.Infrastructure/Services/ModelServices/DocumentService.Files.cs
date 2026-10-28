@@ -60,12 +60,21 @@ public partial class DocumentService
         var existingDocument = await context.MediaDocuments.SingleOrDefaultAsync(d => d.Id == document.Id);
         if (existingDocument is null)
         {
-            _logger.LogError("Could not find file, document: {0}", document.Name);
-            await AuditDocumentAsync(
-                AuditActions.DocumentDeleted,
-                document,
-                AuditOutcomes.Failure,
-                "Document not found.");
+            var storageName = GetStorageName(document);
+            if (!string.IsNullOrWhiteSpace(storageName))
+            {
+                await _storage.DeleteAsync(storageName);
+            }
+
+            if (document.Id > 0)
+            {
+                _logger.LogError("Could not find file, document: {0}", document.Name);
+                await AuditDocumentAsync(
+                    AuditActions.DocumentDeleted,
+                    document,
+                    AuditOutcomes.Failure,
+                    "Document not found.");
+            }
             return;
         }
 

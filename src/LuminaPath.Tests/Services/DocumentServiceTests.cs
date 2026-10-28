@@ -326,6 +326,123 @@ namespace Test.Services
             storage.Verify(service => service.DeleteAsync(It.IsAny<string>()), Times.Never);
         }
 
+        [Fact]
+        public async Task DeleteMediaDocument_RemovesDocumentAndUnlinks_WhenPassedEntity()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            int gameId;
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                var doc = new MediaDocument
+                {
+                    Name = "cover.png",
+                    StorageName = "stored-entity-cover.png",
+                    ContentType = "image/png",
+                    DocumentType = DocumentType.Image
+                };
+                var game = new Game
+                {
+                    Name = "Test Game",
+                    Image = doc
+                };
+                dbContext.Games.Add(game);
+                await dbContext.SaveChangesAsync();
+                gameId = game.Id;
+            }
+
+            var storage = new Mock<IStorageService>();
+            storage
+                .Setup(s => s.DeleteAsync("stored-entity-cover.png"))
+                .ReturnsAsync(new BlobResponseDto { Error = false, Status = "deleted" });
+
+            var service = CreateService(options, storage);
+
+            await using (var loadContext = new LuminaPathDbContext(options))
+            {
+                var gameToUpdate = await loadContext.Games.Include(g => g.Image).FirstAsync(g => g.Id == gameId);
+                await service.DeleteMediaDocument(gameToUpdate);
+            }
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            var updatedGame = await assertContext.Games.Include(g => g.Image).FirstAsync(g => g.Id == gameId);
+            Assert.Null(updatedGame.Image);
+            Assert.Empty(await assertContext.MediaDocuments.ToListAsync());
+            storage.Verify(s => s.DeleteAsync("stored-entity-cover.png"), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteMediaDocument_RemovesDocumentAndUnlinks_WhenPassedViewModel()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            int gameId;
+            int docId;
+            await using (var dbContext = new LuminaPathDbContext(options))
+            {
+                var doc = new MediaDocument
+                {
+                    Name = "vm-cover.png",
+                    StorageName = "stored-vm-cover.png",
+                    ContentType = "image/png",
+                    DocumentType = DocumentType.Image
+                };
+                var game = new Game
+                {
+                    Name = "VM Game",
+                    Image = doc
+                };
+                dbContext.Games.Add(game);
+                await dbContext.SaveChangesAsync();
+                gameId = game.Id;
+                docId = doc.Id;
+            }
+
+            var storage = new Mock<IStorageService>();
+            storage
+                .Setup(s => s.DeleteAsync("stored-vm-cover.png"))
+                .ReturnsAsync(new BlobResponseDto { Error = false, Status = "deleted" });
+
+            var service = CreateService(options, storage);
+
+            var vm = new LuminaPath.Features.Media.Games.ViewModel.GameViewModel
+            {
+                Id = gameId,
+                Name = "VM Game",
+                Image = new MediaDocument { Id = docId, Name = "vm-cover.png", StorageName = "stored-vm-cover.png" }
+            };
+
+            await service.DeleteMediaDocument(vm);
+
+            await using var assertContext = new LuminaPathDbContext(options);
+            var updatedGame = await assertContext.Games.Include(g => g.Image).FirstAsync(g => g.Id == gameId);
+            Assert.Null(updatedGame.Image);
+            Assert.Empty(await assertContext.MediaDocuments.ToListAsync());
+            storage.Verify(s => s.DeleteAsync("stored-vm-cover.png"), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteDocument_CleansUpStorage_WhenDocumentWasNeverSavedToDatabase()
+        {
+            var options = Utilities.DbContext.TestDbContextOptions();
+            var storage = new Mock<IStorageService>();
+            storage
+                .Setup(s => s.DeleteAsync("unsaved-blob.png"))
+                .ReturnsAsync(new BlobResponseDto { Error = false, Status = "deleted" });
+
+            var service = CreateService(options, storage);
+
+            var unsavedDoc = new MediaDocument
+            {
+                Id = 0,
+                Name = "unsaved.png",
+                StorageName = "unsaved-blob.png",
+                ContentType = "image/png"
+            };
+
+            await service.DeleteDocument(unsavedDoc);
+
+            storage.Verify(s => s.DeleteAsync("unsaved-blob.png"), Times.Once);
+        }
+
         private static DocumentService CreateService(
             DbContextOptions<LuminaPathDbContext> options,
             Mock<IStorageService>? storage = null,
