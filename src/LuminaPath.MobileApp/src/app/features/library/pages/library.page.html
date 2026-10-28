@@ -226,29 +226,55 @@
       loadingText="Loading more">
     </ion-infinite-scroll-content>
   </ion-infinite-scroll>
-
-  <app-library-add-dialog
-    [(isOpen)]="isAddDialogOpen"
-    [(form)]="addGameForm"
-    [selectedGame]="selectedGame"
-    [mediaMode]="mediaMode"
-    [statusOptions]="statusOptions"
-    [isGamesMode]="isGamesMode"
-    [isEpisodeMode]="isEpisodeMode"
-    [isEditing]="isEditingSelectedGame()"
-    [errorMessage]="errorMessage"
-    (details)="selectedGame && openDetails(selectedGame)"
-    [isSaving]="selectedGame ? isAdding(selectedGame) : false"
-    (dismiss)="closeAddDialog()"
-    (submitted)="submitAddGame()" />
-
-  <app-library-create-dialog
-    [(isOpen)]="creator.isOpen"
-    [(form)]="creator.form"
-    [mediaMode]="mediaMode"
-    [statusOptions]="statusOptions"
-    [isSaving]="creator.isSaving"
-    [errorMessage]="creator.errorMessage"
-    (dismiss)="creator.close()"
-    (submitted)="submitCreate()" />
 </ion-content>
+
+<app-library-add-dialog
+  [(isOpen)]="isAddDialogOpen"
+  [(form)]="addGameForm"
+  [selectedGame]="selectedGame"
+  [mediaMode]="mediaMode"
+  [statusOptions]="statusOptions"
+  [isGamesMode]="isGamesMode"
+  [isEpisodeMode]="isEpisodeMode"
+  [isEditing]="isEditingSelectedGame()"
+  [errorMessage]="errorMessage"
+  (details)="selectedGame && openDetails(selectedGame)"
+  [isSaving]="selectedGame ? isAdding(selectedGame) : false"
+  (dismiss)="closeAddDialog()"
+  (submitted)="submitAddGame()" />
+
+<app-library-create-dialog
+  [(isOpen)]="creator.isOpen"
+  [(form)]="creator.form"
+  [mediaMode]="mediaMode"
+  [statusOptions]="statusOptions"
+  [isSaving]="creator.isSaving"
+  [errorMessage]="creator.errorMessage"
+  (dismiss)="creator.close()"
+  (submitted)="submitCreate()" />
+
+<ion-modal
+  class="media-detail-modal"
+  [isOpen]="activeDetail() !== null"
+  [canDismiss]="true"
+  (didDismiss)="onDetailModalDismiss()"
+  aria-label="Media details">
+  <ng-template>
+    @if (activeDetail(); as detail) {
+      @switch (detail.kind) {
+        @case ('games') {
+          <app-my-game-details class="ion-page" [gameId]="detail.id" [isModal]="true" (dismiss)="closeDetails()" />
+        }
+        @case ('movies') {
+          <app-movie-details class="ion-page" [movieId]="detail.id" [isModal]="true" (dismiss)="closeDetails()" />
+        }
+        @case ('animes') {
+          <app-anime-details-modal class="ion-page" [mediaId]="detail.id" (dismiss)="closeDetails()" />
+        }
+        @case ('series') {
+          <app-series-details-modal class="ion-page" [mediaId]="detail.id" (dismiss)="closeDetails()" />
+        }
+      }
+    }
+  </ng-template>
+</ion-modal>

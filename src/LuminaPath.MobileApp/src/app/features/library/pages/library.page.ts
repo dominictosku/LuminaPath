@@ -9,13 +9,14 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   IonButton,
   IonContent,
   IonIcon,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
+  IonModal,
   IonRefresher,
   IonRefresherContent,
   IonSkeletonText,
@@ -41,6 +42,12 @@ import { LibraryHeroComponent } from '../components/library-hero/library-hero.co
 import { LibraryToolbarComponent } from '../components/library-toolbar/library-toolbar.component';
 import { LibraryAddDialogComponent } from '../components/library-add-dialog/library-add-dialog.component';
 import { LibraryCreateDialogComponent } from '../components/library-create-dialog/library-create-dialog.component';
+import { MyGameDetailsPage } from '../../my-games/pages/my-game-details.page';
+import { MovieDetailsPage } from '../../movies/pages/movie-details.page';
+import {
+  AnimeDetailsModalComponent,
+  SeriesDetailsModalComponent,
+} from '../components/episodic-details-modal/episodic-details-modal.component';
 import { MediaFilter } from 'src/app/core/entities/mediaFilter';
 import { LibraryIntelligenceService } from '../services/library-intelligence.service';
 import {
@@ -58,6 +65,11 @@ import { LibraryVirtualScroll } from '../services/library-virtual-scroll';
 import { LibraryBulkActions } from '../services/library-bulk-actions';
 import { LibraryCatalogCreator } from '../services/library-catalog-creator';
 
+export interface ActiveMediaDetail {
+  kind: 'games' | 'movies' | 'series' | 'animes';
+  id: number;
+}
+
 @Component({
   selector: 'app-library',
   templateUrl: './library.page.html',
@@ -69,6 +81,7 @@ import { LibraryCatalogCreator } from '../services/library-catalog-creator';
     IonIcon,
     IonInfiniteScroll,
     IonInfiniteScrollContent,
+    IonModal,
     IonRefresher,
     IonRefresherContent,
     IonSkeletonText,
@@ -78,6 +91,10 @@ import { LibraryCatalogCreator } from '../services/library-catalog-creator';
     LibraryToolbarComponent,
     LibraryAddDialogComponent,
     LibraryCreateDialogComponent,
+    MyGameDetailsPage,
+    MovieDetailsPage,
+    AnimeDetailsModalComponent,
+    SeriesDetailsModalComponent,
   ],
 })
 export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
@@ -86,6 +103,8 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   private releaseNotifications = inject(ReleaseNotificationService);
   private dataExport = inject(DataExportService);
   private router = inject(Router);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  readonly activeDetail = signal<ActiveMediaDetail | null>(null);
   private mediaModeService = inject(MediaModeService);
   readonly mediaOptions = this.mediaModeService.options;
   readonly mediaView = inject(MediaLibraryViewService);
@@ -222,6 +241,40 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     });
     this.loadSavedPresets();
     this.loadGames();
+    this.route?.paramMap.subscribe((params) => {
+      const gameId = params.get('gameId');
+      const movieId = params.get('movieId');
+      const seriesId = params.get('seriesId');
+      const animeId = params.get('animeId');
+
+      if (gameId) {
+        const id = Number(gameId);
+        if (Number.isInteger(id) && id > 0) {
+          this.mediaModeService.select('games');
+          this.activeDetail.set({ kind: 'games', id });
+        }
+      } else if (movieId) {
+        const id = Number(movieId);
+        if (Number.isInteger(id) && id > 0) {
+          this.mediaModeService.select('movies');
+          this.activeDetail.set({ kind: 'movies', id });
+        }
+      } else if (seriesId) {
+        const id = Number(seriesId);
+        if (Number.isInteger(id) && id > 0) {
+          this.mediaModeService.select('series');
+          this.activeDetail.set({ kind: 'series', id });
+        }
+      } else if (animeId) {
+        const id = Number(animeId);
+        if (Number.isInteger(id) && id > 0) {
+          this.mediaModeService.select('animes');
+          this.activeDetail.set({ kind: 'animes', id });
+        }
+      } else {
+        this.activeDetail.set(null);
+      }
+    });
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', this.handleResize, { passive: true });
     }
@@ -470,7 +523,21 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
 
   openDetails(game: MediaItem) {
     this.closeAddDialog();
+    const kind = (game.kind as 'games' | 'movies' | 'series' | 'animes') || this.mediaMode.id;
+    this.activeDetail.set({ kind, id: game.id });
     this.router.navigate(this.mediaLibrary.detailsRoute(game));
+  }
+
+  closeDetails(): void {
+    this.activeDetail.set(null);
+    void this.router.navigate(['/library']);
+  }
+
+  onDetailModalDismiss(): void {
+    this.activeDetail.set(null);
+    if (this.router.url.startsWith('/library/') && this.router.url !== '/library') {
+      void this.router.navigate(['/library']);
+    }
   }
 
   isEditingSelectedGame(): boolean {

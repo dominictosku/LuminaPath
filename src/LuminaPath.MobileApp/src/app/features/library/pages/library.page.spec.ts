@@ -542,7 +542,7 @@ describe('LibraryPage', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   }));
 
-  it('openDetails uses the facade route', () => {
+  it('openDetails uses the facade route and opens the modal', () => {
     configure(of(pageOf([])));
     fixture.detectChanges();
 
@@ -550,6 +550,31 @@ describe('LibraryPage', () => {
 
     expect(mediaLibrary.detailsRoute).toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledOnceWith(['/library', 'games', 42]);
+    expect(component.activeDetail()).toEqual({ kind: 'games', id: 42 });
+  });
+
+  it('closeDetails clears activeDetail and navigates back to /library', () => {
+    configure(of(pageOf([])));
+    fixture.detectChanges();
+
+    component.openDetails(makeGame({ id: 42, name: 'Hades' }));
+    expect(component.activeDetail()).toEqual({ kind: 'games', id: 42 });
+
+    component.closeDetails();
+    expect(component.activeDetail()).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/library']);
+  });
+
+  it('onDetailModalDismiss clears activeDetail and resets route when on detail url', () => {
+    configure(of(pageOf([])));
+    (router as unknown as { url: string }).url = '/library/games/42';
+    fixture.detectChanges();
+
+    component.openDetails(makeGame({ id: 42, name: 'Hades' }));
+    component.onDetailModalDismiss();
+
+    expect(component.activeDetail()).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/library']);
   });
 
   it('exportLibrary downloads the Excel workbook', fakeAsync(() => {

@@ -1,5 +1,14 @@
 import { Location } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnInit,
+  Output,
+  SimpleChanges,
+  inject,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   AlertController,
@@ -58,7 +67,11 @@ import { CompletionCardService } from 'src/app/shared/services/completion-card.s
     MediaVideosComponent,
 ],
 })
-export class MovieDetailsPage implements OnInit {
+export class MovieDetailsPage implements OnInit, OnChanges {
+  @Input() movieId?: number | string | null;
+  @Input() isModal = false;
+  @Output() dismiss = new EventEmitter<void>();
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
@@ -105,7 +118,7 @@ export class MovieDetailsPage implements OnInit {
   );
 
   async ngOnInit(): Promise<void> {
-    const movieId = Number(this.route.snapshot.paramMap.get('movieId'));
+    const movieId = Number(this.movieId ?? this.route.snapshot.paramMap.get('movieId'));
     if (!Number.isInteger(movieId) || movieId <= 0) {
       this.showError('Movie not found.');
       return;
@@ -113,6 +126,16 @@ export class MovieDetailsPage implements OnInit {
 
     this.selectedTab = 'overview';
     await this.loadMovie(movieId);
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['movieId'] && !changes['movieId'].firstChange && this.movieId != null) {
+      const id = Number(this.movieId);
+      if (Number.isInteger(id) && id > 0) {
+        this.selectedTab = 'overview';
+        void this.loadMovie(id);
+      }
+    }
   }
 
   get isInLibrary(): boolean {
@@ -155,6 +178,10 @@ export class MovieDetailsPage implements OnInit {
   }
 
   goBack(): void {
+    if (this.isModal) {
+      this.dismiss.emit();
+      return;
+    }
     goBackOrHome(this.location, this.router);
   }
 

@@ -311,3 +311,74 @@ ion-action-sheet.media-action-sheet {
     }
   }
 }
+
+ion-modal.media-detail-modal {
+  --width: min(1120px, calc(100vw - 48px));
+  --height: min(92vh, 980px);
+  --border-radius: 26px;
+  --box-shadow: 0 32px 100px rgba(0, 0, 0, 0.75);
+  --backdrop-opacity: 0.82;
+
+  &::part(backdrop) {
+    background: #030814;
+    backdrop-filter: blur(14px);
+  }
+
+  &::part(content) {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--app-chrome-border, rgba(137, 180, 255, 0.18));
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background: var(--app-chrome-bg-strong, #091322);
+  }
+
+  .ion-delegate-host {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    position: relative;
+  }
+
+  app-my-game-details,
+  app-movie-details,
+  app-anime-details-modal,
+  app-series-details-modal,
+  app-episodic-media-details {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    flex: 1 1 100%;
+    min-height: 0;
+    position: relative;
+
+    .details-header ion-toolbar {
+      --min-height: 54px;
+    }
+
+    ion-title {
+      text-align: start;
+    }
+
+    .details-shell {
+      flex: 1 1 auto;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+  }
+
+  @media (max-width: 768px) {
+    --width: 100vw;
+    --height: 100%;
+    --border-radius: 0;
+
+    &::part(content) {
+      border: none;
+      border-radius: 0;
+    }
+  }
+}

@@ -1,13 +1,6 @@
 import { Routes } from '@angular/router';
 import { TabsPage } from './tabs.page';
 import { AuthGuard } from '../../../core/guards/auth.guard';
-import { animeDetailsProviders } from '../../../features/animes/pages/anime-details.providers';
-import { seriesDetailsProviders } from '../../../features/series/pages/series-details.providers';
-
-const loadEpisodicMediaDetailsPage = () =>
-  import('../../../features/library/pages/episodic-media-details/episodic-media-details.page').then(
-    (m) => m.EpisodicMediaDetailsPage,
-  );
 
 export const routes: Routes = [
   {
@@ -34,27 +27,27 @@ export const routes: Routes = [
       {
         path: 'library/games/:gameId',
         loadComponent: () =>
-          import('../../../features/my-games/pages/my-game-details.page').then((m) => m.MyGameDetailsPage),
+          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
       },
       {
         path: 'library/animes/:animeId',
-        loadComponent: loadEpisodicMediaDetailsPage,
-        providers: animeDetailsProviders,
+        loadComponent: () =>
+          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
       },
       {
         path: 'library/movies/:movieId',
         loadComponent: () =>
-          import('../../../features/movies/pages/movie-details.page').then((m) => m.MovieDetailsPage),
+          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
       },
       {
         path: 'library/series/:seriesId',
-        loadComponent: loadEpisodicMediaDetailsPage,
-        providers: seriesDetailsProviders,
+        loadComponent: () =>
+          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
       },
       {
         path: 'library/:gameId',
         loadComponent: () =>
-          import('../../../features/my-games/pages/my-game-details.page').then((m) => m.MyGameDetailsPage),
+          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
       },
       {
         path: 'weekly-schedule',

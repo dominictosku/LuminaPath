@@ -1,11 +1,11 @@
-<ion-header class="details-header" [class.details-header--condensed]="headerCondensed" [translucent]="true">
+<ion-header class="details-header" [class.details-header--condensed]="headerCondensed" [class.details-header--modal]="isModal" [translucent]="!isModal">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-button fill="clear" class="back-button" aria-label="Go back" (click)="goBack()">
-        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      <ion-button fill="clear" class="back-button" [attr.aria-label]="isModal ? 'Close' : 'Go back'" (click)="goBack()">
+        <ion-icon slot="icon-only" [name]="isModal ? 'close-outline' : 'arrow-back-outline'"></ion-icon>
       </ion-button>
     </ion-buttons>
-    @if (game) {
+    @if (game && !isModal) {
       <div class="condensed-title">
         <img [src]="imageUrl()" [alt]="game.name" />
         <div class="condensed-title__copy">
@@ -50,7 +50,7 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true" [scrollEvents]="true" (ionScroll)="onScroll($any($event))" class="details-shell">
+<ion-content [fullscreen]="!isModal" [scrollEvents]="true" (ionScroll)="onScroll($any($event))" class="details-shell">
   @if (isLoading) {
     <section class="details-state">
       <ion-spinner name="crescent"></ion-spinner>
@@ -63,7 +63,7 @@
       <ion-icon name="game-controller-outline"></ion-icon>
       <h2>Something went wrong</h2>
       <p>{{ errorMessage }}</p>
-      <ion-button shape="round" (click)="goBack()">Back</ion-button>
+      <ion-button shape="round" (click)="goBack()">{{ isModal ? 'Close' : 'Back' }}</ion-button>
     </section>
   }
 

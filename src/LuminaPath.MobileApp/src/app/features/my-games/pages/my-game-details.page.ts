@@ -1,5 +1,16 @@
 import { Location } from '@angular/common';
-import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnDestroy,
+  OnInit,
+  Output,
+  SimpleChanges,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -89,7 +100,11 @@ import {
     FormsModule,
   ],
 })
-export class MyGameDetailsPage implements OnInit, OnDestroy {
+export class MyGameDetailsPage implements OnInit, OnChanges, OnDestroy {
+  @Input() gameId?: number | string | null;
+  @Input() isModal = false;
+  @Output() dismiss = new EventEmitter<void>();
+
   @ViewChild(GameNotesComponent) notesComponent?: GameNotesComponent;
   @ViewChild(GameSessionsComponent) sessionsComponent?: GameSessionsComponent;
 
@@ -167,8 +182,19 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   );
 
   ngOnInit(): void {
+    if (this.isModal && this.gameId != null) {
+      const id = Number(this.gameId);
+      if (Number.isInteger(id) && id > 0) {
+        this.selectedTab = 'overview';
+        void this.loadGameAndQuests(id);
+        this.liveSession.restore(id);
+      }
+      return;
+    }
+
     this.route.paramMap.subscribe(async (params) => {
-      const gameId = Number(params.get('gameId'));
+      const paramId = params.get('gameId');
+      const gameId = Number(this.gameId ?? paramId);
       if (!Number.isInteger(gameId) || gameId <= 0) {
         this.showError('Game not found.');
         return;
@@ -178,6 +204,17 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
       await this.loadGameAndQuests(gameId);
       this.liveSession.restore(gameId);
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['gameId'] && !changes['gameId'].firstChange && this.gameId != null) {
+      const id = Number(this.gameId);
+      if (Number.isInteger(id) && id > 0) {
+        this.selectedTab = 'overview';
+        void this.loadGameAndQuests(id);
+        this.liveSession.restore(id);
+      }
+    }
   }
 
   ngOnDestroy(): void {
@@ -440,6 +477,10 @@ export class MyGameDetailsPage implements OnInit, OnDestroy {
   }
 
   goBack(): void {
+    if (this.isModal) {
+      this.dismiss.emit();
+      return;
+    }
     goBackOrHome(this.location, this.router);
   }
 

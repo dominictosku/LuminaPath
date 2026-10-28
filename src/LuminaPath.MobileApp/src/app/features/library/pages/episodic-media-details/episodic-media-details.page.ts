@@ -1,5 +1,14 @@
 import { Location } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnInit,
+  Output,
+  SimpleChanges,
+  inject,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   ActionSheetController,
@@ -68,7 +77,11 @@ import {
     MediaVideosComponent,
 ],
 })
-export class EpisodicMediaDetailsPage implements OnInit {
+export class EpisodicMediaDetailsPage implements OnInit, OnChanges {
+  @Input() mediaId?: number | string | null;
+  @Input() isModal = false;
+  @Output() dismiss = new EventEmitter<void>();
+
   readonly config = inject(EPISODIC_MEDIA_CONFIG);
   private readonly adapter = inject(EPISODIC_MEDIA_ADAPTER);
   private readonly route = inject(ActivatedRoute);
@@ -121,8 +134,20 @@ export class EpisodicMediaDetailsPage implements OnInit {
   );
 
   ngOnInit(): void {
+    if (this.isModal && this.mediaId != null) {
+      const id = Number(this.mediaId);
+      if (Number.isInteger(id) && id > 0) {
+        this.isLoading = true;
+        this.errorMessage = '';
+        this.selectedTab = 'overview';
+        void this.loadMedia(id);
+      }
+      return;
+    }
+
     this.route.paramMap.subscribe(async (params) => {
-      const mediaId = Number(params.get(this.config.paramKey));
+      const paramId = params.get(this.config.paramKey);
+      const mediaId = Number(this.mediaId ?? paramId);
       if (!Number.isInteger(mediaId) || mediaId <= 0) {
         this.showError(this.config.notFoundLabel);
         return;
@@ -133,6 +158,18 @@ export class EpisodicMediaDetailsPage implements OnInit {
       this.selectedTab = 'overview';
       await this.loadMedia(mediaId);
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['mediaId'] && !changes['mediaId'].firstChange && this.mediaId != null) {
+      const id = Number(this.mediaId);
+      if (Number.isInteger(id) && id > 0) {
+        this.isLoading = true;
+        this.errorMessage = '';
+        this.selectedTab = 'overview';
+        void this.loadMedia(id);
+      }
+    }
   }
 
   get libraryEntry(): EpisodicLibraryEntry | null {
@@ -398,6 +435,10 @@ export class EpisodicMediaDetailsPage implements OnInit {
   }
 
   goBack(): void {
+    if (this.isModal) {
+      this.dismiss.emit();
+      return;
+    }
     goBackOrHome(this.location, this.router);
   }
 
