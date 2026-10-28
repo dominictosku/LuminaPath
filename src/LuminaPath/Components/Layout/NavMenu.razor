@@ -1,10 +1,5 @@
 @implements IDisposable
-@using System.Security.Claims
-@using LuminaPath.Core.Dtos
-@using LuminaPath.Infrastructure.Services.ModelServices
 @inject NavigationManager NavigationManager
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@inject QuestService QuestService
 
 <a class="brand" href="" @onclick="HandleNavClick">
     <span class="brand-mark" aria-hidden="true">✧</span>
@@ -95,16 +90,6 @@
 </nav>
 
 <div class="sidebar-bottom">
-    <a class="level-card" href="quests" @onclick="HandleNavClick">
-        <div class="level-head">
-            <span>LEVEL @Level</span>
-            <strong>@RankTitle.ToUpperInvariant()</strong>
-        </div>
-        <div class="level-title">@RankTitle</div>
-        <div class="xp-bar"><span style="width:@(XpProgress)%"></span></div>
-        <p><strong>@XpIntoLevel / 200 XP</strong> · @(200 - XpIntoLevel) XP to Level @(Level + 1)</p>
-    </a>
-
     <AuthorizeView>
         <Authorized Context="auth">
             <a class="profile" href="Account/Manage">
@@ -132,21 +117,7 @@
 @code {
     [Parameter] public EventCallback OnNavigate { get; set; }
 
-    private int _xp;
     private string _currentPath = string.Empty;
-
-    private int Level => Math.Max(1, (_xp / 200) + 1);
-    private int XpIntoLevel => _xp % 200;
-    private int XpProgress => Math.Clamp(XpIntoLevel * 100 / 200, 4, 100);
-    private string RankTitle => Level >= 15
-        ? "Starfarer"
-        : Level >= 10
-            ? "Wayfinder"
-            : Level >= 6
-                ? "Chronicler"
-                : Level >= 3
-                    ? "Pathfinder"
-                    : "Wanderer";
 
     private bool IsLibraryRoute =>
         _currentPath.StartsWith("library", StringComparison.OrdinalIgnoreCase)
@@ -161,40 +132,16 @@
         || _currentPath.StartsWith("Media/Movies", StringComparison.OrdinalIgnoreCase)
         || _currentPath.StartsWith("Media/Series", StringComparison.OrdinalIgnoreCase);
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         UpdatePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
-        await LoadQuestXpAsync();
-    }
-
-    private async Task LoadQuestXpAsync()
-    {
-        try
-        {
-            var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var userId = state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                ?? state.User.FindFirst(c => c.Type.Contains("nameidentifier", StringComparison.OrdinalIgnoreCase))?.Value;
-            if (!string.IsNullOrWhiteSpace(userId))
-            {
-                var board = await QuestService.GetBoardAsync(userId);
-                _xp = board.Xp;
-            }
-        }
-        catch
-        {
-            // Keep default 0 XP if unavailable
-        }
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         UpdatePath(e.Location);
-        _ = InvokeAsync(async () =>
-        {
-            await LoadQuestXpAsync();
-            StateHasChanged();
-        });
+        StateHasChanged();
     }
 
     private void UpdatePath(string uri)
