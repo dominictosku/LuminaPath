@@ -20,7 +20,7 @@
 
   @if (!isLoading) {
     <section class="release-plan__metrics">
-      @for (metric of metrics; track metric) {
+      @for (metric of metrics; track metric.label) {
         <article class="release-plan-metric">
           <div class="release-plan-metric__icon">
             <ion-icon [name]="metric.icon"></ion-icon>

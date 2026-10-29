@@ -49,7 +49,7 @@
               <span>Media</span>
               <strong>{{ mediaMode.label }}</strong>
             </div>
-            @for (mode of mediaModes; track mode) {
+            @for (mode of mediaModes; track mode.id) {
               <button
                 type="button"
                 class="media-mode-item"

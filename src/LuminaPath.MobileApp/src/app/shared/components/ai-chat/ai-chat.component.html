@@ -57,7 +57,7 @@
             }
             @if (msg.toolUse?.length) {
               <div class="ai-chat-message__tools">
-                @for (t of msg.toolUse; track t) {
+                @for (t of msg.toolUse; track t.name ?? $index) {
                   <span class="ai-chat-message__tool">
                     {{ shortToolLabel(t.name) }}
                   </span>

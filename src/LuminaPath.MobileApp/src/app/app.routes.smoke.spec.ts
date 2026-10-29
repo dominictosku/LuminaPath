@@ -57,11 +57,10 @@ describe('App routes smoke', () => {
     expect(shell?.canActivate?.length).withContext('tabs shell canActivate').toBeGreaterThan(0);
     expect(shell?.canActivateChild?.length).withContext('tabs shell canActivateChild').toBeGreaterThan(0);
 
-    const protectedPaths = [
+    const protectedPagePaths = [
       'home',
       'library',
       'browse',
-      'library/games/:gameId',
       'weekly-schedule',
       'statistic',
       'quests',
@@ -72,10 +71,13 @@ describe('App routes smoke', () => {
       'settings',
     ];
 
-    for (const path of protectedPaths) {
+    for (const path of protectedPagePaths) {
       const route = tabChildRoute(tabRoutes, path);
       expect(route.loadComponent).withContext(path).toEqual(jasmine.any(Function));
     }
+
+    const legacyRedirect = tabChildRoute(tabRoutes, 'library/games/:gameId');
+    expect(legacyRedirect.redirectTo).withContext('legacy game detail redirect').toBeDefined();
   });
 
   it('lazy-loads the main app pages', async () => {
@@ -84,7 +86,6 @@ describe('App routes smoke', () => {
       resolveTabComponent(tabRoutes, 'home'),
       resolveTabComponent(tabRoutes, 'library'),
       resolveTabComponent(tabRoutes, 'browse'),
-      resolveTabComponent(tabRoutes, 'library/games/:gameId'),
       resolveTabComponent(tabRoutes, 'weekly-schedule'),
       resolveTabComponent(tabRoutes, 'statistic'),
       resolveTabComponent(tabRoutes, 'quests'),

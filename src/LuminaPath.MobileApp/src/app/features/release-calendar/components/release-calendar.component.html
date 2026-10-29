@@ -42,7 +42,7 @@
           [class.calendar-day--today]="day.isToday"
           [class.calendar-day--release]="day.releases.length">
           <strong>{{ day.label }}</strong>
-          @for (release of day.releases; track release) {
+          @for (release of day.releases; track release.id) {
             <span>{{ release.name }}</span>
           }
         </article>

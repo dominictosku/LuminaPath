@@ -52,7 +52,7 @@ public sealed class SecurityHeadersOptions
         "img-src 'self' data:; " +
         "font-src 'self' https://fonts.gstatic.com; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "script-src 'self'; " +
+        "script-src 'self' 'sha256-Dm3JSoQei5oD0BdGlPQZojddWN9CDHrJqDVTgLUrmGk=' 'sha256-m9h9m4C0qTvpAhzg6H4kkEXoy7pqHXEAU+91eHeavgM='; " +
         "connect-src 'self'; " +
         "form-action 'self' https://accounts.google.com";
 

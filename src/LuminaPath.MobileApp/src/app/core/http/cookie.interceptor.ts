@@ -15,11 +15,11 @@ const LUMINA_CLIENT_HEADER = 'X-Lumina-Client';
 const LUMINA_CLIENT_HEADER_VALUE = 'web';
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-export const cookieInterceptor: HttpInterceptorFn = (
+function handleCookieInterception(
   request: HttpRequest<unknown>,
-  next: HttpHandlerFn
-): Observable<HttpEvent<unknown>> => {
-  const router = inject(Router);
+  next: (req: HttpRequest<unknown>) => Observable<HttpEvent<unknown>>,
+  router: Router
+): Observable<HttpEvent<unknown>> {
   const isAuthRequest =
     request.url.includes('/login') || request.url.includes('/logout');
   let credentialsRequest = request.withCredentials
@@ -40,15 +40,25 @@ export const cookieInterceptor: HttpInterceptorFn = (
       return throwError(() => error);
     })
   );
+}
+
+export const cookieInterceptor: HttpInterceptorFn = (
+  request: HttpRequest<unknown>,
+  next: HttpHandlerFn
+): Observable<HttpEvent<unknown>> => {
+  const router = inject(Router);
+  return handleCookieInterception(request, next, router);
 };
 
 @Injectable()
 export class CookieInterceptor implements HttpInterceptor {
+  private readonly router = inject(Router);
+
   intercept(
     request: HttpRequest<unknown>,
     next: HttpHandler
   ): Observable<HttpEvent<unknown>> {
-    return cookieInterceptor(request, (req) => next.handle(req));
+    return handleCookieInterception(request, (req) => next.handle(req), this.router);
   }
 }
 

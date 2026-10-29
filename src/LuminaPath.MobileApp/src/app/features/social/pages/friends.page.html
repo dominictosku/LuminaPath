@@ -76,7 +76,7 @@
         </header>
         @if (friends.length) {
           <div class="person-grid">
-            @for (f of friends; track f) {
+            @for (f of friends; track f.id) {
               <article class="person-card">
                 <button class="person-main" type="button" (click)="openProfile(f)">
                   <span class="avatar-fallback">{{ initial(displayName(f.user)) }}</span>
@@ -241,7 +241,7 @@
         </header>
         @if (pending.length) {
           <div class="person-grid">
-            @for (p of pending; track p) {
+            @for (p of pending; track p.id) {
               <article class="person-card">
                 <div class="person-main person-main--static">
                   <span class="avatar-fallback">{{ initial(displayName(p.user)) }}</span>
@@ -301,7 +301,7 @@
         }
         @if (searchResults.length) {
           <div class="person-grid">
-            @for (u of searchResults; track u) {
+            @for (u of searchResults; track u.id) {
               <article class="person-card">
                 <div class="person-main person-main--static">
                   <span class="avatar-fallback">{{ initial(displayName(u)) }}</span>
@@ -379,7 +379,7 @@
             No messages yet. Say hi.
           </div>
         }
-        @for (message of messages; track message) {
+        @for (message of messages; track message.id) {
           <div
             class="chat-bubble"
             [class.chat-bubble--mine]="isMine(message)">

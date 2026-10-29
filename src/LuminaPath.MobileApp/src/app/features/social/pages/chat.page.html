@@ -26,7 +26,7 @@
           No messages yet. Say hi!
         </div>
       }
-      @for (message of messages; track message) {
+      @for (message of messages; track message.id) {
         <div
           class="chat-bubble"
           [class.mine]="isMine(message)"

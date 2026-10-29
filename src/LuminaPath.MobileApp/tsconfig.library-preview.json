@@ -1,1 +1,0 @@
-{"extends":"./tsconfig.app.json","files":["src/library-preview.ts","src/polyfills.ts"]}
