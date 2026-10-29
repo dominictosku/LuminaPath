@@ -1,9 +1,11 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular/standalone';
-import { Observable, of, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 
+import { MediaModeService } from 'src/app/shared/services/media-mode.service';
+import { MediaStore } from '../state/media.store';
 import { LibraryPage } from './library.page';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
 import { DataExportService } from 'src/app/shared/services/data-export.service';
@@ -56,6 +58,7 @@ function pageOf(games: MediaItem[], pageIndex = 1, totalPages = 1): PaginateResu
 }
 
 describe('LibraryPage', () => {
+  let queryParams: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   let component: LibraryPage;
   let fixture: ComponentFixture<LibraryPage>;
 
@@ -73,6 +76,7 @@ describe('LibraryPage', () => {
   });
 
   function configure(getAllResponse: Observable<PaginateResult<MediaItem>>) {
+    queryParams = new BehaviorSubject(convertToParamMap({}));
     mediaLibrary = jasmine.createSpyObj<MediaLibraryFacade>('MediaLibraryFacade', [
       'getAll',
       'addToLibrary',
@@ -129,6 +133,10 @@ describe('LibraryPage', () => {
         { provide: ReleaseNotificationService, useValue: releaseNotifications },
         { provide: DataExportService, useValue: dataExport },
         { provide: Router, useValue: router },
+        { provide: ActivatedRoute, useValue: {
+          queryParamMap: queryParams.asObservable(),
+          snapshot: { get queryParamMap() { return queryParams.value; } },
+        } },
         { provide: GameService, useValue: gameService },
         { provide: AnimeService, useValue: animeService },
         { provide: SeriesService, useValue: seriesService },
@@ -542,40 +550,101 @@ describe('LibraryPage', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   }));
 
-  it('openDetails uses the facade route and opens the modal', () => {
+  it('opens details through query state without reloading the list or clearing filters', fakeAsync(() => {
+    configure(of(pageOf([makeGame({ id: 42 })])));
+    fixture.detectChanges();
+    tick();
+    component.searchTerm = 'Hades';
+    const calls = mediaLibrary.getAll.calls.count();
+    component.openDetails(makeGame({ id: 42, name: 'Hades' }));
+    expect(router.navigate).toHaveBeenCalledWith(['/library'], {
+      queryParams: { mediaKind: 'games', mediaId: 42 }, queryParamsHandling: 'merge',
+    });
+    queryParams.next(convertToParamMap({ mediaKind: 'games', mediaId: '42' }));
+    fixture.detectChanges();
+    tick();
+    expect(component.activeDetail()).toEqual({ kind: 'games', id: 42 });
+    expect(component.isDetailOpen()).toBeTrue();
+    expect(component.searchTerm).toBe('Hades');
+    expect(mediaLibrary.getAll.calls.count()).toBe(calls);
+  }));
+
+  it('keeps detail contents mounted until the exit animation completes', () => {
     configure(of(pageOf([])));
     fixture.detectChanges();
-
-    component.openDetails(makeGame({ id: 42, name: 'Hades' }));
-
-    expect(mediaLibrary.detailsRoute).toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledOnceWith(['/library', 'games', 42]);
-    expect(component.activeDetail()).toEqual({ kind: 'games', id: 42 });
-  });
-
-  it('closeDetails clears activeDetail and navigates back to /library', () => {
-    configure(of(pageOf([])));
-    fixture.detectChanges();
-
-    component.openDetails(makeGame({ id: 42, name: 'Hades' }));
-    expect(component.activeDetail()).toEqual({ kind: 'games', id: 42 });
-
+    queryParams.next(convertToParamMap({ mediaKind: 'games', mediaId: '42' }));
     component.closeDetails();
-    expect(component.activeDetail()).toBeNull();
-    expect(router.navigate).toHaveBeenCalledWith(['/library']);
-  });
-
-  it('onDetailModalDismiss clears activeDetail and resets route when on detail url', () => {
-    configure(of(pageOf([])));
-    (router as unknown as { url: string }).url = '/library/games/42';
-    fixture.detectChanges();
-
-    component.openDetails(makeGame({ id: 42, name: 'Hades' }));
+    expect(component.isDetailOpen()).toBeFalse();
+    expect(component.activeDetail()).toEqual({ kind: 'games', id: 42 });
     component.onDetailModalDismiss();
-
     expect(component.activeDetail()).toBeNull();
-    expect(router.navigate).toHaveBeenCalledWith(['/library']);
+    expect(router.navigate).toHaveBeenCalledWith(['/library'], {
+      queryParams: { mediaKind: null, mediaId: null }, queryParamsHandling: 'merge', replaceUrl: true,
+    });
   });
+
+  it('ignores dismissal events bubbling from the nested catalog editor', () => {
+    configure(of(pageOf([])));
+    fixture.detectChanges();
+    queryParams.next(convertToParamMap({ mediaKind: 'games', mediaId: '42' }));
+    const outer = document.createElement('div');
+    const editor = document.createElement('div');
+    outer.append(editor);
+    outer.addEventListener('didDismiss', event => component.onDetailModalDismiss(event));
+    editor.dispatchEvent(new Event('didDismiss', { bubbles: true }));
+    expect(component.activeDetail()).toEqual({ kind: 'games', id: 42 });
+    expect(component.isDetailOpen()).toBeTrue();
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('responds to browser Back by closing details without reloading the list', fakeAsync(() => {
+    configure(of(pageOf([])));
+    fixture.detectChanges();
+    tick();
+    queryParams.next(convertToParamMap({ mediaKind: 'games', mediaId: '42' }));
+    queryParams.next(convertToParamMap({}));
+    component.onDetailModalDismiss();
+    expect(component.isDetailOpen()).toBeFalse();
+    expect(mediaLibrary.getAll).toHaveBeenCalledTimes(1);
+    expect(router.navigate).not.toHaveBeenCalled();
+  }));
+
+  it('does not refetch or blank the Library when returning from Browse with a matching list', fakeAsync(() => {
+    configure(of(pageOf([makeGame({ id: 42 })])));
+    fixture.detectChanges();
+    tick();
+    component.ionViewWillEnter();
+    expect(mediaLibrary.getAll).toHaveBeenCalledTimes(1);
+    expect(component.filteredGames().length).toBe(1);
+  }));
+
+  it('recovers a cleared store on tab return without requiring Clear filters', fakeAsync(() => {
+    configure(of(pageOf([makeGame({ id: 42 })])));
+    fixture.detectChanges();
+    tick();
+    TestBed.inject(MediaStore).clear();
+    TestBed.flushEffects();
+    component.ionViewWillEnter();
+    tick();
+    expect(component.filteredGames().map(item => item.id)).toEqual([42]);
+    expect(mediaLibrary.getAll).toHaveBeenCalledTimes(2);
+  }));
+
+  it('loads exactly once on mode change and does not react to unrelated store writes', fakeAsync(() => {
+    configure(of(pageOf([])));
+    fixture.detectChanges();
+    tick();
+    mediaLibrary.getAll.calls.reset();
+    TestBed.inject(MediaModeService).select('animes');
+    fixture.detectChanges();
+    tick();
+    TestBed.flushEffects();
+    TestBed.inject(MediaStore).setLibraryEntry(1, null, 'animes');
+    TestBed.flushEffects();
+    tick();
+    expect(mediaLibrary.getAll).toHaveBeenCalledTimes(1);
+    expect(component.mediaMode.id).toBe('animes');
+  }));
 
   it('exportLibrary downloads the Excel workbook', fakeAsync(() => {
     configure(of(pageOf([])));

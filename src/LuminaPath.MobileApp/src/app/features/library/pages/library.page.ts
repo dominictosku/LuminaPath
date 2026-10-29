@@ -1,6 +1,9 @@
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AfterViewInit,
   Component,
+  DestroyRef,
+  untracked,
   ElementRef,
   OnDestroy,
   OnInit,
@@ -26,7 +29,7 @@ import { firstValueFrom } from 'rxjs';
 import { Platforms } from '../../games/models/games.model';
 import { ReleaseNotificationService } from 'src/app/shared/services/release-notification.service';
 import { DataExportService } from 'src/app/shared/services/data-export.service';
-import { MediaMode, MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
+import { MediaModeOption, MediaModeService } from 'src/app/shared/services/media-mode.service';
 import { extractErrorMessage } from 'src/app/shared/utils/extract-error';
 import { capitalize } from 'src/app/shared/utils/format';
 import { triggerDownload } from 'src/app/shared/utils/download-file';
@@ -104,6 +107,9 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   private dataExport = inject(DataExportService);
   private router = inject(Router);
   private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly destroyRef = inject(DestroyRef);
+  readonly isDetailOpen = signal(false);
+  private loadRevision = 0;
   readonly activeDetail = signal<ActiveMediaDetail | null>(null);
   private mediaModeService = inject(MediaModeService);
   readonly mediaOptions = this.mediaModeService.options;
@@ -192,17 +198,16 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
 
   constructor() {
     this.mediaMode = this.mediaModeService.mode();
-    let previousModeId: MediaMode = this.mediaMode.id;
     effect(() => {
       const mode = this.mediaModeService.mode();
-      this.mediaMode = mode;
-      if (mode.id !== previousModeId) {
-        previousModeId = mode.id;
+      untracked(() => {
+        if (mode.id === this.mediaMode.id) return;
+        this.mediaMode = mode;
         this.bulk.resetForMode();
         this.clearFilters(false);
         this.loadSavedPresets();
         this.loadGames();
-      }
+      });
     });
     // Mirror store state into local fields. Fires on initial load AND when
     // any consumer (e.g., a detail page) upserts/patches a cached item, so
@@ -239,42 +244,22 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
       onSuccess: (message) => (this.successMessage = message),
       onError: (message) => (this.errorMessage = message),
     });
-    this.loadSavedPresets();
-    this.loadGames();
-    this.route?.paramMap.subscribe((params) => {
-      const gameId = params.get('gameId');
-      const movieId = params.get('movieId');
-      const seriesId = params.get('seriesId');
-      const animeId = params.get('animeId');
-
-      if (gameId) {
-        const id = Number(gameId);
-        if (Number.isInteger(id) && id > 0) {
-          this.mediaModeService.select('games');
-          this.activeDetail.set({ kind: 'games', id });
-        }
-      } else if (movieId) {
-        const id = Number(movieId);
-        if (Number.isInteger(id) && id > 0) {
-          this.mediaModeService.select('movies');
-          this.activeDetail.set({ kind: 'movies', id });
-        }
-      } else if (seriesId) {
-        const id = Number(seriesId);
-        if (Number.isInteger(id) && id > 0) {
-          this.mediaModeService.select('series');
-          this.activeDetail.set({ kind: 'series', id });
-        }
-      } else if (animeId) {
-        const id = Number(animeId);
-        if (Number.isInteger(id) && id > 0) {
-          this.mediaModeService.select('animes');
-          this.activeDetail.set({ kind: 'animes', id });
-        }
+    this.route?.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const kind = params.get('mediaKind');
+      const id = Number(params.get('mediaId'));
+      const mode = this.mediaOptions.find((option) => option.id === kind);
+      if (mode && Number.isInteger(id) && id > 0) {
+        this.mediaModeService.select(mode.id);
+        this.activeDetail.set({ kind: mode.id, id });
+        this.isDetailOpen.set(true);
       } else {
-        this.activeDetail.set(null);
+        this.isDetailOpen.set(false);
       }
     });
+    // Resolve a deep link's media kind before the first list request.
+    this.mediaMode = this.mediaModeService.mode();
+    this.loadSavedPresets();
+    this.loadGames();
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', this.handleResize, { passive: true });
     }
@@ -323,14 +308,25 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  ionViewWillEnter(): void {
+    // Ionic retains tab pages. Recover only if another view changed the store;
+    // returning to a matching list preserves its filters, pages and scroll.
+    if (!this.mediaStore.matchesCatalog(this.createPageFilter(1))) {
+      this.loadGames();
+    }
+  }
+
   loadGames(event?: CustomEvent) {
-    this.isLoading = !event;
+    const revision = ++this.loadRevision;
     this.isLoadingMore = false;
     this.errorMessage = '';
+    const request = this.mediaStore.loadCatalog(this.createPageFilter(1));
+    this.isLoading = this.mediaStore.isLoading() && !event;
 
-    void this.mediaStore.loadCatalog(this.createPageFilter(1)).then(() => {
-      this.isLoading = false;
+    void request.then(() => {
       this.completeRefresh(event);
+      if (revision !== this.loadRevision || this.destroyRef.destroyed) return;
+      this.isLoading = false;
       if (this.mediaMode.id === 'games') {
         this.releaseNotifications.syncForGames(this.gamesForReleaseNotifications());
       }
@@ -346,9 +342,11 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     this.isLoadingMore = true;
     this.errorMessage = '';
 
+    const revision = this.loadRevision;
     void this.mediaStore.loadNextPage(this.createPageFilter(this.currentPage + 1)).then(() => {
-      this.isLoadingMore = false;
       this.completeInfiniteScroll(event);
+      if (revision !== this.loadRevision || this.destroyRef.destroyed) return;
+      this.isLoadingMore = false;
       if (this.mediaMode.id === 'games') {
         this.releaseNotifications.syncForGames(this.gamesForReleaseNotifications());
       }
@@ -521,23 +519,36 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     if (mode) this.mediaModeService.select(mode.id);
   }
 
-  openDetails(game: MediaItem) {
-    this.closeAddDialog();
-    const kind = (game.kind as 'games' | 'movies' | 'series' | 'animes') || this.mediaMode.id;
-    this.activeDetail.set({ kind, id: game.id });
-    this.router.navigate(this.mediaLibrary.detailsRoute(game));
+  openDetails(game: MediaItem): void {
+    if (this.isAdding(game)) return;
+    void this.router.navigate(['/library'], {
+      queryParams: { mediaKind: game.kind, mediaId: game.id },
+      queryParamsHandling: 'merge',
+    });
   }
 
   closeDetails(): void {
-    this.activeDetail.set(null);
-    void this.router.navigate(['/library']);
+    this.isDetailOpen.set(false);
+    this.clearDetailRoute();
   }
 
-  onDetailModalDismiss(): void {
+  onDetailModalDismiss(event?: Event): void {
+    // Ionic overlay events bubble. Dismissing the nested catalog editor
+    // must never dismiss its parent detail overlay or reset the URL.
+    if (event && event.target !== event.currentTarget) return;
+    this.isDetailOpen.set(false);
     this.activeDetail.set(null);
-    if (this.router.url.startsWith('/library/') && this.router.url !== '/library') {
-      void this.router.navigate(['/library']);
+    if (this.route?.snapshot.queryParamMap.has('mediaId')) {
+      this.clearDetailRoute();
     }
+  }
+
+  private clearDetailRoute(): void {
+    void this.router.navigate(['/library'], {
+      queryParams: { mediaKind: null, mediaId: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   isEditingSelectedGame(): boolean {

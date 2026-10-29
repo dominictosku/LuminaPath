@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, model, output, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { MediaDialogHeroComponent } from 'src/app/shared/components/media-dialog-hero/media-dialog-hero.component';
 import { FormsModule } from '@angular/forms';
@@ -43,7 +43,15 @@ export class LibraryAddDialogComponent {
   readonly isSaving = input<boolean>(false);
 
   readonly errorMessage = input('');
-  readonly details = output<void>();
+  private readonly modal = viewChild(IonModal);
+  readonly details = output<MediaItem>();
+
+  async openDetails(): Promise<void> {
+    const game = this.selectedGame();
+    if (!game || this.isSaving()) return;
+    const dismissed = await this.modal()?.dismiss();
+    if (dismissed) this.details.emit(game);
+  }
   readonly dismiss = output<void>();
   readonly canDismiss = () => !this.isSaving();
   readonly submitted = output<void>();

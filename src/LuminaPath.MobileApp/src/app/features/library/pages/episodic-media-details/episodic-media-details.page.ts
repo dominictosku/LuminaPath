@@ -105,6 +105,7 @@ export class EpisodicMediaDetailsPage implements OnInit, OnChanges {
   ];
 
   media: EpisodicMediaView | null = null;
+  private detailLoadRevision = 0;
   isLoading = true;
   errorMessage = '';
   isUpdatingLibrary = false;
@@ -485,27 +486,26 @@ export class EpisodicMediaDetailsPage implements OnInit, OnChanges {
   }
 
   private async loadMedia(mediaId: number): Promise<void> {
-    // Cache-first paint. Key is per-kind (anime vs series) so the two
-    // adapters never collide on the same id.
+    const revision = ++this.detailLoadRevision;
     const cacheKey = `media:${this.config.kind}:${mediaId}`;
-    const cached = this.cache.get<EpisodicMediaView>(cacheKey);
-    if (cached) {
-      this.media = cached;
-      this.syncMediaStore(mediaId);
-      this.isLoading = false;
-    }
-
+    const cached = this.media?.id === mediaId
+      ? this.media
+      : this.cache.get<EpisodicMediaView>(cacheKey);
+    this.media = cached ?? null;
+    this.isLoading = !cached;
+    this.errorMessage = '';
     try {
       const fresh = await firstValueFrom(this.adapter.load(mediaId));
+      if (revision !== this.detailLoadRevision) return;
       this.media = fresh;
       this.cache.set(cacheKey, fresh);
       this.syncMediaStore(mediaId);
     } catch {
-      if (!cached) {
+      if (revision === this.detailLoadRevision && !cached) {
         this.showError(this.config.loadErrorLabel);
       }
     } finally {
-      this.isLoading = false;
+      if (revision === this.detailLoadRevision) this.isLoading = false;
     }
   }
 
@@ -519,7 +519,7 @@ export class EpisodicMediaDetailsPage implements OnInit, OnChanges {
       status: Number(entry.status ?? 1),
       timeSpend: entry.timeSpend,
       currentEpisode: entry.currentEpisode,
-    } : null);
+    } : null, this.config.kind);
   }
 
   private showError(message: string): void {

@@ -137,6 +137,7 @@ export class MyGameDetailsPage implements OnInit, OnChanges, OnDestroy {
   game: GameWithFlexibleLibrary | null = null;
   forecast: GameForecast | null = null;
   achievements: UserGameAchievement[] = [];
+  private detailLoadRevision = 0;
   isLoading = true;
   isAchievementsLoading = false;
   errorMessage = '';
@@ -485,36 +486,31 @@ export class MyGameDetailsPage implements OnInit, OnChanges, OnDestroy {
   }
 
   private async loadGameAndQuests(gameId: number): Promise<void> {
-    // Cache-first: paint the last-known good game (if any) so detail-page
-    // deep links work offline. Then refetch in the background and replace
-    // on success. On failure, keep the cached painting silently.
-    const cacheKey = `media:games:${gameId}`;
-    const cached = this.cache.get<GameWithFlexibleLibrary>(cacheKey);
-    if (cached) {
-      this.game = cached;
-      this.syncMediaStore(gameId);
-      this.isLoading = false;
-    } else {
-      this.isLoading = true;
-    }
+    const revision = ++this.detailLoadRevision;
+    const cacheKey = `media:${'games'}:${gameId}`;
+    const cached = this.game?.id === gameId
+      ? this.game
+      : this.cache.get<GameWithFlexibleLibrary>(cacheKey);
+    this.game = cached ?? null;
+    this.isLoading = !cached;
     this.errorMessage = '';
-
     try {
       const fresh = await firstValueFrom(this.gameService.get(gameId));
+      if (revision !== this.detailLoadRevision) return;
       this.game = fresh;
       this.cache.set(cacheKey, fresh);
       this.syncMediaStore(gameId);
+      // The title is ready; forecasts and achievements must not block its first paint.
+      this.isLoading = false;
       await this.refreshSideData();
+      if (revision !== this.detailLoadRevision) return;
       await this.sessionsComponent?.refresh();
     } catch {
-      if (!cached) {
+      if (revision === this.detailLoadRevision && !cached) {
         this.showError('Game could not be loaded.');
       }
-      // else: keep cached painting; OfflineBanner already explains the
-      // staleness. refreshSideData is skipped so we don't fire more
-      // requests that will fail.
     } finally {
-      this.isLoading = false;
+      if (revision === this.detailLoadRevision) this.isLoading = false;
     }
   }
 
@@ -528,7 +524,7 @@ export class MyGameDetailsPage implements OnInit, OnChanges, OnDestroy {
       status: Number(entry.status ?? 1),
       timeSpend: entry.timeSpend ?? null,
       personalNotes: entry.personalNotes ?? null,
-    } : null);
+    } : null, 'games');
   }
 
   /** Loads forecast + achievements. Quests are owned by GameQuestsComponent. */
@@ -553,10 +549,11 @@ export class MyGameDetailsPage implements OnInit, OnChanges, OnDestroy {
           return [];
         }),
       ]);
+      if (myGameId !== this.myGameId) return;
       this.forecast = forecast;
       this.achievements = achievements;
     } finally {
-      this.isAchievementsLoading = false;
+      if (myGameId === this.myGameId) this.isAchievementsLoading = false;
     }
   }
 

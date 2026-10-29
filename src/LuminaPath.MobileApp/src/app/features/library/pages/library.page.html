@@ -238,7 +238,7 @@
   [isEpisodeMode]="isEpisodeMode"
   [isEditing]="isEditingSelectedGame()"
   [errorMessage]="errorMessage"
-  (details)="selectedGame && openDetails(selectedGame)"
+  (details)="openDetails($event)"
   [isSaving]="selectedGame ? isAdding(selectedGame) : false"
   (dismiss)="closeAddDialog()"
   (submitted)="submitAddGame()" />
@@ -255,9 +255,9 @@
 
 <ion-modal
   class="media-detail-modal"
-  [isOpen]="activeDetail() !== null"
+  [isOpen]="isDetailOpen()"
   [canDismiss]="true"
-  (didDismiss)="onDetailModalDismiss()"
+  (didDismiss)="onDetailModalDismiss($event)"
   aria-label="Media details">
   <ng-template>
     @if (activeDetail(); as detail) {

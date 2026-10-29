@@ -64,5 +64,5 @@
     [selectedGame]="selectedMedia" [mediaMode]="mediaMode" [statusOptions]="statusOptions"
     [isGamesMode]="isGamesMode" [isEpisodeMode]="isEpisodeMode" [isEditing]="isEditingSelectedGame()"
     [isSaving]="selectedItem ? isAdding(selectedItem) : false" [errorMessage]="errorMessage"
-    (details)="openSelectedDetails()" (dismiss)="closeAddDialog()" (submitted)="submitAddGame()" />
+    (details)="openSelectedDetails($event)" (dismiss)="closeAddDialog()" (submitted)="submitAddGame()" />
 </ion-content>

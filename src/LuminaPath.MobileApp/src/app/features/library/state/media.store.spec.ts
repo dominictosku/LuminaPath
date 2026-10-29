@@ -1,5 +1,5 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 
 import { MediaStore } from './media.store';
 import { MediaLibraryFacade } from '../services/media-library.facade';
@@ -98,6 +98,87 @@ describe('MediaStore', () => {
 
       expect(store.error()).toBe('Games could not be loaded.');
       expect(store.isLoading()).toBeFalse();
+    });
+  });
+
+  describe('request ordering and query isolation', () => {
+    it('keeps newer search results when an older request finishes last', async () => {
+      const old = new Subject<PaginateResult<MediaItem>>();
+      const fresh = new Subject<PaginateResult<MediaItem>>();
+      facade.getAll.and.returnValues(old, fresh);
+      const oldRequest = store.loadCatalog();
+      const filter = new MediaFilter();
+      filter.SearchString = 'new';
+      const newRequest = store.loadCatalog(filter);
+      fresh.next(pageOf([makeItem({ id: 2 })]));
+      await newRequest;
+      old.next(pageOf([makeItem({ id: 1 })]));
+      await oldRequest;
+      expect(store.items().map(item => item.id)).toEqual([2]);
+      expect(store.isLoading()).toBeFalse();
+    });
+
+    it('ignores old failures while a newer query is still loading', async () => {
+      const old = new Subject<PaginateResult<MediaItem>>();
+      const fresh = new Subject<PaginateResult<MediaItem>>();
+      facade.getAll.and.returnValues(old, fresh);
+      const oldRequest = store.loadCatalog();
+      const newRequest = store.loadCatalog();
+      old.error(new Error('old failure'));
+      await oldRequest;
+      expect(store.isLoading()).toBeTrue();
+      expect(store.error()).toBeNull();
+      fresh.next(pageOf([]));
+      await newRequest;
+    });
+
+    it('never paints a response from the media mode left in Browse', async () => {
+      const games = new Subject<PaginateResult<MediaItem>>();
+      facade.getAll.and.returnValue(games);
+      const gamesRequest = store.loadCatalog();
+      mediaMode.select('animes');
+      facade.getAll.and.returnValue(of(pageOf([makeItem({ id: 2, kind: 'animes' })])));
+      await store.loadCatalog();
+      games.next(pageOf([]));
+      await gamesRequest;
+      expect(store.loadedKind()).toBe('animes');
+      expect(store.items().map(item => item.id)).toEqual([2]);
+    });
+
+    it('does not reuse another filter’s empty cache when returning to the full library', async () => {
+      const filter = new MediaFilter();
+      filter.SearchString = 'no matches';
+      facade.getAll.and.returnValue(of(pageOf([makeItem({ id: 1 })])));
+      await store.loadCatalog();
+      facade.getAll.and.returnValue(of(pageOf([])));
+      await store.loadCatalog(filter);
+      store.clear();
+      facade.getAll.and.returnValue(throwError(() => new Error('offline')));
+      await store.loadCatalog();
+      expect(store.items().map(item => item.id)).toEqual([1]);
+      expect(store.error()).toBeNull();
+    });
+
+    it('discards an old next-page result after filters change', async () => {
+      facade.getAll.and.returnValue(of(pageOf([makeItem({ id: 1 })], 1, 2)));
+      await store.loadCatalog();
+      const nextPage = new Subject<PaginateResult<MediaItem>>();
+      facade.getAll.and.returnValue(nextPage);
+      const more = store.loadNextPage(filterForPage(2));
+      const filter = new MediaFilter();
+      filter.SearchString = 'different';
+      facade.getAll.and.returnValue(of(pageOf([makeItem({ id: 3 })])));
+      await store.loadCatalog(filter);
+      nextPage.next(pageOf([makeItem({ id: 2 })], 2, 2));
+      await more;
+      expect(store.items().map(item => item.id)).toEqual([3]);
+      expect(store.page()).toBe(1);
+    });
+
+    it('does not apply a game entry to a movie with the same id', () => {
+      store.upsertItem(makeItem({ id: 1, kind: 'movies' }));
+      store.setLibraryEntry(1, makeEntry(), 'games');
+      expect(store.items()[0].libraryEntry).toBeNull();
     });
   });
 

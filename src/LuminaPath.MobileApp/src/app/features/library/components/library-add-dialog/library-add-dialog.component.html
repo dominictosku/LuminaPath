@@ -91,7 +91,7 @@
           </fieldset>
         </section>
         <footer class="dialog-actions">
-          <ion-button type="button" fill="clear" [disabled]="isSaving()" (click)="details.emit()">Full details ↗</ion-button>
+          <ion-button type="button" fill="clear" [disabled]="isSaving()" (click)="openDetails()">Full details ↗</ion-button>
           <ion-button type="button" fill="clear" [disabled]="isSaving()" (click)="dismiss.emit()">Cancel</ion-button>
           <ion-button type="submit" [disabled]="isSaving() || editorForm.invalid">
             <ion-icon slot="start" [name]="isSaving() ? 'hourglass-outline' : 'checkmark-circle-outline'" />

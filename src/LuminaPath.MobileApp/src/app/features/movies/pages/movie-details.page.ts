@@ -92,6 +92,7 @@ export class MovieDetailsPage implements OnInit, OnChanges {
   ];
 
   movie: Movie | null = null;
+  private detailLoadRevision = 0;
   isLoading = true;
   errorMessage = '';
   selectedTab: 'overview' | 'gallery' = 'overview';
@@ -216,27 +217,26 @@ export class MovieDetailsPage implements OnInit, OnChanges {
   }
 
   private async loadMovie(movieId: number): Promise<void> {
-    // Cache-first paint so detail deep links work offline. Refetch in
-    // the background and replace on success; on failure keep the cache.
-    const cacheKey = `media:movies:${movieId}`;
-    const cached = this.cache.get<Movie>(cacheKey);
-    if (cached) {
-      this.movie = cached;
-      this.syncMediaStore(movieId);
-      this.isLoading = false;
-    }
-
+    const revision = ++this.detailLoadRevision;
+    const cacheKey = `media:${'movies'}:${movieId}`;
+    const cached = this.movie?.id === movieId
+      ? this.movie
+      : this.cache.get<Movie>(cacheKey);
+    this.movie = cached ?? null;
+    this.isLoading = !cached;
+    this.errorMessage = '';
     try {
       const fresh = await firstValueFrom(this.movieService.get(movieId));
+      if (revision !== this.detailLoadRevision) return;
       this.movie = fresh;
       this.cache.set(cacheKey, fresh);
       this.syncMediaStore(movieId);
     } catch {
-      if (!cached) {
+      if (revision === this.detailLoadRevision && !cached) {
         this.showError('Movie could not be loaded.');
       }
     } finally {
-      this.isLoading = false;
+      if (revision === this.detailLoadRevision) this.isLoading = false;
     }
   }
 
@@ -250,7 +250,7 @@ export class MovieDetailsPage implements OnInit, OnChanges {
       status: Number(entry.status ?? 1),
       timeSpend: entry.timeSpend,
       currentWatchTimeMinutes: entry.currentWatchTimeMinutes,
-    } : null);
+    } : null, 'movies');
   }
 
   private showError(message: string): void {

@@ -1,3 +1,4 @@
+import { libraryRoutes } from '../../../features/library/library.routes';
 import { Routes } from '@angular/router';
 import { TabsPage } from './tabs.page';
 import { AuthGuard } from '../../../core/guards/auth.guard';
@@ -14,40 +15,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('../../../features/dashboard/pages/home.page').then((m) => m.HomePage),
       },
-      {
-        path: 'library',
-        loadComponent: () =>
-          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
-      },
+      ...libraryRoutes,
       {
         path: 'browse',
         loadComponent: () =>
           import('../../../features/browse/pages/browse.page').then((m) => m.BrowsePage),
-      },
-      {
-        path: 'library/games/:gameId',
-        loadComponent: () =>
-          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
-      },
-      {
-        path: 'library/animes/:animeId',
-        loadComponent: () =>
-          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
-      },
-      {
-        path: 'library/movies/:movieId',
-        loadComponent: () =>
-          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
-      },
-      {
-        path: 'library/series/:seriesId',
-        loadComponent: () =>
-          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
-      },
-      {
-        path: 'library/:gameId',
-        loadComponent: () =>
-          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
       },
       {
         path: 'weekly-schedule',

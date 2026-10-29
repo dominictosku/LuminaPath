@@ -131,8 +131,8 @@ export class BrowsePage implements OnInit {
     if (id === 'games' || id === 'animes') this.selectKind(id);
   }
 
-  openSelectedDetails(): void {
-    const media = this.selectedMedia;
+  openSelectedDetails(selected?: MediaItem): void {
+    const media = selected ?? this.selectedMedia;
     if (!media) return;
     this.closeAddDialog();
     void this.router.navigate(this.mediaLibrary.detailsRoute(media));

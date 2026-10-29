@@ -87,7 +87,7 @@ export class MediaLibraryFacade {
   }
 
   detailsRoute(item: MediaItem): unknown[] {
-    return ['/library', this.mediaMode.mode().id, item.id];
+    return ['/library', item.kind, item.id];
   }
 
   private currentStrategy(): MediaStrategy {

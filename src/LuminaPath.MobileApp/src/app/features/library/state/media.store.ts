@@ -1,4 +1,4 @@
-import { computed, effect, inject } from '@angular/core';
+import { computed, effect, inject, untracked } from '@angular/core';
 import { signalStore, withComputed, withHooks, withMethods, withState, patchState } from '@ngrx/signals';
 import {
   setAllEntities,
@@ -31,6 +31,12 @@ import { MediaLibraryFacade } from '../services/media-library.facade';
  * media mode). Switching modes clears the cache. Detail-page upserts that
  * cross kinds also clear.
  */
+
+interface CatalogSnapshot {
+  items: MediaItem[];
+  page: number;
+  totalPages: number;
+}
 
 interface MediaListState {
   loadedKind: MediaKind | null;
@@ -65,6 +71,12 @@ export const MediaStore = signalStore(
     const facade = inject(MediaLibraryFacade);
     const mediaMode = inject(MediaModeService);
     const cache = inject(RequestCache);
+    let requestRevision = 0;
+    let activeQuery: string | null = null;
+    const queryKey = (kind: MediaKind, filter = new MediaFilter()) =>
+      `library:query:${kind}:${JSON.stringify({ ...filter, Paging: { ...filter.Paging, PageIndex: 1 } })}`;
+    const isCurrentRequest = (revision: number, kind: MediaKind) =>
+      revision === requestRevision && store.loadedKind() === kind && mediaMode.mode().id === kind;
 
     /** Library mutations affect both the dashboard's library count + featured
      *  items and the statistic page's owned-item derivations. Expire both. */
@@ -77,6 +89,8 @@ export const MediaStore = signalStore(
 
     function ensureKind(kind: MediaKind): void {
       if (store.loadedKind() === kind) return;
+      ++requestRevision;
+      activeQuery = null;
       // Hydrate from cache so cross-page detail navigation (and offline
       // deep-links into /library/<kind>/:id) finds items via findById
       // without waiting for a network refetch.
@@ -99,6 +113,11 @@ export const MediaStore = signalStore(
       const kind = store.loadedKind();
       if (!kind) return;
       cache.set(listCacheKey(kind), store.entities());
+      if (activeQuery && store.page() > 0) {
+        cache.set<CatalogSnapshot>(activeQuery, {
+          items: store.entities(), page: store.page(), totalPages: store.totalPages(),
+        });
+      }
     }
 
     const extractError = (error: unknown) => extractErrorMessage(error, 'Operation failed.');
@@ -108,40 +127,57 @@ export const MediaStore = signalStore(
       // Library-page operations: mode-bound, route through the facade.
       // -----------------------------------------------------------------------
 
-      /** Replace the cache with the first page of results for the current media mode. */
-      async loadCatalog(filter?: MediaFilter): Promise<void> {
+      /** Whether the current list belongs to these filters, including an in-flight request. */
+      matchesCatalog(filter?: MediaFilter): boolean {
         const kind = mediaMode.mode().id;
+        return store.loadedKind() === kind && activeQuery === queryKey(kind, filter);
+      },
+
+      /** Replace the list; cache entries are scoped to both media kind and filters. */
+      async loadCatalog(filter?: MediaFilter): Promise<void> {
+        const mode = mediaMode.mode();
+        const kind = mode.id;
         ensureKind(kind);
-        // If we already have something painted from the persisted cache,
-        // don't flash a skeleton — refetch silently in the background.
-        const hadCached = store.entities().length > 0;
+        const key = queryKey(kind, filter);
+        const cached = cache.get<CatalogSnapshot>(key);
+        const hasCurrent = activeQuery === key && store.page() > 0;
+        const hadCached = hasCurrent || !!cached;
+        const revision = ++requestRevision;
+        activeQuery = key;
+        if (!hasCurrent) {
+          patchState(store, setAllEntities<MediaItem>(cached?.items ?? []), {
+            page: cached?.page ?? 0, totalPages: cached?.totalPages ?? 0,
+          });
+        }
         patchState(store, { isLoading: !hadCached, error: null });
         try {
           const page = await firstValueFrom(facade.getAll(filter));
-          const items = page.data ?? [];
-          patchState(store, setAllEntities<MediaItem>(items), {
+          if (!isCurrentRequest(revision, kind)) return;
+          patchState(store, setAllEntities<MediaItem>(page.data ?? []), {
             isLoading: false,
             page: page.pageIndex ?? 1,
             totalPages: page.totalPages ?? 1,
           });
-          cache.set(listCacheKey(kind), items);
+          persistCurrentList();
         } catch {
+          if (!isCurrentRequest(revision, kind)) return;
           patchState(store, {
             isLoading: false,
-            // Suppress the error message when we have a cached painting
-            // to show — typical offline case. The OfflineBanner already
-            // tells the user something is wrong.
-            error: hadCached ? null : `${mediaMode.mode().label} could not be loaded.`,
+            error: hadCached ? null : `${mode.label} could not be loaded.`,
           });
         }
       },
 
-      /** Append the next page. Caller passes a filter with Paging.PageIndex bumped. */
+      /** Append only if this response still belongs to the current query. */
       async loadNextPage(filter: MediaFilter): Promise<void> {
-        if (!store.hasMorePages() || store.isLoading()) return;
+        const mode = mediaMode.mode();
+        const kind = mode.id;
+        if (!store.hasMorePages() || store.isLoading() || activeQuery !== queryKey(kind, filter)) return;
+        const revision = ++requestRevision;
         patchState(store, { isLoading: true, error: null });
         try {
           const page = await firstValueFrom(facade.getAll(filter));
+          if (!isCurrentRequest(revision, kind)) return;
           patchState(store, upsertEntities<MediaItem>(page.data ?? []), {
             isLoading: false,
             page: page.pageIndex ?? store.page() + 1,
@@ -149,19 +185,21 @@ export const MediaStore = signalStore(
           });
           persistCurrentList();
         } catch {
+          if (!isCurrentRequest(revision, kind)) return;
           patchState(store, {
             isLoading: false,
-            error: `More ${mediaMode.mode().label.toLowerCase()} could not be loaded.`,
+            error: `More ${mode.label.toLowerCase()} could not be loaded.`,
           });
         }
       },
 
       /** Add the catalog item to the user's library and patch the cached entity. */
       async addToLibrary(mediaId: number, details: LibraryEntryDetails): Promise<UserMediaEntry> {
+        const kind = mediaMode.mode().id;
         patchState(store, { isMutating: true, error: null });
         try {
           const entry = await firstValueFrom(facade.addToLibrary(mediaId, details));
-          patchEntry(mediaId, { libraryEntry: entry });
+          if (store.loadedKind() === kind) patchEntry(mediaId, { libraryEntry: entry });
           patchState(store, { isMutating: false });
           invalidateDerivedCaches();
           return entry;
@@ -177,12 +215,13 @@ export const MediaStore = signalStore(
         mediaId: number,
         details: LibraryEntryDetails,
       ): Promise<UserMediaEntry> {
+        const kind = mediaMode.mode().id;
         patchState(store, { isMutating: true, error: null });
         try {
           const entry = await firstValueFrom(
             facade.updateLibraryEntry(libraryEntryId, mediaId, details),
           );
-          patchEntry(mediaId, { libraryEntry: entry });
+          if (store.loadedKind() === kind) patchEntry(mediaId, { libraryEntry: entry });
           patchState(store, { isMutating: false });
           invalidateDerivedCaches();
           return entry;
@@ -194,10 +233,11 @@ export const MediaStore = signalStore(
 
       /** Remove an item from the user's personal library and keep the catalog card visible. */
       async removeFromLibrary(libraryEntryId: number, mediaId: number): Promise<void> {
+        const kind = mediaMode.mode().id;
         patchState(store, { isMutating: true, error: null });
         try {
           await firstValueFrom(facade.removeFromLibrary(libraryEntryId));
-          patchEntry(mediaId, { libraryEntry: null });
+          if (store.loadedKind() === kind) patchEntry(mediaId, { libraryEntry: null });
           patchState(store, { isMutating: false });
           invalidateDerivedCaches();
         } catch (error) {
@@ -221,8 +261,10 @@ export const MediaStore = signalStore(
       /** Replace just the libraryEntry on a cached item. No-op if not cached.
        *  Always invalidates derived caches — the per-kind detail pages call
        *  this after a successful add/update/remove via their own services. */
-      setLibraryEntry(mediaId: number, entry: UserMediaEntry | null): void {
-        patchEntry(mediaId, { libraryEntry: entry });
+      setLibraryEntry(mediaId: number, entry: UserMediaEntry | null, kind?: MediaKind): void {
+        if (!kind || store.loadedKind() === kind) {
+          patchEntry(mediaId, { libraryEntry: entry });
+        }
         invalidateDerivedCaches();
       },
 
@@ -239,6 +281,8 @@ export const MediaStore = signalStore(
 
       /** Reset the cache and all flags. */
       clear(): void {
+        ++requestRevision;
+        activeQuery = null;
         patchState(store, setAllEntities<MediaItem>([]), { ...initialMediaState });
       },
     };
@@ -248,10 +292,10 @@ export const MediaStore = signalStore(
       const mediaMode = inject(MediaModeService);
       effect(() => {
         const kind = mediaMode.mode().id;
-        const loaded = store.loadedKind();
-        if (loaded !== null && loaded !== kind) {
-          store.clear();
-        }
+        untracked(() => {
+          const loaded = store.loadedKind();
+          if (loaded !== null && loaded !== kind) store.clear();
+        });
       });
     },
   }),

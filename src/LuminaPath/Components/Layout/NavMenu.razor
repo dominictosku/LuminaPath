@@ -2,35 +2,14 @@
 @inject NavigationManager NavigationManager
 
 <a class="brand" href="" @onclick="HandleNavClick">
-    <span class="brand-mark" aria-hidden="true">✧</span>
+    <span class="brand-mark" aria-hidden="true">
+        <img src="Images/luminapath-logo.png" alt="LuminaPath" />
+    </span>
     <div>
         <strong>LuminaPath</strong>
         <small>MAKE TIME FOR YOUR WORLD</small>
     </div>
 </a>
-
-<AuthorizeView>
-    <Authorized Context="auth">
-        <a class="workspace-pill" href="Account/Manage">
-            <span class="workspace-avatar">@GetInitial(auth.User.Identity?.Name)</span>
-            <span class="workspace-info">
-                <strong>@GetShortName(auth.User.Identity?.Name)'s space</strong>
-                <small>Personal workspace</small>
-            </span>
-            <em aria-hidden="true">⌄</em>
-        </a>
-    </Authorized>
-    <NotAuthorized>
-        <a class="workspace-pill" href="Account/Login">
-            <span class="workspace-avatar">G</span>
-            <span class="workspace-info">
-                <strong>Guest space</strong>
-                <small>Sign in to sync</small>
-            </span>
-            <em aria-hidden="true">→</em>
-        </a>
-    </NotAuthorized>
-</AuthorizeView>
 
 <div class="nav-label">YOUR UNIVERSE</div>
 <nav aria-label="Universe navigation">

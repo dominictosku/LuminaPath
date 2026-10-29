@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular/standalone';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 
 import { MyGameDetailsPage } from './my-game-details.page';
 import { GameService } from 'src/app/features/games/services/game.service';
@@ -130,6 +130,18 @@ describe('MyGameDetailsPage', () => {
     expect(component.game?.name).toBe('Hades');
     expect(component.isInLibrary).toBeTrue();
     expect(component.errorMessage).toBe('');
+  });
+
+  it('shows game details while trophy and forecast requests are still pending', async () => {
+    configure('42', makeGame({ id: 42, name: 'Hades', myGames: makeMyGame(7, 42) }));
+    const trophies = new Subject<never[]>();
+    myGameService.getAchievements.and.returnValue(trophies);
+    await initialize();
+    expect(component.game?.name).toBe('Hades');
+    expect(component.isLoading).toBeFalse();
+    expect(component.isAchievementsLoading).toBeTrue();
+    trophies.next([]);
+    trophies.complete();
   });
 
   it('loads earned trophies when the user owns the game', async () => {
