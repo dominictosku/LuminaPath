@@ -5,15 +5,15 @@
         <ion-icon name="game-controller-outline"></ion-icon>
         Active
       </span>
-      <h2>Currently Active</h2>
+      <h2>Pick up where you left off</h2>
     </div>
-    <ion-badge>{{ items().length }}</ion-badge>
+    <ion-badge class="active-count">{{ items().length }}</ion-badge>
   </div>
 
   @if (items().length) {
     <div class="horizontal-list">
       @for (item of items(); track trackByItem($index, item)) {
-        <article class="game-card game-card--large">
+        <a class="game-card game-card--large" [routerLink]="itemRoute(item)">
           <img [src]="imageFor(item)" alt="" loading="lazy" decoding="async" />
           <div class="game-card__body">
             <ion-badge>{{ item.kind }}</ion-badge>
@@ -23,7 +23,7 @@
               <span [style.width.%]="progressOf(item)"></span>
             </div>
           </div>
-        </article>
+        </a>
       }
     </div>
   } @else {

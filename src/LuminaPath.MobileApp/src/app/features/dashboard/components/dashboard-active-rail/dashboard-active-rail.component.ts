@@ -1,8 +1,10 @@
+import { RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonBadge, IonIcon } from '@ionic/angular/standalone';
 
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { DashboardMediaItem } from '../../models/dashboard.model';
+import { dashboardItemRoute } from '../../domain/dashboard-view.helpers';
 import { progressOf, remainingLabel } from '../../domain/dashboard-view.helpers';
 
 /** Horizontally scrolling rail of "currently active" media (status === Playing). */
@@ -10,10 +12,12 @@ import { progressOf, remainingLabel } from '../../domain/dashboard-view.helpers'
   selector: 'app-dashboard-active-rail',
   templateUrl: './dashboard-active-rail.component.html',
   styleUrls: ['./dashboard-active-rail.component.scss'],
-  imports: [IonBadge, IonIcon],
+  imports: [RouterLink, IonBadge, IonIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardActiveRailComponent {
+  readonly itemRoute = dashboardItemRoute;
+
   readonly items = input<DashboardMediaItem[]>([]);
 
   imageFor(item: DashboardMediaItem): string {

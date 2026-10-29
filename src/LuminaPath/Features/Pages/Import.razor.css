@@ -23,7 +23,7 @@
     background:
         radial-gradient(circle at 12% 16%, var(--accent-glow, rgba(178, 245, 207, .18)), transparent 34%),
         radial-gradient(circle at 85% 12%, var(--accent-glow, rgba(95, 224, 163, .12)), transparent 26%),
-        linear-gradient(135deg, rgba(12, 16, 17, .98), rgba(19, 25, 26, .96));
+        var(--hero-gradient-subtle, linear-gradient(135deg, rgba(12, 16, 17, .98), rgba(19, 25, 26, .96)));
     box-shadow: 0 24px 70px rgba(0, 0, 0, .22);
 }
 
@@ -38,7 +38,7 @@
 
 .import-title {
     max-width: 720px;
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
     font-weight: 900;
 }
 
@@ -80,7 +80,7 @@
 }
 
 .import-status-card strong {
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
     font-size: 2rem;
     line-height: 1;
 }
@@ -99,7 +99,7 @@
     padding: 12px 14px 0;
     border: 0;
     border-bottom: 1px solid var(--line, #252c2d);
-    background: linear-gradient(135deg, rgba(12, 16, 17, .98), rgba(19, 25, 26, .96));
+    background: var(--hero-gradient-subtle, var(--panel, #13191a));
 }
 
 ::deep .import-tabs .mud-tab {
@@ -120,7 +120,7 @@
 ::deep .import-tabs .mud-tab:hover {
     border-color: var(--line, #252c2d);
     color: var(--text, #f0f4f1);
-    background: rgba(255, 255, 255, .045);
+    background: var(--panel-soft, rgba(255, 255, 255, .045));
 }
 
 ::deep .import-tabs .mud-tab.mud-tab-active {
@@ -183,7 +183,7 @@
 }
 
 .psn-panel__header .mud-typography-h5 {
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
     font-weight: 900;
 }
 
@@ -218,7 +218,7 @@
     border-radius: 18px;
     color: #fff;
     background: var(--accent-gradient, linear-gradient(135deg, #0f766e, #22c55e));
-    box-shadow: 0 16px 36px rgba(15, 118, 110, .24);
+    box-shadow: 0 16px 36px var(--accent-glow, rgba(15, 118, 110, .24));
 }
 
 .steam-emblem .mud-icon-root {
@@ -234,7 +234,7 @@
     border-radius: 18px;
     color: #fff;
     background: var(--accent-gradient, linear-gradient(135deg, #15803d, #22c55e));
-    box-shadow: 0 16px 36px rgba(21, 128, 61, .24);
+    box-shadow: 0 16px 36px var(--accent-glow, rgba(21, 128, 61, .24));
 }
 
 .excel-emblem .mud-icon-root {
@@ -261,7 +261,7 @@
 
 .steam-profile-card span {
     overflow: hidden;
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
     font-weight: 900;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -306,17 +306,7 @@
     width: 100%;
     min-height: 44px;
     border-radius: 12px;
-    color: #f8fbff;
-}
-
-::deep .psn-search__input .rz-textbox {
-    border-color: var(--line, #252c2d);
-    background: var(--panel, #13191a);
-    color: #f8fbff;
-}
-
-::deep .psn-search__input .rz-textbox::placeholder {
-    color: var(--import-faint);
+    color: var(--text, #f0f4f1);
 }
 
 .psn-profile-grid {
@@ -348,7 +338,7 @@
 
 .psn-profile-stat strong {
     overflow: hidden;
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
     font-size: 1.15rem;
     font-weight: 900;
     text-overflow: ellipsis;
@@ -387,25 +377,10 @@
 }
 
 ::deep .psn-games-grid {
-    overflow: hidden;
-    background: var(--panel, #13191a) !important;
-    color: var(--import-text) !important;
-}
-
-::deep .psn-games-grid .rz-datatable,
-::deep .psn-games-grid .rz-grid,
-::deep .psn-games-grid .rz-grid-table,
-::deep .psn-games-grid .rz-datatable-scrollable-wrapper,
-::deep .psn-games-grid .rz-datatable-scrollable-view {
-    border: 0;
-    background: var(--panel, #13191a) !important;
-    color: var(--import-text) !important;
-}
-
-::deep .psn-games-grid {
     border: 1px solid var(--import-panel-border);
     border-radius: 14px;
-    background: var(--panel, #13191a);
+    background: var(--panel, #13191a) !important;
+    color: var(--import-text) !important;
     overflow: hidden;
 }
 
@@ -426,7 +401,7 @@
 
 ::deep .psn-games-grid .mud-table-body tr:hover td {
     background: var(--panel-soft, rgba(255, 255, 255, .045));
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
 }
 
 ::deep .psn-games-grid .mud-table-pagination {
@@ -448,7 +423,7 @@
 
 .psn-empty-state .mud-typography-h6,
 .import-coming-soon .mud-typography-h6 {
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
 }
 
 .psn-empty-state .mud-icon-root,

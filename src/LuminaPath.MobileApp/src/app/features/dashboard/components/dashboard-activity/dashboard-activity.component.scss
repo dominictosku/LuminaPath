@@ -1,50 +1,4 @@
-:host {
-  display: block;
-}
-
-.section-block {
-  display: grid;
-  gap: 16px;
-  align-content: start;
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  background: var(--surface);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
-  color: var(--ink);
-}
-
-.section-block h2 {
-  margin: 4px 0 0;
-  color: inherit;
-  font-size: 1.45rem;
-  font-weight: 820;
-  letter-spacing: 0;
-}
-
-.section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  width: fit-content;
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.eyebrow ion-icon {
-  font-size: 1rem;
-}
-
+@use "../dashboard-panel";
 .activity-list {
   display: grid;
   gap: 10px;
@@ -58,7 +12,7 @@
   min-width: 0;
   padding: 13px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--surface-strong);
 }
 
@@ -77,7 +31,7 @@
   overflow: hidden;
   color: var(--ink);
   font-size: 0.96rem;
-  font-weight: 800;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -90,19 +44,3 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.empty-state {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 18px;
-  border: 1px dashed var(--line);
-  border-radius: 18px;
-  color: var(--muted);
-  background: transparent;
-}
-
-.empty-state ion-icon {
-  font-size: 1.35rem;
-}
-

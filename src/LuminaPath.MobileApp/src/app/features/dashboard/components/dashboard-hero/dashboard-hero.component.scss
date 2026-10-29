@@ -1,28 +1,40 @@
 :host {
   display: block;
+  height: 100%;
 }
 
 .hero {
   position: relative;
   display: grid;
-  min-height: 390px;
+  min-height: 440px;
+  height: 100%;
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  background: var(--surface);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  border: 1px solid #ffffff18;
+  border-radius: 20px;
+  background: #19312f;
   color: #fff;
   isolation: isolate;
 }
 
+.hero::before {
+  content: '';
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  right: -100px;
+  top: -50px;
+  border: 1px solid #9ee3ce28;
+  border-radius: 50%;
+  box-shadow: 0 0 0 65px #9ee3ce08, 0 0 0 130px #9ee3ce06;
+  z-index: -2;
+}
+
 .hero::after {
+  content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
-  content: "";
-  background:
-    linear-gradient(180deg, rgba(11, 18, 32, 0.08), rgba(11, 18, 32, 0.84)),
-    linear-gradient(120deg, rgba(37, 99, 235, 0.56), rgba(225, 29, 72, 0.18));
+  background: linear-gradient(90deg, #0a161aeb 0%, #0c171dc4 40%, #10202035 100%), linear-gradient(0deg, #0c171de6, transparent 80%);
 }
 
 .hero__media {
@@ -35,96 +47,155 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: saturate(1.08);
+  object-position: center 35%;
 }
 
 .hero__content {
-  align-self: end;
-  display: grid;
-  gap: 14px;
-  padding: 28px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  justify-content: center;
+  padding: 38px clamp(24px, 3.3vw, 48px) 56px;
 }
 
-.hero h1 {
-  margin: 0;
-  max-width: 720px;
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 34px;
+  color: #b1e8d9;
+  font-size: .62rem;
+  font-weight: 750;
+  letter-spacing: .16em;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8be0cb;
+}
+
+.hero__kind {
+  color: #e3e8eb;
+  font-size: .72rem;
+}
+
+.hero__kind span {
+  padding: 0 8px;
+  color: #8be0cb;
+}
+
+.hero h2 {
+  max-width: 580px;
+  margin: 12px 0 16px;
   color: inherit;
-  font-size: clamp(2.35rem, 10vw, 5.4rem);
-  line-height: 0.92;
-  font-weight: 850;
-  letter-spacing: 0;
+  font-size: clamp(2.4rem, 4vw, 4rem);
+  line-height: 1.04;
+  font-weight: 750;
+  letter-spacing: -.045em;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .hero p {
-  max-width: 520px;
+  max-width: 420px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.86);
-  font-size: 1rem;
+  color: #c2cdd2;
+  font-size: .88rem;
+  line-height: 1.65;
 }
 
 .hero__progress {
   display: grid;
-  gap: 8px;
-  max-width: 520px;
+  gap: 9px;
+  width: min(100%, 340px);
+  margin-top: 22px;
 }
 
 .hero__progress-label {
   display: flex;
-  align-items: center;
   justify-content: space-between;
   gap: 14px;
-  color: rgba(255, 255, 255, 0.9);
+  color: #d1dce1;
+  font-size: .7rem;
 }
 
 .progress-track {
-  height: 8px;
+  height: 4px;
   overflow: hidden;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.24);
+  border-radius: 9px;
+  background: #ffffff26;
 }
 
 .progress-track span {
   display: block;
   height: 100%;
+  background: #8be0cb;
   border-radius: inherit;
-  background: linear-gradient(90deg, #38bdf8, #34d399);
+}
+
+.hero__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 46px;
+  margin-top: 26px;
+  padding: 12px 20px;
+  border-radius: 9px;
+  background: #a3ead6;
+  color: #102820;
+  font-size: .8rem;
+  font-weight: 750;
+  text-decoration: none;
+  transition: background .2s;
+}
+
+.hero__button:hover {
+  background: #c3f8e8;
+}
+
+.hero__button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 5px;
+}
+
+.hero__signature {
+  position: absolute;
+  bottom: 19px;
+  left: clamp(24px, 3.3vw, 48px);
+  color: #aac5bd;
+  font-size: .5rem;
+  letter-spacing: .18em;
 }
 
 .hero--loading {
-  min-height: 340px;
   padding: 24px;
-  background: rgba(255, 255, 255, 0.04);
 }
 
 .hero--loading ion-skeleton-text {
   width: 100%;
   height: 100%;
-  border-radius: 22px;
+  margin: 0;
+  border-radius: 12px;
+  --background: #ffffff08;
+  --background-rgb: 180, 210, 200;
 }
 
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  width: fit-content;
-  color: rgba(255, 255, 255, 0.86);
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.eyebrow ion-icon {
-  font-size: 1rem;
-}
-
-@media (min-width: 760px) {
+@media (max-width: 650px) {
   .hero {
-    min-height: 470px;
+    min-height: 400px;
   }
-
   .hero__content {
-    padding: 44px;
+    padding-top: 28px;
+  }
+  .eyebrow {
+    margin-bottom: 24px;
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .hero__button {
+    transition: none;
+  }
+}

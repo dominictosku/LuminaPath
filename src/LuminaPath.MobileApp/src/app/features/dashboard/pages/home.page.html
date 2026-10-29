@@ -3,66 +3,54 @@
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
-  <main class="dashboard">
-    <app-dashboard-hero
-      class="dash-cell dash-cell--wide"
-      [featuredItem]="featuredItem"
-      [heroProgress]="heroProgress"
-      [isLoading]="isLoading">
-    </app-dashboard-hero>
+  <main class="dashboard" [attr.aria-busy]="isLoading">
+    <header class="dashboard-header dash-cell--wide">
+      <div>
+        <div class="dashboard-kicker"><span></span> YOUR PERSONAL MEDIA SPACE</div>
+        <h1>A little escape. <span>A lot to discover.</span></h1>
+        <p>Your stories, your progress, your next adventure.</p>
+      </div>
+      <div class="dashboard-header__actions">
+        <time [attr.datetime]="today | date:'yyyy-MM-dd'">{{ today | date:'EEEE, MMM d' }}</time>
+        <a class="browse-link" routerLink="/browse">Explore titles <ion-icon name="arrow-forward-outline" aria-hidden="true"></ion-icon></a>
+      </div>
+    </header>
 
     @if (errorMessage) {
-      <section class="notice dash-cell dash-cell--wide">
-        <ion-icon name="flame-outline"></ion-icon>
+      <section class="notice dash-cell--wide" role="alert">
+        <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
         <span>{{ errorMessage }}</span>
+        <button type="button" (click)="loadDashboard()">Try again</button>
       </section>
     }
 
-    <app-dashboard-metrics
-      class="dash-cell dash-cell--wide"
-      [metrics]="metrics">
-    </app-dashboard-metrics>
+    <app-dashboard-hero class="dash-cell dash-cell--main"
+      [featuredItem]="featuredItem" [heroProgress]="heroProgress" [isLoading]="isLoading">
+    </app-dashboard-hero>
 
-    <app-dashboard-momentum
-      class="dash-cell dash-cell--wide"
-      [playedHours]="playedHours"
-      [completionRate]="completionRate">
-    </app-dashboard-momentum>
+    @if (!isLoading) {
+      <app-dashboard-focus class="dash-cell dash-cell--side" [items]="focusItems"></app-dashboard-focus>
+      <app-dashboard-metrics class="dash-cell dash-cell--wide" [metrics]="metrics"></app-dashboard-metrics>
 
-    <app-dashboard-focus
-      class="dash-cell dash-cell--wide"
-      [items]="focusItems">
-    </app-dashboard-focus>
+      <div class="chapter-heading dash-cell--wide">
+        <div><span>MAKE TIME FOR WHAT YOU LOVE</span><h2>Your next chapter</h2></div>
+        <a routerLink="/library">View library <ion-icon name="arrow-forward-outline" aria-hidden="true"></ion-icon></a>
+      </div>
+      <app-dashboard-active-rail class="dash-cell dash-cell--main" [items]="playingItems"></app-dashboard-active-rail>
+      <app-dashboard-momentum class="dash-cell dash-cell--side" [playedHours]="playedHours" [completionRate]="completionRate"></app-dashboard-momentum>
+      <app-dashboard-recent class="dash-cell dash-cell--main" [items]="recentItems"></app-dashboard-recent>
+      <app-dashboard-activity class="dash-cell dash-cell--side" [items]="activityItems"></app-dashboard-activity>
+      <app-dashboard-releases class="dash-cell dash-cell--half" [items]="upcomingReleases"></app-dashboard-releases>
+      <app-dashboard-backlog class="dash-cell dash-cell--half" [items]="backlogItems"></app-dashboard-backlog>
+    } @else {
+      <div class="loading-state dash-cell dash-cell--side" role="status">
+        <ion-icon name="sparkles-outline" aria-hidden="true"></ion-icon>
+        <h2>Gathering your next adventure</h2><p>Loading your library and plans…</p>
+      </div>
+    }
 
-    <app-dashboard-activity
-      class="dash-cell dash-cell--half"
-      [items]="activityItems">
-    </app-dashboard-activity>
-
-    <app-dashboard-active-rail
-      class="dash-cell dash-cell--half"
-      [items]="playingItems">
-    </app-dashboard-active-rail>
-
-    <app-dashboard-releases
-      class="dash-cell dash-cell--half"
-      [items]="upcomingReleases">
-    </app-dashboard-releases>
-
-    <app-dashboard-backlog
-      class="dash-cell dash-cell--half"
-      [items]="backlogItems">
-    </app-dashboard-backlog>
-
-    <app-dashboard-recent
-      class="dash-cell dash-cell--half"
-      [items]="recentItems">
-    </app-dashboard-recent>
-
-    <app-release-calendar
-      class="dash-cell dash-cell--wide dashboard-release-calendar"
-      [games]="releasePlanGames"
-      [isLoading]="isLoading">
-    </app-release-calendar>
+    <app-release-calendar class="dash-cell dash-cell--wide dashboard-release-calendar"
+      [games]="releasePlanGames" [isLoading]="isLoading"></app-release-calendar>
+    <footer class="dashboard-footer dash-cell--wide">A space for every story. <span>Make it yours.</span></footer>
   </main>
 </ion-content>

@@ -1,30 +1,28 @@
 @if (!isLoading()) {
-  <section class="hero">
-    <div class="hero__media">
-      <img [src]="imageSrc()" alt="" />
-    </div>
+  <section class="hero" [class.hero--empty]="!featuredItem()">
+    @if (featuredItem()?.image) {
+      <div class="hero__media"><img [src]="imageSrc()" alt="" fetchpriority="high" /></div>
+    }
     <div class="hero__content">
-      <span class="eyebrow">
-        <ion-icon name="sparkles-outline"></ion-icon>
-        Today
-      </span>
-      <h1>{{ featuredItem()?.name || 'Your library is ready' }}</h1>
+      <span class="eyebrow"><span class="live-dot"></span>{{ featuredItem() ? 'IN YOUR SPOTLIGHT' : 'THE NEXT CHAPTER STARTS HERE' }}</span>
+      @if (featuredItem(); as item) {
+        <span class="hero__kind">{{ item.kind }} <span> / </span> {{ item.genre || 'From your collection' }}</span>
+      }
+      <h2>{{ featuredItem()?.name || 'Good stories.
+Great adventures.' }}</h2>
       <p>{{ subtitle() }}</p>
       @if (featuredItem(); as item) {
         <div class="hero__progress">
-          <div class="hero__progress-label">
-            <span>{{ playedSummary() }}</span>
-            <strong>{{ heroProgress() }}%</strong>
-          </div>
-          <div class="progress-track">
-            <span [style.width.%]="heroProgress()"></span>
-          </div>
+          <div class="hero__progress-label"><span>{{ playedSummary() }}</span><strong>{{ heroProgress() }}%</strong></div>
+          <div class="progress-track" role="progressbar" aria-label="Title progress" [attr.aria-valuenow]="heroProgress()" aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="heroProgress()"></span></div>
         </div>
+        <a class="hero__button" [routerLink]="itemRoute(item)">Open {{ item.kind.toLowerCase() }} <ion-icon name="arrow-forward-outline" aria-hidden="true"></ion-icon></a>
+      } @else {
+        <a class="hero__button" routerLink="/browse">Find your next favorite <ion-icon name="arrow-forward-outline" aria-hidden="true"></ion-icon></a>
       }
     </div>
+    <span class="hero__signature" aria-hidden="true">LUMINAPATH / YOUR WORLD, EXPANDED</span>
   </section>
 } @else {
-  <section class="hero hero--loading">
-    <ion-skeleton-text animated></ion-skeleton-text>
-  </section>
+  <section class="hero hero--loading" aria-label="Loading featured title"><ion-skeleton-text animated></ion-skeleton-text></section>
 }

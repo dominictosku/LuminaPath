@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideIonicAngular } from '@ionic/angular/standalone';
 import { of, throwError } from 'rxjs';
+import { provideRouter } from '@angular/router';
 
 import { HomePage } from './home.page';
 import { GameService } from '../../games/services/game.service';
@@ -60,6 +61,7 @@ describe('HomePage', () => {
       imports: [HomePage],
       providers: [
         provideIonicAngular(),
+        provideRouter([]),
         { provide: GameService, useValue: gameService },
         { provide: AnimeService, useValue: animeService },
         { provide: MovieService, useValue: movieService },

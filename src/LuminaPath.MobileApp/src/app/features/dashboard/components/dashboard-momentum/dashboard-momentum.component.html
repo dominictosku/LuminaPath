@@ -1,10 +1,8 @@
-<section class="section-block section-block--split">
-  <div>
-    <span class="eyebrow">Momentum</span>
-    <h2>{{ playedHours() }} hours logged</h2>
+<section class="section-block">
+  <div><span class="eyebrow">THE BIG PICTURE</span><h2>Every story counts.</h2></div>
+  <div class="completion-ring" [style.--value]="completionRate() + '%'" [attr.aria-label]="completionRate() + '% of your library completed'">
+    <strong>{{ completionRate() }}<small>%</small></strong><span>completed</span>
   </div>
-  <div class="completion-ring" [style.--value]="completionRate() + '%'">
-    <strong>{{ completionRate() }}%</strong>
-    <span>done</span>
-  </div>
+  <p><strong>{{ playedHours() }} hours</strong> spent in other worlds.<br>Keep exploring at your own pace.</p>
+  <a class="section-link" routerLink="/statistic">Explore your stats <span aria-hidden="true">↗</span></a>
 </section>

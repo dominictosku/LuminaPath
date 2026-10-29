@@ -1,8 +1,10 @@
+import { RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { IonIcon, IonSkeletonText } from '@ionic/angular/standalone';
 
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { DashboardMediaItem } from '../../models/dashboard.model';
+import { dashboardItemRoute } from '../../domain/dashboard-view.helpers';
 import { playedLabel, statusLabel } from '../../domain/dashboard-view.helpers';
 
 /**
@@ -13,10 +15,12 @@ import { playedLabel, statusLabel } from '../../domain/dashboard-view.helpers';
   selector: 'app-dashboard-hero',
   templateUrl: './dashboard-hero.component.html',
   styleUrls: ['./dashboard-hero.component.scss'],
-  imports: [IonIcon, IonSkeletonText],
+  imports: [RouterLink, IonIcon, IonSkeletonText],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardHeroComponent {
+  readonly itemRoute = dashboardItemRoute;
+
   readonly featuredItem = input<DashboardMediaItem | null>(null);
   readonly heroProgress = input<number>(0);
   readonly isLoading = input<boolean>(false);
@@ -24,7 +28,7 @@ export class DashboardHeroComponent {
   readonly imageSrc = computed(() => mediaImageUrl(this.featuredItem()?.image));
   readonly subtitle = computed(() => {
     const item = this.featuredItem();
-    return item ? `${statusLabel(item)} · ${item.context}` : 'Log in and start shaping your media plan.';
+    return item ? `${statusLabel(item)} · ${item.context}` : 'Games, films, anime, and series. Bring the stories you love together and find your next adventure.';
   });
   readonly playedSummary = computed(() => {
     const item = this.featuredItem();

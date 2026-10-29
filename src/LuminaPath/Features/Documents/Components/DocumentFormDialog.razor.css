@@ -1,5 +1,5 @@
 .document-form {
-    --document-dialog-bg: linear-gradient(180deg, rgba(19, 25, 26, .98), rgba(16, 22, 23, .96));
+    --document-dialog-bg: var(--panel, #13191a);
     --document-dialog-soft: var(--panel-soft, rgba(255, 255, 255, 0.04));
     --document-dialog-border: var(--line, #252c2d);
     --document-dialog-text: var(--text, #f0f4f1);
@@ -64,7 +64,7 @@
 }
 
 .document-form__summary .mud-typography-h5 {
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
     font-weight: 900;
 }
 

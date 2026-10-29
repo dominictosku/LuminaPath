@@ -1,52 +1,7 @@
-:host {
-  display: block;
-}
-
-.section-block {
-  display: grid;
-  gap: 16px;
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  background: var(--surface);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
-  color: var(--ink);
-}
-
-.section-block h2 {
-  margin: 4px 0 0;
-  color: inherit;
-  font-size: 1.45rem;
-  font-weight: 820;
-  letter-spacing: 0;
-}
-
-.section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  width: fit-content;
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.eyebrow ion-icon {
-  font-size: 1rem;
-}
-
+@use "../dashboard-panel";
 .focus-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
@@ -58,7 +13,7 @@
   min-width: 0;
   padding: 13px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--surface-strong);
 }
 
@@ -68,22 +23,33 @@
   height: 38px;
   place-items: center;
   border-radius: 14px;
-  color: #fff;
+  color: #101b23;
 }
 
-.focus-card--blue .focus-card__icon { background: var(--accent); }
-.focus-card--green .focus-card__icon { background: var(--success); }
-.focus-card--amber .focus-card__icon { background: var(--warning); }
-.focus-card--rose .focus-card__icon { background: var(--danger); }
+.focus-card--blue .focus-card__icon {
+  background: var(--accent);
+}
+
+.focus-card--green .focus-card__icon {
+  background: var(--success);
+}
+
+.focus-card--amber .focus-card__icon {
+  background: var(--warning);
+}
+
+.focus-card--rose .focus-card__icon {
+  background: var(--danger);
+}
 
 .focus-card h3 {
   margin: 0;
   overflow: hidden;
   color: var(--ink);
   font-size: 0.96rem;
-  font-weight: 800;
+  font-weight: 650;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .focus-card p {
@@ -92,7 +58,7 @@
   color: var(--muted);
   font-size: 0.82rem;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 @media (max-width: 620px) {
@@ -101,3 +67,33 @@
   }
 }
 
+.focus-card {
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.focus-card:last-child {
+  border-bottom: 0;
+}
+
+.focus-grid {
+  gap: 0;
+}
+
+.focus-card__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.focus-card h3 {
+  font-size: .86rem;
+}
+
+.focus-card p {
+  font-size: .75rem;
+  line-height: 1.5;
+}

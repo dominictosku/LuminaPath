@@ -1,92 +1,46 @@
-:host {
-  display: block;
-}
-
-.section-block {
-  display: grid;
-  gap: 16px;
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  background: var(--surface);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
-  color: var(--ink);
-}
-
-.section-block h2 {
-  margin: 4px 0 0;
-  color: inherit;
-  font-size: 1.45rem;
-  font-weight: 820;
-  letter-spacing: 0;
-}
-
-.section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.section-heading ion-badge {
-  --background: rgba(37, 99, 235, 0.1);
-  --color: #1d4ed8;
-  font-weight: 750;
-}
-
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  width: fit-content;
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.eyebrow ion-icon {
-  font-size: 1rem;
-}
-
+@use "../dashboard-panel";
 .horizontal-list {
   display: grid;
-  grid-auto-columns: minmax(248px, 78%);
+  grid-auto-columns: minmax(220px, 46%);
   grid-auto-flow: column;
   gap: 14px;
   overflow-x: auto;
-  padding-bottom: 12px;
-  scrollbar-color: var(--accent) rgba(37, 99, 235, 0.16);
+  padding: 4px 4px 12px;
+  scrollbar-color: var(--accent) #8be0cb18;
   scrollbar-width: thin;
   scroll-snap-type: x mandatory;
 }
 
-.horizontal-list::-webkit-scrollbar { height: 12px; }
+.horizontal-list::-webkit-scrollbar {
+  height: 12px;
+}
+
 .horizontal-list::-webkit-scrollbar-track {
   border-radius: 999px;
-  background: rgba(37, 99, 235, 0.16);
+  background: #8be0cb18;
 }
+
 .horizontal-list::-webkit-scrollbar-thumb {
-  border: 3px solid rgba(37, 99, 235, 0.16);
+  border: 3px solid #8be0cb18;
   border-radius: 999px;
-  background: linear-gradient(90deg, #2563eb, #38bdf8);
+  background: var(--accent);
 }
+
 .horizontal-list::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(90deg, #1d4ed8, #0ea5e9);
+  background: #b5efdf;
 }
 
 .game-card {
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: 14px;
   background: var(--surface-strong);
   scroll-snap-align: start;
 }
 
 .game-card img {
   width: 100%;
-  height: 170px;
+  height: 160px;
   object-fit: cover;
 }
 
@@ -97,8 +51,8 @@
 }
 
 .game-card ion-badge {
-  --background: rgba(37, 99, 235, 0.1);
-  --color: #1d4ed8;
+  --background: #8be0cb12;
+  --color: var(--accent);
   font-weight: 750;
 }
 
@@ -106,7 +60,7 @@
   margin: 0;
   color: inherit;
   font-size: 1rem;
-  font-weight: 780;
+  font-weight: 650;
   letter-spacing: 0;
 }
 
@@ -117,37 +71,47 @@
 }
 
 .progress-track {
-  height: 8px;
+  height: 4px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(37, 99, 235, 0.16);
+  background: #8be0cb18;
 }
 
 .progress-track span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #38bdf8, #34d399);
+  background: var(--accent);
 }
 
-.empty-state {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 18px;
-  border: 1px dashed var(--line);
-  border-radius: 18px;
-  color: var(--muted);
-  background: transparent;
+.active-count {
+  --background: #8be0cb16;
+  --color: var(--accent);
+  padding: 7px 10px;
+  border-radius: 8px;
 }
 
-.empty-state ion-icon {
-  font-size: 1.35rem;
+.game-card {
+  transition: border-color .2s;
 }
 
-@media (min-width: 760px) {
+.game-card:hover {
+  border-color: var(--accent);
+}
+
+.game-card ion-badge {
+  justify-self: start;
+  font-size: .6rem;
+}
+
+@media (max-width: 600px) {
   .horizontal-list {
-    grid-auto-columns: minmax(260px, 38%);
+    grid-auto-columns: 85%;
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .game-card {
+    transition: none;
+  }
+}

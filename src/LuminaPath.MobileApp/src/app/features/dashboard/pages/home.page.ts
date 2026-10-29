@@ -1,4 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 import { catchError, forkJoin, from, of } from 'rxjs';
 import {
@@ -90,6 +92,8 @@ function emptyPage<T>(): PaginateResult<T> {
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
   imports: [
+    DatePipe,
+    RouterLink,
     IonContent,
     IonIcon,
     IonRefresher,
@@ -114,6 +118,8 @@ export class HomePage implements OnInit {
   private sessionService = inject(GamingSessionService);
   private questBoardService = inject(QuestBoardService);
   private cache = inject(RequestCache);
+
+  readonly today = new Date();
 
   games: Game[] = [];
   animes: Anime[] = [];

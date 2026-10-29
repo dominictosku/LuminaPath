@@ -24,7 +24,7 @@
     background:
         radial-gradient(circle at 12% 16%, var(--accent-glow, rgba(178, 245, 207, .18)), transparent 34%),
         radial-gradient(circle at 86% 12%, var(--accent-glow, rgba(95, 224, 163, .12)), transparent 27%),
-        linear-gradient(135deg, rgba(12, 16, 17, .98), rgba(19, 25, 26, .96));
+        var(--hero-gradient-subtle, linear-gradient(135deg, rgba(12, 16, 17, .98), rgba(19, 25, 26, .96)));
     box-shadow: 0 24px 70px rgba(0, 0, 0, .22);
 }
 
@@ -39,7 +39,7 @@
 
 .documents-title {
     margin-top: 4px;
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
     font-weight: 900;
 }
 
@@ -101,7 +101,7 @@
 }
 
 .documents-gallery-toolbar .mud-typography-subtitle2 {
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
 }
 
 .documents-gallery {
@@ -134,7 +134,7 @@
     min-height: 178px;
     place-items: center;
     overflow: hidden;
-    background: linear-gradient(135deg, rgba(19, 25, 26, .98), rgba(25, 33, 34, .92));
+    background: var(--bg-subtle, #101617);
 }
 
 .document-card__preview img {
@@ -184,7 +184,7 @@
     min-height: 44px;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
     font-weight: 800;
 }
 
@@ -229,7 +229,7 @@
 
 .documents-empty .mud-typography-h6,
 .documents-state .mud-typography-h6 {
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
 }
 
 .documents-empty .mud-icon-root,

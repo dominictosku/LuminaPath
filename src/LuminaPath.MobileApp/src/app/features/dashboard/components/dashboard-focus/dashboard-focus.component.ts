@@ -1,3 +1,4 @@
+import { RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
@@ -8,7 +9,7 @@ import { DashboardFocusItem } from '../../models/dashboard.model';
   selector: 'app-dashboard-focus',
   templateUrl: './dashboard-focus.component.html',
   styleUrls: ['./dashboard-focus.component.scss'],
-  imports: [IonIcon],
+  imports: [RouterLink, IonIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardFocusComponent {

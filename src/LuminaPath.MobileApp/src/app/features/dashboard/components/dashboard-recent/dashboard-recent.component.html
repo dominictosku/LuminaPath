@@ -11,11 +11,13 @@
 
   <div class="library-grid">
     @for (item of items(); track trackByItem($index, item)) {
-      <article class="mini-card">
+      <a class="mini-card" [routerLink]="itemRoute(item)">
         <img [src]="imageFor(item)" alt="" loading="lazy" decoding="async" />
         <h3>{{ item.name }}</h3>
         <p>{{ item.kind }}</p>
-      </article>
+      </a>
+    } @empty {
+      <div class="empty-state"><ion-icon name="library-outline" aria-hidden="true"></ion-icon><span>Your collection starts with one great title. Explore titles to add your first favorite.</span></div>
     }
   </div>
 </section>

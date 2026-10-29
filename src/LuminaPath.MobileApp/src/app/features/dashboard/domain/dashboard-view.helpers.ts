@@ -50,3 +50,9 @@ export function progressOf(item: DashboardMediaItem): number {
   }
   return Math.min(100, Math.round((item.playedHours / estimated) * 100));
 }
+
+/** Route to the existing library detail view for each media kind. */
+export function dashboardItemRoute(item: DashboardMediaItem): string[] {
+  const paths = { Game: 'games', Anime: 'animes', Movie: 'movies', Series: 'series' };
+  return ['/library', paths[item.kind], String(item.id)];
+}

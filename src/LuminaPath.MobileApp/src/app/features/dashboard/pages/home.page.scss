@@ -1,18 +1,14 @@
-// Page-level theme tokens cascade into every dashboard sub-component
-// because CSS custom properties ignore Angular view encapsulation.
-// Always-dark — see `library.page.scss` / `global.scss` for the broader
-// app-wide commitment to a single dark visual identity.
 :host {
-  --dashboard-bg: #070b12;
-  --ink: #eef2ff;
-  --muted: #98a2b3;
-  --line: rgba(255, 255, 255, 0.1);
-  --surface: rgba(18, 24, 38, 0.86);
-  --surface-strong: #111827;
-  --accent: #60a5fa;
-  --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #fb7185;
+  --dashboard-bg: #0c1017;
+  --ink: #edf1f7;
+  --muted: #a0aaba;
+  --line: rgba(172, 191, 215, .12);
+  --surface: #131a24;
+  --surface-strong: #19222e;
+  --accent: #8be0cb;
+  --success: #8be0cb;
+  --warning: #ebcd94;
+  --danger: #eaa2b5;
 }
 
 .dashboard-shell {
@@ -21,42 +17,238 @@
 
 .dashboard {
   display: grid;
-  gap: 18px;
-  padding: 18px 16px 96px;
+  gap: 22px;
+  max-width: 1480px;
+  margin-inline: auto;
+  padding: 32px clamp(16px, 3vw, 48px) 100px;
+  color: var(--ink);
+  background: radial-gradient(ellipse at 80% 0, rgba(77, 128, 122, .07), transparent 40%);
 }
 
-// Layout cells. Each sub-component is wrapped with one of these classes so the
-// page owns responsive placement, and components stay layout-agnostic.
 .dash-cell {
   min-width: 0;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding-block: 4px 12px;
+}
+
+.dashboard-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  font-size: .65rem;
+  font-weight: 750;
+  letter-spacing: .16em;
+}
+
+.dashboard-kicker span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 12px #8be0cb55;
+}
+
+h1 {
+  margin: 12px 0 8px;
+  color: var(--ink);
+  font-size: clamp(1.55rem, 2.4vw, 2.4rem);
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -.045em;
+}
+
+h1 span {
+  color: var(--muted);
+}
+
+.dashboard-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .88rem;
+}
+
+.dashboard-header__actions {
+  display: grid;
+  justify-items: end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+time {
+  color: var(--muted);
+  font-size: .75rem;
+}
+
+a {
+  text-decoration: none;
+  color: var(--accent);
+}
+
+a, button {
+  transition: background .2s, border-color .2s;
+}
+
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 5px;
+}
+
+.browse-link {
+  display: inline-flex;
+  gap: 16px;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 17px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: .8rem;
+  font-weight: 650;
+}
+
+.browse-link:hover {
+  border-color: var(--accent);
+  background: var(--surface-strong);
+}
+
+.chapter-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.chapter-heading span {
+  color: var(--muted);
+  font-size: .6rem;
+  letter-spacing: .16em;
+  font-weight: 700;
+}
+
+.chapter-heading h2 {
+  margin: 7px 0 0;
+  font-size: 1.65rem;
+  font-weight: 750;
+  letter-spacing: -.035em;
+}
+
+.chapter-heading a {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  font-size: .8rem;
+  white-space: nowrap;
 }
 
 .notice {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid rgba(225, 29, 72, 0.2);
-  border-radius: 18px;
-  color: #fecdd3;
-  background: rgba(127, 29, 29, 0.36);
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #eaa2b544;
+  border-radius: 12px;
+  color: #f3bfd0;
+  background: #30202a;
 }
 
-@media (min-width: 760px) {
+.notice button {
+  margin-left: auto;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #ffffff12;
+  color: inherit;
+  cursor: pointer;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.loading-state ion-icon {
+  color: var(--accent);
+  font-size: 28px;
+}
+
+.loading-state h2 {
+  font-size: 1.25rem;
+}
+
+.loading-state p {
+  color: var(--muted);
+}
+
+.dashboard-footer {
+  padding-top: 10px;
+  color: var(--muted);
+  font-size: .75rem;
+  text-align: center;
+}
+
+.dashboard-footer span {
+  color: var(--accent);
+}
+
+@media (min-width: 1000px) {
   .dashboard {
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 20px;
-    width: min(1180px, calc(100% - 40px));
-    margin-inline: auto;
-    padding-top: 24px;
   }
-
   .dash-cell--wide {
     grid-column: 1 / -1;
   }
-
+  .dash-cell--main {
+    grid-column: span 8;
+  }
+  .dash-cell--side {
+    grid-column: span 4;
+  }
   .dash-cell--half {
     grid-column: span 6;
   }
 }
 
+@media (max-width: 650px) {
+  .dashboard {
+    gap: 16px;
+    padding-top: 22px;
+  }
+  .dashboard-header {
+    align-items: start;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .dashboard-header__actions {
+    width: 100%;
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    align-items: center;
+  }
+  h1 span {
+    display: block;
+  }
+  .chapter-heading h2 {
+    font-size: 1.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a, button {
+    transition: none;
+  }
+}

@@ -4,63 +4,103 @@
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  overflow: hidden;
 }
 
 .metric {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
+  display: flex;
+  gap: 16px;
   align-items: center;
-  min-height: 112px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--surface);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  padding: 24px;
+  min-width: 0;
+}
+
+.metric + .metric {
+  border-left: 1px solid var(--line);
 }
 
 .metric__icon {
   display: grid;
-  width: 42px;
-  height: 42px;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
   place-items: center;
-  border-radius: 15px;
-  color: #fff;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tone) 10%, transparent);
+  color: var(--tone);
 }
 
 .metric ion-icon {
-  font-size: 1.35rem;
+  font-size: 1.2rem;
 }
 
-.metric span,
-.metric small {
-  display: block;
+.metric span {
   color: var(--muted);
+  font-size: .7rem;
 }
 
 .metric strong {
   display: block;
-  margin-top: 2px;
+  margin-top: 5px;
   color: var(--ink);
-  font-size: 1.8rem;
-  line-height: 1;
+  font-size: 1.9rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
 }
 
 .metric small {
-  margin-top: 5px;
-  font-size: 0.78rem;
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: .65rem;
+  line-height: 1.4;
 }
 
-.metric--blue .metric__icon { background: var(--accent); }
-.metric--green .metric__icon { background: var(--success); }
-.metric--amber .metric__icon { background: var(--warning); }
-.metric--rose .metric__icon { background: var(--danger); }
+.metric--blue {
+  --tone: #a0bbef;
+}
 
-@media (min-width: 760px) {
+.metric--green {
+  --tone: var(--success);
+}
+
+.metric--amber {
+  --tone: var(--warning);
+}
+
+.metric--rose {
+  --tone: var(--danger);
+}
+
+@media (max-width: 760px) {
   .metric-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .metric {
+    padding: 18px;
+    gap: 12px;
+  }
+  .metric:nth-child(3) {
+    border-left: 0;
+  }
+  .metric:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
   }
 }
 
+@media (max-width: 380px) {
+  .metric__icon {
+    width: 28px;
+    height: 32px;
+  }
+  .metric {
+    gap: 8px;
+    padding: 14px;
+  }
+}

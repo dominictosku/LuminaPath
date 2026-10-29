@@ -24,7 +24,7 @@
     background:
         radial-gradient(circle at 12% 16%, var(--accent-glow, rgba(178, 245, 207, .18)), transparent 34%),
         radial-gradient(circle at 86% 12%, var(--accent-glow, rgba(95, 224, 163, .12)), transparent 27%),
-        linear-gradient(135deg, rgba(12, 16, 17, .98), rgba(19, 25, 26, .96));
+        var(--hero-gradient-subtle, linear-gradient(135deg, rgba(12, 16, 17, .98), rgba(19, 25, 26, .96)));
     box-shadow: 0 24px 70px rgba(0, 0, 0, .22);
 }
 
@@ -38,7 +38,7 @@
 }
 
 .users-title {
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
     font-weight: 900;
 }
 
@@ -80,7 +80,7 @@
 }
 
 .users-status-card strong {
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
     font-size: 1.9rem;
     line-height: 1;
 }
@@ -162,7 +162,7 @@
 
 .users-toolbar__title .mud-typography-subtitle1,
 .user-name {
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
     font-weight: 900;
 }
 
@@ -211,7 +211,7 @@
 }
 
 .user-avatar {
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
     background: var(--accent-gradient, linear-gradient(135deg, #184b39, #2cb57e));
     font-weight: 900;
 }
@@ -246,7 +246,7 @@
 }
 
 .users-empty .mud-typography-h6 {
-    color: #f8fbff;
+    color: var(--text, #f0f4f1);
 }
 
 @media (max-width: 1120px) {

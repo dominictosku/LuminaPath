@@ -1,13 +1,14 @@
+import { RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
- * Split panel: total hours logged paired with a conic completion ring.
- * Sits between the metric grid and the per-section blocks.
+ * Library completion and total hours, paired with a link to statistics.
  */
 @Component({
   selector: 'app-dashboard-momentum',
   templateUrl: './dashboard-momentum.component.html',
   styleUrls: ['./dashboard-momentum.component.scss'],
+  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardMomentumComponent {
