@@ -34,7 +34,13 @@ public sealed class S3Storage(IAmazonS3 client, IOptions<S3Options> options, ILo
                     if (item.Key is null || !item.Key.StartsWith(prefix, StringComparison.Ordinal))
                         throw new IOException("S3 returned an object outside the configured upload prefix.");
                     var name = StorageFileNames.GetExactName(item.Key[prefix.Length..]);
-                    files.Add(new BlobDto { Name = name, Uri = AppUrl(name) });
+                    files.Add(new BlobDto
+                    {
+                        Name = name,
+                        Uri = AppUrl(name),
+                        SizeBytes = item.Size,
+                        LastModified = item.LastModified
+                    });
                 }
                 if (page.IsTruncated != true) break;
                 if (string.IsNullOrEmpty(page.NextContinuationToken) || page.NextContinuationToken == continuation)
@@ -57,7 +63,15 @@ public sealed class S3Storage(IAmazonS3 client, IOptions<S3Options> options, ILo
             {
                 await response.ResponseStream.CopyToAsync(temporary);
                 temporary.Position = 0;
-                return new BlobDto { Name = name, Uri = AppUrl(name), ContentType = response.Headers.ContentType, Content = temporary };
+                return new BlobDto
+                {
+                    Name = name,
+                    Uri = AppUrl(name),
+                    ContentType = response.Headers.ContentType,
+                    Content = temporary,
+                    SizeBytes = response.Headers.ContentLength,
+                    LastModified = response.LastModified
+                };
             }
             catch { await temporary.DisposeAsync(); throw; }
         }

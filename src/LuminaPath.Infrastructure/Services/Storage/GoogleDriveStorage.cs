@@ -25,13 +25,20 @@ public sealed class GoogleDriveStorage : IStorageService, IDisposable
     }
 
     public async Task<List<BlobDto>> ListAsync() => (await _drive.ListAsync("uploads"))
-        .Select(file => new BlobDto { Name = file.Name, ContentType = file.MimeType, Uri = AppUrl(file.Name) }).ToList();
+        .Select(file => new BlobDto
+        {
+            Name = file.Name,
+            ContentType = file.MimeType,
+            Uri = AppUrl(file.Name),
+            SizeBytes = file.Size,
+            LastModified = file.ModifiedTime
+        }).ToList();
 
     public async Task<BlobDto?> DownloadAsync(string blobFilename)
     {
         var name = StorageFileNames.GetSafeName(blobFilename);
         if (_cache.TryGetValue<CachedFile>(name, out var cached) && cached is not null)
-            return new BlobDto { Name = name, ContentType = cached.ContentType, Content = new MemoryStream(cached.Bytes, writable: false) };
+            return new BlobDto { Name = name, ContentType = cached.ContentType, Content = new MemoryStream(cached.Bytes, writable: false), SizeBytes = cached.Bytes.Length };
         var revision = Interlocked.Read(ref _revision);
         var file = await _drive.FindAsync("uploads", name);
         if (file is null) return null;
@@ -56,7 +63,14 @@ public sealed class GoogleDriveStorage : IStorageService, IDisposable
                 temporary.Position = 0;
             }
             // DeleteOnClose ties cleanup to the lifetime of the returned download stream.
-            return new BlobDto { Name = name, ContentType = file.MimeType, Content = temporary };
+            return new BlobDto
+            {
+                Name = name,
+                ContentType = file.MimeType,
+                Content = temporary,
+                SizeBytes = temporary.Length,
+                LastModified = file.ModifiedTime
+            };
         }
         catch { await temporary.DisposeAsync(); throw; }
     }

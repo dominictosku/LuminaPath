@@ -230,8 +230,14 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ChecksumSha256")
+                        .HasColumnType("text");
+
                     b.Property<string>("ContentType")
                         .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -243,6 +249,9 @@ namespace LuminaPath.Infrastructure.Migrations
 
                     b.Property<int>("DocumentType")
                         .HasColumnType("integer");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Name")
                         .HasColumnType("text");

@@ -13,6 +13,7 @@ public sealed partial class StorageOptions
     public const string FileSystemProvider = "FileSystem";
 
     public string Provider { get; set; } = FileSystemProvider;
+    public string? FallbackProvider { get; set; }
     public string Path { get; set; } = System.IO.Path.Combine("App_Data", "storage");
     public string AzureBlobConnectionString { get; set; } = string.Empty;
     public string AzureBlobContainerName { get; set; } = "media";
@@ -35,6 +36,11 @@ public sealed partial class StorageOptions
                 options.Provider,
                 FileSystemProvider)
             ?? FileSystemProvider;
+
+        options.FallbackProvider = ConfigurationValues.FirstNonEmpty(
+                options.FallbackProvider,
+                config.GetSection(SectionName)["FallbackProvider"])
+            ?? null;
 
         options.Path = ConfigurationValues.FirstNonEmpty(
                 options.Path,

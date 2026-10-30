@@ -21,11 +21,18 @@ namespace LuminaPath.Infrastructure.Services.Storage
             var files = Directory
                 .EnumerateFiles(_storagePath)
                 .Where(filePath => !IsMetadataFile(filePath))
-                .Select(filePath => new BlobDto
+                .Select(filePath =>
                 {
-                    Uri = CheckRegularFile(filePath),
-                    Name = Path.GetFileName(filePath),
-                    ContentType = ReadContentType(filePath)
+                    var regular = CheckRegularFile(filePath);
+                    var fileInfo = new FileInfo(regular);
+                    return new BlobDto
+                    {
+                        Uri = regular,
+                        Name = Path.GetFileName(filePath),
+                        ContentType = ReadContentType(filePath),
+                        SizeBytes = fileInfo.Length,
+                        LastModified = fileInfo.LastWriteTimeUtc
+                    };
                 })
                 .ToList();
 
@@ -42,11 +49,15 @@ namespace LuminaPath.Infrastructure.Services.Storage
                 return Task.FromResult<BlobDto?>(null);
             }
 
+            var regular = CheckRegularFile(filePath);
+            var fileInfo = new FileInfo(regular);
             BlobDto blob = new()
             {
-                Content = File.OpenRead(CheckRegularFile(filePath)),
+                Content = File.OpenRead(regular),
                 Name = Path.GetFileName(filePath),
-                ContentType = ReadContentType(filePath)
+                ContentType = ReadContentType(filePath),
+                SizeBytes = fileInfo.Length,
+                LastModified = fileInfo.LastWriteTimeUtc
             };
 
             return Task.FromResult<BlobDto?>(blob);

@@ -1,4 +1,4 @@
-﻿using Azure;
+using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using LuminaPath.Core.Dtos;
@@ -37,7 +37,9 @@ namespace LuminaPath.Infrastructure.Services.Storage
                 {
                     Uri = fullUri,
                     Name = name,
-                    ContentType = file.Properties.ContentType
+                    ContentType = file.Properties.ContentType,
+                    SizeBytes = file.Properties.ContentLength,
+                    LastModified = file.Properties.LastModified
                 });
             }
 
@@ -62,7 +64,9 @@ namespace LuminaPath.Infrastructure.Services.Storage
                     {
                         Content = blobContent,
                         Name = blobName,
-                        ContentType = properties.Value.ContentType
+                        ContentType = properties.Value.ContentType,
+                        SizeBytes = properties.Value.ContentLength,
+                        LastModified = properties.Value.LastModified
                     };
                 }
             }

@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using LuminaPath.Core.Entities;
 using LuminaPath.Core.Entities.Results;
 using LuminaPath.Core.Enums;
@@ -18,41 +19,73 @@ public partial class DocumentService
         string? contentType,
         IMedia<MediaDocument>? media)
     {
-        if (media is not null)
-        {
-            await DeleteDocument(media.Image);
-        }
+        Stream uploadStream = stream;
+        MemoryStream? memorySpool = null;
+        long size = 0;
+        string? checksumHex = null;
 
-        var storageName = CreateStorageFileName(displayName, contentType);
-        var result = await _storage.UploadAsync(stream, storageName, contentType);
-        if (result.Error)
+        try
         {
-            _logger.LogError("Could not upload file, error: {Status}", result.Status);
+            if (stream.CanSeek)
+            {
+                size = stream.Length - stream.Position;
+                var hashBytes = await SHA256.HashDataAsync(stream);
+                checksumHex = Convert.ToHexStringLower(hashBytes);
+                stream.Position = 0;
+            }
+            else
+            {
+                memorySpool = new MemoryStream();
+                await stream.CopyToAsync(memorySpool);
+                memorySpool.Position = 0;
+                size = memorySpool.Length;
+                var hashBytes = await SHA256.HashDataAsync(memorySpool);
+                checksumHex = Convert.ToHexStringLower(hashBytes);
+                memorySpool.Position = 0;
+                uploadStream = memorySpool;
+            }
+
+            var storageName = CreateStorageFileName(displayName, contentType);
+            var result = await _storage.UploadAsync(uploadStream, storageName, contentType);
+            if (result.Error)
+            {
+                _logger.LogError("Could not upload file, error: {Status}", result.Status);
+                await AuditDocumentFileUploadAsync(
+                    displayName,
+                    storageName,
+                    contentType,
+                    AuditOutcomes.Failure,
+                    result.Status);
+                return new FailedResult("Could not upload file");
+            }
+
+            var document = new MediaDocument
+            {
+                Name = displayName,
+                StorageName = result.Blob.Name,
+                Description = string.Empty,
+                Path = string.Empty,
+                ContentType = result.Blob.ContentType,
+                DocumentType = InferDocumentType(displayName, result.Blob.ContentType),
+                FileSizeBytes = size,
+                ChecksumSha256 = checksumHex,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
             await AuditDocumentFileUploadAsync(
-                displayName,
-                storageName,
-                contentType,
-                AuditOutcomes.Failure,
-                result.Status);
-            return new FailedResult("Could not upload file");
+                document.Name,
+                document.StorageName,
+                document.ContentType,
+                AuditOutcomes.Success,
+                documentType: document.DocumentType);
+            return document;
         }
-
-        var document = new MediaDocument
+        finally
         {
-            Name = displayName,
-            StorageName = result.Blob.Name,
-            Description = string.Empty,
-            Path = string.Empty,
-            ContentType = result.Blob.ContentType,
-            DocumentType = InferDocumentType(displayName, result.Blob.ContentType)
-        };
-        await AuditDocumentFileUploadAsync(
-            document.Name,
-            document.StorageName,
-            document.ContentType,
-            AuditOutcomes.Success,
-            documentType: document.DocumentType);
-        return document;
+            if (memorySpool is not null)
+            {
+                await memorySpool.DisposeAsync();
+            }
+        }
     }
 
     private async Task DeleteDocument(MediaDocument document, LuminaPathDbContext context)

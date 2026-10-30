@@ -92,6 +92,23 @@ public sealed class OrphanedBlobCleanupServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_PreservesOrphansWithinGracePeriod()
+    {
+        var storage = CreateStorage();
+        await UploadBlob(storage, "fresh-orphan.png", "image/png");
+
+        var dbOptions = Utilities.DbContext.TestDbContextOptions();
+        // Use default 24h grace period
+        var service = CreateService(storage, dbOptions, gracePeriod: TimeSpan.FromHours(24));
+
+        var result = await service.RunAsync();
+
+        Assert.Equal(1, result.Inspected);
+        Assert.Equal(0, result.Deleted);
+        Assert.True(File.Exists(Path.Combine(_storagePath, "fresh-orphan.png")));
+    }
+
+    [Fact]
     public async Task OrphanedBlobCleanupJobRunner_ReturnsSummaryMessage()
     {
         var storage = CreateStorage();
@@ -115,12 +132,14 @@ public sealed class OrphanedBlobCleanupServiceTests : IDisposable
 
     private OrphanedBlobCleanupService CreateService(
         FileSystemStorage storage,
-        DbContextOptions<LuminaPathDbContext> dbOptions)
+        DbContextOptions<LuminaPathDbContext> dbOptions,
+        TimeSpan? gracePeriod = null)
     {
         return new OrphanedBlobCleanupService(
             storage,
             new TestDbContextFactory(dbOptions),
-            new Mock<ILogger<OrphanedBlobCleanupService>>().Object);
+            new Mock<ILogger<OrphanedBlobCleanupService>>().Object,
+            gracePeriod: gracePeriod ?? TimeSpan.Zero);
     }
 
     private FileSystemStorage CreateStorage()

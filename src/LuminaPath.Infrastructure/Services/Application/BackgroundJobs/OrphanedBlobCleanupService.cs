@@ -15,6 +15,8 @@ namespace LuminaPath.Infrastructure.Services.Application.BackgroundJobs;
 /// </summary>
 public sealed class OrphanedBlobCleanupService
 {
+    public TimeSpan GracePeriod { get; set; }
+
     private readonly IStorageService _storage;
     private readonly IDbContextFactory<LuminaPathDbContext> _dbContextFactory;
     private readonly ILogger<OrphanedBlobCleanupService> _logger;
@@ -24,12 +26,14 @@ public sealed class OrphanedBlobCleanupService
         IStorageService storage,
         IDbContextFactory<LuminaPathDbContext> dbContextFactory,
         ILogger<OrphanedBlobCleanupService> logger,
-        AuditLogService? auditLog = null)
+        AuditLogService? auditLog = null,
+        TimeSpan? gracePeriod = null)
     {
         _storage = storage;
         _dbContextFactory = dbContextFactory;
         _logger = logger;
         _auditLog = auditLog;
+        GracePeriod = gracePeriod ?? TimeSpan.FromHours(24);
     }
 
     public async Task<OrphanedBlobCleanupResult> RunAsync(CancellationToken cancellationToken = default)
@@ -79,6 +83,16 @@ public sealed class OrphanedBlobCleanupService
                 continue;
             }
 
+            // Protect newly uploaded files that may be part of an in-flight form submission.
+            if (blob.LastModified.HasValue && blob.LastModified.Value > DateTimeOffset.UtcNow - GracePeriod)
+            {
+                _logger.LogDebug(
+                    "Blob {Blob} is unreferenced but was modified recently ({LastModified}). Preserving within grace period.",
+                    name,
+                    blob.LastModified.Value);
+                continue;
+            }
+
             orphanedNames.Add(name);
             if (!deleteOrphans)
             {
@@ -117,13 +131,19 @@ public sealed class OrphanedBlobCleanupService
     private async Task<HashSet<string>> GetReferencedStorageNamesAsync(CancellationToken cancellationToken)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-        var names = await context.Documents
+        var documents = await context.Documents
             .AsNoTracking()
-            .Where(doc => !string.IsNullOrWhiteSpace(doc.StorageName))
-            .Select(doc => doc.StorageName!)
+            .Select(doc => new { doc.StorageName, doc.Name })
             .ToListAsync(cancellationToken);
 
-        return new HashSet<string>(names, StringComparer.Ordinal);
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var doc in documents)
+        {
+            if (!string.IsNullOrWhiteSpace(doc.StorageName)) names.Add(doc.StorageName);
+            if (!string.IsNullOrWhiteSpace(doc.Name)) names.Add(doc.Name);
+        }
+
+        return names;
     }
 
     private Task AuditOrphanAsync(string blobName, string outcome, string? errorMessage = null)

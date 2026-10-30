@@ -377,6 +377,7 @@ File-system storage is the default.
 | Variable | Default | Notes |
 |---|---|---|
 | `Storage__Provider` | `FileSystem` | `Azure`, `GoogleDrive` or `S3` for remote storage. |
+| `Storage__FallbackProvider` | empty | Optional secondary provider (e.g. `FileSystem`) during migration for zero-downtime cutover. |
 | `Storage__Path` | `App_Data/storage` (under `/app` in Docker) | File-system storage path inside the API container. |
 | `Azure__BlobConnectionString` | empty | Required when `Storage__Provider=Azure`. |
 | `Azure__BlobContainerName` | `media` | Azure container name. |

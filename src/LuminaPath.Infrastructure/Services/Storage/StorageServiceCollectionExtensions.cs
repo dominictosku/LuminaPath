@@ -25,6 +25,7 @@ internal static class StorageServiceCollectionExtensions
 
         var storageOptions = StorageOptions.FromConfiguration(config);
         services.AddScoped<StorageMigrationService>();
+        services.AddScoped<StorageReconciliationService>();
         services.AddOptions<GoogleDriveOptions>()
             .Bind(config.GetSection(GoogleDriveOptions.SectionName))
             .PostConfigure(options => GoogleDriveOptions.ReadSecrets(options, config))
@@ -77,8 +78,30 @@ internal static class StorageServiceCollectionExtensions
             && config.GetValue("S3:UploadBackups", true))
             services.AddSingleton<IBackupArchive, S3BackupArchive>();
         services.AddSingleton<StorageProviderRegistry>();
-        services.AddSingleton<IStorageService>(sp => sp.GetRequiredService<StorageProviderRegistry>()
-            .Get(sp.GetRequiredService<IOptions<StorageOptions>>().Value.Provider));
+        services.AddSingleton<IStorageService>(sp =>
+        {
+            var registry = sp.GetRequiredService<StorageProviderRegistry>();
+            var options = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
+            var primary = registry.Get(options.Provider);
+            IStorageService? fallback = null;
+            if (!string.IsNullOrWhiteSpace(options.FallbackProvider)
+                && !string.Equals(options.Provider, options.FallbackProvider, StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    fallback = registry.Get(options.FallbackProvider);
+                }
+                catch (Exception ex)
+                {
+                    sp.GetRequiredService<ILogger<FallbackStorageService>>()
+                        .LogWarning(ex, "Configured FallbackProvider '{Fallback}' could not be resolved.", options.FallbackProvider);
+                }
+            }
+
+            return fallback is not null
+                ? new FallbackStorageService(primary, fallback, sp.GetRequiredService<ILogger<FallbackStorageService>>())
+                : primary;
+        });
         if (storageOptions.UsesGoogleDrive && config.GetValue("GoogleDrive:UploadBackups", true))
             services.AddSingleton<IBackupArchive, GoogleDriveBackupArchive>();
         return services;

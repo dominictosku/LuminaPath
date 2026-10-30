@@ -1,4 +1,4 @@
-﻿namespace LuminaPath.Core.Dtos
+namespace LuminaPath.Core.Dtos
 {
     public class BlobDto
     {
@@ -6,5 +6,7 @@
         public string? Name { get; set; }
         public string? ContentType { get; set; }
         public Stream? Content { get; set; }
+        public long? SizeBytes { get; set; }
+        public DateTimeOffset? LastModified { get; set; }
     }
 }

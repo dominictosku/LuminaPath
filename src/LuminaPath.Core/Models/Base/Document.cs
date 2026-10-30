@@ -1,4 +1,4 @@
-﻿using LuminaPath.Core.Enums;
+using LuminaPath.Core.Enums;
 using LuminaPath.Core.Interfaces;
 
 namespace LuminaPath.Core.Models.Base
@@ -12,6 +12,9 @@ namespace LuminaPath.Core.Models.Base
         public string? Path { get; set; }
         public string? ContentType { get; set; }
         public DocumentType DocumentType { get; set; } = default!;
+        public long FileSizeBytes { get; set; }
+        public string? ChecksumSha256 { get; set; }
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
         public string Url => $"api/files/{StorageName ?? Name}";
     }
 }

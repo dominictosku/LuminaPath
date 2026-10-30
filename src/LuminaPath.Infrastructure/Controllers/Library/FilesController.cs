@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using LuminaPath.Core.Interfaces;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.Auditing;
@@ -113,6 +114,8 @@ namespace LuminaPath.Infrastructure.Controllers
                 storedName,
                 contentType);
 
+            var checksumHex = Convert.ToHexStringLower(SHA256.HashData(bufferedStream.ToArray()));
+
             // Return enough metadata for callers to wire the file into a
             // freshly-created entity (e.g. Game.Image) without needing a
             // follow-up lookup. `Url` matches Document.Url so the mobile
@@ -123,6 +126,8 @@ namespace LuminaPath.Infrastructure.Controllers
                 Name = file.FileName,
                 StorageName = storedName,
                 ContentType = contentType,
+                Size = bufferedStream.Length,
+                ChecksumSha256 = checksumHex,
                 Url = $"api/files/{storedName}"
             });
         }
@@ -199,6 +204,12 @@ namespace LuminaPath.Infrastructure.Controllers
         [HttpGet("{url}")]
         public async Task<IActionResult> GetImage(string url)
         {
+            var eTag = $"\"{url}\"";
+            if (Request.Headers.IfNoneMatch.ToString() == eTag)
+            {
+                return StatusCode(StatusCodes.Status304NotModified);
+            }
+
             var result = await Storage.DownloadAsync(url);
             if (result is null || result.Content is null)
             {
@@ -211,6 +222,7 @@ namespace LuminaPath.Infrastructure.Controllers
                         errorMessage: "File was not found.");
                 }
 
+                Response.Headers.CacheControl = "no-cache, no-store";
                 return File("/images/placeholder.png", "image/png");
             }
 
@@ -223,6 +235,8 @@ namespace LuminaPath.Infrastructure.Controllers
                     result.ContentType);
             }
 
+            Response.Headers.ETag = eTag;
+            Response.Headers.CacheControl = "public, max-age=31536000, immutable";
             return new FileStreamResult(result.Content, result.ContentType ?? "image/png");
         }
 

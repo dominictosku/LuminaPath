@@ -1,0 +1,260 @@
+@using Microsoft.Extensions.Options
+@using LuminaPath.Infrastructure.Services.Storage
+@inject IOptions<GoogleDriveOptions> DriveOptions
+@inject IOptions<StorageOptions> StorageOptions
+@inject GoogleDriveConnectionStore ConnectionStore
+@inject StorageReconciliationService ReconciliationService
+@inject ISnackbar Snackbar
+
+<section class="settings-panel settings-panel--primary">
+	<div class="settings-panel__header">
+		<div>
+			<MudText Typo="Typo.overline">Cloud & Local Storage</MudText>
+			<MudText Typo="Typo.h5">Storage Management</MudText>
+			<MudText Typo="Typo.body2">
+				Manage primary and fallback storage backends, verify integrity, and connect cloud integrations.
+			</MudText>
+		</div>
+		<div class="settings-panel__icon settings-panel__icon--blue">
+			<MudIcon Icon="@Icons.Material.Filled.Cloud" />
+		</div>
+	</div>
+
+	<div class="settings-form">
+		<div class="storage-summary mb-4">
+			<div>
+				<span>Active Provider</span>
+				<strong>@StorageOptions.Value.Provider</strong>
+			</div>
+			<div>
+				<span>Fallback Provider</span>
+				<strong>@(string.IsNullOrWhiteSpace(StorageOptions.Value.FallbackProvider) ? "None (Direct)" : StorageOptions.Value.FallbackProvider)</strong>
+			</div>
+			<div>
+				<span>Drive Authorization</span>
+				<strong>@(external ? "Server Secret" : connected ? "Connected" : "Not Connected")</strong>
+			</div>
+		</div>
+
+		@if (report != null)
+		{
+			<div class="storage-summary mb-4">
+				<div>
+					<span>Database Documents</span>
+					<strong>@report.TotalDatabaseDocuments</strong>
+				</div>
+				<div>
+					<span>Storage Files</span>
+					<strong>@report.TotalStorageFiles</strong>
+				</div>
+				<div>
+					<span>Total Storage Size</span>
+					<strong>@FormatBytes(report.TotalStorageBytes)</strong>
+				</div>
+				<div>
+					<span>Health Status</span>
+					<strong style="color: @(report.IsHealthy ? "#2cb57e" : "#f59e0b");">
+						@(report.IsHealthy ? "Healthy" : $"{report.GhostDocuments.Count} Ghost(s), {report.EligibleOrphanCount} Orphan(s)")
+					</strong>
+				</div>
+			</div>
+
+			@if (report.GhostDocuments.Count > 0)
+			{
+				<MudAlert Severity="Severity.Error" Class="mb-4">
+					Warning: @report.GhostDocuments.Count document(s) in the database reference files that are missing from storage!
+				</MudAlert>
+			}
+
+			@if (report.EligibleOrphanCount > 0)
+			{
+				<MudAlert Severity="Severity.Warning" Class="mb-4">
+					Found @report.EligibleOrphanCount orphaned file(s) in storage not referenced by the database (older than 24h). Run the Orphan Janitor in Maintenance to safely prune them.
+				</MudAlert>
+			}
+
+			@if (report.GracePeriodOrphanCount > 0)
+			{
+				<MudAlert Severity="Severity.Info" Class="mb-4">
+					@report.GracePeriodOrphanCount file(s) in storage were uploaded within the last 24 hours and are protected by the active grace period.
+				</MudAlert>
+			}
+
+			@if (report.IsHealthy)
+			{
+				<MudAlert Severity="Severity.Success" Class="mb-4">
+					Integrity check passed: 100% of database documents exist in storage, and no uncollected orphans were found.
+				</MudAlert>
+			}
+		}
+
+		<div class="settings-action-row mb-4">
+			<MudButton OnClick="RunReconciliationScan"
+					   Variant="MudBlazor.Variant.Outlined"
+					   Color="Color.Primary"
+					   StartIcon="@Icons.Material.Filled.FactCheck"
+					   Disabled="@scanning">
+				@(scanning ? "Checking Integrity..." : "Scan Storage Integrity")
+			</MudButton>
+		</div>
+
+		<MudDivider Class="my-4" />
+
+		<MudText Typo="Typo.h6" Class="mb-2">Google Drive Integration</MudText>
+		<MudText Typo="Typo.body2" Class="mb-3 text-secondary">
+			Authorize Google Drive storage for uploads, media, and database backup snapshots.
+		</MudText>
+
+		@if (Result == "connected" && connected)
+		{
+			<MudAlert Severity="Severity.Success" Class="mb-4">Google Drive authorization saved.</MudAlert>
+		}
+		@if (Result == "error" || unreadable)
+		{
+			<MudAlert Severity="Severity.Error" Class="mb-4">
+				Could not connect Google Drive. Check the OAuth client and callback URL, allow Drive access,
+				and use the same Google account when reconnecting. If the saved connection cannot be read,
+				restore its original connection volume and encryption keys.
+			</MudAlert>
+		}
+
+		@if (!DriveOptions.Value.CanConnectInBrowser)
+		{
+			<MudAlert Severity="Severity.Info" Class="mb-4">
+				Configure a Google OAuth Web application client ID, client secret and callback URL on the server,
+				then restart the API. See the Google Drive storage setup in the README.
+			</MudAlert>
+		}
+
+		@if (!string.IsNullOrWhiteSpace(DriveOptions.Value.RedirectUri))
+		{
+			<div class="redirect-uri-box mb-4">
+				<MudText Typo="Typo.caption" Class="d-block mb-1">Authorized redirect URI for Google Cloud:</MudText>
+				<code>@DriveOptions.Value.RedirectUri</code>
+			</div>
+		}
+
+		@if (external)
+		{
+			<MudAlert Severity="Severity.Info">
+				The server uses a refresh token from configuration. To use browser authorization instead,
+				remove that token setting and restart the API, then connect the same Google account here.
+			</MudAlert>
+		}
+		else if (DriveOptions.Value.CanConnectInBrowser && !unreadable)
+		{
+			<form method="post" action="/api/integrations/google-drive/connect" data-enhance="false">
+				<AntiforgeryToken />
+				<MudButton ButtonType="ButtonType.Submit"
+						   Variant="MudBlazor.Variant.Filled"
+						   Color="Color.Primary"
+						   StartIcon="@Icons.Material.Filled.Cloud">
+					@(connected ? "Reconnect Google Drive" : "Connect Google Drive")
+				</MudButton>
+			</form>
+		}
+	</div>
+</section>
+
+<section class="settings-panel settings-help-panel">
+	<MudIcon Icon="@Icons.Material.Filled.Info" />
+	<div>
+		<MudText Typo="Typo.h6">Zero-downtime Switching</MudText>
+		<MudText Typo="Typo.body2" Class="mb-3">
+			When switching storage providers, configure <code>Storage:FallbackProvider</code> pointing to your previous provider. Reads will seamlessly check the primary provider first and fall back to the old provider while migration runs in the background.
+		</MudText>
+		<MudText Typo="Typo.h6">Integrity Protection</MudText>
+		<MudText Typo="Typo.body2" Class="mb-3">
+			Files uploaded to LuminaPath are hashed with SHA-256 and verified upon migration. Uncommitted uploads are protected by an automatic 24-hour grace period before being eligible for orphan cleanup.
+		</MudText>
+	</div>
+</section>
+
+<style>
+	.storage-summary {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 12px;
+	}
+
+	.storage-summary > div {
+		display: grid;
+		gap: 6px;
+		padding: 14px;
+		border: 1px solid var(--line, #252c2d);
+		border-radius: 12px;
+		background: rgba(255, 255, 255, .04);
+	}
+
+	.storage-summary span {
+		color: var(--mud-palette-text-secondary);
+		font-size: .78rem;
+		font-weight: 800;
+		text-transform: uppercase;
+	}
+
+	.storage-summary strong {
+		font-size: 1.1rem;
+	}
+
+	.redirect-uri-box {
+		padding: 12px;
+		border: 1px solid var(--line, #252c2d);
+		border-radius: 8px;
+		background: rgba(0, 0, 0, .2);
+	}
+
+	.redirect-uri-box code {
+		color: var(--mint, #b2f5cf);
+		word-break: break-all;
+	}
+</style>
+
+@code {
+	[Parameter] public string? Result { get; set; }
+
+	private bool connected;
+	private bool external;
+	private bool unreadable;
+	private bool scanning;
+	private StorageReconciliationReport? report;
+
+	protected override void OnParametersSet()
+	{
+		external = DriveOptions.Value.HasExternalToken;
+		if (external) return;
+		try { connected = ConnectionStore.Read() is not null; }
+		catch { unreadable = true; }
+	}
+
+	private async Task RunReconciliationScan()
+	{
+		scanning = true;
+		try
+		{
+			report = await ReconciliationService.ReconcileAsync();
+			Snackbar.Add("Storage integrity scan completed.", Severity.Success);
+		}
+		catch (Exception ex)
+		{
+			Snackbar.Add($"Integrity scan failed: {ex.Message}", Severity.Error);
+		}
+		finally
+		{
+			scanning = false;
+		}
+	}
+
+	private static string FormatBytes(long bytes)
+	{
+		string[] suffixes = ["B", "KB", "MB", "GB", "TB"];
+		int counter = 0;
+		decimal number = bytes;
+		while (Math.Round(number / 1024) >= 1 && counter < suffixes.Length - 1)
+		{
+			number /= 1024;
+			counter++;
+		}
+		return $"{number:n1} {suffixes[counter]}";
+	}
+}

@@ -100,7 +100,7 @@ public sealed class GoogleDriveClient : IDisposable
         string? page = null;
         do
         {
-            var url = Api + "files?spaces=drive&pageSize=1000&fields=nextPageToken,files(id,name,mimeType,size,trashed)&q="
+            var url = Api + "files?spaces=drive&pageSize=1000&fields=nextPageToken,files(id,name,mimeType,size,modifiedTime,trashed)&q="
                 + Uri.EscapeDataString("trashed=false and " + query)
                 + (page is null ? "" : "&pageToken=" + Uri.EscapeDataString(page));
             using var response = await SendAsync(() => new(HttpMethod.Get, url), ct);
@@ -303,4 +303,6 @@ public sealed class GoogleDriveClient : IDisposable
 }
 
 public sealed record DriveFile(string Id, string Name, string MimeType,
-    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] long Size = 0, bool Trashed = false);
+    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] long Size = 0,
+    DateTimeOffset? ModifiedTime = null,
+    bool Trashed = false);
