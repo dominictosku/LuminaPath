@@ -495,9 +495,9 @@ needs outbound HTTPS access to `oauth2.googleapis.com` and `www.googleapis.com`.
    Leave `GoogleDrive__RefreshToken` and `GoogleDrive__RefreshTokenFile` unset.
    Keep the current storage provider while connecting and preparing migration.
 4. Recreate the API with `docker compose up -d`, sign in as an administrator, and
-   open **Admin → Google Drive** at `/Admin/GoogleDrive` on the app's origin.
+   open **Admin overview → Storage** at `/Admin/Overview?tab=storage` on the app's origin.
    Click **Connect Google Drive**, sign in to your storage account, and allow
-   access. The page also links from backend Settings → Google Drive.
+   access. The tab also links from backend Settings → Google Drive.
 5. The backend saves an encrypted offline grant. With Compose, the grant and its
    encryption keys persist under `App_Data/connections/google-drive` in the shared
    `luminapath-data` volume, outside the uploaded-file folder. Keep this volume in your server backups and

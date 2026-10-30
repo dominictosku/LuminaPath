@@ -147,7 +147,7 @@ public sealed class GoogleDriveConnectionTests
         var state = QueryHelpers.ParseQuery(new Uri(redirect.Url).Query)["state"].ToString();
         f.Http.Fail = true;
         var failed = Assert.IsType<RedirectResult>(await controller.Callback("secret-code", state, null, default));
-        Assert.Equal("/Admin/GoogleDrive?drive=error", failed.Url);
+        Assert.Equal("/Admin/Overview?tab=storage&drive=error", failed.Url);
         Assert.Null(f.Store.Read());
     }
 

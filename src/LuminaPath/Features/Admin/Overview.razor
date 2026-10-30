@@ -11,7 +11,7 @@
 			<MudText Typo="Typo.overline" Class="overview-eyebrow">Admin console</MudText>
 			<MudText Typo="Typo.h3" Class="overview-title">Overview</MudText>
 			<MudText Typo="Typo.body1" Class="overview-subtitle">
-				Monitor operational work, database backups and the security audit trail from one place.
+				Monitor operational work, database backups, cloud storage and the security audit trail from one place.
 			</MudText>
 		</div>
 
@@ -20,6 +20,11 @@
 				<MudIcon Icon="@Icons.Material.Filled.Backup" />
 				<span>Backups</span>
 				<strong>Snapshots</strong>
+			</div>
+			<div class="overview-status-card">
+				<MudIcon Icon="@Icons.Material.Filled.Cloud" />
+				<span>Storage</span>
+				<strong>Cloud</strong>
 			</div>
 			<div class="overview-status-card">
 				<MudIcon Icon="@Icons.Material.Filled.ManageHistory" />
@@ -34,10 +39,16 @@
 		</div>
 	</div>
 
-	<MudTabs Class="overview-tabs" Rounded="true">
+	<MudTabs Class="overview-tabs" Rounded="true" @bind-ActivePanelIndex="_activeTabIndex">
 		<MudTabPanel Text="Backups" Icon="@Icons.Material.Filled.Backup">
 			<div class="overview-grid">
 				<DatabaseBackupPanel />
+			</div>
+		</MudTabPanel>
+
+		<MudTabPanel Text="Storage" Icon="@Icons.Material.Filled.Cloud">
+			<div class="overview-grid">
+				<GoogleDriveStoragePanel Result="@DriveResult" />
 			</div>
 		</MudTabPanel>
 
@@ -72,3 +83,45 @@
 		</MudTabPanel>
 	</MudTabs>
 </section>
+
+@code {
+	[SupplyParameterFromQuery(Name = "tab")]
+	public string? Tab { get; set; }
+
+	[SupplyParameterFromQuery(Name = "drive")]
+	public string? DriveResult { get; set; }
+
+	private string? _lastHandledTab;
+	private string? _lastHandledDriveResult;
+	private int _activeTabIndex = 0;
+
+	protected override void OnParametersSet()
+	{
+		if (Tab != _lastHandledTab || DriveResult != _lastHandledDriveResult)
+		{
+			_lastHandledTab = Tab;
+			_lastHandledDriveResult = DriveResult;
+
+			if (string.Equals(Tab, "storage", StringComparison.OrdinalIgnoreCase) || !string.IsNullOrWhiteSpace(DriveResult))
+			{
+				_activeTabIndex = 1;
+			}
+			else if (string.Equals(Tab, "jobs", StringComparison.OrdinalIgnoreCase))
+			{
+				_activeTabIndex = 2;
+			}
+			else if (string.Equals(Tab, "maintenance", StringComparison.OrdinalIgnoreCase))
+			{
+				_activeTabIndex = 3;
+			}
+			else if (string.Equals(Tab, "audit", StringComparison.OrdinalIgnoreCase) || string.Equals(Tab, "auditlog", StringComparison.OrdinalIgnoreCase))
+			{
+				_activeTabIndex = 4;
+			}
+			else if (string.Equals(Tab, "backups", StringComparison.OrdinalIgnoreCase))
+			{
+				_activeTabIndex = 0;
+			}
+		}
+	}
+}

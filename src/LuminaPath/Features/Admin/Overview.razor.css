@@ -40,9 +40,9 @@
 
 .overview-hero__status {
     display: grid;
-    grid-template-columns: repeat(3, minmax(118px, 1fr));
+    grid-template-columns: repeat(4, minmax(105px, 1fr));
     gap: 12px;
-    min-width: 450px;
+    min-width: 460px;
 }
 
 .overview-status-card {
@@ -196,6 +196,11 @@
     box-shadow: 0 16px 36px var(--accent-glow, rgba(44, 181, 126, .24));
 }
 
+::deep .settings-panel__icon--blue {
+    background: linear-gradient(135deg, #1e3a5f, #2563eb);
+    box-shadow: 0 16px 36px rgba(37, 99, 235, .24);
+}
+
 ::deep .settings-panel__icon .mud-icon-root {
     font-size: 30px;
 }
@@ -244,6 +249,7 @@
 
     .overview-hero__status {
         min-width: 0;
+        grid-template-columns: repeat(2, 1fr);
     }
 
     ::deep .settings-panel--primary {

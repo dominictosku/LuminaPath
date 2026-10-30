@@ -20,7 +20,7 @@ public sealed class GoogleDriveController(
         try { await antiforgery.ValidateRequestAsync(HttpContext); }
         catch (AntiforgeryValidationException) { return BadRequest("Reload the Drive settings page and try again."); }
         try { return Redirect(connection.BuildConnectUrl(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "")); }
-        catch (InvalidOperationException) { return Redirect("/Admin/GoogleDrive?drive=error"); }
+        catch (InvalidOperationException) { return Redirect("/Admin/Overview?tab=storage&drive=error"); }
     }
 
     [HttpGet("callback")]
@@ -31,13 +31,13 @@ public sealed class GoogleDriveController(
         try
         {
             await connection.CompleteAsync(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "", state, code, error, ct);
-            return Redirect("/Admin/GoogleDrive?drive=connected");
+            return Redirect("/Admin/Overview?tab=storage&drive=connected");
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             // Neither exception messages nor OAuth response bodies belong in logs or redirects.
             logger.LogWarning("Google Drive connection failed ({ErrorType}).", ex.GetType().Name);
-            return Redirect("/Admin/GoogleDrive?drive=error");
+            return Redirect("/Admin/Overview?tab=storage&drive=error");
         }
     }
 }

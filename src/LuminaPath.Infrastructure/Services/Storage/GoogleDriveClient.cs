@@ -235,7 +235,7 @@ public sealed class GoogleDriveClient : IDisposable
             if (_accessToken is not null && DateTimeOffset.UtcNow < _expires) return _accessToken;
             var refreshToken = _options.HasExternalToken ? _options.RefreshToken : _connection?.Read()?.RefreshToken;
             if (string.IsNullOrWhiteSpace(refreshToken))
-                throw new InvalidOperationException("Connect Google Drive from /Admin/GoogleDrive first.");
+                throw new InvalidOperationException("Connect Google Drive from /Admin/Overview?tab=storage first.");
             using var response = await _http.PostAsync("https://oauth2.googleapis.com/token", new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["client_id"] = _options.ClientId, ["client_secret"] = _options.ClientSecret,
