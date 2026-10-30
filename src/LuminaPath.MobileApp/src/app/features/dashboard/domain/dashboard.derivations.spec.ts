@@ -291,3 +291,15 @@ describe('dashboard.derivations', () => {
     });
   });
 });
+
+
+describe('Dashboard mixed-media actions', () => {
+  it('links focus cards to their relevant destinations', () => {
+    const cards = buildFocusItems({ sessions: [], board: null, upcomingReleases: [item({ kind: 'Anime', id: 9 })], backlogItems: [], now: NOW });
+    expect(cards.map(card => card.route)).toEqual([['/weekly-schedule'], ['/quests'], ['/library', 'animes', '9'], ['/discover']]);
+  });
+
+  it('counts completed watch media without counting dropped titles', () => {
+    expect(completionRateFor([item({ kind: 'Movie', status: 3 }), item({ kind: 'Anime', status: 4 }), item({ kind: 'Game', status: 4 })])).toEqual({ completed: 2, rate: 67 });
+  });
+});

@@ -1,3 +1,4 @@
+import { RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
@@ -9,7 +10,7 @@ import { playedLabel, remainingLabel } from '../../domain/dashboard-view.helpers
   selector: 'app-dashboard-backlog',
   templateUrl: './dashboard-backlog.component.html',
   styleUrls: ['./dashboard-backlog.component.scss'],
-  imports: [IonIcon],
+  imports: [RouterLink, IonIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardBacklogComponent {

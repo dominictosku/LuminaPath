@@ -1,4 +1,4 @@
-<ion-modal class="add-game-modal" [isOpen]="isOpen()" [canDismiss]="canDismiss" (didDismiss)="dismiss.emit()" aria-label="Edit library entry">
+<ion-modal class="add-game-modal" [isOpen]="isOpen()" [canDismiss]="canDismiss" (didDismiss)="dismiss.emit()" aria-label="Library entry">
   <ng-template>
     @if (selectedGame(); as game) {
       <form class="media-dialog" #editorForm="ngForm" (ngSubmit)="editorForm.valid && !isSaving() && submitted.emit()">
@@ -9,10 +9,13 @@
         <section class="dialog-body">
           @if (errorMessage()) { <div class="dialog-notice" role="alert">{{ errorMessage() }}</div> }
           @if (game.description) { <p class="dialog-description">{{ game.description }}</p> }
+          @if (!isEditing()) { <p class="dialog-hint">Save this title to your backlog. You can add progress and a rating later.</p> }
+          <details class="tracking-details" [open]="isEditing()">
+          <summary>Edit tracking details</summary>
           <div class="editor-stats">
             <div><strong>{{ view.playedOf(game, mediaMode()) | number:'1.0-1' }} h</strong><span>Your logged time</span></div>
             <div><strong>{{ view.durationLabel(game, mediaMode()) }}</strong><span>Estimated length</span></div>
-            <div><strong>{{ view.progressOf(game, mediaMode()) }}%</strong><span>Your progress</span></div>
+            <div><strong>{{ isEpisodeMode() ? view.episodeLabel(game, mediaMode()) : view.statusLabel(game, mediaMode()) }}</strong><span>{{ isEpisodeMode() ? 'Episodes watched' : 'Your status' }}</span></div>
           </div>
           @if (isGamesMode() && game.libraryEntry?.myGameInfo?.trackedHours) {
             <p class="dialog-hint">{{ game.libraryEntry?.timeSpend ?? 0 }} h manual + {{ game.libraryEntry?.myGameInfo?.trackedHours }} h imported. Only manual hours are editable below.</p>
@@ -89,13 +92,14 @@
             </label>
           </div>
           </fieldset>
+          </details>
         </section>
         <footer class="dialog-actions">
           <ion-button type="button" fill="clear" [disabled]="isSaving()" (click)="openDetails()">Full details ↗</ion-button>
           <ion-button type="button" fill="clear" [disabled]="isSaving()" (click)="dismiss.emit()">Cancel</ion-button>
           <ion-button type="submit" [disabled]="isSaving() || editorForm.invalid">
             <ion-icon slot="start" [name]="isSaving() ? 'hourglass-outline' : 'checkmark-circle-outline'" />
-            {{ isSaving() ? 'Saving…' : (isEditing() ? 'Save changes' : 'Add to library') }}
+            {{ isSaving() ? 'Saving…' : (isEditing() ? 'Save changes' : (form().status === 1 ? 'Add to backlog' : 'Add to library')) }}
           </ion-button>
         </footer>
       </form>

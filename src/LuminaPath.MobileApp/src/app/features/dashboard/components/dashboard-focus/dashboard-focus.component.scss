@@ -97,3 +97,8 @@
   font-size: .75rem;
   line-height: 1.5;
 }
+
+.focus-card { text-decoration: none; }
+.focus-card:hover { background: var(--surface-strong); }
+.focus-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.focus-action { display: inline-block; margin-top: 6px; color: var(--accent); font-size: .75rem; }

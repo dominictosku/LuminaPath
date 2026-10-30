@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
 /** Collection introduction with projected page actions. */
@@ -9,4 +9,4 @@ import { IonIcon } from '@ionic/angular/standalone';
   imports: [IonIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LibraryHeroComponent {}
+export class LibraryHeroComponent { readonly discover = input(false); }

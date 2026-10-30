@@ -108,10 +108,26 @@ export class MediaLibraryViewService {
       : `${Math.round(this.playedOf(item, mode) * 60)}m watched`;
   }
 
+  trackingSummary(item: MediaItem, mode: MediaModeOption): string {
+    if (this.isEpisodeMode(mode)) return this.episodeLabel(item, mode);
+    return `${this.playedLabel(item, mode)} · ${this.remainingLabel(item, mode)}`;
+  }
+
+  /** Only measured watch progress gets a percentage; game time is an estimate. */
+  measuredProgress(item: MediaItem, mode: MediaModeOption): number | null {
+    if (!item.libraryEntry || this.isGamesMode(mode)) return null;
+    if (this.isEpisodeMode(mode)) {
+      return item.episodeCount && item.episodeCount > 0
+        ? Math.min(100, Math.round((item.libraryEntry.currentEpisode ?? 0) / item.episodeCount * 100)) : null;
+    }
+    return this.expectedHoursOf(item, mode) > 0 ? this.progressOf(item, mode) : null;
+  }
+
   remainingLabel(item: MediaItem, mode: MediaModeOption): string {
+    if (this.expectedHoursOf(item, mode) <= 0) return 'Length unknown';
     return this.isGamesMode(mode)
-      ? `${Math.round(this.remainingOf(item, mode))}h left`
-      : `${Math.round(this.remainingOf(item, mode) * 60)}m left`;
+      ? `~${Math.round(this.remainingOf(item, mode))}h remaining`
+      : `~${Math.round(this.remainingOf(item, mode) * 60)}m remaining`;
   }
 
   durationLabel(item: MediaItem, mode: MediaModeOption): string {
@@ -130,7 +146,7 @@ export class MediaLibraryViewService {
 
     const currentEpisode = Number(item.libraryEntry?.currentEpisode) || 0;
     const episodeCount = Number(item.episodeCount) || 0;
-    return episodeCount > 0 ? `Episode ${currentEpisode}/${episodeCount}` : `Episode ${currentEpisode}`;
+    return episodeCount > 0 ? `Episode ${currentEpisode} of ${episodeCount}` : `Episode ${currentEpisode}`;
   }
 
   mediaTypeLabel(item: MediaItem, mode: MediaModeOption): string {

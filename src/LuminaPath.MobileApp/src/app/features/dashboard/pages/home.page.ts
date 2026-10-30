@@ -1,6 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { catchError, forkJoin, from, of } from 'rxjs';
 import {
@@ -43,6 +43,7 @@ import {
   sumRemainingHours,
   topPlayingItems,
 } from '../domain/dashboard.derivations';
+import { LiveSessionTrackerService } from 'src/app/shared/services/live-session-tracker.service';
 import { RequestCache } from 'src/app/shared/services/request-cache.service';
 import { DashboardHeroComponent } from '../components/dashboard-hero/dashboard-hero.component';
 import { DashboardMetricsComponent } from '../components/dashboard-metrics/dashboard-metrics.component';
@@ -118,6 +119,30 @@ export class HomePage implements OnInit {
   private sessionService = inject(GamingSessionService);
   private questBoardService = inject(QuestBoardService);
   private cache = inject(RequestCache);
+  private router = inject(Router);
+  private liveSessions = inject(LiveSessionTrackerService);
+  readonly runningGameIds = computed(() => this.liveSessions.sessions().map((session) => session.gameId));
+  actionMessage = '';
+
+  startSession(item: DashboardMediaItem): void {
+    if (item.kind !== 'Game') return;
+    const game = this.games.find((entry) => entry.id === item.id);
+    if (!game?.myGames || this.liveSessions.get(item.id)) return;
+    this.liveSessions.start({ gameId: item.id, myGameId: game.myGames.id, gameName: item.name,
+      startedAt: new Date().toISOString(), notes: '' });
+    this.actionMessage = this.liveSessions.get(item.id)
+      ? `Session started for ${item.name}. Open the running session to stop and save it.`
+      : 'Your browser could not save the timer. Open the title to start a session.';
+  }
+
+  updateProgress(item: DashboardMediaItem): void {
+    const kinds = { Game: 'games', Anime: 'animes', Movie: 'movies', Series: 'series' };
+    void this.router.navigate(['/library'], { queryParams: { mediaKind: kinds[item.kind], editMediaId: item.id } });
+  }
+
+  ionViewWillEnter(): void {
+    if (!this.isLoading) this.loadDashboard();
+  }
 
   readonly today = new Date();
 

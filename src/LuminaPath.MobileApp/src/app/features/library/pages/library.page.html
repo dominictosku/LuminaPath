@@ -8,15 +8,21 @@
   </ion-refresher>
 
   <main class="library-page">
-    <app-library-hero>
+    <app-library-hero [discover]="isDiscover">
+      @if (!isDiscover) {
       <ion-button fill="outline" aria-label="Export library to Excel" [disabled]="exportState === 'working'" (click)="exportLibrary()">
         <ion-icon slot="start" name="download-outline" />{{ exportState === 'working' ? 'Exporting…' : 'Export library' }}
       </ion-button>
       <ion-button (click)="browseMedia()"><ion-icon slot="start" name="add-outline" />Add media</ion-button>
+      } @else {
+        <ion-button fill="outline" routerLink="/discover/releases">Releases</ion-button>
+        <ion-button routerLink="/library">My library</ion-button>
+      }
     </app-library-hero>
 
     <app-library-toolbar
       [mediaOptions]="mediaOptions"
+      [isDiscover]="isDiscover"
       [mediaModeId]="mediaMode.id"
       (mediaModeChange)="selectMediaMode($event)"
       [(searchTerm)]="searchTerm"
@@ -32,7 +38,7 @@
       [(presetName)]="presetName"
       [statusOptions]="statusOptions"
       [platforms]="platforms"
-      [sortOptions]="sortOptions"
+      [sortOptions]="visibleSortOptions"
       [savedPresets]="savedPresets"
       [shortGameCount]="shortGameCount"
       [abandonedGameCount]="abandonedGameCount"
@@ -67,6 +73,7 @@
       <section class="notice" role="alert">
         <ion-icon name="search-outline"></ion-icon>
         <span>{{ errorMessage }}</span>
+        <ion-button fill="clear" (click)="loadGames()">Retry</ion-button>
       </section>
     }
 
@@ -90,13 +97,13 @@
     @if (!isLoading) {
       <section class="results-heading">
         <div>
-          <h2>{{ resultTitle }} to explore</h2>
+          <h2>{{ resultTitle }} {{ isDiscover ? 'to explore' : 'in your library' }}</h2>
         </div>
         <div class="results-heading__actions">
           @if (creator.canCreate) {
             <ion-button fill="clear" size="small" aria-label="Create new catalog entry" (click)="creator.open()">Create media</ion-button>
           }
-          @if (bulk.visibleLibraryItems.length) {
+          @if (!isDiscover && bulk.visibleLibraryItems.length) {
             <ion-button fill="clear" size="small" (click)="bulk.toggleSelectionMode()">
               <ion-icon slot="start" name="checkbox-outline"></ion-icon>
               {{ bulk.selectionMode ? 'Done' : 'Select' }}
@@ -207,12 +214,23 @@
       </section>
     }
 
-    @if (!isLoading && !filteredGames().length) {
+    @if (!isLoading && !errorMessage && !filteredGames().length) {
       <section class="empty-state">
         <ion-icon name="game-controller-outline"></ion-icon>
-        <h2>{{ emptyTitle }}</h2>
-        <p>Try loosening the search or filters.</p>
-        <ion-button fill="outline" (click)="clearFilters()">Clear filters</ion-button>
+        @if (hasActiveFilters) {
+          <h2>No matching titles</h2>
+          <p>Try a different search or remove a filter.</p>
+          <ion-button fill="outline" (click)="clearFilters()">Clear filters</ion-button>
+        } @else if (!isDiscover) {
+          <h2>Your {{ mediaMode.label.toLowerCase() }} library starts here</h2>
+          <p>Save a title you love, then track your progress as you go.</p>
+          <ion-button (click)="browseMedia()">Find your first title</ion-button>
+        } @else {
+          <h2>No {{ mediaMode.label.toLowerCase() }} in the catalog yet</h2>
+          <p>Try another media type or explore upcoming releases.</p>
+          <ion-button fill="outline" routerLink="/discover/releases">Explore releases</ion-button>
+          @if (creator.canCreate) { <ion-button (click)="creator.open()">Create a title</ion-button> }
+        }
       </section>
     }
   </main>

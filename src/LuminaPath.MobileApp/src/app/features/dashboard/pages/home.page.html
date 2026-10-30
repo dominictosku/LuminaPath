@@ -7,12 +7,12 @@
     <header class="dashboard-header dash-cell--wide">
       <div>
         <div class="dashboard-kicker"><span></span> YOUR PERSONAL MEDIA SPACE</div>
-        <h1>A little escape. <span>A lot to discover.</span></h1>
-        <p>Your stories, your progress, your next adventure.</p>
+        <h1>Pick up where you left off.</h1>
+        <p>Continue a title, log your progress, or make time for today’s plans.</p>
       </div>
       <div class="dashboard-header__actions">
         <time [attr.datetime]="today | date:'yyyy-MM-dd'">{{ today | date:'EEEE, MMM d' }}</time>
-        <a class="browse-link" routerLink="/browse">Explore titles <ion-icon name="arrow-forward-outline" aria-hidden="true"></ion-icon></a>
+        <a class="browse-link" routerLink="/discover">Explore titles <ion-icon name="arrow-forward-outline" aria-hidden="true"></ion-icon></a>
       </div>
     </header>
 
@@ -24,11 +24,11 @@
       </section>
     }
 
-    <app-dashboard-hero class="dash-cell dash-cell--main"
-      [featuredItem]="featuredItem" [heroProgress]="heroProgress" [isLoading]="isLoading">
-    </app-dashboard-hero>
-
     @if (!isLoading) {
+      @if (actionMessage) { <div class="notice notice--success dash-cell--wide" role="status">{{ actionMessage }}</div> }
+      <app-dashboard-hero class="dash-cell dash-cell--main"
+        [featuredItem]="featuredItem" [heroProgress]="heroProgress" [isLoading]="isLoading">
+      </app-dashboard-hero>
       <app-dashboard-focus class="dash-cell dash-cell--side" [items]="focusItems"></app-dashboard-focus>
       <app-dashboard-metrics class="dash-cell dash-cell--wide" [metrics]="metrics"></app-dashboard-metrics>
 
@@ -36,7 +36,8 @@
         <div><span>MAKE TIME FOR WHAT YOU LOVE</span><h2>Your next chapter</h2></div>
         <a routerLink="/library">View library <ion-icon name="arrow-forward-outline" aria-hidden="true"></ion-icon></a>
       </div>
-      <app-dashboard-active-rail class="dash-cell dash-cell--main" [items]="playingItems"></app-dashboard-active-rail>
+      <app-dashboard-active-rail class="dash-cell dash-cell--main" [items]="playingItems"
+        [runningGameIds]="runningGameIds()" (startSession)="startSession($event)" (updateProgress)="updateProgress($event)"></app-dashboard-active-rail>
       <app-dashboard-momentum class="dash-cell dash-cell--side" [playedHours]="playedHours" [completionRate]="completionRate"></app-dashboard-momentum>
       <app-dashboard-recent class="dash-cell dash-cell--main" [items]="recentItems"></app-dashboard-recent>
       <app-dashboard-activity class="dash-cell dash-cell--side" [items]="activityItems"></app-dashboard-activity>

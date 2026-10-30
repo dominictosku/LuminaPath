@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular/standalone';
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 
 import { MediaModeService } from 'src/app/shared/services/media-mode.service';
@@ -75,10 +75,11 @@ describe('LibraryPage', () => {
     localStorage.clear();
   });
 
-  function configure(getAllResponse: Observable<PaginateResult<MediaItem>>) {
+  function configure(getAllResponse: Observable<PaginateResult<MediaItem>>, discover = false) {
     queryParams = new BehaviorSubject(convertToParamMap({}));
     mediaLibrary = jasmine.createSpyObj<MediaLibraryFacade>('MediaLibraryFacade', [
       'getAll',
+      'get',
       'addToLibrary',
       'updateLibraryEntry',
       'removeFromLibrary',
@@ -135,7 +136,7 @@ describe('LibraryPage', () => {
         { provide: Router, useValue: router },
         { provide: ActivatedRoute, useValue: {
           queryParamMap: queryParams.asObservable(),
-          snapshot: { get queryParamMap() { return queryParams.value; } },
+          snapshot: { data: { discover }, get queryParamMap() { return queryParams.value; } },
         } },
         { provide: GameService, useValue: gameService },
         { provide: AnimeService, useValue: animeService },
@@ -151,8 +152,8 @@ describe('LibraryPage', () => {
 
   it('loads games on init and clears the loading flag', fakeAsync(() => {
     const games = [
-      makeGame({ id: 1, name: 'Apex Legends' }),
-      makeGame({ id: 2, name: 'Baldurs Gate' }),
+      makeGame({ id: 1, name: 'Apex Legends', libraryEntry: makeEntry({ id: 10 }) }),
+      makeGame({ id: 2, name: 'Baldurs Gate', libraryEntry: makeEntry({ id: 20 }) }),
     ];
     configure(of(pageOf(games)));
 
@@ -167,8 +168,8 @@ describe('LibraryPage', () => {
   }));
 
   it('loads and appends the next page when infinite scroll fires', fakeAsync(() => {
-    const pageOne = [makeGame({ id: 1, name: 'Apex Legends' })];
-    const pageTwo = [makeGame({ id: 2, name: 'Baldurs Gate' })];
+    const pageOne = [makeGame({ id: 1, name: 'Apex Legends', libraryEntry: makeEntry({ id: 10 }) })];
+    const pageTwo = [makeGame({ id: 2, name: 'Baldurs Gate', libraryEntry: makeEntry({ id: 20 }) })];
     configure(of(pageOf(pageOne, 1, 2)));
     mediaLibrary.getAll.and.returnValues(
       of(pageOf(pageOne, 1, 2)),
@@ -514,7 +515,7 @@ describe('LibraryPage', () => {
     expect(component.successMessage).toBe('2 games updated.');
   });
 
-  it('bulkRemoveFromLibrary removes selected personal entries and keeps catalog items visible', async () => {
+  it('bulkRemoveFromLibrary hides removed titles from the personal library', async () => {
     const owned = makeGame({
       id: 7,
       name: 'Hades',
@@ -535,23 +536,66 @@ describe('LibraryPage', () => {
     expect(component.games.find((game) => game.id === 7)?.libraryEntry).toBeNull();
     expect(component.games.find((game) => game.id === 8)).toBeTruthy();
     expect(component.successMessage).toBe('1 game removed from your library.');
+    expect(component.filteredGames()).toEqual([]);
   });
 
-  it('Add media opens the current media catalog instead of the limited release feed', fakeAsync(() => {
+  it('Add media navigates to the full catalog without changing Library filters', fakeAsync(() => {
     configure(of(pageOf([])));
     fixture.detectChanges();
     tick();
-    component.statusFilter = '2';
     component.browseMedia();
+    expect(component.ownershipFilter).toBe('mine');
+    expect(router.navigate).toHaveBeenCalledWith(['/discover']);
+  }));
+
+  it('defaults and resets Library to saved titles', fakeAsync(() => {
+    configure(of(pageOf([])));
+    fixture.detectChanges();
     tick();
-    expect(component.ownershipFilter).toBe('catalog');
-    expect(component.statusFilter).toBe('all');
-    expect(mediaLibrary.getAll).toHaveBeenCalledWith(jasmine.objectContaining({ Ownership: 'catalog' }));
-    expect(router.navigate).not.toHaveBeenCalled();
+    expect(mediaLibrary.getAll.calls.mostRecent().args[0]?.Ownership).toBe('mine');
+    component.clearFilters();
+    expect(mediaLibrary.getAll.calls.mostRecent().args[0]?.Ownership).toBe('mine');
+  }));
+
+  it('defaults and resets Discover to the full catalog', fakeAsync(() => {
+    configure(of(pageOf([])), true);
+    fixture.detectChanges();
+    tick();
+    expect(component.isDiscover).toBeTrue();
+    expect(mediaLibrary.getAll.calls.mostRecent().args[0]?.Ownership).toBe('all');
+    component.clearFilters();
+    expect(mediaLibrary.getAll.calls.mostRecent().args[0]?.Ownership).toBe('all');
+  }));
+
+  it('loads tracking details outside the current page and closes them on browser Back', fakeAsync(() => {
+    configure(of(pageOf([])));
+    mediaLibrary.get.and.returnValue(of(makeGame({ id: 42, libraryEntry: makeEntry({ id: 8 }) })));
+    fixture.detectChanges();
+    tick();
+    queryParams.next(convertToParamMap({ mediaKind: 'games', editMediaId: '42' }));
+    tick();
+    expect(mediaLibrary.get).toHaveBeenCalledWith(42, 'games');
+    expect(component.selectedGame?.id).toBe(42);
+    expect(component.isAddDialogOpen).toBeTrue();
+    queryParams.next(convertToParamMap({}));
+    expect(component.isAddDialogOpen).toBeFalse();
+  }));
+
+  it('ignores a tracking response after browser Back', fakeAsync(() => {
+    configure(of(pageOf([])));
+    const response = new Subject<MediaItem>();
+    mediaLibrary.get.and.returnValue(response);
+    fixture.detectChanges();
+    tick();
+    queryParams.next(convertToParamMap({ mediaKind: 'games', editMediaId: '42' }));
+    queryParams.next(convertToParamMap({}));
+    response.next(makeGame({ id: 42, libraryEntry: makeEntry({ id: 42 }) }));
+    tick();
+    expect(component.isAddDialogOpen).toBeFalse();
   }));
 
   it('opens details through query state without reloading the list or clearing filters', fakeAsync(() => {
-    configure(of(pageOf([makeGame({ id: 42 })])));
+    configure(of(pageOf([makeGame({ id: 42, libraryEntry: makeEntry({ id: 42 }) })])));
     fixture.detectChanges();
     tick();
     component.searchTerm = 'Hades';
@@ -610,7 +654,7 @@ describe('LibraryPage', () => {
   }));
 
   it('does not refetch or blank the Library when returning from Browse with a matching list', fakeAsync(() => {
-    configure(of(pageOf([makeGame({ id: 42 })])));
+    configure(of(pageOf([makeGame({ id: 42, libraryEntry: makeEntry({ id: 42 }) })])));
     fixture.detectChanges();
     tick();
     component.ionViewWillEnter();
@@ -619,7 +663,7 @@ describe('LibraryPage', () => {
   }));
 
   it('recovers a cleared store on tab return without requiring Clear filters', fakeAsync(() => {
-    configure(of(pageOf([makeGame({ id: 42 })])));
+    configure(of(pageOf([makeGame({ id: 42, libraryEntry: makeEntry({ id: 42 }) })])));
     fixture.detectChanges();
     tick();
     TestBed.inject(MediaStore).clear();

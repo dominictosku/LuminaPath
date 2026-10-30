@@ -1,8 +1,8 @@
 <header class="page-intro">
   <div>
-    <span class="eyebrow"><ion-icon name="sparkles-outline" /> Your library</span>
-    <h1>Every world, in one place.</h1>
-    <p>Your games, films, series, and anime. Make this collection your own.</p>
+    <span class="eyebrow"><ion-icon name="sparkles-outline" /> {{ discover() ? 'Discover' : 'Your library' }}</span>
+    <h1>{{ discover() ? 'Find your next favorite.' : 'Pick your next adventure.' }}</h1>
+    <p>{{ discover() ? 'Search the full catalog of games, films, series, and anime.' : 'Your saved titles, progress, and plans in one place.' }}</p>
   </div>
   <div class="heading-actions"><ng-content /></div>
 </header>

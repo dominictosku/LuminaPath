@@ -17,7 +17,18 @@ export const routes: Routes = [
       },
       ...libraryRoutes,
       {
+        path: 'discover',
+        data: { discover: true },
+        loadComponent: () =>
+          import('../../../features/library/pages/library.page').then((m) => m.LibraryPage),
+      },
+      {
         path: 'browse',
+        redirectTo: '/discover/releases',
+        pathMatch: 'full',
+      },
+      {
+        path: 'discover/releases',
         loadComponent: () =>
           import('../../../features/browse/pages/browse.page').then((m) => m.BrowsePage),
       },

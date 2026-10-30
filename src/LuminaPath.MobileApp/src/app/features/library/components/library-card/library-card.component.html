@@ -1,10 +1,11 @@
 <app-media-poster
   [title]="item.name" [image]="imageFor(item)" [kind]="mediaMode.singular" [icon]="mediaMode.icon"
   [subtitle]="view.mediaTypeLabel(item, mediaMode)"
-  [meta]="view.hasLibraryEntry(item) ? (view.isGamesMode(mediaMode) ? view.playedLabel(item, mediaMode) : view.progressOf(item, mediaMode) + '% watched') : view.releaseLabel(item)"
+  [meta]="view.hasLibraryEntry(item) ? view.trackingSummary(item, mediaMode) : view.releaseLabel(item)"
   [status]="view.statusLabel(item, mediaMode)"
-  [progress]="view.hasLibraryEntry(item) ? view.progressOf(item, mediaMode) : null"
+  [progress]="view.measuredProgress(item, mediaMode)"
   [selecting]="selectionMode" [selected]="selected" [disabled]="isAdding || (selectionMode && !selectable)"
-  [actionLabel]="selectionMode ? (selected ? 'Deselect ' : 'Select ') + item.name : 'View details for ' + item.name"
+  [actionIcon]="view.hasLibraryEntry(item) ? 'create-outline' : 'add-outline'"
+  [actionLabel]="selectionMode ? (selected ? 'Deselect ' : 'Select ') + item.name : (view.hasLibraryEntry(item) ? 'Edit tracking for ' : 'Add to backlog: ') + item.name"
   (open)="openOrSelect(item)"
-  (action)="selectionMode ? openOrSelect(item) : details.emit(item)" />
+  (action)="selectionMode ? openOrSelect(item) : edit.emit(item)" />

@@ -91,5 +91,9 @@ function fromWatchMedia(
     playedHours,
     remainingHours: Math.max(0, estimatedHours - playedHours),
     context: kind,
+    ...('episodeCount' in media ? {
+      episodeCount: media.episodeCount,
+      currentEpisode: 'myAnimes' in media ? media.myAnimes?.currentEpisode : 'mySeries' in media ? media.mySeries?.currentEpisode : null,
+    } : {}),
   };
 }

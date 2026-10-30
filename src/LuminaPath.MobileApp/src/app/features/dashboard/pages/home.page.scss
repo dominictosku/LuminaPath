@@ -252,3 +252,5 @@ a:focus-visible, button:focus-visible {
     transition: none;
   }
 }
+
+.notice--success { color: var(--accent); background: var(--surface); border-color: var(--line); }

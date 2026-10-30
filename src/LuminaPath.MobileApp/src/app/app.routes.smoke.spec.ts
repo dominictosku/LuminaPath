@@ -60,7 +60,8 @@ describe('App routes smoke', () => {
     const protectedPagePaths = [
       'home',
       'library',
-      'browse',
+      'discover',
+      'discover/releases',
       'weekly-schedule',
       'statistic',
       'quests',
@@ -76,6 +77,7 @@ describe('App routes smoke', () => {
       expect(route.loadComponent).withContext(path).toEqual(jasmine.any(Function));
     }
 
+    expect(tabChildRoute(tabRoutes, 'browse').redirectTo).toBe('/discover/releases');
     const legacyRedirect = tabChildRoute(tabRoutes, 'library/games/:gameId');
     expect(legacyRedirect.redirectTo).withContext('legacy game detail redirect').toBeDefined();
   });
@@ -85,7 +87,8 @@ describe('App routes smoke', () => {
     await expectAsync(Promise.all([
       resolveTabComponent(tabRoutes, 'home'),
       resolveTabComponent(tabRoutes, 'library'),
-      resolveTabComponent(tabRoutes, 'browse'),
+      resolveTabComponent(tabRoutes, 'discover'),
+      resolveTabComponent(tabRoutes, 'discover/releases'),
       resolveTabComponent(tabRoutes, 'weekly-schedule'),
       resolveTabComponent(tabRoutes, 'statistic'),
       resolveTabComponent(tabRoutes, 'quests'),

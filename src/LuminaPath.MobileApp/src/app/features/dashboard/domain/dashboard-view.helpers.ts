@@ -1,4 +1,4 @@
-import { GameStatus, gameStatusLabel } from '../../library/models/library-status.model';
+import { GameStatus, WatchStatus, gameStatusLabel, watchStatusLabel } from '../../library/models/library-status.model';
 import { releaseDateOfGame } from '../../games/domain/game-library-metrics';
 import { startOfDay } from 'src/app/shared/utils/date-helpers';
 import { DashboardMediaItem } from '../models/dashboard.model';
@@ -31,7 +31,7 @@ export function releaseLabel(item: DashboardMediaItem): string {
 }
 
 export function statusLabel(item: DashboardMediaItem): string {
-  return gameStatusLabel(item.status, 'Not started');
+  return item.kind === 'Game' ? gameStatusLabel(item.status, 'Not started') : watchStatusLabel(item.status, 'Not started');
 }
 
 export function playedLabel(item: DashboardMediaItem): string {
@@ -39,14 +39,26 @@ export function playedLabel(item: DashboardMediaItem): string {
 }
 
 export function remainingLabel(item: DashboardMediaItem): string {
-  return `${Math.round(item.remainingHours)}h left`;
+  return item.estimatedHours > 0 ? `~${Math.round(item.remainingHours)}h remaining` : 'Length unknown';
+}
+
+/** Actual episode progress when available; game hours remain explicitly estimates. */
+export function progressSummary(item: DashboardMediaItem): string {
+  if ((item.kind === 'Anime' || item.kind === 'Series') && item.currentEpisode != null) {
+    return `Episode ${item.currentEpisode}${item.episodeCount ? ` of ${item.episodeCount}` : ''}`;
+  }
+  return `${playedLabel(item)} · ${remainingLabel(item)}`;
+}
+
+export function isCompleted(item: DashboardMediaItem): boolean {
+  return item.status === (item.kind === 'Game' ? GameStatus.Completed : WatchStatus.Completed);
 }
 
 /** 0-100 percent. Falls back to 100 for completed items with no estimate, 0 otherwise. */
 export function progressOf(item: DashboardMediaItem): number {
   const estimated = item.estimatedHours;
   if (estimated <= 0) {
-    return item.status === GameStatus.Completed ? 100 : 0;
+    return isCompleted(item) ? 100 : 0;
   }
   return Math.min(100, Math.round((item.playedHours / estimated) * 100));
 }

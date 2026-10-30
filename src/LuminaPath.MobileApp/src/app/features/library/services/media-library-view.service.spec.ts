@@ -45,10 +45,10 @@ describe('MediaLibraryViewService', () => {
       },
     });
 
-    expect(service.mediaTypeLabel(item, mode('series'))).toBe('Episode 3/10');
+    expect(service.mediaTypeLabel(item, mode('series'))).toBe('Episode 3 of 10');
     expect(service.durationLabel(item, mode('series'))).toBe('4h 10m');
     expect(service.playedLabel(item, mode('series'))).toBe('75m watched');
-    expect(service.remainingLabel(item, mode('series'))).toBe('175m left');
+    expect(service.remainingLabel(item, mode('series'))).toBe('~175m remaining');
   });
 
   it('uses backend platform flag values for game labels', () => {

@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideIonicAngular } from '@ionic/angular/standalone';
 import { of, throwError } from 'rxjs';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 
+import { LiveSessionTrackerService } from 'src/app/shared/services/live-session-tracker.service';
+import { DashboardMediaItem } from '../models/dashboard.model';
 import { HomePage } from './home.page';
 import { GameService } from '../../games/services/game.service';
 import { AnimeService } from '../../animes/services/anime.service';
@@ -75,7 +77,25 @@ describe('HomePage', () => {
     component = fixture.componentInstance;
   });
 
-  it('should create', fakeAsync(() => {
+  it('starts one persistent session and preserves its start on repeated clicks', () => {
+    const tracker = TestBed.inject(LiveSessionTrackerService);
+    spyOn(tracker, 'get').and.returnValues(null, { gameId: 7 } as never, { gameId: 7 } as never);
+    const start = spyOn(tracker, 'start');
+    component.games = [{ id: 7, name: 'Hades', myGames: { id: 70 } } as never];
+    const item = { id: 7, kind: 'Game', name: 'Hades' } as DashboardMediaItem;
+    component.startSession(item);
+    component.startSession(item);
+    expect(start).toHaveBeenCalledOnceWith(jasmine.objectContaining({ gameId: 7, myGameId: 70, gameName: 'Hades' }));
+    expect(component.actionMessage).toContain('Session started');
+  });
+
+  it('opens tracking directly for the selected media kind', () => {
+    const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    component.updateProgress({ id: 12, kind: 'Series' } as DashboardMediaItem);
+    expect(navigate).toHaveBeenCalledWith(['/library'], { queryParams: { mediaKind: 'series', editMediaId: 12 } });
+  });
+
+  it('should create' , fakeAsync(() => {
     fixture.detectChanges();
     tick();
     expect(component).toBeTruthy();

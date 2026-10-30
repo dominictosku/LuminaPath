@@ -9,7 +9,7 @@ import {
   DashboardMediaItem,
   DashboardMetric,
 } from '../models/dashboard.model';
-import { daysUntil, progressOf, releaseDateOf, remainingLabel, statusLabel } from './dashboard-view.helpers';
+import { dashboardItemRoute, isCompleted, daysUntil, progressOf, releaseDateOf, remainingLabel, statusLabel } from './dashboard-view.helpers';
 
 /**
  * Pure derivations the home page uses to turn raw fetched data into the
@@ -28,7 +28,7 @@ export function getUpcomingReleases(mediaItems: DashboardMediaItem[], now: Date 
 
 export function getBacklogItems(ownedItems: DashboardMediaItem[]): DashboardMediaItem[] {
   return ownedItems
-    .filter((item) => isGameBacklogStatus(item.status))
+    .filter((item) => item.kind === 'Game' ? isGameBacklogStatus(item.status) : item.status === GameStatus.Planned || item.status === GameStatus.OnHold)
     .sort((a, b) => b.remainingHours - a.remainingHours)
     .slice(0, 4);
 }
@@ -117,6 +117,8 @@ export function buildFocusItems(input: FocusInput): DashboardFocusItem[] {
 
   return [
     {
+      route: ['/weekly-schedule'],
+      actionLabel: session ? 'View session' : 'Plan a session',
       title: session?.gameName ?? 'Plan a session',
       detail: session
         ? `${formatShortDateTime(session.scheduledAt)} · ${Math.round(session.durationMinutes / 60 * 10) / 10}h`
@@ -125,6 +127,8 @@ export function buildFocusItems(input: FocusInput): DashboardFocusItem[] {
       tone: 'blue',
     },
     {
+      route: ['/quests'],
+      actionLabel: 'Open quests',
       title: dueQuests
         ? `${dueQuests} quest${dueQuests === 1 ? '' : 's'} need attention`
         : 'Quest board is calm',
@@ -135,6 +139,8 @@ export function buildFocusItems(input: FocusInput): DashboardFocusItem[] {
       tone: dueQuests ? 'amber' : 'green',
     },
     {
+      route: nextRelease ? dashboardItemRoute(nextRelease) : ['/discover/releases'],
+      actionLabel: nextRelease ? 'View release' : 'Explore releases',
       title: nextRelease?.name ?? 'No upcoming release',
       detail: nextRelease
         ? `${daysUntil(nextRelease)} · ${nextRelease.kind}`
@@ -143,6 +149,8 @@ export function buildFocusItems(input: FocusInput): DashboardFocusItem[] {
       tone: 'rose',
     },
     {
+      route: backlogPick ? dashboardItemRoute(backlogPick) : ['/discover'],
+      actionLabel: backlogPick ? 'View title' : 'Find a title',
       title: backlogPick?.name ?? 'Backlog is clear',
       detail: backlogPick
         ? `${remainingLabel(backlogPick)} · ${statusLabel(backlogPick)}`
@@ -233,7 +241,7 @@ export function sumPlayedHours(items: DashboardMediaItem[]): number {
 }
 
 export function completionRateFor(ownedItems: DashboardMediaItem[]): { completed: number; rate: number } {
-  const completed = ownedItems.filter((item) => item.status === GameStatus.Completed).length;
+  const completed = ownedItems.filter(isCompleted).length;
   const rate = ownedItems.length === 0 ? 0 : Math.round((completed / ownedItems.length) * 100);
   return { completed, rate };
 }

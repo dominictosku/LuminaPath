@@ -7,7 +7,7 @@
         </span>
         <span class="brand-copy">
           <strong>LuminaPath</strong>
-          <small>Game life tracker</small>
+          <small>Your media &amp; plans</small>
         </span>
       </a>
       <div class="nav-links" aria-label="Primary navigation">
@@ -19,13 +19,8 @@
           <ion-icon name="library-outline"></ion-icon>
           <span>Library</span>
         </a>
-        <a [routerLink]="['/weekly-schedule']" [class.active]="isActive('/weekly-schedule')">
-          <ion-icon name="calendar-outline"></ion-icon>
-          <span>Schedule</span>
-        </a>
-        <a [routerLink]="['/statistic']" [class.active]="isActive('/statistic')">
-          <ion-icon name="bar-chart-outline"></ion-icon>
-          <span>Stats</span>
+        <a [routerLink]="['/discover']" [class.active]="isActive('/discover')">
+          <ion-icon name="albums-outline"></ion-icon><span>Discover</span>
         </a>
         <a [routerLink]="['/quests']" [class.active]="isActive('/quests')">
           <ion-icon name="sparkles-outline"></ion-icon>
@@ -178,6 +173,9 @@
                 <strong>Apps</strong>
               </div>
               <div class="app-grid">
+                <a [routerLink]="['/discover']" (click)="closeMenus()">
+                  <ion-icon name="albums-outline"></ion-icon><span>Discover</span>
+                </a>
                 <a [routerLink]="['/weekly-schedule']" (click)="closeMenus()">
                   <ion-icon name="calendar-outline"></ion-icon>
                   <span>Schedule</span>

@@ -6,7 +6,7 @@ import { MediaItem } from '../../models/media-item.model';
 const item: MediaItem = { id: 1, name: 'A story', kind: 'games', image: null, genre: '', description: '', releaseDate: null, libraryEntry: null };
 
 describe('LibraryCardComponent interactions', () => {
-  it('opens the editor from the poster and keeps details as a separate keyboard-accessible action', () => {
+  it('opens details from the poster and tracking from the separate action', () => {
     const fixture = TestBed.createComponent(LibraryCardComponent);
     fixture.componentRef.setInput('item', item);
     fixture.componentRef.setInput('mediaMode', MEDIA_MODE_OPTIONS[0]);
@@ -14,10 +14,10 @@ describe('LibraryCardComponent interactions', () => {
     const details = spyOn(fixture.componentInstance.details, 'emit');
     fixture.detectChanges();
     fixture.nativeElement.querySelector('.poster-button').click();
-    expect(edit).toHaveBeenCalledOnceWith(item);
-    expect(details).not.toHaveBeenCalled();
-    fixture.nativeElement.querySelector('.card-action').click();
     expect(details).toHaveBeenCalledOnceWith(item);
+    expect(edit).not.toHaveBeenCalled();
+    fixture.nativeElement.querySelector('.card-action').click();
+    expect(edit).toHaveBeenCalledOnceWith(item);
   });
 
   it('selects owned items without opening either the editor or the detail route during bulk selection', () => {

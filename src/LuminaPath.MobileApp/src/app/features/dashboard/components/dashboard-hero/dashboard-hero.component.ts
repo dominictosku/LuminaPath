@@ -5,7 +5,7 @@ import { IonIcon, IonSkeletonText } from '@ionic/angular/standalone';
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { DashboardMediaItem } from '../../models/dashboard.model';
 import { dashboardItemRoute } from '../../domain/dashboard-view.helpers';
-import { playedLabel, statusLabel } from '../../domain/dashboard-view.helpers';
+import { progressSummary, statusLabel } from '../../domain/dashboard-view.helpers';
 
 /**
  * Hero card at the top of the dashboard: featured media artwork, name, status,
@@ -32,6 +32,6 @@ export class DashboardHeroComponent {
   });
   readonly playedSummary = computed(() => {
     const item = this.featuredItem();
-    return item ? playedLabel(item) : '';
+    return item ? progressSummary(item) : '';
   });
 }

@@ -39,6 +39,6 @@ export class LibraryCardComponent {
       return;
     }
 
-    this.edit.emit(item);
+    this.details.emit(item);
   }
 }

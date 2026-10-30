@@ -76,7 +76,8 @@ export class NavBarComponent implements OnInit, OnDestroy {
   }
 
   isActive(path: string): boolean {
-    return this.router.url === path || this.router.url.startsWith(`${path}/`);
+    const current = this.router.url.split(/[?#]/)[0];
+    return current === path || current.startsWith(`${path}/`);
   }
 
   toggleMenu(menu: 'media' | 'liveSessions' | 'notifications' | 'apps' | 'profile') {

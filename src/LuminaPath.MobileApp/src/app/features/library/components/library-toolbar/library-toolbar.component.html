@@ -1,22 +1,30 @@
-<section class="toolbar-panel" aria-label="Library filters">
+<section class="toolbar-panel" [attr.aria-label]="isDiscover() ? 'Catalog filters' : 'Library filters'">
   <div class="toolbar-top">
     <app-media-filter-tabs [options]="mediaOptions()" [selected]="mediaModeId()" (selectedChange)="mediaModeChange.emit($event)" />
     <div class="primary-filters">
       <input class="library-search" type="search" aria-label="Search titles" [value]="inputValue"
         (input)="onSearchInput($any($event.target).value)" placeholder="Search titles…" />
+      @if (!isDiscover()) {
       <select aria-label="Filter by status" [(ngModel)]="statusFilter" (ngModelChange)="apply.emit()">
         <option value="all">All statuses</option>
         @for (status of statusOptions(); track status.value) { <option [value]="status.value">{{ status.label }}</option> }
       </select>
+      }
       <select aria-label="Sort media" [(ngModel)]="sortMode" (ngModelChange)="apply.emit()">
         @for (option of sortOptions(); track option.value) { <option [value]="option.value">{{ option.label }}</option> }
       </select>
     </div>
   </div>
+  <div class="active-filters" aria-label="Active filters">
+    @if (searchTerm()) { <button type="button" (click)="clearFilter('search')" [attr.aria-label]="'Remove search: ' + searchTerm()">Search: {{ searchTerm() }} <span aria-hidden="true">×</span></button> }
+    @if (statusFilter() !== 'all') { <button type="button" (click)="clearFilter('status')" [attr.aria-label]="'Remove status filter: ' + statusLabel">{{ statusLabel }} <span aria-hidden="true">×</span></button> }
+    @if (platformFilter() !== 'all') { <button type="button" (click)="clearFilter('platform')" [attr.aria-label]="'Remove platform filter: ' + platformLabel">{{ platformLabel }} <span aria-hidden="true">×</span></button> }
+    @if (releaseDateFilter() !== 'all') { <button type="button" (click)="clearFilter('release')" aria-label="Remove release date filter">Release: {{ releaseDateFilter() === 'custom' ? (releaseDateFrom() || 'Any date') + ' – ' + (releaseDateTo() || 'Any date') : releaseDateFilter() }} <span aria-hidden="true">×</span></button> }
+    @if (smartFilter() !== 'none') { <button type="button" (click)="clearFilter('smart')" aria-label="Remove smart filter">{{ smartFilter() === 'short' ? 'Under 10 hours' : smartFilter() === 'best' ? 'Best finish' : 'Started, stalled' }} <span aria-hidden="true">×</span></button> }
+  </div>
   <details class="advanced-filters">
-    <summary>More filters & views <span>{{ ownershipFilter() === 'mine' ? 'My library' : ownershipFilter() === 'catalog' ? 'Not in my library' : 'All titles' }}{{ smartFilter() !== 'none' ? ' · Smart filter active' : '' }}{{ platformFilter() !== 'all' || releaseDateFilter() !== 'all' ? ' · Filtered' : '' }}</span></summary>
+    <summary>More filters &amp; views</summary>
     <div class="filter-grid">
-      <label>Collection<select [(ngModel)]="ownershipFilter" (ngModelChange)="apply.emit()"><option value="all">All titles</option><option value="mine">My library</option><option value="catalog">Not in my library</option></select></label>
       @if (isGamesMode()) {
         <label>Platform<select [(ngModel)]="platformFilter" (ngModelChange)="apply.emit()">
           <option value="all">All platforms</option>
@@ -28,6 +36,7 @@
       </select></label>
       <label>View<select [(ngModel)]="viewMode"><option value="grid">Poster grid</option><option value="list">Compact list</option></select></label>
     </div>
+    @if (!isDiscover()) {
     <div class="smart-chips" aria-label="Smart library filters">
       <button
         type="button"
@@ -55,6 +64,7 @@
         <ion-icon name="flash-outline"></ion-icon>
       </button>
     </div>
+    }
   @if (releaseDateFilter() === 'custom') {
     <div class="release-date-range">
       <label>

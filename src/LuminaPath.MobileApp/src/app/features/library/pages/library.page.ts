@@ -12,7 +12,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   IonButton,
   IonContent,
@@ -79,6 +79,7 @@ export interface ActiveMediaDetail {
   styleUrls: ['./library.page.scss'],
   providers: [LibraryBulkActions, LibraryCatalogCreator],
   imports: [
+    RouterLink,
     IonButton,
     IonContent,
     IonIcon,
@@ -107,6 +108,10 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   private dataExport = inject(DataExportService);
   private router = inject(Router);
   private readonly route = inject(ActivatedRoute, { optional: true });
+  readonly isDiscover = this.route?.snapshot.data?.['discover'] === true;
+  private viewActive = true;
+  private editRevision = 0;
+  private routeEditorOpen = false;
   private readonly destroyRef = inject(DestroyRef);
   readonly isDetailOpen = signal(false);
   private loadRevision = 0;
@@ -128,7 +133,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
    */
   filteredGames = signal<MediaItem[]>([]);
   searchTerm = '';
-  ownershipFilter: OwnershipFilter = 'all';
+  ownershipFilter: OwnershipFilter = this.isDiscover ? 'all' : 'mine';
   statusFilter = 'all';
   platformFilter = 'all';
   releaseDateFilter: ReleaseDateFilter = 'all';
@@ -196,6 +201,12 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     { label: 'Best to finish', value: 'best-finish' },
   ];
 
+  get visibleSortOptions() {
+    return this.isDiscover
+      ? this.sortOptions.filter((option) => ['title', 'release-desc', 'release-asc'].includes(option.value))
+      : this.sortOptions;
+  }
+
   constructor() {
     this.mediaMode = this.mediaModeService.mode();
     effect(() => {
@@ -206,14 +217,16 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
         this.bulk.resetForMode();
         this.clearFilters(false);
         this.loadSavedPresets();
-        this.loadGames();
+        if (this.viewActive) this.loadGames();
       });
     });
     // Mirror store state into local fields. Fires on initial load AND when
     // any consumer (e.g., a detail page) upserts/patches a cached item, so
     // the library view stays consistent with mutations that happen elsewhere.
     effect(() => {
-      this.games = this.mediaStore.items();
+      const items = this.mediaStore.items();
+      if (!this.viewActive) return;
+      this.games = items;
       this.currentPage = this.mediaStore.page();
       this.totalPages = this.mediaStore.totalPages();
       const storeError = this.mediaStore.error();
@@ -247,6 +260,17 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     this.route?.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const kind = params.get('mediaKind');
       const id = Number(params.get('mediaId'));
+      const editId = Number(params.get('editMediaId'));
+      if (kind && Number.isInteger(editId) && editId > 0) {
+        void this.openTrackingEditor(kind, editId);
+      } else {
+        ++this.editRevision;
+        if (this.routeEditorOpen) {
+          this.routeEditorOpen = false;
+          this.isAddDialogOpen = false;
+          this.selectedGame = null;
+        }
+      }
       const mode = this.mediaOptions.find((option) => option.id === kind);
       if (mode && Number.isInteger(id) && id > 0) {
         this.mediaModeService.select(mode.id);
@@ -308,7 +332,14 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  ionViewWillLeave(): void {
+    this.viewActive = false;
+  }
+
   ionViewWillEnter(): void {
+    this.viewActive = true;
+    this.games = this.mediaStore.items();
+    this.applyLoadedGames();
     // Ionic retains tab pages. Recover only if another view changed the store;
     // returning to a matching list preserves its filters, pages and scroll.
     if (!this.mediaStore.matchesCatalog(this.createPageFilter(1))) {
@@ -359,13 +390,14 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
 
   private applyLoadedGames(): void {
     this.refreshLibraryIntelligence();
-    this.filteredGames.set(this.games);
+    this.filteredGames.set(this.ownershipFilter === 'mine'
+      ? this.games.filter((item) => item.libraryEntry != null) : this.games);
     this.bulk.prune();
   }
 
   clearFilters(apply = true) {
     this.searchTerm = '';
-    this.ownershipFilter = 'all';
+    this.ownershipFilter = this.isDiscover ? 'all' : 'mine';
     this.statusFilter = 'all';
     this.platformFilter = 'all';
     this.releaseDateFilter = 'all';
@@ -423,14 +455,14 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
 
   applyPreset(preset: LibraryFilterPreset): void {
     this.searchTerm = preset.searchTerm ?? '';
-    this.ownershipFilter = preset.ownershipFilter ?? 'all';
-    this.statusFilter = preset.statusFilter ?? 'all';
+    this.ownershipFilter = this.isDiscover ? 'all' : 'mine';
+    this.statusFilter = this.isDiscover ? 'all' : preset.statusFilter ?? 'all';
     this.platformFilter = preset.platformFilter ?? 'all';
     this.releaseDateFilter = preset.releaseDateFilter ?? 'all';
     this.releaseDateFrom = preset.releaseDateFrom ?? '';
     this.releaseDateTo = preset.releaseDateTo ?? '';
-    this.sortMode = preset.sortMode ?? 'title';
-    this.smartFilter = preset.smartFilter ?? 'none';
+    this.sortMode = this.visibleSortOptions.some((option) => option.value === preset.sortMode) ? preset.sortMode : 'title';
+    this.smartFilter = this.isDiscover ? 'none' : preset.smartFilter ?? 'none';
     this.loadGames();
   }
 
@@ -466,6 +498,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
 
     this.isAddDialogOpen = false;
     this.selectedGame = null;
+    this.clearEditRoute();
   }
 
   async submitAddGame(): Promise<void> {
@@ -492,6 +525,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
       }
       this.isAddDialogOpen = false;
       this.selectedGame = null;
+      this.clearEditRoute();
       this.triggerAddHaptic();
       if (this.mediaMode.id === 'games') {
         this.releaseNotifications.syncForGames(this.gamesForReleaseNotifications());
@@ -508,10 +542,38 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   browseMedia(): void {
-    // The catalog supports every media mode; release feeds only cover games and anime.
-    this.clearFilters(false);
-    this.ownershipFilter = 'catalog';
-    this.applyFilters();
+    void this.router.navigate(['/discover']);
+  }
+
+  private async openTrackingEditor(kind: string, id: number): Promise<void> {
+    const mode = this.mediaOptions.find((option) => option.id === kind);
+    if (!mode) return;
+    const revision = ++this.editRevision;
+    this.routeEditorOpen = true;
+    this.mediaModeService.select(mode.id);
+    try {
+      const item = await firstValueFrom(this.mediaLibrary.get(id, mode.id));
+      if (revision !== this.editRevision || this.destroyRef.destroyed || this.mediaModeService.mode().id !== mode.id) return;
+      this.openGameListDialog(item);
+    } catch (error) {
+      if (revision === this.editRevision) {
+        this.errorMessage = extractErrorMessage(error, 'Tracking details could not be loaded. Please try again.');
+        this.clearEditRoute();
+      }
+    }
+  }
+
+  private clearEditRoute(): void {
+    if (!this.route?.snapshot.queryParamMap.has('editMediaId')) return;
+    void this.router.navigate([this.isDiscover ? '/discover' : '/library'], {
+      queryParams: { editMediaId: null, mediaKind: null },
+      queryParamsHandling: 'merge', replaceUrl: true,
+    });
+  }
+
+  get hasActiveFilters(): boolean {
+    return !!this.searchTerm.trim() || this.statusFilter !== 'all' || this.platformFilter !== 'all'
+      || this.releaseDateFilter !== 'all' || this.smartFilter !== 'none';
   }
 
   selectMediaMode(id: string): void {
@@ -521,7 +583,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
 
   openDetails(game: MediaItem): void {
     if (this.isAdding(game)) return;
-    void this.router.navigate(['/library'], {
+    void this.router.navigate([this.isDiscover ? '/discover' : '/library'], {
       queryParams: { mediaKind: game.kind, mediaId: game.id },
       queryParamsHandling: 'merge',
     });
@@ -544,7 +606,7 @@ export class LibraryPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private clearDetailRoute(): void {
-    void this.router.navigate(['/library'], {
+    void this.router.navigate([this.isDiscover ? '/discover' : '/library'], {
       queryParams: { mediaKind: null, mediaId: null },
       queryParamsHandling: 'merge',
       replaceUrl: true,

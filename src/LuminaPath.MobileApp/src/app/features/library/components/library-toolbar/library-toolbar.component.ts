@@ -56,6 +56,7 @@ export class LibraryToolbarComponent implements OnDestroy {
   readonly shortGameCount = input<number>(0);
   readonly abandonedGameCount = input<number>(0);
   readonly hasNextBest = input<boolean>(false);
+  readonly isDiscover = input(false);
   readonly isGamesMode = input<boolean>(false);
 
   readonly mediaOptions = input<readonly MediaFilterTab[]>([]);
@@ -127,6 +128,34 @@ export class LibraryToolbarComponent implements OnDestroy {
       this.inputValue = '';
     }
     this.apply.emit();
+  }
+
+  clearFilter(filter: 'search' | 'status' | 'platform' | 'release' | 'smart'): void {
+    if (filter === 'search') {
+      window.clearTimeout(this.debounceTimer);
+      this.searchTerm.set('');
+      this.inputValue = '';
+    }
+    if (filter === 'status') this.statusFilter.set('all');
+    if (filter === 'platform') this.platformFilter.set('all');
+    if (filter === 'release') {
+      this.releaseDateFilter.set('all');
+      this.releaseDateFrom.set('');
+      this.releaseDateTo.set('');
+    }
+    if (filter === 'smart') {
+      this.smartFilter.set('none');
+      if (this.sortMode() === 'best-finish') this.sortMode.set('title');
+    }
+    this.apply.emit();
+  }
+
+  get statusLabel(): string {
+    return this.statusOptions().find((option) => String(option.value) === this.statusFilter())?.label ?? this.statusFilter();
+  }
+
+  get platformLabel(): string {
+    return this.platforms().find((option) => String(option.value) === this.platformFilter())?.label ?? this.platformFilter();
   }
 
   trackByPreset(_: number, preset: LibraryFilterPreset): string {

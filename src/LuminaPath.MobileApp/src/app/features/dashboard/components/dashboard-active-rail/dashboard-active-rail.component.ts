@@ -1,11 +1,11 @@
 import { RouterLink } from '@angular/router';
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { IonBadge, IonIcon } from '@ionic/angular/standalone';
 
 import { mediaImageUrl } from 'src/app/shared/utils/media-url';
 import { DashboardMediaItem } from '../../models/dashboard.model';
 import { dashboardItemRoute } from '../../domain/dashboard-view.helpers';
-import { progressOf, remainingLabel } from '../../domain/dashboard-view.helpers';
+import { progressSummary, progressOf, remainingLabel } from '../../domain/dashboard-view.helpers';
 
 /** Horizontally scrolling rail of "currently active" media (status === Playing). */
 @Component({
@@ -17,6 +17,10 @@ import { progressOf, remainingLabel } from '../../domain/dashboard-view.helpers'
 })
 export class DashboardActiveRailComponent {
   readonly itemRoute = dashboardItemRoute;
+  readonly progressSummary = progressSummary;
+  readonly runningGameIds = input<readonly number[]>([]);
+  readonly startSession = output<DashboardMediaItem>();
+  readonly updateProgress = output<DashboardMediaItem>();
 
   readonly items = input<DashboardMediaItem[]>([]);
 

@@ -1,20 +1,15 @@
 <ion-content [fullscreen]="true" class="release-shell">
   <main class="release-page">
     <header class="page-intro">
-      <span class="eyebrow"><ion-icon name="sparkles-outline" /> Discover</span>
-      <h1>Follow your curiosity.</h1>
-      <p>Something unforgettable is waiting just around the corner.</p>
+      <span class="eyebrow"><ion-icon name="sparkles-outline" /> Discover / Releases</span>
+      <h1>Explore releases.</h1>
+      <p>Games by month and anime by season. Looking for an older title, film, or series?</p>
+      <ion-button fill="outline" routerLink="/discover">Search the full catalog</ion-button>
     </header>
-    <section class="catalog-banner">
-      <span class="big-spark" aria-hidden="true">✧</span>
-      <span class="eyebrow">A world for every mood</span>
-      <h2>One more world to fall into.</h2>
-      <p>From sprawling adventures to stories that stay with you. Explore new releases and save your next favorite.</p>
-    </section>
     <div class="browse-controls">
       <app-media-filter-tabs [options]="kindOptions" [selected]="selectedKind" (selectedChange)="selectKindTab($event)" />
       <div class="browse-fields">
-        <input type="search" aria-label="Search releases" placeholder="Search titles…" [(ngModel)]="searchTerm" />
+        <input type="search" aria-label="Search releases" [placeholder]="'Search releases in ' + periodLabel" [(ngModel)]="searchTerm" />
         <select aria-label="Sort releases" [(ngModel)]="sortMode"><option value="popular">Most popular</option><option value="release">Newest release</option><option value="title">Title A–Z</option></select>
       </div>
     </div>
@@ -54,6 +49,7 @@
             <ion-icon name="albums-outline" />
             <h2>{{ searchTerm ? 'No stories found.' : 'No releases in ' + periodLabel }}</h2>
             <p>{{ searchTerm ? 'Try another title or clear your search.' : 'Explore a nearby ' + (selectedKind === 'games' ? 'month' : 'season') + ' to find your next story.' }}</p>
+            <ion-button fill="clear" routerLink="/discover">Search the full catalog</ion-button>
             @if (searchTerm) { <ion-button fill="outline" (click)="searchTerm = ''">Clear search</ion-button> }
           </section>
         }

@@ -29,9 +29,13 @@ export type DashboardMediaItem = {
   playedHours: number;
   remainingHours: number;
   context: string;
+  currentEpisode?: number | null;
+  episodeCount?: number | null;
 };
 
 export type DashboardFocusItem = {
+  route: string[];
+  actionLabel: string;
   title: string;
   detail: string;
   icon: string;

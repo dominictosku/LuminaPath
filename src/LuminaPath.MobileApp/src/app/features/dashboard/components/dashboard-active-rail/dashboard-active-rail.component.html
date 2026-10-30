@@ -13,23 +13,34 @@
   @if (items().length) {
     <div class="horizontal-list">
       @for (item of items(); track trackByItem($index, item)) {
-        <a class="game-card game-card--large" [routerLink]="itemRoute(item)">
+        <article class="game-card game-card--large">
+          <a [routerLink]="itemRoute(item)" class="game-card__link">
           <img [src]="imageFor(item)" alt="" loading="lazy" decoding="async" />
           <div class="game-card__body">
             <ion-badge>{{ item.kind }}</ion-badge>
             <h3>{{ item.name }}</h3>
-            <p>{{ item.context }} · {{ remainingLabel(item) }}</p>
-            <div class="progress-track">
-              <span [style.width.%]="progressOf(item)"></span>
-            </div>
+            <p>{{ progressSummary(item) }}</p>
+
           </div>
-        </a>
+          </a>
+          <div class="game-card__actions">
+            @if (item.kind === 'Game') {
+              @if (runningGameIds().includes(item.id)) {
+                <a [routerLink]="itemRoute(item)">View running session</a>
+              } @else {
+                <button type="button" (click)="startSession.emit(item)" [attr.aria-label]="'Start session for ' + item.name">Start session</button>
+              }
+            }
+            <button type="button" (click)="updateProgress.emit(item)" [attr.aria-label]="'Update progress for ' + item.name">{{ item.kind === 'Game' ? 'Log time' : 'Update progress' }}</button>
+          </div>
+        </article>
       }
     </div>
   } @else {
     <div class="empty-state">
       <ion-icon name="game-controller-outline"></ion-icon>
       <span>No active media yet.</span>
+      <a routerLink="/library">Choose a title from your library →</a>
     </div>
   }
 </section>

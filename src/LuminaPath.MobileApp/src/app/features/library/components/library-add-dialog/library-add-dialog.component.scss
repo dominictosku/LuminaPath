@@ -7,3 +7,6 @@
 .rating-field { display: grid; grid-template-columns: minmax(0, 1fr) 76px; align-items: center; gap: 14px; }
 .rating-field input[type=range] { padding: 0; min-height: 36px; accent-color: var(--collection-accent); }
 @media (max-width: 600px) { .editor-stats strong { font-size: 22px; } .editor-stats span { font-size: 9px; } .dialog-actions ion-button:first-child { margin-right: auto; } }
+
+.tracking-details summary { cursor: pointer; min-height: 44px; padding-block: 12px; font-weight: 600; }
+.tracking-details summary:focus-visible { outline: 2px solid var(--ion-color-primary); outline-offset: 2px; }

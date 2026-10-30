@@ -1,6 +1,6 @@
 
 import { Component, OnInit, effect, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MediaPosterComponent } from 'src/app/shared/components/media-poster/media-poster.component';
 import { MediaFilterTabsComponent } from 'src/app/shared/components/media-filter-tabs/media-filter-tabs.component';
 import { CollectionSectionComponent } from 'src/app/shared/components/collection-section/collection-section.component';
@@ -40,6 +40,7 @@ const SEASONS = [
   styleUrls: ['./browse.page.scss'],
   imports: [
     FormsModule,
+    RouterLink,
     IonButton,
     IonContent,
     IonIcon,
@@ -143,7 +144,7 @@ export class BrowsePage implements OnInit {
   }
 
   browseProgress(item: BrowseItem): number | null {
-    return item.libraryEntry ? this.mediaView.progressOf(this.toMediaItem(item), this.mediaMode) : null;
+    return item.libraryEntry ? this.mediaView.measuredProgress(this.toMediaItem(item), this.mediaMode) : null;
   }
 
 

@@ -1,3 +1,4 @@
+import { RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular/standalone';
 
@@ -9,7 +10,7 @@ import { daysUntil, releaseLabel } from '../../domain/dashboard-view.helpers';
   selector: 'app-dashboard-releases',
   templateUrl: './dashboard-releases.component.html',
   styleUrls: ['./dashboard-releases.component.scss'],
-  imports: [IonIcon],
+  imports: [RouterLink, IonIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardReleasesComponent {

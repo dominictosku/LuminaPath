@@ -2,6 +2,15 @@
 
 The library is where a user keeps track of every game, movie, series and anime they own, plan to consume, or have finished. Each library entry holds **status** (Planned / Playing / Completed / etc.), **rating**, **progress** (episode, playtime, dates) and free-form **personal notes**.
 
+## Everyday navigation
+
+- **Library** (`/library`) opens your saved titles. Resetting filters keeps you in your personal collection.
+- **Discover** (`/discover`) searches the full catalog, with tabs for games, movies, series and anime. **Add media** in Library opens Discover.
+- **Releases** (`/discover/releases`) is a separate Discover view for game months and anime seasons. Existing `/browse` links redirect here.
+- Open a poster for full details, or use its add/edit action for tracking. New entries offer **Add to backlog**, with optional tracking fields under **Edit tracking details**. Existing entries open those fields immediately.
+- Active search, status, platform, release and smart filters appear as removable chips, including when advanced filters are collapsed.
+- Home puts active titles first, with **Start session**, **Log time**, and **Update progress** actions. Starting a game session uses the existing local timer; open the running session to stop and save it. Game hours are described as estimates, while available episode counts are shown directly.
+
 ## Where it lives
 
 | Concern | Path |
