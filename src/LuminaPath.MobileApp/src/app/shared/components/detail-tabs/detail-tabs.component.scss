@@ -3,19 +3,22 @@
 }
 
 .detail-tabs {
-  min-height: 46px;
+  min-height: 44px;
   padding: 4px;
-  border: 1px solid var(--card-border);
-  border-radius: 18px;
-  background: rgba(12, 31, 64, 0.72);
+  border: 1px solid var(--card-border, var(--collection-line, rgba(164, 183, 211, 0.19)));
+  border-radius: 10px;
+  background: var(--card-bg, var(--collection-surface, #151d2b));
   backdrop-filter: blur(18px);
 
   ion-segment-button {
-    --border-radius: 14px;
-    --color: var(--muted);
-    --color-checked: var(--text);
-    --indicator-color: rgba(96, 165, 250, 0.28);
-    min-height: 38px;
-    font-weight: 800;
+    --border-radius: 8px;
+    --color: var(--muted, var(--collection-muted, #9aa8bb));
+    --color-checked: var(--text, var(--collection-text, #edf2fa));
+    --indicator-color: var(--accent-soft, var(--app-theme-accent-soft, rgba(96, 165, 250, 0.16)));
+    --indicator-box-shadow: none;
+    min-height: 36px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0;
   }
 }

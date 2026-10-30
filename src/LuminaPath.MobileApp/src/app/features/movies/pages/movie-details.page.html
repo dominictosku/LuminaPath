@@ -42,7 +42,7 @@
       <ion-icon name="film-outline"></ion-icon>
       <h2>Something went wrong</h2>
       <p>{{ errorMessage }}</p>
-      <ion-button shape="round" (click)="goBack()">{{ isModal ? 'Close' : 'Back' }}</ion-button>
+      <ion-button (click)="goBack()">{{ isModal ? 'Close' : 'Back' }}</ion-button>
     </section>
   }
 
@@ -103,7 +103,6 @@
         @if (canShareCompletionCard) {
           <section class="quick-actions">
             <ion-button
-              shape="round"
               fill="outline"
               class="quick-action"
               (click)="exportCompletionCard()">

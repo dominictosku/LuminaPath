@@ -63,7 +63,7 @@
       <ion-icon name="game-controller-outline"></ion-icon>
       <h2>Something went wrong</h2>
       <p>{{ errorMessage }}</p>
-      <ion-button shape="round" (click)="goBack()">{{ isModal ? 'Close' : 'Back' }}</ion-button>
+      <ion-button (click)="goBack()">{{ isModal ? 'Close' : 'Back' }}</ion-button>
     </section>
   }
 
@@ -83,7 +83,6 @@
       <section class="quick-actions">
         @if (!isInLibrary) {
           <ion-button
-            shape="round"
             class="quick-action quick-action--primary"
             [disabled]="isUpdatingLibrary"
             (click)="addToLibrary()">
@@ -93,7 +92,6 @@
         }
         @if (isInLibrary) {
           <ion-button
-            shape="round"
             class="quick-action quick-action--primary"
             [disabled]="isUpdatingLibrary"
             (click)="advanceStatus()">
@@ -101,7 +99,6 @@
             {{ primaryActionLabel }}
           </ion-button>
           <ion-button
-            shape="round"
             fill="outline"
             class="quick-action"
             (click)="openSessionsTab()">
@@ -111,7 +108,6 @@
         }
         @if (canShareCompletionCard) {
           <ion-button
-            shape="round"
             fill="outline"
             class="quick-action"
             (click)="exportCompletionCard()">
@@ -148,7 +144,6 @@
             </textarea>
             <div class="live-session-card__actions">
               <ion-button
-                shape="round"
                 class="quick-action quick-action--primary"
                 [disabled]="liveSession.isSaving"
                 (click)="liveSession.stop()">
@@ -156,7 +151,6 @@
                 {{ liveSession.isSaving ? 'Saving...' : 'Stop & log' }}
               </ion-button>
               <ion-button
-                shape="round"
                 fill="outline"
                 class="quick-action"
                 [disabled]="liveSession.isSaving"
@@ -168,7 +162,6 @@
           } @else {
             <div class="live-session-card__actions">
               <ion-button
-                shape="round"
                 class="quick-action quick-action--primary"
                 [disabled]="liveSession.isSaving"
                 (click)="liveSession.start()">

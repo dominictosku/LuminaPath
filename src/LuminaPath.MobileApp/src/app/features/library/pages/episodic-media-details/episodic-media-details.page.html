@@ -63,7 +63,7 @@
       <ion-icon [name]="config.errorIcon"></ion-icon>
       <h2>Something went wrong</h2>
       <p>{{ errorMessage }}</p>
-      <ion-button shape="round" (click)="goBack()">{{ isModal ? 'Close' : 'Back' }}</ion-button>
+      <ion-button (click)="goBack()">{{ isModal ? 'Close' : 'Back' }}</ion-button>
     </section>
   }
 
@@ -126,7 +126,6 @@
         <section class="quick-actions">
           @if (!isInLibrary) {
             <ion-button
-              shape="round"
               class="quick-action quick-action--primary"
               [disabled]="isUpdatingLibrary"
               (click)="addToLibrary()">
@@ -135,7 +134,6 @@
             </ion-button>
           } @else {
             <ion-button
-              shape="round"
               class="quick-action quick-action--primary"
               [disabled]="isUpdatingLibrary || primaryActionDisabled"
               (click)="runPrimaryAction()">
@@ -144,7 +142,6 @@
             </ion-button>
             @if (canMarkComplete) {
               <ion-button
-                shape="round"
                 fill="outline"
                 class="quick-action"
                 [disabled]="isUpdatingLibrary"
@@ -155,7 +152,6 @@
             }
             @if (canShareCompletionCard) {
               <ion-button
-                shape="round"
                 fill="outline"
                 class="quick-action"
                 [disabled]="isUpdatingLibrary"

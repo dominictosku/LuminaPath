@@ -315,9 +315,9 @@ ion-action-sheet.media-action-sheet {
 ion-modal.media-detail-modal {
   --width: min(1120px, calc(100vw - 48px));
   --height: min(92vh, 980px);
-  --border-radius: 26px;
-  --box-shadow: 0 32px 100px rgba(0, 0, 0, 0.75);
-  --backdrop-opacity: 0.82;
+  --border-radius: 16px;
+  --box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
+  --backdrop-opacity: 0.85;
 
   &::part(backdrop) {
     background: #030814;
@@ -327,10 +327,10 @@ ion-modal.media-detail-modal {
   &::part(content) {
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--app-chrome-border, rgba(137, 180, 255, 0.18));
+    border: 1px solid var(--collection-line, rgba(164, 183, 211, 0.19));
     border-radius: var(--border-radius);
     overflow: hidden;
-    background: var(--app-chrome-bg-strong, #091322);
+    background: var(--collection-bg, #0b1019);
   }
 
   .ion-delegate-host {

@@ -7,7 +7,7 @@
       </span>
       <h2>Unlocked by you</h2>
     </div>
-    <ion-badge>{{ summaryLabel() }}</ion-badge>
+    <ion-badge [class.trophies-badge--empty]="!isLoading() && !achievements().length">{{ summaryLabel() }}</ion-badge>
   </header>
   @if (isLoading()) {
     <app-empty-state
