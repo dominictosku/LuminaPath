@@ -14,6 +14,8 @@ This section has one folder per user-facing feature. Each feature page should co
 |---|---|
 | [Library](library.md) (games / movies / series / anime) | Documented |
 | [Quest board](quest-board.md) (incl. Skills + Skill Tree modes) | Documented |
+| [AI Assistant](ai-assistant.md) (streaming LLM chat & MCP) | Documented |
+| [Third-Party Integrations](integrations.md) (Google Calendar, Steam, PSN, IGDB) | Documented |
 | Planning / forecasting | TODO |
 | Social feed | TODO |
 | Achievements | TODO |

@@ -7,7 +7,8 @@ Operational guides — how to run, deploy, debug, and recover LuminaPath. Writte
 | Runbook | When you need it |
 |---|---|
 | [Local setup](local-setup.md) | First time running the stack on a laptop. |
-| [Configuration reference](configuration.md) | Optional environment variables and backend config keys. |
+| [Configuration reference](configuration.md) | Environment variables, backend config keys, and settings. |
+| [Storage providers & migration](storage-providers.md) | Configuring S3, Google Drive, Azure Blob, and running migrations. |
 | [Database migrations](migrations.md) | Creating EF migrations and applying reviewed SQL scripts in production. |
 | [Updating the app](updating-the-app.md) | Upgrading .NET, Angular, Ionic, Capacitor and related deployment files. |
 | [Publishing releases](releases.md) | Publishing containers, APKs, corresponding source and license notices. |

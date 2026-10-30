@@ -77,6 +77,8 @@ nav:
       - 03-features/index.md
       - Library: 03-features/library.md
       - Quest board: 03-features/quest-board.md
+      - AI Assistant: 03-features/ai-assistant.md
+      - Integrations: 03-features/integrations.md
   - Decisions:
       - 04-decisions/index.md
       - ADR template: 04-decisions/template.md
@@ -86,6 +88,7 @@ nav:
       - 05-runbooks/index.md
       - Local setup: 05-runbooks/local-setup.md
       - Configuration reference: 05-runbooks/configuration.md
+      - Storage providers & migration: 05-runbooks/storage-providers.md
       - Database migrations: 05-runbooks/migrations.md
       - Updating the app: 05-runbooks/updating-the-app.md
       - Publishing releases: 05-runbooks/releases.md
