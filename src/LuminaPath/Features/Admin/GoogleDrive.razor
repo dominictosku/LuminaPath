@@ -3,7 +3,6 @@
 @using Microsoft.Extensions.Options
 @using LuminaPath.Infrastructure.Services.Storage
 @attribute [Authorize(Roles = "Administrator")]
-@attribute [ExcludeFromInteractiveRouting]
 @inject IOptions<GoogleDriveOptions> DriveOptions
 @inject IOptions<StorageOptions> StorageOptions
 @inject GoogleDriveConnectionStore ConnectionStore
