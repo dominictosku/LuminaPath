@@ -1,4 +1,4 @@
-﻿using LuminaPath.Core.Models;
+using LuminaPath.Core.Models;
 using LuminaPath.Infrastructure.Configuration;
 using LuminaPath.Infrastructure.Identity;
 using LuminaPath.Infrastructure.Services.ModelServices;
@@ -123,7 +123,7 @@ namespace LuminaPath.Infrastructure
                 else
                 {
                     // Handle error if user creation fails
-                    throw new Exception($"Failed to create admin user: {string.Join(", ", result.Errors)}");
+                    throw new Exception($"Failed to create admin user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                 }
             }
         }
