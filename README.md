@@ -40,9 +40,11 @@
   </p>
 
   <p>
-    <a href="#quick-start">Quick Start</a>
+    <a href="#overview">Overview</a>
     <span> | </span>
     <a href="#features">Features</a>
+    <span> | </span>
+    <a href="#quick-start">Quick Start</a>
     <span> | </span>
     <a href="#documentation">Documentation</a>
     <span> | </span>
@@ -58,22 +60,82 @@
 
 ## Overview
 
-LuminaPath combines your digital entertainment backlog with real-world productivity. It catalogs games, movies, series, and anime, lets you track manual and synced playtime, schedule co-op gaming sessions with friends, and turn personal goals into RPG-style quests with customizable skill trees.
+> **One sovereign cockpit for your entertainment backlog, playtime history, social gaming, and real-life RPG progression.**
 
-The primary everyday interface is an Ionic/Angular web and mobile app backed by ASP.NET Core, with a companion Blazor Server interface for administration, storage audits, and user management.
+LuminaPath unifies your fragmented digital hobbies and channels them into real-world momentum. Instead of juggling separate services for game backlogs, anime watchlists, movie diaries, habit trackers, and gaming calendars, LuminaPath brings everything together into a single privacy-first, self-hosted command center.
+
+```mermaid
+flowchart TD
+    subgraph Ingest ["External Sync & Discovery"]
+        Steam["🎮 Steam & PlayStation"]
+        Meta["🎬 IGDB & RAWG Metadata"]
+        Cal["📅 Google Calendar"]
+    end
+
+    subgraph Hub ["LuminaPath Command Center"]
+        Core["Media Backlog & Playtime Engine"]
+        Quests["⚔️ RPG Quests & Real-Life Skill Trees"]
+        Social["🤝 Friends & Co-Op Sessions"]
+        AI["🧠 Streaming AI Assistant (Claude / Ollama)"]
+    end
+
+    subgraph Clients ["Two Purpose-Built Interfaces"]
+        App["📱 Everyday Client (Ionic / Angular 21)"]
+        Admin["⚙️ Control Panel (Blazor Server)"]
+    end
+
+    Steam --> Core
+    Meta --> Core
+    Core <--> Cal
+    Quests <--> Cal
+
+    Core --- Quests --- Social --- AI
+
+    Hub --> App
+    Hub --> Admin
+```
+
+### What Makes LuminaPath Special
 
 <table>
   <tr>
-    <td width="33%"><strong>Unified Media Library</strong><br />Track games, movies, series, and anime with rich metadata, custom covers, release dates, and backlog statuses.</td>
-    <td width="33%"><strong>Playtime & Progress</strong><br />Log manual hours or import play history from Steam and PlayStation Network.</td>
-    <td width="33%"><strong>RPG Quest Board</strong><br />Gamify your real-life productivity with main quests, sub-quests, factions, and unlockable skill trees.</td>
+    <td width="50%" valign="top">
+      <h3>🎮 Cross-Media Universe</h3>
+      <p>Seamlessly organize games, movies, series, and anime. Track release dates, custom cover art, personal ratings, and detailed backlog status across all your platforms in one unified view.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>⏱️ Unified Playtime Tracking</h3>
+      <p>Log manual play sessions or sync playtime and trophies directly from Steam and PlayStation Network. Gain true insights into your gaming habits with estimated vs. actual playtime analytics.</p>
+    </td>
   </tr>
   <tr>
-    <td width="33%"><strong>Streaming AI Assistant</strong><br />Chat with an AI companion powered by Claude or local models (Ollama/vLLM) that can query your library and create quests.</td>
-    <td width="33%"><strong>Social Hub</strong><br />Connect with friends, send direct messages, and schedule co-op gaming sessions.</td>
-    <td width="33%"><strong>Privacy & Self-Hosting</strong><br />Own your data. Run entirely on Docker with local filesystem, S3, or private Google Drive storage.</td>
+    <td width="50%" valign="top">
+      <h3>⚔️ RPG-Style Life Quests</h3>
+      <p>Turn real-life goals and habits into an interactive RPG. Structure your ambitions into Main Quests, Side Quests, Factions, and branching Skill Trees with XP and milestone tracking.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>🧠 Context-Aware AI Companion</h3>
+      <p>A streaming AI assistant (Claude, Ollama, or vLLM) embedded directly in your app. It has secure, user-scoped read access to your library and can draft quests with confirm-first safety.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🤝 Self-Hosted Social Hub</h3>
+      <p>Add friends, coordinate co-op gaming sessions, and chat directly without relying on big-tech platforms or telemetry. Your social graph stays strictly on your server.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>🛡️ Sovereign Data & Storage Freedom</h3>
+      <p>Deploy in seconds with Docker. Choose between local disk storage, AWS S3 / MinIO, or private Google Drive, with built-in zero-downtime migration and integrity verification tools.</p>
+    </td>
   </tr>
 </table>
+
+### Dual-Interface Architecture
+
+LuminaPath pairs a high-performance ASP.NET Core & PostgreSQL backend with two purpose-built frontends:
+
+- **Everyday Mobile & Web App (`:4200`)**: Engineered with Angular 21 & Ionic for a fluid, responsive experience across phones, tablets, and desktop browsers. Features touch gestures, release calendars, and instant search.
+- **Admin & Diagnostic Portal (`:4200/Admin`)**: Powered by Blazor Server & MudBlazor for server administrators. Provides real-time storage health audits, ghost/orphan blob reconciliation, user role management, and background job telemetry.
 
 ---
 
