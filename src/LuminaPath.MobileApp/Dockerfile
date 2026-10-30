@@ -1,17 +1,18 @@
 FROM node:22-alpine AS build
 WORKDIR /src/src/LuminaPath.MobileApp
 
+COPY scripts/ /src/scripts/
 COPY src/LuminaPath.MobileApp/package*.json ./
 RUN npm ci
 
 COPY LICENSE THIRD_PARTY_NOTICES.md /src/
 COPY legal/ /src/legal/
 COPY licenses/ /src/licenses/
-COPY scripts/ /src/scripts/
 COPY src/LuminaPath.MobileApp/ ./
 ARG SOURCE_REVISION=
 ARG SOURCE_REPOSITORY=https://github.com/dominictosku/LuminaPath
 ARG SOURCE_URL=
+ENV CI=true NG_CLI_ANALYTICS=false
 RUN npm run build -- --configuration production
 
 FROM nginx:1.29-alpine AS runtime

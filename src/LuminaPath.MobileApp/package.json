@@ -5,9 +5,10 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "ng": "ng",
+    "postinstall": "node ../../scripts/patch-angular-cli.mjs",
     "prestart": "node ../../scripts/prepare-legal.mjs",
     "start": "ng serve",
-    "prebuild": "node ../../scripts/prepare-legal.mjs",
+    "prebuild": "node ../../scripts/prepare-legal.mjs && node ../../scripts/patch-angular-cli.mjs",
     "build": "ng build",
     "postbuild": "node ../../scripts/finish-web-licenses.mjs",
     "prewatch": "node ../../scripts/prepare-legal.mjs",
