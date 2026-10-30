@@ -161,6 +161,28 @@ have been applied, reverting an image may also require restoring its database
 backup. Dependency upgrades are covered in the
 [upgrade runbook](docs/05-runbooks/updating-the-app.md).
 
+### Local builds
+
+To build the container images locally from the repository root:
+
+#### Build the Backend API:
+
+```sh
+docker build -f src/LuminaPath/Dockerfile -t luminapath-api:local .
+```
+
+#### Build the Frontend (Angular/Ionic):
+
+```sh
+docker build -f src/LuminaPath.MobileApp/Dockerfile -t luminapath-frontend:local .
+```
+
+To build and run the entire stack with local source builds using Docker Compose:
+
+```sh
+docker compose -f compose.yml -f compose.dev.yml up -d --build
+```
+
 ### Optional services
 
 - `docker compose --profile tools up -d` adds pgAdmin at
