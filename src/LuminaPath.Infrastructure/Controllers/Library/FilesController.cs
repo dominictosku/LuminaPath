@@ -223,7 +223,7 @@ namespace LuminaPath.Infrastructure.Controllers
                 }
 
                 Response.Headers.CacheControl = "no-cache, no-store";
-                return File("/images/placeholder.png", "image/png");
+                return File("/Images/Placeholder.png", "image/png");
             }
 
             if (ShouldAuditDownload(result.ContentType))

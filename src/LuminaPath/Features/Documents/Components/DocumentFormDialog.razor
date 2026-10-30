@@ -257,6 +257,9 @@
         Model.ContentType = document.ContentType;
         Model.DocumentType = document.DocumentType;
         Model.Path = document.Path;
+        Model.FileSizeBytes = document.FileSizeBytes;
+        Model.ChecksumSha256 = document.ChecksumSha256;
+        Model.CreatedAt = document.CreatedAt;
 
         if (string.IsNullOrWhiteSpace(Model.Description))
         {

@@ -63,6 +63,23 @@ public class FilesControllerAuditTests
         Assert.Empty(await assertContext.AuditLogs.ToListAsync());
     }
 
+    [Fact]
+    public async Task GetImage_WhenFileNotFound_ReturnsPlaceholderResult()
+    {
+        var options = Utilities.DbContext.TestDbContextOptions();
+        var storage = new Mock<IStorageService>();
+        storage
+            .Setup(service => service.DownloadAsync("missing.png"))
+            .ReturnsAsync((BlobDto?)null);
+
+        var controller = CreateController(options, storage);
+
+        var result = await controller.GetImage("missing.png");
+
+        var fileResult = Assert.IsType<VirtualFileResult>(result);
+        Assert.Equal("/Images/Placeholder.png", fileResult.FileName);
+    }
+
     private static FilesController CreateController(
         DbContextOptions<LuminaPathDbContext> options,
         Mock<IStorageService> storage)
